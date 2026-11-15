@@ -1,0 +1,94 @@
+## Comfortable
+### web
+<div class="eq-1eb13m5 eq-1x18l2e eq-5ew4ww eq-akjizx eq-g7fowl">
+<div class="eq-1eb13m5 eq-1iu691c eq-1uhnwvg eq-5ew4ww eq-akjizx eq-b97nbe eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-cjx69j eq-kngwsg eq-m92pvu eq-mc2xdp">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-1xqhk2i eq-7gvrt4 eq-da01c7 eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-pbx3g3">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-1566de{white-space:pre}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1iu691c{gap:12px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1x18l2e{min-height:52px}
+.eq-1xqhk2i{font-weight:500}
+.eq-5ew4ww{min-width:0}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-b97nbe{padding:8px 16px 8px 16px}
+.eq-cjx69j{gap:2px}
+.eq-da01c7{line-height:20px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-jsw0f2{font-size:15px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+### semantics
+StaticText "x"
+### photon
+ListItem 0 0 480x52
+  Box 0 0 480x52
+    Row 0 0 480x36
+      Flexible 16 8 448x20
+        Column 16 8 448x20
+          Text 16 8 448x20 1 line(s)
+
+## Compact
+### web
+<div class="eq-1eb13m5 eq-1x18l2e eq-5ew4ww eq-akjizx eq-g7fowl">
+<div class="eq-1eb13m5 eq-1iu691c eq-1uhnwvg eq-5ew4ww eq-akjizx eq-b97nbe eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-cjx69j eq-kngwsg eq-m92pvu eq-mc2xdp">
+<span class="eq-type-bodym eq-1566de eq-16x7aca eq-1xqhk2i eq-7gvrt4 eq-da01c7 eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-pbx3g3">x</span>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-1566de{white-space:pre}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1iu691c{gap:12px}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1x18l2e{min-height:52px}
+.eq-1xqhk2i{font-weight:500}
+.eq-5ew4ww{min-width:0}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-b97nbe{padding:8px 16px 8px 16px}
+.eq-cjx69j{gap:2px}
+.eq-da01c7{line-height:20px}
+.eq-epaxs4{text-overflow:ellipsis}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-jsw0f2{font-size:15px}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+### semantics
+StaticText "x"
+### photon
+ListItem 0 0 480x52
+  Box 0 0 480x52
+    Row 0 0 480x36
+      Flexible 16 8 448x20
+        Column 16 8 448x20
+          Text 16 8 448x20 1 line(s)
+

@@ -74,6 +74,45 @@ export class RenderManager {
   }
 
   /**
+   * Patches ONE subtree of what the page drew: `drawn`, a node of the current tree, becomes `next`,
+   * and only the DOM `drawn` produced is reconciled (#1455, a render answered by what the page's owners
+   * built). The DOM is found the way the reconciler finds it, the n-th node of its parent for the n-th
+   * child. The current tree takes `next` in `drawn`'s place, so the next whole render diffs against
+   * what the DOM now holds. False when `drawn` is not in the current tree: the caller renders whole.
+   */
+  patch(drawn: HtmlNode, next: HtmlNode | null): boolean {
+    const tree = this.previousVirtualDom;
+    if (!this.container || !tree) return false;
+    const path = pathTo(tree, drawn);
+    if (!path) return false;
+    const reconciler = getReconciler();
+    if (path.length === 0) {
+      if (!next) return false;
+      reconciler.reconcile(this.container, drawn, next, 0);
+      this.previousVirtualDom = next;
+      return true;
+    }
+    // Each step is CHECKED against the node the tree says stands there: hydration adopts markup in
+    // which an empty text the tree holds was never written, and from there on a child index points at
+    // the next sibling. A whole render tolerates that; a patch would rewrite the wrong element.
+    let parent = tree;
+    let parentDom: Node | null = this.container.childNodes[0] ?? null;
+    if (!drew(parentDom, tree)) return false;
+    for (const index of path.slice(0, -1)) {
+      parent = parent.children[index];
+      parentDom = parentDom?.childNodes[index] ?? null;
+      if (!drew(parentDom, parent)) return false;
+    }
+    if (!(parentDom instanceof Element)) return false;
+    const index = path[path.length - 1];
+    if (!drew(parentDom.childNodes[index] ?? null, drawn)) return false;
+    reconciler.reconcile(parentDom, drawn, next, index);
+    if (next) parent.children[index] = next;
+    else parent.children.splice(index, 1);
+    return true;
+  }
+
+  /**
    * Unmount - cleanup
    */
   unmount(): void {
@@ -137,4 +176,28 @@ export class RenderManager {
   canHydrate(container: HTMLElement): boolean {
     return container.dataset.ssr === 'true' && container.firstElementChild !== null;
   }
+}
+
+/** The child indices from `tree` down to `target`, by identity, or null when it is not in the tree. */
+function pathTo(tree: HtmlNode, target: HtmlNode): number[] | null {
+  const path: number[] = [];
+  const find = (node: HtmlNode): boolean => {
+    if (node === target) return true;
+    const children = node.children ?? [];
+    for (let index = 0; index < children.length; index++) {
+      path.push(index);
+      if (find(children[index])) return true;
+      path.pop();
+    }
+    return false;
+  };
+  return find(tree) ? path : null;
+}
+
+/** Whether `dom` is the kind of node `node` draws: a text for a text, an element of its tag. */
+function drew(dom: Node | null, node: HtmlNode): boolean {
+  if (!dom) return false;
+  if (node.tag === '#text') return dom.nodeType === 3;
+  if (node.tag === '#comment') return dom.nodeType === 8;
+  return dom instanceof Element && dom.localName === node.tag.toLowerCase();
 }

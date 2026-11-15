@@ -34,15 +34,16 @@ public class MaterialThemeRealizerTests
     }
 
     [Fact]
-    public void Card_UsesM3SurfaceAndLargeShape()
+    public void Card_UsesM3SurfaceAndMediumShape()
     {
         var node = Render(new Card(new Text("Hi")), Material);
 
         node.Attributes["style"].Should().Contain(
             $"background-color: {TokenCss.Value(Material.Surface)}");
         node.Attributes["style"].Should().Contain("light-dark(#f7f2fa, #1d1b20)");
-        // Card uses Large shape → M3 large is 16dp.
-        node.Attributes["style"].Should().Contain("border-radius: 16px");
+        // M3's card container is the medium corner, 12dp, which the Card slot now says (#1243); the
+        // Card read the large one, 16dp, while it could not be told otherwise.
+        node.Attributes["style"].Should().Contain("border-radius: 12px");
     }
 
     [Fact]

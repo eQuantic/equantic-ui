@@ -85,7 +85,7 @@ public sealed class NodeElement : Element
         Owner.EnterLayer(this);
         try
         {
-            var shown = UpdateChild(ChildAt(_deferred), configuration, Owner.RebuildingAll)!;
+            var shown = UpdateChild(ChildAt(_deferred), configuration, _deferred, Owner.RebuildingAll)!;
             _children[_deferred] = shown;
             _shownInFrame = Owner.Frame;
             // What a SetState marked under the slot builds now, with the configuration the layer
@@ -131,7 +131,7 @@ public sealed class NodeElement : Element
 
     private void UpdateChildren(bool force)
     {
-        var slots = ChildSlots.Of(Configuration, Owner.SizeClass);
+        var slots = ChildSlots.Of(Configuration, Owner.SizeClass, Owner.HoldsEveryArm);
         _deferred = slots.Deferred;
         if (slots.IsList && AnyKey(slots))
         {
@@ -145,7 +145,7 @@ public sealed class NodeElement : Element
         {
             // Left as it is: the realizer builds it when it shows it (see ShowDeferred).
             if (slot == _deferred) continue;
-            _children[slot] = UpdateChild(_children[slot], slots[slot], force);
+            _children[slot] = UpdateChild(_children[slot], slots[slot], slot, force);
         }
 
         for (var slot = _children.Count - 1; slot >= count; slot--)
@@ -176,9 +176,10 @@ public sealed class NodeElement : Element
         var stamp = Owner.NextStamp();
         var byKey = Owner.KeyScratch;
         byKey.Clear();
+        var repeated = false;
         foreach (var old in _children)
         {
-            if (old?.Configuration.Key is { Length: > 0 } key) byKey.TryAdd(key, old);
+            if (old?.Configuration.Key is { Length: > 0 } key && !byKey.TryAdd(key, old)) repeated = true;
         }
 
         var next = _spare ??= new List<Element?>();
@@ -190,10 +191,16 @@ public sealed class NodeElement : Element
             Element? claimed = null;
             if (node.Key is { Length: > 0 } key)
             {
-                claimed = byKey.TryGetValue(key, out var keyed) && keyed.MatchStamp != stamp
-                                                                && CanUpdate(keyed.Configuration, node)
-                    ? keyed
-                    : NextUnclaimed(node, stamp);
+                // Only an old member with the same key can be taken (CanUpdate compares the keys), so a
+                // key the table does not hold is made below, and the pass over the old list runs only
+                // when a key repeats there: a window whose keys, or whose members' types, all changed
+                // passed over every old member once per new one (#1505).
+                if (byKey.TryGetValue(key, out var keyed))
+                {
+                    claimed = keyed.MatchStamp != stamp && CanUpdate(keyed.Configuration, node) ? keyed
+                        : repeated ? NextUnclaimed(node, stamp)
+                        : null;
+                }
             }
             else if (i < _children.Count && _children[i] is { } indexed && indexed.Configuration.Key is not { Length: > 0 }
                      && indexed.MatchStamp != stamp && CanUpdate(indexed.Configuration, node))
@@ -216,8 +223,12 @@ public sealed class NodeElement : Element
         for (var i = 0; i < count; i++)
         {
             var node = slots[i]!;
-            if (_children[i] is { } kept) kept.Update(node, force);
-            else _children[i] = Inflate(node);
+            if (_children[i] is { } kept)
+            {
+                kept.Slot = i;
+                kept.Update(node, force);
+            }
+            else _children[i] = Inflate(node, i);
         }
     }
 
@@ -225,8 +236,10 @@ public sealed class NodeElement : Element
     /// The first old member <paramref name="node"/> can take that nothing claimed yet, in order: what a
     /// key shared by two siblings falls back to, since the table holds one member per key. Siblings
     /// that repeat a key are matched first to first and second to second, so each keeps its state
-    /// across a rebuild instead of the second being made again every time. Only reached when the
-    /// table's member was taken or is of another type, which a list without repeated keys never is.
+    /// across a rebuild instead of the second being made again every time. Only reached for a key the
+    /// table holds, when a key repeats in the old list and the table's member was taken or is of
+    /// another type, and it answers only a member with that same key, which
+    /// <see cref="Element.CanUpdate"/> compares.
     /// </summary>
     private Element? NextUnclaimed(VisualNode node, int stamp)
     {

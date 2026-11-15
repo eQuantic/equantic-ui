@@ -134,7 +134,8 @@ public static class ModuleGraph
                     File.WriteAllText(path, module.TypeScript);
                     return path;
                 }).ToList();
-                var bundled = ModuleBundler.Bundle(bun, dir, entries, Path.Combine(dir, "out"), written, SourceMapMode.None);
+                string? bundled;
+                using (var bundler = new ModuleBundler(bun, dir)) bundled = bundler.Bundle(entries, Path.Combine(dir, "out"), written, SourceMapMode.None);
                 bundled.Should().BeNull($"the emitted modules bundle:\n{bundled}");
                 importDir = "./out";
             }

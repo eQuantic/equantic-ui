@@ -13,7 +13,7 @@ import { AdaptiveNode, Box, BoxStyle } from './vocabulary';
 import type { LoweringContext } from './lowering';
 import type { VisualNodeValue } from './nodes';
 
-/** A write-once stateless twin, which declares no `nodeKind` and renders itself (the mixing seam). */
+/** A write-once stateless twin: a component, which the element engine builds where it stands. */
 class BuildsIt extends StatelessComponent {
   constructor(private readonly built: VisualNodeValue) {
     super();
@@ -25,6 +25,21 @@ class BuildsIt extends StatelessComponent {
 }
 
 const styles = (node: HtmlNode): string[] => [effectiveStyle(node), ...node.children.flatMap(styles)];
+
+/**
+ * An adaptive node as transpiled code makes one, from the fields a literal would carry: the element
+ * engine asks the node itself for the arm a size class resolves (`resolve`), which a literal cannot
+ * answer, and the lowering then draws every arm as before.
+ */
+const adaptive = (fields: Record<string, unknown>): VisualNodeValue =>
+  Object.assign(
+    new AdaptiveNode(
+      fields.compact as never,
+      (fields.medium ?? null) as never,
+      (fields.expanded ?? null) as never,
+    ),
+    fields,
+  ) as unknown as VisualNodeValue;
 
 const ctx: LoweringContext = { textPrimary: photonTheme.textPrimary };
 const marker = (): VisualNodeValue =>
@@ -39,12 +54,11 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
 
   it('three variants gate as compact/medium/expanded, rules land in the registry', () => {
     const node = lowerVisualNode(
-      {
-        nodeKind: 'adaptive',
+      adaptive({
         compact: marker(),
         medium: marker(),
         expanded: marker(),
-      } as unknown as VisualNodeValue,
+      }) as unknown as VisualNodeValue,
       ctx,
     );
     expect(node.children).toHaveLength(3);
@@ -61,7 +75,7 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
 
   it('compact+expanded: compact serves the medium range (fallback parity with native)', () => {
     const node = lowerVisualNode(
-      { nodeKind: 'adaptive', compact: marker(), expanded: marker() } as unknown as VisualNodeValue,
+      adaptive({ compact: marker(), expanded: marker() }) as unknown as VisualNodeValue,
       ctx,
     );
     expect(node.children).toHaveLength(2);
@@ -72,12 +86,11 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
     // The handoff header swaps nav↔hamburger at 1024 — gating at 840 is what let the nav overlap
     // the logo on tablets.
     const node = lowerVisualNode(
-      {
-        nodeKind: 'adaptive',
+      adaptive({
         compact: marker(),
         expanded: marker(),
         expandedFrom: 1024,
-      } as unknown as VisualNodeValue,
+      }) as unknown as VisualNodeValue,
       ctx,
     );
     expect(node.children[0].attributes['class']).toBe('eq-vc1024');
@@ -90,7 +103,7 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
 
   it('a lone compact is not gated', () => {
     const node = lowerVisualNode(
-      { nodeKind: 'adaptive', compact: marker() } as unknown as VisualNodeValue,
+      adaptive({ compact: marker() }) as unknown as VisualNodeValue,
       ctx,
     );
     expect(node.attributes['class'] ?? '').not.toContain('eq-v');
@@ -101,13 +114,12 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
     // `.7037`, which cannot be one, so the browser dropped every rule of the gate and each arm
     // showed at every width. The SAME literals S6AdaptiveRealizerTests pins on the server.
     const node = lowerVisualNode(
-      {
-        nodeKind: 'adaptive',
+      adaptive({
         compact: marker(),
         medium: marker(),
         expanded: marker(),
         expandedFrom: Math.fround(703.7037),
-      } as unknown as VisualNodeValue,
+      }) as unknown as VisualNodeValue,
       ctx,
     );
     const gates = node.children.map((gate) => gate.attributes['class']);
@@ -129,12 +141,11 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
     // The value arrives as the C# float it was authored as (eqc writes a float constant through
     // Math.fround), and both producers spell that single's exact value.
     const node = lowerVisualNode(
-      {
-        nodeKind: 'adaptive',
+      adaptive({
         compact: marker(),
         expanded: marker(),
         expandedFrom: Math.fround(from),
-      } as unknown as VisualNodeValue,
+      }) as unknown as VisualNodeValue,
       ctx,
     );
     expect(node.children[1].attributes['class']).toBe(gate);
@@ -147,12 +158,11 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
     const fixed = (length: number) =>
       ({ nodeKind: 'spacer', flex: 0, fixedLength: length }) as unknown as VisualNodeValue;
     const arms = () =>
-      ({
-        nodeKind: 'adaptive',
+      (adaptive({
         compact: fixed(24),
         expanded: fixed(64),
         expandedFrom: 980,
-      }) as unknown as VisualNodeValue;
+      })) as unknown as VisualNodeValue;
     const flex = (nodeKind: string, children: VisualNodeValue[]) =>
       ({
         nodeKind,
@@ -187,12 +197,11 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
       align: 'topStart',
       children: [
         sized(400, 300),
-        {
-          nodeKind: 'adaptive',
+        adaptive({
           compact: { nodeKind: 'box', style: {} },
           expanded: { nodeKind: 'positioned', child: sized(32, 32), top: 0, end: 0 },
           expandedFrom: 980,
-        },
+        }),
       ],
     } as unknown as VisualNodeValue;
 
@@ -222,12 +231,11 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
       main: 'start',
       cross: 'start',
       children: [
-        {
-          nodeKind: 'adaptive',
+        adaptive({
           alignSelf: 'center',
           compact: marker(),
           expanded: sized({ alignSelf: 'end' }),
-        },
+        }),
       ],
     } as unknown as VisualNodeValue;
     const grid = {
@@ -238,7 +246,7 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
       ],
       gap: 0,
       children: [
-        { nodeKind: 'adaptive', gridSpan: 2, compact: marker(), expanded: sized({ gridSpan: 2 }) },
+        adaptive({ gridSpan: 2, compact: marker(), expanded: sized({ gridSpan: 2 }) }),
       ],
     } as unknown as VisualNodeValue;
 
@@ -251,8 +259,8 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
     expect(effectiveStyle(cells[0].children[0])).not.toContain('grid-column');
   });
 
-  // The SAME arms S6AdaptiveRealizerTests pins on the server, out of a component (#738). A stateful
-  // one takes the store's door and a stateless twin renders itself, and both reach the same arms.
+  // The SAME arms S6AdaptiveRealizerTests pins on the server, out of a component (#738): through one
+  // component and through two, the arms a component builds are placed by the line or grid it stands in.
   it('a line and a grid see through a component to the arms it builds', () => {
     const sized = (extra: Record<string, unknown>) =>
       ({
@@ -261,15 +269,14 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
         ...extra,
       }) as unknown as VisualNodeValue;
     const marker = () => ({ nodeKind: 'box', style: {} }) as unknown as VisualNodeValue;
-    const builds = (built: VisualNodeValue) =>
-      ({ nodeKind: 'component', build: () => built }) as unknown as VisualNodeValue;
+    const builds = (built: VisualNodeValue) => new BuildsIt(built) as unknown as VisualNodeValue;
     const twinArms = () => {
       const expanded = new Box(new BoxStyle({ width: 10, height: 10 }));
       expanded.alignSelf = 'end';
       return new AdaptiveNode(new Box(new BoxStyle({})), null, expanded) as unknown as VisualNodeValue;
     };
     const arms = (extra: Record<string, unknown>) =>
-      ({ nodeKind: 'adaptive', compact: marker(), expanded: sized(extra) }) as unknown as VisualNodeValue;
+      (adaptive({ compact: marker(), expanded: sized(extra) })) as unknown as VisualNodeValue;
     const row = (child: VisualNodeValue) =>
       ({ nodeKind: 'row', gap: 0, main: 'start', cross: 'start', children: [child] }) as unknown as VisualNodeValue;
     const grid = {
@@ -295,18 +302,17 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
     const inner = {
       nodeKind: 'box',
       style: { width: { kind: 'fixed', value: 10 } },
-      child: {
-        nodeKind: 'adaptive',
+      child: adaptive({
         compact: { nodeKind: 'box', style: {} },
         expanded: { nodeKind: 'box', style: {}, alignSelf: 'end' },
-      },
+      }),
     } as unknown as VisualNodeValue;
     const row = {
       nodeKind: 'row',
       gap: 0,
       main: 'start',
       cross: 'start',
-      children: [{ nodeKind: 'component', build: () => inner }],
+      children: [new BuildsIt(inner)],
     } as unknown as VisualNodeValue;
 
     expect(styles(lowerVisualNode(row, ctx)).join(';')).not.toContain('align-self');

@@ -44,12 +44,16 @@ public sealed class Stepper : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var height = ControlMetrics.Height(context, Size);
+        // The theme's Segmented slot, then its control ladder, then the component's own (§3.10).
+        var slot = theme.Segmented;
+        var ladder = slot?.Controls;
+        var height = ControlMetrics.Height(context, Size, ladder);
+        var iconSize = slot?.IconSize ?? IconSize.Dense;
         var canDecrement = !Disabled && Value - Step >= Min;
         var canIncrement = !Disabled && Value + Step <= Max;
 
         var row = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
-        row.Add(Arm(theme, Icons.Minus, height, canDecrement,
+        row.Add(Arm(theme, Icons.Minus, height, iconSize, canDecrement,
             () => OnChanged?.Invoke(Value - Step), Action("Decrease")));
 
         // The value HUGS between the arms with a floor, rather than flexing: a Flexible here makes
@@ -65,11 +69,11 @@ public sealed class Stepper : StatelessComponent
         {
             Align = TextAlignment.Center,
             Tabular = true,
-            StyleOverride = theme.Type(TypeRole.Label).WithSize(ControlMetrics.LabelSize(context, Size)),
+            StyleOverride = theme.Type(TypeRole.Label).WithSize(ControlMetrics.LabelSize(context, Size, ladder)),
         });
         row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));
 
-        row.Add(Arm(theme, Icons.Plus, height, canIncrement,
+        row.Add(Arm(theme, Icons.Plus, height, iconSize, canIncrement,
             () => OnChanged?.Invoke(Value + Step), Action("Increase")));
 
         return new Box(new BoxStyle
@@ -77,15 +81,15 @@ public sealed class Stepper : StatelessComponent
             Width = SizeValue.Hug,
             Height = height,
             Background = Disabled ? theme.SurfaceSubtle : theme.Surface,
-            CornerRadius = new CornerRadii(ControlMetrics.Radius(context, Size)),
-            BorderWidth = 1,
-            BorderColor = theme.BorderStrong,
+            CornerRadius = new CornerRadii(ControlMetrics.Radius(context, Size, ladder)),
+            BorderWidth = slot?.BorderWidth ?? 1,
+            BorderColor = slot?.BorderColor ?? theme.BorderStrong,
             Opacity = Disabled ? theme.DisabledOpacity : 1f,
         }, row);
     }
 
     /// <summary>One end of the control: a square press target the full height of the frame.</summary>
-    private static VisualNode Arm(IAppTheme theme, Icons glyph, float height, bool enabled,
+    private static VisualNode Arm(IAppTheme theme, Icons glyph, float height, float iconSize, bool enabled,
         Action onPressed, string label)
     {
         var centered = new Row(gap: 0)
@@ -95,7 +99,7 @@ public sealed class Stepper : StatelessComponent
             Main = MainAlign.Center,
             Cross = CrossAlign.Center,
         };
-        centered.Add(new Icon(glyph, IconSize.Dense, enabled ? theme.TextPrimary : theme.TextMuted));
+        centered.Add(new Icon(glyph, iconSize, enabled ? theme.TextPrimary : theme.TextMuted));
 
         var box = new Box(new BoxStyle { Width = height, Height = SizeValue.Fill }, centered);
 

@@ -165,7 +165,7 @@ public class ControlStateNativeTests
 
     private static bool Rings(DisplayList list) =>
         list.Commands.ToArray().Any(c => c.Kind == DrawCommandKind.StrokeRRect
-            && c.Paint.Color == PhotonTheme.Instance.FocusRing.Resolve(ThemeMode.Light));
+            && c.Paint.Color == PhotonTheme.Instance.FocusRing.Resolve(ThemeMode.Light, ContrastLevel.Standard));
 
     [Fact]
     public void AControlDisabledWhilePressed_DrawsNoPressedFill()

@@ -17,9 +17,12 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// Whoever writes code a function runs DECLARES what was bound while converting it: the statement
 /// dispatcher in front of each statement, and the lowering of a concise body (a member's, a local
 /// function's, a lambda's) in its block. Every call of a function has its own slots, so an async
-/// lambda run twice at once cannot overwrite the other call's receiver. Where nothing is open to
-/// declare one (an initializer, which C# never lets await), <see cref="CanBind"/> is false and the
-/// lowering keeps a way that needs no declaration.
+/// lambda run twice at once cannot overwrite the other call's receiver. An initializer, which runs
+/// outside any statement, is converted in a scope of its own and declares what it bound in the arrow
+/// around it (<see cref="CSharpToJsConverter.ConvertInitializer"/>): C# never lets an initializer
+/// await, so that arrow carries none of the defects above, and a call whose named arguments are
+/// written out of order evaluates them as written there too (#1201). Where nothing at all is open to
+/// declare one, <see cref="CanBind"/> is false and the lowering keeps a way that needs no declaration.
 /// </para>
 /// </summary>
 internal sealed class Temporaries

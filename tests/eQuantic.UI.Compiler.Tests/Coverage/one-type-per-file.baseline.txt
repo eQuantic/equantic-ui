@@ -54,7 +54,6 @@ src/eQuantic.UI.Components/EmptyState.cs  3  not looked at yet
 src/eQuantic.UI.Components/FormInput.cs  2  not looked at yet
 src/eQuantic.UI.Components/IconButton.cs  2  not looked at yet
 src/eQuantic.UI.Components/ListItem.cs  2  not looked at yet
-src/eQuantic.UI.Components/Markdown.cs  2  not looked at yet
 src/eQuantic.UI.Components/MarkdownBlocks.cs  6  not looked at yet
 src/eQuantic.UI.Components/MarkdownParser.cs  3  not looked at yet
 src/eQuantic.UI.Components/Menu.cs  2  not looked at yet

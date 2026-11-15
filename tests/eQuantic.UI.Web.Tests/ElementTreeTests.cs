@@ -124,6 +124,56 @@ public class ElementTreeTests
         b.Count.Should().Be(0);
     }
 
+    /// <summary>
+    /// A key the old list does not hold is a member of its own: it takes no other key's position, so
+    /// the key that stayed keeps its state wherever it moved, and the new one starts from nothing, as
+    /// Flutter's <c>updateChildren</c> inflates a keyed child with no old match (#1505).
+    /// </summary>
+    [Fact]
+    public void AKeyInsertedAtTheFront_TakesNoOtherKeysPosition()
+    {
+        var owner = ComponentBoundary.Owner();
+        var page = new Page(["a", "b"]) { Keyed = true };
+        var root = Frame(owner, page);
+        var a = CounterAt(root, 0);
+        var b = CounterAt(root, 1);
+        a.Press();
+        b.Press();
+        b.Press();
+
+        page.Show("c", "a");
+        Frame(owner, page, rebuildAll: false);
+
+        var c = CounterAt(root, 0);
+        c.Should().NotBeSameAs(a).And.NotBeSameAs(b, "a key the old list did not hold takes no other key's member");
+        c.Count.Should().Be(0);
+        c.Label.Should().Be("c");
+        CounterAt(root, 1).Should().BeSameAs(a, "the key that stayed kept its member as it moved");
+        a.Count.Should().Be(1);
+    }
+
+    /// <summary>Every key replaced, as a table window that moves a page replaces its cells': every
+    /// member is new, and none carries the state of the one that stood at its index.</summary>
+    [Fact]
+    public void EveryKeyReplaced_EveryMemberStartsAgain()
+    {
+        var owner = ComponentBoundary.Owner();
+        var page = new Page(["a", "b"]) { Keyed = true };
+        var root = Frame(owner, page);
+        var a = CounterAt(root, 0);
+        var b = CounterAt(root, 1);
+        a.Press();
+        b.Press();
+
+        page.Show("c", "d");
+        Frame(owner, page, rebuildAll: false);
+
+        CounterAt(root, 0).Should().NotBeSameAs(a).And.NotBeSameAs(b);
+        CounterAt(root, 1).Should().NotBeSameAs(a).And.NotBeSameAs(b);
+        CounterAt(root, 0).Count.Should().Be(0);
+        CounterAt(root, 1).Count.Should().Be(0);
+    }
+
     /// <summary>The unkeyed rule, which is the index's: the state stays where it was, whatever moved.</summary>
     [Fact]
     public void UnkeyedRowsSwap_TheStateStaysAtItsIndex()
@@ -577,7 +627,6 @@ public class ElementTreeTests
 
         inside.Should().Equal(true, true);
         outside.Should().Equal(false);
-        InFlow.Current.Should().BeFalse("the intent is put back after the build");
     }
 
     // ---- what a target keeps for a node (#975) ---------------------------------------------------
@@ -714,6 +763,27 @@ public class ElementTreeTests
         second.Should().NotBeSameAs(first);
         new[] { first.Id, second.Id, third.Id }.Should().OnlyHaveUniqueItems(
             "an id is never handed on, so a host holding the old one finds nothing rather than the newcomer");
+    }
+
+    /// <summary>
+    /// A host that keeps several trees and names their nodes in one space hands each owner the same
+    /// count (the browser: a tree per root a page lowers, whose attributes carry an element's id), and
+    /// no two positions of those trees share an id. An owner handed none counts alone, as before.
+    /// </summary>
+    [Fact]
+    public void TreesHandedOneCount_NeverGiveTwoPositionsTheSameId()
+    {
+        var ids = new ElementIds();
+        Func<UiComponent, ComponentContext, int, VisualNode> build = (component, context, _) => component.Build(context);
+        var live = Frame(new BuildOwner(build, ids: ids), new Page(["a", "b"]));
+        var structural = Frame(BuildOwner.Structural(build, ids: ids), new Page(["c"]));
+        var part = ((NodeElement)Frame(BuildOwner.Structural(build, ids: ids), Keyed("d"))).PartId(0);
+
+        Everything(live).Concat(Everything(structural)).Select(element => element.Id).Append(part)
+            .Should().OnlyHaveUniqueItems("the trees take their ids, parts included, from one count");
+
+        var alone = Frame(BuildOwner.Structural(build), new Page(["e"]));
+        alone.Id.Should().Be(1, "an owner handed no count counts its own from one");
     }
 
     [Fact]

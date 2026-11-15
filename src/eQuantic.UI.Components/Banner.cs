@@ -32,6 +32,10 @@ public sealed class Banner : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var tint = context.Theme.Colors(Status);
+        // The notices' slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
+        var slot = context.Theme.Notice;
+        var textSize = slot?.BannerTextSize ?? 13f;
+        var lineHeight = slot?.BannerLineHeight ?? 18f;
         var glyph = Status switch
         {
             Variant.Success => Icons.CheckCircle,
@@ -40,16 +44,16 @@ public sealed class Banner : StatelessComponent
             _ => Icons.Info,
         };
 
-        var column = new Column(gap: Space.S1);
+        var column = new Column(gap: slot?.BannerGap ?? Space.S1);
         column.Add(new Text(Title, TypeRole.Caption, tint.OnSubtle, maxLines: 2)
         {
-            StyleOverride = new TypeStyle(13, 18, FontWeight.SemiBold, 0, 1.3f),
+            StyleOverride = new TypeStyle(textSize, lineHeight, slot?.BannerTitleWeight ?? FontWeight.SemiBold, 0, 1.3f),
         });
         if (Body != null)
         {
             column.Add(new Text(Body, TypeRole.Caption, tint.OnSubtle, maxLines: 4)
             {
-                StyleOverride = new TypeStyle(13, 18, FontWeight.Regular, 0, 1.3f),
+                StyleOverride = new TypeStyle(textSize, lineHeight, slot?.BannerBodyWeight ?? FontWeight.Regular, 0, 1.3f),
             });
         }
         if (PrimaryAction != null || SecondaryAction != null)
@@ -61,7 +65,7 @@ public sealed class Banner : StatelessComponent
         }
 
         // Spec B18: status icon Md 20 + gap 10, top-aligned with the lead-in.
-        var content = new Row(gap: 10) { Cross = CrossAlign.Start };
+        var content = new Row(gap: slot?.BannerIconGap ?? 10) { Cross = CrossAlign.Start };
         content.Add(new Icon(glyph, IconSize.Dense, tint.OnSubtle));
         content.Add(new Flexible(column));
         if (OnDismiss != null)
@@ -75,9 +79,9 @@ public sealed class Banner : StatelessComponent
         var surface = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Padding = new EdgeInsets(14, 12, 14, 12),
+            Padding = slot?.BannerPadding ?? new EdgeInsets(14, 12, 14, 12),
             Background = tint.Subtle,
-            CornerRadius = new CornerRadii(context.Theme.Shape(ShapeScale.Large)),
+            CornerRadius = new CornerRadii(context.Theme.Shape(slot?.BannerShape ?? ShapeScale.Large)),
         }, content);
 
         // Spec B18: the banner IS an announcement — it appears to tell the user something, and a

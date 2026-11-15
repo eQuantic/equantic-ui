@@ -690,11 +690,12 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // It runs through the SLOT path rather than beside it, so the drop is by PARAMETER and the
         // form a developer chose — positional, named, mixed, or omitted — cannot change the answer.
         var dropping = symbol is not null && DeclaresDependency(symbol);
-        if (!dropping && !args.Any(a => a.NameColon != null)) return converted;
+        // The elements a call lists for a params parameter that is an array go to it packed (#1192).
+        if (!dropping && !args.Any(a => a.NameColon != null)) return BoundArguments.Packed(creation, converted, symbol, context);
 
         if (symbol is not { } ctor) return converted;
 
-        var places = BoundArguments.InPlaces(args, converted, ctor);
+        var places = BoundArguments.InPlaces(args, ctor);
 
         // A dependency slot is not filled with a default — it is REMOVED, because the parameter
         // it stood in front of is gone from the emitted signature too.
@@ -703,13 +704,9 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             .ToList();
 
         var lastSet = keep.FindLastIndex(i => places[i] != null);
-        var ordered = new List<JsExpr>();
-        for (var k = 0; k <= lastSet; k++)
-        {
-            if (places[keep[k]] is { } supplied) ordered.AddRange(supplied);
-            else ordered.Add(DefaultOf(ctor.Parameters[keep[k]], context));
-        }
-        return ordered;
+        // Each argument is evaluated in the order it is written, as C# evaluates it (#1071).
+        return BoundArguments.PassedInPlaces(args, converted, places, keep.Take(lastSet + 1),
+            ordinal => DefaultOf(ctor.Parameters[ordinal], context), BoundArguments.PackedPlace(creation, ctor, context), context);
     }
 
     /// <summary>
@@ -934,11 +931,14 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     {
         if (creation.ArgumentList is not { Arguments.Count: > 0 } list) return [];
         var converted = list.Arguments.Select(argument => BoundArguments.Convert(argument, context)).ToList();
-        if (ctor is null || !list.Arguments.Any(argument => argument.NameColon != null)) return converted;
+        if (ctor is null || !list.Arguments.Any(argument => argument.NameColon != null))
+            return BoundArguments.Packed(creation, converted, ctor, context);
 
-        var places = BoundArguments.InPlaces(list.Arguments, converted, ctor);
+        var places = BoundArguments.InPlaces(list.Arguments, ctor);
         var last = Array.FindLastIndex(places, place => place != null);
-        return places.Take(last + 1).SelectMany(place => place ?? [Undefined]).ToList();
+        // Each argument is evaluated in the order it is written, as C# evaluates it (#1071).
+        return BoundArguments.PassedInPlaces(list.Arguments, converted, places, Enumerable.Range(0, last + 1), _ => Undefined,
+            BoundArguments.PackedPlace(creation, ctor, context), context);
     }
 
     private JsExpr ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)

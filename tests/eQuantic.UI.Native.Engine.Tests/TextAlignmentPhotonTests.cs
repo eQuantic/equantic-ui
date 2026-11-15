@@ -37,7 +37,7 @@ public class TextAlignmentPhotonTests
     private static DrawCommand[] Render(VisualNode root, float width = 400, float height = 200)
     {
         var builder = new DisplayListBuilder();
-        PhotonRealizer.Realize(root, width, height, Theme, ThemeMode.Light, builder);
+        PhotonRealizer.Realize(root, width, height, Theme, ThemeMode.Light, ContrastLevel.Standard, builder);
         return builder.Build().Commands.ToArray();
     }
 

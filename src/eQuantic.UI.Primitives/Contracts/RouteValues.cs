@@ -1,5 +1,3 @@
-using System.Threading;
-
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
@@ -15,22 +13,41 @@ namespace eQuantic.UI.Primitives;
 /// Never null on <see cref="ComponentContext.Route"/>; an absent name answers null, which is what a
 /// caller has to handle anyway (a route can match with an empty optional segment).
 /// </para>
+/// <para>
+/// A component reads it from its context, which reads it from the frame its owner was handed: the server
+/// hands its request's, the browser its router's (#1395). Code outside the tree that needs the request's
+/// route, a prefetch, resolves it from the request's services, where the server registers it.
+/// </para>
 /// </summary>
 public sealed class RouteValues
 {
-    /// <summary>The route nothing matched — every lookup answers null.</summary>
-    public static readonly RouteValues Empty = new(null, null);
+    /// <summary>The route nothing matched — every lookup answers null, and its path is the root.</summary>
+    public static readonly RouteValues Empty = new(null, null, "/");
 
     private readonly IReadOnlyDictionary<string, string>? _params;
     private readonly IReadOnlyDictionary<string, string>? _query;
 
+    /// <param name="parameters">The matched route parameters, by name.</param>
+    /// <param name="query">The query string's values, by name.</param>
+    /// <param name="path">The path the route was matched on (<see cref="Path"/>).</param>
     public RouteValues(
         IReadOnlyDictionary<string, string>? parameters,
-        IReadOnlyDictionary<string, string>? query)
+        IReadOnlyDictionary<string, string>? query,
+        string path)
     {
+        ArgumentNullException.ThrowIfNull(path);
         _params = parameters;
         _query = query;
+        Path = path;
     }
+
+    /// <summary>
+    /// The path the route was matched on, as the app writes it: <c>/docs/getting-started</c>, with no
+    /// query, no fragment and no language segment (a page served at <c>/pt-BR/docs</c> is at
+    /// <c>/docs</c>, the path its in-app links name). What <see cref="Navigator.Location"/> answers, so
+    /// a layout can mark the destination of the page it shows.
+    /// </summary>
+    public string Path { get; }
 
     /// <summary>A matched route parameter — the <c>slug</c> of <c>/docs/{slug}</c>.</summary>
     public string? Param(string name) =>
@@ -39,25 +56,4 @@ public sealed class RouteValues
     /// <summary>A query-string value — the <c>page</c> of <c>?page=2</c>.</summary>
     public string? Query(string name) =>
         _query is not null && _query.TryGetValue(name, out var value) ? value : null;
-
-    // ---- The AMBIENT route, per request -------------------------------------------------------
-
-    private static readonly AsyncLocal<RouteValues?> Scoped = new();
-
-    /// <summary>
-    /// The route for the request being rendered right now.
-    /// <para>
-    /// AsyncLocal, like every other per-request value here: SSR renders concurrent requests on
-    /// shared instances, and a route held in a field would hand one visitor's slug to another's
-    /// page. Set by the rendering pipeline and cleared when it finishes.
-    /// </para>
-    /// </summary>
-    public static RouteValues Current
-    {
-        get => Scoped.Value ?? Empty;
-        set => Scoped.Value = value;
-    }
-
-    /// <summary>Clears the ambient route — the pipeline's `finally`.</summary>
-    public static void ClearCurrent() => Scoped.Value = null;
 }

@@ -83,7 +83,7 @@ internal sealed partial class EmitVisitor
             sheetSurface.Announcement));
         foreach (var child in s.Node)
             Emit(s with { Node = child });
-        EmitCarets(s.Node, sheetSurface.Model.Carets, sheetSurface.CaretColor, s.Theme, s.Mode, s.Builder, s.Press);
+        EmitCarets(s.Node, sheetSurface.Model.Carets, sheetSurface.CaretColor, s.Theme, s.Mode, s.Contrast, s.Builder, s.Press);
     }
 
     // An Overlay queues for the viewport pass — nothing renders in the page flow. Its child is

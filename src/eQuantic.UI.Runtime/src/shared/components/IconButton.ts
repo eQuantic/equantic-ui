@@ -33,10 +33,13 @@ export class IconButton extends StatelessComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let primary = theme.colors('primary');
-        let side = ControlMetrics.height(context, this.size);
-        let iconSize = (() => { const $s = this.size; if ($s === 'small') return 16; if ($s === 'medium') return 20; return 24; })();
+        let slot = theme.iconButton;
+        let side = ControlMetrics.height(context, this.size, (slot?.controls ?? null));
+        let iconSize = ControlMetrics.atSize((slot?.iconSize ?? null), this.size) ?? (() => { const $s = this.size; if ($s === 'small') return 16; if ($s === 'medium') return 20; return 24; })();
+        let quietFill = slot?.quietFill ?? theme.surfaceSubtle;
+        let tonalPress = primary.pressed.withOpacity(slot?.tonalPressOpacity ?? Math.fround(0.24));
         let fill = (() => { const $s = this.kind; if ($s === 'tonal') return primary.subtle; if ($s === 'filled') return primary.base; return null; })();
-        let tint = (() => { const $s = this.kind; if ($s === 'filled') return primary.onBase; if ($s === 'tonal') return primary.onSubtle; return this.selected ? primary.base : theme.textSecondary; })();
+        let tint = (() => { const $s = this.kind; if ($s === 'filled') return primary.onBase; if ($s === 'tonal') return primary.onSubtle; return this.selected ? primary.base : slot?.glyphColor ?? theme.textSecondary; })();
         if (this.disabled) {
             let opacity = theme.disabledOpacity;
             let filled: any; 
@@ -46,9 +49,9 @@ export class IconButton extends StatelessComponent {
         let filledGlyph: any; 
         let glyph = (this.selected && (filledGlyph = this.selectedGlyph) != null ? filledGlyph : this.glyph).glyph;
         let content = VisualNodeExtensions.centered(new Icon(glyph, iconSize, tint));
-        let pressedFill = (() => { const $s = this.kind; if ($s === 'filled') return primary.pressed; if ($s === 'tonal') return primary.pressed.withOpacity(Math.fround(0.24)); return theme.surfaceSubtle; })();
-        let hoverFill = (() => { const $s = this.kind; if ($s === 'filled') return primary.hover; if ($s === 'tonal') return primary.subtle.midpointWith(primary.pressed.withOpacity(Math.fround(0.24))); return theme.surfaceSubtle; })();
-        let box = new Box(new BoxStyle({ width: side, height: side, background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.kind === 'outline' ? 1 : 0, borderColor: theme.borderStrong, hover: this.disabled ? null : new StyleDiff({ background: hoverFill }), pressed: this.disabled ? null : new StyleDiff({ background: pressedFill }) }), content);
+        let pressedFill = (() => { const $s = this.kind; if ($s === 'filled') return primary.pressed; if ($s === 'tonal') return tonalPress; return quietFill; })();
+        let hoverFill = (() => { const $s = this.kind; if ($s === 'filled') return primary.hover; if ($s === 'tonal') return primary.subtle.midpointWith(tonalPress); return quietFill; })();
+        let box = new Box(new BoxStyle({ width: side, height: side, background: fill, cornerRadius: new CornerRadii(slot?.radius ?? theme.shape('full')), borderWidth: this.kind === 'outline' ? slot?.outlineWidth ?? 1 : 0, borderColor: slot?.outlineColor ?? theme.borderStrong, hover: this.disabled ? null : new StyleDiff({ background: hoverFill }), pressed: this.disabled ? null : new StyleDiff({ background: pressedFill }) }), content);
         return new Pressable(box, this.disabled ? null : this.onPressed, { disabled: this.disabled, label: this.label, selected: this.selectedGlyph == null && !this.selected ? null : this.selected });
     }
 }

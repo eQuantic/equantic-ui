@@ -125,7 +125,7 @@ public class TreePrefetchTests
         // KEYED BY COMPONENT. A flat map could not say which component a field belongs to, and two
         // components holding a field of the same name would overwrite each other in whichever order
         // reflection returned them.
-        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(StatsHeader), 0), out var header)
+        PayloadKeys.TryGet(payload.RootElement, typeof(StatsHeader), out var header)
             .Should().BeTrue($"the payload names each component; it carried: {result.SerializedState}");
         // AS A STRING, and that is the wire contract rather than a quirk: EqJson writes Int64 as
         // text so a value beyond 2^53 survives into the client's BigInt-backed `long`. Asserting a
@@ -356,7 +356,7 @@ public class TreePrefetchTests
         result.SerializedState.Should().NotBeNull();
 
         using var payload = JsonDocument.Parse(result.SerializedState!);
-        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(AwkwardShapes), 0), out var fields)
+        PayloadKeys.TryGet(payload.RootElement, typeof(AwkwardShapes), out var fields)
             .Should().BeTrue($"payload was: {result.SerializedState}");
         fields.TryGetProperty("_cleared", out var cleared).Should().BeTrue(
             "the field the prefetch CLEARED has to travel; payload was: " + result.SerializedState);
@@ -448,7 +448,7 @@ public class TreePrefetchTests
         if (result.SerializedState is null) return;
 
         using var payload = JsonDocument.Parse(result.SerializedState);
-        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(StatsHeader), 0), out _).Should().BeFalse(
+        PayloadKeys.TryGet(payload.RootElement, typeof(StatsHeader), out _).Should().BeFalse(
             "the header is not on the page the navigation answers with; payload was: "
             + result.SerializedState);
     }
@@ -484,7 +484,7 @@ public class TreePrefetchTests
         result.SerializedState.Should().NotBeNull();
 
         using var payload = JsonDocument.Parse(result.SerializedState!);
-        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(StatsHeader), 0), out var fields)
+        PayloadKeys.TryGet(payload.RootElement, typeof(StatsHeader), out var fields)
             .Should().BeTrue($"payload was: {result.SerializedState}");
         fields.GetProperty("_downloads").GetString().Should().Be("675617");
     }
@@ -696,7 +696,7 @@ public class TreePrefetchTests
 
         result.SerializedState.Should().NotBeNull();
         using var payload = JsonDocument.Parse(result.SerializedState!);
-        payload.RootElement.GetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(Row), 0)).GetProperty("_value").GetString()
+        PayloadKeys.Get(payload.RootElement, typeof(Row)).GetProperty("_value").GetString()
             .Should().Be("b-loaded", "the payload is read off the instance that drew, so it says "
                 + "what the markup beside it says");
     }
@@ -819,7 +819,10 @@ public class TreePrefetchTests
         foreach (var entry in payload.RootElement.EnumerateObject())
         {
             if (!entry.Value.TryGetProperty("_value", out var value)) continue;
-            var depth = entry.Name.Split('#')[1];
+            // Named by where it stands (#1477): each link stands two slots below the one before it (its
+            // column's second child), so its depth is half the slots below the page.
+            var slots = entry.Name[(entry.Name.IndexOf('@') + 1)..];
+            var depth = slots.Length == 0 ? 0 : slots.Split('.').Length / 2;
             var says = value.GetString();
             result.Html.Should().Contain($"link{depth}:{says}",
                 $"the payload says {entry.Name} is '{says}', so the markup beside it must say the "
@@ -935,7 +938,7 @@ public class TreePrefetchTests
             $"a navigation answers with state or the page rebuilds from defaults; payload was: "
             + navigated.SerializedState);
         using var payload = JsonDocument.Parse(navigated.SerializedState!);
-        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(StatsHeader), 0), out var fields)
+        PayloadKeys.TryGet(payload.RootElement, typeof(StatsHeader), out var fields)
             .Should().BeTrue($"payload was: {navigated.SerializedState}");
         fields.GetProperty("_downloads").GetString().Should().Be("675617");
     }
@@ -1099,7 +1102,7 @@ public class TreePrefetchTests
         navigated.Success.Should().BeTrue(navigated.Error);
         navigated.SerializedState.Should().NotBeNull();
         using var payload = JsonDocument.Parse(navigated.SerializedState!);
-        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(Greeted), 0), out var greeted)
+        PayloadKeys.TryGet(payload.RootElement, typeof(Greeted), out var greeted)
             .Should().BeTrue($"the navigation reaches what the greeting composed; payload was: {navigated.SerializedState}");
         greeted.GetProperty("_said").GetString().Should().Be("hello, loaded");
     }

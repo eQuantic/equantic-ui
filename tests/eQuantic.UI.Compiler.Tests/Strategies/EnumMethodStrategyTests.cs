@@ -45,7 +45,7 @@ public class EnumMethodStrategyTests
     public void EnumGetValues_ByTheTypeArgument_OrTheTypeof()
     {
         TestHelper.ConvertExpression("Enum.GetValues<Size>()").Should().Be($"$eq.enums.values({Shape})");
-        TestHelper.ConvertExpression("Enum.GetValues(typeof(Size))").Should().Be($"$eq.enums.values({Shape})");
+        TestHelper.ConvertExpression("Enum.GetValues(typeof(Size))").Should().Be($"$eq.enums.values({Shape}, 'Size')");
     }
 
     [Fact]
@@ -61,13 +61,13 @@ public class EnumMethodStrategyTests
         TestHelper.ConvertExpression("Enum.IsDefined(Size.Large)").Should().Be($"$eq.enums.isDefined('large', {Shape}, 'held')");
         TestHelper.ConvertExpression("Enum.IsDefined(typeof(Size), 2)").Should().Be($"$eq.enums.isDefined(2, {Shape}, 'number')");
         TestHelper.ConvertExpression("Enum.IsDefined(typeof(Size), \"Large\")").Should().Be($"$eq.enums.isDefined('Large', {Shape}, 'name')");
-        TestHelper.ConvertExpression("Enum.IsDefined(typeof(Size), (object)2)").Should().Be($"$eq.enums.isDefined(2, {Shape}, 'object')");
+        TestHelper.ConvertExpression("Enum.IsDefined(typeof(Size), (object)2)").Should().Be($"$eq.enums.isDefined(2, {Shape}, 'object', 'Size')");
     }
 
     [Fact]
     public void EnumTryParse_ByItsType_LeavesNullWhenItFails()
     {
         TestHelper.ConvertExpression("Enum.TryParse(typeof(Size), \"Large\", out var size)")
-            .Should().Be($"((size = $eq.enums.tryParse('Large', {Shape})) !== undefined || ((size = null), false))");
+            .Should().Be($"((size = $eq.box($eq.enums.tryParse('Large', {Shape}), 'Size', {Shape})) !== undefined || ((size = null), false))");
     }
 }

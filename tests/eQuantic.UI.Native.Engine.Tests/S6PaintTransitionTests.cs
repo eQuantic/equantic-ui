@@ -148,7 +148,7 @@ public class S6PaintTransitionTests
         fading.StrokeWidth.Should().BeInRange(0.01f, target.Blur, "dropping to 0 FADES the shadow");
         // The COLOUR fades with the geometry: level 0's own spec is transparent, so the alpha is on
         // its way to zero rather than holding level 1's tint while the blur shrinks.
-        fading.Paint.Color.A.Should().BeInRange(1, (byte)(target.Color.Resolve(ThemeMode.Light).A - 1),
+        fading.Paint.Color.A.Should().BeInRange(1, (byte)(target.Color.Resolve(ThemeMode.Light, ContrastLevel.Standard).A - 1),
             "the alpha interpolates toward transparent, the way box-shadow: none does in CSS");
         Frame(host, 2100).Should().NotContain(c => c.Kind == DrawCommandKind.ShadowRRect, "gone once settled");
     }

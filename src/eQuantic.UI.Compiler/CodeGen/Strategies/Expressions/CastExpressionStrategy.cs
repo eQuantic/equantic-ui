@@ -75,7 +75,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
             {
                 context.UsedHelpers.Add(Eq.Import);
                 return JsExpr.Call(JsExpr.Identifier(Eq.EnumUnbox), operandIr,
-                    JsExpr.Literal(Types.EnumShape.Of(enumTarget)), JsExpr.Literal(JsStringLiteral.Quote(enumTarget.Name)));
+                    JsExpr.Literal(Types.EnumShape.Of(enumTarget)), JsExpr.Literal(JsStringLiteral.Quote(Boxing.NameOf(enumTarget))));
             }
             // A value that is not null converts on its own; a nullable one kept nullable lets null pass.
             var from = unwraps ? operandType : context.SemanticHelper.GetType(cast.Expression);

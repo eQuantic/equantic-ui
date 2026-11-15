@@ -60,6 +60,9 @@ public sealed class Accordion : StatefulComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        // The theme's List slot, then the component's own (§3.10).
+        var slot = theme.List;
+        var paddingX = slot?.SectionPaddingX ?? Space.S3;
         var column = new Column(gap: 0) { Width = SizeValue.Fill };
 
         for (var i = 0; i < Items.Count; i++)
@@ -68,17 +71,18 @@ public sealed class Accordion : StatefulComponent
             var index = i;
             var open = IsOpen(i);
 
-            var header = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
+            var header = new Row(gap: slot?.HeaderGap ?? Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
             header.Add(new Text(item.Title, TypeRole.Label));
             header.Add(new Flexible(new Spacer()));
-            header.Add(new Icon(open ? Icons.ChevronUp : Icons.ChevronDown, IconSize.Sm, theme.TextSecondary));
+            header.Add(new Icon(open ? Icons.ChevronUp : Icons.ChevronDown, slot?.ChevronSize ?? IconSize.Sm,
+                slot?.ChevronColor ?? theme.TextSecondary));
 
             column.Add(new Pressable(new Box(new BoxStyle
             {
-                Height = Sizing.Height(SizeVariant.Large),
+                Height = slot?.HeaderHeight ?? Sizing.Height(SizeVariant.Large),
                 Width = SizeValue.Fill,
-                Padding = EdgeInsets.Symmetric(Space.S3, 0),
-                Hover = new StyleDiff { Background = theme.SurfaceSubtle },
+                Padding = EdgeInsets.Symmetric(paddingX, 0),
+                Hover = new StyleDiff { Background = slot?.QuietFill ?? theme.SurfaceSubtle },
             }, header), () => Toggle(index))
             {
                 // The chevron is paint; this is the answer a screen reader gets.
@@ -90,7 +94,7 @@ public sealed class Accordion : StatefulComponent
                 column.Add(new Box(new BoxStyle
                 {
                     Width = SizeValue.Fill,
-                    Padding = new EdgeInsets(Space.S3, 0, Space.S3, Space.S3),
+                    Padding = new EdgeInsets(paddingX, 0, paddingX, slot?.SectionPaddingBottom ?? Space.S3),
                 }, content));
             }
 

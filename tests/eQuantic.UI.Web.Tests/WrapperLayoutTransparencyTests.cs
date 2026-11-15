@@ -46,6 +46,7 @@ public class WrapperLayoutTransparencyTests
         { "Adjustable", new Adjustable(CappedCard(), _ => { }) },
         { "Progress", new Progress(CappedCard()) },
         { "LiveRegion", new LiveRegion(CappedCard()) },
+        { "Group", new Group(CappedCard()) { Label = "Shipping" } },
         // The third role-bearing host, and the one that forwarded NEITHER half (#241): its
         // block div took the container's width while the sheet inside kept its own.
         { "SheetSurface", new SheetSurface(CappedCard(), new SheetController()) },

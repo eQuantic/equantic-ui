@@ -119,7 +119,7 @@ internal sealed class ServiceRegistrations
     /// <summary>Whether <paramref name="service"/> is one of the app's own interfaces: declared in
     /// source the build reads as the app's or a referenced project's.</summary>
     public bool IsAppsOwn(ITypeSymbol service) =>
-        service.OriginalDefinition.DeclaringSyntaxReferences.Any(reference =>
+        service.OriginalDefinition.ReadDeclarations().Any(reference =>
             !string.IsNullOrEmpty(reference.SyntaxTree.FilePath) && _isSourceOfTheBuild(reference.SyntaxTree.FilePath));
 
     /// <summary>The method a call names, as written: <c>AddSingleton</c> in
@@ -186,13 +186,13 @@ internal sealed class ServiceRegistrations
         if (service is not INamedTypeSymbol { IsUnboundGenericType: false } named
             || !(CapabilityRule.IsDependency(named)
                  || (named.TypeKind == TypeKind.Class && SymbolEqualityComparer.Default.Equals(named, implementation)))
-            || !named.OriginalDefinition.DeclaringSyntaxReferences.Any(reference =>
+            || !named.OriginalDefinition.ReadDeclarations().Any(reference =>
                 !string.IsNullOrEmpty(reference.SyntaxTree.FilePath) && isSourceOfTheBuild(reference.SyntaxTree.FilePath)))
             return null;
 
         // A class the browser can build: declared in source the build reads, and not abstract.
         var buildable = implementation is INamedTypeSymbol { TypeKind: TypeKind.Class, IsAbstract: false, IsUnboundGenericType: false } type
-            && type.OriginalDefinition.DeclaringSyntaxReferences.Any(reference =>
+            && type.OriginalDefinition.ReadDeclarations().Any(reference =>
                 !string.IsNullOrEmpty(reference.SyntaxTree.FilePath) && isSourceOfTheBuild(reference.SyntaxTree.FilePath))
             ? type
             : null;

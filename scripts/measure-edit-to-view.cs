@@ -122,10 +122,14 @@ try
     {
         var marker = $"Edit to view {run}";
         if (page is not null) await page.Evaluate($"sessionStorage.setItem('eq-edit-to-view:marker', {JsonSerializer.Serialize(marker)})");
+        // The machine's load as the edit is saved: a median taken at a load average of 80 says little
+        // about one at 5, so each run carries the load it ran under.
+        var load = LoadAverage();
         var saved = Now();
         File.WriteAllText(file, original.Replace(literal, JsonSerializer.Serialize(marker), StringComparison.Ordinal));
         var parts = target == "web" ? await MeasureWeb(marker, saved) : await MeasureDesktop(saved);
         parts["cold"] = run == 1 ? 1 : 0;
+        if (load is { } average) parts["load"] = average;
         measured.Add(parts);
         Console.WriteLine($"{target} run {run}{(run == 1 ? " (cold)" : "")}: {Describe(parts)}");
         await Task.Delay(TimeSpan.FromSeconds(2));
@@ -148,8 +152,8 @@ finally
 // The report: the cold run apart, the warm ones as a distribution.
 var warm = measured.Where(r => r["cold"] == 0).ToList();
 var partNames = target == "web"
-    ? new[] { "total", "wait", "msbuild", "eqc", "bun", "replay", "early", "flips", "documents" }
-    : new[] { "total", "delta", "frame" };
+    ? new[] { "total", "wait", "msbuild", "eqc", "bun", "replay", "early", "flips", "documents", "load" }
+    : new[] { "total", "delta", "frame", "load" };
 var summary = new JsonObject();
 foreach (var name in partNames)
 {
@@ -327,15 +331,42 @@ async Task<(Process, Cdp)> OpenBrowser()
 
 // ---- the desktop -----------------------------------------------------------------------------
 
+// How far an edit the window did not draw got: what dotnet watch said after the save, and what the app
+// said of it, the edit arriving and the windows it woke. A failure named none of them, so an edit that
+// never reached the app could not be told apart from one a window never drew (#1473).
+string WhyItWasNotDrawn(double saved)
+{
+    var watchSaid = lines.Where(l => l.At > saved && l.Text.Contains("dotnet watch", StringComparison.Ordinal))
+        .Select(l => l.Text.Trim()).TakeLast(12).ToList();
+    var appSaid = lines.Where(l => l.At > saved && l.Text.Contains("[eQuantic.HotReload]", StringComparison.Ordinal))
+        .Select(l => l.Text.Trim()).TakeLast(6).ToList();
+    var running = watch switch
+    {
+        null => "not started",
+        { HasExited: false } => "running",
+        _ => $"gone (exit code {watch.ExitCode})",
+    };
+    return $"dotnet watch said: {(watchSaid.Count > 0 ? string.Join(" | ", watchSaid) : "nothing")}; "
+        + $"the app said: {(appSaid.Count > 0 ? string.Join(" | ", appSaid) : "nothing, so no edit reached it")}; "
+        + $"dotnet watch is {running}.";
+}
+
 async Task<Dictionary<string, double>> MeasureDesktop(double saved)
 {
     var drew = new Regex(@"\[eQuantic\.HotReload\] drew the edit (\d+)ms after it was applied");
     (double At, string? Text) line = default;
-    await Until(() =>
+    try
     {
-        line = lines.FirstOrDefault(l => l.At > saved && drew.IsMatch(l.Text));
-        return Task.FromResult(line.Text is not null);
-    }, TimeSpan.FromMinutes(5), "the window did not draw the edit");
+        await Until(() =>
+        {
+            line = lines.FirstOrDefault(l => l.At > saved && drew.IsMatch(l.Text));
+            return Task.FromResult(line.Text is not null);
+        }, TimeSpan.FromMinutes(5), "the window did not draw the edit");
+    }
+    catch (TimeoutException timedOut)
+    {
+        throw new TimeoutException($"{timedOut.Message}. {WhyItWasNotDrawn(saved)}");
+    }
     var frame = double.Parse(drew.Match(line.Text!).Groups[1].Value, CultureInfo.InvariantCulture);
     return new Dictionary<string, double>
     {
@@ -400,6 +431,29 @@ static async Task Until(Func<Task<bool>> condition, TimeSpan limit, string failu
 
 static double Now() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
+// The one-minute load average, where the system says it: /proc/loadavg on Linux, vm.loadavg on macOS
+// (`{ 26.79 34.42 47.38 }`). Null on a system that says neither.
+static double? LoadAverage()
+{
+    try
+    {
+        string? text = null;
+        if (File.Exists("/proc/loadavg")) text = File.ReadAllText("/proc/loadavg");
+        else if (OperatingSystem.IsMacOS())
+        {
+            using var sysctl = Process.Start(new ProcessStartInfo("sysctl", ["-n", "vm.loadavg"]) { RedirectStandardOutput = true });
+            text = sysctl?.StandardOutput.ReadToEnd();
+            sysctl?.WaitForExit();
+        }
+        var first = text?.Split([' ', '{', '}'], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        return double.TryParse(first, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var load) ? load : null;
+    }
+    catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception)
+    {
+        return null;
+    }
+}
+
 static int FreePort()
 {
     var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -426,7 +480,8 @@ static JsonObject Round(Dictionary<string, double> parts) =>
 
 static string Describe(Dictionary<string, double> parts) =>
     string.Join(", ", parts.Where(p => p.Key != "cold")
-        .Select(p => p.Key is "flips" or "documents" ? $"{p.Key} {p.Value:F0}" : $"{p.Key} {p.Value:F0}ms"));
+        .Select(p => p.Key is "flips" or "documents" ? $"{p.Key} {p.Value:F0}"
+            : p.Key is "load" ? $"load {p.Value:F1}" : $"{p.Key} {p.Value:F0}ms"));
 
 void WriteSummary()
 {

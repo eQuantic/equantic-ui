@@ -15,6 +15,9 @@ import {
   scheduleInViewCommit,
 } from './in-view';
 import { lowerVisualNode } from './lowering';
+import type { Element as Position } from './runtime-exports';
+import { positionsOf } from './test-positions';
+import { Text } from './vocabulary';
 import type { LoweringContext } from './lowering';
 import { photonTheme } from './design-system.generated';
 import { effectiveStyle } from './style-atomizer';
@@ -49,15 +52,20 @@ function installObserver(): void {
   );
 }
 
-function anObservedElement(path: string): HTMLElement {
+function anObservedElement(id: string | number): HTMLElement {
   const element = document.createElement('div');
-  element.setAttribute('data-eq-inview', path);
+  element.setAttribute('data-eq-inview', String(id));
   document.body.appendChild(element);
   return element;
 }
 
 describe('in-view observers', () => {
+  /** The position of the InView each case declares, and the one it leaves undeclared. */
+  let position: Position;
+  let undeclared: Position;
+
   beforeEach(() => {
+    [position, undeclared] = positionsOf(new Text('watched', 'bodyM'), new Text('not watched', 'bodyM'));
     document.body.innerHTML = '';
     observers = [];
     resetInViewForTests();
@@ -66,8 +74,8 @@ describe('in-view observers', () => {
 
   it('reports a child coming into view', () => {
     const seen: boolean[] = [];
-    const element = anObservedElement('r0/1');
-    declareInView('r0/1', { threshold: 0, onChanged: (v) => seen.push(v) });
+    const element = anObservedElement(position.id);
+    declareInView(position, { threshold: 0, onChanged: (v) => seen.push(v) });
     commitInViewObservers();
 
     observers[0].deliver(element, true);
@@ -78,8 +86,8 @@ describe('in-view observers', () => {
   // A callback that fires on every crossing report is one every caller has to debounce.
   it('says nothing when the answer has not changed', () => {
     const seen: boolean[] = [];
-    const element = anObservedElement('r0/1');
-    declareInView('r0/1', { threshold: 0, onChanged: (v) => seen.push(v) });
+    const element = anObservedElement(position.id);
+    declareInView(position, { threshold: 0, onChanged: (v) => seen.push(v) });
     commitInViewObservers();
 
     observers[0].deliver(element, true);
@@ -97,12 +105,12 @@ describe('in-view observers', () => {
   it('refreshes the callback across passes without replacing the observer', () => {
     const first: boolean[] = [];
     const second: boolean[] = [];
-    const element = anObservedElement('r0/1');
+    const element = anObservedElement(position.id);
 
-    declareInView('r0/1', { threshold: 0, onChanged: (v) => first.push(v) });
+    declareInView(position, { threshold: 0, onChanged: (v) => first.push(v) });
     commitInViewObservers();
 
-    declareInView('r0/1', { threshold: 0, onChanged: (v) => second.push(v) });
+    declareInView(position, { threshold: 0, onChanged: (v) => second.push(v) });
     commitInViewObservers();
 
     expect(observers).toHaveLength(1);
@@ -113,7 +121,7 @@ describe('in-view observers', () => {
   });
 
   it('leaves an element nobody declared alone', () => {
-    anObservedElement('r0/9');
+    anObservedElement(undeclared.id);
     commitInViewObservers();
 
     expect(observers).toHaveLength(0);
@@ -149,11 +157,11 @@ describe('in-view observers', () => {
    */
   it('commits after the pass has been written, not during it', async () => {
     const seen: boolean[] = [];
-    declareInView('r0/1', { threshold: 0, onChanged: (v) => seen.push(v) });
+    declareInView(position, { threshold: 0, onChanged: (v) => seen.push(v) });
     scheduleInViewCommit();
 
     // The element arrives the way a rendered one does: after the pass returned.
-    const element = anObservedElement('r0/1');
+    const element = anObservedElement(position.id);
     expect(observers).toHaveLength(0);
 
     await Promise.resolve();

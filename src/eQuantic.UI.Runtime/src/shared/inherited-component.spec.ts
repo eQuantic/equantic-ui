@@ -49,11 +49,11 @@ describe('an inherited component in the browser', () => {
     expect(held).toEqual(bare);
   });
 
-  it('is found by no context yet, so DependOn and Find answer null as C# does on a context with no position', () => {
+  it('is found by no context without a position, so DependOn and Find answer null as C# does', () => {
     const context = new ComponentContext(photonTheme);
 
-    expect(context.dependOn()).toBeNull();
-    expect(context.find()).toBeNull();
+    expect(context.dependOn(Brand)).toBeNull();
+    expect(context.find(Brand)).toBeNull();
   });
 
   it('navigates through Navigator.of(context), where Navigator.go goes', () => {

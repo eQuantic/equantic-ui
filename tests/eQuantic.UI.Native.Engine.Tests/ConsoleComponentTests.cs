@@ -129,7 +129,7 @@ public class ConsoleComponentTests
         var pending = (Box)tree.Children[1];
         pending.Key.Should().Be("pending-0");
         ((Grid)pending.Child!).Columns.Should().HaveCount(2, "the same tracks the real rows use");
-        pending.Style.MinHeight.Should().Be(DataTable.RowHeight);
+        pending.Style.MinHeight.Should().Be(PhotonTheme.Instance.Table!.DataRowHeight!.Value);
     }
 
     [Fact]

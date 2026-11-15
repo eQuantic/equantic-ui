@@ -66,7 +66,7 @@ public class AnchorPanelWidthTests
         hugging.Add(panel);
 
         var builder = new DisplayListBuilder();
-        var frame = PhotonRealizer.Realize(hugging, 1000, 100, PhotonTheme.Instance, ThemeMode.Light, builder);
+        var frame = PhotonRealizer.Realize(hugging, 1000, 100, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder);
 
         // The ROOT is the page's body and stretches to the window; the PANEL inside it hugs.
         frame.Root.Children[0].Bounds.Width.Should().BeLessThan(300,
@@ -82,7 +82,7 @@ public class AnchorPanelWidthTests
         var content = new Box(new BoxStyle { Width = SizeValue.Fill, Height = 30 });
         var root = new Box(new BoxStyle { Padding = EdgeInsets.All(10) }, content);
 
-        var frame = PhotonRealizer.Realize(root, 140, 120, PhotonTheme.Instance, ThemeMode.Light,
+        var frame = PhotonRealizer.Realize(root, 140, 120, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
             new DisplayListBuilder());
 
         frame.Root.Bounds.Width.Should().Be(140);
@@ -99,7 +99,7 @@ public class AnchorPanelWidthTests
         hugging.Add(clamped);
 
         var builder = new DisplayListBuilder();
-        var frame = PhotonRealizer.Realize(hugging, 1000, 100, PhotonTheme.Instance, ThemeMode.Light, builder);
+        var frame = PhotonRealizer.Realize(hugging, 1000, 100, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard, builder);
 
         var clampedNode = frame.Root.Children[0];
         clampedNode.Bounds.Width.Should().Be(200);

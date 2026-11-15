@@ -120,10 +120,10 @@ public class OriginTierTests
     [Fact]
     public void ANodeFromAnotherFile_IsForeign_AndNamesTheFile()
     {
-        var tier = Classify(OriginAt(10, 8, "/app/Screens/ConsoleShell.cs"));
+        var tier = Classify(OriginAt(10, 8, "/app/Screens/ConsoleLayout.cs"));
 
         tier.Tier.Should().Be("foreign");
-        tier.Member.Should().Be("ConsoleShell.cs");
+        tier.Member.Should().Be("ConsoleLayout.cs");
         tier.Reason.Should().Contain("not the file being previewed");
     }
 

@@ -29,7 +29,7 @@ export class InheritedElement extends Element {
     }
 
     firstBuild() {
-        this._child = this.updateChild(null, this.inherited.child, false);
+        this._child = this.updateChild(null, this.inherited.child, 0, false);
     }
 
     update(configuration: VisualNode, force: boolean) {
@@ -40,7 +40,7 @@ export class InheritedElement extends Element {
             this.configuration = configuration;
             if (this.inherited.updateShouldNotify(old)) this.notifyDependents();
         }
-        this._child = this.updateChild(this._child, this.inherited.child, force);
+        this._child = this.updateChild(this._child, this.inherited.child, 0, force);
     }
 
     addDependent(dependent: ComponentElement) {

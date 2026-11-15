@@ -81,7 +81,7 @@ public class ShadowedRuntimeMembersTests
 
     /// <summary>
     /// AND THE BASE DECIDES, which is the half a union got wrong. `setState`, `onMount`,
-    /// `_sharedStateful` and more belong to a STATEFUL component; on a stateless one they shadow
+    /// `mountedAt` and more belong to a STATEFUL component; on a stateless one they shadow
     /// nothing at all, and refusing them is refusing valid code. `buildAttributes` is the same story
     /// one branch over — the escape hatch has it and a component does not.
     /// </summary>
@@ -381,8 +381,8 @@ public class ShadowedRuntimeMembersTests
             "a leading underscore lowers unchanged, and what these corrupt is the lifecycle");
 
         // The eleven a stateful component adds, and the surface only the escape hatch carries.
-        all["StatefulComponent"].Should().Contain(["setState", "key", "_sharedStateful"]);
-        all["StatelessComponent"].Should().NotContain(["setState", "_sharedStateful"]);
+        all["StatefulComponent"].Should().Contain(["setState", "key", "mountedAt"]);
+        all["StatelessComponent"].Should().NotContain(["setState", "mountedAt"]);
         // The node's members every component carries, stateless included (`UiComponent : VisualNode`).
         all["StatelessComponent"].Should().Contain(["key", "nodeKind"]);
         all["HtmlElement"].Should().Contain(["buildAttributes", "buildEvents"]);

@@ -27,21 +27,22 @@ export class Dialog extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let content = new Column(8);
+        let slot = theme.modal;
+        let content = new Column(slot?.dialogTextGap ?? 8);
         content.add(new Text(this.title, 'title'));
         content.add(new Text(this.body, 'bodyM', theme.textSecondary, 6));
-        let actions = new Row(8, 'start', 'center', false, null, null, { main: 'end' });
+        let actions = new Row(slot?.dialogActionGap ?? 8, 'start', 'center', false, null, null, { main: 'end' });
         let safe = (this.actions.find((action) => action.variant === 'ghost') ?? null);
         for (const action of this.actions) {
             actions.add(new Button(action.label, action.variant, 'medium', action.onPressed, { initialFocus: (action === safe) }));
         }
-        let body = new Column(20, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
+        let body = new Column(slot?.dialogGap ?? 20, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         body.add(content);
         body.add(actions);
         let scrim = new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: theme.scrim })), this.dismissible ? this.onDismiss : null, { disabled: !this.dismissible, label: SdkStrings.dismiss });
-        let elevated = new Box(new BoxStyle({ width: SizeValue.fill, maxWidth: 480, background: theme.surface, cornerRadius: new CornerRadii(theme.shape('extraLarge')), elevation: 5, padding: EdgeInsets.all(20) }), body);
+        let elevated = new Box(new BoxStyle({ width: SizeValue.fill, maxWidth: slot?.dialogMaxWidth ?? 480, background: theme.surface, cornerRadius: new CornerRadii(theme.shape(slot?.dialogShape ?? 'extraLarge')), elevation: slot?.dialogElevation ?? 5, padding: slot?.dialogPadding ?? EdgeInsets.all(20) }), body);
         if (context.inFlow) return elevated;
-        let centering = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center', padding: EdgeInsets.symmetric(24, 0) });
+        let centering = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center', padding: EdgeInsets.symmetric(slot?.dialogGutter ?? 24, 0) });
         centering.add(elevated);
         let layers = new Stack('topStart', { width: SizeValue.fill, height: SizeValue.fill });
         layers.add(scrim);

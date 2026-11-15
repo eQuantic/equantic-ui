@@ -1,0 +1,1200 @@
+## Primary · Comfortable
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl eq-p7ntc">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-1h2zrd3 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-6h2zm0-8h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-1h2zrd3 eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1h2zrd3{color:var(--eq-color-primary-on-subtle, light-dark(#003e7e, #a8cdf2))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-p7ntc{background-color:var(--eq-color-primary-subtle, light-dark(#e8f1fa, #0f2740))}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Primary · Compact
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl eq-p7ntc">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-1h2zrd3 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-6h2zm0-8h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-1h2zrd3 eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1h2zrd3{color:var(--eq-color-primary-on-subtle, light-dark(#003e7e, #a8cdf2))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-p7ntc{background-color:var(--eq-color-primary-subtle, light-dark(#e8f1fa, #0f2740))}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Secondary · Comfortable
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl eq-ymfs57">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-nzrmhs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-6h2zm0-8h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-nzrmhs eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-nzrmhs{color:var(--eq-color-secondary-on, light-dark(#3a4350, #d7dde5))}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+.eq-ymfs57{background-color:var(--eq-color-secondary-base, light-dark(#e9edf2, #242c36))}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Secondary · Compact
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl eq-ymfs57">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-nzrmhs" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-6h2zm0-8h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-nzrmhs eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-nzrmhs{color:var(--eq-color-secondary-on, light-dark(#3a4350, #d7dde5))}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+.eq-ymfs57{background-color:var(--eq-color-secondary-base, light-dark(#e9edf2, #242c36))}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Destructive · Comfortable
+### web
+<div class="eq-akjizx" role="alert" aria-live="assertive" aria-atomic="true">
+<div class="eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl eq-ufuzv4">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-17y6yig eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-2h2zm0-4h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-17y6yig eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-17y6yig{color:var(--eq-color-destructive-on-subtle, light-dark(#8f1d1d, #f4a9a4))}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-ufuzv4{background-color:var(--eq-color-destructive-subtle, light-dark(#fcebea, #3a1210))}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Destructive · Compact
+### web
+<div class="eq-akjizx" role="alert" aria-live="assertive" aria-atomic="true">
+<div class="eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl eq-ufuzv4">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-17y6yig eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-2h2zm0-4h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-17y6yig eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-17y6yig{color:var(--eq-color-destructive-on-subtle, light-dark(#8f1d1d, #f4a9a4))}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-ufuzv4{background-color:var(--eq-color-destructive-subtle, light-dark(#fcebea, #3a1210))}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Outline · Comfortable
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15b7nbg eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-6h2zm0-8h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-7gvrt4 eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15b7nbg{background-color:#00000000}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Outline · Compact
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15b7nbg eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-6h2zm0-8h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-7gvrt4 eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15b7nbg{background-color:#00000000}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Ghost · Comfortable
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15b7nbg eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-6h2zm0-8h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-7gvrt4 eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15b7nbg{background-color:#00000000}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Ghost · Compact
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15b7nbg eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-7gvrt4 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-6h2zm0-8h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-7gvrt4 eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15b7nbg{background-color:#00000000}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Link · Comfortable
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15b7nbg eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-96qelu eq-i29sta eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-6h2zm0-8h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-a53ok4 eq-gxup24 eq-h7owsy eq-i29sta eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15b7nbg{background-color:#00000000}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i29sta{color:var(--eq-color-focus, light-dark(#0050a0, #81baf3))}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Link · Compact
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15b7nbg eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-96qelu eq-i29sta eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-6h2zm0-8h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-a53ok4 eq-gxup24 eq-h7owsy eq-i29sta eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15b7nbg{background-color:#00000000}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i29sta{color:var(--eq-color-focus, light-dark(#0050a0, #81baf3))}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Success · Comfortable
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15bwtfr eq-1cwdjxy eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-1w5c292 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.58L19 8z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-1w5c292 eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1cwdjxy{background-color:var(--eq-color-success-subtle, light-dark(#edf6e6, #16290c))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1w5c292{color:var(--eq-color-success-on-subtle, light-dark(#2c5e17, #b5db97))}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Success · Compact
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15bwtfr eq-1cwdjxy eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-1w5c292 eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m-2 15-5-5 1.41-1.41L10 14.17l7.59-7.58L19 8z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-1w5c292 eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1cwdjxy{background-color:var(--eq-color-success-subtle, light-dark(#edf6e6, #16290c))}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-1w5c292{color:var(--eq-color-success-on-subtle, light-dark(#2c5e17, #b5db97))}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Warning · Comfortable
+### web
+<div class="eq-akjizx" role="alert" aria-live="assertive" aria-atomic="true">
+<div class="eq-15bwtfr eq-17di1e0 eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-1nnm3ej eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M1 21h22L12 2zm12-3h-2v-2h2zm0-4h-2v-4h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-1nnm3ej eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-17di1e0{background-color:var(--eq-color-warning-subtle, light-dark(#fbf3df, #2e2008))}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1nnm3ej{color:var(--eq-color-warning-on-subtle, light-dark(#7a5200, #eecf8f))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Warning · Compact
+### web
+<div class="eq-akjizx" role="alert" aria-live="assertive" aria-atomic="true">
+<div class="eq-15bwtfr eq-17di1e0 eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-1nnm3ej eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M1 21h22L12 2zm12-3h-2v-2h2zm0-4h-2v-4h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-1nnm3ej eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-17di1e0{background-color:var(--eq-color-warning-subtle, light-dark(#fbf3df, #2e2008))}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1nnm3ej{color:var(--eq-color-warning-on-subtle, light-dark(#7a5200, #eecf8f))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Info · Comfortable
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl eq-ik5vn1">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-1pcg3ju eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-6h2zm0-8h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-1pcg3ju eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1pcg3ju{color:var(--eq-color-info-on-subtle, light-dark(#0a5468, #9fdceb))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-ik5vn1{background-color:var(--eq-color-info-subtle, light-dark(#e4f3f8, #0a2a32))}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Info · Compact
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl eq-ik5vn1">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-1pcg3ju eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-6h2zm0-8h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-1pcg3ju eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1pcg3ju{color:var(--eq-color-info-on-subtle, light-dark(#0a5468, #9fdceb))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-ik5vn1{background-color:var(--eq-color-info-subtle, light-dark(#e4f3f8, #0a2a32))}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Tertiary · Comfortable
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl eq-ik5vn1">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-1pcg3ju eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-6h2zm0-8h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-1pcg3ju eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1pcg3ju{color:var(--eq-color-info-on-subtle, light-dark(#0a5468, #9fdceb))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-ik5vn1{background-color:var(--eq-color-info-subtle, light-dark(#e4f3f8, #0a2a32))}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+
+## Tertiary · Compact
+### web
+<div class="eq-akjizx" role="status" aria-live="polite" aria-atomic="true">
+<div class="eq-15bwtfr eq-1eb13m5 eq-5ew4ww eq-akjizx eq-fkv60s eq-g7fowl eq-ik5vn1">
+<div class="eq-196dx6e eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-1pcg3ju eq-96qelu eq-i95eb9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-6h2zm0-8h-2V7h2z">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+<span class="eq-type-caption eq-12qw9lh eq-1pcg3ju eq-a53ok4 eq-gxup24 eq-h7owsy eq-mbtjfn eq-pbx3g3 eq-xkrzsg eq-y9mhin">x</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12qw9lh{-webkit-line-clamp:2}
+.eq-15bwtfr{border-radius:14px}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1pcg3ju{color:var(--eq-color-info-on-subtle, light-dark(#0a5468, #9fdceb))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1w1wt6p{align-items:flex-start}
+.eq-5ew4ww{min-width:0}
+.eq-96qelu{height:20px}
+.eq-a53ok4{font-size:13px}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-fkv60s{padding:12px 14px 12px 14px}
+.eq-g7fowl{pointer-events:auto}
+.eq-gxup24{line-height:18px}
+.eq-h7owsy{display:-webkit-box}
+.eq-i95eb9{width:20px}
+.eq-ik5vn1{background-color:var(--eq-color-info-subtle, light-dark(#e4f3f8, #0a2a32))}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mbtjfn{overflow:hidden}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-pbx3g3{letter-spacing:0}
+.eq-xkrzsg{-webkit-box-orient:vertical}
+.eq-y9mhin{font-weight:600}
+### semantics
+Group ""
+StaticText "x"
+### photon
+Banner 0 0 480x44
+  LiveRegion 0 0 480x44
+    Box 0 0 480x44
+      Row 14 12 452x20
+        Icon 14 12 20x20
+        Flexible 44 12 422x18
+          Column 44 12 422x18
+            Text 44 12 422x18 1 line(s)
+

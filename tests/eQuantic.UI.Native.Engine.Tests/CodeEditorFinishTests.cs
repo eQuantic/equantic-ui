@@ -108,7 +108,7 @@ public class CodeEditorFinishTests
         var builder = new DisplayListBuilder();
         var region = host.RenderFrame(builder, 0).CodeRegions.Single();
 
-        var band = CodeBlock.SelectionFor(false, PhotonTheme.Instance).Resolve(ThemeMode.Light);
+        var band = CodeBlock.SelectionFor(false, PhotonTheme.Instance).Resolve(ThemeMode.Light, ContrastLevel.Standard);
         var drawn = builder.Build().Commands.ToArray()
             .Single(c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == band);
         var grid = region.Surface.Grid();
@@ -132,7 +132,7 @@ public class CodeEditorFinishTests
         host.RenderFrame(builder, 0);
         var commands = builder.Build().Commands.ToArray();
 
-        var band = CodeBlock.SelectionFor(false, PhotonTheme.Instance).Resolve(ThemeMode.Light);
+        var band = CodeBlock.SelectionFor(false, PhotonTheme.Instance).Resolve(ThemeMode.Light, ContrastLevel.Standard);
         var fills = commands.Where(c => c.Kind == DrawCommandKind.FillRRect
             && MathF.Abs(c.Shape.Rect.Width - 3 * surface.Grid().Cell.Width) < 0.5f).ToArray();
         var washes = fills.Where(c => c.Paint.Color != band).ToArray();

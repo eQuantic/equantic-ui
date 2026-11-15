@@ -50,39 +50,47 @@ public sealed class Badge : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var fill = Neutral ? theme.SurfaceSubtle : theme.Colors(Variant).Base;
-        var textColor = Neutral ? theme.TextSecondary : theme.Colors(Variant).OnBase;
+        // The theme's Badge slot, then the component's own (§3.10). A ring grows the badge on every
+        // side, so a ringed size is the plain one plus the ring twice.
+        var slot = theme.Badge;
+        var fill = Neutral ? slot?.NeutralFill ?? theme.SurfaceSubtle : theme.Colors(Variant).Base;
+        var textColor = Neutral ? slot?.NeutralColor ?? theme.TextSecondary : theme.Colors(Variant).OnBase;
+        var ring = Ring ? slot?.RingWidth ?? 2f : 0f;
+        var ringColor = slot?.RingColor ?? theme.Surface;
 
         if (Dot)
         {
+            var dot = (slot?.DotSize ?? 8) + ring * 2;
             return new Box(new BoxStyle
             {
-                Width = Ring ? 12 : 8,
-                Height = Ring ? 12 : 8,
+                Width = dot,
+                Height = dot,
                 Background = fill,
                 CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
-                BorderWidth = Ring ? 2f : 0f,
-                BorderColor = theme.Surface,
+                BorderWidth = ring,
+                BorderColor = ringColor,
             });
         }
 
         var label = Count > Max ? $"{Max}+" : $"{Count}";
         var text = new Text(label, TypeRole.Caption, textColor, maxLines: 1)
         {
-            StyleOverride = new TypeStyle(10, 12, FontWeight.Bold, 0, 1.3f),
+            StyleOverride = new TypeStyle(slot?.CountLabelSize ?? 10, slot?.CountLabelLineHeight ?? 12,
+                slot?.CountLabelWeight ?? FontWeight.Bold, 0, 1.3f),
         };
 
         var content = text.Centered();
+        var height = (slot?.CountHeight ?? 16) + ring * 2;
 
         return new Box(new BoxStyle
         {
-            Height = Ring ? 20 : 16,
-            MinWidth = Ring ? 20 : 16,
-            Padding = EdgeInsets.Symmetric(Space.S1, 0),
+            Height = height,
+            MinWidth = height,
+            Padding = EdgeInsets.Symmetric(slot?.CountPaddingX ?? Space.S1, 0),
             Background = fill,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
-            BorderWidth = Ring ? 2f : 0f,
-            BorderColor = theme.Surface,
+            BorderWidth = ring,
+            BorderColor = ringColor,
         }, content);
     }
 }

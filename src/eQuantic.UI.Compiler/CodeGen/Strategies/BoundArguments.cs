@@ -34,11 +34,12 @@ internal sealed class BoundArguments
     public readonly record struct Slot(int Written, bool Spread);
 
     private BoundArguments(IReadOnlyList<ExpressionSyntax> sources, IReadOnlyList<JsExpr> written,
-        IReadOnlyList<IReadOnlyList<Slot>?> byParameter)
+        IReadOnlyList<IReadOnlyList<Slot>?> byParameter, IReadOnlySet<int> packs)
     {
         Sources = sources;
         Written = written;
         ByParameter = byParameter;
+        _packs = packs;
         // An optional parameter left out after the last argument is not passed at all.
         var slots = byParameter.SelectMany(placed => placed ?? [new Slot(-1, false)]).ToList();
         while (slots.Count > 0 && slots[^1].Written < 0) slots.RemoveAt(slots.Count - 1);
@@ -54,6 +55,11 @@ internal sealed class BoundArguments
 
     /// <summary>The arguments in parameter order, a params parameter's elements each a slot of its own.</summary>
     public IReadOnlyList<Slot> Slots { get; }
+
+    /// <summary>The params parameters that are the array they are on the twin (<see cref="TakesAnArray"/>), by
+    /// ordinal: the elements a call lists go to it packed into one array, and a collection handed whole goes as
+    /// it is, where a rest parameter takes the elements one by one and the collection spread.</summary>
+    private readonly IReadOnlySet<int> _packs;
 
     /// <summary>What each parameter takes, in parameter order: its argument, the elements packed into a
     /// params parameter's array or collection (none for an empty one), or null for an optional parameter left out.</summary>
@@ -91,6 +97,7 @@ internal sealed class BoundArguments
         var sources = new List<ExpressionSyntax>();
         var written = new List<JsExpr>();
         var placed = new List<Slot>?[method.Parameters.Length];
+        var packs = method.Parameters.Where(TakesAnArray).Select(parameter => parameter.Ordinal).ToHashSet();
         foreach (var argument in arguments)
         {
             if (argument.Parameter is not { } parameter) return null;
@@ -127,7 +134,7 @@ internal sealed class BoundArguments
             }
         }
 
-        return new BoundArguments(sources, written, placed);
+        return new BoundArguments(sources, written, placed, packs);
     }
 
     /// <summary>
@@ -160,12 +167,12 @@ internal sealed class BoundArguments
     /// <summary>
     /// Whether a params parameter is the array it is in C#, on a twin a build writes, this one's or a referenced
     /// project's, which reaches it as metadata: a call that lists its elements packs them, and an array handed whole is
-    /// passed as it is, so it meets no argument cap and the callee holds the caller's array (#1159). A constructor's stays
-    /// a rest parameter, which its overloads dispatch on (#1192), and so does a parameter of the SDK's own, which a
-    /// hand-written twin may spell.
+    /// passed as it is, so it meets no argument cap and the callee holds the caller's array (#1159). A constructor's
+    /// too, whose overloads count it as the one argument it is (#1192). A parameter of the SDK's own stays a rest
+    /// parameter, which a hand-written twin may spell.
     /// </summary>
     internal static bool TakesAnArray(IParameterSymbol parameter) =>
-        parameter is { IsParams: true, ContainingSymbol: IMethodSymbol { MethodKind: not MethodKind.Constructor, ContainingType: { } type } }
+        parameter is { IsParams: true, ContainingSymbol: IMethodSymbol { ContainingType: { } type } }
         && !type.IsFramework() && !BoundaryShape.IsPlatform(type);
 
     /// <summary>Whether a method's parameter a build of <paramref name="compilation"/> writes is a rest parameter: a
@@ -180,11 +187,16 @@ internal sealed class BoundArguments
     /// A call's arguments in parameter order, with the elements a call lists for a params parameter that
     /// <see cref="TakesAnArray"/> packed into the array C# packs them into.
     /// </summary>
-    internal static List<JsExpr> Packed(InvocationExpressionSyntax invocation, List<JsExpr> arguments, IMethodSymbol? method,
+    internal static List<JsExpr> Packed(ExpressionSyntax call, List<JsExpr> arguments, IMethodSymbol? method,
         ConversionContext context)
     {
-        if (method?.Parameters is not [.., { IsParams: true } last] || !TakesAnArray(last)
-            || context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation { Arguments: var bound }
+        var bound = context.SemanticHelper.GetOperation(call) switch
+        {
+            IInvocationOperation invocation => invocation.Arguments,
+            IObjectCreationOperation creation => creation.Arguments,
+            _ => default,
+        };
+        if (method?.Parameters is not [.., { IsParams: true } last] || !TakesAnArray(last) || bound.IsDefault
             || !bound.Any(argument => argument.ArgumentKind is ArgumentKind.ParamArray or ArgumentKind.ParamCollection))
             return arguments;
         var before = last.Ordinal - method.Parameters.Take(last.Ordinal).Count(parameter => parameter.RefKind == RefKind.Out);
@@ -194,19 +206,39 @@ internal sealed class BoundArguments
     }
 
     /// <summary>
-    /// A call's written arguments, read from its syntax, in its parameters' places: a named one in the
-    /// place it names, a positional one in its position, and from the params parameter's position on,
-    /// every positional one an element of that parameter, in the order written. Null where a parameter
-    /// takes nothing. A place kept one argument, so the elements a call lists past the parameter count
-    /// were dropped: <c>new FontFamily(Name: "Brand", regular, italic)</c> lost its italic file in the
-    /// browser (Copilot's third review of #1062).
+    /// The ordinal of the params parameter of <paramref name="method"/> whose elements a call lists and the twin
+    /// takes packed into one array (<see cref="TakesAnArray"/>), for a call laid out by its places
+    /// (<see cref="InPlaces"/>); -1 where none is, an array handed whole included, which goes as it is.
     /// </summary>
-    public static IReadOnlyList<JsExpr>?[] InPlaces(SeparatedSyntaxList<ArgumentSyntax> arguments,
-        IReadOnlyList<JsExpr> converted, IMethodSymbol method)
+    internal static int PackedPlace(ExpressionSyntax call, IMethodSymbol method, ConversionContext context)
     {
-        var places = new List<JsExpr>?[method.Parameters.Length];
+        var bound = context.SemanticHelper.GetOperation(call) switch
+        {
+            IInvocationOperation invocation => invocation.Arguments,
+            IObjectCreationOperation creation => creation.Arguments,
+            _ => default,
+        };
+        return method.Parameters is [.., { IsParams: true } last] && TakesAnArray(last) && !bound.IsDefault
+            && bound.Any(argument => argument.ArgumentKind is ArgumentKind.ParamArray or ArgumentKind.ParamCollection)
+                ? last.Ordinal
+                : -1;
+    }
+
+    /// <summary>
+    /// A call's written arguments, read from its syntax, in its parameters' places, each by its index in
+    /// the list written: a named one in the place it names, a positional one in its position, and from the
+    /// params parameter's position on, every positional one an element of that parameter, in the order
+    /// written. Null where a parameter takes nothing. A place kept one argument, so the elements a call
+    /// lists past the parameter count were dropped: <c>new FontFamily(Name: "Brand", regular, italic)</c>
+    /// lost its italic file in the browser (Copilot's third review of #1062). By the index, and never a list
+    /// of what was converted: a call that converts no <c>out</c> argument paired the argument after one with
+    /// the value of the next (#1071).
+    /// </summary>
+    public static IReadOnlyList<int>?[] InPlaces(SeparatedSyntaxList<ArgumentSyntax> arguments, IMethodSymbol method)
+    {
+        var places = new List<int>?[method.Parameters.Length];
         var rest = method.Parameters is [.., { IsParams: true } last] ? last.Ordinal : -1;
-        for (var i = 0; i < arguments.Count && i < converted.Count; i++)
+        for (var i = 0; i < arguments.Count; i++)
         {
             // A positional argument's place is its LIST position: C# allows one after a named argument
             // only when that one sits in its own position, so the list index IS the parameter's (an
@@ -215,9 +247,101 @@ internal sealed class BoundArguments
             var ordinal = named is null
                 ? rest >= 0 && i >= rest ? rest : i
                 : method.Parameters.FirstOrDefault(parameter => parameter.Name == named)?.Ordinal ?? -1;
-            if (ordinal >= 0 && ordinal < places.Length) (places[ordinal] ??= []).Add(converted[i]);
+            if (ordinal >= 0 && ordinal < places.Length) (places[ordinal] ??= []).Add(i);
         }
         return places;
+    }
+
+    /// <summary>
+    /// The arguments a call read from its syntax passes, in its parameters' order, each written argument
+    /// evaluated where C# evaluates it: in the order it is written (#1071). Passed in parameter order, a
+    /// named argument written after another it precedes in the signature ran first, so
+    /// <c>new TypeStyle(Weight: Next(), Size: Next())</c> ran its calls in the signature's order in the
+    /// browser. Where that order is not the written one and an argument does anything, each such argument
+    /// is evaluated into a temporary, in the order written, ahead of the first one passed, and passed by it.
+    /// Where nothing is open to declare one (a field's initializer, a constructor's base call), the
+    /// parameter order stands (#1201).
+    /// </summary>
+    /// <param name="arguments">The call's written arguments, what each one is read from.</param>
+    /// <param name="written">Each written argument converted, by its index in the list written.</param>
+    /// <param name="slots">What the call passes, in parameter order: the index of the written argument a slot
+    /// holds, or -1 with the slot's own value (a default).</param>
+    /// <param name="taken">The by-reference arguments whose place the call took before it, which each written
+    /// argument reads through (an element counted from the end, #1190).</param>
+    /// <param name="context">Where the temporaries are declared.</param>
+    public static List<JsExpr> PassedAsWritten(SeparatedSyntaxList<ArgumentSyntax> arguments, IReadOnlyList<JsExpr> written,
+        IReadOnlyList<(int Written, JsExpr? Own)> slots, IReadOnlySet<ArgumentSyntax> taken, ConversionContext context)
+    {
+        JsExpr Placed(int at, Func<int, JsExpr> read) => slots[at].Written is var index and >= 0 ? read(index) : slots[at].Own!;
+        static JsExpr Value(JsExpr part) => part is JsSpread spread ? spread.Operand : part;
+        // Read from the C#, never from what it became: a constant may arrive as a member read or a negation
+        // (`top: Space.S2`, `end: -1`), and a lambda runs nothing until it is called. Neither runs nor
+        // changes, so where it is evaluated is no matter. A local or a parameter runs nothing either, but an
+        // argument written after it may change it: `Pair(b: i, a: ++i)` passed the incremented i twice.
+        bool Fixed(int index) => arguments[index].Expression is AnonymousFunctionExpressionSyntax
+            || context.SemanticHelper.TryGetConstantValue(arguments[index].Expression, out _);
+        // A reference (`ref`, `in`) is read by the callee, after every argument ran, so one whose place runs
+        // nothing (a variable, a field of this) is read where it is passed, never held: held where it is
+        // written, `Pair(b: ref i, a: ++i)` passed the i from before the increment. One whose place the call
+        // took before it is read through what took it, which runs nothing more.
+        bool AtTheCall(int index) => arguments[index].RefKindKeyword.Kind() is SyntaxKind.RefKeyword or SyntaxKind.InKeyword
+            && (taken.Contains(arguments[index])
+                || arguments[index].Expression is IdentifierNameSyntax or MemberAccessExpressionSyntax { Expression: ThisExpressionSyntax });
+        bool Runs(int index) => !Fixed(index) && !AtTheCall(index) && Value(written[index]) is not JsIdentifier;
+        var order = slots.Where(slot => slot.Written >= 0 && !Fixed(slot.Written)).Select(slot => slot.Written).ToList();
+        var lastRun = order.Where(Runs).DefaultIfEmpty(-1).Max();
+        if (order.SequenceEqual(order.Order()) || lastRun < 0 || !context.Temporaries.CanBind)
+            return slots.Select((_, at) => Placed(at, index => written[index])).ToList();
+
+        // What is passed is read where it stands, after every temporary was assigned, so a temporary holds
+        // what runs and a name written before what runs. An argument no slot passes (an `out` one, a
+        // dependency the twin resolves itself) is not run here, as it never was.
+        var holds = order.Where(index => !AtTheCall(index) && (Runs(index) || index < lastRun)).ToHashSet();
+        var temporaries = new string?[written.Count];
+        var assignments = new List<JsExpr>();
+        for (var index = 0; index < written.Count; index++)
+        {
+            if (!holds.Contains(index)) continue;
+            var name = context.Temporaries.Fresh();
+            context.Temporaries.Bind(name);
+            temporaries[index] = name;
+            assignments.Add(JsExpr.Binary(JsExpr.Identifier(name), "=", Value(written[index])));
+        }
+        JsExpr Read(int index) => temporaries[index] is { } name
+            ? written[index] is JsSpread ? JsExpr.Spread(JsExpr.Identifier(name)) : JsExpr.Identifier(name)
+            : written[index];
+        var passed = slots.Select((_, at) => Placed(at, Read)).ToList();
+        // A spread cannot stand in a sequence: what it is spread from is read there, and spread where it stands.
+        var sequence = JsExpr.Group(assignments.Append(Value(passed[0])).Aggregate((before, next) => JsExpr.Binary(before, ",", next)));
+        passed[0] = passed[0] is JsSpread ? JsExpr.Spread(sequence) : sequence;
+        return passed;
+    }
+
+    /// <summary>
+    /// What a call read from its syntax passes for the places <see cref="InPlaces"/> laid out, those of
+    /// <paramref name="ordinals"/> in that order: each place its written arguments, or what
+    /// <paramref name="missing"/> answers for a parameter that takes nothing; the elements a call lists for the
+    /// params parameter at <paramref name="packed"/> (<see cref="PackedPlace"/>) packed into one array (#1192);
+    /// and every written argument evaluated in the order it is written (<see cref="PassedAsWritten"/>, #1071).
+    /// </summary>
+    internal static List<JsExpr> PassedInPlaces(SeparatedSyntaxList<ArgumentSyntax> arguments, IReadOnlyList<JsExpr> written,
+        IReadOnlyList<int>?[] places, IEnumerable<int> ordinals, Func<int, JsExpr> missing, int packed, ConversionContext context)
+    {
+        var slots = new List<(int Written, JsExpr? Own)>();
+        var (start, count) = (-1, 0);
+        foreach (var ordinal in ordinals)
+        {
+            if (places[ordinal] is not { } supplied)
+            {
+                slots.Add((-1, missing(ordinal)));
+                continue;
+            }
+            if (ordinal == packed) (start, count) = (slots.Count, supplied.Count);
+            slots.AddRange(supplied.Select(index => (index, (JsExpr?)null)));
+        }
+        var passed = PassedAsWritten(arguments, written, slots, ImmutableHashSet<ArgumentSyntax>.Empty, context);
+        return start < 0 ? passed
+            : [.. passed.Take(start), JsExpr.Array(passed.Skip(start).Take(count).ToList()), .. passed.Skip(start + count)];
     }
 
     /// <summary>A call's written argument converted as its parameter takes it, where the call is read
@@ -231,12 +355,43 @@ internal sealed class BoundArguments
 
     /// <summary>The arguments in parameter order, each the written argument it is, or what
     /// <paramref name="read"/> answers for it (a temporary it was evaluated into), spread where it
-    /// is spread, and <c>undefined</c> for an optional parameter left out.</summary>
+    /// is handed whole to a rest parameter, the elements a call lists for a params parameter that is an
+    /// array packed into one, and <c>undefined</c> for an optional parameter left out.</summary>
     public IReadOnlyList<JsExpr> InParameterOrder(Func<int, JsExpr>? read = null) =>
-        Slots.Select(slot => slot.Written < 0
-                ? JsExpr.Identifier("undefined")
-                : slot.Spread ? JsExpr.Spread(Read(slot.Written, read)) : Read(slot.Written, read))
-            .ToList();
+        Laid(written => Read(written, read), elements => JsExpr.Array(elements.ToList()), value => JsExpr.Spread(value),
+            JsExpr.Identifier("undefined"));
+
+    /// <summary>
+    /// The arguments in parameter order, as <paramref name="value"/> writes a written one: each in its place, a
+    /// rest parameter's elements one by one and a collection handed whole to it through <paramref name="spread"/>,
+    /// a params parameter that is an array its elements through <paramref name="packed"/> and a collection handed
+    /// whole as it is, and <paramref name="missing"/> for an optional parameter left out before one that is not.
+    /// </summary>
+    private List<T> Laid<T>(Func<int, T> value, Func<IEnumerable<T>, T> packed, Func<T, T> spread, T missing)
+    {
+        var laid = new List<(T Value, bool Missing)>();
+        for (var ordinal = 0; ordinal < ByParameter.Count; ordinal++)
+        {
+            switch (ByParameter[ordinal])
+            {
+                case null:
+                    laid.Add((missing, true));
+                    break;
+                case [{ Spread: true } whole] when _packs.Contains(ordinal):
+                    laid.Add((value(whole.Written), false));
+                    break;
+                case var elements when _packs.Contains(ordinal):
+                    laid.Add((packed(elements.Select(element => value(element.Written))), false));
+                    break;
+                case var slots:
+                    laid.AddRange(slots.Select(slot => (slot.Spread ? spread(value(slot.Written)) : value(slot.Written), false)));
+                    break;
+            }
+        }
+        // An optional parameter left out after the last argument is not passed at all.
+        while (laid.Count > 0 && laid[^1].Missing) laid.RemoveAt(laid.Count - 1);
+        return laid.Select(entry => entry.Value).ToList();
+    }
 
     private JsExpr Read(int index, Func<int, JsExpr>? read = null) => read?.Invoke(index) ?? Written[index];
 
@@ -277,7 +432,7 @@ internal sealed class BoundArguments
             var construction = built(InParameterOrder(index => JsExpr.Identifier($"$a{index}")));
             return JsExpr.Call(JsExpr.Arrow(parameters, construction), Written);
         }
-        var holes = Slots.Select(slot => slot.Written < 0 ? "undefined" : (slot.Spread ? "..." : "") + $"{{{slot.Written}}}");
+        var holes = Laid(written => $"{{{written}}}", elements => $"[{string.Join(", ", elements)}]", hole => "..." + hole, "undefined");
         return JsExpr.Template($"({head}{string.Join(", ", holes)}))", Written);
     }
 }

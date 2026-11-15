@@ -1,0 +1,40 @@
+## Comfortable
+### web
+<div class="eq-15qobfw eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-15qobfw{height:48px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-5ew4ww{min-width:0}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+Tabs 0 0 480x48
+  Row 0 0 480x48
+
+## Compact
+### web
+<div class="eq-15qobfw eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-15qobfw{height:48px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-5ew4ww{min-width:0}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+Tabs 0 0 480x48
+  Row 0 0 480x48
+

@@ -65,4 +65,24 @@ public class RichTextPlainContentTests
         TooltipId("saves the draft").Should().NotBe(TooltipId("discards the draft"),
             "the id hashes the panel's visible text, and a styled paragraph keeps all of it in runs");
     }
+
+    /// <summary>The tooltip id hashes the panel's text through a Group, as the client twin does.</summary>
+    [Fact]
+    public void ATooltipPanelHoldingAGroupHashesTheTextInsideIt()
+    {
+        static string TooltipId(VisualNode panel)
+        {
+            var tooltip = new Anchored(
+                new Pressable(new Text("Save", TypeRole.Label), () => { }) { Label = "Save" }, panel)
+            {
+                OpenOnHover = true,
+                DescribesAnchor = true,
+            };
+            return ((HtmlElement)WebRealizer.Lower(tooltip, PhotonTheme.Instance).Children[^1]).Id!;
+        }
+
+        TooltipId(new Group(Styled("saves the draft")) { Label = "Hint" })
+            .Should().Be(TooltipId(Styled("saves the draft")));
+        TooltipId(new Group(Styled("saves the draft"))).Should().NotBe(TooltipId(new Group(Styled("discards"))));
+    }
 }

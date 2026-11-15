@@ -294,6 +294,9 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         Descend(s);
         return Nothing.Value;
     }
+    // A Group paints nothing and takes no focus: it is a name the semantics walk reads, and the paint
+    // walk carries on through it.
+    public Nothing Visit(Group node, EmitState s) { Descend(s); return Nothing.Value; }
     public Nothing Visit(ScrollView node, EmitState s) { EmitScrollView(node, s); return Nothing.Value; }
     public Nothing Visit(SheetSurface node, EmitState s) { EmitSheet(node, s); return Nothing.Value; }
     public Nothing Visit(Overlay node, EmitState s) { EmitOverlay(node, s); return Nothing.Value; }

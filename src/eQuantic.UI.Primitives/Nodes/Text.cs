@@ -114,6 +114,18 @@ public sealed class Text : VisualNode
     public bool Tabular { get; init; }
 
     /// <summary>
+    /// The paragraph is DRAWN and never READ: a reader passes over it, as Flutter's
+    /// <c>excludeFromSemantics</c> says of an image or a gesture. For text whose words a reader already
+    /// heard another way — a group's heading, which the <see cref="Group"/> announces as its name — so
+    /// the same words are not announced twice.
+    /// <para>
+    /// A paragraph with a LINKED run is read whatever this says: a link is something a reader can
+    /// follow, and one hidden from it that a keyboard still reaches is a trap.
+    /// </para>
+    /// </summary>
+    public bool ExcludeFromSemantics { get; init; }
+
+    /// <summary>
     /// RICH runs (spec A8's inline emphasis): when set, the paragraph renders these runs in order
     /// instead of <see cref="Content"/> — a highlighted figure inside a sentence
     /// (<c>"… ecosystem with **627k+** downloads …"</c>) without splitting the paragraph into

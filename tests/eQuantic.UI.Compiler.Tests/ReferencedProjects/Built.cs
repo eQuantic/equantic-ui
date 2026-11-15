@@ -25,6 +25,9 @@ internal sealed class Built
         _outputDirectory = outputDirectory;
     }
 
+    /// <summary>The build itself, which a later one may start from.</summary>
+    public AppBuild AppBuild => _build;
+
     /// <summary>Where the bundle and the string catalogs were written.</summary>
     public string OutputDirectory => _outputDirectory;
 
@@ -59,6 +62,9 @@ internal sealed class Built
                 .Order(StringComparer.Ordinal)
                 .ToList()
             : [];
+
+    /// <summary>Where the module written for a type is.</summary>
+    public string ModulePath(string name) => Path.Combine(_build.IntermediateDirectory, name + ".ts");
 
     /// <summary>The module written for a type, or null when the build wrote none.</summary>
     public string? Module(string name)

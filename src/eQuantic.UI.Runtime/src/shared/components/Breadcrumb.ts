@@ -13,12 +13,13 @@ export class Breadcrumb extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let row = new Row(4, 'start', 'center', false, null, null, { cross: 'center' });
+        let slot = theme.navigation;
+        let row = new Row(slot?.crumbGap ?? 4, 'start', 'center', false, null, null, { cross: 'center' });
         for (let i = 0; i < $eq.collections.count(this.crumbs); i++) {
             let crumb = $eq.collections.item(this.crumbs, i);
             let last = i === $eq.collections.count(this.crumbs) - 1;
-            if (i > 0) row.add(new Icon(IconGlyph.fromIcons('chevronRight'), 16, theme.borderStrong));
-            let text = new Text(crumb.label, 'caption', last ? theme.textPrimary : theme.textSecondary, 1);
+            if (i > 0) row.add(new Icon(IconGlyph.fromIcons('chevronRight'), slot?.separatorSize ?? 16, slot?.separatorColor ?? theme.borderStrong));
+            let text = new Text(crumb.label, 'caption', last ? slot?.currentCrumbColor ?? theme.textPrimary : slot?.crumbColor ?? theme.textSecondary, 1);
             let destination: any; 
             row.add(!last && (destination = crumb.destination) != null ? new Link(destination, text, { label: crumb.label }) : text);
         }

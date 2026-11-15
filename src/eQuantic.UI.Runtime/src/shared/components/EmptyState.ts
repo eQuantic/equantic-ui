@@ -21,20 +21,22 @@ export class EmptyState extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let wellContent = VisualNodeExtensions.centered(new Icon(this.icon.glyph, 32, theme.textMuted));
-        let well = new Box(new BoxStyle({ width: 64, height: 64, background: theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')) }), wellContent);
-        let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill, cross: 'center', padding: EdgeInsets.symmetric(16, 48) });
+        let slot = theme.badge;
+        let wellSize = slot?.wellSize ?? 64;
+        let wellContent = VisualNodeExtensions.centered(new Icon(this.icon.glyph, slot?.wellIconSize ?? 32, slot?.wellIconColor ?? theme.textMuted));
+        let well = new Box(new BoxStyle({ width: wellSize, height: wellSize, background: slot?.wellFill ?? theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')) }), wellContent);
+        let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill, cross: 'center', padding: EdgeInsets.symmetric(slot?.emptyPaddingX ?? 16, slot?.emptyPaddingY ?? 48) });
         column.add(well);
-        column.add(Spacer.fixed(16));
-        column.add(new Text(this.title, 'title', theme.textPrimary, 2, 'start', false, false, null, 0, { styleOverride: new TypeStyle(20, 26, 'semiBold', 0, Math.fround(1.3)) }));
+        column.add(Spacer.fixed(slot?.wellGap ?? 16));
+        column.add(new Text(this.title, 'title', slot?.emptyTitleColor ?? theme.textPrimary, 2, 'start', false, false, null, 0, { styleOverride: new TypeStyle(slot?.emptyTitleSize ?? 20, slot?.emptyTitleLineHeight ?? 26, slot?.emptyTitleWeight ?? 'semiBold', 0, Math.fround(1.3)) }));
         let body: any; 
         if ((body = this.body) != null) {
-            column.add(Spacer.fixed(6));
-            column.add(new Text(body, 'bodyM', theme.textSecondary, 2));
+            column.add(Spacer.fixed(slot?.bodyGap ?? 6));
+            column.add(new Text(body, 'bodyM', slot?.emptyBodyColor ?? theme.textSecondary, 2));
         }
         if (!(this.action == null) || !(this.secondaryAction == null)) {
-            column.add(Spacer.fixed(20));
-            let actions = new Row(8, 'start', 'center', false, null, null, { main: 'center' });
+            column.add(Spacer.fixed(slot?.actionsGap ?? 20));
+            let actions = new Row(slot?.actionSpacing ?? 8, 'start', 'center', false, null, null, { main: 'center' });
             let action: any; 
             if ((action = this.action) != null) actions.add(action);
             let secondary: any; 

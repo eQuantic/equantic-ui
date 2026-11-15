@@ -196,7 +196,7 @@ public class StackLayoutTests
 
         stack.Bounds.Height.Should().Be(78);
         action.Bounds.Height.Should().Be(78, "the action fills the row it sits behind, as the web draws it");
-        action.Bounds.Width.Should().Be(SwipeableRow.ActionWidth);
+        action.Bounds.Width.Should().Be(PhotonTheme.Instance.List!.SwipeActionWidth!.Value);
     }
 
     private static LayoutNode? Find(LayoutNode node, Func<LayoutNode, bool> match)

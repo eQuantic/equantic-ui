@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -96,7 +97,7 @@ public class RecordTypeEmitter
     /// <c>[ServerOnly]</c>.
     /// </summary>
     public static bool EmitsTwin(INamedTypeSymbol type) =>
-        type.DeclaringSyntaxReferences.Any(reference =>
+        type.ReadDeclarations().Any(reference =>
             reference.GetSyntax() is TypeDeclarationSyntax declaration && CanEmit(declaration, type));
 
     /// <summary>A model that can answer about THIS declaration. Roslyn throws for a node from
@@ -255,7 +256,7 @@ public class RecordTypeEmitter
     /// (<see cref="TypeInitializer.Constant"/>), and the expression converted otherwise.</summary>
     private string StaticValue(EqualsValueClauseSyntax initializer, TypeSyntax type) =>
         TypeInitializer.Constant(initializer, ModelFor(initializer), _converter)
-        ?? ExpressionVariableScanner.Scoped(initializer.Value, _converter.ConvertExpression(initializer.Value, type.ValueText()), _annotations);
+        ?? _converter.ConvertInitializer(initializer.Value, () => _converter.ConvertExpression(initializer.Value, type.ValueText()), _annotations);
 
     /// <summary>
     /// The annotation of a static that STARTS as null, in the TypeScript emission: its declared type
@@ -541,6 +542,11 @@ public class RecordTypeEmitter
             foreach (var member in _lowering.Indexer(indexer, TsTypeOf)) sb.Append(Written(member));
         }
 
+        // An event declared with accessors, as the methods every subscription to it calls (#1445).
+        _converter.SetCurrentClass(name);
+        foreach (var e in type.TwinMembers().OfType<EventDeclarationSyntax>())
+            foreach (var member in _lowering.EventAccessors(e, TsTypeOf, asStatic: false)) sb.Append(Written(member));
+
         // OPERATOR overloads. JavaScript cannot overload `+`, so the operator becomes a static
         // method and the call site is rewritten to call it — dropping it silently made `a + b` on
         // two objects concatenate their toString()s, which is wrong output with nothing to see.
@@ -714,7 +720,7 @@ public class RecordTypeEmitter
         var self = ModelFor(type)?.GetDeclaredSymbol(type) as INamedTypeSymbol;
         if (type is RecordDeclarationSyntax
             && self is { BaseType: { } parent }
-            && parent.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())
+            && parent.ReadDeclarations().Select(reference => reference.GetSyntax())
                 .OfType<TypeDeclarationSyntax>().FirstOrDefault(declaration => CanEmit(declaration, parent)) is { } baseDeclaration)
         {
             foreach (var inherited in Printed(baseDeclaration)) yield return inherited;
@@ -725,7 +731,7 @@ public class RecordTypeEmitter
             // parameters first, and a positional member the body declares where the body declares it
             // (`record Box(int X, int Y) { public int X … }` prints `Y = …, X = …`, as .NET does).
             foreach (var member in self.PrintedMembers().Where(member => member is not IPropertySymbol { IsOverride: true })
-                         .OrderBy(member => member.DeclaringSyntaxReferences.FirstOrDefault()?.Span.Start ?? int.MaxValue))
+                         .OrderBy(member => member.ReadDeclarations().FirstOrDefault()?.Span.Start ?? int.MaxValue))
                 yield return (member.Name,
                     member switch { IFieldSymbol field => field.Type, IPropertySymbol property => property.Type, _ => null });
             yield break;
@@ -897,7 +903,7 @@ public class RecordTypeEmitter
     /// </summary>
     private JsClassMember CopyStep(INamedTypeSymbol self, IReadOnlyList<ValueMember> members, bool hasBase)
     {
-        var declared = DeclaredCopy(self)?.DeclaringSyntaxReferences
+        var declared = DeclaredCopy(self)?.ReadDeclarations()
             .Select(reference => reference.GetSyntax()).OfType<ConstructorDeclarationSyntax>().FirstOrDefault();
         var parameter = declared?.ParameterList.Parameters[0].Identifier.ValueText.ToJsIdentifier() ?? "original";
         var original = JsExpr.Identifier(parameter);
