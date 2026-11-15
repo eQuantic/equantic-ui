@@ -302,7 +302,7 @@ internal sealed partial class WebLoweringVisitor(
         // NAMED ONLY IN A FRAME: a tree the server draws for the browser is built through a host
         // (MarkupHost), so its components have positions and are named by them above. A lowering
         // with no frame is the email realizer's or the design host's, and neither has server data.
-        return component.ExpandContained(_context, (Visitor: this, Axis: horizontalAxis, Asked: _measurer.Asks),
+        return _measurer.Boundary.ExpandContained(component, _context, (Visitor: this, Axis: horizontalAxis, Asked: _measurer.Asks),
             static (built, state) =>
             {
                 // Counted BEFORE the built tree lowers: the components inside it build during that

@@ -25,7 +25,7 @@ public class PresenceMotionTests
     private sealed class Tree
     {
         private static readonly ComponentContext Context = new(PhotonTheme.Instance);
-        private readonly BuildOwner _owner = ComponentBoundary.StructuralOwner();
+        private readonly BuildOwner _owner = new ComponentBoundary().StructuralOwner();
 
         /// <summary>Builds a frame that holds the presence, and answers its position.</summary>
         public Element Shown()

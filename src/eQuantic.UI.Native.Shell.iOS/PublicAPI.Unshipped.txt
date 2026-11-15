@@ -1,1 +1,5 @@
 #nullable enable
+[EQX0001]eQuantic.UI.Native.Shell.iOS.PhotonViewController.Boundary.get -> eQuantic.UI.Primitives.ComponentBoundary!
+[EQX0001]eQuantic.UI.Native.Shell.iOS.PhotonViewController.Boundary.init -> void
+[EQX0001]static eQuantic.UI.Native.Shell.iOS.PhotonApp.Run(string![]! args, System.Func<eQuantic.UI.Primitives.VisualNode!>! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode? forcedMode = null, int maxFrames = 0, bool smoothScroll = true, eQuantic.UI.Primitives.ComponentBoundary? boundary = null) -> void
+*REMOVED*[EQX0001]static eQuantic.UI.Native.Shell.iOS.PhotonApp.Run(string![]! args, System.Func<eQuantic.UI.Primitives.VisualNode!>! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode? forcedMode = null, int maxFrames = 0, bool smoothScroll = true) -> void

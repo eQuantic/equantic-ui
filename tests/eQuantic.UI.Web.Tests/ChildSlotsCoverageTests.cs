@@ -117,7 +117,7 @@ public class ChildSlotsCoverageTests
             }
             try
             {
-                var owner = ComponentBoundary.Owner();
+                var owner = new ComponentBoundary().Owner();
                 owner.Build(node!, Context, 400f, rebuildAll: true);
                 owner.EndFrame();
             }
