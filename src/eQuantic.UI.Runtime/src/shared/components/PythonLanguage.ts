@@ -4,14 +4,7 @@ export class PythonLanguage {
     static $interfaces = ['eQuantic.UI.Code.ICodeLanguage'];
 
     constructor() {
-        this.rules = (() => {
-        const $o = new CodeLanguageRules();
-        $o.lineComment = '#';
-        $o.indentAfter = [':', '(', '[', '{'];
-        $o.outdentOn = [')', ']', '}'];
-        $o.indentWidth = 4;
-        return $o;
-    })();
+        this.rules = (() => { let $n0: CodeLanguageRules; return ($n0 = new CodeLanguageRules(), $n0.lineComment = '#', $n0.indentAfter = [':', '(', '[', '{'], $n0.outdentOn = [')', ']', '}'], $n0.indentWidth = 4, $n0); })();
     }
 
     rules!: CodeLanguageRules;
