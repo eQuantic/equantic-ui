@@ -65,6 +65,8 @@ public sealed class ConsoleLayout(VisualNode body) : StatefulComponent
         new(Icons.Copy, "Colors", "/colors"),
         // Files sent to the server in parts, which a Server Action reads as a stream.
         new(Icons.Plus, "Uploads", "/uploads"),
+        // Cards a pointer moves inside a column and across columns.
+        new(Icons.Table, "Board", "/board"),
     ];
 
     /// <summary>Whether the compact drawer is up. The layout's, so a navigation keeps it.</summary>

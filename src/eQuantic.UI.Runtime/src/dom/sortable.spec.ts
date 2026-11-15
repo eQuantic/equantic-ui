@@ -47,6 +47,8 @@ class Board extends StatefulComponent {
   }
 }
 
+const last = <T,>(values: T[]): T | undefined => values[values.length - 1];
+
 type Box = { left: number; top: number; width: number; height: number };
 const boxes = new Map<Element, Box>();
 
@@ -139,9 +141,9 @@ describe('lists a pointer sorts', () => {
     expect(copy.getAttribute('aria-hidden')).toBe('true');
     expect(copy.querySelector('[data-eq-sort-item]')).toBeNull();
     pointer(document, 'pointermove', 20, 10);
-    expect(hovered.at(-1)?.index).toBe(0);
+    expect(last(hovered)?.index).toBe(0);
     pointer(document, 'pointerup', 20, 10);
-    expect(hovered.at(-1)).toBeNull();
+    expect(last(hovered)).toBeNull();
     expect(dropped[0].index).toBe(0);
   });
 
@@ -163,11 +165,11 @@ describe('lists a pointer sorts', () => {
   it('puts the item back on Escape', () => {
     const container = mount(new Board());
     drag(container, 'a', [[20, 30], [250, 20]], false);
-    expect(hovered.at(-1)?.to).toBe('done');
+    expect(last(hovered)?.to).toBe('done');
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
     pointer(document, 'pointerup', 250, 20);
     expect(dropped).toHaveLength(0);
-    expect(hovered.at(-1)).toBeNull();
+    expect(last(hovered)).toBeNull();
     expect(item(container, 'a').style.opacity).toBe('');
   });
 

@@ -306,6 +306,24 @@ public class WikiClaimsCompile
         public override VisualNode Build(ComponentContext context) => Text("queue", TypeRole.BodyM);
     }
 
+    /// <summary>Components, "Sortable: lists a pointer puts in order" (preview.69, #1535): a board's column.</summary>
+    private sealed class BoardColumnPage : Primitives.StatefulComponent
+    {
+        private readonly List<(string Id, string Title)> _cards = [("c1", "Draw the tree")];
+        private SortDrop? _landing;
+
+        private void Move(string item, string to, int index) { }
+
+        public override VisualNode Build(ComponentContext context) =>
+            Sortable(
+                Column(gap: Space.S2, children: [.. _cards.Select(card => SortableItem(Text(card.Title, TypeRole.BodyM), card.Id))]),
+                id: "todo",
+                onDropped: drop => SetState(() => Move(drop.Item, drop.To, drop.Index)),
+                group: "board",
+                onHovered: drop => SetState(() => _landing = drop),
+                accepts: drop => !drop.Item.StartsWith("locked", StringComparison.Ordinal));
+    }
+
     /// <summary>
     /// The EmailRealizer page's welcome email, as the page writes it, with an address standing in
     /// for its generated <c>Assets.Logo</c>. Its logo gave a width and no height (#684), and its
