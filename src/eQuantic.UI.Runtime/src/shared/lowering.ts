@@ -4377,7 +4377,8 @@ function lowerPressable(
     node.events['mousedown'] = ((event: MouseEvent) => {
       event.preventDefault();
       const host = (event.currentTarget as HTMLElement | null)?.closest('[role="tree"]');
-      if (host instanceof HTMLElement) host.focus();
+      // Without scrolling: the host is the whole tree, whose top may be far above the row pressed.
+      if (host instanceof HTMLElement) host.focus({ preventScroll: true });
     }) as unknown as EventHandler;
     const place = pressable.treePlace;
     if (place) {

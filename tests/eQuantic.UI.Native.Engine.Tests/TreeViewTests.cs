@@ -162,6 +162,48 @@ public class TreeViewTests
     }
 
     [Fact]
+    public void AChordsTextIsNotASearch()
+    {
+        var harness = Open();
+        harness.Host.KeyDown("d", KeyModifiers.Command);
+        harness.Host.TextInput("d").Should().BeFalse("the shell hands over ⌘D's text when no chord claimed it");
+        harness.Host.KeyDown("d");
+        harness.Host.TextInput("d").Should().BeTrue("the same letter alone is a search");
+    }
+
+    /// <summary>The roots arrive after the path, as an app that fetches its tree on mount hands them.</summary>
+    private sealed class LateRoots : StatefulComponent
+    {
+        public IReadOnlyList<TreeNode> Roots = [];
+        public readonly List<string> Pressed = [];
+
+        public void Arrive(IReadOnlyList<TreeNode> roots) => SetState(() => Roots = roots);
+
+        public override VisualNode Build(ComponentContext context) =>
+            new TreeView(Roots, onPressed: node => Pressed.Add(node.Key))
+            {
+                RevealPath = ["src", "src/Assets"],
+            };
+    }
+
+    [Fact]
+    public void APathHandedBeforeItsNodesIsRevealedOnceTheyArrive()
+    {
+        var page = new LateRoots();
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 360, 480);
+        host.RenderFrame(new DisplayListBuilder());
+        page.Arrive(Files());
+        host.RenderFrame(new DisplayListBuilder());
+
+        host.Semantics().Should().Contain(node => node.Role == SemanticRole.TreeItem && node.Label == "Assets",
+            "src opened once it was there");
+        host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder());
+        host.KeyDown("Enter");
+        page.Pressed.Should().Equal("src/Assets");
+    }
+
+    [Fact]
     public void AFolderLoadsOnce_WithALoadingItemUnderItUntilItsChildrenArrive()
     {
         var gate = new TaskCompletionSource<IReadOnlyList<TreeNode>>();

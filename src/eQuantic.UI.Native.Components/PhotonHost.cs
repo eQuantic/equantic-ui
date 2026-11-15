@@ -1398,6 +1398,10 @@ public sealed class PhotonHost
     /// of a dead key or an input method. It arrives as a STRING for that reason: what a keystroke
     /// produces is the platform's business, and "á" may be one key or three.
     /// </summary>
+    /// <summary>The modifiers of the last key the shell handed over, which the text it hands over next
+    /// came from.</summary>
+    private KeyModifiers _keyModifiers;
+
     public bool TextInput(string text)
     {
         if (string.IsNullOrEmpty(text)) return false;
@@ -1423,7 +1427,11 @@ public sealed class PhotonHost
         // tree jumps to the item whose label starts with it. It arrives here and not in KeyDown
         // because the shells hand over a key's TEXT only once no key claimed it, the same point the
         // web's keydown reads a one-character key at. Space is a key of its own, and never searches.
-        if (TextTarget is null && text != " " && _focusedId != 0 && _lastFrame?.FocusStops is { } searchStops)
+        // A chord's text is not a search, as the web's keydown reads only a key with no modifier but Shift:
+        // the shells hand over the text of a key KeyDown did not claim, ⌘D's "d" included.
+        if (TextTarget is null && text != " " && _focusedId != 0
+            && (_keyModifiers & (KeyModifiers.Command | KeyModifiers.Control | KeyModifiers.Alt)) == 0
+            && _lastFrame?.FocusStops is { } searchStops)
         {
             for (var i = 0; i < searchStops.Count; i++)
             {
@@ -3384,6 +3392,7 @@ public sealed class PhotonHost
     /// </summary>
     public bool KeyDown(string key, KeyModifiers modifiers = KeyModifiers.None)
     {
+        _keyModifiers = modifiers;
         // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it.
         if (BindingFor(key, modifiers) is { } binding)
         {

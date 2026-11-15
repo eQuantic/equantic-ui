@@ -113,6 +113,30 @@ public class TreeSemanticsTests
         treeItems[1].Attributes["id"].Should().Be(active, "the active item is the one the host names");
     }
 
+    /// <summary>
+    /// The server draws a page once and keeps none of it, so a folder the page opens is not loaded there:
+    /// its loading item is drawn, and the browser's tree, which is mounted, loads it.
+    /// </summary>
+    [Fact]
+    public async Task TheServersRenderLoadsNothing()
+    {
+        var loads = 0;
+        var tree = new TreeView([new TreeNode("docs", "docs")])
+        {
+            ExpandedKeys = ["docs"],
+            LoadChildren = _ =>
+            {
+                loads++;
+                return Task.FromResult<IReadOnlyList<TreeNode>>([Leaf("docs/intro.md", "intro.md")]);
+            },
+        };
+        var host = WebRealizer.Lower(tree, Theme).Render();
+        await Task.Delay(100);
+
+        loads.Should().Be(0);
+        Walk(host).Should().Contain(node => node.Attributes.GetValueOrDefault("aria-label") == SdkStrings.TreeLoading);
+    }
+
     [Fact]
     public void ADisabledTreeItemSaysSo_ForADivCannotBeDisabled()
     {

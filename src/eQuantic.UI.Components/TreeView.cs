@@ -49,6 +49,11 @@ public sealed class TreeView : StatefulComponent
     private readonly HashSet<string> _loading = new();
     private readonly HashSet<string> _failed = new();
 
+    /// <summary>The loads whose loader has been called: a load marked during a build waits for the tree
+    /// to be mounted, and the server's one-frame render, which never mounts it, calls no loader.</summary>
+    private readonly HashSet<string> _started = new();
+    private bool _inTree;
+
     /// <summary>The visible rows of the last build, which the keyboard walks.</summary>
     private List<TreeViewRow> _rows = new();
 
@@ -144,6 +149,19 @@ public sealed class TreeView : StatefulComponent
         _height = fresh.Height;
     }
 
+    protected override void OnMount()
+    {
+        _inTree = true;
+        // The loads a build marked before the tree was in the tree: an ExpandedKeys or a RevealPath
+        // naming a folder still to load.
+        if (LoadChildren is not { } loader) return;
+        // Load changes nothing before its first await, so the set is walked as it stands.
+        foreach (var key in _loading)
+            if (FindNode(key) is { } node) Load(node, loader);
+    }
+
+    protected override void OnUnmount() => _inTree = false;
+
     public override VisualNode Build(ComponentContext context)
     {
         if (!_seeded)
@@ -161,6 +179,9 @@ public sealed class TreeView : StatefulComponent
 
         _rowHeight = ControlMetrics.Height(context, SizeVariant.Small);
         _rows = Flatten();
+        // A status item that went away (its load finished) hands the keyboard to the node it stood under,
+        // which is where the person was.
+        if (_activeIsStatus && _activeKey is { } statusKey && !HasStatusRow(statusKey)) _activeIsStatus = false;
         var active = ActiveIndex();
 
         var items = new List<VisualNode>();
@@ -192,7 +213,9 @@ public sealed class TreeView : StatefulComponent
                 _scrollRequest = new ScrollRequest(_scrollVersion) { Offset = offset };
             }
         }
-        _scrollToActive = false;
+        // Kept until the view has said how tall it is: a node revealed on the first frame is scrolled to
+        // once the viewport is known, not forgotten before it.
+        if (_viewport > 0) _scrollToActive = false;
 
         return new ScrollView(tree)
         {
@@ -316,11 +339,14 @@ public sealed class TreeView : StatefulComponent
         if (_activeKey is null) return -1;
         for (var i = 0; i < _rows.Count; i++)
             if (_rows[i].Key == _activeKey && _rows[i].IsStatus == _activeIsStatus) return i;
-        // A status item that went away (the load finished) hands the keyboard to the node it stood
-        // under, which is where the person was.
-        if (!_activeIsStatus) return -1;
-        _activeIsStatus = false;
-        return IndexOfNode(_activeKey);
+        return -1;
+    }
+
+    private bool HasStatusRow(string key)
+    {
+        foreach (var row in _rows)
+            if (row.IsStatus && row.Key == key) return true;
+        return false;
     }
 
     private int IndexOfNode(string key)
@@ -368,12 +394,15 @@ public sealed class TreeView : StatefulComponent
         // Never inside the build or the handler that asked: a task already finished would otherwise go on
         // in it, and set state while the frame is being built.
         await Task.Yield();
+        // Not before the tree is mounted (OnMount starts what waited), and once per load.
+        if (!_inTree || !_loading.Contains(node.Key) || !_started.Add(node.Key)) return;
         try
         {
             var children = await loader(node);
             SetState(() =>
             {
                 _loading.Remove(node.Key);
+                _started.Remove(node.Key);
                 _loaded[node.Key] = children;
             });
         }
@@ -382,25 +411,24 @@ public sealed class TreeView : StatefulComponent
             SetState(() =>
             {
                 _loading.Remove(node.Key);
+                _started.Remove(node.Key);
                 _failed.Add(node.Key);
             });
         }
     }
 
     /// <summary>Takes a reveal one step further each build: opens what is known, starts the load it waits
-    /// for, and when the path is open puts the keyboard on its last node. A path that leaves the tree, or
-    /// whose load failed, ends there.</summary>
+    /// for, and when the path is open puts the keyboard on its last node. A path whose load failed ends
+    /// there; one that names nodes the tree does not have yet waits for them.</summary>
     private void AdvanceReveal()
     {
         if (_revealing is not { } path) return;
         var level = Roots;
         for (var i = 0; i < path.Count - 1; i++)
         {
-            if (FindIn(level, path[i], deep: false) is not { } node)
-            {
-                _revealing = null;
-                return;
-            }
+            // Not in the tree YET: an app often hands the path before the nodes it names (the roots are
+            // still loading), so the reveal waits for a build that has them, until a new path replaces it.
+            if (FindIn(level, path[i], deep: false) is not { } node) return;
             _open.Add(node.Key);
             if (ChildrenOf(node) is not { } children)
             {
@@ -411,12 +439,10 @@ public sealed class TreeView : StatefulComponent
             level = children;
         }
         var last = path[path.Count - 1];
-        if (FindIn(level, last, deep: false) is not null)
-        {
-            _activeKey = last;
-            _activeIsStatus = false;
-            _scrollToActive = true;
-        }
+        if (FindIn(level, last, deep: false) is null) return;
+        _activeKey = last;
+        _activeIsStatus = false;
+        _scrollToActive = true;
         _revealing = null;
     }
 
