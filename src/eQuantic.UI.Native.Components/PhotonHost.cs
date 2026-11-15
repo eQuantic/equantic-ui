@@ -1419,6 +1419,20 @@ public sealed class PhotonHost
             SurfaceChanged(surface.OnChanged);
             return true;
         }
+        // A COMPOSITE under focus with no field being edited searches with what was typed (#1529): a
+        // tree jumps to the item whose label starts with it. It arrives here and not in KeyDown
+        // because the shells hand over a key's TEXT only once no key claimed it, the same point the
+        // web's keydown reads a one-character key at. Space is a key of its own, and never searches.
+        if (TextTarget is null && text != " " && _focusedId != 0 && _lastFrame?.FocusStops is { } searchStops)
+        {
+            for (var i = 0; i < searchStops.Count; i++)
+            {
+                if (searchStops[i].Id != _focusedId || searchStops[i].Grid is not { OnTextSearch: { } search }) continue;
+                search(text);
+                NeedsRender = true;
+                return true;
+            }
+        }
         if (TextTarget is not { } entry || entry.Disabled) return false;
         // Typing over a selection REPLACES it — the one behaviour that makes selecting worth doing.
         var (start, end) = Selection;

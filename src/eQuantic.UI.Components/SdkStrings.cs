@@ -294,6 +294,11 @@ public static class SdkStrings
     public static string UploadAcceptsAny(string size) =>
         string.Format(CultureInfo.CurrentCulture, SdkResources.UploadAcceptsAny, size);
 
+    // TreeView — the item that stands under a node while its children load, and the one that stands
+    // there when the load failed, whose press tries again (#1530).
+    public static string TreeLoading => SdkResources.TreeLoading;
+    public static string TreeLoadFailed => SdkResources.TreeLoadFailed;
+
     public static string UploadWaiting => SdkResources.UploadWaiting;
 
     /// <summary>How far a file got: "3.2 MB of 12 MB".</summary>

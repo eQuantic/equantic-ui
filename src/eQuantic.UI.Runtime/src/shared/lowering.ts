@@ -4309,7 +4309,10 @@ function lowerPressable(
   // the child keeps being the real control, and the markup stays legal. The C# realizer decides
   // this the same way, from the same lowered subtree, or hydration disagrees about the whole thing.
   const wrapping = child != null && wrapsAnInteractive(child);
-  const node = element(wrapping ? 'span' : 'button', {
+  // A tree item is a div (#1529): ARIA in HTML refuses role="treeitem" on a button, and its keyboard
+  // is the tree's (the C# twin decides the same).
+  const treeItem = pressable.role === 'treeItem';
+  const node = element(treeItem ? 'div' : wrapping ? 'span' : 'button', {
     padding: '0',
     background: 'none',
     border: 'none',
@@ -4362,6 +4365,19 @@ function lowerPressable(
     node.attributes['role'] = 'gridcell';
     node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false';
     node.attributes['tabindex'] = '-1';
+  } else if (treeItem) {
+    // One item of a tree: picked when it says so, out of the Tab order (the tree is the one stop), and
+    // PLACED, because the tree's rows are a flat list a reader cannot infer a depth from.
+    node.attributes['role'] = 'treeitem';
+    if (pressable.selected !== undefined && pressable.selected !== null)
+      node.attributes['aria-selected'] = pressable.selected ? 'true' : 'false';
+    node.attributes['tabindex'] = '-1';
+    const place = pressable.treePlace;
+    if (place) {
+      node.attributes['aria-level'] = String(place.level);
+      node.attributes['aria-posinset'] = String(place.positionInSet);
+      node.attributes['aria-setsize'] = String(place.sizeOfSet);
+    }
   } else if (pressable.role === 'checkbox' || pressable.role === 'switch') {
     // A check states its state as an ATTRIBUTE, never in the name; it keeps its own Tab stop.
     // "mixed" exists for checkboxes and nothing else — the C# realizer enforces the same rule.
@@ -4380,8 +4396,8 @@ function lowerPressable(
   } else if (pressable.selected !== undefined && pressable.selected !== null) {
     node.attributes['aria-pressed'] = pressable.selected ? 'true' : 'false';
   }
-  if (disabled && !wrapping) node.attributes['disabled'] = '';
-  if (disabled && wrapping) node.attributes['aria-disabled'] = 'true';
+  if (disabled && !wrapping && !treeItem) node.attributes['disabled'] = '';
+  if (disabled && (wrapping || treeItem)) node.attributes['aria-disabled'] = 'true';
   if (!disabled && pressable.onPressed) node.events['click'] = pressable.onPressed as EventHandler;
   // A pressable that may not take the keyboard (Flutter's canRequestFocus): out of the Tab order, as
   // the C# realizer writes it, and its press cancelled before the browser moves the focus to it, so
@@ -4910,7 +4926,10 @@ function navigableMove(event: KeyboardEvent): NavigableMoveValue | null {
  */
 function lowerNavigable(node: NavigableNode, context: LoweringContext, path: string): HtmlNode {
   const host = element('div', {});
-  host.attributes['role'] = node.role ?? 'grid';
+  // A TREE's rows are its visible items, and a tree must not hold rows (#1529): they are lowered as
+  // they are, and numbered by the same walk under the same id scheme (the C# twin does the same).
+  const tree = node.role === 'tree';
+  host.attributes['role'] = tree ? 'tree' : 'grid';
   host.attributes['tabindex'] = '0';
   if (node.label) host.attributes['aria-label'] = node.label;
   const scope = pathScope(path);
@@ -4923,17 +4942,33 @@ function lowerNavigable(node: NavigableNode, context: LoweringContext, path: str
 
   if (node.onMove) {
     const move = node.onMove;
+    const search = node.onTextSearch ?? null;
     host.events['keydown'] = ((event: KeyboardEvent) => {
       const which = navigableMove(event);
-      if (which === null) return;
-      // An arrow that also scrolls the page is two answers to one key.
-      event.preventDefault();
-      move(which);
+      if (which !== null) {
+        // An arrow that also scrolls the page is two answers to one key.
+        event.preventDefault();
+        move(which);
+        return;
+      }
+      // A character the composite searches with is its own, not the page's (a find-as-you-type
+      // would otherwise take it too).
+      if (search !== null && isTextSearch(event)) {
+        event.preventDefault();
+        search(event.key);
+      }
     }) as unknown as EventHandler;
   }
 
   const rows = node.rows ?? [];
   for (let index = 0; index < rows.length; index++) {
+    if (tree) {
+      const items = lowerNode(rows[index], context, null, `${path}/${index}`);
+      if (!items) continue;
+      numberCells(items, 'treeitem', scope, index, { next: 0 });
+      host.children.push(items);
+      continue;
+    }
     const row = element('div', { display: 'contents' });
     row.attributes['role'] = 'row';
     const lowered = lowerNode(rows[index], context, null, `${path}/${index}`);
@@ -4944,24 +4979,34 @@ function lowerNavigable(node: NavigableNode, context: LoweringContext, path: str
     }
     // The cells are IDENTIFIED — an aria-activedescendant pointing at an id nothing carries is a
     // dangling reference, which reads to assistive tech as no focus at all.
-    if (!isHeader) numberGridCells(row, scope, index, { next: 0 });
+    if (!isHeader) numberCells(row, 'gridcell', scope, index, { next: 0 });
     host.children.push(row);
   }
   return host;
 }
 
-/** Ids every gridcell of one row in tree order — the C# twin numbers the same way. */
-function numberGridCells(
+/** Ids every cell of the composite's kind (a grid's gridcells, a tree's treeitems) of one row in
+ * tree order — the C# twin numbers the same way. */
+function numberCells(
   node: HtmlNode,
+  role: 'gridcell' | 'treeitem',
   scope: string,
   row: number,
   counter: { next: number },
 ): void {
-  if (node.attributes?.role === 'gridcell') {
+  if (node.attributes?.role === role) {
     node.attributes['id'] = navigableCellId(scope, row, counter.next);
     counter.next++;
   }
-  for (const child of node.children ?? []) numberGridCells(child as HtmlNode, scope, row, counter);
+  for (const child of node.children ?? []) numberCells(child as HtmlNode, role, scope, row, counter);
+}
+
+/** Whether a key press is a character a composite searches with (C# twin: `IsTextSearch`): one
+ * printable character, no modifier but Shift, and never Space, which is a key of its own. */
+function isTextSearch(event: KeyboardEvent): boolean {
+  return (
+    event.key.length === 1 && event.key !== ' ' && !event.ctrlKey && !event.metaKey && !event.altKey
+  );
 }
 
 /**

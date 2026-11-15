@@ -696,6 +696,22 @@ public static class UI
         SizeValue width = default, SizeValue height = default) =>
         new ListView(count, itemExtent, itemBuilder) { Width = width, Height = height };
 
+    /// <summary>A tree of nodes, loaded as they open, walked by the keyboard as the WAI-ARIA tree pattern;
+    /// given a height, it scrolls and keeps the keyboard's item in view (#1530).</summary>
+    public static TreeView TreeView(IReadOnlyList<TreeNode> roots, string? selectedKey = null,
+        Action<TreeNode>? onPressed = null, Func<TreeNode, Task<IReadOnlyList<TreeNode>>>? loadChildren = null,
+        Action<TreeNode, bool>? onToggled = null, IReadOnlyList<string>? expandedKeys = null,
+        IReadOnlyList<string>? revealPath = null, string label = "", SizeValue height = default) =>
+        new TreeView(roots, selectedKey, onPressed)
+        {
+            LoadChildren = loadChildren,
+            OnToggled = onToggled,
+            ExpandedKeys = expandedKeys,
+            RevealPath = revealPath,
+            Label = label,
+            Height = height,
+        };
+
     /// <summary>A list beside a detail on a wide window, one pane at a time on a phone (spec B4).
     /// The panes arrive as BUILDERS, one call per shape that shows them; the titles, the wide
     /// placeholder and the threshold are init slots.</summary>

@@ -1,2 +1,4 @@
 #nullable enable
 eQuantic.UI.Testing.ComponentTester.Css.get -> string!
+eQuantic.UI.Testing.Announcement.TreePlace.get -> eQuantic.UI.Primitives.TreePlace?
+eQuantic.UI.Testing.Announcement.TreePlace.init -> void
