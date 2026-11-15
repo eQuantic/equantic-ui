@@ -130,7 +130,7 @@ public class S6TransitionClockTests
     /// <summary>A node's position, kept by an owner as a host keeps it: where its tracks live.</summary>
     private static Element Position() =>
         ComponentBoundary.StructuralOwner().Build(new Box(new BoxStyle()), new ComponentContext(PhotonTheme.Instance),
-            WindowSizeClass.Compact, rebuildAll: true);
+            400f, rebuildAll: true);
 
     [Fact]
     public void ATrackFollowsItsSpecsDurationAndCurve()

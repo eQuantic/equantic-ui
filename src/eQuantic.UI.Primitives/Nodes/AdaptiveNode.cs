@@ -1,11 +1,13 @@
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// Spec S6 — a subtree that ADAPTS to the window size class: up to three variants, resolved by the
-/// fallback chain (Expanded → Medium → Compact). Fully general responsiveness — a different nav, a
-/// different grid, a different direction — with ZERO listeners: the web realizer emits every
-/// declared variant gated by build-time media queries (display:contents/none); Photon lays out only
-/// the variant matching the window class and re-lays-out when the class crosses a threshold.
+/// Spec S6 — a subtree that ADAPTS to the window's width: up to three variants, resolved by the
+/// fallback chain (Expanded → Medium → Compact) at the node's OWN thresholds (<see cref="MediumFrom"/>,
+/// <see cref="ExpandedFrom"/>). Fully general responsiveness — a different nav, a different grid, a
+/// different direction — with ZERO listeners: the web realizer emits every declared variant gated by
+/// build-time media queries on those thresholds (display:contents/none); Photon and the element tree
+/// hold and lay out only the variant <see cref="ResolveWidth"/> answers for the window's width, the same
+/// width the web's gates read, so every target switches at the same place (#1465).
 /// <para>
 /// Because the web emits EVERY arm, anything inside one that must be unique in the document is
 /// emitted once per arm it appears in — a <see cref="VisualNode.Bookmark"/> most visibly, since a
@@ -46,8 +48,9 @@ public sealed class AdaptiveNode : VisualNode
     /// <summary>Where <see cref="Expanded"/> takes over (dp). See <see cref="MediumFrom"/>.</summary>
     public float ExpandedFrom { get; init; } = WindowSizeClasses.ExpandedMinDp;
 
-    /// <summary>The variant for a WIDTH (dp) — the general form, honoring custom thresholds.
-    /// Missing variants fall back toward Compact.</summary>
+    /// <summary>The variant for a window <paramref name="widthDp"/> wide, at this node's thresholds: the one
+    /// every target holds and draws (the web's gates show it at the same widths). Missing variants fall back
+    /// toward Compact.</summary>
     public VisualNode ResolveWidth(float widthDp)
     {
         if (Expanded is { } expanded && widthDp >= ExpandedFrom) return expanded;
@@ -56,15 +59,6 @@ public sealed class AdaptiveNode : VisualNode
         if (Medium is { } medium && widthDp >= MediumFrom) return medium;
         return Compact;
     }
-
-    /// <summary>The variant for a size CLASS — the spec-threshold shorthand (custom thresholds
-    /// resolve through <see cref="ResolveWidth"/>).</summary>
-    public VisualNode Resolve(WindowSizeClass sizeClass) => sizeClass switch
-    {
-        WindowSizeClass.Expanded => Expanded ?? Medium ?? Compact,
-        WindowSizeClass.Medium => Medium ?? Compact,
-        _ => Compact,
-    };
 
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
