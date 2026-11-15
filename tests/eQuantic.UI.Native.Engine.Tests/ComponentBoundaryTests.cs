@@ -128,7 +128,7 @@ public class ComponentBoundaryTests
     private LayoutNode LaidOut(VisualNode root, float width, float height, ComponentBoundary boundary)
     {
         var context = Layout;
-        var element = boundary.StructuralOwner().Build(root, context.Components, context.SizeClass, rebuildAll: true);
+        var element = boundary.StructuralOwner().Build(root, context.Components, width, rebuildAll: true);
         return LayoutEngine.Layout(root, width, height, context, rootElement: element);
     }
 

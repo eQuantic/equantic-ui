@@ -16,7 +16,7 @@ public class InheritedComponentTests
 
     private static Element Frame(BuildOwner owner, VisualNode root, bool rebuildAll = false, ComponentContext? context = null)
     {
-        var element = owner.Build(root, context ?? Comfortable, WindowSizeClass.Compact, rebuildAll);
+        var element = owner.Build(root, context ?? Comfortable, 400f, rebuildAll);
         owner.EndFrame();
         return element;
     }
@@ -195,7 +195,7 @@ public class InheritedComponentTests
     /// the log is read, before the frame ends.</summary>
     private static List<string> FrameShowingTheLayer(BuildOwner owner, VisualNode root, Log log, bool rebuildAll = false)
     {
-        var element = owner.Build(root, Comfortable, WindowSizeClass.Compact, rebuildAll);
+        var element = owner.Build(root, Comfortable, 400f, rebuildAll);
         // The overlay is the root's first child in both trees here.
         var overlay = (NodeElement)element.ChildAt(0)!;
         overlay.ShowDeferred(((Overlay)overlay.Configuration).Child);
@@ -254,7 +254,7 @@ public class InheritedComponentTests
 
         List<string> Draw(bool rebuildAll, out List<string> afterOuter)
         {
-            var outer = (NodeElement)owner.Build(holder, Comfortable, WindowSizeClass.Compact, rebuildAll).ChildAt(0)!;
+            var outer = (NodeElement)owner.Build(holder, Comfortable, 400f, rebuildAll).ChildAt(0)!;
             // The outer layer's score, then its column, then the inner overlay.
             var inner = (NodeElement)outer.ShowDeferred(((Overlay)outer.Configuration).Child).ChildAt(0)!.ChildAt(0)!;
             afterOuter = log.Entries.ToList();
