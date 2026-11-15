@@ -700,6 +700,46 @@ which the browser builds by itself (`MarkupHost.ForPage`).
   adaptive node and once after the node, each with its own data
 - **THEN** the browser hands each instance its own data, whichever arm the window shows
 
+### Requirement: The route is read from the tree on every target
+
+A component SHALL read the route through its context from the frame its owner was handed, and the
+position SHALL be registered as a reader of the route, apart from the readers of the theme, density and
+type scale. An owner handed a frame with another route SHALL build again the positions that read the route
+and no other. No code inside a tree SHALL read the route from an ambient channel, and a tree built with no
+route SHALL answer an empty one.
+
+#### Scenario: A navigation within one page type
+
+- **WHEN** a page whose header reads the route and whose footer does not is drawn again with another route
+- **THEN** the header builds again and the footer does not
+
+#### Scenario: A prefetch reads the request's route
+
+- **WHEN** a component's prefetch resolves `RouteValues` from the services it is handed during a request
+  for `/docs/getting-started`
+- **THEN** its `slug` parameter is `getting-started`
+
+### Requirement: An inherited value is read the same way in the browser
+
+In the browser, `DependOn<T>()` and `Find<T>()` SHALL find the nearest `T` above the component's position,
+and a dependent SHALL build again when that value says it changed, as on .NET.
+
+#### Scenario: An app's inherited value in the browser
+
+- **WHEN** a component in the browser depends on an app's inherited value, and its parent hands the value a
+  new number
+- **THEN** the component builds again with the new number, and a sibling that did not depend on it does not
+
+### Requirement: A theme is the nearest one above
+
+A component's `context.Theme` SHALL be the theme of the nearest `Theme` above its position, or the frame's
+when none is, and reading it SHALL register the component as a dependent of whichever answered.
+
+#### Scenario: A subtree under its own theme
+
+- **WHEN** a component stands under a `Theme` holding another theme than the frame's
+- **THEN** it builds with that theme, and a component beside the `Theme` builds with the frame's
+
 ### Requirement: The browser keeps a node's state on its position
 
 In the browser, what the runtime keeps for a node between renders SHALL belong to the node's position and
@@ -764,3 +804,40 @@ so no two positions of the document share an id.
 - **WHEN** a live owner and two structural owners handed one count each build a tree
 - **THEN** no two positions or parts of the three trees share an id, and an owner handed no count
   numbers its root 1
+
+### Requirement: A dirty element in the browser lowers its own subtree
+
+In the browser, a render that only the page's element owners asked for (a nested component's state change)
+SHALL lower only the components that built, each with what it was lowered with and with what its parents did
+to its root done again, and SHALL patch only the DOM those components drew. The DOM it leaves SHALL be the DOM
+a whole-page lowering leaves. A component whose lowering a parent read or walked into SHALL be lowered with the
+nearest component above it that nothing reached into, and the page SHALL lower whole when none is left. The
+shortcuts the components lowered declared SHALL replace the ones they declared before, and every other
+binding SHALL stay.
+
+#### Scenario: One component changes its state
+
+- **WHEN** a page holds two counters and one of them changes its state
+- **THEN** one component is lowered, and the page's DOM is the DOM a whole lowering of the page leaves
+
+#### Scenario: A parent acted on the component's root
+
+- **WHEN** a counter inside a presence changes its state
+- **THEN** one component is lowered, its element carries the presence's motion class and exit marker, and
+  the DOM is the DOM a whole lowering leaves
+
+#### Scenario: A parent read what the component lowered to
+
+- **WHEN** a counter wrapped by a shortcut changes its state
+- **THEN** the page lowers whole, and the DOM is the DOM a whole lowering leaves
+
+#### Scenario: A component and one inside it change their state
+
+- **WHEN** a component and a counter it holds both change their state before the render
+- **THEN** the outer component's subtree is lowered once, both show their new state, and the DOM is the DOM
+  a whole lowering leaves
+
+#### Scenario: Shortcuts outside the lowered components
+
+- **WHEN** a page declares a shortcut beside a counter, and the counter changes its state
+- **THEN** one component is lowered and the shortcut is still live

@@ -38,6 +38,7 @@ public sealed class ComponentTester : IDisposable
     private readonly MarkupHost _host;
     private VisualNode? _root;
     private HtmlNode? _frame;
+    private StyleSink? _styles;
     private HtmlNode? _paintServers;
     private AnnouncedTree? _announced;
     private string? _html;
@@ -86,6 +87,14 @@ public sealed class ComponentTester : IDisposable
     /// servers its drawings use, which the server declares once for the document beside the page.</summary>
     public string Html => _html ??= HtmlRenderer.RenderNode(Frame)
         + (_paintServers is { } servers ? HtmlRenderer.RenderNode(servers) : "");
+
+    /// <summary>
+    /// The atomic stylesheet the current frame's markup is written against: every atomic class
+    /// <see cref="Html"/> names, with its rule, as the server writes it beside the page. A test that
+    /// asks what a component LOOKS like reads it here, since an atomic class's name is a hash of its
+    /// rule. The theme's own classes (<c>eq-type-label</c>) are the theme's stylesheet, not this one.
+    /// </summary>
+    public string Css => (_styles ?? throw NothingDrawn()).Css;
 
     /// <summary>The current frame's markup as a tree, for a test that walks it.</summary>
     public HtmlNode Root => Frame;
@@ -219,6 +228,7 @@ public sealed class ComponentTester : IDisposable
         // node's classes hide it, an adaptive arm's gate among them.
         var channels = new RenderChannels(density: Density);
         _frame = _host.Lower(channels).Render();
+        _styles = channels.Styles;
         _host.EndFrame();
         _paintServers = channels.Gradients.IsEmpty ? null : channels.Gradients.Container().Render();
         _announced = AnnouncedTree.Read(_frame, channels.Styles, Width);

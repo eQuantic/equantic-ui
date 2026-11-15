@@ -23,6 +23,7 @@ import type {
   UiComponent,
   VisualNode,
 } from './runtime-exports';
+import { noteBuilt } from './lowered-records';
 
 export interface ElementEngine {
   readonly BuildOwner: typeof BuildOwner;
@@ -79,7 +80,11 @@ export function liveOwner(build: BuildComponent): BuildOwner {
   // The owner is handed to every build it runs, so the build can ask which position it is for
   // (`owner.building`): the server's data reaches a component by where it stands.
   const owner: BuildOwner = new (elementEngine().BuildOwner)(
-    (component: UiComponent, context: BuildContext, depth: number) => build(component, context, depth, owner),
+    (component: UiComponent, context: BuildContext, depth: number) => {
+      // What a render the page's owners asked for lowers again (lowered-records.ts, #1455).
+      noteBuilt(owner.building);
+      return build(component, context, depth, owner);
+    },
     true,
     idsOfTheDocument(),
   );

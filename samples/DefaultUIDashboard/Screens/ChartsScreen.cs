@@ -12,22 +12,15 @@ namespace eQuantic.Console;
 /// which is what a consumer's dashboard reads like.
 /// </summary>
 [Page("/charts", Title = "Charts — eQuantic Console")]
-public sealed class ChartsScreen : StatefulComponent
+public sealed class ChartsScreen : StatelessComponent
 {
     private static readonly string[] Quarters = ["Q1", "Q2", "Q3", "Q4"];
-
-    /// <summary>Whether the compact drawer is up — page state wherever the page is.</summary>
-    private bool _navOpen;
-
-    public override VisualNode Build(ComponentContext context) =>
-        ConsoleShell.Frame(context.Theme, "/charts", "Charts", Content(context),
-            _navOpen, () => SetState(() => _navOpen = !_navOpen));
 
     // "N0", not "C0": this sample negotiates NEUTRAL cultures ("en", "pt-BR", "es" — see Program.cs),
     // and a neutral culture has no currency, so "C0" would print the generic ¤. A currency format
     // belongs to an app whose cultures are specific ("en-US"); the label still follows the request's
     // culture — 120,000 here, 120.000 under /pt-BR.
-    private static VisualNode Content(ComponentContext context)
+    public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var page = new Column(gap: Space.S4, padding: EdgeInsets.All(Space.S4)) { Width = SizeValue.Fill };

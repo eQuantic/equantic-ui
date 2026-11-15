@@ -1,0 +1,58 @@
+## Comfortable
+### web
+<div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-12ve49g eq-1aoicmy eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl">
+<div class="eq-1avhl7d eq-1eb13m5 eq-akjizx eq-ax7sge">
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-1aoicmy{border:1px solid var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-5ew4ww{min-width:0}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-ax7sge{grid-template-columns:}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+DataTable 0 0 480x2
+  Column 0 0 480x2
+    Box 0 0 480x2
+      Grid 1 1 478x0
+
+## Compact
+### web
+<div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
+<div class="eq-12ve49g eq-1aoicmy eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl">
+<div class="eq-1avhl7d eq-1eb13m5 eq-akjizx eq-ax7sge">
+</div>
+</div>
+</div>
+### css
+.eq-11yg588{align-items:stretch}
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-1aoicmy{border:1px solid var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
+.eq-1avhl7d{display:grid}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-5ew4ww{min-width:0}
+.eq-aexooi{flex-direction:column}
+.eq-akjizx{width:100%}
+.eq-ax7sge{grid-template-columns:}
+.eq-g7fowl{pointer-events:auto}
+.eq-kngwsg{pointer-events:none}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+DataTable 0 0 480x2
+  Column 0 0 480x2
+    Box 0 0 480x2
+      Grid 1 1 478x0
+

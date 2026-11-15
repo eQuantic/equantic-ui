@@ -1,0 +1,96 @@
+## Small · Comfortable
+### web
+<div class="eq-1eb13m5 eq-kngwsg">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-kngwsg{pointer-events:none}
+### semantics
+### photon
+FormInput 0 0 480x0
+  Box 0 0 480x0
+
+## Small · Compact
+### web
+<div class="eq-1eb13m5 eq-kngwsg">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-kngwsg{pointer-events:none}
+### semantics
+### photon
+FormInput 0 0 480x0
+  Box 0 0 480x0
+
+## Medium · Comfortable
+### web
+<div class="eq-1eb13m5 eq-kngwsg">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-kngwsg{pointer-events:none}
+### semantics
+### photon
+FormInput 0 0 480x0
+  Box 0 0 480x0
+
+## Medium · Compact
+### web
+<div class="eq-1eb13m5 eq-kngwsg">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-kngwsg{pointer-events:none}
+### semantics
+### photon
+FormInput 0 0 480x0
+  Box 0 0 480x0
+
+## Large · Comfortable
+### web
+<div class="eq-1eb13m5 eq-kngwsg">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-kngwsg{pointer-events:none}
+### semantics
+### photon
+FormInput 0 0 480x0
+  Box 0 0 480x0
+
+## Large · Compact
+### web
+<div class="eq-1eb13m5 eq-kngwsg">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-kngwsg{pointer-events:none}
+### semantics
+### photon
+FormInput 0 0 480x0
+  Box 0 0 480x0
+
+## XLarge · Comfortable
+### web
+<div class="eq-1eb13m5 eq-kngwsg">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-kngwsg{pointer-events:none}
+### semantics
+### photon
+FormInput 0 0 480x0
+  Box 0 0 480x0
+
+## XLarge · Compact
+### web
+<div class="eq-1eb13m5 eq-kngwsg">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-kngwsg{pointer-events:none}
+### semantics
+### photon
+FormInput 0 0 480x0
+  Box 0 0 480x0
+

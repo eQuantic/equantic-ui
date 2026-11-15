@@ -28,7 +28,7 @@ public class ComponentCompiler
     /// <summary>
     /// The C#→TS map for whatever the emitter just produced. One seam for every module kind: the
     /// plain-class and static-helper branches used to RETURN before the component path's map
-    /// generation ran, so an app's helpers (its ConsoleShell, its data shapers) shipped mapless —
+    /// generation ran, so an app's helpers (its frame, its data shapers) shipped mapless —
     /// the error overlay could walk a page's frame back to C# and stopped dead on a helper's.
     /// </summary>
     private void AttachSourceMap(CompilationResult result, Models.ComponentDefinition component)

@@ -35,14 +35,16 @@ public sealed class PaymentsPage : StatefulComponent
     private string _query = "";
     private bool _palette;
     private bool _newPayment;
-    private bool _navOpen;
     private string? _notice;
 
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
 
+        // The console's frame is the app's layout (ConsoleLayout), which lights this screen as the
+        // root route and names it in the breadcrumb, so the screen is its content alone.
         var content = new Column(gap: Space.S4) { Width = SizeValue.Fill };
+        content.Add(Actions(theme));
         // Every affordance in this screen ANSWERS; the ones whose answer is a sentence say it here.
         if (_notice is { } notice)
             content.Add(new Banner(Variant.Info, notice) { OnDismiss = () => SetState(() => _notice = null) });
@@ -52,40 +54,20 @@ public sealed class PaymentsPage : StatefulComponent
         content.Add(TableCard(theme));
         content.Add(Footer(theme));
 
-        // The payments screen IS the root route, so that is what the sidebar lights — pointing the
-        // active item at "/payments" highlighted an entry whose own link went nowhere.
-        var frame = ConsoleShell.Wrap(theme, "/",
-            [new Crumb("Workspace", "/"), new Crumb("Payments")],
-            content,
-            new ShellActions(
-                OnOpenPalette: () => SetState(() => _palette = true),
-                OnNewPayment: () => SetState(() => _newPayment = true),
-                OnQueryChanged: query => SetState(() => { _query = query; _page = 1; }),
-                OnAccountMenu: index => SetState(() =>
-                    _notice = $"Account menu: {AccountEntries[index]}"),
-                OnHelp: index => SetState(() => _notice = $"Opened: {HelpEntries[index]}"),
-                Query: _query,
-                Sandbox: _sandbox,
-                OnToggleSandbox: () => SetState(() => _sandbox = !_sandbox),
-                NavOpen: _navOpen,
-                OnToggleNav: () => SetState(() => _navOpen = !_navOpen)));
-
-        // A dialog is a LAYER: it lays out against the viewport above the frame, so the tree simply
-        // carries it when it is up.
+        // A dialog is a LAYER: it lays out against the viewport, above the frame and the page, so the
+        // content carries it last when it is up and nothing before it moves.
         var layer = _palette ? Palette(theme) : _newPayment ? NewPaymentDialog(theme) : null;
-        if (layer is null) return frame;
+        if (layer is not null) content.Add(layer);
 
-        var stack = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fill };
-        stack.Add(frame);
-        stack.Add(layer);
-        return stack;
+        // ⌘K opens the palette from anywhere on the screen, as its entry point says it does.
+        return Shortcut(content, KeyChord.Command("k"), () => SetState(() => _palette = true));
     }
 
     private static readonly string[] ExportFormats = ["CSV", "JSON", "PDF"];
     private static readonly string[] ScheduleNames = ["Daily", "Weekly", "Manual"];
     private static readonly string[] AccountNames = ["Checking ··· 4821", "Savings ··· 1190"];
 
-    /// <summary>The rows the toolbar's query leaves standing — id or customer, case-insensitive.</summary>
+    /// <summary>The rows the search's query leaves standing — id or customer, case-insensitive.</summary>
     private IReadOnlyList<Payment> Visible()
     {
         IEnumerable<Payment> rows = ConsoleData.Payments;
@@ -99,12 +81,9 @@ public sealed class PaymentsPage : StatefulComponent
         return rows.ToArray();
     }
 
-    private static readonly string[] AccountEntries = ["Profile", "Workspace settings", "Sign out"];
-    private static readonly string[] HelpEntries = ["Documentation", "Keyboard shortcuts", "Contact support"];
-
     private VisualNode Palette(IAppTheme theme) =>
         new Dialog("Search the workspace",
-            "Type a payment id, a customer, or a command. ⌘K opens this from anywhere.",
+            "Type a payment id, a customer, or a command. ⌘K opens this from anywhere on the screen.",
             [new DialogAction("Close", () => SetState(() => _palette = false), Variant.Secondary)],
             dismissible: true, onDismiss: () => SetState(() => _palette = false));
 
@@ -118,6 +97,93 @@ public sealed class PaymentsPage : StatefulComponent
                  _notice = "Sandbox payment created — it will appear in the next sync.";
              }))],
             dismissible: true, onDismiss: () => SetState(() => _newPayment = false));
+
+    // ---- Actions ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// What this screen does, across its top: the search that narrows the table, the palette, the
+    /// sandbox switch and the primary action. They sat in the frame's toolbar and sidebar while every
+    /// screen drew its own frame. The frame is the app's layout now, which outlives the screen, and
+    /// all four change THIS screen's state, so the screen draws them. Narrow, the search is the
+    /// palette's (the fastest way in IS the advertised one) and the primary action keeps its place as
+    /// a filled icon.
+    /// <para>
+    /// The wide row needs about 840dp of its own, and the page has that only from a 1120dp window,
+    /// beside the docked sidebar and inside the page's gutters. At the window class's own threshold
+    /// (840) the row was 576dp wide and pushed "New payment" off its edge, so it switches where the
+    /// row fits, as the header and the KPI grid below switch where they fit.
+    /// </para>
+    /// </summary>
+    private VisualNode Actions(IAppTheme theme) =>
+        new AdaptiveNode(
+            Row(gap: Space.S2, width: SizeValue.Fill, children: [
+                IconButton(Icon(Icons.Search), "Search the workspace", IconButtonKind.Standard,
+                    SizeVariant.Small, onPressed: () => SetState(() => _palette = true)),
+                Flexible(Sandbox(theme), 1),
+                IconButton(Icon(Icons.Plus), "New payment", IconButtonKind.Filled, SizeVariant.Small,
+                    onPressed: () => SetState(() => _newPayment = true)),
+            ]),
+            expanded: Row(gap: Space.S2, width: SizeValue.Fill, children: [
+                Box(new BoxStyle { Width = 240 },
+                    SearchField(_query, query => SetState(() => { _query = query; _page = 1; }),
+                        placeholder: "Search payments…")),
+                PaletteEntry(theme),
+                Spacer(),
+                Sandbox(theme),
+                new Button("New payment", Variant.Primary, SizeVariant.Small)
+                {
+                    Leading = CuratedIcons.Resolve(Icons.Plus),
+                    OnPressed = () => SetState(() => _newPayment = true),
+                },
+            ]))
+        { ExpandedFrom = 1120 };
+
+    /// <summary>
+    /// The palette's ENTRY POINT, not a field: it opens the command palette, and it shows the
+    /// shortcut that names the same thing, because the fastest way in is the one that gets advertised.
+    /// </summary>
+    private VisualNode PaletteEntry(IAppTheme theme) =>
+        // Fill the box's content height so the row truly centers within the 32dp frame: a hugging
+        // row sits at the TOP of a fixed-height Box on both targets (the same contract SearchField
+        // and SegmentedControl state in the library).
+        Pressable(Box(new BoxStyle
+        {
+            Width = 200,
+            Height = Sizing.Height(SizeVariant.Small),
+            Padding = EdgeInsets.Symmetric(Space.S2, 0),
+            Background = theme.SurfaceSubtle,
+            CornerRadius = new CornerRadii(Sizing.Radius(SizeVariant.Small)),
+            Hover = new StyleDiff { Background = theme.Border },
+            Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
+        },
+        Row(gap: Space.S2, width: SizeValue.Fill, height: SizeValue.Fill, children: [
+            Icon(Icons.Search, IconSize.Sm, theme.TextMuted),
+            Flexible(Text("Search workspace", TypeRole.Caption, theme.TextMuted, maxLines: 1), 1),
+            Text("⌘K", TypeRole.Caption, theme.TextMuted, maxLines: 1, mono: true),
+        ])),
+        () => SetState(() => _palette = true), label: "Search the workspace, command K");
+
+    /// <summary>
+    /// The one switch that changes what every figure on this screen MEANS, so it says what it does:
+    /// "no real money moves" is the only wording that stops a costly mistake.
+    /// </summary>
+    private VisualNode Sandbox(IAppTheme theme)
+    {
+        var warning = theme.Colors(Variant.Warning);
+        return Box(new BoxStyle
+        {
+            Height = Sizing.Height(SizeVariant.Small),
+            Padding = EdgeInsets.Symmetric(Space.S2, 0),
+            Background = _sandbox ? warning.Subtle : theme.SurfaceSubtle,
+            CornerRadius = new CornerRadii(Sizing.Radius(SizeVariant.Small)),
+            Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.State),
+        },
+        Row(gap: Space.S2, height: SizeValue.Fill, children: [
+            Switch(_sandbox, () => SetState(() => _sandbox = !_sandbox), label: "Sandbox mode"),
+            Text(_sandbox ? "Sandbox: no real money moves" : "Sandbox off", TypeRole.Caption,
+                _sandbox ? warning.OnSubtle : theme.TextMuted, maxLines: 1),
+        ]));
+    }
 
     // ---- Header ----------------------------------------------------------------------------
 

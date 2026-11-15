@@ -1,0 +1,156 @@
+## Comfortable
+### web
+<div class="eq-12ve49g eq-17a2pwz eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-cl6mtg eq-g7fowl eq-hebsiu">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-lgp7n6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-field">
+<input class="eq-entry eq-type-bodym eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-g7fowl" type="text" value="x" placeholder="Search…" aria-label="Search…" />
+<span class="eq-desc" hidden="">
+</span>
+</div>
+</div>
+<button aria-label="Clear search" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-bo3n4y eq-cl6mtg eq-g7fowl eq-ra6ajf eq-1glut8d eq-1tjg7qo">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-lgp7n6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z">
+</path>
+</svg>
+</div>
+</div>
+</button>
+</div>
+</div>
+### css
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-14ehxct{color:inherit}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-17a2pwz{border-radius:999px}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1glut8d.eq-1glut8d:not(:where(.eq-pressable:not(:hover) .eq-1glut8d)){background-color:light-dark(#e9ebef, #232b34)}
+}
+.eq-1gudvpj{min-height:0}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-1tjg7qo:not(:where(.eq-pressable:not(:active) .eq-1tjg7qo)){background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-96qelu{height:20px}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-cl6mtg{height:40px}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hebsiu{padding:0 14px 0 14px}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-p7nbpw{text-align:start}
+.eq-ra6ajf{width:48px}
+### semantics
+TextField "Search…" (value "x")
+Button "Clear search"
+### photon
+SearchField 0 0 480x40
+  Box 0 0 480x40
+    Row 14 0 452x40
+      Icon 14 10 20x20
+      Flexible 44 10 364x20
+        TextEntry 44 10 364x20 1 line(s)
+      Pressable 418 0 48x40
+        Box 418 0 48x40
+          Row 418 0 48x40
+            Icon 432 10 20x20
+
+## Compact
+### web
+<div class="eq-12ve49g eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-hebsiu">
+<div class="eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
+<svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-lgp7n6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14">
+</path>
+</svg>
+<div class="eq-168ghzj eq-5ew4ww">
+<div class="eq-field">
+<input class="eq-entry eq-type-bodym eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-g7fowl" type="text" value="x" placeholder="Search…" aria-label="Search…" />
+<span class="eq-desc" hidden="">
+</span>
+</div>
+</div>
+<button aria-label="Clear search" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw">
+<div class="eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-bo3n4y eq-g7fowl eq-ra6ajf eq-1glut8d eq-1tjg7qo">
+<div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu">
+<svg class="eq-16x7aca eq-96qelu eq-i95eb9 eq-lgp7n6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+<path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z">
+</path>
+</svg>
+</div>
+</div>
+</button>
+</div>
+</div>
+### css
+.eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
+.eq-14ehxct{color:inherit}
+.eq-168ghzj{flex:1 1 0%}
+.eq-16x7aca{display:block}
+.eq-17a2pwz{border-radius:999px}
+.eq-196dx6e{gap:10px}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1esejbi{font-family:inherit}
+.eq-1etnzxl{border:none}
+@media (hover: hover){:where(.eq-pressable:hover) .eq-1glut8d.eq-1glut8d:not(:where(.eq-pressable:not(:hover) .eq-1glut8d)){background-color:light-dark(#e9ebef, #232b34)}
+}
+.eq-1gudvpj{min-height:0}
+.eq-1imlfss{cursor:pointer}
+.eq-1jjc6f6{height:100%}
+.eq-1su9m49{height:32px}
+.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .eq-1tjg7qo:not(:where(.eq-pressable:not(:active) .eq-1tjg7qo)){background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
+.eq-1uhnwvg{flex-direction:row}
+.eq-1uykvw{padding:0}
+.eq-5ew4ww{min-width:0}
+.eq-6gdbvu{justify-content:center}
+.eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
+.eq-96qelu{height:20px}
+.eq-akjizx{width:100%}
+.eq-bo3n4y{flex-shrink:0}
+.eq-byqqyj{background:none}
+.eq-ewlixa{align-items:center}
+.eq-g7fowl{pointer-events:auto}
+.eq-hebsiu{padding:0 14px 0 14px}
+.eq-i95eb9{width:20px}
+.eq-kngwsg{pointer-events:none}
+.eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+.eq-p7nbpw{text-align:start}
+.eq-ra6ajf{width:48px}
+### semantics
+TextField "Search…" (value "x")
+Button "Clear search"
+### photon
+SearchField 0 0 480x32
+  Box 0 0 480x32
+    Row 14 0 452x32
+      Icon 14 6 20x20
+      Flexible 44 6 364x20
+        TextEntry 44 6 364x20 1 line(s)
+      Pressable 418 0 48x32
+        Box 418 0 48x32
+          Row 418 0 48x32
+            Icon 432 6 20x20
+

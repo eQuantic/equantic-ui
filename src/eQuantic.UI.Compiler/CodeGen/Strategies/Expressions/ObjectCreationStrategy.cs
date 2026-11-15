@@ -695,8 +695,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
         if (symbol is not { } ctor) return converted;
 
-        var places = BoundArguments.InPlaces(args, converted, ctor);
-        var packed = BoundArguments.PackedPlace(creation, ctor, context);
+        var places = BoundArguments.InPlaces(args, ctor);
 
         // A dependency slot is not filled with a default — it is REMOVED, because the parameter
         // it stood in front of is gone from the emitted signature too.
@@ -705,17 +704,9 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             .ToList();
 
         var lastSet = keep.FindLastIndex(i => places[i] != null);
-        var ordered = new List<JsExpr>();
-        for (var k = 0; k <= lastSet; k++)
-        {
-            if (places[keep[k]] is { } supplied)
-            {
-                if (keep[k] == packed) ordered.Add(JsExpr.Array(supplied));
-                else ordered.AddRange(supplied);
-            }
-            else ordered.Add(DefaultOf(ctor.Parameters[keep[k]], context));
-        }
-        return ordered;
+        // Each argument is evaluated in the order it is written, as C# evaluates it (#1071).
+        return BoundArguments.PassedInPlaces(args, converted, places, keep.Take(lastSet + 1),
+            ordinal => DefaultOf(ctor.Parameters[ordinal], context), BoundArguments.PackedPlace(creation, ctor, context), context);
     }
 
     /// <summary>
@@ -943,12 +934,11 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         if (ctor is null || !list.Arguments.Any(argument => argument.NameColon != null))
             return BoundArguments.Packed(creation, converted, ctor, context);
 
-        var places = BoundArguments.InPlaces(list.Arguments, converted, ctor);
-        var packed = BoundArguments.PackedPlace(creation, ctor, context);
+        var places = BoundArguments.InPlaces(list.Arguments, ctor);
         var last = Array.FindLastIndex(places, place => place != null);
-        return places.Take(last + 1)
-            .SelectMany((place, ordinal) => place is null ? [Undefined] : ordinal == packed ? [JsExpr.Array(place)] : place)
-            .ToList();
+        // Each argument is evaluated in the order it is written, as C# evaluates it (#1071).
+        return BoundArguments.PassedInPlaces(list.Arguments, converted, places, Enumerable.Range(0, last + 1), _ => Undefined,
+            BoundArguments.PackedPlace(creation, ctor, context), context);
     }
 
     private JsExpr ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)

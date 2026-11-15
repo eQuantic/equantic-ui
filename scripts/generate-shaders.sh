@@ -12,8 +12,13 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT/scripts/slang-toolchain.sh"
 eq_slang_resolve
 SLANGC="${EQ_SLANGC:?the Slang toolchain could not be resolved}"
-SRC="$ROOT/src/eQuantic.UI.Native.Engine/Shaders/Sdf.slang"
-OUT="$ROOT/src/eQuantic.UI.Native.Engine/Shaders/Generated"
+SHADERS="$ROOT/src/eQuantic.UI.Native.Engine/Shaders"
+OUT="$SHADERS/Generated"
+# slangc is run from the shader's folder and handed the source by its name: every #line it writes names
+# the file as it was handed, so an absolute path named the machine that generated it, home folder
+# included (#1416). GeneratedShaderPathTests fails on a path only one machine has.
+SRC="Sdf.slang"
+cd "$SHADERS"
 
 mkdir -p "$OUT"
 "$SLANGC" "$SRC" -target metal -o "$OUT/Sdf.metal"

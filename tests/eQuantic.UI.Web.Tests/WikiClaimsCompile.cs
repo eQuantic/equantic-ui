@@ -19,7 +19,7 @@ public class WikiClaimsCompile
         [ServerOnly]
         public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
             => _doc = await services.GetRequiredService<IDocs>()
-                .FindAsync(RouteValues.Current.Param("slug"), cancellationToken);
+                .FindAsync(services.GetRequiredService<RouteValues>().Param("slug"), cancellationToken);
 
         public override VisualNode Build(ComponentContext context)
         {
@@ -573,4 +573,22 @@ public class WikiClaimsCompile
             SetState(() => _upload = upload);
         }
     }
+
+    /// <summary>ServerIntegration's UseLayout: a layout takes the page as its one constructor
+    /// parameter, keeps its own state, and reads the location the page is shown at.</summary>
+    private sealed class ConsoleLayout(VisualNode body) : Primitives.StatefulComponent
+    {
+        private bool _navOpen;
+
+        public override VisualNode Build(ComponentContext context) =>
+            Column(children: [
+                Button(_navOpen ? "Close menu" : "Menu", Variant.Secondary,
+                    onPressed: () => SetState(() => _navOpen = !_navOpen)),
+                Text($"You are at {Navigator.Of(context).Location}", TypeRole.Label),
+                body,
+            ]);
+    }
+
+    /// <summary>The declaration ServerIntegration shows, which refuses a layout that cannot take the page.</summary>
+    private static void DeclaresTheLayout(eQuantic.UI.Server.UIOptions options) => options.UseLayout<ConsoleLayout>();
 }

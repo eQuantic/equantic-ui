@@ -4,6 +4,7 @@ import { Element } from "./Element";
 export class ComponentElement extends Element {
     constructor(component: UiComponent) {
         const $$frameReaderIndex: number = -1;
+        const $$routeReaderIndex: number = -1;
         super(component);
         this._child = null;
         this._context = null;
@@ -13,6 +14,7 @@ export class ComponentElement extends Element {
         this.builtInFrame = 0;
         this.dependenciesChanged = false;
         this.frameReaderIndex = $$frameReaderIndex;
+        this.routeReaderIndex = $$routeReaderIndex;
         this.component = component;
     }
 
@@ -24,6 +26,7 @@ export class ComponentElement extends Element {
     builtInFrame!: number;
     dependenciesChanged!: boolean;
     frameReaderIndex!: number;
+    routeReaderIndex!: number;
 
     get context(): BuildContext {
         return this._context ?? (this._context = new ComponentContext(this));
@@ -119,6 +122,7 @@ export class ComponentElement extends Element {
 
     onDeactivated() {
         this.owner.forgetFrameReader(this);
+        this.owner.forgetRouteReader(this);
         if (!(this._dependencies == null)) {
             for (const dependency of this._dependencies) dependency.removeDependent(this);
             this._dependencies = null;

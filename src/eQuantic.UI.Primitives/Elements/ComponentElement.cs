@@ -42,6 +42,10 @@ public sealed class ComponentElement : Element
     /// one that read none of it.</summary>
     internal int FrameReaderIndex { get; set; } = -1;
 
+    /// <summary>Where this position stands among those that read the frame's route, apart from the
+    /// frame's other values so a navigation builds only them; -1 for one that did not read it.</summary>
+    internal int RouteReaderIndex { get; set; } = -1;
+
     /// <summary>
     /// What this position builds with: ONE context for as long as the position lives, a view of where it
     /// stands (docs/ELEMENT-TREE-PLAN.md, 3.3). It reads the frame's theme, density and type scale from
@@ -186,6 +190,7 @@ public sealed class ComponentElement : Element
     private protected override void OnDeactivated()
     {
         Owner.ForgetFrameReader(this);
+        Owner.ForgetRouteReader(this);
         if (_dependencies is not null)
         {
             foreach (var dependency in _dependencies) dependency.RemoveDependent(this);

@@ -24,6 +24,7 @@ export class BuildOwner {
         this._unmounting = [];
         this._deferred = [];
         this._frameReaders = [];
+        this._routeReaders = [];
         this._context = null;
         this._building = 0;
         this._inFrameBuild = false;
@@ -59,6 +60,7 @@ export class BuildOwner {
     _unmounting!: StatefulComponent[];
     _deferred!: NodeElement[];
     _frameReaders!: ComponentElement[];
+    _routeReaders!: ComponentElement[];
     _context!: BuildContext | null;
     _building!: number;
     _inFrameBuild!: boolean;
@@ -142,6 +144,7 @@ export class BuildOwner {
         this._inFrameBuild = true;
         try {
             if (!(previous == null) && BuildOwner.frameValuesDiffer(previous, context)) this.markFrameReaders();
+            if (!(previous == null) && !(previous.route === context.route)) this.markRouteReaders();
             if (this.root == null || !Element.canUpdate(this.root.configuration, root)) {
                 if (!(this.root == null)) this.deactivate(this.root);
                 this.root = Element.create(root);
@@ -179,6 +182,26 @@ export class BuildOwner {
 
     markFrameReaders() {
         for (const reader of this._frameReaders) reader.dependencyChanged();
+    }
+
+    readRoute(reader: ComponentElement) {
+        if (reader.routeReaderIndex >= 0) return;
+        reader.routeReaderIndex = this._routeReaders.length;
+        this._routeReaders.push(reader);
+    }
+
+    forgetRouteReader(reader: ComponentElement) {
+        let index = reader.routeReaderIndex;
+        if (index < 0) return;
+        let last = this._routeReaders[this._routeReaders.length - 1];
+        this._routeReaders[index] = last;
+        last.routeReaderIndex = index;
+        $eq.collections.listRemoveAt(this._routeReaders, this._routeReaders.length - 1);
+        reader.routeReaderIndex = -1;
+    }
+
+    markRouteReaders() {
+        for (const reader of this._routeReaders) reader.dependencyChanged();
     }
 
     endFrame() {

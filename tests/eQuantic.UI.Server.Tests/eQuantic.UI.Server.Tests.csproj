@@ -30,6 +30,9 @@
   <ItemGroup>
     <!-- How a test starts a program: one deadline over the exit and both streams (#971). -->
     <Compile Include="..\Shared\ChildProcess.cs" Link="Shared\ChildProcess.cs" />
+    <!-- Every place a node is reachable from a root, which ConsoleLayoutTests asks of the dashboard's
+         layout: the instrument the web suite's own frame tests read with, not a second copy of it. -->
+    <Compile Include="..\eQuantic.UI.Web.Tests\NodePlacements.cs" Link="Shared\NodePlacements.cs" />
   </ItemGroup>
 
   <ItemGroup>

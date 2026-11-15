@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Pipelines · eQuantic UI</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/tokens.css">
+  <link rel="stylesheet" href="/board.css">
+  <script src="/board.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <img class="logo logo-light" src="/logo-light.svg" alt="eQuantic UI">
+    <img class="logo logo-dark" src="/logo-dark.svg" alt="eQuantic UI">
+    <span class="crumb">Pipelines</span>
+    <span class="updated" id="updated" role="status" aria-live="polite">Loading…</span>
+  </header>
+  <main class="page">
+    <div class="title">
+      <div>
+        <h1>Deliveries</h1>
+        <p class="sub" id="subtitle">Every delivery of every worktree, read from its state. Read-only.</p>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Deliveries shown">
+        <button type="button" role="tab" id="tab-running" data-tab="running" aria-selected="true">Running</button>
+        <button type="button" role="tab" id="tab-all" data-tab="all" aria-selected="false">All</button>
+      </div>
+    </div>
+    <section class="kpis" id="kpis" aria-label="Totals"></section>
+    <div class="layout">
+      <nav class="card list" id="list" aria-label="Deliveries"></nav>
+      <section class="detail" id="detail" aria-live="off">
+        <div class="detail" id="detail-main"></div>
+        <div id="detail-reports"></div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

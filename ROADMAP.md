@@ -44,8 +44,10 @@ What exists (the Security bullet is a review and a setting, not a suite):
 - **Styling**: one first-party engine, typed C# lowered to atomic classes. No other engine ships.
 - **Security**: the written review is [docs/SECURITY-REVIEW.md](docs/SECURITY-REVIEW.md), and an
   app turns on a Content-Security-Policy in C# (`UseContentSecurityPolicy`).
-- **Testing without a browser**: `eQuantic.UI.Testing` renders a component with a theme and a
-  culture and says what the web lowers and what the semantics announce.
+- **Testing without a browser**: `eQuantic.UI.Testing` renders a component with a theme, a
+  culture and a density and says what the web lowers and what the semantics announce. The SDK
+  holds itself to it: every shipped control is pinned at every variant, size and density it
+  accepts (#1247), and announces the same on every target (#339).
 - **The release contract**: every shipping assembly names its class (contract, tool or
   experimental, #899), the C# surface is held by `PublicAPI.*.txt`, the MSBuild and configuration
   surface by `tests/eQuantic.UI.Web.Tests/developer-surface.baseline.txt` (#322), and the rules of
@@ -62,8 +64,7 @@ What is not there yet, each with its issue:
 - the Element tree, one instance per position on every target (#937: the browser's and the
   server's slices are open), and per-component theme slots (#938: a Theme applying to its subtree,
   #1387, is open); the design is [docs/ELEMENT-TREE-PLAN.md](docs/ELEMENT-TREE-PLAN.md);
-- the variant matrix over every control, and its accessibility checklist (#294, the open slice is
-  #1247); under #306 only #1259 is open, the VS Code extension's tooling advisories;
+- under #306 only #1259 is open, the VS Code extension's tooling advisories;
 - edit-to-view under a second on the web: the desktop meets it and the web does not. CI measures
   both in the merge queue's run, before a pull request reaches main (`scripts/measure-edit-to-view.cs`, held to
   `scripts/edit-to-view.budget.json`), and #900 is bringing the web down;
@@ -115,8 +116,10 @@ multipliers: edit-to-view under a second on the web (#900, measured by
 ### 4. shadcn-like components
 The catalog (the wiki's Components page is its index) is a respectable start, but shadcn's value is **polish + accessibility + variants**.
 The accessibility half is done on the web and on the three native shells with a bridge (Phase 5;
-UI Automation on Windows is owed). What remains is proof per component: the variant matrix and the
-checklist, through `eQuantic.UI.Testing`, which an app can use too (#294). Quality > quantity here.
+UI Automation on Windows is owed). The proof per component is held by suites: the variant matrix
+pins every control at every variant, size and density (#1247), and the parity fixture holds what a
+screen reader hears alike on every target (#339), both through `eQuantic.UI.Testing`, which an app
+can use too (#294). Quality > quantity here.
 
 ### 5. Styling — **one engine, resolved by decision, not by plugging**
 The first-party engine shipped (Track S): typed C# styles lowered to deduplicated atomic classes,
@@ -128,7 +131,7 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
 ### Cross-cutting maturity (framework → SDK)
 - **Compiler diagnostics**: actionable messages with C# `file:line` + suggestions.
 - **Component test harness**: `eQuantic.UI.Testing` lets an app author render and test a
-  component; what #294 still holds open is the variant matrix over every control (#1247).
+  component, and the SDK pins every shipped control through it (#1247).
 - **Docs & examples**: essential for a "0 JS" audience — the supported subset and recipes.
 - **SSR/hydration robustness**: the build derives the hydration contract (#515), and the classes SSR
   writes are cross-pinned with the ones hydration computes. `tests/e2e` proves adoption, live events
@@ -198,8 +201,7 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
   Android's virtual `AccessibilityNodeInfo` hierarchy), each proved by asking the platform rather
   than the tree. 2026-08-15 closed the last named gap: a navigation now says WHERE YOU ARE
   (`PressableRole.Destination` / `Link.Current` → `aria-current="page"`, the Selected trait on both
-  mobiles), which no existing role could express. Remaining: variant coverage and a component test
-  harness (#294), and UI Automation on the Windows shell.
+  mobiles), which no existing role could express. Remaining: UI Automation on the Windows shell.
 - **Phase 6 — First-party embedded CSS engine** — **✅ shipped** (Track S: atomic classes deduplicated
   by a hash cross-pinned between C# and TypeScript, theme tokens as custom properties with
   fallbacks, one engine and no provider contract by decision — see pillar 5). **Normative
@@ -489,8 +491,8 @@ The bar 1.0 holds the web track to (#898, criterion 3); each line says whether i
   the desktop (Phase 3), and on a simulator or an emulator hot reload waits for W7. The second is
   measured in the merge queue's run, before a pull request reaches main:
   the desktop meets it and the web does not yet (#900, `scripts/measure-edit-to-view.cs`).
-- **Components**: every shipped component passes an a11y checklist + variant matrix tests. Not met
-  (#294).
+- **Components**: every shipped component passes an a11y checklist + variant matrix tests. Met for
+  the matrix (#1247) and for what a screen reader hears, alike on every target (#339).
 - **CSS**: at least one first-party engine ships. Met by Phase 6; a provider contract was the
   other half of this line, and pillar 5 declined it.
 - **Security**: a formal hardening review, and a CSP the SDK writes. The review is written (#1265),

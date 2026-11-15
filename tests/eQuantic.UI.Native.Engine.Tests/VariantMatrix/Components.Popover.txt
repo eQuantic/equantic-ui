@@ -1,0 +1,28 @@
+## Comfortable
+### web
+<div class="eq-anchorhost">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+### css
+.eq-16x7aca{display:block}
+### semantics
+StaticText "x"
+### photon
+Popover 0 0 480x24
+  Anchored 0 0 480x24
+    Text 0 0 480x24 1 line(s)
+
+## Compact
+### web
+<div class="eq-anchorhost">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+### css
+.eq-16x7aca{display:block}
+### semantics
+StaticText "x"
+### photon
+Popover 0 0 480x24
+  Anchored 0 0 480x24
+    Text 0 0 480x24 1 line(s)
+
