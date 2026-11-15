@@ -1,0 +1,55 @@
+using eQuantic.UI.Web;
+using eQuantic.UI.Primitives;
+using FluentAssertions;
+
+namespace eQuantic.UI.Web.Tests;
+
+/// <summary>
+/// A list a pointer sorts, the server's half (#1535): the list and its items add no element of their own,
+/// they MARK their child, which the browser's controller finds; and the controller's reports are declared
+/// by the server, which runs none of them, so the parity net notices the client losing one. The browser's
+/// half is <c>sortable.spec.ts</c>.
+/// </summary>
+public class SortableRealizerTests
+{
+    private static readonly IAppTheme Theme = PhotonTheme.Instance;
+
+    private static HtmlNode Render(VisualNode node) => WebRealizer.Lower(node, Theme).Render();
+
+    private static Column Cards(params string[] ids)
+    {
+        var column = new Column(gap: 0);
+        foreach (var id in ids) column.Add(new SortableItem(new Text(id), id));
+        return column;
+    }
+
+    [Fact]
+    public void AListMarksItsChild_WithItsGroupIdAxisAndReports()
+    {
+        var list = Render(new Sortable(Cards("a", "b"), "todo", _ => { })
+        {
+            Group = "board",
+            Nests = true,
+            OnHovered = _ => { },
+            Accepts = _ => true,
+        });
+
+        list.Tag.Should().Be("div", "the column is the list: no wrapper stands between it and its parent");
+        list.Attributes["data-eq-sort"].Should().Be("board");
+        list.Attributes["data-eq-sort-id"].Should().Be("todo");
+        list.Attributes["data-eq-sort-axis"].Should().Be("y");
+        list.Attributes["data-eq-sort-nests"].Should().Be("1");
+        list.Events.Keys.Should().Contain(["eq-sort-dropped", "eq-sort-hovered", "eq-sort-accepts"]);
+        list.Children.Select(item => item.Attributes["data-eq-sort-item"]).Should().Equal("a", "b");
+    }
+
+    [Fact]
+    public void AListThatHearsNoHoverAndAsksNoGuard_DeclaresNeither_AndADisabledOneSaysSo()
+    {
+        var list = Render(new Sortable(Cards("a"), "todo", _ => { }) { Axis = DragAxis.Horizontal, Enabled = false });
+
+        list.Attributes["data-eq-sort-axis"].Should().Be("x");
+        list.Attributes["data-eq-sort-off"].Should().Be("1");
+        list.Events.Keys.Should().Contain("eq-sort-dropped").And.NotContain(["eq-sort-hovered", "eq-sort-accepts"]);
+    }
+}

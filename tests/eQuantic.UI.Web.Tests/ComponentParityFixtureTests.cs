@@ -230,6 +230,14 @@ public class ComponentParityFixtureTests
         // A grouped Select opened (#677): the listbox holds the ungrouped option, then the labelled
         // group with its heading and its options, numbered across the group on both producers.
         ("select-grouped-opens", new Select(["Lisboa"], 0, groups: [new OptionGroup("A seguir", ["Braga", "Faro"])]), [0]),
+        // A LIST A POINTER SORTS (#1535): no element of its own, its column marked, and the reports the
+        // browser's controller dispatches declared by the server.
+        ("sortable-column", new Sortable(Stack(0, new SortableItem(new Text("a", TypeRole.BodyM, Theme.TextPrimary), "a"),
+            new SortableItem(new Text("b", TypeRole.BodyM, Theme.TextPrimary), "b")), "todo", _ => { })
+        {
+            Group = "board",
+            OnHovered = _ => { },
+        }, NoPresses),
         ("accordion-switches", new Accordion([
             new AccordionItem("One") { Content = new Text("body one", TypeRole.BodyM, Theme.TextPrimary) },
             new AccordionItem("Two") { Content = new Text("body two", TypeRole.BodyM, Theme.TextPrimary) },
