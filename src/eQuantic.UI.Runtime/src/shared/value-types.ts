@@ -805,6 +805,25 @@ export class TableRange {
   }
 }
 
+/** Mirror of the C# `SortDrop` (#1535): where a carried item lands, the item's id, the list it left and the
+ * one it lands in, and its position there counted without it; `into` names the item it lands inside, in a
+ * list that nests. */
+export class SortDrop {
+  readonly item: string;
+  readonly from: string;
+  readonly to: string;
+  readonly index: number;
+  readonly into: string | null = null;
+
+  constructor(item = '', from = '', to = '', index = 0, config?: { into?: string | null }) {
+    this.item = item;
+    this.from = from;
+    this.to = to;
+    this.index = index;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `TreePlace`: where one item of a tree stands, its level and its position among its
  * siblings of how many, all from one. Built bare it is the struct's default, three zeros
  * (`[ZeroConstructs]`). */
@@ -863,6 +882,7 @@ export class ScrollRequest {
  * compares it (`ValueTwinHashTests` holds this list to the C#). */
 hashesByValue(
   ColorToken,
+  SortDrop,
   TableOffset,
   TableRange,
   TableScrollRequest,

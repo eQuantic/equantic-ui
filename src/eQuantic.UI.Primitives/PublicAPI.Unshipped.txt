@@ -1060,6 +1060,75 @@ override sealed eQuantic.UI.Primitives.Group.Accept<TState, TResult>(eQuantic.UI
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Group! node, TState state) -> TResult
 eQuantic.UI.Primitives.Text.ExcludeFromSemantics.get -> bool
 eQuantic.UI.Primitives.Text.ExcludeFromSemantics.init -> void
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Sortable! node, TState state) -> TResult
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.SortableItem! node, TState state) -> TResult
+eQuantic.UI.Primitives.SortDrop
+eQuantic.UI.Primitives.SortDrop.<Clone>$() -> eQuantic.UI.Primitives.SortDrop!
+eQuantic.UI.Primitives.SortDrop.Deconstruct(out string! Item, out string! From, out string! To, out int Index) -> void
+eQuantic.UI.Primitives.SortDrop.Equals(eQuantic.UI.Primitives.SortDrop? other) -> bool
+eQuantic.UI.Primitives.SortDrop.SortDrop(string! Item, string! From, string! To, int Index) -> void
+override eQuantic.UI.Primitives.SortDrop.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.SortDrop.GetHashCode() -> int
+override eQuantic.UI.Primitives.SortDrop.ToString() -> string!
+static eQuantic.UI.Primitives.SortDrop.operator !=(eQuantic.UI.Primitives.SortDrop? left, eQuantic.UI.Primitives.SortDrop? right) -> bool
+static eQuantic.UI.Primitives.SortDrop.operator ==(eQuantic.UI.Primitives.SortDrop? left, eQuantic.UI.Primitives.SortDrop? right) -> bool
+eQuantic.UI.Primitives.SortDrop.Item.get -> string!
+eQuantic.UI.Primitives.SortDrop.Item.init -> void
+eQuantic.UI.Primitives.SortDrop.From.get -> string!
+eQuantic.UI.Primitives.SortDrop.From.init -> void
+eQuantic.UI.Primitives.SortDrop.To.get -> string!
+eQuantic.UI.Primitives.SortDrop.To.init -> void
+eQuantic.UI.Primitives.SortDrop.Index.get -> int
+eQuantic.UI.Primitives.SortDrop.Index.init -> void
+eQuantic.UI.Primitives.SortDrop.Into.get -> string?
+eQuantic.UI.Primitives.SortDrop.Into.init -> void
+eQuantic.UI.Primitives.Sortable
+override eQuantic.UI.Primitives.Sortable.NodeKind.get -> string!
+eQuantic.UI.Primitives.Sortable.Sortable(eQuantic.UI.Primitives.VisualNode! child, string! id, System.Action<eQuantic.UI.Primitives.SortDrop!>! onDropped) -> void
+eQuantic.UI.Primitives.Sortable.Id.get -> string!
+eQuantic.UI.Primitives.Sortable.Id.init -> void
+eQuantic.UI.Primitives.Sortable.OnDropped.get -> System.Action<eQuantic.UI.Primitives.SortDrop!>!
+eQuantic.UI.Primitives.Sortable.OnDropped.init -> void
+eQuantic.UI.Primitives.Sortable.Group.get -> string!
+eQuantic.UI.Primitives.Sortable.Group.init -> void
+eQuantic.UI.Primitives.Sortable.Axis.get -> eQuantic.UI.Primitives.DragAxis
+eQuantic.UI.Primitives.Sortable.Axis.init -> void
+eQuantic.UI.Primitives.Sortable.Nests.get -> bool
+eQuantic.UI.Primitives.Sortable.Nests.init -> void
+eQuantic.UI.Primitives.Sortable.OnHovered.get -> System.Action<eQuantic.UI.Primitives.SortDrop?>?
+eQuantic.UI.Primitives.Sortable.OnHovered.init -> void
+eQuantic.UI.Primitives.Sortable.Accepts.get -> System.Func<eQuantic.UI.Primitives.SortDrop!, bool>?
+eQuantic.UI.Primitives.Sortable.Accepts.init -> void
+eQuantic.UI.Primitives.Sortable.Enabled.get -> bool
+eQuantic.UI.Primitives.Sortable.Enabled.init -> void
+override sealed eQuantic.UI.Primitives.Sortable.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+override eQuantic.UI.Primitives.SortableItem.NodeKind.get -> string!
+eQuantic.UI.Primitives.SortableItem.Enabled.get -> bool
+eQuantic.UI.Primitives.SortableItem.Enabled.init -> void
+override sealed eQuantic.UI.Primitives.SortableItem.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+eQuantic.UI.Primitives.SortableItem
+eQuantic.UI.Primitives.SortableItem.SortableItem(eQuantic.UI.Primitives.VisualNode! child, string! id) -> void
+eQuantic.UI.Primitives.SortableItem.Id.get -> string!
+eQuantic.UI.Primitives.SortableItem.Id.init -> void
+eQuantic.UI.Primitives.Sortable.Label.get -> string!
+eQuantic.UI.Primitives.Sortable.Label.init -> void
+eQuantic.UI.Primitives.SortPlacement
+const eQuantic.UI.Primitives.SortPlacement.TiltPerSpeed = 8 -> float
+const eQuantic.UI.Primitives.SortPlacement.TiltMax = 12 -> float
+const eQuantic.UI.Primitives.SortPlacement.TiltRestMs = 80 -> float
+static eQuantic.UI.Primitives.SortPlacement.Place(System.Collections.Generic.IReadOnlyList<float>! starts, System.Collections.Generic.IReadOnlyList<float>! extents, float at, bool nests) -> (int Index, int Into)
+static eQuantic.UI.Primitives.SortPlacement.Tilt(float across, float milliseconds) -> float?
+static eQuantic.UI.Primitives.SortPlacement.Step(int index, int step, int count) -> int
+const eQuantic.UI.Primitives.SortPlacement.PickUpTravel = 5 -> float
+const eQuantic.UI.Primitives.SortPlacement.HoldMs = 250 -> float
+const eQuantic.UI.Primitives.SortPlacement.EdgeZone = 32 -> float
+const eQuantic.UI.Primitives.SortPlacement.EdgeStep = 14 -> float
+const eQuantic.UI.Primitives.SortPlacement.LiftedOpacity = 0.4 -> double
+const eQuantic.UI.Primitives.SortPlacement.CopyOpacity = 0.92 -> double
+const eQuantic.UI.Primitives.SortPlacement.CopyShadowOffsetY = 12 -> float
+const eQuantic.UI.Primitives.SortPlacement.CopyShadowBlur = 28 -> float
+const eQuantic.UI.Primitives.SortPlacement.CopyShadowAlpha = 0.28 -> double
+static eQuantic.UI.Primitives.SortPlacement.EdgeScroll(float at, float start, float end) -> float
 *REMOVED*eQuantic.UI.Primitives.SemanticNode.Deconstruct(out eQuantic.UI.Primitives.SemanticRole Role, out int Id, out eQuantic.UI.Primitives.Rect Bounds, out string! Label, out string? Value, out bool Disabled, out eQuantic.UI.Primitives.SemanticCheck? Checked, out bool? Expanded, out bool Current, out bool? Selected, out int HeadingLevel, out eQuantic.UI.Primitives.LiveRegionUrgency? Live, out eQuantic.UI.Primitives.RangeValue? Range, out eQuantic.UI.Primitives.TableRange? Place, out eQuantic.UI.Primitives.TableRange? Extent) -> void
 *REMOVED*eQuantic.UI.Primitives.SemanticNode.SemanticNode(eQuantic.UI.Primitives.SemanticRole Role, int Id, eQuantic.UI.Primitives.Rect Bounds, string! Label, string? Value, bool Disabled, eQuantic.UI.Primitives.SemanticCheck? Checked = null, bool? Expanded = null, bool Current = false, bool? Selected = null, int HeadingLevel = 0, eQuantic.UI.Primitives.LiveRegionUrgency? Live = null, eQuantic.UI.Primitives.RangeValue? Range = null, eQuantic.UI.Primitives.TableRange? Place = null, eQuantic.UI.Primitives.TableRange? Extent = null) -> void
 eQuantic.UI.Primitives.SemanticRole.Tree = 27 -> eQuantic.UI.Primitives.SemanticRole

@@ -911,4 +911,16 @@ public sealed class SectionState
     /// switcher that cannot switch.</summary>
     public string UICulture = "en";
     public Action<string>? OnCulture;
+
+    /// <summary>The board's cards, where a pointer or the keyboard would land one, and the card last opened.</summary>
+    public List<BoardCard> BoardCards =
+    [
+        new("c1", "Draw the tree", "To do"),
+        new("c2", "Sort the lists", "To do"),
+        new("c3", "Read the board aloud", "To do"),
+        new("c4", "Ship the preview", "Doing"),
+        new("c5", "Write the wiki", "Done"),
+    ];
+    public SortDrop? BoardLanding;
+    public string? BoardOpened;
 }

@@ -476,6 +476,8 @@ internal sealed partial class WebLoweringVisitor
         Pressable pressable => CapsAt(pressable.Child),
         Hoverable hoverable => CapsAt(hoverable.Child),
         DropTarget target => CapsAt(target.Child),
+        Sortable sortable => CapsAt(sortable.Child),
+        SortableItem item => CapsAt(item.Child),
         Adjustable adjustable => CapsAt(adjustable.Child),
         Progress progress => CapsAt(progress.Child),
         LiveRegion live => CapsAt(live.Child),
@@ -985,5 +987,57 @@ internal sealed partial class WebLoweringVisitor
         if (Lower(target.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
             element.Children.Add(child);
         return element;
+    }
+
+    /// <summary>
+    /// A list a pointer sorts (#1535, TS twin: <c>lowerSortable</c>): no element of its own, its CHILD marked as
+    /// the container the runtime's sortable controller finds by <c>data-eq-sort</c> (the group), with its id,
+    /// its axis and whether it nests. The controller's reports are custom events the client dispatches; the
+    /// server declares them and runs none, so the parity net notices the client losing one.
+    /// </summary>
+    private HtmlElement? LowerSortable(Sortable sortable, bool? horizontalAxis)
+    {
+        if (Lower(sortable.Child, horizontalAxis, LoweringPath.Child) is not RealizedElement child) return null;
+        child.RawAttributes ??= new Dictionary<string, string>();
+        child.RawAttributes["data-eq-sort"] = sortable.Group;
+        child.RawAttributes["data-eq-sort-id"] = sortable.Id;
+        child.RawAttributes["data-eq-sort-axis"] = sortable.Axis == DragAxis.Horizontal ? "x" : "y";
+        if (sortable.Label.Length > 0)
+        {
+            child.RawAttributes["data-eq-sort-label"] = sortable.Label;
+            // A named list is a labelled group to a reader, unless what it marks already says what it is
+            // (a tree's host). TS twin: lowerSortable.
+            if (child.Role is null && !child.RawAttributes.ContainsKey("role"))
+            {
+                child.Role = "group";
+                child.AriaLabel ??= sortable.Label;
+            }
+        }
+        if (sortable.Nests) child.RawAttributes["data-eq-sort-nests"] = "1";
+        if (!sortable.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
+        child.CustomEvents["eq-sort-dropped"] = ClientDispatches;
+        if (sortable.OnHovered is not null) child.CustomEvents["eq-sort-hovered"] = ClientDispatches;
+        if (sortable.Accepts is not null) child.CustomEvents["eq-sort-accepts"] = ClientDispatches;
+        return child;
+    }
+
+    /// <summary>
+    /// One item a pointer picks up (#1535, TS twin: <c>lowerSortableItem</c>): its child marked with the
+    /// item's key, and a target for the pointer, which a transparent row above it would otherwise take away
+    /// (`none` inherits), as a drag surface declares itself.
+    /// </summary>
+    private HtmlElement? LowerSortableItem(SortableItem item, bool? horizontalAxis)
+    {
+        if (Lower(item.Child, horizontalAxis, LoweringPath.Child) is not RealizedElement child) return null;
+        child.Style ??= new HtmlStyle();
+        child.Style.PointerEvents = "auto";
+        child.RawAttributes ??= new Dictionary<string, string>();
+        child.RawAttributes["data-eq-sort-item"] = item.Id;
+        if (!item.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
+        // The keyboard sorts an item from its focus (#1536): one that takes none of its own (a box, not a
+        // button or a link) becomes a Tab stop. The TS twin decides by the same tags.
+        else if (child.TabIndex is null && child.Tag is not ("button" or "a" or "input" or "select" or "textarea"))
+            child.TabIndex = 0;
+        return child;
     }
 }
