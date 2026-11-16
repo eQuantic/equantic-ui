@@ -483,6 +483,8 @@ internal sealed partial class WebLoweringVisitor
         Progress progress => CapsAt(progress.Child),
         LiveRegion live => CapsAt(live.Child),
         Group group => CapsAt(group.Child),
+        MergeSemantics merge => CapsAt(merge.Child),
+        ExcludeSemantics exclude => CapsAt(exclude.Child),
         Flexible flexible => CapsAt(flexible.Child),
         LoopMotion motion => CapsAt(motion.Child),
         Link link => CapsAt(link.Child),

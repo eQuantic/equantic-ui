@@ -87,6 +87,8 @@ import type {
   ProgressNode,
   LiveRegionNode,
   GroupNode,
+  MergeSemanticsNode,
+  ExcludeSemanticsNode,
   NavigableNode,
   NavigableMoveValue,
   CameraPreviewNode,
@@ -780,6 +782,10 @@ function lowerNodeKind(
       return lowerLiveRegion(node as unknown as LiveRegionNode, context, path);
     case 'group':
       return lowerGroup(node as unknown as GroupNode, context, path);
+    case 'mergeSemantics':
+      return lowerMergeSemantics(node as unknown as MergeSemanticsNode, context, path);
+    case 'excludeSemantics':
+      return lowerExcludeSemantics(node as unknown as ExcludeSemanticsNode, context, path);
     case 'navigable':
       return lowerNavigable(node as unknown as NavigableNode, context, path);
     case 'hoverable':
@@ -4184,6 +4190,8 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'progress':
     case 'liveRegion':
     case 'group':
+    case 'mergeSemantics':
+    case 'excludeSemantics':
     case 'flexible':
     case 'loopMotion':
     case 'link':
@@ -4240,6 +4248,10 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as unknown as LiveRegionNode).child as VisualNodeValue);
     case 'group':
       return fills((node as unknown as GroupNode).child as VisualNodeValue);
+    case 'mergeSemantics':
+      return fills((node as unknown as MergeSemanticsNode).child as VisualNodeValue);
+    case 'excludeSemantics':
+      return fills((node as unknown as ExcludeSemanticsNode).child as VisualNodeValue);
     case 'navigable':
       // A grid host has ROWS, not one child: nothing to inherit a fill from.
       return { width: false, height: false };
@@ -4547,6 +4559,10 @@ function visualTextOf(node: VisualNodeValue): string {
       return visualTextOf((node as PressableNode).child);
     case 'group':
       return visualTextOf((node as unknown as GroupNode).child as VisualNodeValue);
+    case 'mergeSemantics':
+      return visualTextOf((node as unknown as MergeSemanticsNode).child as VisualNodeValue);
+    case 'excludeSemantics':
+      return visualTextOf((node as unknown as ExcludeSemanticsNode).child as VisualNodeValue);
     default:
       return '';
   }
@@ -4860,6 +4876,148 @@ function lowerGroup(node: GroupNode, context: LoweringContext, path: string): Ht
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;
+}
+
+/**
+ * A SUBTREE HEARD AS ONE STOP (C# twin: LowerMergeSemantics): a host, and the child lowered inside it,
+ * then read by `mergeReading`, which names the one stop by the parts it hides. The host takes the
+ * child's fill and cap, as the group's does.
+ */
+function lowerMergeSemantics(node: MergeSemanticsNode, context: LoweringContext, path: string): HtmlNode {
+  const host = semanticsHost(node.child);
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) {
+    host.children.push(child);
+    mergeReading(host, child, `eq-merge-${pathScope(path)}`);
+  }
+  return host;
+}
+
+/**
+ * A SUBTREE A READER PASSES OVER (C# twin: LowerExcludeSemantics): a host marked `aria-hidden` while it
+ * excludes, and a plain one when it does not, so the shape is the same either way.
+ */
+function lowerExcludeSemantics(node: ExcludeSemanticsNode, context: LoweringContext, path: string): HtmlNode {
+  const host = semanticsHost(node.child);
+  if (node.excluding !== false) host.attributes['aria-hidden'] = 'true';
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
+/** The host both write: layout-transparent, by the role-bearing wrappers' one rule (C# twin: SemanticsHost). */
+function semanticsHost(child: VisualNodeValue): HtmlNode {
+  const fill = fills(child);
+  const cap = capsAt(child);
+  return element('div', {
+    width: fill.width ? '100%' : 'fit-content',
+    'max-width': sizeValue(cap),
+    height: fill.height ? '100%' : undefined,
+  });
+}
+
+/** The ARIA roles of the controls a merge's stop becomes (C# twin: MergedReading's ControlRoles). */
+const MERGE_CONTROL_ROLES = new Set([
+  'button', 'link', 'textbox', 'searchbox', 'slider', 'checkbox', 'switch', 'gridcell', 'radio', 'tab',
+  'menuitem', 'menuitemcheckbox', 'menuitemradio', 'option', 'combobox', 'treeitem',
+]);
+
+/**
+ * How a merge is written into the markup it lowered (C# twin: MergedReading, whose summary says why).
+ * The subtree is cut into the parts a reader would have stopped on, a layout element walked into, so the
+ * parts of a row are named apart; each part with something to say is named by an id and hidden, and the first control, or the host as a group when there is none,
+ * names itself by them in reading order. Every element walked is REACHED INTO, so a component inside is
+ * never lowered again without the merge around it.
+ */
+function mergeReading(host: HtmlNode, child: HtmlNode, prefix: string): void {
+  const control = firstMergeControl(child);
+  const ids: string[] = [];
+  let next = 0;
+  const idOf = (node: HtmlNode, fresh: string): string => {
+    const id = node.attributes['id'];
+    if (id) return id;
+    node.attributes['id'] = fresh;
+    return fresh;
+  };
+  const collect = (node: HtmlNode): void => {
+    reachedInto(node);
+    if (node.tag === '#text' || mergeHidden(node)) return;
+    if (node === control) {
+      ids.push(idOf(node, `${prefix}-c`));
+      return;
+    }
+    if (isMergeControl(node)) return;
+    if (!readsAsOne(node)) {
+      for (const inner of node.children) collect(inner);
+      return;
+    }
+    if (!saysSomething(node)) return;
+    ids.push(idOf(node, `${prefix}-${next++}`));
+    node.attributes['aria-hidden'] = 'true';
+  };
+  collect(child);
+  if (control) {
+    // Only its own name: nothing to join, so the control is read as it was.
+    if (ids.length > 1) control.attributes['aria-labelledby'] = ids.join(' ');
+  } else if (ids.length > 0) {
+    host.attributes['role'] = 'group';
+    host.attributes['aria-labelledby'] = ids.join(' ');
+  }
+}
+
+/** An element a person operates: its written role is a control's, or, with none, its tag is one. */
+function isMergeControl(node: HtmlNode): boolean {
+  const role = node.attributes['role'];
+  if (role !== undefined) return MERGE_CONTROL_ROLES.has(role.split(' ').filter((token) => token)[0] ?? '');
+  switch (node.tag) {
+    case 'button':
+    case 'textarea':
+    case 'select':
+      return true;
+    case 'a':
+      return node.attributes['href'] !== undefined;
+    case 'input':
+      return node.attributes['type'] !== 'hidden';
+    default:
+      return false;
+  }
+}
+
+function mergeHidden(node: HtmlNode): boolean {
+  return node.attributes['aria-hidden'] === 'true' || node.attributes['hidden'] !== undefined;
+}
+
+function firstMergeControl(node: HtmlNode): HtmlNode | null {
+  if (node.tag === '#text' || mergeHidden(node)) return null;
+  if (isMergeControl(node)) return node;
+  for (const inner of node.children) {
+    const found = firstMergeControl(inner);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** The roles that group what they hold, walked into like a layout element (C# twin: ContainerRoles). */
+const MERGE_CONTAINER_ROLES = new Set([
+  'group', 'status', 'log', 'alert', 'list', 'listbox', 'table', 'grid', 'row', 'rowgroup', 'tablist',
+  'radiogroup', 'dialog', 'alertdialog', 'tree', 'region', 'none', 'presentation',
+]);
+
+/** Whether an element is one part: it holds only text, it is named by a label, it is an image, or it has a
+ *  role of its own that does not group what it holds (C# twin: ReadsAsOne). */
+function readsAsOne(node: HtmlNode): boolean {
+  const role = node.attributes['role'];
+  if (role !== undefined) return !MERGE_CONTAINER_ROLES.has(role.split(' ').filter((token) => token)[0] ?? '');
+  if (node.attributes['aria-label'] || node.attributes['alt']) return true;
+  return node.tag === 'img' || (node.children.length > 0 && node.children.every((inner) => inner.tag === '#text'));
+}
+
+/** Whether a part has a word for a reader: text, or an element named by a label. */
+function saysSomething(node: HtmlNode): boolean {
+  if (node.tag === '#text') return (node.textContent ?? '').trim().length > 0;
+  if (mergeHidden(node)) return false;
+  if (node.attributes['aria-label'] || node.attributes['alt']) return true;
+  return node.children.some(saysSomething);
 }
 
 /**

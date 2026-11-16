@@ -422,6 +422,8 @@ internal sealed partial class WebLoweringVisitor
         FlexNode flex => string.Concat(flex.Children.Select(TextContentOf)),
         Pressable pressable => TextContentOf(pressable.Child),
         Group group => TextContentOf(group.Child),
+        MergeSemantics merge => TextContentOf(merge.Child),
+        ExcludeSemantics exclude => TextContentOf(exclude.Child),
         _ => "",
     };
 

@@ -146,6 +146,8 @@ export {
   Progress,
   LiveRegion,
   Group,
+  MergeSemantics,
+  ExcludeSemantics,
   RangeValue,
   Navigable,
   CameraPreview,

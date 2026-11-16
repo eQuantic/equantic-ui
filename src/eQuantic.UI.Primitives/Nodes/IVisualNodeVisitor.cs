@@ -116,6 +116,10 @@ public interface IVisualNodeVisitor<in TState, out TResult>
 
     TResult Visit(Group node, TState state);
 
+    TResult Visit(MergeSemantics node, TState state);
+
+    TResult Visit(ExcludeSemantics node, TState state);
+
     TResult Visit(Positioned node, TState state);
 
     TResult Visit(Presence node, TState state);

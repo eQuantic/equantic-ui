@@ -253,6 +253,14 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(Group node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
 
+    // The two semantics wrappers emit a host of their own on the web for the Group's reason: it takes
+    // `fit-content` when the child does not ask to fill, and Photon lays out the box the web sizes.
+    public LayoutNode Visit(MergeSemantics node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
+
+    public LayoutNode Visit(ExcludeSemantics node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
+
     // INLINED like the three wrappers above it, and the reason this comment once said otherwise is
     // worth keeping: "a progress bar reports across whatever it is given" sounds right and is not
     // what the other target does. `LowerProgress` gives the host `fit-content` when the child does
