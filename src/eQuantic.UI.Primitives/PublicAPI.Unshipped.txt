@@ -1183,19 +1183,3 @@ override sealed eQuantic.UI.Primitives.ContextTarget.Accept<TState, TResult>(eQu
 static eQuantic.UI.Primitives.ContextRequest.operator !=(eQuantic.UI.Primitives.ContextRequest? left, eQuantic.UI.Primitives.ContextRequest? right) -> bool
 static eQuantic.UI.Primitives.ContextRequest.operator ==(eQuantic.UI.Primitives.ContextRequest? left, eQuantic.UI.Primitives.ContextRequest? right) -> bool
 const eQuantic.UI.Primitives.ContextTarget.HoldMs = 500 -> float
-eQuantic.UI.Primitives.Navigable.FocusVersion.get -> int
-eQuantic.UI.Primitives.Navigable.FocusVersion.init -> void
-eQuantic.UI.Primitives.TextEntry.SelectOnFocus.get -> bool
-eQuantic.UI.Primitives.TextEntry.SelectOnFocus.init -> void
-eQuantic.UI.Primitives.ListTheme.TreeRowHeight.get -> float?
-eQuantic.UI.Primitives.ListTheme.TreeRowHeight.init -> void
-eQuantic.UI.Primitives.ListTheme.TreeIndent.get -> float?
-eQuantic.UI.Primitives.ListTheme.TreeIndent.init -> void
-eQuantic.UI.Primitives.ListTheme.TreePaddingX.get -> float?
-eQuantic.UI.Primitives.ListTheme.TreePaddingX.init -> void
-eQuantic.UI.Primitives.ListTheme.TreeGap.get -> float?
-eQuantic.UI.Primitives.ListTheme.TreeGap.init -> void
-eQuantic.UI.Primitives.ListTheme.TreeRowShape.get -> eQuantic.UI.Primitives.ShapeScale?
-eQuantic.UI.Primitives.ListTheme.TreeRowShape.init -> void
-eQuantic.UI.Primitives.ListTheme.TreeIconColor.get -> eQuantic.UI.Primitives.ColorToken?
-eQuantic.UI.Primitives.ListTheme.TreeIconColor.init -> void

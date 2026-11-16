@@ -1,0 +1,25 @@
+# Lists and tables. Their slice is #1551. The format is README.md's.
+# owns: Accordion Card DataTable Divider List ListDetail ListItem ListView SwipeableRow Table TableView AccordionItem DataColumn DataRow
+Accordion  style  #1551: ListTheme
+AccordionItem.Title  text  #1551: a section's header, a node
+Card  style  #1551: CardTheme
+DataColumn.Header  text  #1551: a column's header, a node (Flutter's DataColumn label)
+DataRow.Key  text  kept: the row's identity for selection, never drawn
+DataTable  style  #1551: TableTheme
+DataTable.Selection  text  kept: the selected rows' keys, never drawn
+Divider  style  #1551: ListTheme
+List  style  #1551: ListTheme
+ListDetail  style  #1551: ListTheme
+ListDetail.ListTitle  text  #1551: the list pane's title, a node
+ListDetail.Title  text  #1551: the detail pane's title, a node
+ListItem  style  #1551: ListTheme
+ListItem.Subtitle  text  #1551: the row's subtitle, a node (Flutter's ListTile)
+ListItem.Title  text  #1551: the row's title, a node (Flutter's ListTile)
+ListView  style  kept: a virtualised list draws what its builder returns and has no look of its own
+SwipeableRow  style  #1551: ListTheme
+SwipeableRow.ActionLabel  text  #1551: the revealed action, a node
+Table  style  #1551: TableTheme
+Table.Columns  text  kept: a column's name, its header's accessible name; the header builder draws it (#1551)
+Table.Rows  text  #1551: a cell is drawn by the table's cell builder
+TableView  style  #1551: TableTheme
+TableView.Label  text  kept: the table's accessible name
