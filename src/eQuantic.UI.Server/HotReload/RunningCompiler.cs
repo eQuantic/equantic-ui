@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
 
@@ -174,6 +175,8 @@ internal sealed class RunningCompiler : IModuleCompiler
             eqc.OutputDataReceived += (_, line) => Heard(eqc, line.Data);
             // Read so its pipe never fills: the errors also arrive in the answer.
             eqc.ErrorDataReceived += (_, _) => { };
+            // Raised inside the process's own lock, and it takes the gate: so no member of a process is
+            // ever called while the gate is held, or the two wait on each other (#1491).
             eqc.Exited += (_, _) => AnswerOf(eqc)?.TrySetResult(CompileOutcome.NotRun("eqc exited before it answered"));
             if (!eqc.Start()) return null;
             eqc.BeginOutputReadLine();
@@ -184,14 +187,14 @@ internal sealed class RunningCompiler : IModuleCompiler
     }
 
     /// <summary>Whether <paramref name="eqc"/> is still running; false once a Dispose that ran beside the
-    /// asking has released it.</summary>
+    /// asking has released it, which Windows can answer as an invalid handle (#1375).</summary>
     private static bool StillRunning(Process eqc)
     {
         try
         {
             return !eqc.HasExited;
         }
-        catch (InvalidOperationException)
+        catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
         {
             return false;
         }

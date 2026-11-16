@@ -181,6 +181,9 @@ public class RunningCompilerTests
     /// waited on the event while the event waited on it, and the hot reload hung for good (#1491, a
     /// Server suite that stopped for its 15 minutes on CI). Here the test holds the process's lock, as
     /// the event does, while the next save runs, and asks for the gate as the event's handler does.
+    /// It waits for the exit first, which raises the event, so it covers the RELEASE of the dead eqc and
+    /// not the question whether it exited, which hung on: that is
+    /// <see cref="ASaveThatIsTheFirstToSeeEqcDead_NeverHoldsTheGateWhileItAsksTheProcess"/>.
     /// </summary>
     [Fact]
     public async Task ASaveThatFindsEqcDead_NeverHoldsTheGateWhileItWaitsOnTheProcess()
@@ -240,7 +243,9 @@ public class RunningCompilerTests
     [Fact]
     public async Task ASaveThatIsTheFirstToSeeEqcDead_NeverHoldsTheGateWhileItAsksTheProcess()
     {
-        var compiler = new RunningCompiler(_ => Answering(Compiled));
+        // Released whatever the outcome: the only other holder of the process's lock is this test's
+        // thread, and it lets go before any assertion.
+        using var compiler = new RunningCompiler(_ => Answering(Compiled));
         compiler.Compile(TimeSpan.FromSeconds(30)).Compiled.Should().BeTrue();
         var watched = compiler.Running!;
         var pid = watched.Id;
@@ -280,31 +285,40 @@ public class RunningCompilerTests
         reached.Should().BeTrue("the save asks the dead process without the gate, which the process's exit event needs");
         (await next.WaitAsync(TimeSpan.FromSeconds(30))).Compiled.Should().BeTrue();
         holder.Join(TimeSpan.FromSeconds(10));
-        compiler.Dispose();
     }
 
     /// <summary>
     /// eqc killed, and the save after it, round after round, each under a deadline: every killed eqc's exit
     /// event races the save that finds it dead, as when eqc dies under a server. A round that hangs fails
     /// naming itself, and the compiler is then left as it is, since releasing it would wait on the gate the
-    /// hung save holds (#1491).
+    /// hung save holds (#1491); any other outcome releases it.
     /// </summary>
     [Fact]
     public async Task AnEqcKilledRoundAfterRound_IsStartedAgainByEverySave()
     {
         var compiler = new RunningCompiler(_ => Answering(Compiled));
-        for (var round = 1; round <= 60; round++)
+        var hung = false;
+        try
         {
-            var save = Task.Run(() => compiler.Compile(TimeSpan.FromSeconds(30)));
-            if (await Task.WhenAny(save, Task.Delay(TimeSpan.FromSeconds(45))) != save)
-                throw new TimeoutException($"round {round}: the save after eqc was killed never answered");
-            (await save).Compiled.Should().BeTrue($"round {round} compiles on an eqc started again");
+            for (var round = 1; round <= 60; round++)
+            {
+                var save = Task.Run(() => compiler.Compile(TimeSpan.FromSeconds(30)));
+                if (await Task.WhenAny(save, Task.Delay(TimeSpan.FromSeconds(45))) != save)
+                {
+                    hung = true;
+                    throw new TimeoutException($"round {round}: the save after eqc was killed never answered");
+                }
+                (await save).Compiled.Should().BeTrue($"round {round} compiles on an eqc started again");
 
-            var pid = compiler.ProcessId!.Value;
-            using (var other = Process.GetProcessById(pid)) other.Kill(entireProcessTree: true);
-            SpinWait.SpinUntil(() => !Running(pid), TimeSpan.FromSeconds(10));
+                var pid = compiler.ProcessId!.Value;
+                using (var other = Process.GetProcessById(pid)) other.Kill(entireProcessTree: true);
+                SpinWait.SpinUntil(() => !Running(pid), TimeSpan.FromSeconds(10));
+            }
         }
-        compiler.Dispose();
+        finally
+        {
+            if (!hung) compiler.Dispose();
+        }
     }
 
     /// <summary>A compile past its limit stops eqc rather than leaving it to write beside the next one.</summary>
