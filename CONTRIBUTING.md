@@ -122,11 +122,12 @@ RS0017 one that went. After changing a public signature on purpose, declare it:
 ./scripts/public-api.sh update
 ```
 
-It reads both diagnostics out of the build and writes `PublicAPI.Unshipped.txt` — an addition as
-itself, a retirement as `*REMOVED*<entry>`. **Read that diff before committing it: it is the API
+It reads both diagnostics out of the build and writes your change's own file beside each project
+it touched, `PublicAPI.Unshipped.<branch>.txt`, named after your branch so that two pull requests
+never write the same file — an addition as itself, a retirement as `*REMOVED*<entry>`. **Read that diff before committing it: it is the API
 review**, and a line you did not mean to add is a public surface you did not mean to ship.
 
-At a release `./scripts/public-api.sh ship` folds Unshipped into Shipped, and the `*REMOVED*` lines
+At a release `./scripts/public-api.sh ship` folds every Unshipped file into Shipped, and the `*REMOVED*` lines
 it cancels ARE the release's list of breaks — with
 `git diff v<previous>..v<this> -- '**/PublicAPI.Shipped.txt'` as the full change of surface. The
 analyzer says what moved; the migration line is still yours to write, from what an app upgrading

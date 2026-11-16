@@ -42,30 +42,35 @@ public class ReleaseContractTests
 
     /// <summary>
     /// The build target that holds the promise, run as a build runs it, on a contract project and on a
-    /// tool, at a stable version and at a preview, with a declared API made for the case.
+    /// tool, at a stable version and at a preview, with a declared API made for the case. The removal is
+    /// written in the project's own Unshipped file or in a change's (<c>PublicAPI.Unshipped.&lt;branch&gt;.txt</c>,
+    /// #1489), and the guard reads every one: reading the project's own alone let a change's removal
+    /// through.
     /// </summary>
     [Theory]
-    [InlineData("eQuantic.UI.Primitives", "1.1.0", true, false)]
-    [InlineData("eQuantic.UI.Primitives", "2.0.0-preview.1", true, true)]
-    [InlineData("eQuantic.UI.Primitives", "2.0.0", true, true)]
-    [InlineData("eQuantic.UI.Primitives", "1.1.0+5a1b2c3", true, false)]
-    [InlineData("eQuantic.UI.Primitives", "1.1.0", false, true)]
-    [InlineData("eQuantic.UI.Compiler", "1.1.0", true, true)]
+    [InlineData("eQuantic.UI.Primitives", "1.1.0", true, false, false)]
+    [InlineData("eQuantic.UI.Primitives", "1.1.0", true, true, false)]
+    [InlineData("eQuantic.UI.Primitives", "2.0.0-preview.1", true, false, true)]
+    [InlineData("eQuantic.UI.Primitives", "2.0.0", true, false, true)]
+    [InlineData("eQuantic.UI.Primitives", "1.1.0+5a1b2c3", true, false, false)]
+    [InlineData("eQuantic.UI.Primitives", "1.1.0", false, false, true)]
+    [InlineData("eQuantic.UI.Primitives", "1.1.0", false, true, true)]
+    [InlineData("eQuantic.UI.Compiler", "1.1.0", true, true, true)]
     public void AStableVersionRemovesNoContractMember_AndTheBuildSaysSo(
-        string project, string version, bool removes, bool builds)
+        string project, string version, bool removes, bool inAChangesFile, bool builds)
     {
         var scratch = Directory.CreateTempSubdirectory("eq-contract-").FullName;
         try
         {
-            var unshipped = Path.Combine(scratch, "PublicAPI.Unshipped.txt");
-            File.WriteAllText(unshipped, "#nullable enable\n" + (removes
-                ? "*REMOVED*static eQuantic.UI.Primitives.Space.Probe.get -> int\n"
-                : "static eQuantic.UI.Primitives.Space.Probe.get -> int\n"));
+            var entry = (removes ? "*REMOVED*" : "") + "static eQuantic.UI.Primitives.Space.Probe.get -> int\n";
+            File.WriteAllText(Path.Combine(scratch, "PublicAPI.Unshipped.txt"), "#nullable enable\n" + (inAChangesFile ? "" : entry));
+            if (inAChangesFile)
+                File.WriteAllText(Path.Combine(scratch, "PublicAPI.Unshipped.feat-a-probe-leaves.txt"), "#nullable enable\n" + entry);
 
             var (exitCode, output, error) = SdkProbe.Run(null, null, "msbuild",
                 Path.Combine("src", project, $"{project}.csproj"),
                 "-nologo", "-v:m", "-t:EqStableVersionRemovesNoContractMember",
-                $"-p:Version={version}", $"-p:_EqUnshippedFile={unshipped}");
+                $"-p:Version={version}", $"-p:_EqApiDirectory={scratch}");
 
             if (builds)
             {
@@ -76,6 +81,8 @@ public class ReleaseContractTests
             exitCode.Should().NotBe(0, "a stable version removes no member of the contract");
             (output + error).Should()
                 .Contain("eQuantic.UI.Primitives.Space.Probe.get", "the refusal names the member")
+                .And.Contain(inAChangesFile ? "PublicAPI.Unshipped.feat-a-probe-leaves.txt" : "PublicAPI.Unshipped.txt",
+                    "and the file that removes it")
                 .And.Contain("[Obsolete]", "and the way on");
         }
         finally

@@ -1,0 +1,10 @@
+# Charts. No family slice holds them yet: what is owed is the parent's, #1545. The format is README.md's.
+# owns: BarChart CategoryAxis ChartSeries ValueAxis
+BarChart  style  kept: a chart's colours are the theme's data palette, which has no Merge, and a series picks its slot (ChartSeries.Slot)
+BarChart(subtitle)  text  #1545: the chart's subtitle, a node
+BarChart(title)  text  #1545: the chart's title, a node
+CategoryAxis.Categories  text  kept: data, a category's name, drawn under its bar and read in the chart's table
+CategoryAxis.Title  text  #1545: the axis title, a node
+ChartSeries.Name  text  kept: data, the series' name in the legend and the tooltip
+ValueAxis.Format  text  kept: a .NET numeric format, never drawn
+ValueAxis.Title  text  #1545: the axis title, a node
