@@ -131,9 +131,9 @@ public sealed class Icon : VisualNode
     /// here. There were two constructors differing only in that first parameter, which is the shape
     /// the no-overloads rule removes, and the TypeScript twin already had one.
     /// </summary>
-    public Icon(IconGlyph glyph, float size = 24, ColorToken? color = null, string? label = null)
+    public Icon(IconGlyph glyph, float? size = null, ColorToken? color = null, string? label = null)
     {
-        if (size is not (16 or 20 or 24 or 32))
+        if (size is not (null or 16 or 20 or 24 or 32))
             throw new ArgumentOutOfRangeException(nameof(size),
                 $"Icon size {size} is not on the §07 whitelist (16/20/24/32 — IconSize.Sm/Dense/Md/Lg). "
                 + "The scale is for CONTENT. Window chrome is sized by the platform, not by it — a title "
@@ -149,7 +149,14 @@ public sealed class Icon : VisualNode
     /// <summary>The RESOLVED target-neutral glyph data (curated or from any pack).</summary>
     public IconGlyph Glyph { get; }
 
-    public float Size { get; }
+    /// <summary>The icon's size in dp; <c>null</c> takes the box's around it (<see cref="ContentStyle.IconSize"/>),
+    /// and 24 where none states one. A realizer reads the resolved one through <see cref="SizeUnder"/>.</summary>
+    public float? Size { get; }
+
+    /// <summary>The size this icon is drawn at under <paramref name="around"/>, the look the boxes above it
+    /// state (#1577): its own, else the box's, else 24, as Flutter's <c>Icon</c> takes its <c>IconTheme</c>'s.</summary>
+    [ServerOnly]
+    public float SizeUnder(ContentStyle? around) => Size ?? around?.IconSize ?? 24;
 
     /// <summary>Tint token; null inherits the context text color (like Text).</summary>
     public ColorToken? Color { get; init; }

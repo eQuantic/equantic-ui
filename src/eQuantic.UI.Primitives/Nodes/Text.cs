@@ -22,8 +22,8 @@ public sealed class Text : VisualNode
     /// target.
     /// </para>
     /// </summary>
-    public Text(string content, TypeRole role = TypeRole.BodyL, ColorToken? color = null,
-        int maxLines = 0, TextAlignment align = TextAlignment.Start, bool mono = false,
+    public Text(string content, TypeRole? role = null, ColorToken? color = null,
+        int? maxLines = null, TextAlignment? align = null, bool mono = false,
         bool tabular = false, TypeStyle? styleOverride = null, int headingLevel = 0)
     {
         Content = content;
@@ -38,13 +38,18 @@ public sealed class Text : VisualNode
     }
 
     public string Content { get; init; }
-    public TypeRole Role { get; init; }
+
+    /// <summary>The role of the type scale this paragraph is set in; <c>null</c> takes the role of the box
+    /// around it (<see cref="BoxStyle.Content"/>), and <see cref="TypeRole.BodyL"/> where none states one.
+    /// A realizer reads the resolved one through <see cref="Under"/>.</summary>
+    public TypeRole? Role { get; init; }
 
     /// <summary><c>null</c> resolves to the theme's TextPrimary.</summary>
     public ColorToken? Color { get; init; }
 
-    /// <summary>0 = unlimited lines.</summary>
-    public int MaxLines { get; init; }
+    /// <summary>The line limit, 0 for none; <c>null</c> takes the box's around it, and no limit where none
+    /// states one.</summary>
+    public int? MaxLines { get; init; }
 
     /// <summary>
     /// Where this text sits in the document's OUTLINE — 1 to 6, or 0 for text that is not a
@@ -82,7 +87,7 @@ public sealed class Text : VisualNode
     /// Photon fence: the native shaper positions lines start-aligned for now (single-line display
     /// text is unaffected — the box hugs).
     /// </summary>
-    public TextAlignment Align { get; init; } = TextAlignment.Start;
+    public TextAlignment? Align { get; init; }
 
     /// <summary>
     /// Monospace rendering (code snippets, versions, tabular figures — the design's
@@ -140,6 +145,21 @@ public sealed class Text : VisualNode
     public string PlainContent => Spans is { Count: > 0 } spans
         ? string.Concat(spans.Select(run => run.Content))
         : Content;
+
+    /// <summary>
+    /// The look this paragraph is drawn in under <paramref name="around"/>, the look the boxes above it state
+    /// (#1577): its own role, line limit and alignment where it names them, else the box's, else
+    /// <see cref="TypeRole.BodyL"/>, no limit and the start. Its own <see cref="StyleOverride"/>, else the box's
+    /// type style when it took the box's role: a style was written for its role, so a text that names its own
+    /// role keeps that role's type whole. Every realizer reads a paragraph through this, so one rule answers on
+    /// every target.
+    /// </summary>
+    [ServerOnly]
+    public TextLook Under(ContentStyle? around) => new(
+        Role ?? around?.Role ?? TypeRole.BodyL,
+        StyleOverride ?? (Role is null ? around?.Type : null),
+        MaxLines ?? around?.MaxLines ?? 0,
+        Align ?? around?.Align ?? TextAlignment.Start);
 
     /// <summary>
     /// SYSTEM COMPONENTS ONLY: overrides the role's <see cref="TypeStyle"/> with an exact style from a
