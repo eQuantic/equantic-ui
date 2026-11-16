@@ -47,7 +47,7 @@ Do not read `docs/LEDGER.md` or an audit whole: search them for the term you nee
    already offers. Prefer the structural fix, and the instrument that fails to the one that warns.
 5. Where the design relies on what .NET does, MEASURE it (`dotnet fsi`, or a small test) and write
    the measured answer as the scenario. A claim you did not measure is marked as one.
-6. Name every part the change reaches and whether a `PublicAPI.Unshipped.txt` or
+6. Name every part the change reaches and whether a `PublicAPI.Unshipped*.txt` or
    `tests/eQuantic.UI.Web.Tests/developer-surface.baseline.txt` moves. In preview the old shape
    goes: name what goes, what replaces it and the migration line.
 7. Write the change with the pinned CLI (`scripts/openspec.sh`), as the `openspec-propose` skill

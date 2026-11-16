@@ -1,0 +1,24 @@
+# Code and documents: text is what they are made of. The format is README.md's.
+# owns: CodeBlock CodeDiff CodeEditor Markdown Mermaid
+CodeBlock  style  kept: a code surface's look is the theme's code palette (IAppTheme.Code), which no slot record carries
+CodeBlock(code)  text  kept: the code is the content, and it is text
+CodeBlock(language)  text  kept: a language's id
+CodeBlock.Caption  text  kept: a file's or a language's name over the code
+CodeDiff  style  kept: a code surface's look is the theme's code palette (IAppTheme.Code), which no slot record carries
+CodeDiff(language)  text  kept: a language's id
+CodeDiff.LanguageName  text  kept: a language's id
+CodeDiff.Modified  text  kept: the code is the content, and it is text
+CodeDiff.ModifiedCaption  text  kept: a file's name over the code
+CodeDiff.Original  text  kept: the code is the content, and it is text
+CodeDiff.OriginalCaption  text  kept: a file's name over the code
+CodeEditor  style  kept: a code surface's look is the theme's code palette (IAppTheme.Code), which no slot record carries
+CodeEditor(code)  text  kept: the code is the content, and it is text
+CodeEditor(language)  text  kept: a language's id
+CodeEditor.Caption  text  kept: a file's name over the code
+CodeEditor.InitialCode  text  kept: the code is the content, and it is text
+CodeEditor.LanguageName  text  kept: a language's id
+CodeEditor.Search  text  kept: what the app searches the code for, never drawn
+Markdown  style  #1545: Style is an init member the factory cannot reach until the constructor takes style
+Markdown.Source  text  kept: the document's source, parsed into nodes
+Mermaid  style  kept: a diagram is drawn in the theme's data palette and type, and no slot record exists for it
+Mermaid.Source  text  kept: the diagram's source, parsed into nodes
