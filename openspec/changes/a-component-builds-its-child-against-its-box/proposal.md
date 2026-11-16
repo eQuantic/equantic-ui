@@ -68,8 +68,9 @@ None.
   node's twin, its lowering, the measurement after the pass, the regenerated node kinds and transpiled modules.
 - **Email realizer**: the refusal.
 - **eqc, the SDKs, the templates, the shells**: untouched. The developer surface does not move.
-- **Docs**: `docs/FLUTTER-PARITY.md`'s `LayoutBuilder` and `BoxConstraints` rows read SAME; the wiki's Layout
-  page in every language it is written in; a ledger entry.
+- **Docs**: `docs/FLUTTER-PARITY.md`'s `LayoutBuilder` and `BoxConstraints` rows read SAME; the wiki's
+  WriteOnceComponents page, where the vocabulary's layout nodes are documented, in all five languages; a
+  ledger entry.
 - **Depends on #1575**: on the web, a component that builds alone used to unmount the components of a deferred
   slot elsewhere on the page. The web half lands on its fix.
 
