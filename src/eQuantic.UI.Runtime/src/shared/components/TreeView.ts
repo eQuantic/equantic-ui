@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Color, ColorToken, ControlMetrics, CornerRadii, DateTime, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, Navigable, NavigableMoveValue, Pressable, Row, ScrollRequest, ScrollView, SdkStrings, Shortcut, SizeValue, StatefulComponent, StyleDiff, Text, TreeNode, TreePlace, TreeViewRow, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Anchored, Box, BoxStyle, BuildContext, Color, ColorToken, ContextRequest, ContextTarget, ControlMetrics, CornerRadii, DateTime, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, ListTheme, MenuItem, MenuPanel, Navigable, NavigableMoveValue, Pressable, Row, ScrollRequest, ScrollView, SdkStrings, Shortcut, SizeValue, StatefulComponent, StyleDiff, Text, TextEntry, TreeNode, TreePlace, TreeRowState, TreeViewRow, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TreeView extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TreeView';
@@ -19,12 +19,36 @@ export class TreeView extends StatefulComponent {
     _seeded: boolean = false;
     _revealed: any = null;
     _revealing: any = null;
+    _editKey: any = null;
+    _editCreates: boolean = false;
+    _editIcon: any = null;
+    _editText: string = '';
+    _editSerial: number = 0;
+    _editSeen: any = null;
+    _reloadSeen: any = null;
+    _working: any = $eq.collections.hashSet();
+    _busy: any = $eq.collections.hashSet();
+    _focusVersion: number = 0;
+    _menuKey: any = null;
+    _menuAt: any = null;
+    _menuItems: MenuItem[] = [];
+    _menuHighlight: number = 0;
+    _activeParent: any = null;
     _scrollToActive: boolean = false;
     _offset: number = 0;
     _viewport: number = 0;
     _rowHeight: number = 0;
     _scrollVersion: number = 0;
     _scrollRequest: any = null;
+    _rowBuilder: ((value: TreeRowState) => VisualNode) | null = null;
+    _style: any = null;
+    _onRenamed: ((arg1: TreeNode, arg2: string) => void) | null = null;
+    _onCreated: ((arg1: TreeNode, arg2: string) => void) | null = null;
+    _edit: any = null;
+    _reload: any = null;
+    _busyKeys: any = null;
+    _menuBuilder: ((value: TreeNode) => MenuItem[]) | null = null;
+    _onMenuSelect: ((arg1: TreeNode, arg2: number) => void) | null = null;
     _loadChildren: ((value: TreeNode) => TreeNode[]) | null = null;
     _onToggled: ((arg1: TreeNode, arg2: boolean) => void) | null = null;
     _expandedKeys: any = null;
@@ -92,6 +116,78 @@ export class TreeView extends StatefulComponent {
         this._height = value;
     }
 
+    get rowBuilder() {
+        return this._rowBuilder;
+    }
+
+    set rowBuilder(value) {
+        this._rowBuilder = value;
+    }
+
+    get style() {
+        return this._style;
+    }
+
+    set style(value) {
+        this._style = value;
+    }
+
+    get onRenamed() {
+        return this._onRenamed;
+    }
+
+    set onRenamed(value) {
+        this._onRenamed = value;
+    }
+
+    get onCreated() {
+        return this._onCreated;
+    }
+
+    set onCreated(value) {
+        this._onCreated = value;
+    }
+
+    get edit() {
+        return this._edit;
+    }
+
+    set edit(value) {
+        this._edit = value;
+    }
+
+    get reload() {
+        return this._reload;
+    }
+
+    set reload(value) {
+        this._reload = value;
+    }
+
+    get busyKeys() {
+        return this._busyKeys;
+    }
+
+    set busyKeys(value) {
+        this._busyKeys = value;
+    }
+
+    get menuBuilder() {
+        return this._menuBuilder;
+    }
+
+    set menuBuilder(value) {
+        this._menuBuilder = value;
+    }
+
+    get onMenuSelect() {
+        return this._onMenuSelect;
+    }
+
+    set onMenuSelect(value) {
+        this._onMenuSelect = value;
+    }
+
     static $slots: any = null;
     static $failure: any = null;
 
@@ -141,15 +237,36 @@ export class TreeView extends StatefulComponent {
             this._revealing = path;
         }
         this.advanceReveal();
-        this._rowHeight = ControlMetrics.height(context, 'small');
+        this._busy = $eq.collections.hashSet(false, this._working);
+        let busyKeys: any; 
+        if ((busyKeys = this.busyKeys) != null) for (const key of busyKeys) $eq.collections.setAdd(this._busy, key);
+        this.adoptRequests();
+        let slot = ListTheme.merge(context.theme.list, this.style);
+        this._rowHeight = slot?.treeRowHeight ?? ControlMetrics.height(context, 'small');
         this._rows = this.flatten();
         let statusKey: any; 
         if (this._activeIsStatus && (statusKey = this._activeKey) != null && !this.hasStatusRow(statusKey)) this._activeIsStatus = false;
+        let parent: any; 
+        if (!(this._activeKey == null) && !this._activeIsStatus && this.activeIndex() < 0 && (parent = this._activeParent) != null && this.indexOfNode(parent) >= 0) this._activeKey = parent;
         let active = this.activeIndex();
+        this._activeParent = active >= 0 ? this._rows[active].parentKey : null;
+        let menuKey: any; 
+        if ((menuKey = this._menuKey) != null && (this.indexOfNode(menuKey) < 0 || this._busy.has(menuKey))) this._menuKey = null;
+        let editKey: any; 
+        if ((editKey = this._editKey) != null && this.indexOfNode(editKey) < 0) {
+            this._editKey = null;
+            this._editSerial++;
+        }
         let items: VisualNode[] = [];
-        for (let i = 0; i < this._rows.length; i++) items.push(this.buildRow(context, this._rows[i], i === active && this._keyboard));
-        let tree: VisualNode = new Navigable($eq.delegates.bound(this, this.move), items, { role: 'tree', label: this.label, activeCell: active >= 0 ? [active, 0] : null, onTextSearch: $eq.delegates.bound(this, this.search).bind(this) });
-        tree = new Shortcut(tree, KeyChord.enter, $eq.delegates.bound(this, this.pressActive), { focusScoped: true, enabled: active >= 0 });
+        for (let i = 0; i < this._rows.length; i++) items.push(this.buildRow(context, slot, this._rows[i], i === active && this._keyboard));
+        let tree: VisualNode = new Navigable($eq.delegates.bound(this, this.move), items, { role: 'tree', label: this.label, activeCell: active >= 0 ? [active, 0] : null, onTextSearch: $eq.delegates.bound(this, this.search).bind(this), focusVersion: this._focusVersion });
+        let editing = !(this._editKey == null);
+        let menuOpen = !(this._menuKey == null);
+        let activeNode = active >= 0 ? this._rows[active].node : null;
+        let activeFree = !(activeNode == null) && !this._busy.has(activeNode.key);
+        tree = new Shortcut(tree, KeyChord.enter, $eq.delegates.bound(this, this.pressActive), { focusScoped: true, enabled: active >= 0 && !editing && !menuOpen });
+        tree = new Shortcut(tree, new KeyChord('F2'), $eq.delegates.bound(this, this.renameActive), { focusScoped: true, enabled: !(this.onRenamed == null) && activeFree && !editing && !menuOpen });
+        tree = MenuPanel.withKeys(tree, menuOpen && $eq.collections.count(this._menuItems) > 0, () => this.setState(() => this._menuHighlight = MenuPanel.step(this._menuItems, this._menuHighlight, +1)), () => this.setState(() => this._menuHighlight = MenuPanel.step(this._menuItems, this._menuHighlight, -1)), () => this.chooseMenu(this._menuHighlight));
         let height: any; 
         if (!((height = this.height) != null)) return new Box(new BoxStyle({ width: this.width }), tree);
         if (this._scrollToActive && active >= 0 && this._viewport > 0) {
@@ -178,6 +295,15 @@ export class TreeView extends StatefulComponent {
         this._label = fresh.label;
         this._width = fresh.width;
         this._height = fresh.height;
+        this._rowBuilder = fresh.rowBuilder;
+        this._style = fresh.style;
+        this._onRenamed = fresh.onRenamed;
+        this._onCreated = fresh.onCreated;
+        this._edit = fresh.edit;
+        this._reload = fresh.reload;
+        this._busyKeys = fresh.busyKeys;
+        this._menuBuilder = fresh.menuBuilder;
+        this._onMenuSelect = fresh.onMenuSelect;
     }
 
     onMount() {
@@ -191,22 +317,73 @@ export class TreeView extends StatefulComponent {
         return this._inTree = false;
     }
 
-    buildRow(context: BuildContext, row: TreeViewRow, ringed: boolean) {
+    buildRow(context: BuildContext, slot: any, row: TreeViewRow, ringed: boolean) {
+        if (row.isField) return this.buildFieldRow(context, slot, row);
         let theme = context.theme;
         let node = row.node;
         let chevron = !(node == null) && this.hasChevron(node);
         let open = !(node == null) && this._open.has(node.key);
         let selected = !(node == null) && !(this.selectedKey == null) && node.key === this.selectedKey;
         let failed = node == null && this._failed.has(row.key);
-        let content = new Row(4, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
-        content.add(new Box(new BoxStyle({ width: SizeValue.fixed(20), height: SizeValue.fixed(20) }), chevron ? new Icon(IconGlyph.fromIcons(open ? 'chevronDown' : 'chevronRight'), 20, theme.textSecondary) : null));
-        let glyph: any; 
-        if ((glyph = (node?.icon ?? null)) != null) content.add(new Icon(glyph, 20, theme.textSecondary)); else if (failed) content.add(new Icon(IconGlyph.fromIcons('refresh'), 20, theme.textSecondary));
+        let busy = !(node == null) && this._busy.has(node.key);
+        let renaming = !(node == null) && !this._editCreates && this._editKey === node.key;
+        let iconColor = slot?.treeIconColor ?? theme.textSecondary;
+        let content = TreeView.content(context, slot, chevron, open);
         let label = node?.label ?? (failed ? SdkStrings.treeLoadFailed : SdkStrings.treeLoading);
-        content.add(new Flexible(new Text(label, 'bodyM', node == null ? theme.textSecondary : theme.textPrimary, 1)));
-        let quietFill = theme.list?.quietFill ?? theme.surfaceSubtle;
-        let surface = new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fixed(this._rowHeight), padding: new EdgeInsets(Math.fround(8 + Math.fround(Math.fround(row.level - 1) * 16)), 0, 8, 0), cornerRadius: new CornerRadii(theme.shape('small')), background: selected ? theme.colors('primary').subtle : null, borderWidth: 2, borderColor: ringed ? theme.focusRing : new ColorToken(Color.transparent), hover: selected ? null : new StyleDiff({ background: quietFill }), pressed: selected ? null : new StyleDiff({ background: quietFill }) }), content);
-        return new Pressable(surface, () => this.press(row, false), { role: 'treeItem', label: label, selected: node == null ? null : selected, expanded: chevron ? open : null, treePlace: new TreePlace(row.level, row.position, row.count) });
+        if (renaming) {
+            let editedGlyph: any; 
+            if ((editedGlyph = (node!).icon) != null) content.add(new Icon(editedGlyph, 20, iconColor));
+            content.add(new Flexible(this.field(context)));
+        } else { let builder: any; if (!(node == null) && (builder = this.rowBuilder) != null) {
+            content.add(new Flexible(builder(new TreeRowState(node, row.level, chevron ? open : null, selected, busy))));
+        } else {
+            let glyph: any; 
+            if ((glyph = (node?.icon ?? null)) != null) content.add(new Icon(glyph, 20, iconColor)); else if (failed) content.add(new Icon(IconGlyph.fromIcons('refresh'), 20, iconColor));
+            content.add(new Flexible(new Text(label, 'bodyM', node == null ? theme.textSecondary : slot?.titleColor ?? theme.textPrimary, 1)));
+        } }
+        let quietFill = slot?.quietFill ?? theme.surfaceSubtle;
+        let quiet = selected || busy || renaming ? null : new StyleDiff({ background: quietFill });
+        let surface = this.rowSurface(context, slot, row.level, content, selected ? theme.colors('primary').subtle : null, ringed && !renaming, busy, quiet);
+        let item: VisualNode = new Pressable(surface, busy || renaming ? null : () => this.press(row, false), { role: 'treeItem', label: label, selected: node == null ? null : selected, expanded: chevron ? open : null, treePlace: new TreePlace(row.level, row.position, row.count), disabled: busy });
+        if (node == null) return item;
+        if (!(this.menuBuilder == null)) item = new ContextTarget(item, (request) => this.requestMenu(node, request), { enabled: !busy && !renaming });
+        if (this._menuKey === node.key) {
+            item = new Anchored(item, MenuPanel.build(context, this._menuItems, true, this._menuHighlight, $eq.delegates.bound(this, this.chooseMenu)), { at: this._menuAt, placement: 'bottomStart', open: true, onDismiss: $eq.delegates.bound(this, this.closeMenu).bind(this), panelRole: 'menu', activeIndex: this._menuHighlight });
+        }
+        return item;
+    }
+
+    buildFieldRow(context: BuildContext, slot: any, row: TreeViewRow) {
+        let content = TreeView.content(context, slot, false, false);
+        let glyph: any; 
+        if ((glyph = this._editIcon) != null) content.add(new Icon(glyph, 20, slot?.treeIconColor ?? context.theme.textSecondary));
+        content.add(new Flexible(this.field(context)));
+        let surface = this.rowSurface(context, slot, row.level, content, null, false, false, null);
+        return new Pressable(surface, null, { role: 'treeItem', label: SdkStrings.treeItemName, treePlace: new TreePlace(row.level, row.position, row.count) });
+    }
+
+    static content(context: BuildContext, slot: any, chevron: boolean, open: boolean) {
+        let size = 20;
+        let content = new Row(slot?.treeGap ?? 4, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
+        content.add(new Box(new BoxStyle({ width: SizeValue.fixed(size), height: SizeValue.fixed(size) }), chevron ? new Icon(IconGlyph.fromIcons(open ? 'chevronDown' : 'chevronRight'), size, slot?.chevronColor ?? context.theme.textSecondary) : null));
+        return content;
+    }
+
+    rowSurface(context: BuildContext, slot: any, level: number, content: VisualNode, fill: any, ringed: boolean, busy: boolean, quiet: any) {
+        let theme = context.theme;
+        let padding = slot?.treePaddingX ?? 8;
+        let indent = slot?.treeIndent ?? 16;
+        return new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fixed(this._rowHeight), padding: new EdgeInsets(Math.fround(padding + Math.fround(Math.fround(level - 1) * indent)), 0, padding, 0), cornerRadius: new CornerRadii(theme.shape(slot?.treeRowShape ?? 'small')), background: fill, borderWidth: 2, borderColor: ringed ? theme.focusRing : new ColorToken(Color.transparent), opacity: busy ? theme.disabledOpacity : null, hover: quiet, pressed: quiet }), content);
+    }
+
+    field(context: BuildContext) {
+        let theme = context.theme;
+        let serial = this._editSerial;
+        let entry = new TextEntry(this._editText, (text: string) => this._editText = text, { label: SdkStrings.treeItemName, role: 'bodyM', autofocus: true, selectOnFocus: true, onSubmit: () => this.commit(serial, true), onFocusChanged: (focused: boolean) => {
+            if (!focused) this.commit(serial, false);
+        } });
+        let field: VisualNode = new Box(new BoxStyle({ width: SizeValue.fill, background: theme.surface, borderWidth: 1, borderColor: theme.colors('primary').base, cornerRadius: new CornerRadii(theme.shape('small')), padding: EdgeInsets.symmetric(4, 0) }), entry);
+        return new Shortcut(field, KeyChord.escape, () => this.closeEdit(serial), { focusScoped: true });
     }
 
     childrenOf(node: TreeNode) {
@@ -229,9 +406,14 @@ export class TreeView extends StatefulComponent {
     }
 
     addLevel(rows: TreeViewRow[], nodes: TreeNode[], parent: any, level: number) {
+        let field = !(parent == null) && this.isCreatingUnder(parent) ? 1 : 0;
+        if (field === 1) {
+            let $n0: TreeViewRow; 
+            rows.push(($n0 = new TreeViewRow(parent, null, parent, level, 1, $eq.collections.count(nodes) + 1), $n0.isField = true, $n0));
+        }
         for (let i = 0; i < $eq.collections.count(nodes); i++) {
             let node = $eq.collections.item(nodes, i);
-            rows.push(new TreeViewRow(node.key, node, parent, level, i + 1, $eq.collections.count(nodes)));
+            rows.push(new TreeViewRow(node.key, node, parent, level, i + 1 + field, $eq.collections.count(nodes) + field));
             if (!this._open.has(node.key)) continue;
             let children = this.childrenOf(node);
             if (!(children == null)) {
@@ -239,8 +421,16 @@ export class TreeView extends StatefulComponent {
                 continue;
             }
             if (!this._loading.has(node.key) && !this._failed.has(node.key)) this.startLoad(node);
+            if (this.isCreatingUnder(node.key)) {
+                let $n1: TreeViewRow; 
+                rows.push(($n1 = new TreeViewRow(node.key, null, node.key, level + 1, 1, 2), $n1.isField = true, $n1));
+            }
             rows.push(new TreeViewRow(node.key, null, node.key, level + 1, 1, 1));
         }
+    }
+
+    isCreatingUnder(key: string) {
+        return this._editCreates && this._editKey === key;
     }
 
     findNode(key: string) {
@@ -367,7 +557,128 @@ export class TreeView extends StatefulComponent {
 
     pressActive() {
         let at = this.activeIndex();
-        if (at >= 0) this.press(this._rows[at], true);
+        let node: any; 
+        if (at < 0 || (node = this._rows[at].node) != null && this._busy.has(node.key)) return;
+        this.press(this._rows[at], true);
+    }
+
+    adoptRequests() {
+        let edit: any; 
+        if ((edit = this.edit) != null && edit.version !== this._editSeen) {
+            this._editSeen = edit.version;
+            this.beginEdit(edit.key, edit.creates, edit.icon);
+        }
+        let reload: any; 
+        if ((reload = this.reload) != null && reload.version !== this._reloadSeen) {
+            this._reloadSeen = reload.version;
+            for (const key of reload.keys) this.reloadChildren(key);
+        }
+    }
+
+    beginEdit(key: string, creates: boolean, icon: any) {
+        let node: any; 
+        if ((creates ? this.onCreated : this.onRenamed) == null || !((node = this.findNode(key)) != null) || this._busy.has(key)) return;
+        if (creates) {
+            if (node.isLeaf) return;
+            this.toggle(node, true);
+        }
+        this._editKey = key;
+        this._editCreates = creates;
+        this._editIcon = icon;
+        this._editText = creates ? '' : node.label;
+        this._editSerial++;
+        this._menuKey = null;
+        this._activeKey = key;
+        this._activeIsStatus = false;
+        this._scrollToActive = true;
+    }
+
+    renameActive() {
+        let at = this.activeIndex();
+        let node: any; 
+        if (at < 0 || !((node = this._rows[at].node) != null)) return;
+        this.setState(() => this.beginEdit(node.key, false, null));
+    }
+
+    commit(serial: number, giveBack: boolean) {
+        let key: any; 
+        if (serial !== this._editSerial || !((key = this._editKey) != null)) return;
+        let creates = this._editCreates;
+        let name = $eq.text.trim(this._editText);
+        let node = this.findNode(key);
+        let handler = creates ? this.onCreated : this.onRenamed;
+        let changed = creates ? key : this.parentOf(key);
+        let runs = !(node == null) && !(handler == null) && name.length > 0 && (creates || name !== node.label);
+        this.setState(() => {
+            this.closeEditState(giveBack);
+            if (runs) $eq.collections.setAdd(this._working, key);
+        });
+        if (runs) this.runEdit(handler!, node!, name, key, changed);
+    }
+
+    closeEdit(serial: number) {
+        if (serial !== this._editSerial || this._editKey == null) return;
+        this.setState(() => this.closeEditState(true));
+    }
+
+    closeEditState(giveBack: boolean) {
+        this._editKey = null;
+        this._editSerial++;
+        if (!giveBack) return;
+        this._focusVersion++;
+        this._keyboard = true;
+    }
+
+    async runEdit(handler: (arg1: TreeNode, arg2: string) => void, node: TreeNode, name: string, busyKey: string, changedKey: any) {
+        let done = false;
+        try {
+            await handler(node, name);
+            done = true;
+        } catch {
+            done = false;
+        }
+        this.setState(() => {
+            this._working.delete(busyKey);
+            if (done && !(changedKey == null)) this.reloadChildren(changedKey);
+        });
+    }
+
+    reloadChildren(key: string) {
+        let node: any; 
+        if (!this._loaded.has(key) || !((node = this.findNode(key)) != null) || !(node.children == null)) return;
+        this.startLoad(node);
+    }
+
+    parentOf(key: string) {
+        let at = this.indexOfNode(key);
+        return at >= 0 ? this._rows[at].parentKey : null;
+    }
+
+    requestMenu(node: TreeNode, request: ContextRequest) {
+        let builder: any; 
+        if (!((builder = this.menuBuilder) != null) || this._busy.has(node.key) || !(this._editKey == null)) return;
+        let items = builder(node);
+        this.setState(() => {
+            this._activeKey = node.key;
+            this._activeIsStatus = false;
+            this._keyboard = request.at == null;
+            this._menuKey = $eq.collections.count(items) > 0 ? node.key : null;
+            this._menuAt = request.at;
+            this._menuItems = items;
+            this._menuHighlight = MenuPanel.firstEnabled(items);
+        });
+    }
+
+    chooseMenu(index: number) {
+        let key: any; 
+        if (!((key = this._menuKey) != null) || index < 0 || index >= $eq.collections.count(this._menuItems) || $eq.collections.item(this._menuItems, index).disabled) return;
+        let node = this.findNode(key);
+        this.setState(() => this._menuKey = null);
+        if (!(node == null)) this.onMenuSelect?.(node, index);
+    }
+
+    closeMenu() {
+        return this.setState(() => this._menuKey = null);
     }
 
     move(move: NavigableMoveValue) {

@@ -697,11 +697,16 @@ public static class UI
         new ListView(count, itemExtent, itemBuilder) { Width = width, Height = height };
 
     /// <summary>A tree of nodes, loaded as they open, walked by the keyboard as the WAI-ARIA tree pattern;
-    /// given a height, it scrolls and keeps the keyboard's item in view (#1530).</summary>
+    /// given a height, it scrolls and keeps the keyboard's item in view (#1530). Its nodes are renamed and
+    /// created in place, open a menu each, and its rows are built by the app when it gives a builder (#1532).</summary>
     public static TreeView TreeView(IReadOnlyList<TreeNode> roots, string? selectedKey = null,
         Action<TreeNode>? onPressed = null, Func<TreeNode, Task<IReadOnlyList<TreeNode>>>? loadChildren = null,
         Action<TreeNode, bool>? onToggled = null, IReadOnlyList<string>? expandedKeys = null,
-        IReadOnlyList<string>? revealPath = null, string label = "", SizeValue? height = null) =>
+        IReadOnlyList<string>? revealPath = null, string label = "", SizeValue? height = null,
+        Func<TreeRowState, VisualNode>? rowBuilder = null, ListTheme? style = null,
+        Func<TreeNode, string, Task>? onRenamed = null, Func<TreeNode, string, Task>? onCreated = null,
+        TreeEditRequest? edit = null, TreeReloadRequest? reload = null, IReadOnlyList<string>? busyKeys = null,
+        Func<TreeNode, IReadOnlyList<MenuItem>>? menuBuilder = null, Action<TreeNode, int>? onMenuSelect = null) =>
         new TreeView(roots, selectedKey, onPressed)
         {
             LoadChildren = loadChildren,
@@ -710,6 +715,15 @@ public static class UI
             RevealPath = revealPath,
             Label = label,
             Height = height,
+            RowBuilder = rowBuilder,
+            Style = style,
+            OnRenamed = onRenamed,
+            OnCreated = onCreated,
+            Edit = edit,
+            Reload = reload,
+            BusyKeys = busyKeys,
+            MenuBuilder = menuBuilder,
+            OnMenuSelect = onMenuSelect,
         };
 
     /// <summary>A list beside a detail on a wide window, one pane at a time on a phone (spec B4).

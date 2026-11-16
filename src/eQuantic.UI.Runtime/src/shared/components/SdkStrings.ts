@@ -221,6 +221,10 @@ export class SdkStrings {
         return $eq.str('SdkResources', 'TreeLoadFailed');
     }
 
+    static get treeItemName(): string {
+        return $eq.str('SdkResources', 'TreeItemName');
+    }
+
     static get uploadWaiting(): string {
         return $eq.str('SdkResources', 'UploadWaiting');
     }
