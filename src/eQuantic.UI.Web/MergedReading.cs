@@ -71,11 +71,22 @@ internal static class MergedReading
         if (node is not RealizedElement element || Hidden(element)) return;
         if (ReferenceEquals(element, control))
         {
-            ids.Add(IdOf(element, $"{prefix}-c"));
+            // A control an inner merge already named keeps the parts it was named by, its own id among them.
+            if (Attribute(element, "aria-labelledby") is { Length: > 0 } inner) ids.AddRange(Ids(inner));
+            else ids.Add(IdOf(element, $"{prefix}-c"));
             return;
         }
         if (IsControl(element)) return;
-        if (!ReadsAsOne(element))
+        if (Attribute(element, "aria-labelledby") is { Length: > 0 } merged)
+        {
+            // An inner merge's group: its parts are hidden already and become this merge's, and the group
+            // is no stop of its own any more, as Photon's outer merge consumes the inner one's stop.
+            ids.AddRange(Ids(merged));
+            element.RawAttributes?.Remove("aria-labelledby");
+            element.RawAttributes?.Remove("role");
+            return;
+        }
+        if (Holds(element, control) || !ReadsAsOne(element))
         {
             foreach (var child in element.Children) Collect(child, control, ids, prefix, ref next);
             return;
@@ -84,6 +95,21 @@ internal static class MergedReading
         ids.Add(IdOf(element, $"{prefix}-{next++}"));
         Set(element, "aria-hidden", "true");
     }
+
+    /// <summary>Whether an element must be walked into rather than be a part: it holds a control, the merge's
+    /// or another, which a hidden part would hide with it, or something a reader already passes over, which a
+    /// name read through a hidden part would take in.</summary>
+    private static bool Holds(RealizedElement element, RealizedElement? control)
+    {
+        foreach (var child in element.Children)
+        {
+            if (child is not RealizedElement inner) continue;
+            if (ReferenceEquals(inner, control) || IsControl(inner) || Hidden(inner) || Holds(inner, control)) return true;
+        }
+        return false;
+    }
+
+    private static string[] Ids(string list) => list.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
     /// <summary>Whether an element is one part: it holds only text, it is named by a label, it is an image, or
     /// it has a role of its own that does not group what it holds.</summary>

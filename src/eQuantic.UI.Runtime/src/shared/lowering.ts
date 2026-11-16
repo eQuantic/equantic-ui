@@ -4943,11 +4943,22 @@ function mergeReading(host: HtmlNode, child: HtmlNode, prefix: string): void {
     reachedInto(node);
     if (node.tag === '#text' || mergeHidden(node)) return;
     if (node === control) {
-      ids.push(idOf(node, `${prefix}-c`));
+      // A control an inner merge already named keeps the parts it was named by, its own id among them.
+      const inner = node.attributes['aria-labelledby'];
+      if (inner) ids.push(...inner.split(' ').filter((id) => id));
+      else ids.push(idOf(node, `${prefix}-c`));
       return;
     }
     if (isMergeControl(node)) return;
-    if (!readsAsOne(node)) {
+    const merged = node.attributes['aria-labelledby'];
+    if (merged) {
+      // An inner merge's group: its parts become this merge's, and the group is no stop of its own any more.
+      ids.push(...merged.split(' ').filter((id) => id));
+      delete node.attributes['aria-labelledby'];
+      delete node.attributes['role'];
+      return;
+    }
+    if (mergeHolds(node, control) || !readsAsOne(node)) {
       for (const inner of node.children) collect(inner);
       return;
     }
@@ -4995,6 +5006,16 @@ function firstMergeControl(node: HtmlNode): HtmlNode | null {
     if (found) return found;
   }
   return null;
+}
+
+/** Whether an element must be walked into rather than be a part: it holds a control, which a hidden part
+ *  would hide with it, or something a reader already passes over (C# twin: Holds). */
+function mergeHolds(node: HtmlNode, control: HtmlNode | null): boolean {
+  return node.children.some(
+    (inner) =>
+      inner.tag !== '#text' &&
+      (inner === control || isMergeControl(inner) || mergeHidden(inner) || mergeHolds(inner, control)),
+  );
 }
 
 /** The roles that group what they hold, walked into like a layout element (C# twin: ContainerRoles). */

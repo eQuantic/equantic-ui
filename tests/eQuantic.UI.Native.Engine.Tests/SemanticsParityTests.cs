@@ -160,6 +160,12 @@ public class SemanticsParityTests(ITestOutputHelper output)
             new Text("Volume", TypeRole.BodyM), new Slider(0.5f, _ => { }), new Button("Mute"))));
         yield return new("case merge around an exclusion", () => new MergeSemantics(Line(
             new ExcludeSemantics(new Text("JD", TypeRole.BodyM)), new Text("Jane Doe", TypeRole.BodyM))));
+        yield return new("case merge inside a merge", () => new MergeSemantics(Line(
+            new MergeSemantics(Line(new Text("Wi-Fi", TypeRole.BodyM), new Text("On", TypeRole.BodyM))),
+            new Text("Home", TypeRole.BodyM))));
+        yield return new("case merge around a merged control", () => new MergeSemantics(Line(
+            new Text("Home", TypeRole.BodyM),
+            new MergeSemantics(Line(new Text("Wi-Fi", TypeRole.BodyM), new Switch(true))))));
         yield return new("case exclude", () => Line(
             new ExcludeSemantics(new Text("Decoration", TypeRole.BodyM)), new Text("Shown", TypeRole.BodyM)));
         yield return new("case exclude, not excluding",
