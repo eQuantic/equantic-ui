@@ -74,11 +74,17 @@ public class LazyQueryConformanceTests
     // A query read to its end or to an answer is walked by pushing, in the same steps.
     [InlineData("var log = \"\"; var l = new List<int> { 1, 2 }; var r = l.SelectMany(x => { log += x; return new[] { x, x * 10 }; }).Take(3).ToList(); return log + \"|\" + string.Join(\",\", r);")]
     [InlineData("var log = \"\"; var a = new List<int> { 1 }; var b = new List<int> { 2 }; var r = a.Concat(b.Select(x => { log += x; return x; })).Take(1).ToList(); return log + \"|\" + string.Join(\",\", r);")]
-    [InlineData("var l = new List<int> { 1, 2, 3 }; try { var r = l.Where(x => { if (x == 1) l.Add(9); return true; }).ToList(); return r.Count.ToString(); } catch (InvalidOperationException e) { return e.Message; }")]
     [InlineData("var l = new List<int> { 1, 2, 3 }; return string.Join(\",\", l.Prepend(0).Append(9).Skip(1).Take(2).ToList()) + \"|\" + string.Join(\",\", l.SkipWhile((x, i) => i < 1).ToList()) + \"|\" + \"abc\".Where(c => c != 'b').Count() + \"|\" + string.Join(\",\", l.Distinct().ToList()) + string.Join(\",\", l.OrderBy(x => -x).Take(2).ToList());")]
     [InlineData("var h = new HashSet<int> { 1 }; var d = new Dictionary<int, int>(); var q = new Queue<int>(); return h.Any() + \"|\" + d.Any() + \"|\" + q.Any() + \"|\" + h.Concat(h).Any() + \"|\" + h.Append(2).ToList().Count;")]
     // A projection of a list reads one element alone, as .NET's does.
     [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var e = l.Select(x => { log += x; return x; }).ElementAt(2); var f = l.Select(x => { log += x; return x; }).Last(x => x < 3); var g = l.Select(x => { log += x; return x; }).LastOrDefault(); return log + \"|\" + e + f + g;")]
+    // A query held in a local stops where .NET's stops too, as one written in place does.
+    [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var q = l.Select(x => { log += x; return x; }); var f = q.First(); var e = q.ElementAt(1); var t = q.Last(); return log + \"|\" + f + e + t;")]
+    [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; IEnumerable<int> q = l.Where(x => { log += x; return x > 1; }); var f = q.First(); var d = q.FirstOrDefault(x => x > 2); return log + \"|\" + f + d;")]
+    [InlineData("var l = new List<int> { 1 }; IEnumerable<int> q = l.Where(x => x > 5); try { return q.First().ToString(); } catch (InvalidOperationException e) { return e.Message + \"|\" + q.LastOrDefault() + q.ElementAtOrDefault(3); }")]
+    [InlineData("var h = new HashSet<int> { 4, 5 }; IEnumerable<int> q = h; return q.First() + \"|\" + q.Last() + \"|\" + q.ElementAt(1);")]
+    // The index overload of Select is a plain iterator in .NET: no count, no element read alone.
+    [InlineData("var log = \"\"; var l = new List<int> { 1, 2, 3 }; var t = l.Select((x, i) => { log += x; return x + i; }).Last(); var e = l.Select((x, i) => { log += x; return x; }).ElementAt(1); var a = l.Select((x, i) => { log += x; return x; }).Any(); return log + \"|\" + t + e + a;")]
     [InlineData("var l = new List<int>(); try { return l.Select(x => x).Last().ToString(); } catch (InvalidOperationException e) { return e.Message + \"|\" + l.Select(x => x).LastOrDefault() + l.Select(x => x).FirstOrDefault(); }")]
     public void AQuery_RunsAsDotNetsIteratorsRun(string statements)
     {

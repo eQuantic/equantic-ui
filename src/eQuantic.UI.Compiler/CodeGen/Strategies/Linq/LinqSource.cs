@@ -74,7 +74,18 @@ internal static class LinqSource
         && context.SemanticHelper.GetSymbol(source) is IMethodSymbol method
         && context.SemanticHelper.IsLinqExtension(method.ContainingType)
         && (LinqTableStrategy.Lazy(method.Name, method.ReducedFrom is not null ? method.Parameters.Length : method.Parameters.Length - 1) is not null
-            || Deferred(method.Name));
+            || Deferred(method.Name))
+        || HoldsASequence(source, context);
+
+    /// <summary>
+    /// Whether <paramref name="source"/> is held as a bare sequence (<c>IEnumerable&lt;T&gt;</c> or
+    /// <c>IOrderedEnumerable&lt;T&gt;</c>), which a query may be: a local, a field or a method's answer that holds
+    /// one stops where .NET's stops, as the query written in place does, and anything else held so (a list, a
+    /// set) is walked as it is.
+    /// </summary>
+    private static bool HoldsASequence(ExpressionSyntax source, ConversionContext context) =>
+        context.SemanticHelper.GetType(source) is INamedTypeSymbol { OriginalDefinition: var definition }
+        && (definition.ToDisplayString() is "System.Collections.Generic.IEnumerable<T>" or "System.Linq.IOrderedEnumerable<TElement>");
 
     /// <summary>
     /// The deferred operators the runtime has no walk of its own for: run when their query is walked
@@ -130,6 +141,16 @@ internal static class LinqSource
             if (IsArray(source, context)) return JsExpr.Call(JsExpr.Member(converted, "slice"));
             if (context.Diagnostics.Count == before)
                 IterableTwin.FenceEnumeration(sequenceType, source, context);
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(Eq.LinqToArray), converted);
+        }
+        // Still with no model, a source an operator answers by name is a query the runtime walks (#685), which
+        // holds no element until it is read: read into the array a ToList or a ToArray answers, which a
+        // `.Count` after it reads as its length.
+        if (source is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax access } call
+            && (LinqTableStrategy.Lazy(access.Name.Identifier.ValueText, call.ArgumentList.Arguments.Count) is not null
+                || Deferred(access.Name.Identifier.ValueText)))
+        {
             context.UsedHelpers.Add(Eq.Import);
             return JsExpr.Call(JsExpr.Identifier(Eq.LinqToArray), converted);
         }

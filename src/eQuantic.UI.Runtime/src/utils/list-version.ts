@@ -56,6 +56,16 @@ export function listWalk<T>(list: readonly T[]): IterableIterator<T> {
 }
 
 /**
+ * The walk `foreach` takes over a sequence held as an interface a `List<T>` answers to (`IEnumerable<T>`,
+ * `IList<T>`, `IReadOnlyList<T>`…) or as a class derived from it: a list's own walk when the value is one, so a
+ * change is refused as .NET's enumerator refuses it through any face, and the sequence as it is otherwise. A
+ * `T[]` behind a face keeps no version and walks as it is. A null is handed back, for the loop to refuse.
+ */
+export function sequenceWalk<T>(source: Iterable<T>): Iterable<T> {
+  return Array.isArray(source) && !isFixedSize(source) ? new ListWalk(source as readonly T[]) : source;
+}
+
+/**
  * {@link listWalk}'s iterator, written by hand: a `foreach` over a list is the walk every page takes, and a
  * generator's machinery made it about half as slow again (measured).
  */

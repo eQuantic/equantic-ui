@@ -194,11 +194,19 @@ export function where<T>(source: Iterable<T> | string, predicate: (item: T, inde
   );
 }
 
-/** `Select(selector)`, the index overload included. */
-export function select<T, R>(source: Iterable<T> | string, selector: (item: T, index: number) => R): Query<R> {
+/**
+ * `Select(selector)`, and with `indexed` the index overload, which .NET runs as a plain iterator: it has no
+ * count nor element of its own to read without walking, so `Any()`, `Last()` and `ElementAt` over it run every
+ * selector before the one that answers, where a projection of a list reads its count and one element alone.
+ */
+export function select<T, R>(
+  source: Iterable<T> | string,
+  selector: (item: T, index: number) => R,
+  indexed = false,
+): Query<R> {
   const from = checked(source);
   const project = required(selector, 'selector');
-  const read = randomAccess<T>(from);
+  const read = indexed ? undefined : randomAccess<T>(from);
   return new Query(
     function* () {
       let index = 0;
@@ -208,7 +216,7 @@ export function select<T, R>(source: Iterable<T> | string, selector: (item: T, i
       let index = 0;
       eachOf(from, (item) => sink(project(item, index++)));
     },
-    () => cheapCount(from),
+    indexed ? undefined : () => cheapCount(from),
     read === undefined
       ? undefined
       : (index) => {
@@ -225,7 +233,9 @@ export function selectMany<T, C, R = C>(
   resultSelector?: (item: T, inner: C) => R,
 ): Query<R> {
   const from = checked(source);
-  const many = required(collectionSelector, 'collectionSelector');
+  // .NET names the one-selector overload's parameter `selector`, and the two-selector one's
+  // `collectionSelector`.
+  const many = required(collectionSelector, resultSelector === undefined ? 'selector' : 'collectionSelector');
   if (resultSelector === null) throw nullArgument('resultSelector');
   return new Query(
     function* () {

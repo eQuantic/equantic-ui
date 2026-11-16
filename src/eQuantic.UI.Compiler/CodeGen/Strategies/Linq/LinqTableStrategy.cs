@@ -66,6 +66,10 @@ public class LinqTableStrategy : IExpressionIrStrategy
         // is handed over as it is, and the runtime walks it, a list through its version.
         if (Lazy(name.Identifier.ValueText, shaped.Count) is { } lazy)
         {
+            // Select's index overload is a plain iterator in .NET, with no count nor element read alone, so
+            // the runtime is told which overload C# chose.
+            if (name.Identifier.ValueText == "Select" && SelectsByIndex(invocation, context))
+                lazy = $"{Eq.Query}.select({{0}}, {{1}}, true)";
             context.UsedHelpers.Add(Eq.Import);
             var parts = new[] { LinqSource.Lazy(receiverSyntax, context) }
                 .Concat(shaped.Select(argument => LinqSource.LazyArgument(argument, invocation, context)))
@@ -264,6 +268,11 @@ public class LinqTableStrategy : IExpressionIrStrategy
         return JsExpr.Call(JsExpr.Identifier(Eq.HashSet), JsExpr.Literal(ElementEquality.Of(element, invocation, context) ?? "false"),
             context.Converter.ConvertIr(receiver));
     }
+
+    /// <summary>Whether the <c>Select</c> C# bound takes its element's index, <c>Func&lt;TSource, int, TResult&gt;</c>.</summary>
+    private static bool SelectsByIndex(InvocationExpressionSyntax invocation, ConversionContext context) =>
+        context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters: [.., var selector] }
+        && selector.Type is INamedTypeSymbol { TypeArguments.Length: 3 };
 
     /// <summary>
     /// The operators the runtime runs as .NET runs them (<c>utils/query.ts</c>): each checks its arguments

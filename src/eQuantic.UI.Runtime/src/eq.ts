@@ -15,7 +15,7 @@ import {
   removeDelegate,
   removeFromEvent,
 } from './utils/delegates';
-import { listAdd, listClear, listForEach, listSet, listWalk } from './utils/list-version';
+import { listAdd, listClear, listForEach, listSet, listWalk, sequenceWalk } from './utils/list-version';
 import * as query from './utils/query';
 import { hydrate } from './utils/hydrate';
 import { twinJson } from './utils/twin-json';
@@ -615,6 +615,7 @@ export const $eq = {
     /** `List<T>.Insert`, `RemoveAt`, `RemoveRange` and `GetRange`, each position checked as .NET checks it (#1160). */
     /** A `List<T>`'s version, moved by every change and compared at every step of a walk (#863). */
     listWalk,
+    sequenceWalk,
     listAdd,
     listClear,
     listSet,

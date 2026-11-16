@@ -39,6 +39,7 @@ const eQuantic.UI.Compiler.CodeGen.Eq.TypesImplements = "$eq.types.implements" -
 const eQuantic.UI.Compiler.CodeGen.Eq.DelegateBound = "$eq.delegates.bound" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.DelegateOver = "$eq.delegates.over" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListWalk = "$eq.collections.listWalk" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.SequenceWalk = "$eq.collections.sequenceWalk" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListAdd = "$eq.collections.listAdd" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListClear = "$eq.collections.listClear" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListSet = "$eq.collections.listSet" -> string!

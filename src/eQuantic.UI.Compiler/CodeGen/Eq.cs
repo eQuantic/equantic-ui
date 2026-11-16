@@ -536,6 +536,9 @@ public static class Eq
     /// <summary>A walk over a <c>List&lt;T&gt;</c> that compares the list's version at every step, as .NET's
     /// enumerator does (#863).</summary>
     public const string ListWalk = "$eq.collections.listWalk";
+    /// <summary>The walk a <c>foreach</c> takes over a sequence held as an interface a list answers to, or as a
+    /// class derived from a list: a list's own walk when the value is one, the sequence as it is otherwise (#863).</summary>
+    public const string SequenceWalk = "$eq.collections.sequenceWalk";
     /// <summary><c>List&lt;T&gt;.Add</c>: appends and moves the version.</summary>
     public const string ListAdd = "$eq.collections.listAdd";
     /// <summary><c>List&lt;T&gt;.Clear</c>: empties the list and moves the version.</summary>

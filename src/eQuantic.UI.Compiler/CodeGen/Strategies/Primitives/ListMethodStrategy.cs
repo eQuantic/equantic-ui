@@ -18,8 +18,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// A member is the array's own method only where the two answer alike: <c>FindAll</c> is <c>filter</c>,
 /// <c>Exists</c> <c>some</c>, <c>TrueForAll</c> <c>every</c>, and <c>IndexOf</c> <c>indexOf</c> for an
 /// element compared by identity that no NaN can be. A change of the list moves its version, which a walk
-/// over it compares, so <c>Add</c>, <c>Clear</c> and <c>ForEach</c> go through the runtime too (#863). Everything else goes through the runtime (<c>utils/list.ts</c>), which answers
-/// as .NET does (#488, #425): <c>Sort</c> by .NET's introspective sort and the comparer it is handed,
+/// over it compares, so <c>Add</c>, <c>Clear</c> and <c>ForEach</c> go through the runtime too (#863).
+/// Everything else goes through the runtime (<c>utils/list.ts</c>), which answers as .NET does (#488, #425): <c>Sort</c> by .NET's introspective sort and the comparer it is handed,
 /// where <c>sort()</c> compared the elements' text; <c>BinarySearch</c> with the complement of the
 /// insertion point; <c>IndexOf</c>, <c>LastIndexOf</c> and <c>Remove</c> by the element type's equality
 /// (<see cref="ElementEquality"/>), which <c>indexOf</c>'s <c>===</c> is not; <c>Find</c> and
@@ -119,13 +119,17 @@ public class ListMethodStrategy : IExpressionIrStrategy
             .Select(a => context.Converter.ConvertIr(a.Expression))
             .ToList();
 
-        // A change that moves the list's version, and a walk that compares it (#863), as IR, so a lambda
-        // passed to ForEach maps line by line.
-        if (methodName is "Add" or "ForEach" && argsIr.Count == 1)
+        // With no model, an Add moves the list's version (#863), as a bound one does. A ForEach stays the
+        // receiver's own method, which an array has and so does any type with a ForEach of its own: the
+        // runtime's listForEach walks an array by its length, and over any other receiver it would run
+        // nothing, in silence. Each is IR, so a lambda passed to it maps line by line.
+        if (methodName == "Add" && argsIr.Count == 1)
         {
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Call(JsExpr.Identifier(methodName == "Add" ? Eq.ListAdd : Eq.ListForEach), [callerIr, .. argsIr]);
+            return JsExpr.Call(JsExpr.Identifier(Eq.ListAdd), [callerIr, .. argsIr]);
         }
+        if (methodName == "ForEach" && argsIr.Count == 1)
+            return Method(callerIr, "forEach", argsIr);
 
         // A call of the array's own method, as IR, so a lambda passed to it reaches the statement
         // writer as an arrow whose block maps line by line (#384).

@@ -53,6 +53,14 @@ public class ListStrategyTests
         converter.Diagnostics.Should().NotContain(d => d.Code == "EQ1004");
     }
 
+    /// <summary>With no model, a ForEach is the receiver's own method, which an array has and so does any type
+    /// with a ForEach of its own: the runtime's listForEach would run nothing over a receiver that is no
+    /// array, in silence.</summary>
+    [Fact]
+    public void AForEach_WithNoModel_IsTheReceiversOwn() =>
+        new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression("items.ForEach(x => Use(x))"))
+            .Should().Be("items.forEach((x) => Use(x))");
+
     /// <summary>With no model, a named argument could fill either of a range's parameters: a build error
     /// rather than a guess, which put a named collection in the index's place.</summary>
     [Theory]

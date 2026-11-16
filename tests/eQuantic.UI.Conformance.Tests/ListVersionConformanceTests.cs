@@ -73,6 +73,14 @@ public class ListVersionConformanceTests
     [InlineData("var l = new List<int> { 1 }; try { l[1] = 5; return l.Count.ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")]
     [InlineData("var l = new List<int> { 1 }; try { l[-1] = 5; return l.Count.ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")]
     // A write answers the value written, and a compound reads before it writes.
+    // A list held as an interface it answers to is refused through that face too, and anything else held so
+    // walks as it is: a set, and an array, whose element may be written during its walk.
+    [InlineData("var l = new List<int> { 1, 2 }; IEnumerable<int> e = l; var s = \"\"; try { foreach (var x in e) { s += x; l.Add(x); } return s; } catch (InvalidOperationException ex) { return s + \"|\" + ex.Message; }")]
+    [InlineData("var l = new List<int> { 1, 2 }; IReadOnlyList<int> e = l; var s = \"\"; try { foreach (var x in e) { s += x; l.Add(x); } return s; } catch (InvalidOperationException ex) { return s + \"|\" + ex.Message; }")]
+    [InlineData("var l = new List<int> { 1, 2 }; IList<int> e = l; var s = \"\"; try { foreach (var x in e) { s += x; e.Add(x); } return s; } catch (InvalidOperationException ex) { return s + \"|\" + ex.Message; }")]
+    [InlineData("var l = new List<int> { 1, 2 }; ICollection<int> e = l; var s = \"\"; try { foreach (var x in e) { s += x; e.Clear(); } return s; } catch (InvalidOperationException ex) { return s + \"|\" + ex.Message; }")]
+    [InlineData("IEnumerable<int> e = new HashSet<int> { 1, 2 }; var s = 0; foreach (var x in e) s += x; return s.ToString();")]
+    [InlineData("int[] a = { 1, 2, 3 }; IEnumerable<int> e = a; var s = 0; foreach (var x in e) { s += x; a[2] = 10; } return s.ToString();")]
     [InlineData("var l = new List<int> { 1, 2 }; var y = (l[0] = 7); l[1] *= 3; l[^1]++; return y + \"|\" + string.Join(\",\", l);")]
     public void AListWalk_EndsAsDotNetsDoes(string statements)
     {
