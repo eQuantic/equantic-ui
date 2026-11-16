@@ -7,10 +7,10 @@ namespace eQuantic.UI.Web.Tests.Coverage;
 
 /// <summary>
 /// Every ready-made component takes the developer's own content, builders and style (CLAUDE.md, "Every
-/// component is composed, and takes the developer's content, builders and style"). Measured on main on
-/// 2026-11-15, before the rule was written: 28 of the catalog's 55 components took what they show only as
-/// a <c>string</c>, and the only one that took a style of its own was <c>Markdown</c>, the precedent the
-/// rule generalises. Flutter takes a widget in each of those places and a <c>ButtonStyle</c> beside it.
+/// component is composed, and takes the developer's content, builders and style"). Measured by this test on
+/// 2026-11-16, when the rule was written: 42 of the catalog's 65 components took text where a developer may
+/// want a node, and none took a style its factory reaches; <c>Markdown</c>'s, set by an initializer, is the
+/// precedent the rule generalises. Flutter takes a widget in each of those places and a <c>ButtonStyle</c> beside it.
 /// <para>
 /// So this test reads every component of the catalog, and every item type a component takes (an option, a
 /// column, a destination), and names two things: a member that carries text (a <c>string</c>, a list of
@@ -67,6 +67,10 @@ public class CatalogCustomizationTests
         if (Environment.GetEnvironmentVariable(UpdateVariable) == "1")
             foreach (var family in Family.ReadAll()) family.Shrink(census);
         var families = Family.ReadAll();
+
+        var repeated = families.SelectMany(family => family.Repeated).ToList();
+        Assert.True(repeated.Count == 0, "A line repeats an entry of its file; keep one, with its reason:\n  "
+            + string.Join("\n  ", repeated));
 
         var owners = families.SelectMany(family => family.Owns.Select(name => (name, family)))
             .GroupBy(owned => owned.name, StringComparer.Ordinal)
@@ -150,11 +154,23 @@ public class CatalogCustomizationTests
         census.Measure(typeof(InitStyled));
 
         census.Entries.Keys.Should().BeEquivalentTo(
-            "Probe.Title  text", "Probe(options)  text", "Probe(format)  text", "ProbeItem.Name  text",
+            "Probe.Title  text", "Probe(options)  text", "Probe(format)  text", "Probe.Captions  text", "ProbeItem.Name  text",
             "Unstyled  style", "InitStyled  style");
         census.Entries["ProbeItem.Name  text"].Should().Be("ProbeItem", "an item's entry belongs to the item's type");
         census.Owned.Should().BeEquivalentTo("Probe", "ProbeItem", "Unstyled", "InitStyled");
     }
+
+    /// <summary>A reason is decided from its first character: an issue that removes the entry, or
+    /// <c>kept:</c> and why. A number further in, or a bare <c>kept:</c>, is no decision.</summary>
+    [Theory]
+    [InlineData("#1547: ButtonTheme", true)]
+    [InlineData("kept: the field's value", true)]
+    [InlineData("not looked at yet, see #1", false)]
+    [InlineData("TODO #0", false)]
+    [InlineData("kept:", false)]
+    [InlineData("#1547", false)]
+    public void AReason_IsDecided_FromItsFirstCharacter(string reason, bool decided) =>
+        Family.Decided.IsMatch(reason).Should().Be(decided);
 
     /// <summary>The regenerator removes the entries the census no longer measures, and an owned item that
     /// carries no text any more, and keeps every other line as it was written.</summary>
@@ -296,7 +312,8 @@ public class CatalogCustomizationTests
             foreach (var input in Inputs(definition)) Reach(input, items);
         }
 
-        /// <summary>A <c>string</c>, a sequence of text, or a delegate that answers text.</summary>
+        /// <summary>A <c>string</c>, a sequence of text, a map whose values are text, or a delegate that
+        /// answers text.</summary>
         private static bool CarriesText(Type type)
         {
             if (type == typeof(string)) return true;
@@ -306,7 +323,12 @@ public class CatalogCustomizationTests
                     && CarriesText(invoke.ReturnType);
             var sequence = type.GetInterfaces().Append(type).FirstOrDefault(candidate =>
                 candidate.IsGenericType && candidate.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-            return sequence is not null && CarriesText(sequence.GetGenericArguments()[0]);
+            if (sequence is null) return false;
+            var element = sequence.GetGenericArguments()[0];
+            // A map's text is its values: labels by key are text, keys alone are identifiers.
+            return element.IsGenericType && element.GetGenericTypeDefinition() == typeof(KeyValuePair<,>)
+                ? CarriesText(element.GetGenericArguments()[1])
+                : CarriesText(element);
         }
 
         private static Type Definition(Type type) =>
@@ -327,8 +349,9 @@ public class CatalogCustomizationTests
     /// </summary>
     private sealed class Family
     {
-        /// <summary>A decided reason: the issue that removes the entry, or <c>kept:</c> and why.</summary>
-        public static readonly Regex Decided = new(@"^kept: \S|#\d+", RegexOptions.CultureInvariant);
+        /// <summary>A decided reason, from its first character: the issue that removes the entry (<c>#N:</c>),
+        /// or <c>kept:</c> and why. A number further in is no decision.</summary>
+        public static readonly Regex Decided = new(@"^(kept: \S|#\d+[: ])", RegexOptions.CultureInvariant);
 
         private const string OwnsPrefix = "# owns:";
 
@@ -341,6 +364,9 @@ public class CatalogCustomizationTests
         public HashSet<string> Owns { get; } = new(StringComparer.Ordinal);
 
         public Dictionary<string, Entry> Entries { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>Lines that repeat an entry above them, as a merge of two family slices can leave.</summary>
+        public List<string> Repeated { get; } = [];
 
         public static IReadOnlyList<Family> ReadAll() =>
             Directory.EnumerateFiles(Folder(), "*.baseline.txt").Order(StringComparer.Ordinal).Select(Read).ToList();
@@ -363,8 +389,7 @@ public class CatalogCustomizationTests
                 var fields = line.Split("  ", 3, StringSplitOptions.TrimEntries);
                 var entry = new Entry($"{fields[0]}  {(fields.Length > 1 ? fields[1] : "")}",
                     fields.Length > 2 ? fields[2] : "", index + 1);
-                if (!family.Entries.TryAdd(entry.Id, entry))
-                    throw new InvalidOperationException($"{family.Name}:{index + 1} repeats {entry.Id}");
+                if (!family.Entries.TryAdd(entry.Id, entry)) family.Repeated.Add($"{family.Name}:{index + 1}  {entry.Id}");
             }
 
             return family;
@@ -420,7 +445,8 @@ public class CatalogCustomizationTests
     public sealed class Probe : StatelessComponent
     {
         public Probe(string title, VisualNode child, IReadOnlyList<string> options, Func<int, string> format,
-            Func<int, VisualNode> rowBuilder, ProbeItem[] items, ButtonTheme? style = null)
+            Func<int, VisualNode> rowBuilder, ProbeItem[] items, IReadOnlyDictionary<int, string> captions,
+            IReadOnlyDictionary<string, int> counts, ButtonTheme? style = null)
         {
             Title = title;
             Child = child;
@@ -428,6 +454,8 @@ public class CatalogCustomizationTests
             Format = format;
             RowBuilder = rowBuilder;
             Items = items;
+            Captions = captions;
+            Counts = counts;
             Style = style;
         }
 
@@ -437,6 +465,8 @@ public class CatalogCustomizationTests
         public Func<int, string> Format { get; }
         public Func<int, VisualNode> RowBuilder { get; init; }
         public ProbeItem[] Items { get; init; }
+        public IReadOnlyDictionary<int, string> Captions { get; init; }
+        public IReadOnlyDictionary<string, int> Counts { get; init; }
         public string Summary => Title;
         public ButtonTheme? Style { get; init; }
 
