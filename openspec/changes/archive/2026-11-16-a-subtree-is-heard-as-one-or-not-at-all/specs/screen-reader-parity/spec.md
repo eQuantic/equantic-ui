@@ -2,14 +2,11 @@
 
 ### Requirement: A merged subtree is heard as one stop on every target
 
-A `MergeSemantics` node SHALL be heard as ONE stop whose name joins, in reading order, the names of the stops
-its subtree would make. When a control is among them, the stop SHALL be the first control, with that control's
-role, value and states, and activating it SHALL press that control on every target; a later control SHALL stay
-a stop of its own, after the merged one, named by itself. With no control the stop SHALL be a group named the
-same way, and nothing inside it SHALL be a stop of its own. What a reader passes over, a `Text` marked
-`ExcludeFromSemantics` or an `ExcludeSemantics` subtree, SHALL be no part of the name. It SHALL add no geometry
-of its own. On the web the name SHALL be computed by the browser from the parts the merge hides, so it follows
-their content.
+A `MergeSemantics` node SHALL be heard as ONE stop. When a control is among the stops its subtree would make,
+the stop SHALL be the first control, with that control's role, value and states, and activating it SHALL press
+that control on every target; a later control SHALL stay a stop of its own, after the merged one. With no
+control the stop SHALL be a group, and nothing inside it SHALL be a stop of its own. It SHALL add no geometry of
+its own.
 
 #### Scenario: A switch beside its label
 
@@ -28,6 +25,13 @@ their content.
 
 - **WHEN** `MergeSemantics(Row[Text("Volume"), Slider(0.5), Button("Mute")])` is read on both targets
 - **THEN** both readings are `Slider "Volume"` and then `Button "Mute"`
+
+### Requirement: A merged stop is named by what its subtree says
+
+A merged stop's name SHALL join, in reading order, the names of the stops its subtree would make, the merged
+control's own in its place and a later control's left out. What a reader passes over, a `Text` marked
+`ExcludeFromSemantics` or an `ExcludeSemantics` subtree, SHALL be no part of it. On the web the name SHALL be
+computed by the browser from the parts the merge hides, so it follows their content.
 
 #### Scenario: The merged name leaves out what a reader passes over
 
