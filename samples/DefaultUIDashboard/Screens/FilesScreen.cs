@@ -20,6 +20,12 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
     private string? _open;
     private string? _said;
 
+    /// <summary>How wide the tree is: the gap beside it drags it wider or narrower (#1562).</summary>
+    private float _treeWidth = 320;
+
+    /// <summary>Where across the gap the press took it, so the gap stays under the pointer as it moves.</summary>
+    private float? _grabbedAt;
+
     [ServerOnly]
     public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken) =>
         Top = await SampleRepository.ListAsync("");
@@ -42,12 +48,12 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
             Text("Files", TypeRole.Heading, theme.TextPrimary),
             Text("Folders load from the server the first time they open. Tab reaches the tree; the arrows "
                 + "walk and open it, Enter opens a file, and typing a name jumps to it. The open file has a menu: "
-                + "right-click it, hold it, or press the menu key on it.",
+                + "right-click it, hold it, or press the menu key on it. Drag the gap beside the tree to resize it.",
                 TypeRole.BodyM, theme.TextSecondary),
-            Row(gap: Space.S4, children: [
+            Row(gap: 0, children: [
                 Box(new BoxStyle
                 {
-                    Width = 320,
+                    Width = _treeWidth,
                     Height = 440,
                     Padding = EdgeInsets.All(Space.S2),
                     BorderWidth = 1,
@@ -61,6 +67,7 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
                     loadChildren: Load,
                     label: "Repository",
                     height: SizeValue.Fill)),
+                Splitter(),
                 Column(gap: Space.S2, children: [
                     OpenFile(context),
                     Text(_said ?? "", TypeRole.BodyM, theme.TextSecondary),
@@ -68,6 +75,23 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
             ]),
         ]));
     }
+
+    /// <summary>
+    /// The gap between the tree and the file, which a pointer drags to resize the tree (#1562). The listener is
+    /// <see cref="HitTestBehavior.Opaque"/> because the gap draws nothing, where a deferring one would hear nothing,
+    /// and it follows the press wherever it goes, so a drag that runs past the gap still resizes.
+    /// </summary>
+    private VisualNode Splitter() =>
+        Listener(Box(new BoxStyle { Width = Space.S4, Height = 440, Cursor = PointerCursor.ColResize }),
+            onPointerDown: e => _grabbedAt = e.Position.X,
+            onPointerMove: e =>
+            {
+                if (_grabbedAt is not { } grabbed) return;
+                SetState(() => _treeWidth = Math.Clamp(_treeWidth + e.Position.X - grabbed, 200, 560));
+            },
+            onPointerUp: _ => _grabbedAt = null,
+            onPointerCancel: _ => _grabbedAt = null,
+            behavior: HitTestBehavior.Opaque);
 
     /// <summary>
     /// The open file, whose menu a right-click, a long press or the menu key opens (#1531): where the pointer
