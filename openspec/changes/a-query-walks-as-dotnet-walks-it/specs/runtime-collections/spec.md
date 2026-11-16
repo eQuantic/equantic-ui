@@ -17,3 +17,13 @@ at every step and after the last, and SHALL throw .NET's `InvalidOperationExcept
 
 - **WHEN** the body calls `l.Remove(42)` for an absent item, or `l.AddRange(new int[0])`
 - **THEN** the loop runs to its end, as .NET's does
+
+#### Scenario: An element written through the indexer
+
+- **WHEN** the body writes `l[0] = l[0]`, the same value
+- **THEN** the next step throws, as .NET's does, while a `T[]`'s element written during its walk ends nothing
+
+#### Scenario: An index outside the list
+
+- **WHEN** `l[1] = 5` runs over `new List<int> { 1 }`
+- **THEN** it throws .NET's `ArgumentOutOfRangeException`, where the array grew

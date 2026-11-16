@@ -1,4 +1,4 @@
-- **2026-11-12 · A query and a list walk as .NET's iterators walk**: two Bugs, under #565 and #845
+- **2026-11-16 · A query and a list walk as .NET's iterators walk**: two Bugs, under #565 and #845
   ([#685](https://github.com/eQuantic/equantic-ui/issues/685), [#863](https://github.com/eQuantic/equantic-ui/issues/863)).
   Every LINQ operator was an array method over a copy of its source, read whole when it was called, so a chain ran
   each stage's callbacks before the next began, `Any` and `Take` ran every selector, and a query never saw an `Add`

@@ -28,3 +28,13 @@ answers.
 
 - **WHEN** `none.Where(x => true)` is called on a null list, without walking it
 - **THEN** it throws `ArgumentNullException` naming the parameter `source`
+
+#### Scenario: A callback that changes its source
+
+- **WHEN** `string.Join(",", d.Select(kv => { d["b"] = 5; return kv.Value; }))` runs over a dictionary of `a = 1` and `b = 2`
+- **THEN** it answers `1,5`, as .NET's, where it answered `1,2`
+
+#### Scenario: A sorted query read after its source changed
+
+- **WHEN** `var q = l.OrderBy(x => x);` over `{ 3, 1 }`, then `l.Add(2)`, and `q` is joined
+- **THEN** it answers `1,2,3`, as .NET's, where it answered `1,3`
