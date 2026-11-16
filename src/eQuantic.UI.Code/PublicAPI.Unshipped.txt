@@ -1,3 +1,4 @@
 #nullable enable
+eQuantic.UI.Code.CodeEditorController.Pasted -> System.Action?
 const eQuantic.UI.Code.CodeEditorController.ReadingLines = 10 -> int
 eQuantic.UI.Code.CodeEditorController.Reading.get -> eQuantic.UI.Primitives.TextReading

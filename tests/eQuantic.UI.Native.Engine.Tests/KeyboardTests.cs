@@ -733,7 +733,7 @@ public class ClipboardTests
     private sealed class FakeClipboard : ITextClipboard
     {
         public string? Content;
-        public string? Read() => Content;
+        public Task<string?> ReadAsync() => Task.FromResult(Content);
         public void Write(string text) => Content = text;
     }
 

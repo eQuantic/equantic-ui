@@ -1,3 +1,5 @@
+import { readClipboardText } from './devices/text-clipboard';
+
 /**
  * The clipboard a code surface hands its keymap on the web (C# `ITextClipboard`), so Copy and Cut run on
  * whatever key an app binds them to, as VS Code's do.
@@ -6,21 +8,42 @@
  * fires at once inside a key's handler, and the surface's copy handler puts on it what `write` was given
  * (`pending`). A write that no copy event took throws, so a cut copies first or deletes nothing: the
  * Clipboard API's promise answered after the text was gone, and a refused write deleted text it never
- * copied (Copilot's second round on #1027). A page reads the clipboard only in a paste event (#1028):
- * `read` answers null and notes that it was asked, and the surface leaves the key to the browser, whose
- * paste event brings the text, where the browser pastes on that key.
+ * copied (Copilot's second round on #1027). A read answers later, as C#'s `ReadAsync` does (#1028): on a
+ * key the browser pastes on, the surface leaves the key to the browser and the read waits for its paste
+ * event, which brings the text with no prompt; on any other key it reads through the Clipboard API, as VS
+ * Code's web build does, which may first ask the person's permission.
  */
 export class CodeSurfaceClipboard {
   /** What the next copy event writes, while a write waits for it. */
   pending: string | null = null;
   /** Whether the copy event a write fired took the text. */
   written = false;
-  /** Whether a command asked to read, which only the browser's paste event can answer. */
+  /** Whether the key being handled is one the browser pastes on, which the surface says before the keymap
+   *  runs. */
+  browserPastes = false;
+  /** Whether a command asked to read on such a key, so the key goes on to the browser's paste event. */
   pasteAsked = false;
+  /** The read that waits for the browser's paste event. */
+  private waiting: ((text: string | null) => void) | null = null;
 
-  read(): string | null {
+  readAsync(): Promise<string | null> {
+    if (!this.browserPastes) return readClipboardText();
     this.pasteAsked = true;
-    return null;
+    // A read still waiting found no paste event: the browser took the key for nothing.
+    this.answer(null);
+    return new Promise((resolve) => {
+      this.waiting = resolve;
+    });
+  }
+
+  /** Hands a read that waits for the browser's paste event what that event brought; false when none waits,
+   *  and the paste is then the surface's own (a menu's Paste, a key no command claimed). */
+  answer(text: string | null): boolean {
+    const waiting = this.waiting;
+    if (waiting === null) return false;
+    this.waiting = null;
+    waiting(text);
+    return true;
   }
 
   write(text: string): void {

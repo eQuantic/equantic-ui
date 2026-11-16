@@ -22,7 +22,9 @@ namespace eQuantic.UI.Native.Shell.Windows;
 /// </summary>
 public sealed class WindowsClipboard : ITextClipboard
 {
-    public string? Read()
+    public Task<string?> ReadAsync() => Task.FromResult(Read());
+
+    private static string? Read()
     {
         if (!Open()) return null;
         try
