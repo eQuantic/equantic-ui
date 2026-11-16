@@ -25,7 +25,7 @@
 
 ## 5. Docs
 
-- [ ] 5.1 `docs/FLUTTER-PARITY.md`: the `LayoutBuilder` and `BoxConstraints` rows read SAME, with their probes; the wiki's WriteOnceComponents page in all five languages; a ledger entry citing #1555
+- [x] 5.1 `docs/FLUTTER-PARITY.md`: the `LayoutBuilder` and `BoxConstraints` rows read SAME, with their probes; the wiki's WriteOnceComponents page in all five languages; a ledger entry citing #1555
 
 ## 6. Archive
 
