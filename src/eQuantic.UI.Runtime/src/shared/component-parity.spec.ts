@@ -847,9 +847,16 @@ function canonical(node: HtmlNode): unknown {
   // it emits neither the channel key nor the listener that reports back through it. Recognised by
   // the key itself rather than by tag, and only there — a scroll handler anywhere else still counts.
   const scrollView = 'data-eq-scroll' in (node.attributes ?? {});
+  // A COMPOSITE's mount hook is the client's alone: it keeps the host it gives the keyboard back to
+  // (Navigable.FocusVersion, #1532), and the server has no keyboard to give. Recognised by the composite's
+  // own role, and only there: a mount hook anywhere else still counts.
+  const composite = node.attributes?.role === 'tree' || node.attributes?.role === 'grid';
   result.events = Object.keys(node.events ?? {})
     .filter(
-      (name) => !(entry && CLIENT_ONLY_EVENTS.has(name)) && !(scrollView && name === 'scroll'),
+      (name) =>
+        !(entry && CLIENT_ONLY_EVENTS.has(name)) &&
+        !(scrollView && name === 'scroll') &&
+        !(composite && name === 'eq:mounted'),
     )
     .sort();
   result.children = (node.children ?? []).map(canonical);

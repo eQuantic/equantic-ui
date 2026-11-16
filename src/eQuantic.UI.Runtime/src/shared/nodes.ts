@@ -703,6 +703,9 @@ export interface TextEntryNode extends VisualNodeValue {
   /** Takes focus on MOUNT (the command-palette contract) — the attribute alone only fires on the
    * initial document parse, so the client lowering focuses it too. */
   autofocus?: boolean;
+  /** Selects all of the text whenever the entry takes the keyboard, by autofocus or Tab; a press
+   * inside it still puts the caret where it pressed. */
+  selectOnFocus?: boolean;
   /** Line count: 1 (default) is the single-line input, more makes it a textarea that tall. */
   lines?: number;
 }
@@ -939,6 +942,9 @@ export interface NavigableNode extends VisualNodeValue {
    * crosses as a plain array and the transpiler cannot promise its arity, so the type is what a
    * tuple actually becomes; the realizer reads exactly two entries. */
   activeCell?: readonly number[] | null;
+  /** A version higher than the last one built takes the keyboard to the composite's stop (C#
+   * `FocusVersion`); the first build only records it. */
+  focusVersion?: number;
 }
 
 /**
