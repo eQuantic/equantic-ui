@@ -80,6 +80,15 @@ public class PlainJavaScriptSyntaxTests
             public int Parse(string text) { int.TryParse(text, out var number); return number; }
         }
 
+        // A component that takes its parameters through its constructor: a plain one, one with a
+        // default, and a `params` list last. The twin's constructor is a signature written by hand,
+        // and it wrote `tag?: any` and `size: any = 2` in plain mode, which bun refuses (#1574).
+        public sealed class Tally(string tag, int size = 2, params int[] items) : StatelessComponent
+        {
+            public override VisualNode Build(ComponentContext context) =>
+                new Text(tag + size + items.Length, TypeRole.BodyM, context.Theme.TextPrimary);
+        }
+
         public sealed class Probe : StatefulComponent
         {
             private string? _notice;
@@ -132,6 +141,7 @@ public class PlainJavaScriptSyntaxTests
     [InlineData(@"\blet\s+\w+\s*:\s*any\b", "an annotated hoisted variable")]
     [InlineData(@"\blet\s+\w+\s*:\s*[A-Z]\w*", "an annotated local declaration")]
     [InlineData(@"\w\?\s*:", "an optional-parameter marker")]
+    [InlineData(@"[(,]\s*\w+\s*:\s*any\s*=", "an annotated parameter with a default")]
     [InlineData(@"\w!\s*[.);,]", "a null-forgiving assertion")]
     public void PlainJavaScript_CarriesNoTypeScriptOnlySyntax(string pattern, string what)
     {
@@ -166,6 +176,7 @@ public class PlainJavaScriptSyntaxTests
                 (@"\blet\s+\w+\s*:\s*[A-Z]\w*", "an annotated local declaration"),
                 (@"\bdeclare\s", "a type-only declared property"),
                 (@"\w\?\s*:", "an optional parameter"),
+                (@"[(,]\s*\w+\s*:\s*any\s*=", "an annotated parameter with a default"),
                 (@"\w!\s*[.);,]", "a null-forgiving assertion"),
                 (@"\babstract\s+\w+\s*:", "a type-only abstract property"),
             }
@@ -177,5 +188,21 @@ public class PlainJavaScriptSyntaxTests
             "the probe source no longer produces " + string.Join(", ", missing)
             + " — so the matching plain-JavaScript guard is passing vacuously. Restore the member "
             + "that produced it, or drop the guard.\n\n" + ts);
+    }
+
+    /// <summary>
+    /// The constructor a component's twin is written with, in both modes: the same parameters and
+    /// defaults, the annotations only in TypeScript (#1574).
+    /// </summary>
+    [Theory]
+    [InlineData(false, "constructor(tag, size = 2, items, props)")]
+    [InlineData(true, "constructor(tag?: any, size: any = 2, items?: any, props?: any)")]
+    public void AComponentsConstructor_IsWrittenForItsMode(bool typeAnnotations, string expected)
+    {
+        var compiler = new ComponentCompiler { TypeAnnotations = typeAnnotations };
+        var tally = compiler.CompileSource(AnnotationHeavySource, "Probe.cs")
+            .Single(r => r.Success && r.TypeScript.Contains("class Tally", StringComparison.Ordinal));
+
+        Assert.Contains(expected, tally.TypeScript, StringComparison.Ordinal);
     }
 }
