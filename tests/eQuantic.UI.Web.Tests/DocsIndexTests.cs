@@ -106,8 +106,8 @@ public class DocsIndexTests
     /// </para>
     /// <para>
     /// What tells them apart is the citation, not the code: <paramref name="located"/> is true when
-    /// it carried a <c>:line</c>, and then it points at a LINE OF CODE — a claim this instrument
-    /// cannot check, since the number is the part that rots. Without one it names the file that
+    /// it points at a LINE OF CODE, which a number once said and since #1489 a quote the quote guard
+    /// settles says. Without one it names the file that
     /// HOLDS the member, which is exactly the claim being checked. So the assignment form is read
     /// only there. A property or a <c>const</c> is a declaration wherever it is quoted and is read
     /// either way.
@@ -288,8 +288,11 @@ public class DocsIndexTests
                 var cited = EvidenceLine.Match(line);
                 if (!cited.Success) continue;
 
-                var declarations = QuotedDeclarations(
-                    cited.Groups["code"].Value, cited.Groups["at"].Success).ToArray();
+                // LOCATED by its number until #1489, and by its quote since: the quote guard finds the
+                // code in the file, so a quote it settles points at a line of code as surely as a
+                // number did, and its assignment is not read as a declaration either.
+                var code = cited.Groups["code"].Value;
+                var declarations = QuotedDeclarations(code, cited.Groups["at"].Success || Claim(code) is not null).ToArray();
                 if (declarations.Length == 0) continue;
 
                 var path = cited.Groups["path"].Value;
@@ -333,9 +336,9 @@ public class DocsIndexTests
     /// on <c>main</c> before the move — <c>ExpandHitRect</c> was cited at 1658 and declared at 1797
     /// — and a line that still exists is a line this test accepts. That half is closed by the two
     /// guards below, each reading the part of a citation that survives a move:
-    /// <see cref="Every_quoted_line_is_at_the_line_its_citation_names"/> reads the QUOTE a fenced
+    /// <see cref="Every_quoted_line_is_found_once_in_the_file_its_citation_names"/> reads the QUOTE a fenced
     /// citation carries, and
-    /// <see cref="Every_member_named_beside_a_citation_is_declared_where_the_citation_points"/> the
+    /// <see cref="Every_member_named_beside_a_citation_is_declared_by_the_file_it_names"/> the
     /// MEMBER a prose one names. This test stays, because a citation can also point past a file that
     /// quotes nothing and names nobody.
     /// </para>
@@ -415,8 +418,8 @@ public class DocsIndexTests
     }
 
     /// <summary>
-    /// A fenced citation QUOTES the code it points at, so the quote is the claim and the line is
-    /// checkable against it: the quoted text must be found at the lines the citation names.
+    /// A fenced citation QUOTES the code it points at and names no line: the quote is the claim, and it
+    /// must be found exactly once in the file the citation names (#1489).
     ///
     /// <para>
     /// This is the half of citation rot the two guards above are documented as unable to see —
@@ -428,10 +431,22 @@ public class DocsIndexTests
     /// </para>
     ///
     /// <para>
+    /// THEN THE NUMBER WENT (#1489). Held to its line, a citation was rewritten by every pull request
+    /// that moved a line above it, so two pull requests that each moved one in the same file conflicted
+    /// here on the number alone, and the merge queue ejected one of them: 13 of the audit's 17 commits
+    /// in one week changed only numbers. The quote already settled the line, so the number told the
+    /// reader nothing the quote did not. A quote found ONCE locates the code as surely, and moves with
+    /// it. The claim is the quote's first forty characters, and when those occur more than once the
+    /// whole quote must occur once; one that does not is lengthened with the lines around it, joined
+    /// by the audits' <c>\n</c> escape. A <c>:LINE</c> beside a quote is refused, so the number cannot
+    /// come back in.
+    /// </para>
+    ///
+    /// <para>
     /// THE CONVENTION THE RULE RESTS ON, stated because it is now load-bearing: inside a fence a
     /// citation is followed by the CODE it names (two spaces, then the line, exactly as
     /// <see cref="EvidenceLine"/> already reads it); in prose it is followed by the MEMBER it names,
-    /// which <see cref="Every_member_named_beside_a_citation_is_declared_where_the_citation_points"/>
+    /// which <see cref="Every_member_named_beside_a_citation_is_declared_by_the_file_it_names"/>
     /// checks. A member name written inside a fence would eat the two-space seam and blind the
     /// declaration guard, so the two forms stay apart.
     /// </para>
@@ -449,11 +464,11 @@ public class DocsIndexTests
     /// </para>
     /// </summary>
     [Fact]
-    public void Every_quoted_line_is_at_the_line_its_citation_names()
+    public void Every_quoted_line_is_found_once_in_the_file_its_citation_names()
     {
         var root = Root();
         var sources = SourceFiles(root);
-        var stale = new List<string>();
+        var wrong = new List<string>();
 
         foreach (var file in RepositoryMarkdown(root))
         {
@@ -465,51 +480,71 @@ public class DocsIndexTests
                 if (line.TrimStart().StartsWith("```", StringComparison.Ordinal)) { fenced = !fenced; continue; }
                 if (!fenced) continue;
 
-                // A quote ends where the NEXT citation begins, whatever separates them: the audits
-                // write `A.cs:1  code  → B.cs:2  code` on one line, and reading to end-of-line swept
-                // the second citation into the first one's claim.
-                var starts = CitedLine.Matches(line).Select(next => next.Index).ToArray();
-                foreach (Match cited in EvidenceQuote.Matches(line))
-                {
-                    var from = cited.Index + cited.Length;
-                    var to = starts.Where(start => start > cited.Index).DefaultIfEmpty(line.Length).Min();
-                    var claim = Claim(line[from..to]);
-                    if (claim is null) continue;
+                // An evidence line STARTS with its citation, as EvidenceLine reads it. A fenced tree of
+                // folders (`component.ts       # Component base class`) quotes nothing, and with no
+                // number in a citation nothing else tells the two apart.
+                var citations = EvidenceQuote.Matches(line);
+                if (citations.Count == 0 || citations[0].Index > 6 || line[..citations[0].Index].Trim().Length > 0)
+                    continue;
 
+                // A quote ends where the NEXT citation begins, whatever separates them: the audits
+                // write `A.cs  code  → B.cs  code` on one line, and reading to end-of-line swept the
+                // second citation into the first one's claim.
+                var starts = citations.Select(next => next.Index)
+                    .Concat(CitedLine.Matches(line).Select(next => next.Index)).ToArray();
+                var where = $"{Path.GetRelativePath(root, file)}:{lineNumber}";
+                foreach (Match cited in citations)
+                {
                     var path = cited.Groups["path"].Value;
-                    var rooted = path.Contains('/', StringComparison.Ordinal);
-                    var candidates = (rooted ? [Path.Combine(root, path)] : sources[Path.GetFileName(path)].ToArray())
-                        .Where(File.Exists).ToArray();
-                    var where = $"{Path.GetRelativePath(root, file)}:{lineNumber}";
-                    if (candidates.Length == 0)
+                    if (cited.Groups["at"].Success)
                     {
-                        if (rooted) stale.Add($"{where} → {path} (no such file)");
+                        wrong.Add($"{where} → {path}{cited.Groups["at"].Value} names a line: drop the number, the quote "
+                            + "finds the line, and a number makes every change above it rewrite this citation");
                         continue;
                     }
 
-                    var lo = int.Parse(cited.Groups["from"].Value, CultureInfo.InvariantCulture);
-                    var hi = cited.Groups["to"].Success
-                        ? int.Parse(cited.Groups["to"].Value, CultureInfo.InvariantCulture)
-                        : lo;
-                    if (candidates.Any(candidate => Spans(candidate, lo, hi).Contains(claim, StringComparison.Ordinal)))
-                        continue;
+                    var from = cited.Index + cited.Length;
+                    var to = starts.Where(start => start > cited.Index).DefaultIfEmpty(line.Length).Min();
+                    var quoted = line[from..to];
+                    var claim = Claim(quoted);
+                    if (claim is null) continue;
 
-                    stale.Add($"{where} → {path}:{lo}"
-                        + (hi == lo ? "" : $"-{hi}") + $" no longer holds \"{claim}\"");
+                    var rooted = path.Contains('/', StringComparison.Ordinal);
+                    var candidates = (rooted ? [Path.Combine(root, path)] : sources[Path.GetFileName(path)].ToArray())
+                        .Where(File.Exists).ToArray();
+                    if (candidates.Length == 0)
+                    {
+                        if (rooted) wrong.Add($"{where} → {path} (no such file)");
+                        continue;
+                    }
+
+                    var found = candidates.Sum(candidate => Occurrences(Collapsed(candidate), claim));
+                    if (found == 1) continue;
+                    if (found == 0)
+                    {
+                        wrong.Add($"{where} → {path} no longer holds \"{claim}\"");
+                        continue;
+                    }
+
+                    var whole = Whole(quoted);
+                    if (candidates.Sum(candidate => Occurrences(Collapsed(candidate), whole)) == 1) continue;
+                    wrong.Add($"{where} → {path} holds \"{claim}\" {found} times, so the quote locates nothing: "
+                        + "lengthen it with the lines around the one it means, joined by \\n");
                 }
             }
         }
 
-        string.Join(Environment.NewLine, stale).Should().BeEmpty(
-            "a fenced citation quotes the code it points at, so the quote settles the line without judgement: "
-            + "search the repository for the quote and repoint the citation, or re-quote it when the code itself "
-            + "changed — and when it changed enough that the row's CLAIM is spent, re-judge the row");
+        string.Join(Environment.NewLine, wrong).Should().BeEmpty(
+            "a fenced citation quotes the code it points at, and the quote settles where it is without a number: "
+            + "search the repository for the quote and correct the file, or re-quote it when the code itself "
+            + "changed, and when it changed enough that the row's CLAIM is spent, re-judge the row");
     }
 
     /// <summary>
-    /// A prose citation that names a MEMBER says which member the line holds, and that is checkable
-    /// where the line alone is not: the named member must be declared in the file the citation names,
-    /// and the line must fall inside it.
+    /// A prose citation that names a MEMBER says which member the reader is sent to, and that is
+    /// checkable where a line alone is not: the named member must be declared in the file the citation
+    /// names. Since #1489 it names no line: a <c>:LINE</c> beside a member is refused, for the reason
+    /// <see cref="Every_quoted_line_is_found_once_in_the_file_its_citation_names"/> gives.
     ///
     /// <para>
     /// The overshoot guard accepts any line within the file's length, so a member that moved down its
@@ -529,17 +564,9 @@ public class DocsIndexTests
     /// named, and citations of those name the enclosing type instead.
     /// </para>
     ///
-    /// <para>
-    /// The span is the declaration's FULL span, so citing a member's doc comment is citing the
-    /// member, and a RANGE must fit inside one declaration end to end. Reading only the range's
-    /// start let <c>:311-600 LowerPressable</c> through — a member that ends at 458 plus a hundred
-    /// and fifty lines of its neighbours, which the overshoot guard cannot see either because 600 is
-    /// inside the file. An overloaded name passes if ANY of its declarations contains the range,
-    /// which is the honest answer: the citation named a member and not an overload.
-    /// </para>
     /// </summary>
     [Fact]
-    public void Every_member_named_beside_a_citation_is_declared_where_the_citation_points()
+    public void Every_member_named_beside_a_citation_is_declared_by_the_file_it_names()
     {
         var root = Root();
         var sources = SourceFiles(root);
@@ -567,39 +594,23 @@ public class DocsIndexTests
                         .Where(File.Exists).ToArray();
                     if (candidates.Length == 0) continue; // the overshoot guard already reports a path that is not there
 
-                    // The WHOLE range, not its first line: `…:311-600 LowerPressable` names a member
-                    // that ends at 458 and a hundred and fifty lines of its neighbours, and reading
-                    // only the start accepted it — the overshoot guard cannot see it either, because
-                    // 600 is inside the file. A range belongs to ONE declaration or it names two things.
-                    var first = int.Parse(cited.Groups["from"].Value, CultureInfo.InvariantCulture);
-                    var last = cited.Groups["to"].Success
-                        ? int.Parse(cited.Groups["to"].Value, CultureInfo.InvariantCulture)
-                        : first;
-                    var cites = first == last ? $"{path}:{first}" : $"{path}:{first}-{last}";
                     var where = $"{Path.GetRelativePath(root, file)}:{lineNumber}";
-                    var declaring = candidates.Where(candidate => DeclarationSpans(candidate).ContainsKey(member)).ToArray();
-                    if (declaring.Length == 0)
+                    if (cited.Groups["at"].Success)
                     {
-                        misplaced.Add($"{where} → {path} does not declare {member}");
+                        misplaced.Add($"{where} → {path}{cited.Groups["at"].Value} {token} names a line: drop the number, "
+                            + "the member locates the citation, and a number makes every change above it rewrite this one");
                         continue;
                     }
 
-                    if (declaring.Any(candidate => DeclarationSpans(candidate)[member]
-                            .Any(span => first >= span.First && last <= span.Last)))
-                        continue;
-
-                    var declared = string.Join(", ", declaring
-                        .SelectMany(candidate => DeclarationSpans(candidate)[member])
-                        .Select(span => $"{span.First}-{span.Last}"));
-                    misplaced.Add($"{where} → {cites} is not inside {member}, which is at {declared}");
+                    if (!candidates.Any(candidate => DeclarationSpans(candidate).ContainsKey(member)))
+                        misplaced.Add($"{where} → {path} does not declare {member}");
                 }
             }
         }
 
         string.Join(Environment.NewLine, misplaced).Should().BeEmpty(
-            "a prose citation names the member the line holds; the member is the part that survives a move, "
-            + "so it decides where the citation points — repoint the line to the member, or name the member "
-            + "that is actually there");
+            "a prose citation names the member the reader is sent to; the member is the part that survives a move, "
+            + "so the file it names must declare it: correct the file, or name the member that is actually there");
     }
 
     /// <summary>
@@ -628,7 +639,7 @@ public class DocsIndexTests
     /// which is a reading of the prose and not a transformation of it. There are 273 left; they are
     /// #207's to work through block by block, and the baseline is what keeps that work visible and
     /// keeps the number from quietly growing while it happens. Anchoring one moves it under
-    /// <see cref="Every_member_named_beside_a_citation_is_declared_where_the_citation_points"/>,
+    /// <see cref="Every_member_named_beside_a_citation_is_declared_by_the_file_it_names"/>,
     /// which is the whole point: the count going down means citations becoming checkable.
     /// </para>
     ///
@@ -774,20 +785,20 @@ public class DocsIndexTests
     /// before the quote. C# OR TypeScript — a quote settles its line by being found there, which
     /// needs no parser and so needs no language.</summary>
     private static readonly Regex EvidenceQuote = new(
-        @"(?<path>(?:[\w.-]+/)*[\w.-]+\.(?:cs|ts)):(?<from>\d+)(?:-(?<to>\d+))?\s{2,}",
+        @"(?<path>(?:[\w.-]+/)*[\w.-]+\.(?:cs|ts))(?<at>:(?<from>\d+)(?:-(?<to>\d+))?)?\s{2,}",
         RegexOptions.Compiled);
 
     /// <summary>
     /// A prose citation followed by ONE space and the member it names. C# ONLY, and that is a
     /// LIMIT rather than an oversight: this guard asks Roslyn where a member is declared, and
     /// Roslyn does not read TypeScript. A .ts citation is held to its quote by
-    /// <see cref="Every_quoted_line_is_at_the_line_its_citation_names"/> and to its file's length by
+    /// <see cref="Every_quoted_line_is_found_once_in_the_file_its_citation_names"/> and to its file's length by
     /// <see cref="No_citation_points_past_the_end_of_the_file_it_names"/>, neither of which parses
     /// anything — so the TypeScript side is covered by what does not need a compiler, and claims
     /// nothing it cannot check.
     /// </summary>
     private static readonly Regex NamedMember = new(
-        @"(?<!\w)(?<path>(?:[\w.]+/)*[\w.]+\.cs):(?<from>\d+)(?:-(?<to>\d+))? (?<member>[A-Z][A-Za-z0-9]*(?:\.[A-Z][A-Za-z0-9]*)*)",
+        @"(?<!\w)(?<path>(?:[\w.]+/)*[\w.]+\.cs)(?<at>:(?<from>\d+)(?:-(?<to>\d+))?)? (?<member>[A-Z][A-Za-z0-9]*(?:\.[A-Z][A-Za-z0-9]*)*)",
         RegexOptions.Compiled);
 
     private static readonly Regex TwoCapitals = new(@"[A-Z][A-Za-z0-9]*[A-Z]", RegexOptions.Compiled);
@@ -811,15 +822,36 @@ public class DocsIndexTests
 
     private static readonly Regex Whitespace = new(@"\s+", RegexOptions.Compiled);
 
-    /// <summary>Lines <paramref name="from"/> to <paramref name="to"/> of a source file, joined and collapsed — a quote the audit flattened is read against the same shape.</summary>
-    private static string Spans(string sourceFile, int from, int to)
+    /// <summary>A source file as one line, whitespace collapsed: where a quote is looked for, since the
+    /// audits flatten a quote that spans lines with <c>\n</c>.</summary>
+    private static string Collapsed(string sourceFile) =>
+        CollapsedText.GetOrAdd(sourceFile, static file => Whitespace.Replace(File.ReadAllText(file), " ").Trim());
+
+    private static readonly ConcurrentDictionary<string, string> CollapsedText = new(StringComparer.Ordinal);
+
+    /// <summary>The WHOLE quote, read as <see cref="Claim"/> reads its start: the annotation cut, the
+    /// escape expanded, whitespace collapsed, and what follows an elision left out.</summary>
+    private static string Whole(string quoted)
     {
-        var lines = SourceLines.GetOrAdd(sourceFile, static file => File.ReadAllLines(file));
-        if (from > lines.Length) return string.Empty;
-        return Whitespace.Replace(string.Join(' ', lines[(from - 1)..Math.Min(to, lines.Length)]), " ").Trim();
+        var claim = Whitespace.Replace(Annotation.Split(quoted)[0].Replace("\\n", " ", StringComparison.Ordinal), " ").Trim();
+        foreach (var elision in new[] { "...", "…" })
+        {
+            var at = claim.IndexOf(elision, StringComparison.Ordinal);
+            if (at >= 0) claim = claim[..at].TrimEnd();
+        }
+
+        return claim;
     }
 
-    private static readonly ConcurrentDictionary<string, string[]> SourceLines = new(StringComparer.Ordinal);
+    /// <summary>How many times <paramref name="claim"/> occurs in <paramref name="text"/>, one after another.</summary>
+    private static int Occurrences(string text, string claim)
+    {
+        var count = 0;
+        for (var at = text.IndexOf(claim, StringComparison.Ordinal); at >= 0;
+             at = text.IndexOf(claim, at + claim.Length, StringComparison.Ordinal))
+            count++;
+        return count;
+    }
 
     /// <summary>
     /// Every member a file declares, with the LINES it spans — the full span, so a member's doc
