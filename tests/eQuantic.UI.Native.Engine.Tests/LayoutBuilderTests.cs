@@ -211,4 +211,18 @@ public class LayoutBuilderTests
         Texts(root).Should().Equal("counter 1");
         told.Should().HaveCount(1, "the room and the node did not change");
     }
+
+    /// <summary>A held value applied: in a column 600 wide whose children stretch, a box loose at 320 by
+    /// 480 is its maximum wide, the CSS rule a Box follows, and its child is laid out within it.</summary>
+    [Fact]
+    public void AConstrainedBoxInAWideSlot_IsItsMaximumWide()
+    {
+        var column = new Column { Width = SizeValue.Fill };
+        column.Add(new eQuantic.UI.Components.ConstrainedBox(BoxConstraints.Loose(new Size(320, 480)),
+            new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 })));
+        var root = Frame(Open(new Box(new BoxStyle { Width = 600, Height = 300 }, column), width: 800));
+
+        var fill = Find(root, node => node is Box { Style.Height: { Kind: SizeKind.Fixed, Value: 40 } });
+        fill.Bounds.Width.Should().Be(320);
+    }
 }
