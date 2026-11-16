@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CodeBlock, Column, CornerRadii, Divider, EdgeInsets, Grid, GridTrack, MarkdownBlock, MarkdownParser, MarkdownRun, MarkdownTheme, Mermaid, Row, SizeValue, StatelessComponent, Text, TextRun, TypeRoleValue, TypeStyle } from "../runtime-exports";
+import { $TypeRoleValue, Box, BoxStyle, BuildContext, CodeBlock, Column, CornerRadii, Divider, EdgeInsets, Grid, GridTrack, MarkdownBlock, MarkdownParser, MarkdownRun, MarkdownTheme, Mermaid, Row, SizeValue, StatelessComponent, Text, TextRun, TypeStyle } from "../runtime-exports";
 
 export class Markdown extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Markdown';
@@ -29,7 +29,7 @@ export class Markdown extends StatelessComponent {
         switch (block.kind) {
             case 'heading':
                 {
-                    let role: TypeRoleValue = style.heading4 ?? 'label';
+                    let role: $TypeRoleValue = style.heading4 ?? 'label';
                     if (block.level === 1) role = style.heading1 ?? 'heading'; else if (block.level === 2) role = style.heading2 ?? 'title'; else if (block.level === 3) role = style.heading3 ?? 'titleSmall';
                     return new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(0, block.level <= 2 ? style.headingSpace ?? 10 : style.subheadingSpace ?? 6, 0, 0) }), new Text(block.text, role, style.headingColor ?? theme.textPrimary, 0, 'start', false, false, null, block.level, { key: block.id }));
                 }
@@ -50,7 +50,7 @@ export class Markdown extends StatelessComponent {
     }
 
     static paragraph(runs: MarkdownRun[], theme: any, style: MarkdownTheme) {
-        let body: TypeRoleValue = Markdown.bodyRole(style);
+        let body: $TypeRoleValue = Markdown.bodyRole(style);
         let prose = theme.type(body);
         let codeMax = style.inlineCodeMaxSize ?? 13.5;
         let codeSize = prose.size < codeMax ? prose.size : codeMax;

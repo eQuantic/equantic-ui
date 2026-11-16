@@ -1,4 +1,4 @@
-import { $eq, Adjustable, Box, BoxStyle, BuildContext, ColorToken, Column, CornerRadii, Draggable, Flexible, Motion, Pressable, RangeValue, Row, SizeValue, StatelessComponent, TransitionSpec, VariantValue } from "../runtime-exports";
+import { $eq, $VariantValue, Adjustable, Box, BoxStyle, BuildContext, ColorToken, Column, CornerRadii, Draggable, Flexible, Motion, Pressable, RangeValue, Row, SizeValue, StatelessComponent, TransitionSpec } from "../runtime-exports";
 
 export class Slider extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Slider';
@@ -11,7 +11,7 @@ export class Slider extends StatelessComponent {
     declare max: number;
     declare step: number;
     declare disabled: boolean;
-    declare variant: VariantValue;
+    declare variant: $VariantValue;
     declare label: string;
     declare valueText: any;
 

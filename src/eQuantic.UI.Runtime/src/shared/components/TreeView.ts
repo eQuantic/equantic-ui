@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Color, ColorToken, ControlMetrics, CornerRadii, DateTime, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, Navigable, NavigableMoveValue, Pressable, Row, ScrollRequest, ScrollView, SdkStrings, Shortcut, SizeValue, StatefulComponent, StyleDiff, Text, TreeNode, TreePlace, TreeViewRow, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, $NavigableMoveValue, Box, BoxStyle, BuildContext, Color, ColorToken, ControlMetrics, CornerRadii, DateTime, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, Navigable, Pressable, Row, ScrollRequest, ScrollView, SdkStrings, Shortcut, SizeValue, StatefulComponent, StyleDiff, Text, TreeNode, TreePlace, TreeViewRow, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TreeView extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TreeView';
@@ -370,7 +370,7 @@ export class TreeView extends StatefulComponent {
         if (at >= 0) this.press(this._rows[at], true);
     }
 
-    move(move: NavigableMoveValue) {
+    move(move: $NavigableMoveValue) {
         if (this._rows.length === 0) return;
         let at = this.activeIndex();
         if (at < 0) {

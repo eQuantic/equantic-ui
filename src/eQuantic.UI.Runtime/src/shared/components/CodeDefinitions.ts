@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeDefinitionKindValue, CodeDocument, CodeEditorController, CodeLocation, CodePosition, CodeRange, ProviderRequest, UiThread } from "../runtime-exports";
+import { $CodeDefinitionKindValue, $eq, CancellationToken, CancellationTokenSource, CodeDocument, CodeEditorController, CodeLocation, CodePosition, CodeRange, ProviderRequest, UiThread } from "../runtime-exports";
 
 export class CodeDefinitions {
     constructor(editor: CodeEditorController) {
@@ -32,7 +32,7 @@ export class CodeDefinitions {
         if (!selection.isEmpty) this.clearLink();
     }
 
-    async requestAsync(position: CodePosition, kind: CodeDefinitionKindValue, cancellation: CancellationToken) {
+    async requestAsync(position: CodePosition, kind: $CodeDefinitionKindValue, cancellation: CancellationToken) {
         let document = this._editor.document;
         let asked = [];
         for (const provider of this.providers) asked.push(this.askOne(provider, document, position, kind, cancellation));
@@ -42,7 +42,7 @@ export class CodeDefinitions {
         return CodeLocation.joined(answers);
     }
 
-    async askOne(provider: any, document: CodeDocument, position: CodePosition, kind: CodeDefinitionKindValue, cancellation: CancellationToken) {
+    async askOne(provider: any, document: CodeDocument, position: CodePosition, kind: $CodeDefinitionKindValue, cancellation: CancellationToken) {
         try {
             return await provider.definitionsAsync(document, position, kind, cancellation);
         } catch ($e: any) {

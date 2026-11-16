@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Motion, Pressable, Row, SizeValue, StatelessComponent, Text, TransitionSpec, VariantValue, VisualNode } from "../runtime-exports";
+import { $eq, $VariantValue, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Motion, Pressable, Row, SizeValue, StatelessComponent, Text, TransitionSpec, VisualNode } from "../runtime-exports";
 
 export class PageIndicator extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.PageIndicator';
@@ -6,7 +6,7 @@ export class PageIndicator extends StatelessComponent {
     declare count: number;
     declare currentIndex: number;
     declare onSelected: ((int: number) => void) | null;
-    declare variant: VariantValue;
+    declare variant: $VariantValue;
 
     constructor(count?: any, currentIndex?: any, onSelected: any = null, props?: any) {
         super();

@@ -1,4 +1,4 @@
-import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
+import { $CodeTokenKindValue, $eq, CodeDocument, CodeLanguageRules, CodeToken } from "../runtime-exports";
 
 export class PythonLanguage {
     static $interfaces = ['eQuantic.UI.Code.ICodeLanguage'];
@@ -137,7 +137,7 @@ export class PythonLanguage {
                 let start = i;
                 while (i < line.length && CodeDocument.isWordChar(line[i])) i++;
                 let word = line.slice(start, i);
-                let kind: CodeTokenKindValue = PythonLanguage.reserved.has(word) ? 'keyword' : PythonLanguage.constants.has(word) ? 'constant' : PythonLanguage.builtins.has(word) ? 'type' : PythonLanguage.nextNonSpace(line, i) === '(' ? 'function' : (/^\p{Lu}$/u.test(word[0])) ? 'type' : 'plain';
+                let kind: $CodeTokenKindValue = PythonLanguage.reserved.has(word) ? 'keyword' : PythonLanguage.constants.has(word) ? 'constant' : PythonLanguage.builtins.has(word) ? 'type' : PythonLanguage.nextNonSpace(line, i) === '(' ? 'function' : (/^\p{Lu}$/u.test(word[0])) ? 'type' : 'plain';
                 PythonLanguage.add(into, start, i - start, kind);
                 continue;
             }
@@ -167,7 +167,7 @@ export class PythonLanguage {
         return '\u0000';
     }
 
-    static add(into: CodeToken[], start: number, length: number, kind: CodeTokenKindValue) {
+    static add(into: CodeToken[], start: number, length: number, kind: $CodeTokenKindValue) {
         if (length <= 0) return;
         if (into.length > 0 && into[into.length - 1].kind === kind && into[into.length - 1].end === start) {
             (into[into.length - 1] = $eq.withPatch(into[into.length - 1], { length: into[into.length - 1].length + length }));

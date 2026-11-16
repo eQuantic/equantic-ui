@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeCompletion, CodeCompletionItem, CodeCompletionKindValue, CodeCompletionMatch, CodeLineCells, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Rect, Row, SizeValue, Spacer, StyleDiff, Text, TextRun } from "../runtime-exports";
+import { $CodeCompletionKindValue, $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeCompletion, CodeCompletionItem, CodeCompletionMatch, CodeLineCells, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Rect, Row, SizeValue, Spacer, StyleDiff, Text, TextRun } from "../runtime-exports";
 
 export class CodeCompletionView {
     static pageRows: number = 12;
@@ -144,17 +144,17 @@ export class CodeCompletionView {
         return $eq.text.substring(text, 0, end) + '…';
     }
 
-    static glyph(theme: any, metrics: CodeBlock$CodeMetrics, kind: CodeCompletionKindValue) {
+    static glyph(theme: any, metrics: CodeBlock$CodeMetrics, kind: $CodeCompletionKindValue) {
         let cell = new Row(0, 'center', 'center', false, null, null, { width: SizeValue.fixed(metrics.lineHeight), height: SizeValue.fixed(metrics.lineHeight) });
         cell.add(new Text(CodeCompletionView.glyphOf(kind), 'labelSmall', theme.code(CodeCompletionView.inkOf(kind)), 1, 'start', false, false, null, 0, { mono: true, styleOverride: $eq.withPatch(metrics.style, { weight: 'bold' }) }));
         return cell;
     }
 
-    static glyphOf(kind: CodeCompletionKindValue) {
+    static glyphOf(kind: $CodeCompletionKindValue) {
         return (() => { const $s = kind; if ((($s === 'method' || $s === 'function') || $s === 'constructor')) return 'm'; if (($s === 'field' || $s === 'variable')) return 'v'; if ($s === 'property') return 'p'; if ($s === 'event') return 'e'; if ($s === 'class') return 'C'; if ($s === 'struct') return 'S'; if ($s === 'interface') return 'I'; if ($s === 'enum') return 'E'; if ($s === 'typeParameter') return 'T'; if ($s === 'module') return 'N'; if (($s === 'enumMember' || $s === 'constant')) return 'c'; if ((($s === 'value' || $s === 'unit') || $s === 'color')) return '#'; if ($s === 'keyword') return 'k'; if ($s === 'snippet') return 's'; if ($s === 'operator') return 'o'; if ($s === 'reference') return 'r'; if ($s === 'file') return 'f'; if ($s === 'folder') return 'd'; return 'a'; })();
     }
 
-    static inkOf(kind: CodeCompletionKindValue) {
+    static inkOf(kind: $CodeCompletionKindValue) {
         return (() => { const $s = kind; if (((($s === 'method' || $s === 'function') || $s === 'constructor') || $s === 'event')) return 'function'; if (((((($s === 'class' || $s === 'struct') || $s === 'interface') || $s === 'enum') || $s === 'typeParameter') || $s === 'module')) return 'type'; if ($s === 'property') return 'property'; if (($s === 'enumMember' || $s === 'constant')) return 'constant'; if ((($s === 'value' || $s === 'unit') || $s === 'color')) return 'number'; if (($s === 'keyword' || $s === 'snippet')) return 'keyword'; if ($s === 'operator') return 'operator'; return 'plain'; })();
     }
 

@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Checkbox, Column, DataColumn, DataRow, EdgeInsets, Grid, GridTrack, Icon, IconGlyph, Motion, Pressable, Row, SizeValue, Skeleton, StatelessComponent, StyleDiff, Text, TextAlignmentValue, TransitionSpec, VisualNode } from "../runtime-exports";
+import { $eq, $TextAlignmentValue, Box, BoxStyle, BuildContext, Checkbox, Column, DataColumn, DataRow, EdgeInsets, Grid, GridTrack, Icon, IconGlyph, Motion, Pressable, Row, SizeValue, Skeleton, StatelessComponent, StyleDiff, Text, TransitionSpec, VisualNode } from "../runtime-exports";
 
 export class DataTable extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.DataTable';
@@ -99,7 +99,7 @@ export class DataTable extends StatelessComponent {
         return new Box(new BoxStyle({ width: SizeValue.fill, minHeight: slot?.dataRowHeight ?? 52, borderWidth: slot?.borderWidth ?? 1, borderColor: slot?.borderColor ?? theme.border }), grid, { key: `pending-${$eq.text.format(index, null, undefined, undefined, 'int32')}` });
     }
 
-    static cell(child: VisualNode, align: TextAlignmentValue, slot: any) {
+    static cell(child: VisualNode, align: $TextAlignmentValue, slot: any) {
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center', main: (() => { const $s = align; if ($s === 'center') return 'center'; if ($s === 'end') return 'end'; return 'start'; })() });
         row.add(child);
         return new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(slot?.cellPaddingX ?? 12, slot?.cellPaddingY ?? 8) }), row);

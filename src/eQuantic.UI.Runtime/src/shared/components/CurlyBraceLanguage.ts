@@ -1,4 +1,4 @@
-import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
+import { $CodeTokenKindValue, $eq, CodeDocument, CodeLanguageRules, CodeToken } from "../runtime-exports";
 
 export abstract class CurlyBraceLanguage {
     static $interfaces = ['eQuantic.UI.Code.ICodeLanguage'];
@@ -245,7 +245,7 @@ export abstract class CurlyBraceLanguage {
         return i < line.length && line[i] === '"' ? [i, verbatim] : null;
     }
 
-    static add(into: CodeToken[], start: number, length: number, kind: CodeTokenKindValue) {
+    static add(into: CodeToken[], start: number, length: number, kind: $CodeTokenKindValue) {
         if (length <= 0) return;
         if (into.length > 0 && into[into.length - 1].kind === kind && into[into.length - 1].end === start) {
             (into[into.length - 1] = $eq.withPatch(into[into.length - 1], { length: into[into.length - 1].length + length }));

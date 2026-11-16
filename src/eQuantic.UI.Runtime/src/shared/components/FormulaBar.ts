@@ -1,8 +1,8 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeDocument, CodeGrid, CodeSurface, Column, EdgeInsets, EntryLines, Point, ScrollView, SdkStrings, SheetController, SheetPalette, Size, SizeValue, StatefulComponent, Text, TypeRoleValue, TypeStyle, UiComponent } from "../runtime-exports";
+import { $eq, $TypeRoleValue, Box, BoxStyle, BuildContext, CodeDocument, CodeGrid, CodeSurface, Column, EdgeInsets, EntryLines, Point, ScrollView, SdkStrings, SheetController, SheetPalette, Size, SizeValue, StatefulComponent, Text, TypeStyle, UiComponent } from "../runtime-exports";
 
 export class FormulaBar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.FormulaBar';
-    static barType: TypeRoleValue = 'bodyM';
+    static barType: $TypeRoleValue = 'bodyM';
     _config: FormulaBar;
     _rebuild: () => void;
     _listening: any = null;

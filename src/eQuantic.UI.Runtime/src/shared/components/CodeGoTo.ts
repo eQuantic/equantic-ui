@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeDefinitionKindValue, CodeDocument, CodeEditorController, CodeFuzzyMatch, CodeGoToEntry, CodeGoToLine, CodeGoToModeValue, CodeGoToNotFound, CodeLocation, CodePosition, CodeRange, CodeSymbol, ProviderRequest, Rect, UiThread } from "../runtime-exports";
+import { $CodeDefinitionKindValue, $CodeGoToModeValue, $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeDocument, CodeEditorController, CodeFuzzyMatch, CodeGoToEntry, CodeGoToLine, CodeGoToNotFound, CodeLocation, CodePosition, CodeRange, CodeSymbol, ProviderRequest, Rect, UiThread } from "../runtime-exports";
 
 export class CodeGoTo {
     constructor(editor: CodeEditorController) {
@@ -38,7 +38,7 @@ export class CodeGoTo {
     _editor!: CodeEditorController;
     _open!: boolean;
     _query!: string;
-    _mode!: CodeGoToModeValue;
+    _mode!: $CodeGoToModeValue;
     _line!: CodeGoToLine | null;
     _lineTarget!: CodePosition | null;
     _entries!: CodeGoToEntry[];
@@ -57,7 +57,7 @@ export class CodeGoTo {
     _nearest!: number;
     _entryPlaces!: number[];
     _keepPlace!: number;
-    _kind!: CodeDefinitionKindValue;
+    _kind!: $CodeDefinitionKindValue;
     _notFound!: CodeGoToNotFound | null;
     _placesGeneration!: number;
     _placesRequest!: CancellationTokenSource | null;
@@ -77,7 +77,7 @@ export class CodeGoTo {
         this.read(value, false);
     }
 
-    get mode(): CodeGoToModeValue {
+    get mode(): $CodeGoToModeValue {
         return this._mode;
     }
 
@@ -89,7 +89,7 @@ export class CodeGoTo {
         return this._entries;
     }
 
-    get definitionKind(): CodeDefinitionKindValue {
+    get definitionKind(): $CodeDefinitionKindValue {
         return this._kind;
     }
 
@@ -117,7 +117,7 @@ export class CodeGoTo {
         return this._preview;
     }
 
-    open(mode: CodeGoToModeValue) {
+    open(mode: $CodeGoToModeValue) {
         this.begin();
         if (CodeGoTo.lists(this._mode)) this._mode = 'none';
         this.read((() => { const $s = mode; if ($s === 'line') return ':'; if ($s === 'symbol') return '@'; return ''; })(), true);
@@ -134,7 +134,7 @@ export class CodeGoTo {
         if (!(this._editor.composition == null)) this._editor.setComposition('');
     }
 
-    static lists(mode: CodeGoToModeValue) {
+    static lists(mode: $CodeGoToModeValue) {
         return mode === 'definitions' || mode === 'references';
     }
 
@@ -286,7 +286,7 @@ export class CodeGoTo {
             this.refresh();
             return;
         }
-        let was: CodeGoToModeValue = this._mode;
+        let was: $CodeGoToModeValue = this._mode;
         this._query = query;
         this._mode = query.startsWith(':') ? 'line' : query.startsWith('@') ? 'symbol' : 'none';
         if (this._mode === 'symbol' && (opening || was !== 'symbol')) {
@@ -490,7 +490,7 @@ export class CodeGoTo {
         this._editor.revealInCenter(shown);
     }
 
-    definition(kind: CodeDefinitionKindValue) {
+    definition(kind: $CodeDefinitionKindValue) {
         return $eq.collections.count(this._editor.definitions.providers) > 0 && this.requestPlaces('definitions', kind, false);
     }
 
@@ -523,7 +523,7 @@ export class CodeGoTo {
         return true;
     }
 
-    requestPlaces(mode: CodeGoToModeValue, kind: CodeDefinitionKindValue, muted: boolean) {
+    requestPlaces(mode: $CodeGoToModeValue, kind: $CodeDefinitionKindValue, muted: boolean) {
         this.unsay();
         this.stopAsking();
         let generation = this._placesGeneration;
@@ -534,7 +534,7 @@ export class CodeGoTo {
         return true;
     }
 
-    async askPlaces(mode: CodeGoToModeValue, kind: CodeDefinitionKindValue, at: CodePosition, muted: boolean, generation: number, cancellation: CancellationToken) {
+    async askPlaces(mode: $CodeGoToModeValue, kind: $CodeDefinitionKindValue, at: CodePosition, muted: boolean, generation: number, cancellation: CancellationToken) {
         let places = null;
         try {
             places = mode === 'references' ? await this._editor.references.requestAsync(at, cancellation) : await this._editor.definitions.requestAsync(at, kind, cancellation);
@@ -552,7 +552,7 @@ export class CodeGoTo {
         });
     }
 
-    answered(mode: CodeGoToModeValue, kind: CodeDefinitionKindValue, at: CodePosition, muted: boolean, places: CodeLocation[]) {
+    answered(mode: $CodeGoToModeValue, kind: $CodeDefinitionKindValue, at: CodePosition, muted: boolean, places: CodeLocation[]) {
         if ($eq.collections.count(places) === 0) {
             if (muted) return;
             let word = this._editor.definitions.wordUnder(at) ?? (at.column > 0 ? this._editor.definitions.wordUnder($eq.withPatch(at, { column: at.column - 1 })) : null);
@@ -575,7 +575,7 @@ export class CodeGoTo {
         this.openPlaces(mode, kind, places, at);
     }
 
-    openPlaces(mode: CodeGoToModeValue, kind: CodeDefinitionKindValue, places: CodeLocation[], at: CodePosition) {
+    openPlaces(mode: $CodeGoToModeValue, kind: $CodeDefinitionKindValue, places: CodeLocation[], at: CodePosition) {
         this.begin();
         this.stopSymbols();
         this._mode = mode;

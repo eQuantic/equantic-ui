@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, EntryLines, LeadingSpans, Motion, Point, Positioned, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetGrid, SheetPalette, SheetRange, SheetSurface, Size, SizeValue, Stack, StatefulComponent, TableOffset, TableRange, TableScroll, TableScrollRequest, TableView, TableViewCell, Text, TypeRoleValue, UiComponent, VisualNode, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, $SheetAxisValue, $TypeRoleValue, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, EntryLines, LeadingSpans, Motion, Point, Positioned, SdkStrings, SheetController, SheetDocument, SheetGrid, SheetPalette, SheetRange, SheetSurface, Size, SizeValue, Stack, StatefulComponent, TableOffset, TableRange, TableScroll, TableScrollRequest, TableView, TableViewCell, Text, UiComponent, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Spreadsheet extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.Spreadsheet';
@@ -14,7 +14,7 @@ export class Spreadsheet extends StatefulComponent {
     static headerWidth: number = 44;
     static headerHeight: number = 26;
     static numberPadding: number = 8;
-    static cellType: TypeRoleValue = 'bodyM';
+    static cellType: $TypeRoleValue = 'bodyM';
     static minColWidth: number = 24;
     static minRowHeight: number = 14;
     static grip: number = 6;
@@ -169,7 +169,7 @@ export class Spreadsheet extends StatefulComponent {
         return [inBand, false];
     }
 
-    previewResize(axis: SheetAxisValue, index: number, delta: number) {
+    previewResize(axis: $SheetAxisValue, index: number, delta: number) {
         let document = this.controller.document;
         if (this._resizeBase < 0) this._resizeBase = axis === 'cols' ? document.colWidth(index) : document.rowHeight(index);
         let floor = axis === 'cols' ? Spreadsheet.minColWidth : Spreadsheet.minRowHeight;
@@ -179,7 +179,7 @@ export class Spreadsheet extends StatefulComponent {
         });
     }
 
-    commitResize(axis: SheetAxisValue, index: number, delta: number) {
+    commitResize(axis: $SheetAxisValue, index: number, delta: number) {
         if (this._resizeBase < 0) return;
         let document = this.controller.document;
         let floor = axis === 'cols' ? Spreadsheet.minColWidth : Spreadsheet.minRowHeight;

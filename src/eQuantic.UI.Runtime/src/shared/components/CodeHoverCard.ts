@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDiagnostic, CodeDiagnosticSeverityValue, CodeHoverSession, CodeNoteBuilder, CornerRadii, EdgeInsets, Flexible, Row, SizeValue, Text, TextRun, TypeStyle, VisualNode } from "../runtime-exports";
+import { $CodeDiagnosticSeverityValue, $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDiagnostic, CodeHoverSession, CodeNoteBuilder, CornerRadii, EdgeInsets, Flexible, Row, SizeValue, Text, TextRun, TypeStyle, VisualNode } from "../runtime-exports";
 
 export class CodeHoverCard {
     static mark: number = 8;
@@ -64,7 +64,7 @@ export class CodeHoverCard {
         return row;
     }
 
-    static severityColor(theme: any, severity: CodeDiagnosticSeverityValue) {
+    static severityColor(theme: any, severity: $CodeDiagnosticSeverityValue) {
         return (() => { const $s = severity; if ($s === 'error') return theme.colors('destructive').base; if ($s === 'warning') return theme.colors('warning').base; if ($s === 'information') return theme.colors('info').base; return theme.textMuted; })();
     }
 }

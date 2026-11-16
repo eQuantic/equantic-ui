@@ -1,11 +1,11 @@
-import { Box, BoxStyle, BuildContext, CodeEditorController, CodeGrid, ColorToken, Point, Positioned, Rect, SheetPalette, SizeValue, Stack, StatelessComponent, Text, TypeRoleValue } from "../runtime-exports";
+import { $TypeRoleValue, Box, BoxStyle, BuildContext, CodeEditorController, CodeGrid, ColorToken, Point, Positioned, Rect, SheetPalette, SizeValue, Stack, StatelessComponent, Text } from "../runtime-exports";
 
 export class EntryLines extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.EntryLines';
     _entry: CodeEditorController;
     _grid: CodeGrid = CodeGrid.$zero();
     _corner: Point = new Point();
-    _role: TypeRoleValue = 'display';
+    _role: $TypeRoleValue = 'display';
     _palette: SheetPalette = SheetPalette.$zero();
     _active: boolean = false;
 
