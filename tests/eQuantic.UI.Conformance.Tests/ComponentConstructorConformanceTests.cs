@@ -25,7 +25,7 @@ public class ComponentConstructorConformanceTests
             private readonly string _label;
             private readonly int[] _counts;
             public Badge(string label, params int[] counts) { _label = label; _counts = counts; }
-            public string Says() => _label + "|" + _counts.Length;
+            public string Says() => _label + "|" + (_counts == null ? "null" : _counts.Length.ToString());
             public override VisualNode Build(ComponentContext context) => new Text(Says(), TypeRole.BodyM);
         }
         public sealed class Line
@@ -52,6 +52,7 @@ public class ComponentConstructorConformanceTests
         ("the params list passed as an array", "return new Tally(\"t\", 3, new[] { 7 }).Says();"),
         ("an explicit constructor ending in params, with none passed", "return new Badge(\"b\").Says();"),
         ("an explicit constructor ending in params, with two passed", "return new Badge(\"b\", 1, 2).Says();"),
+        ("null passed for the params list, which C# passes as the array, not inside one", "return new Badge(\"b\", null).Says();"),
         ("a plain class's constructor ending in params", "return new Line(\"l\").Says() + \"/\" + new Line(\"l\", 5, 1, 2).Says();"),
         ("a record's constructor ending in params", "return new Row(\"r\").Says() + \"/\" + new Row(\"r\", 5, 1, 2).Says();"),
         ("a method ending in params", "return Sums.Of(\"m\") + \"/\" + Sums.Of(\"m\", 5, 1, 2);"),
