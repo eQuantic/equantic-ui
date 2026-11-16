@@ -12,7 +12,7 @@ import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from '.
 import type { NodeKind } from './node-kinds.generated';
 import type { TableCellRoleValue, TableRoleValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
-import type { AppTheme, ContextRequest } from './value-types';
+import type { AppTheme, BoxConstraints, ContextRequest } from './value-types';
 import { iconPaths } from './icons.generated';
 import type {
   BoxStyleValue,
@@ -491,6 +491,22 @@ export class AdaptiveNode extends VisualNode {
     if (this.expanded && widthDp >= this.expandedFrom) return this.expanded;
     if (this.medium && widthDp >= this.mediumFrom) return this.medium;
     return this.compact;
+  }
+}
+
+/**
+ * Mirror of the C# `LayoutBuilder` (#1555): a child built for the room its box has. The box fills on
+ * both axes; the browser measures the room it is given after the pass and hands it to `builder`.
+ */
+export class LayoutBuilder extends VisualNode {
+  readonly nodeKind = 'layoutBuilder';
+
+  constructor(
+    readonly builder: (constraints: BoxConstraints) => VisualNode,
+    config?: EqConfig,
+  ) {
+    super();
+    if (config) Object.assign(this, config);
   }
 }
 

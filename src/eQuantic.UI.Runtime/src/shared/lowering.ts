@@ -749,6 +749,9 @@ function lowerNodeKind(
     // C# twin (W3): the app's own shapes as inline SVG, in call order.
     case 'canvas':
       return lowerCanvas(node as unknown as CanvasNodeValue, context);
+    // C# twin (#1555): the builder's box, written empty, as the server writes it, so hydration adopts it.
+    case 'layoutBuilder':
+      return lowerBox(UNBUILT_BUILDER, context, path);
     // C# twin: artwork stays VECTOR in the DOM — one <path> per shape, the paint the file chose.
     case 'drawing':
       return lowerDrawing(node as unknown as DrawingNode);
@@ -3550,6 +3553,13 @@ function paintsNothing(box: BoxNode): boolean {
   );
 }
 
+/** A builder's box with nothing built in it: a box that fills on both axes (C# `UnbuiltBuilder`). */
+const UNBUILT_BUILDER: BoxNode = {
+  nodeKind: 'box',
+  style: { width: { kind: 'fill', value: 0 }, height: { kind: 'fill', value: 0 } } as BoxStyleValue,
+  child: null,
+};
+
 function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNode {
   const style = box.style ?? ({} as BoxStyleValue);
   // A CAP with no decided height bounds the child (the C# twin, CapsItsChild): as a flex column, a
@@ -4202,6 +4212,9 @@ function capsAt(node: unknown): SizeValueValue | undefined {
 /** Whether a node requests Fill per axis — wrappers must stretch for the 100% chain to reach it. */
 function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
   switch (node.nodeKind) {
+    // A builder's box fills on both axes, whatever it built inside it (C# twin).
+    case 'layoutBuilder':
+      return { width: true, height: true };
     case 'box': {
       const style = (node as BoxNode).style ?? ({} as BoxStyleValue);
       return { width: style.width?.kind === 'fill', height: style.height?.kind === 'fill' };

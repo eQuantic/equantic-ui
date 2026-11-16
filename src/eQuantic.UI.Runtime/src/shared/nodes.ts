@@ -1,4 +1,4 @@
-import type { ContextRequest, FontFamily, Point, Rect, Size } from './value-types';
+import type { BoxConstraints, ContextRequest, FontFamily, Point, Rect, Size } from './value-types';
 import type { PickedFile } from './picked-file';
 /**
  * The SHARED abstract vocabulary on the client (docs/SHARED-COMPONENTS-PLAN.md) — the JS shapes of
@@ -201,6 +201,14 @@ export interface AdaptiveNodeValue {
   /** Custom thresholds in dp (default 600/840) — a design that switches elsewhere brings its own. */
   mediumFrom?: number;
   expandedFrom?: number;
+}
+
+/** Wire shape of the C# `LayoutBuilder` (#1555): a child built for the room its box has, which the
+ * browser measures after the pass and builds the child for. */
+export interface LayoutBuilderValue {
+  nodeKind: 'layoutBuilder';
+  key?: string | null;
+  builder: (constraints: BoxConstraints) => VisualNodeValue;
 }
 
 /** Wire shape of the C# `KeyChord`: a DOM `KeyboardEvent.key` name plus [Flags] KeyModifiers

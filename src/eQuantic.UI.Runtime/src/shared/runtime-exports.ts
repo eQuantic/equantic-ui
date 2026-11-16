@@ -77,6 +77,7 @@ export {
   SafeArea,
   Pinned,
   AdaptiveNode,
+  LayoutBuilder,
   Vector,
   Canvas,
   CanvasPointer,
@@ -134,6 +135,7 @@ export { RouteValues } from './route-values';
 // Same promise, same failure shape: a page writing BoxStyle.Transform / .Pattern / .Glow names
 // these, and eqc routes every Primitives name here.
 export {
+  BoxConstraints,
   ContextRequest,
   FaceName,
   Point,

@@ -1,4 +1,4 @@
-import { $eq, AdaptiveNode, Adjustable, AdjustableRoleValue, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, CodeSurface, ColorToken, Column, ContextMenu, ContextRequest, ContextTarget, CookieConsent, CornerRadii, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragAxisValue, DragDismiss, Draggable, Drawer, Drawing, DropTarget, EdgeInsets, EmptyState, FileUpload, Flexible, Grid, GridTrack, Group, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, LiveRegion, LiveRegionUrgencyValue, LoopEffectValue, LoopMotion, MainAlignValue, Markdown, MenuItem, Mermaid, Navigable, NavigableMoveValue, NavigableRoleValue, NavigationRail, NavItem, OptionGroup, Overlay, PickedFile, Pinned, Positioned, Presence, PresenceMotionValue, Pressable, PressableRoleValue, Progress, ProgressBar, RangeValue, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, SegmentedControl, Select, SheetSurface, Shortcut, Simulated, Size, SizeValue, SizeVariantValue, Skeleton, Slider, Sortable, SortableItem, SortDrop, Spacer, Spinner, Stack, Stepper, Switch, TableCellRoleValue, TableOffset, TableRange, TableRoleValue, TableScroll, TableScrollRequest, TableSpans, TableView, TableViewCell, TableViewport, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TreeNode, TreeView, TypeRoleValue, TypeStyle, UploadedFile, UploadPolicy, VariantValue, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "../runtime-exports";
+import { $eq, AdaptiveNode, Adjustable, AdjustableRoleValue, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxConstraints, BoxStyle, Button, Calendar, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, CodeSurface, ColorToken, Column, ConstrainedBox, ContextMenu, ContextRequest, ContextTarget, CookieConsent, CornerRadii, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragAxisValue, DragDismiss, Draggable, Drawer, Drawing, DropTarget, EdgeInsets, EmptyState, FileUpload, Flexible, Grid, GridTrack, Group, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, LayoutBuilder, Link, ListDetail, ListItem, ListView, LiveRegion, LiveRegionUrgencyValue, LoopEffectValue, LoopMotion, MainAlignValue, Markdown, MenuItem, Mermaid, Navigable, NavigableMoveValue, NavigableRoleValue, NavigationRail, NavItem, OptionGroup, Overlay, PickedFile, Pinned, Positioned, Presence, PresenceMotionValue, Pressable, PressableRoleValue, Progress, ProgressBar, RangeValue, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, SegmentedControl, Select, SheetSurface, Shortcut, Simulated, Size, SizeValue, SizeVariantValue, Skeleton, Slider, Sortable, SortableItem, SortDrop, Spacer, Spinner, Stack, Stepper, Switch, TableCellRoleValue, TableOffset, TableRange, TableRoleValue, TableScroll, TableScrollRequest, TableSpans, TableView, TableViewCell, TableViewport, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TreeNode, TreeView, TypeRoleValue, TypeStyle, UploadedFile, UploadPolicy, VariantValue, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "../runtime-exports";
 
 export class UI {
     static column(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
@@ -43,6 +43,10 @@ export class UI {
 
     static box(style?: BoxStyle, child: VisualNode | null = null) {
         return new Box(style, child);
+    }
+
+    static constrainedBox(constraints: BoxConstraints, child: VisualNode) {
+        return new ConstrainedBox(constraints, child);
     }
 
     static text(content: string, role: TypeRoleValue = 'bodyL', color: ColorToken | null = null, maxLines: number = 0, align: TextAlignmentValue = 'start', mono: boolean = false, tabular: boolean = false, styleOverride: TypeStyle | null = null, headingLevel: number = 0) {
@@ -169,6 +173,10 @@ export class UI {
 
     static adaptiveNode(compact: VisualNode, medium: VisualNode | null = null, expanded: VisualNode | null = null) {
         return new AdaptiveNode(compact, medium, expanded);
+    }
+
+    static layoutBuilder(builder: (value: BoxConstraints) => VisualNode) {
+        return new LayoutBuilder(builder);
     }
 
     static cameraPreview(session: any, width: number, height: number, cornerRadius?: CornerRadii, label: string = '') {
