@@ -52,6 +52,7 @@ class FilesHost extends StatefulComponent {
         ],
         null,
         (node: TreeNode) => pressed.push(node.key),
+        null,
         {
           label: 'Files',
           loadChildren: async (node: TreeNode) => {

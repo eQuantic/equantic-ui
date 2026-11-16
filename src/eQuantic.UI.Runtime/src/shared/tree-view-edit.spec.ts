@@ -82,6 +82,7 @@ class EditHost extends StatefulComponent {
         ],
         null,
         (node: TreeNode) => pressed.push(node.key),
+        this.style,
         {
           label: 'Files',
           loadChildren: async (node: TreeNode) => {
@@ -103,7 +104,6 @@ class EditHost extends StatefulComponent {
           menuBuilder: () => [new MenuItem('Rename'), new MenuItem('Delete')],
           onMenuSelect: (node: TreeNode, index: number) => chosen.push(`${node.key}#${index}`),
           rowBuilder: this.rowBuilder,
-          style: this.style,
         },
       ) as never,
     );

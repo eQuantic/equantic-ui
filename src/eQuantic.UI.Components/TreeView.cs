@@ -132,11 +132,13 @@ public sealed class TreeView : StatefulComponent
     private int _scrollVersion;
     private ScrollRequest? _scrollRequest;
 
-    public TreeView(IReadOnlyList<TreeNode> roots, string? selectedKey = null, Action<TreeNode>? onPressed = null)
+    public TreeView(IReadOnlyList<TreeNode> roots, string? selectedKey = null, Action<TreeNode>? onPressed = null,
+        ListTheme? style = null)
     {
         Roots = roots;
         SelectedKey = selectedKey;
         OnPressed = onPressed;
+        _style = style;
     }
 
     /// <summary>The nodes at the top of the tree, in the order they show.</summary>
@@ -191,7 +193,7 @@ public sealed class TreeView : StatefulComponent
 
     /// <summary>The tree's own measures and colours, laid over the theme's <see cref="IAppTheme.List"/>: the
     /// members whose names start with <c>Tree</c>, and the family's quiet fill, chevron and title colour.</summary>
-    public ListTheme? Style { get => _style; init => _style = value; }
+    public ListTheme? Style => _style;
 
     /// <summary>
     /// Renames a node to the name typed, without the spaces around it. Without it, F2 and a rename request do

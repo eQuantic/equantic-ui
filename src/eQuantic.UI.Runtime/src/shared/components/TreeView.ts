@@ -129,10 +129,6 @@ export class TreeView extends StatefulComponent {
         return this._style;
     }
 
-    set style(value) {
-        this._style = value;
-    }
-
     get onRenamed() {
         return this._onRenamed;
     }
@@ -215,7 +211,7 @@ export class TreeView extends StatefulComponent {
         TreeView.$init().noChildren = value;
     }
 
-    constructor(roots?: any, selectedKey: any = null, onPressed: any = null, props?: any) {
+    constructor(roots?: any, selectedKey: any = null, onPressed: any = null, style: any = null, props?: any) {
         super();
         if (roots !== undefined) this.roots = roots;
         if (selectedKey !== undefined) this.selectedKey = selectedKey;
@@ -223,6 +219,7 @@ export class TreeView extends StatefulComponent {
         this.roots = roots;
         this.selectedKey = selectedKey;
         this.onPressed = onPressed;
+        this._style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
