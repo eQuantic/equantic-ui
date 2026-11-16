@@ -219,6 +219,8 @@ export {
   WebContent,
 } from './shared/value-types';
 export type { AppTheme } from './shared/value-types';
+export { ContentStyle } from './shared/content-style';
+
 export {
   ComponentContext,
   setPhotonTheme,

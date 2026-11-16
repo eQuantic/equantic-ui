@@ -1,12 +1,12 @@
 ## 1. The vocabulary
 
 - [ ] 1.1 `ContentStyle` with `Merge`, `BoxStyle.Content`; `Text.Role`, `MaxLines`, `Align` and `Icon.Size` optional, with `Text.Under` and `Icon.SizeUnder`; `EffectiveTypeStyle.Resolve` takes the look in effect
-- [ ] 1.2 `VisualNode`'s conversion from `string`, and the runtime twin's `VisualNode.fromString`
+- [x] 1.2 `VisualNode`'s conversion from `string`, and the runtime twin's `VisualNode.fromString`
 
 ## 2. The producers
 
 - [ ] 2.1 Photon: measure (and intrinsics) and paint carry the look down their walks
-- [ ] 2.2 The web: the server's lowering and the browser's, the browser's relowered records included
+- [x] 2.2 The web: the server's lowering and the browser's, the browser's relowered records included
 - [ ] 2.3 Email
 
 ## 3. Proof, docs

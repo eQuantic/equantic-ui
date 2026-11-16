@@ -47,6 +47,7 @@ import {
   WebContent,
 } from './value-types';
 import { Curve, Motion } from './design-system.generated';
+import type { ContentStyle } from './content-style';
 import type { MotionSpec } from './primitive-values';
 import { hashesByValue } from '../utils/hash';
 
@@ -72,6 +73,15 @@ export abstract class VisualNode {
    * system said so: its own `anchor` is the NODE a popover sits against.
    */
   bookmark?: string | null;
+  /**
+   * C# `implicit operator VisualNode(string)` (#1577): a string where a node is taken IS the Text of it,
+   * naming nothing, so it is drawn in the look the box around it states. eqc calls this wherever the
+   * conversion applies, as it calls `IconGlyph.fromIcons`.
+   */
+  static fromString(text: string): VisualNode {
+    return new Text(text);
+  }
+
   /** Spec S1 `align-self` — overrides the parent flex container's cross alignment for this child. */
   alignSelf?: CrossAlignValue | null;
   /** Spec S4 — how many grid COLUMNS this child spans. */
@@ -179,6 +189,8 @@ interface BoxStyleConfig {
   maxHeight?: SizeValue | number;
   padding?: EdgeInsetsValue;
   background?: ColorTokenValue | null;
+  foreground?: ColorTokenValue | null;
+  content?: ContentStyle | null;
   cornerRadius?: CornerRadii;
   borderWidth?: number;
   borderColor?: ColorTokenValue;
@@ -219,6 +231,8 @@ export class BoxStyle {
   background?: ColorTokenValue | null;
   /** What the text and icons inside that name no colour inherit (C# `BoxStyle.Foreground`, #614). */
   foreground?: ColorTokenValue | null;
+  /** What the text and icons inside that name no role, line limit, alignment or size take (C# `BoxStyle.Content`, #1577). */
+  content?: ContentStyle | null;
   cornerRadius: CornerRadii = new CornerRadii();
   borderWidth = 0;
   borderColor?: ColorTokenValue;
@@ -678,12 +692,15 @@ interface TextConfig {
 export class Text extends VisualNode {
   readonly nodeKind = 'text';
   content: string;
-  role: string;
+  /** Null takes the role of the box around it, and `bodyL` where none states one (C# `Text.Role`, #1577). */
+  role: string | null;
   color: ColorTokenValue | null;
-  maxLines: number;
+  /** Null takes the box's line limit, and none where none states one. */
+  maxLines: number | null;
   styleOverride: TypeStyleValue | null = null;
   gradient: LinearGradient | null = null;
-  align: string = 'start';
+  /** Null takes the box's alignment, and the start where none states one. */
+  align: string | null = null;
   mono = false;
   /** The SLANTED cut for the whole paragraph (C# `Text.Italic`). */
   italic = false;
@@ -703,10 +720,10 @@ export class Text extends VisualNode {
    */
   constructor(
     content: string,
-    role = 'bodyL',
+    role: string | null = null,
     color: ColorTokenValue | null = null,
-    maxLines = 0,
-    align?: string | TextConfig,
+    maxLines: number | null = null,
+    align?: string | null | TextConfig,
     mono?: boolean,
     tabular?: boolean,
     styleOverride?: TypeStyleValue | null,
@@ -1792,19 +1809,20 @@ export class IconGlyph {
 export class Icon extends VisualNode {
   readonly nodeKind = 'icon';
   glyph: IconGlyph;
-  size: number;
+  /** Null takes the box's `content.iconSize`, and 24 where none states one (C# `Icon.Size`, #1577). */
+  size: number | null;
   color: ColorTokenValue | null;
   label: string | null;
 
   constructor(
     glyph: IconGlyph,
-    size = 24,
+    size: number | null = null,
     color: ColorTokenValue | null = null,
     label: string | null = null,
     config?: EqConfig,
   ) {
     super();
-    if (size !== 16 && size !== 20 && size !== 24 && size !== 32) {
+    if (size !== null && size !== 16 && size !== 20 && size !== 24 && size !== 32) {
       throw new RangeError(`Icon size ${size} is not on the §07 whitelist (16/20/24/32).`);
     }
     // A curated glyph arrives through its conversion (`IconGlyph.fromIcons`), a pack glyph as the
