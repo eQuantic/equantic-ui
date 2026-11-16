@@ -125,14 +125,13 @@ public class ServerRenderingService : IServerRenderingService
 
             object metadataSource = component is Web.VisualNodeComponent bridge ? bridge.Node : component;
 
-            // Scoped provider + route for this async context (thread-safe via AsyncLocal), armed
-            // BEFORE anything the page runs. The prefetch is the first thing that needs the route:
-            // a page on /docs/{slug} loads BY the slug, so a route arriving after it would be a
-            // route arriving after the only question it was there to answer.
-            // ONE route, in the shape with no target in it — a write-once page reads
-            // context.Route.Param("slug") instead of reaching for ASP.NET (and losing Photon), and
-            // the web's `context.Route` is this same value rather than a copy of it.
-            Primitives.RouteValues.Current = BuildRouteValues(context);
+            // The ROUTE of this request, in the shape with no target in it: a write-once page reads
+            // context.Route.Param("slug") instead of reaching for ASP.NET (and losing Photon). It is the
+            // frame's, handed to the owner the page is drawn with and to the channels its bridges are
+            // drawn with, so every component of the request reads it from its context, and no ambient
+            // channel carries it (#1395). A prefetch, outside the tree, resolves it from the request's
+            // services (UIExtensions registers it).
+            var route = BuildRouteValues(context, _options.CultureRoutes);
             // Where a component in the MIDDLE of the tree finds a capability — the REQUEST's
             // container, so a scoped one resolves and a page's own registrations win.
             Primitives.CapabilityScope.Current = context.RequestServices.GetService;
@@ -214,7 +213,19 @@ public class ServerRenderingService : IServerRenderingService
                     // so they have no position to keep an owner at: each is a tree drawn once, and what
                     // loaded is put back by its name.
                     var page = component as Web.VisualNodeComponent;
-                    var host = page is null ? null : Web.MarkupHost.Structural(Theme, 1f, density);
+                    // THE PAGE'S ERROR BOUNDARY (#1452), the request's tree's: a component that throws is
+                    // contained to its own subtree instead of turning this request into a 500.
+                    // Development quotes the exception in the panel; production says only that a section
+                    // is missing, and either way the failure reaches the log.
+                    var boundary = new Primitives.ComponentBoundary
+                    {
+                        Diagnostics = IsDevelopment(context),
+                        Report = (failed, error) => _logger.LogError(error,
+                            "Component {Component} failed to render and was contained", failed.GetType().Name),
+                    };
+                    var host = page is null ? null : PageHost(density, route, boundary);
+                    // What the host builds: the page, or the app's layout around it.
+                    var tree = page is null ? null : PageTree(page);
 
                     // ONE ROUND, the same for both paths: the page drawn with channels of its own, whose
                     // expansion scope names what it reaches. It answers that scope.
@@ -224,48 +235,33 @@ public class ServerRenderingService : IServerRenderingService
                         vectorDefs = null;
                         CollectAssets(component, assets, context.RequestServices, new HashSet<Type>());
 
-                        // Armed the same way and for the same reason: a component that throws is
-                        // contained to its own subtree instead of turning this request into a 500.
-                        // Development quotes the exception in the panel; production says only that a
-                        // section is missing, and either way the failure reaches the log.
-                        Primitives.ComponentBoundary.Diagnostics = IsDevelopment(context);
-                        Primitives.ComponentBoundary.Report = (failed, error) => _logger.LogError(error,
-                            "Component {Component} failed to render and was contained", failed.GetType().Name);
                         // NAMES every component as the realizer expands it, and hands back what an
                         // earlier round loaded for it — before its Build runs, or the build reads the
                         // defaults again and the round was wasted.
                         renderScope = new Web.ComponentExpansionScope
                         {
                             Restore = prefetched,
-                            Reserved = coreRootKey,
                         };
                         // THE RENDER'S CHANNELS (#1404): every write-once bridge in the tree, top-level
                         // page or composed inside a Core component, collects its atomic rules, the
                         // gradients the page paints with and the families its text names into this one
                         // set, and names each component it expands into the scope.
-                        var channels = new Web.RenderChannels(renderScope, density, linkPolicy);
+                        var channels = new Web.RenderChannels(renderScope, density, linkPolicy, route, boundary);
                         var styles = channels.Styles;
                         var gradients = channels.Gradients;
                         var faces = channels.Faces;
-                        try
+                        if (host is not null)
                         {
-                            if (host is not null)
-                            {
-                                host.Build(page!.Node, ServerSizeClass);
-                                html = HtmlRenderer.RenderToString(host.Lower(channels));
-                                host.EndFrame();
-                            }
-                            else
-                            {
-                                // An escape-hatch page reaches its bridges through Render(), which takes no
-                                // parameter: the one place the channels are found in an ambient.
-                                using (Web.RenderChannels.BridgeWith(channels))
-                                    html = RenderComponent(component);
-                            }
+                            host.Build(tree!);
+                            html = HtmlRenderer.RenderToString(host.Lower(channels));
+                            host.EndFrame();
                         }
-                        finally
+                        else
                         {
-                            Primitives.ComponentBoundary.Report = null;
+                            // An escape-hatch page reaches its bridges through Render(), which takes no
+                            // parameter: the one place the channels are found in an ambient.
+                            using (Web.RenderChannels.BridgeWith(channels))
+                                html = RenderComponent(component);
                         }
 
                         // The faces of the families the page named that the theme's stylesheet does not
@@ -385,8 +381,8 @@ public class ServerRenderingService : IServerRenderingService
                     // visit showed the default. The root's own kind decides how the ROOT is asked —
                     // directly, above — and says nothing about what it composes.
                     navigationPayload = component is Web.VisualNodeComponent navigated
-                        ? await PrefetchPageAsync(navigated, context, density)
-                        : await PrefetchTreeAsync(component, prefetched, asked, context, coreRootKey, density);
+                        ? await PrefetchPageAsync(navigated, context, density, route)
+                        : await PrefetchTreeAsync(component, prefetched, asked, context, density, route);
                 }
 
                 // THEN metadata, and the order is the whole point. ConfigureMetadata used to run first,
@@ -463,7 +459,6 @@ public class ServerRenderingService : IServerRenderingService
             }
             finally
             {
-                Primitives.RouteValues.ClearCurrent();
                 Primitives.CapabilityScope.Current = null;
             }
         }
@@ -492,13 +487,6 @@ public class ServerRenderingService : IServerRenderingService
     /// </summary>
     private const int MaxPrefetchRounds = 5;
 
-    /// <summary>
-    /// The window size class a page's tree resolves an adaptive node's arm for. The server cannot see
-    /// the window, and the markup is the same for every class, since every arm lowers behind its own
-    /// media gate: it decides only which arm's components keep their instances from one prefetch round
-    /// to the next, while the others are drawn once per round.
-    /// </summary>
-    private const WindowSizeClass ServerSizeClass = WindowSizeClass.Expanded;
 
     /// <summary>The theme every write-once page and bridge builds with: the app's, or the SDK's.</summary>
     private IAppTheme Theme => _options.Theme ?? Primitives.PhotonTheme.Instance;
@@ -528,8 +516,8 @@ public class ServerRenderingService : IServerRenderingService
         Dictionary<string, Web.LoadedComponentState> loaded,
         HashSet<string> asked,
         HttpContext context,
-        string? reserved,
-        Density density)
+        Density density,
+        Primitives.RouteValues route)
     {
         var wire = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
 
@@ -538,9 +526,9 @@ public class ServerRenderingService : IServerRenderingService
 
         for (var round = 0; round < MaxPrefetchRounds; round++)
         {
-            var scope = new Web.ComponentExpansionScope { Restore = loaded, Reserved = reserved };
+            var scope = new Web.ComponentExpansionScope { Restore = loaded };
             settled = scope;
-            Expand(component, scope, density);
+            Expand(component, scope, density, route);
 
             var pending = scope.Expanded
                 .Where(pair => pair.Value is Primitives.IServerPrefetch
@@ -609,17 +597,20 @@ public class ServerRenderingService : IServerRenderingService
     /// container joins.
     /// </summary>
     private async Task<Dictionary<string, IReadOnlyDictionary<string, object?>>> PrefetchPageAsync(
-        Web.VisualNodeComponent page, HttpContext context, Density density)
+        Web.VisualNodeComponent page, HttpContext context, Density density, Primitives.RouteValues route)
     {
         var wire = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
-        var host = Web.MarkupHost.Structural(Theme, 1f, density);
+        var host = PageHost(density, route);
+        // The tree the browser builds for the navigation: under a layout, the page in the layout's slot,
+        // so every key names the position the browser's walk reaches it at.
+        var tree = PageTree(page);
         var data = new Web.ServerDataRounds(host);
         var settled = new Web.ComponentExpansionScope();
 
         Web.ComponentExpansionScope Round()
         {
             settled = new Web.ComponentExpansionScope();
-            Discover(host, page.Node, settled, density);
+            Discover(host, tree, settled, density, route);
             return settled;
         }
 
@@ -655,14 +646,45 @@ public class ServerRenderingService : IServerRenderingService
         return wire;
     }
 
+    /// <summary>
+    /// The host a write-once page is drawn in for a request.
+    /// <para>
+    /// Without a layout the browser builds the page's OWN component by itself and only what it builds
+    /// through an owner, so a key is measured below the page (<see cref="Web.MarkupHost.ForPage"/>): the
+    /// page is <c>Type#0</c> and everything it composes <c>r0/…</c> from its build. Under a layout the
+    /// browser builds the layout, the slot and the page all through the document's one owner, measured
+    /// from the layout at its root, so the server's host measures from its root too
+    /// (<see cref="Web.MarkupHost.Structural"/>): the layout is <c>r0/Layout@</c>, the page stands where
+    /// the layout placed the slot, and its own data travels under that position's key, never
+    /// <c>Type#0</c>. Measured from the page instead, every key would come out one step apart and every
+    /// component would draw its defaults in the browser, in silence.
+    /// </para>
+    /// </summary>
+    private Web.MarkupHost PageHost(Density density, Primitives.RouteValues route,
+        Primitives.ComponentBoundary? boundary = null) =>
+        _options.Layout is null
+            ? Web.MarkupHost.ForPage(Theme, 1f, density, route, boundary)
+            : Web.MarkupHost.Structural(Theme, 1f, density, route, boundary);
+
+    /// <summary>
+    /// What a write-once page is drawn as: the page, or the app's layout around it,
+    /// <c>new TLayout(new PageSlot(page))</c> (<see cref="UIOptions.UseLayout{TLayout}"/>), the tree the
+    /// browser builds for it.
+    /// </summary>
+    private VisualNode PageTree(Web.VisualNodeComponent page) =>
+        _options.Layout is { } layout
+            ? (VisualNode)Activator.CreateInstance(layout, new PageSlot(page.Node))!
+            : page.Node;
+
     /// <summary>A frame of <paramref name="host"/>'s tree built and lowered with <paramref name="scope"/>
     /// naming its components, the markup thrown away: <see cref="Expand"/>, for a tree the request owns.</summary>
-    private static void Discover(Web.MarkupHost host, VisualNode page, Web.ComponentExpansionScope scope, Density density)
+    private static void Discover(Web.MarkupHost host, VisualNode tree, Web.ComponentExpansionScope scope, Density density,
+        Primitives.RouteValues route)
     {
         // Channels of its own, so nothing the discovery collects reaches the page the request serves:
         // only the scope it names components into is read.
-        host.Build(page, ServerSizeClass);
-        host.Lower(new Web.RenderChannels(scope, density));
+        host.Build(tree);
+        host.Lower(new Web.RenderChannels(scope, density, route: route));
         host.EndFrame();
     }
 
@@ -670,9 +692,10 @@ public class ServerRenderingService : IServerRenderingService
     /// One discovery expansion of an escape-hatch page: builds the tree and throws the result away, with
     /// channels of its own so nothing it collects reaches the page the request actually serves.
     /// </summary>
-    private static void Expand(IComponent component, Web.ComponentExpansionScope scope, Density density)
+    private static void Expand(IComponent component, Web.ComponentExpansionScope scope, Density density,
+        Primitives.RouteValues route)
     {
-        using (Web.RenderChannels.BridgeWith(new Web.RenderChannels(scope, density)))
+        using (Web.RenderChannels.BridgeWith(new Web.RenderChannels(scope, density, route: route)))
             component.Render();
     }
 
@@ -770,11 +793,11 @@ public class ServerRenderingService : IServerRenderingService
     }
 
     /// <summary>
-    /// Builds the per-request <see cref="Primitives.RouteValues"/> from the HTTP route values and
-    /// query string, so SSR sees the same parameters the client router will (e.g. <c>id</c> in
-    /// <c>/users/{id}</c>).
+    /// Builds the per-request <see cref="Primitives.RouteValues"/> from the HTTP route values, the
+    /// query string and the path, so SSR sees the same parameters the client router will (e.g.
+    /// <c>id</c> in <c>/users/{id}</c>).
     /// </summary>
-    private static Primitives.RouteValues BuildRouteValues(HttpContext context)
+    internal static Primitives.RouteValues BuildRouteValues(HttpContext context, CultureRouteMap? cultureRoutes)
     {
         var routeParams = new Dictionary<string, string>();
         foreach (var rv in context.Request.RouteValues)
@@ -794,7 +817,14 @@ public class ServerRenderingService : IServerRenderingService
             query[q.Key] = q.Value.Count > 0 ? q.Value[0] ?? string.Empty : string.Empty;
         }
 
-        return new Primitives.RouteValues(routeParams, query);
+        // The path as the app writes it (Navigator.Location): the route a page declares and an in-app
+        // link names, so a layout compares it with the href it wrote. The language segment is not the
+        // app's to write, since a link gains it as it is drawn (UseCultureRoutes), and the browser's
+        // location answers the same path for the same page.
+        var path = context.Request.Path.Value;
+        path = string.IsNullOrEmpty(path) ? "/" : path;
+        if (cultureRoutes is not null) path = cultureRoutes.Split(path).Path;
+        return new Primitives.RouteValues(routeParams, query, path);
     }
 
     /// <summary>

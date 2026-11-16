@@ -10,6 +10,26 @@ import { round as dotnetRound } from '../utils/dotnet-math';
 import type { ColorValue, SizeKindValue, TypeStyleValue } from './nodes';
 import type { DataPalette } from './data-palette';
 import type { SheetTheme } from './sheet-theme';
+import type {
+  BadgeTheme,
+  ButtonTheme,
+  CalendarTheme,
+  CardTheme,
+  ChipTheme,
+  ControlsTheme,
+  IconButtonTheme,
+  InputTheme,
+  ListTheme,
+  MarkdownTheme,
+  MenuTheme,
+  ModalTheme,
+  NavigationTheme,
+  NoticeTheme,
+  ProgressTheme,
+  SegmentedTheme,
+  SelectionControlsTheme,
+  TableTheme,
+} from './theme-slots';
 import { hashesByValue } from '../utils/hash';
 import { FontWeightNumbers, type FontWeightValue } from './enums.generated';
 
@@ -216,6 +236,18 @@ export class Point {
   }
   length(): number {
     return f(Math.sqrt(f(f(this.x * this.x) + f(this.y * this.y))));
+  }
+}
+
+/**
+ * Mirror of the C# `ContextRequest` (#1531): a person asked for the menu of a `ContextTarget`, at a point of its
+ * box, or with none when the keyboard asked.
+ */
+export class ContextRequest {
+  readonly at: Point | null;
+
+  constructor(at: Point | null = null) {
+    this.at = at;
   }
 }
 
@@ -600,6 +632,42 @@ export interface AppTheme {
   data: DataPalette;
   /** The spreadsheet's slot (C# `IAppTheme.Sheet`), absent or null for its own colours. */
   sheet?: SheetTheme | null;
+  /** The control ladder (C# `IAppTheme.Controls`), absent or null for `Sizing`'s. */
+  controls?: ControlsTheme | null;
+  /** The Button's slot (C# `IAppTheme.Button`), absent or null for its own defaults. */
+  button?: ButtonTheme | null;
+  /** The IconButton's slot (C# `IAppTheme.IconButton`), absent or null for its own defaults. */
+  iconButton?: IconButtonTheme | null;
+  /** The fields' slot (C# `IAppTheme.Input`), absent or null for their own defaults. */
+  input?: InputTheme | null;
+  /** The selection controls' slot (C# `IAppTheme.SelectionControls`), absent or null for their own defaults. */
+  selectionControls?: SelectionControlsTheme | null;
+  /** The segmented controls' slot (C# `IAppTheme.Segmented`), absent or null for their own defaults. */
+  segmented?: SegmentedTheme | null;
+  /** The Chip's slot (C# `IAppTheme.Chip`), absent or null for its own defaults. */
+  chip?: ChipTheme | null;
+  /** The modal surfaces' slot: Dialog, BottomSheet and Drawer (C# `IAppTheme.Modal`). */
+  modal?: ModalTheme | null;
+  /** The menus' slot: Popover, Menu and Tooltip (C# `IAppTheme.Menu`). */
+  menu?: MenuTheme | null;
+  /** The notices' slot: Toast, Banner and CookieConsent (C# `IAppTheme.Notice`). */
+  notice?: NoticeTheme | null;
+  /** The progress slot: ProgressBar, PullToRefresh and Skeleton (C# `IAppTheme.Progress`). */
+  progress?: ProgressTheme | null;
+  /** The Card's slot (C# `IAppTheme.Card`). */
+  card?: CardTheme | null;
+  /** The navigation family's slot (C# `IAppTheme.Navigation`), absent or null for each component's own defaults. */
+  navigation?: NavigationTheme | null;
+  /** The list family's slot (C# `IAppTheme.List`), absent or null for each component's own defaults. */
+  list?: ListTheme | null;
+  /** The table family's slot (C# `IAppTheme.Table`), absent or null for each component's own defaults. */
+  table?: TableTheme | null;
+  /** The badge family's slot (C# `IAppTheme.Badge`), absent or null for each component's own defaults. */
+  badge?: BadgeTheme | null;
+  /** The calendar family's slot (C# `IAppTheme.Calendar`), absent or null for each component's own defaults. */
+  calendar?: CalendarTheme | null;
+  /** The rendered document's slot (C# `IAppTheme.Markdown`), absent or null for each component's own defaults. */
+  markdown?: MarkdownTheme | null;
   disabledOpacity: number;
   /**
    * The face this theme sets CODE in (C# `IAppTheme.MonoFamily`), or undefined for the platform's
@@ -749,6 +817,40 @@ export class TableRange {
   }
 }
 
+/** Mirror of the C# `SortDrop` (#1535): where a carried item lands, the item's id, the list it left and the
+ * one it lands in, and its position there counted without it; `into` names the item it lands inside, in a
+ * list that nests. */
+export class SortDrop {
+  readonly item: string;
+  readonly from: string;
+  readonly to: string;
+  readonly index: number;
+  readonly into: string | null = null;
+
+  constructor(item = '', from = '', to = '', index = 0, config?: { into?: string | null }) {
+    this.item = item;
+    this.from = from;
+    this.to = to;
+    this.index = index;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `TreePlace`: where one item of a tree stands, its level and its position among its
+ * siblings of how many, all from one. Built bare it is the struct's default, three zeros
+ * (`[ZeroConstructs]`). */
+export class TreePlace {
+  readonly level: number;
+  readonly positionInSet: number;
+  readonly sizeOfSet: number;
+
+  constructor(level = 0, positionInSet = 0, sizeOfSet = 0) {
+    this.level = level;
+    this.positionInSet = positionInSet;
+    this.sizeOfSet = sizeOfSet;
+  }
+}
+
 /** Mirror of the C# `TableScrollRequest`: an offset to go to or a range to reveal, honoured once per
  * version. */
 export class TableScrollRequest {
@@ -759,6 +861,21 @@ export class TableScrollRequest {
   constructor(version = 0, config?: { offset?: TableOffset | null; reveal?: TableRange | null }) {
     this.version = version;
     if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `TextReading` (#1333): the text a screen reader hears a surface hold as its field's
+ * value, and the selection in it, its anchor and its focus, in UTF-16 code units of that text. A code
+ * surface's model answers one, and the door writes it. */
+export class TextReading {
+  readonly text: string;
+  readonly anchor: number;
+  readonly focus: number;
+
+  constructor(text = '', anchor = 0, focus = 0) {
+    this.text = text;
+    this.anchor = anchor;
+    this.focus = focus;
   }
 }
 
@@ -777,9 +894,13 @@ export class ScrollRequest {
  * compares it (`ValueTwinHashTests` holds this list to the C#). */
 hashesByValue(
   ColorToken,
+  ContextRequest,
+  SortDrop,
   TableOffset,
   TableRange,
   TableScrollRequest,
+  TextReading,
+  TreePlace,
   ScrollRequest,
   SizeValue,
   WebContent,

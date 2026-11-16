@@ -321,7 +321,6 @@ public class CodeEditorSurfaceTests
     [Fact]
     public void CommentingOutSeveralLines_LeavesTheEditorOnScreen()
     {
-        ComponentBoundary.ClearContained();
         var (host, surface, bounds) = Open("// a\n//\n// b");
         Focus(host, surface, bounds);
         surface.Engine().Selection = new CodeRange(new CodePosition(0, 0), new CodePosition(2, 4));
@@ -329,7 +328,7 @@ public class CodeEditorSurfaceTests
         Press(host, "/", KeyModifiers.Command);
 
         surface.Engine().Document.Text.Should().Be("a\n\nb");
-        ComponentBoundary.Contained.Should().BeEmpty("the editor drew the lines ⌘/ rewrote");
+        host.Boundary.Contained.Should().BeEmpty("the editor drew the lines ⌘/ rewrote");
     }
 
     /// <summary>
@@ -340,7 +339,6 @@ public class CodeEditorSurfaceTests
     [Fact]
     public void ATokenLongerThanItsLineIsDrawnAsFarAsTheLineGoes()
     {
-        ComponentBoundary.ClearContained();
         var stale = new CodeHighlighter(CodeLanguages.CSharp);
         stale.TokensFor(CodeDocument.FromText("// a\n// long comment\nb"), 2);
         var block = new CodeBlock("")
@@ -357,7 +355,7 @@ public class CodeEditorSurfaceTests
 
         host.RenderFrame(new DisplayListBuilder());
 
-        ComponentBoundary.Contained.Should().BeEmpty("the block drew every line, the empty one too");
+        host.Boundary.Contained.Should().BeEmpty("the block drew every line, the empty one too");
     }
 
     [Fact]

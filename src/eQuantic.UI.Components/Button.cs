@@ -56,24 +56,28 @@ public sealed class Button : StatelessComponent
     {
         var theme = context.Theme;
         var colors = theme.Colors(Variant);
-        // Straight off the ladder, the way Avatar and IconButton already read it. This used to go
-        // through `ButtonStyles.Metrics`, a tuple view of these same seven calls that existed only
-        // because the Button once had two browser twins and neither could copy numbers by hand.
-        var height = Sizing.Height(Size, context.Density);
-        var padX = Sizing.PaddingX(Size, context.Density);
-        var gap = Sizing.Gap(Size);
-        var labelSize = Sizing.LabelSize(Size, context.Density);
-        var iconSize = Sizing.Icon(Size);
-        // Shape is theme-driven (Material overrides the ladder): XLarge rides Large, the rest Medium.
-        var radius = theme.Shape(Size == SizeVariant.XLarge ? ShapeScale.Large : ShapeScale.Medium);
+        // The theme's Button slot, then its control ladder, then the component's own (§3.10): the
+        // ladder through ControlMetrics, which reads the button's own rungs ahead of the theme's.
+        var slot = theme.Button;
+        var ladder = slot?.Controls;
+        var height = ControlMetrics.Height(context, Size, ladder);
+        var padX = ControlMetrics.PaddingX(context, Size, ladder);
+        var gap = ControlMetrics.Gap(context, Size, ladder);
+        var labelSize = ControlMetrics.LabelSize(context, Size, ladder);
+        var iconSize = ControlMetrics.Icon(context, Size, ladder);
+        // Shape is theme-driven (Material overrides the ladder): XLarge rides Large, the rest Medium,
+        // unless a slot names the button's radius.
+        var radius = ControlMetrics.Radius(context, Size, ladder,
+            theme.Shape(Size == SizeVariant.XLarge ? ShapeScale.Large : ShapeScale.Medium));
 
         // Link is an inline-text control: no fill ever, minimal padding (spec A12).
-        if (Variant == Variant.Link) padX = 6;
+        if (Variant == Variant.Link) padX = slot?.LinkPaddingX ?? 6;
         ColorToken? fill = Variant is Variant.Outline or Variant.Ghost or Variant.Link ? null : colors.Base;
         var textColor = colors.OnBase;
 
-        var borderWidth = Variant == Variant.Outline ? 1f : 0f;
-        var borderColor = theme.BorderStrong;
+        var borderWidth = Variant == Variant.Outline ? slot?.OutlineWidth ?? 1f : 0f;
+        var borderColor = slot?.OutlineColor ?? theme.BorderStrong;
+        var quietFill = slot?.QuietFill ?? theme.SurfaceSubtle;
 
         var inert = Disabled || Loading;
         if (inert)
@@ -88,7 +92,7 @@ public sealed class Button : StatelessComponent
         // free-form size (spec A8). Single line, ellipsis — never two lines (spec A12).
         var label = new Text(Label, TypeRole.Label, textColor, maxLines: 1)
         {
-            StyleOverride = TypeStyle.OfSize(labelSize, FontWeight.SemiBold, 0.1f),
+            StyleOverride = TypeStyle.OfSize(labelSize, slot?.LabelWeight ?? FontWeight.SemiBold, slot?.LabelTracking ?? 0.1f),
         };
 
         var content = new Row(gap: gap)
@@ -106,7 +110,7 @@ public sealed class Button : StatelessComponent
         ColorToken? pressedFill = Variant switch
         {
             Variant.Link => null,
-            Variant.Outline or Variant.Ghost => theme.SurfaceSubtle,
+            Variant.Outline or Variant.Ghost => quietFill,
             _ => colors.Pressed,
         };
 
@@ -116,7 +120,7 @@ public sealed class Button : StatelessComponent
         ColorToken? hoverFill = Variant switch
         {
             Variant.Link => null,
-            Variant.Outline or Variant.Ghost => theme.SurfaceSubtle,
+            Variant.Outline or Variant.Ghost => quietFill,
             _ => colors.Hover,
         };
 
@@ -124,7 +128,7 @@ public sealed class Button : StatelessComponent
         {
             Height = height,
             Width = Expand ? SizeValue.Fill : SizeValue.Hug,
-            MinWidth = Sizing.ButtonMinWidth,
+            MinWidth = slot?.MinWidth ?? Sizing.ButtonMinWidth,
             Padding = EdgeInsets.Symmetric(padX, 0),
             Background = fill,
             CornerRadius = new CornerRadii(radius),

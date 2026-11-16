@@ -1,4 +1,4 @@
-import type { FontFamily, Point, Rect, Size } from './value-types';
+import type { ContextRequest, FontFamily, Point, Rect, Size } from './value-types';
 import type { PickedFile } from './picked-file';
 /**
  * The SHARED abstract vocabulary on the client (docs/SHARED-COMPONENTS-PLAN.md) — the JS shapes of
@@ -168,6 +168,8 @@ export interface AnchoredNode extends VisualNodeValue {
   anchor: VisualNodeValue;
   panel: VisualNodeValue;
   placement?: AnchorPlacementValue;
+  /** A point of the anchor's box where the panel's corner stands instead of an edge (#1531). */
+  at?: Point | null;
   gap?: number;
   open?: boolean;
   onDismiss?: (() => void) | null;
@@ -413,6 +415,8 @@ export interface TextNode extends VisualNodeValue {
   content: string;
   /** Where this text sits in the document's OUTLINE — 1..6, 0 for text that is not a heading. */
   headingLevel?: number;
+  /** Drawn and never read: a reader passes over it (C# `Text.ExcludeFromSemantics`). */
+  excludeFromSemantics?: boolean;
   /** `TypeRole` as a camelCase member string ('display' | 'heading' | … | 'bodyL' | 'caption'). */
   role: string;
   color?: ColorTokenValue | null;
@@ -463,6 +467,47 @@ export interface DropTargetNode extends VisualNodeValue {
   onDropped?: (files: PickedFile[]) => void;
   /** true while files are carried over the area, false when they leave or land. */
   onDragOverChanged?: ((over: boolean) => void) | null;
+  enabled?: boolean;
+}
+
+/** Wire shape of the C# `ContextTarget` (#1531): what a person can ask the menu of. */
+export interface ContextTargetNode extends VisualNodeValue {
+  nodeKind: 'contextTarget';
+  child: VisualNodeValue;
+  /** Where in the target's box the menu was asked for; `at` is null when the keyboard asked. */
+  onRequested: (request: ContextRequest) => void;
+  enabled?: boolean;
+}
+
+/** The value a C# `SortDrop` crosses as (value-types.ts `SortDrop`). */
+export interface SortDropValue {
+  readonly item: string;
+  readonly from: string;
+  readonly to: string;
+  readonly index: number;
+  readonly into: string | null;
+}
+
+/** Wire shape of the C# `Sortable` (#1535) — a list whose items a pointer puts in order. */
+export interface SortableNode extends VisualNodeValue {
+  nodeKind: 'sortable';
+  child: VisualNodeValue;
+  id: string;
+  onDropped: (drop: SortDropValue) => void;
+  group?: string;
+  axis?: string;
+  nests?: boolean;
+  label?: string;
+  onHovered?: ((drop: SortDropValue | null) => void) | null;
+  accepts?: ((drop: SortDropValue) => boolean) | null;
+  enabled?: boolean;
+}
+
+/** Wire shape of the C# `SortableItem` (#1535) — one item a pointer picks up. */
+export interface SortableItemNode extends VisualNodeValue {
+  nodeKind: 'sortableItem';
+  child: VisualNodeValue;
+  id: string;
   enabled?: boolean;
 }
 
@@ -530,6 +575,16 @@ export interface PressableNode extends VisualNodeValue {
    * stop); menuItem/option leave the tab order too (the keyboard lives on the trigger, the
    * highlight rides aria-activedescendant); checkbox/switch keep their own stop. */
   role?: string;
+  /** Where a tree item stands (C# `Pressable.TreePlace`): level, position in its set and the set's
+   * size, all from one. */
+  treePlace?: TreePlaceValue | null;
+}
+
+/** The value a C# `TreePlace` crosses as (value-types.ts `TreePlace`). */
+export interface TreePlaceValue {
+  readonly level: number;
+  readonly positionInSet: number;
+  readonly sizeOfSet: number;
 }
 
 export interface FlexibleNode extends VisualNodeValue {
@@ -842,6 +897,14 @@ export interface LiveRegionNode extends VisualNodeValue {
 
 export type { LiveRegionUrgencyValue } from './enums.generated';
 
+/** A labelled group (C# twin: Group) — a reader names it by its label and then walks into it. */
+export interface GroupNode extends VisualNodeValue {
+  nodeKind: 'group';
+  child: VisualNodeValue;
+  /** The group's name; none is announced when absent or empty. */
+  label?: string;
+}
+
 /**
  * Wire shape of the C# `RangeValue`: the trio ARIA calls now/min/max. One object rather than three
  * fields because `role="slider"` REQUIRES a now, and a now without its bounds is read against ARIA's
@@ -866,8 +929,10 @@ export interface NavigableNode extends VisualNodeValue {
   nodeKind: 'navigable';
   rows: VisualNodeValue[];
   onMove?: (move: NavigableMoveValue) => void;
+  /** A printable character typed while the composite holds the focus (C# `OnTextSearch`). */
+  onTextSearch?: ((text: string) => void) | null;
   label?: string;
-  role?: 'grid';
+  role?: 'grid' | 'tree';
   /** Whether rows[0] holds the column headers (a calendar's day-name row). */
   hasHeaderRow?: boolean;
   /** The focused cell as [row, item] — announced through aria-activedescendant. A C# tuple
@@ -915,6 +980,14 @@ export interface SurfaceRectLike {
   readonly height: number;
 }
 
+/** The C# `TextReading`: the text a reader hears as a field's value, and the selection in it, in UTF-16
+ * code units of that text. */
+export interface TextReadingLike {
+  readonly text: string;
+  readonly anchor: number;
+  readonly focus: number;
+}
+
 /**
  * The C# `ICodeSurfaceModel`, member for member: what a realizer may TELL the engine and ASK it.
  * The transpiled controller satisfies it structurally. Nothing here turns a column into pixels or
@@ -927,6 +1000,8 @@ export interface CodeSurfaceModelLike {
   readonly revealVersion: number;
   /** Changes whenever the surface should take the keyboard; remembered per model, from 0. */
   readonly focusVersion: number;
+  /** What a screen reader hears the surface hold, and where its caret stands in it (#1333). */
+  readonly reading: TextReadingLike;
   handleKey(
     key: string,
     modifiers: number,

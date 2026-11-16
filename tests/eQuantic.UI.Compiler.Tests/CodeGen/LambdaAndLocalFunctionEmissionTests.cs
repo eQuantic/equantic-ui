@@ -8,19 +8,19 @@ using Xunit;
 namespace eQuantic.UI.Compiler.Tests.CodeGen;
 
 /// <summary>
-/// Arrows through the authoritative harness: an object-literal body gets its parentheses (the
-/// bare braces read as a block and the arrow returned undefined), a local function's two body
-/// forms lay out the same, an async lambda keeps its modifier.
+/// Arrows through the authoritative harness: an anonymous object's body is its marked object, a call
+/// whose braces never read as a block (they did once, bare, and the arrow returned undefined), a local
+/// function's two body forms lay out the same, an async lambda keeps its modifier.
 /// </summary>
 public class LambdaAndLocalFunctionEmissionTests
 {
     private static string Flat(string js) => Regex.Replace(js, @"\s+", "");
 
     [Theory]
-    [InlineData("var h = list1.Select(s => new { Len = s.Length });", "(s) => ({ len: s.length })")]
-    [InlineData("var g = () => new { Name = name };", "() => ({ name: this.name })")]
-    [InlineData("var f = (int x) => new { A = x, B = 2 };", "(x) => ({ a: x, b: 2 })")]
-    public void AnObjectLiteralBody_IsParenthesized(string code, string expected)
+    [InlineData("var h = list1.Select(s => new { Len = s.Length });", "(s) => $eq.anonymous({ len: s.length })")]
+    [InlineData("var g = () => new { Name = name };", "() => $eq.anonymous({ name: this.name })")]
+    [InlineData("var f = (int x) => new { A = x, B = 2 };", "(x) => $eq.anonymous({ a: x, b: 2 })")]
+    public void AnAnonymousObjectBody_IsItsMarkedObject(string code, string expected)
     {
         TestHelper.ConvertCodeBlock(code).Should().Contain(expected);
     }

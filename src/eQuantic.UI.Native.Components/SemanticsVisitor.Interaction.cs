@@ -4,13 +4,13 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Native.Components;
 
 /// <summary>
-/// Interaction and motion — fifteen words. Three are controls with a keyboard stop each:
+/// Interaction and motion — sixteen words. Three are controls with a keyboard stop each:
 /// <see cref="Pressable"/> and <see cref="Link"/> announce as one stop, and
 /// <see cref="Adjustable"/> as one stop when it is a slider and as a GROUP that keeps walking when it
 /// is a tab strip or a radio group (#500); a fourth, <see cref="Progress"/>, announces WITHOUT being
-/// one — it is read, never moved, which is why it carries no tab stop and no key handler; two,
-/// <see cref="Navigable"/> and <see cref="LiveRegion"/>, are GROUPS that announce and then keep
-/// walking; the remaining nine wrap a child or are ornament.
+/// one — it is read, never moved, which is why it carries no tab stop and no key handler; three,
+/// <see cref="Navigable"/>, <see cref="LiveRegion"/> and <see cref="Group"/>, are GROUPS that announce
+/// and then keep walking; the remaining nine wrap a child or are ornament.
 /// <para>
 /// This tally said "the fourteenth, Navigable, is the gap" until <see cref="SemanticRole.Group"/>
 /// landed — the running-count shape that rots, caught here one commit after the gap closed.
@@ -70,18 +70,24 @@ internal sealed partial class SemanticsVisitor
             // Where the user IS rides Current, below, not a check and not a pick.
             PressableRole.Destination => (SemanticRole.Destination, (SemanticCheck?)null),
             PressableRole.GridCell => (SemanticRole.GridCell, (SemanticCheck?)null),
+            // Picked when it says so, open when it has children, and placed (#1529).
+            PressableRole.TreeItem => (SemanticRole.TreeItem, (SemanticCheck?)null),
         };
 #pragma warning restore CS8524
         // PICKED-ness, for the three roles that have it. Before the Selected field existed a Tab and
         // an Option arrived here as plain Buttons whose selection was paint only.
         bool? selected = node.Role is PressableRole.Tab or PressableRole.Option or PressableRole.GridCell
             ? node.Selected == true
+            // A tree item says whether it is picked only when the tree says so, as the web writes
+            // aria-selected only then: a tree with no selection announces none.
+            : node.Role == PressableRole.TreeItem ? node.Selected
             : null;
         return Announce(new(role, IdOf(laidOut), laidOut.Bounds,
             node.Label ?? TextWithin(laidOut), null, node.Disabled, check,
             node.Expanded,
             node.Role == PressableRole.Destination && node.Selected == true,
-            selected));
+            selected,
+            TreePlace: node.Role == PressableRole.TreeItem ? node.TreePlace : null));
     }
 
     /// <summary>
@@ -184,8 +190,8 @@ internal sealed partial class SemanticsVisitor
     /// every row inside, which is why this declined while the web honoured it.
     /// </summary>
     public bool Visit(Navigable node, LayoutNode laidOut) =>
-        AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds,
-            node.Label, null, false));
+        AnnounceGroup(new(node.Role == NavigableRole.Tree ? SemanticRole.Tree : SemanticRole.Group,
+            IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
 
     /// <summary>
     /// A table viewport is a GROUP named by its label, over the cells it holds in view: a reader walks
@@ -273,6 +279,11 @@ internal sealed partial class SemanticsVisitor
         AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds,
             node.Label, null, false, Live: node.Urgency));
 
+    /// <summary>A labelled group: one stop named by its label, then what it holds, as the web's
+    /// <c>role="group"</c> is read.</summary>
+    public bool Visit(Group node, LayoutNode laidOut) =>
+        AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
+
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(DragDismiss node, LayoutNode laidOut) => Wraps;
 
@@ -282,8 +293,18 @@ internal sealed partial class SemanticsVisitor
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(Hoverable node, LayoutNode laidOut) => Wraps;
 
+    /// <summary>What a person asks the menu of reads as its child: the request is a gesture, not a role.</summary>
+    public bool Visit(ContextTarget node, LayoutNode laidOut) => Wraps;
+
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(DropTarget node, LayoutNode laidOut) => Wraps;
+    /// <summary>A named list is a labelled GROUP, read and then walked into, as the web's role=group says it
+    /// (#1536); an unnamed one wraps its child and says nothing of its own.</summary>
+    public bool Visit(Sortable node, LayoutNode laidOut) => node.Label.Length == 0
+        ? Wraps
+        : AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
+    /// <inheritdoc cref="Wraps"/>
+    public bool Visit(SortableItem node, LayoutNode laidOut) => Wraps;
 
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(InFlow node, LayoutNode laidOut) => Wraps;
@@ -317,7 +338,9 @@ internal sealed partial class SemanticsVisitor
             // Content. Here it costs more than a missing announcement — a control whose label happens
             // to emphasise one word derived NO name at all, and a nameless button is announced as
             // "button" and nothing else.
-            if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
+            // A text drawn and never read is no part of a name either, as the web's aria-hidden says.
+            if (node.Source is Text { PlainContent.Length: > 0 } text && !HiddenFromReaders(text))
+                parts.Add(text.PlainContent);
             foreach (var child in node) Gather(child, parts);
         }
     }

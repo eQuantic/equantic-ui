@@ -34,10 +34,10 @@ public class DocumentSlotsTests
     public void AFieldsPlaceholder_IsTheThemesPlaceholder()
     {
         var builder = new DisplayListBuilder();
-        PhotonRealizer.Realize(new TextEntry("") { Placeholder = "you@company.com" }, 260, 200, Brand, ThemeMode.Light, builder);
+        PhotonRealizer.Realize(new TextEntry("") { Placeholder = "you@company.com" }, 260, 200, Brand, ThemeMode.Light, ContrastLevel.Standard, builder);
 
         builder.Build().Commands.ToArray().Single(c => c.Kind == DrawCommandKind.FillRRect).Paint.Color
-            .Should().Be(Gold.Resolve(ThemeMode.Light).WithOpacity(0.30f),
+            .Should().Be(Gold.Resolve(ThemeMode.Light, ContrastLevel.Standard).WithOpacity(0.30f),
                 "the headless stand-in bar is drawn in the colour the glyphs would be");
     }
 
@@ -55,10 +55,10 @@ public class DocumentSlotsTests
     {
         var paints = TableScrollbarPaints(Brand);
 
-        paints.Should().Contain(Forest.Resolve(ThemeMode.Light), "the thumb").And.Contain(Cream.Resolve(ThemeMode.Light), "the track");
+        paints.Should().Contain(Forest.Resolve(ThemeMode.Light, ContrastLevel.Standard), "the thumb").And.Contain(Cream.Resolve(ThemeMode.Light, ContrastLevel.Standard), "the track");
         TableScrollbarPaints(PhotonTheme.Instance).Should()
-            .Contain(PhotonTheme.Instance.TextMuted.Resolve(ThemeMode.Light).WithOpacity(0.55f), "the default thumb is what Photon drew")
-            .And.Contain(PhotonTheme.Instance.SurfaceSubtle.Resolve(ThemeMode.Light), "and so is the track");
+            .Contain(PhotonTheme.Instance.TextMuted.Resolve(ThemeMode.Light, ContrastLevel.Standard).WithOpacity(0.55f), "the default thumb is what Photon drew")
+            .And.Contain(PhotonTheme.Instance.SurfaceSubtle.Resolve(ThemeMode.Light, ContrastLevel.Standard), "and so is the track");
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class DocumentSlotsTests
         host.RenderFrame(builder, 0);
 
         builder.Build().Commands.ToArray()
-            .Should().Contain(c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == Forest.WithOpacity(0.4f).Resolve(ThemeMode.Light));
+            .Should().Contain(c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == Forest.WithOpacity(0.4f).Resolve(ThemeMode.Light, ContrastLevel.Standard));
     }
 
     /// <summary>

@@ -61,13 +61,13 @@ public class PressedFillPlacementTests
     private static (DisplayList Frame, LayoutNode Root) Draw(VisualNode node)
     {
         var builder = new DisplayListBuilder();
-        var result = PhotonRealizer.Realize(node, 400, 400, Theme, ThemeMode.Light, builder);
+        var result = PhotonRealizer.Realize(node, 400, 400, Theme, ThemeMode.Light, ContrastLevel.Standard, builder);
         return (builder.Build(), result.Root);
     }
 
     private static List<Rect> Painted(DisplayList list, ColorToken token)
     {
-        var color = token.Resolve(ThemeMode.Light);
+        var color = token.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         var rects = new List<Rect>();
         foreach (var command in list.Commands)
             if (command.Kind == DrawCommandKind.FillRRect && command.Paint.Color == color)
@@ -161,7 +161,7 @@ public class PressedFillPlacementTests
 
     private static List<DrawCommand> Commands(DisplayList list, DrawCommandKind kind, ColorToken token)
     {
-        var color = token.Resolve(ThemeMode.Light);
+        var color = token.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         var found = new List<DrawCommand>();
         foreach (var command in list.Commands)
             if (command.Kind == kind && command.Paint.Color == color) found.Add(command);

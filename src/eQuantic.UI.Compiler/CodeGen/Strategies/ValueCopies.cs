@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 
@@ -230,7 +231,12 @@ internal static class ValueCopies
         };
     }
 
-    private static readonly ConditionalWeakTable<Compilation, ConcurrentDictionary<IMethodSymbol, bool>> Mutating = new();
+    /// <summary>
+    /// Whether each method writes its value, per compilation, with the files whose syntax the answer
+    /// read: a compile that takes an answer another computed notes those files as its own reads (#1281),
+    /// or a save that changed one of them would leave its module stale.
+    /// </summary>
+    private static readonly ConditionalWeakTable<Compilation, ConcurrentDictionary<IMethodSymbol, (bool Writes, string[] Read)>> Mutating = new();
 
     /// <summary>
     /// Whether a method writes the state of the value it is called on: an instance method of a mutable
@@ -242,14 +248,21 @@ internal static class ValueCopies
     {
         if (method.IsStatic || method.IsReadOnly || !IsMutableValue(method.ContainingType)) return false;
         if (context.SemanticModel?.Compilation is not { } compilation) return false;
-        var known = Mutating.GetValue(compilation, _ => new ConcurrentDictionary<IMethodSymbol, bool>(SymbolEqualityComparer.Default));
-        return known.TryGetValue(method, out var answer) ? answer : known[method] = Writes(method, compilation, []);
+        var known = Mutating.GetValue(compilation, _ => new ConcurrentDictionary<IMethodSymbol, (bool, string[])>(SymbolEqualityComparer.Default));
+        if (!known.TryGetValue(method, out var answer))
+        {
+            using var reads = SourceReads.Begin();
+            var writes = Writes(method, compilation, []);
+            known[method] = answer = (writes, reads.Files.ToArray());
+        }
+        SourceReads.Note(answer.Read);
+        return answer.Writes;
     }
 
     private static bool Writes(IMethodSymbol method, Compilation compilation, HashSet<IMethodSymbol> seen)
     {
         if (!seen.Add(method)) return false;
-        foreach (var reference in method.DeclaringSyntaxReferences)
+        foreach (var reference in method.ReadDeclarations())
         {
             var syntax = reference.GetSyntax();
             if (compilation.ModelOf(syntax.SyntaxTree)?.GetOperation(syntax) is not { } body) continue;

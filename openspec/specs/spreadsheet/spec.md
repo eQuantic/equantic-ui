@@ -154,6 +154,12 @@ clipboard.
   clipboard's text `x\ty` is pasted
 - **THEN** the entry is `ax\tyb`, no other cell changed, and one undo while editing gives back `ab`
 
+#### Scenario: A clipboard that answers later
+
+- **WHEN** ⌘V is pressed over B2 with a clipboard whose read has not answered yet, and it then answers `x\ty`
+- **THEN** the key is claimed, B2 is empty until the clipboard answers, B2 and C2 hold `x` and `y` after, and
+  the sheet's views are told to build again once, after the paste
+
 ### Requirement: The spreadsheet's engine is an assembly the SDK adds
 
 An app built with either SDK SHALL reach the spreadsheet's engine through the `eQuantic.UI.Sheet`
@@ -617,7 +623,9 @@ press SHALL stretch the new range; Shift+F8 SHALL enter add mode, in which a pre
 as it would with ⌘ or Ctrl, until Shift+F8 is pressed again or Escape is. A press without a modifier, an
 arrow, Go To and every other move that selects SHALL leave one range. Copy, cut, paste, the fill down
 and right chords and the fill handle SHALL act on the active range alone; Delete SHALL clear every range,
-and Ctrl+Enter (⌘↩) SHALL fill every range with the entry, as one step undo takes back.
+and Ctrl+Enter (⌘↩) SHALL fill every range with the entry, as one step undo takes back. An undo and a
+redo of any step SHALL bring back the selection as it stood on that side of it, every range and the
+active cell where it was, and a paste SHALL leave the active cell where it landed.
 
 #### Scenario: A press with Command adds a cell
 
@@ -637,8 +645,9 @@ and Ctrl+Enter (⌘↩) SHALL fill every range with the entry, as one step undo 
 
 #### Scenario: Delete clears every range
 
-- **WHEN** B2 and D4:D5 hold values, B2 and D4:D5 are selected, and Delete is pressed
-- **THEN** B2, D4 and D5 are empty, and one undo restores all three
+- **WHEN** B2 and D4:D5 hold values, B2 and D4:D5 are selected with D4 active, and Delete is pressed
+- **THEN** B2, D4 and D5 are empty, one undo restores all three with B2 and D4:D5 selected and D4
+  active, and a redo empties them again with the same selection
 
 #### Scenario: Copy takes the active range
 
@@ -648,7 +657,13 @@ and Ctrl+Enter (⌘↩) SHALL fill every range with the entry, as one step undo 
 #### Scenario: Ctrl+Enter fills every range
 
 - **WHEN** B2 and D4:D5 are selected, `x` is typed and Ctrl+Enter (⌘↩) is pressed
-- **THEN** B2, D4 and D5 hold `x`, and one undo empties all three
+- **THEN** B2, D4 and D5 hold `x`, and one undo empties all three with B2 and D4:D5 selected
+
+#### Scenario: An undo keeps the active cell where it was
+
+- **WHEN** B2:C3 is selected, Tab moves the active cell to C2, Delete is pressed, E5 is selected and the
+  step is undone
+- **THEN** B2:C3 is selected with C2 active
 
 ### Requirement: A header answers the pointer through the engine
 
@@ -932,3 +947,14 @@ column, and of a row's header SHALL select the row, as a press there does, on ev
 
 - **WHEN** a reader activates the header of column C
 - **THEN** the selection is column C, as a press on that header makes it
+
+### Requirement: A resize keeps the keyboard on the sheet
+
+A press on a resize grip drawn inside a spreadsheet's surface SHALL leave the keyboard on the sheet, on the web
+as on Photon, so the keys that follow, ⌘Z among them, reach the sheet.
+
+#### Scenario: A grip pressed on the web
+
+- **WHEN** a sheet with B2 selected has a resize grip inside its surface pressed with a mouse
+- **THEN** the sheet's text control holds the focus, the `mousedown` is prevented, and B2 is still the
+  selection

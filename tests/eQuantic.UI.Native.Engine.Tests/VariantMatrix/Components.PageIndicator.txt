@@ -1,0 +1,340 @@
+## Primary · Comfortable
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Primary · Compact
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Secondary · Comfortable
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Secondary · Compact
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Destructive · Comfortable
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Destructive · Compact
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Outline · Comfortable
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Outline · Compact
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Ghost · Comfortable
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Ghost · Compact
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Link · Comfortable
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Link · Compact
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Success · Comfortable
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Success · Compact
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Warning · Comfortable
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Warning · Compact
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Info · Comfortable
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Info · Compact
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Tertiary · Comfortable
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+
+## Tertiary · Compact
+### web
+<div class="eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
+</div>
+### css
+.eq-1eb13m5{box-sizing:border-box}
+.eq-1uhnwvg{flex-direction:row}
+.eq-ewlixa{align-items:center}
+.eq-kngwsg{pointer-events:none}
+.eq-m7pi4h{gap:4px}
+.eq-m92pvu{display:flex}
+.eq-mc2xdp{justify-content:flex-start}
+### semantics
+### photon
+PageIndicator 0 0 480x0
+  Row 0 0 480x0
+

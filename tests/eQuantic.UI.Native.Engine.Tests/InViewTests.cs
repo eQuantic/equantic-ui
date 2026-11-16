@@ -21,7 +21,7 @@ public class InViewTests
     // An InView reports in a tree that is drawn again: a live owner, kept across the frames of a test
     // the way a host keeps it, and where each InView's last answer lives.
     private static void Draw(VisualNode node, BuildOwner owner, float height = 100) =>
-        PhotonRealizer.Realize(node, 200, height, Theme, ThemeMode.Light, new DisplayListBuilder(),
+        PhotonRealizer.Realize(node, 200, height, Theme, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder(),
             owner: owner);
 
     private static Column Page(Action<bool> onChanged, float spacerHeight, float threshold = 0)
@@ -39,7 +39,7 @@ public class InViewTests
     public void AChildOnScreen_IsReported()
     {
         var seen = new List<bool>();
-        Draw(Page(seen.Add, spacerHeight: 0), ComponentBoundary.Owner());
+        Draw(Page(seen.Add, spacerHeight: 0), new ComponentBoundary().Owner());
 
         seen.Should().Equal(true);
     }
@@ -49,7 +49,7 @@ public class InViewTests
     public void AChildBelowTheSurface_IsNot()
     {
         var seen = new List<bool>();
-        Draw(Page(seen.Add, spacerHeight: 400), ComponentBoundary.Owner());
+        Draw(Page(seen.Add, spacerHeight: 400), new ComponentBoundary().Owner());
 
         seen.Should().BeEmpty("it never became visible, so nothing changed");
     }
@@ -62,7 +62,7 @@ public class InViewTests
     public void StayingVisible_DoesNotKeepFiring()
     {
         var seen = new List<bool>();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var page = Page(seen.Add, spacerHeight: 0);
 
         Draw(page, owner);
@@ -76,7 +76,7 @@ public class InViewTests
     public void LeavingTheSurface_ReportsTheDeparture()
     {
         var seen = new List<bool>();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
 
         Draw(Page(seen.Add, spacerHeight: 0), owner);
         Draw(Page(seen.Add, spacerHeight: 400), owner);
@@ -92,7 +92,7 @@ public class InViewTests
     public void ATreeLaidOutOnce_ReportsNothing()
     {
         var seen = new List<bool>();
-        PhotonRealizer.Realize(Page(seen.Add, spacerHeight: 0), 200, 100, Theme, ThemeMode.Light,
+        PhotonRealizer.Realize(Page(seen.Add, spacerHeight: 0), 200, 100, Theme, ThemeMode.Light, ContrastLevel.Standard,
             new DisplayListBuilder());
 
         seen.Should().BeEmpty();
@@ -105,12 +105,12 @@ public class InViewTests
     {
         var seen = new List<bool>();
         // 50 tall, 30 of it on screen: 60%, under a threshold of 0.9.
-        Draw(Page(seen.Add, spacerHeight: 70, threshold: 0.9f), ComponentBoundary.Owner());
+        Draw(Page(seen.Add, spacerHeight: 70, threshold: 0.9f), new ComponentBoundary().Owner());
 
         seen.Should().BeEmpty();
 
         var enough = new List<bool>();
-        Draw(Page(enough.Add, spacerHeight: 0, threshold: 0.9f), ComponentBoundary.Owner());
+        Draw(Page(enough.Add, spacerHeight: 0, threshold: 0.9f), new ComponentBoundary().Owner());
         enough.Should().Equal(true);
     }
 }
@@ -128,7 +128,7 @@ public class InViewClipTests
     private static readonly IAppTheme Theme = PhotonTheme.Instance;
 
     private static void Draw(VisualNode node, BuildOwner owner) =>
-        PhotonRealizer.Realize(node, 200, 100, Theme, ThemeMode.Light, new DisplayListBuilder(),
+        PhotonRealizer.Realize(node, 200, 100, Theme, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder(),
             owner: owner);
 
     // Explicit widths, not Fill: a column of all-Fill children inside a scroll view measures zero
@@ -150,7 +150,7 @@ public class InViewClipTests
         content.Add(Row(70));
         content.Add(Watched(seen.Add));
 
-        Draw(new ScrollView(content) { Width = 200, Height = 60 }, ComponentBoundary.Owner());
+        Draw(new ScrollView(content) { Width = 200, Height = 60 }, new ComponentBoundary().Owner());
 
         seen.Should().BeEmpty("it is inside the window, and outside the list's viewport");
     }
@@ -165,7 +165,7 @@ public class InViewClipTests
         content.Add(Watched(seen.Add));
         content.Add(Row(300));
 
-        Draw(new ScrollView(content) { Width = 200, Height = 60 }, ComponentBoundary.Owner());
+        Draw(new ScrollView(content) { Width = 200, Height = 60 }, new ComponentBoundary().Owner());
 
         seen.Should().Equal(true);
     }
@@ -180,7 +180,7 @@ public class InViewClipTests
         inner.Add(Watched(seen.Add));
 
         // Clipped to 40 but 100 of window below it: the row at y=50 is on screen and out of the box.
-        Draw(new Box(new BoxStyle { Width = 200, Height = 40, Clip = true }, inner), ComponentBoundary.Owner());
+        Draw(new Box(new BoxStyle { Width = 200, Height = 40, Clip = true }, inner), new ComponentBoundary().Owner());
 
         seen.Should().BeEmpty();
     }
@@ -195,7 +195,7 @@ public class InViewClipTests
         content.Add(Row(70));
         content.Add(Watched(seen.Add));
 
-        Draw(content, ComponentBoundary.Owner());
+        Draw(content, new ComponentBoundary().Owner());
 
         seen.Should().Equal(true);
     }

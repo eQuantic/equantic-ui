@@ -145,12 +145,16 @@ export {
   Adjustable,
   Progress,
   LiveRegion,
+  Group,
   RangeValue,
   Navigable,
   CameraPreview,
   WebFrame,
   Hoverable,
   DropTarget,
+  ContextTarget,
+  Sortable,
+  SortableItem,
   Flexible,
   Spacer,
   Stack,
@@ -174,6 +178,7 @@ export {
   RadialGradient,
   InFlow,
   InheritedComponent,
+  Theme,
   InView,
   Simulated,
   TextEntry,
@@ -192,6 +197,7 @@ export {
   ColorToken,
   SizeValue,
   EdgeInsets,
+  ContextRequest,
   CornerRadii,
   FaceName,
   FluidSize,
@@ -201,10 +207,13 @@ export {
   Rect,
   ScrollRequest,
   Size,
+  SortDrop,
   TableOffset,
   TableRange,
   TableScrollRequest,
+  TextReading,
   Transform2D,
+  TreePlace,
   TypeStyle,
   VariantColors,
   WebContent,
@@ -226,6 +235,30 @@ export {
 } from './shared/photon-context';
 export { DataPalette, DivergingScale, StatusScale } from './shared/data-palette';
 export { SheetTheme } from './shared/sheet-theme';
+export {
+  SizeLadder,
+  DensityLadder,
+  ControlsTheme,
+  ButtonTheme,
+  AppThemeExtensions,
+  DensityPair,
+  IconButtonTheme,
+  InputTheme,
+  SelectionControlsTheme,
+  SegmentedTheme,
+  ChipTheme,
+  ModalTheme,
+  MenuTheme,
+  NoticeTheme,
+  ProgressTheme,
+  CardTheme,
+  NavigationTheme,
+  ListTheme,
+  TableTheme,
+  BadgeTheme,
+  CalendarTheme,
+  MarkdownTheme,
+} from './shared/theme-slots';
 // The vocabulary's interface defaults, which an app's twin delegates to where eqc has the
 // interface's signature and not its body (#414).
 export { IAppTheme, ICodeCompletionProvider, ICodeLanguage, ICodeSignatureProvider } from './shared/interface-defaults';
@@ -301,6 +334,12 @@ export function createApp<T extends import('./core/component').StatefulComponent
  */
 export interface EqConfig {
   page?: string | null;
+  /**
+   * The module of the app's layout (C# `UseLayout<TLayout>()`), when it declared one: every write-once
+   * page is shown inside it, and it stays mounted across client navigations (`core/layout-host.ts`).
+   * Absent for an app without one.
+   */
+  layout?: string | null;
   version?: string;
   /** The SDK's version, in Development alone: what the error overlay's report names (#1108). */
   sdkVersion?: string | null;

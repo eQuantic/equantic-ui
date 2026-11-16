@@ -21,7 +21,7 @@ public class TextEntryTests
     private static (RealizeResult Frame, DrawCommand[] Commands) Render(VisualNode root, float w = 260, float h = 200)
     {
         var builder = new DisplayListBuilder();
-        var frame = PhotonRealizer.Realize(root, w, h, Theme, ThemeMode.Light, builder);
+        var frame = PhotonRealizer.Realize(root, w, h, Theme, ThemeMode.Light, ContrastLevel.Standard, builder);
         return (frame, builder.Build().Commands.ToArray());
     }
 
@@ -45,10 +45,10 @@ public class TextEntryTests
         var placeholderBar = empty.Single(c => c.Kind == DrawCommandKind.FillRRect);
 
         valueBar.Paint.Color.Should().Be(
-            Theme.TextPrimary.Resolve(ThemeMode.Light).WithOpacity(0.30f),
+            Theme.TextPrimary.Resolve(ThemeMode.Light, ContrastLevel.Standard).WithOpacity(0.30f),
             "a typed value reads as primary text");
         placeholderBar.Paint.Color.Should().Be(
-            Theme.TextMuted.Resolve(ThemeMode.Light).WithOpacity(0.30f),
+            Theme.TextMuted.Resolve(ThemeMode.Light, ContrastLevel.Standard).WithOpacity(0.30f),
             "the placeholder reads as muted text (spec: TextMuted, never the label)");
     }
 
@@ -60,7 +60,7 @@ public class TextEntryTests
         // Column(5): [ Column(6): [label, container], caption ] — container = the bordered stroke.
         var stroke = commands.Single(c => c.Kind == DrawCommandKind.StrokeRRect);
         stroke.StrokeWidth.Should().Be(1);
-        stroke.Paint.Color.Should().Be(Theme.BorderStrong.Resolve(ThemeMode.Light));
+        stroke.Paint.Color.Should().Be(Theme.BorderStrong.Resolve(ThemeMode.Light, ContrastLevel.Standard));
 
         // Label (Label role) + reserved caption line always present: total height is stable.
         var labelLine = Theme.Type(TypeRole.Label).LineHeight;
@@ -79,7 +79,7 @@ public class TextEntryTests
             "the helper line is always reserved — error swaps never shift the form (spec B9)");
 
         var stroke = errCommands.Single(c => c.Kind == DrawCommandKind.StrokeRRect);
-        stroke.Paint.Color.Should().Be(Theme.Colors(Variant.Destructive).Base.Resolve(ThemeMode.Light));
+        stroke.Paint.Color.Should().Be(Theme.Colors(Variant.Destructive).Base.Resolve(ThemeMode.Light, ContrastLevel.Standard));
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public class TextEntryTests
         var pill = withQuery.First(c => c.Kind == DrawCommandKind.FillRRect);
         pill.Shape.Rect.Height.Should().Be(40);
         pill.Shape.Radii.TopLeft.Should().Be(20, "Radius.Full normalizes to height/2 on a 40dp pill");
-        pill.Paint.Color.Should().Be(Theme.SurfaceSubtle.Resolve(ThemeMode.Light));
+        pill.Paint.Color.Should().Be(Theme.SurfaceSubtle.Resolve(ThemeMode.Light, ContrastLevel.Standard));
     }
 
     [Fact]

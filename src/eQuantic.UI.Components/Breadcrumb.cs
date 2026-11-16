@@ -27,17 +27,22 @@ public sealed class Breadcrumb : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var row = new Row(gap: Space.S1) { Cross = CrossAlign.Center };
+        // The theme's Navigation slot, then the component's own (§3.10).
+        var slot = theme.Navigation;
+        var row = new Row(gap: slot?.CrumbGap ?? Space.S1) { Cross = CrossAlign.Center };
 
         for (var i = 0; i < Crumbs.Count; i++)
         {
             var crumb = Crumbs[i];
             var last = i == Crumbs.Count - 1;
 
-            if (i > 0) row.Add(new Icon(Icons.ChevronRight, IconSize.Sm, theme.BorderStrong));
+            if (i > 0)
+                row.Add(new Icon(Icons.ChevronRight, slot?.SeparatorSize ?? IconSize.Sm,
+                    slot?.SeparatorColor ?? theme.BorderStrong));
 
             var text = new Text(crumb.Label, TypeRole.Caption,
-                last ? theme.TextPrimary : theme.TextSecondary, maxLines: 1);
+                last ? slot?.CurrentCrumbColor ?? theme.TextPrimary : slot?.CrumbColor ?? theme.TextSecondary,
+                maxLines: 1);
 
             row.Add(!last && crumb.Destination is { } destination
                 ? new Link(destination, text) { Label = crumb.Label }

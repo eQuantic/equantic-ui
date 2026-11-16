@@ -71,10 +71,13 @@ public sealed class WindowsPhotonRunner : IPhotonRunner
         // The concrete controller only — an app that registered its own IThemeController has
         // taken over the switch, and this attach quietly steps aside.
         var themeController = app.Services.GetService(typeof(IThemeController)) as PhotonThemeController;
+        // The window's error boundary (#1452), armed with the app's report and read for the summary.
+        var boundary = new eQuantic.UI.Primitives.ComponentBoundary();
+        app.ArmBoundary(boundary);
         window.Run(app.Root(), app.Theme, mode, options.MaxFrames, themeController, cultureController,
-            followSystemTheme: options.Mode is null);
+            followSystemTheme: options.Mode is null, boundary: boundary);
         ReportFrames($"frames presented: {window.FramesPresented} through {window.PresenterName}, "
-            + $"{window.AveragePresentMs:F0} ms per frame", app);
+            + $"{window.AveragePresentMs:F0} ms per frame", app, boundary);
     }
 
     /// <summary>
@@ -83,9 +86,10 @@ public sealed class WindowsPhotonRunner : IPhotonRunner
     /// count — sides with the box. So the names go on the line everyone reads, and StrictRender
     /// decides whether the exit code says so too.
     /// </summary>
-    private static void ReportFrames(string summary, PhotonApplication app)
+    private static void ReportFrames(string summary, PhotonApplication app,
+        eQuantic.UI.Primitives.ComponentBoundary boundary)
     {
-        var contained = eQuantic.UI.Primitives.ComponentBoundary.Contained;
+        var contained = boundary.Contained;
         var missing = eQuantic.UI.Primitives.FaceResolution.Unresolved;
         if (contained.Count > 0) summary += $" — CONTAINED: {string.Join(", ", contained)}";
         // A face the machine does not have is the other thing only the pixels used to say, and it
@@ -129,6 +133,7 @@ public sealed class WindowsPhotonRunner : IPhotonRunner
             IconRasterizer = iconRasterizer,
             Density = Density.Compact,
         };
+        app.ArmBoundary(host.Boundary);
 
         var width = (int)options.Width;
         var height = (int)options.Height;
@@ -147,7 +152,7 @@ public sealed class WindowsPhotonRunner : IPhotonRunner
         File.WriteAllBytes(path, PngCodec.Encode(width, height, pixels));
         // The headless path needs this MORE than the windowed one, not less: a CI screenshot step
         // is exactly where nobody is looking at the picture.
-        ReportFrames($"screenshot: {path}", app);
+        ReportFrames($"screenshot: {path}", app, host.Boundary);
     }
 
     private static void AttachParentConsole()

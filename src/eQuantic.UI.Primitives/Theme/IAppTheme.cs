@@ -136,6 +136,77 @@ public interface IAppTheme
     SheetTheme? Sheet => null;
 
     /// <summary>
+    /// The control ladder every sized control reads (<see cref="ControlsTheme"/>), NULL by default, which
+    /// a control reads as <see cref="Sizing"/>. A theme that changes how tall a medium control is answers
+    /// a slot naming that rung, and every medium control follows (<c>docs/ELEMENT-TREE-PLAN.md</c> §3.10).
+    /// </summary>
+    ControlsTheme? Controls => null;
+
+    /// <summary>
+    /// The Button's slot (<see cref="ButtonTheme"/>), NULL by default, which a button reads as its own
+    /// defaults: the ladder through <see cref="Controls"/>, and its constants.
+    /// </summary>
+    ButtonTheme? Button => null;
+
+    /// <summary>The slot of the Dialog, the BottomSheet and the Drawer (<see cref="ModalTheme"/>), NULL by default, which each reads as its own
+    /// defaults. Plural, since <see cref="Surface"/> is the colour they are filled with.</summary>
+    ModalTheme? Modal => null;
+
+    /// <summary>The slot of the Popover, the Menu and the Tooltip (<see cref="MenuTheme"/>), NULL by default, which each reads as its own
+    /// defaults.</summary>
+    MenuTheme? Menu => null;
+
+    /// <summary>The slot of the Toast, the Banner and the CookieConsent (<see cref="NoticeTheme"/>), NULL by default, which each reads as its own
+    /// defaults.</summary>
+    NoticeTheme? Notice => null;
+
+    /// <summary>The slot of the ProgressBar, the PullToRefresh and the Skeleton (<see cref="ProgressTheme"/>), NULL by default, which each reads as its own
+    /// defaults.</summary>
+    ProgressTheme? Progress => null;
+
+    /// <summary>The slot of the Card (<see cref="CardTheme"/>), NULL by default, which each reads as its own
+    /// defaults.</summary>
+    CardTheme? Card => null;
+
+    /// <summary>
+    /// The navigation family's slot (<see cref="NavigationTheme"/>): Tabs, BottomNavigation, NavigationRail,
+    /// AppBar, Breadcrumb, Pagination and PageIndicator, NULL by default, which each reads as its own
+    /// defaults.
+    /// </summary>
+    NavigationTheme? Navigation => null;
+
+    /// <summary>
+    /// The list family's slot (<see cref="ListTheme"/>): ListItem, List, Divider, Accordion and
+    /// SwipeableRow, NULL by default, which each reads as its own defaults.
+    /// </summary>
+    ListTheme? List => null;
+
+    /// <summary>
+    /// The table family's slot (<see cref="TableTheme"/>): Table and DataTable, NULL by default, which each
+    /// reads as its own defaults.
+    /// </summary>
+    TableTheme? Table => null;
+
+    /// <summary>
+    /// The badge family's slot (<see cref="BadgeTheme"/>): Badge, Avatar and EmptyState, NULL by default,
+    /// which each reads as its own defaults.
+    /// </summary>
+    BadgeTheme? Badge => null;
+
+    /// <summary>
+    /// The calendar family's slot (<see cref="CalendarTheme"/>): Calendar and DatePicker, NULL by default,
+    /// which each reads as its own defaults.
+    /// </summary>
+    CalendarTheme? Calendar => null;
+
+    /// <summary>
+    /// The rendered document's slot (<see cref="MarkdownTheme"/>), NULL by default, which a Markdown reads
+    /// as its own defaults. A Markdown's own <c>Style</c> comes first, member by member, as a code
+    /// decoration's colour comes before its kind's.
+    /// </summary>
+    MarkdownTheme? Markdown => null;
+
+    /// <summary>
     /// The colour of a code token. DEFAULTED from the palette the theme already has — a design
     /// system that ships one set of variants should not have to invent a second one to show code,
     /// and a theme that wants a real syntax palette overrides this and nothing else.
@@ -160,4 +231,33 @@ public interface IAppTheme
         CodeTokenKind.Punctuation => TextSecondary,
         _ => TextPrimary,
     };
+
+    /// <summary>
+    /// The IconButton's slot (<see cref="IconButtonTheme"/>), NULL by default, which an icon button reads
+    /// as its own defaults: the side through <see cref="Controls"/>, and its constants.
+    /// </summary>
+    IconButtonTheme? IconButton => null;
+
+    /// <summary>
+    /// The fields' slot (<see cref="InputTheme"/>): TextInput, SearchField, Select and TimePicker, NULL by
+    /// default, which each reads as its own defaults.
+    /// </summary>
+    InputTheme? Input => null;
+
+    /// <summary>
+    /// The selection controls' slot (<see cref="SelectionControlsTheme"/>): Checkbox, RadioGroup, Switch and
+    /// Slider, NULL by default, which each reads as its own defaults.
+    /// </summary>
+    SelectionControlsTheme? SelectionControls => null;
+
+    /// <summary>
+    /// The segmented controls' slot (<see cref="SegmentedTheme"/>): SegmentedControl and Stepper, NULL by
+    /// default, which each reads as its own defaults.
+    /// </summary>
+    SegmentedTheme? Segmented => null;
+
+    /// <summary>
+    /// The Chip's slot (<see cref="ChipTheme"/>), NULL by default, which a chip reads as its own defaults.
+    /// </summary>
+    ChipTheme? Chip => null;
 }

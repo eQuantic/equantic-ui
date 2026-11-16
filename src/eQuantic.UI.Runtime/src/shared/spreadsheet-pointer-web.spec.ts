@@ -144,6 +144,27 @@ describe('the spreadsheet pointer on the web', () => {
     expect(scroll.offset.down).toBeGreaterThan(0);
   });
 
+  it('keeps the keyboard on the sheet through a press on a resize grip drawn inside it', () => {
+    // #1092: the grip is a Draggable the sheet steps aside for, and the browser moved the focus to the page's
+    // body on the press's mousedown, so ⌘Z could no longer take the resize back. Photon keeps the keyboard on
+    // the sheet (BeginSheetEditing), and so does the web now.
+    const { sheet, surface, view } = build();
+    sheet.selection = new SheetRange(new CellRef(1, 1));
+    const grip = document.createElement('div');
+    grip.setAttribute('data-eq-drag', 'x');
+    cellElement(view).appendChild(grip);
+    const input = surface.querySelector<HTMLTextAreaElement>('textarea.eq-code-input')!;
+    input.blur();
+
+    pointer(grip, 'pointerdown', middle(0, 1), { buttons: 1 });
+    const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true, clientX: 0, clientY: 0, detail: 1 });
+    grip.dispatchEvent(down);
+
+    expect(document.activeElement).toBe(input);
+    expect(down.defaultPrevented).toBe(true);
+    expect(sheet.selection).toEqual(new SheetRange(new CellRef(1, 1)));
+  });
+
   it('draws the pointer resting on the fill handle as the engine answers', () => {
     const { sheet, surface, view } = build();
     sheet.selection = new SheetRange(new CellRef(1, 1));

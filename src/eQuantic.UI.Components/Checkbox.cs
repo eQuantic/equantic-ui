@@ -39,8 +39,11 @@ public sealed class Checkbox : StatelessComponent
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
+        // The theme's Selection slot, then the component's own (§3.10); the box varies by density alone.
+        var slot = theme.SelectionControls;
+        var side = ControlMetrics.AtDensity(slot?.Box, context.Density) ?? Sizing.SelectionBox(context.Density);
 
-        var borderColor = Error ? theme.Colors(Variant.Destructive).Base : theme.BorderStrong;
+        var borderColor = Error ? theme.Colors(Variant.Destructive).Base : slot?.BorderColor ?? theme.BorderStrong;
         var filled = Checked || Indeterminate;
         VisualNode? glyph = Indeterminate ? new Icon(Icons.Minus, IconSize.Sm, primary.OnBase)
             : Checked ? new Icon(Icons.Check, IconSize.Sm, primary.OnBase)
@@ -49,15 +52,15 @@ public sealed class Checkbox : StatelessComponent
 
         var box = new Box(new BoxStyle
         {
-            Width = Sizing.SelectionBox(context.Density),
-            Height = Sizing.SelectionBox(context.Density),
+            Width = side,
+            Height = side,
             Background = filled ? primary.Base : null,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.ExtraSmall)),
-            BorderWidth = filled ? 0f : 2f,
+            CornerRadius = new CornerRadii(slot?.CheckboxRadius ?? theme.Shape(ShapeScale.ExtraSmall)),
+            BorderWidth = filled ? 0f : slot?.BorderWidth ?? 2f,
             BorderColor = borderColor,
         }, boxContent);
 
-        var row = new Row(gap: Space.S3) { Cross = CrossAlign.Center };
+        var row = new Row(gap: slot?.LabelGap ?? Space.S3) { Cross = CrossAlign.Center };
         row.Add(box);
         if (Label is { } label)
             row.Add(new Text(label, TypeRole.BodyM, Disabled ? theme.TextMuted : theme.TextPrimary, maxLines: 2));

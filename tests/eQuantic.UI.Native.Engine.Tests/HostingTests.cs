@@ -137,4 +137,24 @@ public class HostingTests
         var run = () => app.UseRoot(() => new Text("x")).Run();
         run.Should().Throw<InvalidOperationException>().WithMessage("*MAIN thread*");
     }
+
+    /// <summary>
+    /// A window's boundary is armed with the report the app chose (#1452), and with the app's logger
+    /// when it chose none: the seam an app had when the report was one static it assigned before Run.
+    /// </summary>
+    [Fact]
+    public void AWindowsBoundary_ReportsWhereTheAppSays()
+    {
+        var app = PhotonApplication.CreateBuilder().Build();
+        Action<UiComponent, Exception> mine = (_, _) => { };
+        var chosen = new ComponentBoundary();
+        var logged = new ComponentBoundary();
+
+        app.ArmBoundary(logged);
+        app.ContainedReport = mine;
+        app.ArmBoundary(chosen);
+
+        chosen.Report.Should().BeSameAs(mine);
+        logged.Report.Should().NotBeNull("with no report chosen, a window reports to the app's logger");
+    }
 }

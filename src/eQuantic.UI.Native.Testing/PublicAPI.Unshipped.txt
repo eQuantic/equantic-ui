@@ -1,1 +1,2 @@
 #nullable enable
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Boundary.get -> eQuantic.UI.Primitives.ComponentBoundary!

@@ -103,6 +103,15 @@ public class ComponentParityFixtureTests
         // fill passed through, and the four drag events declared by the server and attached by the client.
         ("drop-target", new DropTarget(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), _ => { }), NoPresses),
         ("drop-target-disabled", new DropTarget(new Box(new BoxStyle { Height = 40 }), _ => { }) { Enabled = false }, NoPresses),
+        // What a person can ask the menu of (#1531): the same transparent div, marked, with the request's event
+        // declared by the server and attached by the client; and a panel opened at a point of its anchor.
+        ("context-target", new ContextTarget(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), _ => { }), NoPresses),
+        ("context-target-disabled", new ContextTarget(new Box(new BoxStyle { Height = 40 }), _ => { }) { Enabled = false }, NoPresses),
+        ("anchored-at", new Anchored(new Box(new BoxStyle { Width = 200, Height = 40 }), new Box(new BoxStyle { Width = 120, Height = 80 }))
+        {
+            At = new Point(120, 30),
+            Open = true,
+        }, NoPresses),
         // A pinned header's scrolled diff with every member (#506), through the builder a box's
         // states use, over the header's base, whose border is its bottom edge.
         ("pinned-scrolled", new Pinned(new Box(new BoxStyle { Height = 40 }))
@@ -170,6 +179,8 @@ public class ComponentParityFixtureTests
         // structure, so the most surface on which two lowerings can quietly disagree — and every
         // one of them takes an ITEM type whose twin has to line up as well.
         ("menu-closed", new Menu(new Button("Open"), [new MenuItem("One"), new MenuItem("Two")]), NoPresses),
+        ("context-menu-closed", new ContextMenu(new Text("row", TypeRole.BodyM, Theme.TextPrimary),
+            [new MenuItem("Rename"), new MenuItem("Delete") { Destructive = true }]), NoPresses),
         ("dialog", new Dialog("Delete this?", "It cannot be undone.",
             [new DialogAction("Cancel", null, Variant.Ghost), new DialogAction("Delete")]), NoPresses),
         ("list-item", new ListItem("Title", "and a subtitle"), NoPresses),
@@ -227,10 +238,31 @@ public class ComponentParityFixtureTests
         // that. Opening a Select and switching an Accordion's open section are the two smallest
         // changes of state that rewrite a subtree.
         ("select-opens", new Select(["alpha", "beta", "gamma"], 0), [0]),
+        // A grouped Select opened (#677): the listbox holds the ungrouped option, then the labelled
+        // group with its heading and its options, numbered across the group on both producers.
+        ("select-grouped-opens", new Select(["Lisboa"], 0, groups: [new OptionGroup("A seguir", ["Braga", "Faro"])]), [0]),
+        // A LIST A POINTER SORTS (#1535): no element of its own, its column marked, and the reports the
+        // browser's controller dispatches declared by the server.
+        ("sortable-column", new Sortable(Stack(0, new SortableItem(new Text("a", TypeRole.BodyM, Theme.TextPrimary), "a"),
+            new SortableItem(new Text("b", TypeRole.BodyM, Theme.TextPrimary), "b")), "todo", _ => { })
+        {
+            Group = "board",
+            OnHovered = _ => { },
+        }, NoPresses),
         ("accordion-switches", new Accordion([
             new AccordionItem("One") { Content = new Text("body one", TypeRole.BodyM, Theme.TextPrimary) },
             new AccordionItem("Two") { Content = new Text("body two", TypeRole.BodyM, Theme.TextPrimary) },
         ], 0), [1]),
+        // A TREE (#1529, #1530): a role="tree" host whose items are div treeitems with their level and
+        // place, not wrapped in rows. The first press opens the folder and the second presses the item
+        // it showed, so the frames pin the open state and the keyboard's item moving with a press.
+        ("tree-opens", new TreeView([
+            new TreeNode("src", "src")
+            {
+                Children = [new TreeNode("src/App.cs", "App.cs") { IsLeaf = true }, new TreeNode("src/Ui.cs", "Ui.cs") { IsLeaf = true }],
+            },
+            new TreeNode("README.md", "README.md") { IsLeaf = true },
+        ], "src/Ui.cs") { Label = "Files" }, [0, 1]),
 
         // A COMPOSITE, and the first case here whose tree is a grid: 31 cells, seven column
         // headers, a roving tab order, and a selection stated as an attribute. Pinned under a
@@ -564,7 +596,7 @@ public class ComponentParityFixtureTests
     /// A FRAME OF A LIVE TREE lowers the tree the server draws. <see cref="MarkupHost"/> lowers each
     /// component from what its position built rather than building it again, which is what a host that
     /// draws more than once needs: a component test, and the server's owner of a request, whose prefetch
-    /// rounds are frames. Its first frame must be the markup <see cref="WebRealizer.Lower(VisualNode, IAppTheme, float, StyleSink?, Density)"/> writes,
+    /// rounds are frames. Its first frame must be the markup <see cref="WebRealizer.Lower(VisualNode, IAppTheme, float, StyleSink?, Density, ComponentBoundary?)"/> writes,
     /// byte for byte, at every size class: an arm the element does not hold lowers as it always did.
     /// The markup is compared whole, not canonically, so attribute order counts.
     /// <para>
@@ -574,11 +606,8 @@ public class ComponentParityFixtureTests
     /// or on none, fails here.
     /// </para>
     /// </summary>
-    [Theory]
-    [InlineData(WindowSizeClass.Compact)]
-    [InlineData(WindowSizeClass.Medium)]
-    [InlineData(WindowSizeClass.Expanded)]
-    public void TheFirstFrameOfALiveTree_LowersTheMarkupTheServerWrites(WindowSizeClass sizeClass)
+    [Fact]
+    public void TheFirstFrameOfALiveTree_LowersTheMarkupTheServerWrites()
     {
         var previousCulture = CultureInfo.CurrentCulture;
         var previousUiCulture = CultureInfo.CurrentUICulture;
@@ -591,11 +620,11 @@ public class ComponentParityFixtureTests
             // and the frame must start from instances nobody built.
             foreach (var ((name, drawnOnce, _), (_, framed, _)) in Cases().Zip(Cases()))
             {
-                // Both inside a render of their own, as the server lowers either.
-                var once = HtmlRenderer.RenderNode(WebRealizer.Lower(drawnOnce, Theme, 1f, new RenderChannels()).Render());
+                // Both atomized, as the server lowers either: the one drawn once with no frame at all.
+                var once = HtmlRenderer.RenderNode(WebRealizer.Lower(drawnOnce, Theme, 1f, new StyleSink()).Render());
 
                 var host = new MarkupHost(Theme);
-                host.Build(framed, sizeClass);
+                host.Build(framed);
                 var frame = HtmlRenderer.RenderNode(host.Lower(new RenderChannels()).Render());
                 host.EndFrame();
                 host.Owner.UnmountAll();
@@ -625,7 +654,7 @@ public class ComponentParityFixtureTests
         {
             if (linkPolicy is null) return WebRealizer.Lower(node, Theme, 1f, new StyleSink());
             var channels = new RenderChannels(linkPolicy: linkPolicy);
-            var lowered = WebRealizer.Lower(node, Theme, 1f, channels);
+            var lowered = MarkupHost.DrawOnce(node, Theme, 1f, channels);
             // A render declares its paint servers beside the page, where the twin writes them inline:
             // a case in a language compares its links, so it paints with none.
             channels.Gradients.IsEmpty.Should().BeTrue("a case lowered in a language paints with no gradient");

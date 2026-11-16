@@ -17,8 +17,8 @@ internal sealed class MacClipboard : ITextClipboard
     private static IntPtr General() =>
         Send(AppKit.Class("NSPasteboard"), Sel("generalPasteboard"));
 
-    public string? Read() =>
-        FromNSString(Send(General(), Sel("stringForType:"), NSString("public.utf8-plain-text")));
+    public Task<string?> ReadAsync() =>
+        Task.FromResult(FromNSString(Send(General(), Sel("stringForType:"), NSString("public.utf8-plain-text"))));
 
     public void Write(string text)
     {

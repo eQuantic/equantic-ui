@@ -22,15 +22,7 @@ export class SheetEntryLanguage {
             let $slots: any = SheetEntryLanguage.$slots = {};
             try {
                 $slots.nothingPaired = null;
-                $slots.nothingPaired = (() => {
-        const $o = new CodeLanguageRules();
-        $o.brackets = [];
-        $o.quotes = [];
-        $o.indentAfter = [];
-        $o.outdentOn = [];
-        $o.insertSpaces = false;
-        return $o;
-    })();
+                $slots.nothingPaired = (() => { let $n0: CodeLanguageRules; return ($n0 = new CodeLanguageRules(), $n0.brackets = [], $n0.quotes = [], $n0.indentAfter = [], $n0.outdentOn = [], $n0.insertSpaces = false, $n0); })();
             } catch ($error) {
                 SheetEntryLanguage.$slots = null;
                 throw SheetEntryLanguage.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Sheet.SheetEntryLanguage', $error);

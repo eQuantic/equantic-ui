@@ -2,7 +2,8 @@ namespace eQuantic.UI.Web;
 
 /// <summary>
 /// What a component is CALLED at the seam between the server and the browser: the name both sides
-/// key its hydration state by, <c>Identity#ordinal</c>.
+/// key its hydration state by: <c>Identity#0</c> for a page's own component, and the identity at its
+/// position for every component the page composes (<see cref="ElementFrame"/>, #1477).
 /// <para>
 /// The FULL name, as the CLR spells a type definition: <c>MyApp.Pages.Row</c>, a nested type's
 /// containing types joined by <c>+</c>, a generic definition's arity after a backtick. eqc writes
@@ -22,6 +23,7 @@ public static class ComponentIdentity
         return definition.FullName ?? definition.Name;
     }
 
-    /// <summary>The key a component's state travels under: <c>Identity#ordinal</c>.</summary>
+    /// <summary>The key a page's own component's state travels under: <c>Identity#ordinal</c>, the
+    /// ordinal zero for the page.</summary>
     public static string Key(Type type, int ordinal) => $"{Of(type)}#{ordinal}";
 }

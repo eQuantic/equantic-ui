@@ -197,6 +197,13 @@ public sealed class RealizeResult
     /// Empty in a frame that draws none.</summary>
     internal IReadOnlyList<CodeNoteLayer> NoteLayers { get; init; } = Array.Empty<CodeNoteLayer>();
 
+    /// <summary>What a person may ask the menu of, in tree order, an outer target before what it holds (#1531).
+    /// Empty in a frame with no target.</summary>
+    internal IReadOnlyList<ContextRegion> ContextRegions { get; init; } = Array.Empty<ContextRegion>();
+    /// <summary>The sortable lists and their items, in tree order, a list before what it holds (#1537). Empty
+    /// in a frame with nothing to sort.</summary>
+    internal IReadOnlyList<SortRegion> SortRegions { get; init; } = Array.Empty<SortRegion>();
+
     /// <summary>Editable code surfaces, in paint order (topmost last).</summary>
     public IReadOnlyList<CodeRegion> CodeRegions { get; }
 
@@ -265,6 +272,7 @@ public static class PhotonRealizer
         float viewportHeight,
         IAppTheme theme,
         ThemeMode mode,
+        ContrastLevel contrast,
         DisplayListBuilder builder,
         ITextMeasurer? measurer = null,
         float typeScale = 1f,
@@ -341,7 +349,6 @@ public static class PhotonRealizer
             // — the tree is the same either way, which is the point of the node.
             SafeAreaInsets = safeAreaInsets,
             WindowControlsInsets = windowControlsInsets,
-            SizeClass = WindowSizeClasses.FromWidth(viewportWidth),
             Transitions = transitions,
             Presences = presences,
             TimeMs = timeMs,
@@ -359,8 +366,8 @@ public static class PhotonRealizer
         // dropdown panel hug its options while the page behind it still fills the viewport.
         //
         // The tree BUILDS first, and the layout measures what it built (docs/ELEMENT-TREE-PLAN.md, 3.2).
-        var builds = owner ?? ComponentBoundary.StructuralOwner();
-        var rootElement = builds.Build(root, context.Components, context.SizeClass, rebuildAll);
+        var builds = owner ?? new ComponentBoundary().StructuralOwner();
+        var rootElement = builds.Build(root, context.Components, viewportWidth, rebuildAll);
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context,
             rootStretch: StretchKind.Block, rootElement: rootElement);
 
@@ -386,7 +393,7 @@ public static class PhotonRealizer
         // sets state for a tree laid out once would set it for nobody.
         var reportsInView = builds.Live;
         EmitVisitor.Shared.Emit(new EmitState(layout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { HoveredPart = hoveredPart, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
-            theme, mode, builder, motion, overlays));
+            theme, mode, contrast, builder, motion, overlays));
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
         // the page (painter's order); its hit regions register after the page's, so the topmost-
@@ -423,7 +430,7 @@ public static class PhotonRealizer
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
             EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { HoveredPart = hoveredPart, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
-                theme, mode, builder, motion, overlays));
+                theme, mode, contrast, builder, motion, overlays));
         }
 
         // The frame's end, for the tree: what a layer did not show this frame leaves it, and what
@@ -464,6 +471,8 @@ public static class PhotonRealizer
             LiveRegions = regions.LivesOrEmpty,
             TransformedRegions = regions.TransformedOrEmpty,
             NoteLayers = regions.NotesOrEmpty,
+            ContextRegions = regions.ContextsOrEmpty,
+            SortRegions = regions.SortsOrEmpty,
         };
     }
 

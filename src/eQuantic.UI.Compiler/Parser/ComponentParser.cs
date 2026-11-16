@@ -24,6 +24,17 @@ public class ComponentParser
     /// </summary>
     public Dictionary<string, string> DiscoveredResources { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>The resource classes the file a recorded compile parses discovers, in order; null
+    /// outside one (#1281).</summary>
+    internal List<KeyValuePair<string, string>>? DiscoveriesSeen { get; set; }
+
+    /// <summary>A resource class found by its catalog id, with its Designer: the first one of an id is kept.</summary>
+    internal void Discover(string id, string designerPath)
+    {
+        DiscoveriesSeen?.Add(new(id, designerPath));
+        DiscoveredResources.TryAdd(id, designerPath);
+    }
+
     /// <summary>The catalogue ids of the build, where it has more than one compilation; null where a
     /// class's own compilation answers (<see cref="Services.ResourceCatalogIds"/>).</summary>
     internal Services.ResourceCatalogIds? ResourceIds { get; set; }
@@ -150,7 +161,7 @@ public class ComponentParser
                 // seen here and used nowhere the app compiles (its components are transpiled into
                 // runtime.js at the SDK's own build), so the catalog emitter has no reachable use
                 // to learn it from — and D14 promises the SDK's strings ride every app's catalogs.
-                DiscoveredResources.TryAdd(
+                Discover(
                     CatalogIdOf(helperModel, declared),
                     Services.ResourceClasses.DesignerPathFor(declared));
                 continue;
@@ -274,7 +285,7 @@ public class ComponentParser
             // below, which the resolver reads too (#824).
             if (helperModel?.GetDeclaredSymbol(classDecl) is INamedTypeSymbol declaredPlain
                 && Services.ResourceClasses.IsResourceClass(declaredPlain))
-                DiscoveredResources.TryAdd(
+                Discover(
                     CatalogIdOf(helperModel, declaredPlain),
                     Services.ResourceClasses.DesignerPathFor(declaredPlain));
             if (!PlainClassModule.Is(classDecl, ProjectSymbol(classDecl, model), chains)) continue;
@@ -528,9 +539,10 @@ public class ComponentParser
     }
 
     /// <summary>
-    /// Whether <paramref name="node"/> is code no twin is written from: a method, an operator or a
-    /// conversion marked <c>[ServerOnly]</c>, which no twin holds whatever type declares it, and the
-    /// body of a component's <c>[ServerAction]</c>, whose twin is a stub written from its SIGNATURE.
+    /// Whether <paramref name="node"/> is code no twin is written from: a method, an operator, a
+    /// conversion or an event's accessor marked <c>[ServerOnly]</c>, which no twin holds whatever type
+    /// declares it, and the body of a component's <c>[ServerAction]</c>, whose twin is a stub written
+    /// from its SIGNATURE, or of an event accessor a component marks <c>[ServerAction]</c> (<see cref="IsServerOnlyAccessor"/>).
     /// <para>
     /// The one rule for what crosses, asked by everything that reads a declaration for the browser:
     /// the parser and the emitters, which leave such code out, and the scans that decide what a module
@@ -553,8 +565,26 @@ public class ComponentParser
             IsServerOnlyMethod((BaseMethodDeclarationSyntax)node, model),
         BlockSyntax or ArrowExpressionClauseSyntax => inAComponent
             && node.Parent is MethodDeclarationSyntax action && IsServerAction(action, model),
+        AccessorDeclarationSyntax { Parent.Parent: EventDeclarationSyntax } accessor => IsServerOnlyAccessor(accessor, inAComponent, model),
         _ => false,
     };
+
+    /// <summary>
+    /// Whether an event's <c>add</c> or <c>remove</c> accessor stays on the server (#1445): marked
+    /// <c>[ServerOnly]</c>, or <c>[ServerAction]</c> on a component's, whose body never crosses. C# refuses
+    /// <c>[ServerOnly]</c> on the event (CS0592) and takes it on an accessor, a method; the twins of a
+    /// record, a struct and a component came to write an event's accessors, and such a body crossed with
+    /// them. Asked of the accessor's symbol, and of its attribute lists by name only where no model holds it.
+    /// </summary>
+    private static bool IsServerOnlyAccessor(AccessorDeclarationSyntax accessor, bool inAComponent, SemanticModel? model)
+    {
+        if (accessor.AttributeLists.Count == 0) return false;
+        if (SymbolOf(accessor, model) is { } symbol)
+            return PlainClassModule.IsServerOnly(symbol) || inAComponent && PlainClassModule.IsServerAction(symbol);
+        var attributes = accessor.AttributeLists.SelectMany(list => list.Attributes);
+        return attributes.Any(attribute => attribute.IsNamed("ServerOnly"))
+            || inAComponent && attributes.Any(attribute => attribute.IsNamed("ServerAction"));
+    }
 
     /// <summary>
     /// Whether a method, an operator or a conversion is marked <c>[ServerOnly]</c>, asked of its SYMBOL
@@ -578,8 +608,8 @@ public class ComponentParser
             : PlainClassModule.IsServerOnlyDeclaration(method);
     }
 
-    /// <summary>The method's symbol, from a model of its own tree, or null where none holds it.</summary>
-    private static IMethodSymbol? SymbolOf(BaseMethodDeclarationSyntax method, SemanticModel? model)
+    /// <summary>The method's symbol, an accessor's included, from a model of its own tree, or null where none holds it.</summary>
+    private static IMethodSymbol? SymbolOf(SyntaxNode method, SemanticModel? model)
     {
         var own = model is null ? null
             : ReferenceEquals(model.SyntaxTree, method.SyntaxTree) ? model
@@ -601,7 +631,7 @@ public class ComponentParser
     {
         if (method.AttributeLists.Count == 0 && !method.Modifiers.Any(SyntaxKind.PartialKeyword)) return null;
         return SymbolOf(method, model) is { } symbol
-            ? PlainClassModule.ServerActionMark(symbol)?.ApplicationSyntaxReference?.GetSyntax() as AttributeSyntax
+            ? PlainClassModule.ServerActionMark(symbol)?.ReadApplication()?.GetSyntax() as AttributeSyntax
             : PartsOf(method).SelectMany(part => part.AttributeLists).SelectMany(list => list.Attributes)
                 .FirstOrDefault(attribute => attribute.IsNamed("ServerAction"));
     }

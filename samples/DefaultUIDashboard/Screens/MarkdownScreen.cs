@@ -26,7 +26,7 @@ public sealed class MarkdownScreen : StatefulComponent
         "",
         "## What rides the type scale",
         "",
-        "- Headings map to `TypeRole` rungs, overridable per level via *MarkdownStyle*",
+        "- Headings map to `TypeRole` rungs, overridable per level by the theme's *Markdown* slot or the document's own",
         "- Prose is ONE `Text` with spans, so a sentence with `code` in it wraps between **words**",
         "- Links ride inside the sentence: the [component library](/declarative) is one",
         "",
@@ -111,19 +111,7 @@ public sealed class MarkdownScreen : StatefulComponent
         "The important part: *never* retry a `card_declined` — that answer is final.",
     ]);
 
-    /// <summary>Whether the compact drawer is up — page state wherever the page is.</summary>
-    private bool _navOpen;
-
-    /// <summary>
-    /// The frame, then this screen inside it. Every route wraps itself: there is no separate
-    /// layout, and none is needed — the reconciler matches the frame position for position across
-    /// a navigation, so the sidebar is never rebuilt and only the middle changes.
-    /// </summary>
-    public override VisualNode Build(ComponentContext context) =>
-        ConsoleShell.Frame(context.Theme, "/markdown", "Markdown", Content(context),
-            _navOpen, () => SetState(() => _navOpen = !_navOpen));
-
-    private VisualNode Content(ComponentContext context)
+    public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
 
@@ -141,7 +129,7 @@ public sealed class MarkdownScreen : StatefulComponent
             Padding = EdgeInsets.All(Space.S5),
         }, new Markdown(_document == 0 ? Doc : _document == 1 ? Chat : Diagrams)
         {
-            Style = new MarkdownStyle { CodeLineNumbers = _document == 0 },
+            Style = new MarkdownTheme { CodeLineNumbers = _document == 0 },
         }))
         { Width = SizeValue.Fill });
 

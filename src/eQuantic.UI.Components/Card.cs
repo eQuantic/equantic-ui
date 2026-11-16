@@ -38,12 +38,14 @@ public sealed class Card : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var background = Kind == CardKind.Filled ? theme.SurfaceSubtle : theme.Surface;
-        var borderWidth = Kind == CardKind.Outlined ? 1f : Kind == CardKind.Elevated ? 1f : 0f;
+        // The Card's slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
+        var slot = theme.Card;
+        var background = Kind == CardKind.Filled ? slot?.FilledColor ?? theme.SurfaceSubtle : theme.Surface;
+        var borderWidth = Kind is CardKind.Outlined or CardKind.Elevated ? slot?.BorderWidth ?? 1f : 0f;
         // §05: Elevated = E1 shadow, and DARK mode also wants the 1dp border — a mode-free token
         // with a transparent light side realizes exactly that on every target.
         var borderColor = Kind == CardKind.Elevated
-            ? new ColorToken(Color.Transparent, theme.Border.Dark)
+            ? slot?.ElevatedBorderColor ?? new ColorToken(Color.Transparent, theme.Border.Dark)
             : theme.Border;
 
         return new Box(new BoxStyle
@@ -51,10 +53,10 @@ public sealed class Card : StatelessComponent
             Width = Width,
             Padding = Padding,
             Background = background,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Large)),
+            CornerRadius = new CornerRadii(theme.Shape(slot?.Shape ?? ShapeScale.Large)),
             BorderWidth = borderWidth,
             BorderColor = borderColor,
-            Elevation = Kind == CardKind.Elevated ? 1 : 0,
+            Elevation = Kind == CardKind.Elevated ? slot?.Elevation ?? 1 : 0,
         }, Child);
     }
 }

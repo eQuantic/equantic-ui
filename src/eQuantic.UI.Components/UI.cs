@@ -359,6 +359,14 @@ public static class UI
         new LiveRegion(child) { Urgency = urgency, Label = label };
 
     /// <summary>
+    /// A labelled group: a reader hears <paramref name="label"/> as the group's name and then walks
+    /// into <paramref name="child"/>. It draws nothing and adds no geometry; the heading a person
+    /// sees, when there is one, is the child's own.
+    /// </summary>
+    public static Group Group(VisualNode child, string label = "") =>
+        new Group(child) { Label = label };
+
+    /// <summary>
     /// Arrow-key adjustment semantics: one Tab stop, arrows call back with ±1.
     /// <para>
     /// <paramref name="value"/> is what the control HOLDS, and a slider needs it —
@@ -585,10 +593,11 @@ public static class UI
         DateOnly? min = null, DateOnly? max = null) =>
         new Calendar(selected, onChanged, min, max);
 
-    /// <summary>One choice out of a dropdown list.</summary>
-    public static Select Select(IReadOnlyList<string> options, int selectedIndex = -1,
-        Action<int>? onChanged = null, string? placeholder = null) =>
-        new Select(options, selectedIndex, onChanged, placeholder);
+    /// <summary>One choice out of a dropdown list: the ungrouped <paramref name="options"/> first, then
+    /// each of <paramref name="groups"/> under its heading, one index across them all.</summary>
+    public static Select Select(IReadOnlyList<string>? options = null, int selectedIndex = -1,
+        Action<int>? onChanged = null, string? placeholder = null, IReadOnlyList<OptionGroup>? groups = null) =>
+        new Select(options, selectedIndex, onChanged, placeholder, groups);
 
     /// <summary>The full text field: label, helper, error, leading icon, and a trailing SLOT
     /// for whatever belongs at the end of the row — a picker's opener, a clear affordance.</summary>
@@ -687,6 +696,22 @@ public static class UI
         SizeValue width = default, SizeValue height = default) =>
         new ListView(count, itemExtent, itemBuilder) { Width = width, Height = height };
 
+    /// <summary>A tree of nodes, loaded as they open, walked by the keyboard as the WAI-ARIA tree pattern;
+    /// given a height, it scrolls and keeps the keyboard's item in view (#1530).</summary>
+    public static TreeView TreeView(IReadOnlyList<TreeNode> roots, string? selectedKey = null,
+        Action<TreeNode>? onPressed = null, Func<TreeNode, Task<IReadOnlyList<TreeNode>>>? loadChildren = null,
+        Action<TreeNode, bool>? onToggled = null, IReadOnlyList<string>? expandedKeys = null,
+        IReadOnlyList<string>? revealPath = null, string label = "", SizeValue? height = null) =>
+        new TreeView(roots, selectedKey, onPressed)
+        {
+            LoadChildren = loadChildren,
+            OnToggled = onToggled,
+            ExpandedKeys = expandedKeys,
+            RevealPath = revealPath,
+            Label = label,
+            Height = height,
+        };
+
     /// <summary>A list beside a detail on a wide window, one pane at a time on a phone (spec B4).
     /// The panes arrive as BUILDERS, one call per shape that shows them; the titles, the wide
     /// placeholder and the threshold are init slots.</summary>
@@ -747,6 +772,26 @@ public static class UI
             Current = current,
         };
 
+    /// <summary>A list whose items a pointer puts in order, and which takes the items of the lists of its
+    /// group; the drop is the app's to apply (#1535).</summary>
+    public static Sortable Sortable(VisualNode child, string id, Action<SortDrop> onDropped, string group = "",
+        DragAxis axis = DragAxis.Vertical, bool nests = false, Action<SortDrop?>? onHovered = null,
+        Func<SortDrop, bool>? accepts = null, bool enabled = true, string label = "") =>
+        new Sortable(child, id, onDropped)
+        {
+            Label = label,
+            Group = group,
+            Axis = axis,
+            Nests = nests,
+            OnHovered = onHovered,
+            Accepts = accepts,
+            Enabled = enabled,
+        };
+
+    /// <summary>One item of a <see cref="Primitives.Sortable"/>, named by its id.</summary>
+    public static SortableItem SortableItem(VisualNode child, string id, bool enabled = true) =>
+        new SortableItem(child, id) { Enabled = enabled };
+
     /// <summary>
     /// An area a person drops files onto: <paramref name="onDropped"/> hands over what landed, and
     /// <paramref name="onDragOverChanged"/> says when files are carried over it, so the caller can
@@ -756,6 +801,23 @@ public static class UI
     public static DropTarget DropTarget(VisualNode child, Action<IReadOnlyList<PickedFile>> onDropped,
         Action<bool>? onDragOverChanged = null, bool enabled = true) =>
         new DropTarget(child, onDropped) { OnDragOverChanged = onDragOverChanged, Enabled = enabled };
+
+    /// <summary>
+    /// What a person can ask the menu of: <paramref name="onRequested"/> hears a secondary click, a finger held
+    /// still, or the menu key or Shift+F10 with the focus inside, with where in the child's box the pointer asked
+    /// (none for the keyboard). Open a menu there with an <c>Anchored</c> placed <c>At</c> that point, or use
+    /// <c>ContextMenu</c>, which does it.
+    /// </summary>
+    public static ContextTarget ContextTarget(VisualNode child, Action<ContextRequest> onRequested, bool enabled = true) =>
+        new ContextTarget(child, onRequested) { Enabled = enabled };
+
+    /// <summary>
+    /// A menu of <paramref name="items"/> for what <paramref name="child"/> is, opened where a person asks for it
+    /// (a secondary click, a long press, the menu key or Shift+F10), its choice handed to <paramref name="onSelect"/>.
+    /// </summary>
+    public static ContextMenu ContextMenu(VisualNode child, IReadOnlyList<MenuItem> items, Action<int>? onSelect = null,
+        bool enabled = true) =>
+        new ContextMenu(child, items, onSelect) { Enabled = enabled };
 
     /// <summary>
     /// A whole file upload: an area files are dropped on, a button that asks for them, and a row for each

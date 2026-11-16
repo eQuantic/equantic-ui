@@ -40,9 +40,11 @@ refuses raw, a quote and a backslash included, whatever C# file, app name or pat
 
 The web SDK SHALL declare eqc's output folder in `DefaultItemExcludes` while the compiler is on, so
 that no default glob takes its files and `dotnet watch` ignores what eqc writes there. A compile SHALL
-NOT empty the folder before eqc writes it: eqc SHALL write its files in place, and the files it did
-not write (a removed component's module, a renamed chunk, a culture taken out, the maps a Release
-build does not write) SHALL be removed after it has written, never the runtime another target writes.
+NOT empty the folder before eqc writes it: eqc SHALL write its files in place, writing a module, a map
+or a catalog only when its text differs from the file's, and eqc SHALL remove the files the compile
+did not produce (a removed component's module, a renamed chunk, a culture taken out, the maps a
+Release build does not write) after it has written, by what the compile produced and never by a file's
+time, and never the runtime another target writes.
 
 #### Scenario: A component removed between two compiles
 
@@ -72,3 +74,8 @@ build does not write) SHALL be removed after it has written, never the runtime a
 
 - **WHEN** an app turns `EnableEQuanticUICompilation` off
 - **THEN** the folder is not excluded, and its files are Content as any file under wwwroot is
+
+#### Scenario: A save that changes one module
+
+- **WHEN** a compile follows a save that changes the text of one module only
+- **THEN** that module is written, and every other module and catalog keeps the time it had

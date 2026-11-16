@@ -1,8 +1,10 @@
 /**
  * The after-pass half of a table viewport on the web (the C# twin is Photon's host and emit): lowering
- * DECLARES each viewport, keyed by the path stamped on its element as `data-eq-table`, with the
- * offset its cells were placed at; the commit, once the pass is written, finds the element and drives
- * the scroll model the node carries.
+ * DECLARES each viewport on the state its POSITION keeps (`TableViewportState`), whose id is stamped on
+ * its element as `data-eq-table`, with the offset its cells were placed at; the commit, once the pass
+ * is written, finds the element and drives the scroll model the node carries. What was last reported
+ * to the owner is the position's too: a table that took another's place, on the element the
+ * reconciler handed it, is told where its own grid stands even when the numbers match (#1454).
  *
  * The model owns the offset (the browser scrolls nothing: an element is at most 16 777 214 px tall,
  * which a million rows pass). So this half reads the window's size, hands the model the wheel, the
@@ -10,13 +12,15 @@
  * since its cells were placed (a scroll step inside the built cells rewrites no cell), the scrollbars
  * where the model puts them, and the bands short of them. It glides a keyed mark a pass placed over
  * other cells. It tells the owner where the grid stands and how large the window is, each once per
- * change, and gives a viewport asked to fill an axis with no bound the visible extent of the scroller
- * around it.
+ * change, and gives a viewport asked to fill an axis with no bound what the scroller around it shows
+ * from where the viewport starts.
  */
 
 import { logger } from '../utils/logger';
 import { modifiersOf } from './css-values';
 import type { TableScrollModelLike, TableViewCellNode, TableViewportNode } from './nodes';
+import type { Element as Position } from './runtime-exports';
+import { DISPOSABLE, nodeStateFor, type NodeState } from './node-states';
 
 /** What the latest pass said about one viewport. */
 export interface TableViewportDeclaration {
@@ -30,15 +34,48 @@ export interface TableViewportDeclaration {
 /** A wheel's line, in points: the C# `Touch.WheelLine`. */
 const WHEEL_LINE = 16;
 
-const declared = new Map<string, TableViewportDeclaration>();
+/**
+ * What a table viewport's position keeps between passes: the latest declaration, the element it
+ * drives, and what it last told the owner. Driving another element tells the owner afresh.
+ */
+export class TableViewportState implements NodeState {
+  /** Disposed when its position leaves the tree (`node-states.ts`). */
+  static readonly $interfaces = DISPOSABLE;
 
-/** Marker properties live on the ELEMENT: the reconciler reuses it, so what was attached survives. */
+  declaration: TableViewportDeclaration | null = null;
+  view: TableElement | null = null;
+  reported: { across: number; down: number; width: number; height: number } | undefined = undefined;
+
+  /** Drives `view`, which another position may have driven before. */
+  adopt(view: TableElement): void {
+    const before = view.__eqTableState;
+    if (before && before !== this && before.view === view) before.view = null;
+    this.view = view;
+    this.reported = undefined;
+    view.__eqTableState = this;
+  }
+
+  dispose(): void {
+    const view = this.view;
+    if (view?.__eqTableState === this) {
+      stopWatching(view);
+      view.__eqTableState = undefined;
+    }
+    this.view = null;
+    this.declaration = null;
+  }
+}
+
+/** The viewports the latest passes declared, by their position's id, until the commit reads them. */
+const declared = new Map<string, TableViewportState>();
+
+/** Marker properties live on the ELEMENT: the reconciler reuses it, so what was attached survives.
+ * Its listeners and its observer act for whichever position drives it now (`__eqTableState`). */
 interface TableElement extends HTMLElement {
-  __eqTable?: TableViewportDeclaration;
+  __eqTableState?: TableViewportState;
   __eqTableObserver?: ResizeObserver;
   __eqTableListening?: boolean;
   __eqTableFrame?: number;
-  __eqTableReported?: { across: number; down: number; width: number; height: number };
   __eqTableLogged?: number;
   /** The axes whose extent this half set from a scroller (1 across, 2 down), and the scroller. */
   __eqTableFitted?: number;
@@ -49,8 +86,16 @@ interface TableElement extends HTMLElement {
   __eqTableLeaving?: boolean;
 }
 
-export function declareTableViewport(path: string, declaration: TableViewportDeclaration): void {
-  declared.set(path, declaration);
+/**
+ * Declares the viewport at `position`, on the state the position keeps, and answers the id the
+ * lowering stamps on its element as `data-eq-table`.
+ */
+export function declareTableViewport(position: Position, declaration: TableViewportDeclaration): string {
+  const state = nodeStateFor(position, TableViewportState);
+  state.declaration = declaration;
+  const id = String(position.id);
+  declared.set(id, state);
+  return id;
 }
 
 const watched = new Set<TableElement>();
@@ -92,9 +137,10 @@ export function commitTableViewports(): void {
     return;
   }
   for (const view of document.querySelectorAll<TableElement>('[data-eq-table]')) {
-    const declaration = declared.get(view.getAttribute('data-eq-table') ?? '');
-    if (!declaration) continue;
-    view.__eqTable = declaration;
+    const state = declared.get(view.getAttribute('data-eq-table') ?? '');
+    const declaration = state?.declaration;
+    if (!state || !declaration) continue;
+    if (state.view !== view) state.adopt(view);
     listen(view);
     arrange(view, true);
     const { node } = declaration;
@@ -167,7 +213,7 @@ interface GlidingMark extends HTMLElement {
  * it starts where it stands.
  */
 function glideMarks(view: TableElement): void {
-  const declaration = view.__eqTable;
+  const declaration = view.__eqTableState?.declaration;
   if (!declaration) return;
   const { node } = declaration;
   const reduceMotion =
@@ -225,13 +271,20 @@ function pinnedColumnsOf(node: TableViewportNode): number {
 }
 
 /**
+ * What is left of a scroller's extent from where a viewport starts is worth filling when it is at least
+ * this share of what the scroller shows (C# twin: `MeasureVisitor.WorthFilling`). Further down a long
+ * page, what is left is a sliver, and the viewport takes the whole extent instead (#1006).
+ */
+const WORTH_FILLING = 0.5;
+
+/**
  * The window the model is told, after the unbounded axes took their extent. A viewport's box comes out
  * empty on an axis whose parent has no definite size, because its cells are positioned and say
- * nothing about it; there it takes the visible extent of the nearest scroller around it, or the
- * window's, as Photon's layout does, and the development log says so once.
+ * nothing about it; there it takes what the nearest scroller around it shows from where it starts, or
+ * the window's, as Photon's layout does, and the development log says so once.
  */
 function arrange(view: TableElement, decide: boolean): void {
-  const declaration = view.__eqTable;
+  const declaration = view.__eqTableState?.declaration;
   if (!declaration) return;
   const { node } = declaration;
   const width = fit(view, node, 'width', decide);
@@ -267,25 +320,47 @@ function fit(view: TableElement, node: TableViewportNode, axis: 'width' | 'heigh
   }
   const scroller = scrollerAround(view, axis);
   view.__eqTableScroller = scroller;
-  const visible = scroller
+  const shown = scroller
     ? axis === 'width'
       ? scroller.clientWidth
       : scroller.clientHeight
     : axis === 'width'
       ? window.innerWidth
       : window.innerHeight;
+  // A viewport below the top of what scrolls takes what is left from where it starts, so its own end,
+  // and its scrollbar with it, stands at the scroller's (#1006).
+  const left = shown - startIn(view, scroller, axis);
+  const fromStart = left < shown && left >= shown * WORTH_FILLING;
+  const visible = fromStart ? left : shown;
   const spelled = `${visible}px`;
   if (view.style.getPropertyValue(axis) !== spelled) view.style.setProperty(axis, spelled);
   view.__eqTableFitted = (view.__eqTableFitted ?? 0) | bit;
   if (((view.__eqTableLogged ?? 0) & bit) === 0) {
     view.__eqTableLogged = (view.__eqTableLogged ?? 0) | bit;
     const label = node.label ? ` (${node.label})` : '';
+    const around = scroller ? 'scroller around it' : 'window';
     logger.info(
       `A table viewport${label} was asked to fill its ${axis}, which had no bound; it takes the ` +
-        `${visible} points the ${scroller ? 'scroller around it' : 'window'} shows, and scrolls its grid inside them.`,
+        (fromStart
+          ? `${visible} of the ${shown} points the ${around} shows that are left from where it starts`
+          : `${visible} points the ${around} shows`) +
+        ', and scrolls its grid inside them.',
     );
   }
   return visible;
+}
+
+/**
+ * Where a viewport starts on an axis inside what the scroller around it scrolls, or inside the page when
+ * the window scrolls it: the same whether that scroller is scrolled or not.
+ */
+function startIn(view: HTMLElement, scroller: HTMLElement | null, axis: 'width' | 'height'): number {
+  const own = view.getBoundingClientRect();
+  if (!scroller) return axis === 'width' ? own.left + window.scrollX : own.top + window.scrollY;
+  const around = scroller.getBoundingClientRect();
+  return axis === 'width'
+    ? own.left - around.left - scroller.clientLeft + scroller.scrollLeft
+    : own.top - around.top - scroller.clientTop + scroller.scrollTop;
 }
 
 /** The nearest ancestor that scrolls on an axis, or none. */
@@ -301,7 +376,7 @@ function scrollerAround(view: HTMLElement, axis: 'width' | 'height'): HTMLElemen
 /** The bands' layers moved to the model's offset, the bands short of the scrollbars, the scrollbars
  * where the model puts them. */
 function paint(view: TableElement): void {
-  const declaration = view.__eqTable;
+  const declaration = view.__eqTableState?.declaration;
   if (!declaration) return;
   const { node, base } = declaration;
   const scroll = node.scroll;
@@ -353,13 +428,15 @@ function placeScrollbar(track: HTMLElement | undefined, scroll: TableScrollModel
 
 /** Tells the owner where the grid stands and how large the window is, each once per change. */
 function report(view: TableElement): void {
-  const declaration = view.__eqTable;
+  const declaration = view.__eqTableState?.declaration;
   if (!declaration) return;
   const { node } = declaration;
   const offset = node.scroll.offset;
   const viewport = node.scroll.viewport;
-  const last = view.__eqTableReported;
-  view.__eqTableReported = {
+  const state = view.__eqTableState;
+  if (!state) return;
+  const last = state.reported;
+  state.reported = {
     across: offset.across,
     down: offset.down,
     width: viewport.width,
@@ -378,7 +455,7 @@ function animate(view: TableElement): void {
   if (view.__eqTableFrame !== undefined || typeof requestAnimationFrame !== 'function') return;
   const step = () => {
     view.__eqTableFrame = undefined;
-    const declaration = view.__eqTable;
+    const declaration = view.__eqTableState?.declaration;
     if (!declaration || !view.isConnected) return;
     const moving = declaration.node.scroll.advance(performance.now());
     paint(view);
@@ -396,7 +473,7 @@ function listen(view: TableElement): void {
   view.addEventListener(
     'wheel',
     (event: WheelEvent) => {
-      const declaration = view.__eqTable;
+      const declaration = view.__eqTableState?.declaration;
       if (!declaration) return;
       const scroll = declaration.node.scroll;
       const unit =
@@ -428,9 +505,25 @@ function listen(view: TableElement): void {
 
   // The press in flight. On a scrollbar it is the scroll's from the start; a finger on the cells is a
   // CANDIDATE, as on Photon: the press goes on to the cell under it, and the scroll takes it only
-  // once it travels past the slop, so a tap on a cell is still a tap.
-  let press: { id: number; start: { x: number; y: number }; kind: string; time: number; active: boolean } | null =
-    null;
+  // once it travels past the slop, so a tap on a cell is still a tap. A pan keeps where it began on
+  // screen (`client`), so the table moving under a still finger, because the page around it took part
+  // of the pan, is no travel of the finger, and the pages around it on each axis (`around`), which take
+  // what the table cannot follow (#1007).
+  let press: {
+    id: number;
+    start: { x: number; y: number };
+    client: { x: number; y: number };
+    kind: string;
+    time: number;
+    active: boolean;
+    around?: PassedOn;
+  } | null = null;
+
+  /** Where the pan stands in the table's own space: where it began, plus the finger's travel since. */
+  const followed = (event: PointerEvent) =>
+    press
+      ? { x: press.start.x + event.clientX - press.client.x, y: press.start.y + event.clientY - press.client.y }
+      : local(event);
 
   const onScrollbar = (scroll: TableScrollModelLike, at: { x: number; y: number }) =>
     [scroll.trackOf('vertical'), scroll.trackOf('horizontal')].some(
@@ -439,29 +532,34 @@ function listen(view: TableElement): void {
 
   view.addEventListener('pointerdown', (event: PointerEvent) => {
     view.__eqTablePointerAt = performance.now();
-    const declaration = view.__eqTable;
+    const declaration = view.__eqTableState?.declaration;
     if (!declaration) return;
     const scroll = declaration.node.scroll;
     const at = local(event);
     const kind = kindOf(event);
+    const client = { x: event.clientX, y: event.clientY };
     if (onScrollbar(scroll, at)) {
       if (!scroll.pointer('down', at, kind, performance.now())) return;
-      press = { id: event.pointerId, start: at, kind, time: performance.now(), active: true };
+      press = { id: event.pointerId, start: at, client, kind, time: performance.now(), active: true };
       capture(view, event.pointerId, 'take');
       event.preventDefault();
       paint(view);
       report(view);
       return;
     }
-    if (kind !== 'mouse') press = { id: event.pointerId, start: at, kind, time: performance.now(), active: false };
+    // A drag surface inside a cell keeps its gesture, as one anywhere else does (#1007).
+    const target = event.target as Element | null;
+    const drag = target?.closest?.('[data-eq-drag]');
+    if (drag && view.contains(drag)) return;
+    if (kind !== 'mouse') press = { id: event.pointerId, start: at, client, kind, time: performance.now(), active: false };
   });
 
   view.addEventListener('pointermove', (event: PointerEvent) => {
     if (!press || press.id !== event.pointerId) return;
-    const declaration = view.__eqTable;
+    const declaration = view.__eqTableState?.declaration;
     if (!declaration) return;
     const scroll = declaration.node.scroll;
-    const at = local(event);
+    const at = followed(event);
     if (!press.active) {
       if (Math.max(Math.abs(at.x - press.start.x), Math.abs(at.y - press.start.y)) <= PRESS_SLOP) return;
       if (!scroll.pointer('down', press.start, press.kind, press.time)) {
@@ -469,10 +567,12 @@ function listen(view: TableElement): void {
         return;
       }
       press.active = true;
+      if (press.kind !== 'mouse') press.around = passedOn(view, scroll);
       capture(view, event.pointerId, 'take');
       swallowNextClick();
     }
     scroll.pointer('move', at, press.kind, performance.now());
+    if (press.around) passOn(press.around, scroll, event.clientX - press.client.x, event.clientY - press.client.y);
     event.preventDefault();
     paint(view);
     report(view);
@@ -483,9 +583,15 @@ function listen(view: TableElement): void {
     const ended = press;
     press = null;
     if (!ended.active) return;
-    const declaration = view.__eqTable;
+    const declaration = view.__eqTableState?.declaration;
     if (!declaration) return;
-    declaration.node.scroll.pointer(phase, local(event), ended.kind, performance.now());
+    declaration.node.scroll.pointer(
+      phase,
+      { x: ended.start.x + event.clientX - ended.client.x, y: ended.start.y + event.clientY - ended.client.y },
+      ended.kind,
+      performance.now(),
+    );
+    if (phase === 'up' && ended.around) flingOn(ended.around);
     // Handled: the release of a pan is no tap, and what composes the table reads it so (a spreadsheet's
     // surface tells its engine the press was taken away).
     event.preventDefault();
@@ -501,7 +607,7 @@ function listen(view: TableElement): void {
   // moves along, before the browser would scroll a clipping box to it. Its cells past the window are
   // built, and Tab reaches them.
   view.addEventListener('focusin', (event: FocusEvent) => {
-    const declaration = view.__eqTable;
+    const declaration = view.__eqTableState?.declaration;
     const target = event.target as Element | null;
     if (!declaration || !target || view.__eqTableLeaving) return;
     // Shift+Tab from past the table lands on the last control the document holds in it; the last one
@@ -531,7 +637,7 @@ function listen(view: TableElement): void {
   // On the viewport itself the keys scroll it; Tab walks its cells' controls row by row, across the
   // bands they are painted in, where the document's own order would visit them band by band.
   view.addEventListener('keydown', (event: KeyboardEvent) => {
-    const declaration = view.__eqTable;
+    const declaration = view.__eqTableState?.declaration;
     if (!declaration) return;
     if (event.key === 'Tab') {
       tab(view, event);
@@ -611,6 +717,78 @@ function tab(view: TableElement, event: KeyboardEvent): void {
     edge.focus({ preventScroll: true });
   } finally {
     view.__eqTableLeaving = false;
+  }
+}
+
+/** One axis of the page around a table that takes what the table's pan cannot follow (#1007). */
+interface PassedOnAxis {
+  /** The element that scrolls, or null for the window. */
+  scroller: HTMLElement | null;
+  /** Where it stood when the table took the pan. */
+  from: number;
+  /** What it was last given, and when, for the flick it carries on with. */
+  last: number;
+  lastTime: number;
+  velocity: number;
+}
+
+/** The pages around a table on each axis, and where the grid stood, when the table took a pan. */
+interface PassedOn {
+  across: PassedOnAxis | null;
+  down: PassedOnAxis | null;
+  grid: { across: number; down: number };
+}
+
+/** How far a flick of what passed on carries, per point a millisecond: Photon's `ScrollClock.FlingReach`. */
+const FLING_REACH = 90;
+
+/** The pages around a table, on each axis that scrolls, as they stand when the table takes a pan. */
+function passedOn(view: HTMLElement, scroll: TableScrollModelLike): PassedOn {
+  const axis = (which: 'width' | 'height'): PassedOnAxis | null => {
+    const scroller = scrollerAround(view, which);
+    const page = document.scrollingElement as HTMLElement | null;
+    const scrolls = scroller ?? page;
+    if (!scrolls) return null;
+    const from = which === 'width' ? scrolls.scrollLeft : scrolls.scrollTop;
+    return { scroller: scrolls, from, last: 0, lastTime: performance.now(), velocity: 0 };
+  };
+  return { across: axis('width'), down: axis('height'), grid: { across: scroll.offset.across, down: scroll.offset.down } };
+}
+
+/**
+ * What a finger's pan of a table could not follow, on each axis, moves the page around it on that axis,
+ * as a nested scroll does on iOS and Android and Photon's host does (#1007): the finger's travel along it,
+ * less what the grid took since the table took the pan.
+ */
+function passOn(around: PassedOn, scroll: TableScrollModelLike, travelledAcross: number, travelledDown: number): void {
+  const move = (axis: PassedOnAxis | null, travelled: number, took: number, horizontal: boolean) => {
+    if (!axis?.scroller) return;
+    const left = travelled - took;
+    const now = performance.now();
+    const elapsed = now - axis.lastTime;
+    if (elapsed > 0) axis.velocity = (left - axis.last) / elapsed;
+    axis.last = left;
+    axis.lastTime = now;
+    // Written only when it moves: a write of the value it holds still cancels a scroll the page has in flight.
+    const to = axis.from - left;
+    if (horizontal) {
+      if (axis.scroller.scrollLeft !== to) axis.scroller.scrollLeft = to;
+    } else if (axis.scroller.scrollTop !== to) axis.scroller.scrollTop = to;
+  };
+  move(around.across, travelledAcross, around.grid.across - scroll.offset.across, true);
+  move(around.down, travelledDown, around.grid.down - scroll.offset.down, false);
+}
+
+/** A flick of what passed on carries on, as Photon's `ScrollClock.Fling` does, unless motion is reduced. */
+function flingOn(around: PassedOn): void {
+  if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  for (const [axis, horizontal] of [
+    [around.across, true],
+    [around.down, false],
+  ] as const) {
+    if (!axis?.scroller || axis.last === 0 || Math.abs(axis.velocity) < 0.05) continue;
+    const reach = -axis.velocity * FLING_REACH;
+    axis.scroller.scrollBy?.(horizontal ? { left: reach, behavior: 'smooth' } : { top: reach, behavior: 'smooth' });
   }
 }
 

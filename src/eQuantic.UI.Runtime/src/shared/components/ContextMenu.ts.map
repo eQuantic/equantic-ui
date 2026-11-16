@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "ContextMenu.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/ContextMenu.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;;;;IAsC4B;IATxB;IAEA;IAGA;;IAGsB;QAAO;;;IAAU;QAAQ;;;;;;;;QAd3C;QACA;QACA;;;;;QA0BA;QACA;QASA;;;IArBJ;QAEI;QAAA,8DAAmC;QACnC;QACA;QACA;QACA;;;IAqBJ;QAAgD;YAE5C;YACA;YACA;SAJ4C;;;IAOhD;QAEI,iHAAgE;QAChE;QACA"
+}

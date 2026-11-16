@@ -94,9 +94,13 @@ public sealed class Calendar : StatefulComponent
         var theme = context.Theme;
         var first = CalendarNames.FirstDayOfWeek;
         var monthTitle = $"{CalendarNames.MonthNames[_month.Month - 1]} {_month.Year}";
+        // The theme's Calendar slot, then the component's own (§3.10).
+        var slot = theme.Calendar;
+        var cellSize = slot?.CellSize ?? CellSize;
 
-        var header = new Row(gap: Space.S1) { Cross = CrossAlign.Center, Width = SizeValue.Fill };
-        header.Add(new Text(Label ?? monthTitle, TypeRole.TitleSmall, theme.TextPrimary, maxLines: 1));
+        var header = new Row(gap: slot?.HeaderGap ?? Space.S1) { Cross = CrossAlign.Center, Width = SizeValue.Fill };
+        header.Add(new Text(Label ?? monthTitle, slot?.TitleRole ?? TypeRole.TitleSmall,
+            slot?.TitleColor ?? theme.TextPrimary, maxLines: 1));
         header.Add(new Flexible(new Spacer()));
         header.Add(new IconButton(new Icon(Icons.ChevronLeft), SdkStrings.PreviousMonth, IconButtonKind.Standard,
             SizeVariant.Small, () => Page(-1)));
@@ -109,8 +113,13 @@ public sealed class Calendar : StatefulComponent
         var dayRow = new Row(gap: 0) { Width = SizeValue.Fill };
         for (var column = 0; column < 7; column++)
         {
-            dayRow.Add(new Box(new BoxStyle { Width = SizeValue.Fixed(CellSize), Height = SizeValue.Fixed(HeaderHeight) },
-                new Text(names[(first + column) % 7], TypeRole.Caption, theme.TextMuted, maxLines: 1).Centered()));
+            dayRow.Add(new Box(new BoxStyle
+                {
+                    Width = SizeValue.Fixed(cellSize),
+                    Height = SizeValue.Fixed(slot?.WeekdayHeight ?? HeaderHeight),
+                },
+                new Text(names[(first + column) % 7], slot?.WeekdayRole ?? TypeRole.Caption,
+                    slot?.WeekdayColor ?? theme.TextMuted, maxLines: 1).Centered()));
         }
 
         // Six weeks, always: a month that needs five would otherwise change the grid's height as
@@ -125,7 +134,7 @@ public sealed class Calendar : StatefulComponent
             rows.Add(weekRow);
         }
 
-        var month = new Column(gap: Space.S2);
+        var month = new Column(gap: slot?.Gap ?? Space.S2);
         month.Add(header);
         month.Add(new Navigable(Move, rows)
         {
@@ -142,7 +151,9 @@ public sealed class Calendar : StatefulComponent
     private VisualNode Cell(DateOnly day, ComponentContext context)
     {
         var theme = context.Theme;
-        var size = SizeValue.Fixed(CellSize);
+        var slot = theme.Calendar;
+        var cellSize = slot?.CellSize ?? CellSize;
+        var size = SizeValue.Fixed(cellSize);
         if (day.Month != _month.Month) return new Box(new BoxStyle { Width = size, Height = size });
 
         var selected = Selected == day;
@@ -150,8 +161,8 @@ public sealed class Calendar : StatefulComponent
         var reachable = InRange(day);
         var primary = theme.Colors(Variant.Primary);
 
-        var numeral = new Text(day.Day.ToString(), TypeRole.BodyM,
-            selected ? primary.OnBase : isToday ? primary.Base : theme.TextPrimary, maxLines: 1);
+        var numeral = new Text(day.Day.ToString(), slot?.DayRole ?? TypeRole.BodyM,
+            selected ? primary.OnBase : isToday ? primary.Base : slot?.DayColor ?? theme.TextPrimary, maxLines: 1);
 
         var cell = new Box(new BoxStyle
         {
@@ -159,12 +170,12 @@ public sealed class Calendar : StatefulComponent
             Height = size,
             // A full circle for the selection, a ring for today — C15's own two marks, and they
             // compose: today STAYS today when it is picked.
-            CornerRadius = new CornerRadii(CellSize / 2),
+            CornerRadius = new CornerRadii(cellSize / 2),
             Background = selected ? primary.Base : null,
-            BorderWidth = !selected && isToday ? 1.5f : 0,
+            BorderWidth = !selected && isToday ? slot?.TodayRingWidth ?? 1.5f : 0,
             BorderColor = primary.Base,
             Opacity = reachable ? null : theme.DisabledOpacity,
-            Hover = reachable && !selected ? new StyleDiff { Background = theme.SurfaceSubtle } : null,
+            Hover = reachable && !selected ? new StyleDiff { Background = slot?.DayHoverFill ?? theme.SurfaceSubtle } : null,
         }, numeral.Centered());
 
         if (!reachable) return cell;
@@ -317,7 +328,8 @@ public sealed class Calendar : StatefulComponent
 
     private static DateOnly Today() => DateOnly.FromDateTime(DateTime.Now);
 
-    /// <summary>C15: 44dp on device. The header row is shorter — it carries a caption, not a target.</summary>
+    /// <summary>C15: 44dp on device, unless the theme's Calendar slot says otherwise. The header row is
+    /// shorter — it carries a caption, not a target.</summary>
     private const float CellSize = 44;
     private const float HeaderHeight = 28;
 }

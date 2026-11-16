@@ -92,6 +92,8 @@ export type CodeTokenKindValue =
 
 export type ConsentStateValue = 'unknown' | 'granted' | 'denied';
 
+export type ContrastLevelValue = 'standard' | 'more';
+
 export type CrossAlignValue = 'start' | 'center' | 'end' | 'stretch';
 
 export type DensityValue = 'comfortable' | 'compact';
@@ -134,7 +136,7 @@ export type NavigableMoveValue =
   'previousItem' | 'nextItem' | 'previousRow' | 'nextRow' | 'previousPage' | 'nextPage'
   | 'previousSection' | 'nextSection' | 'rowStart' | 'rowEnd';
 
-export type NavigableRoleValue = 'grid';
+export type NavigableRoleValue = 'grid' | 'tree';
 
 export type NetworkKindValue = 'none' | 'wifi' | 'cellular' | 'wired' | 'other';
 
@@ -155,7 +157,7 @@ export type PresenceMotionValue = 'fade' | 'slideUp';
 
 export type PressableRoleValue =
   'button' | 'radio' | 'checkbox' | 'switch' | 'tab' | 'menuItem' | 'option' | 'destination'
-  | 'gridCell';
+  | 'gridCell' | 'treeItem';
 
 export type ScrollAxisValue = 'vertical' | 'horizontal' | 'both';
 
@@ -165,7 +167,7 @@ export type SemanticRoleValue =
   'staticText' | 'button' | 'link' | 'textField' | 'codeField' | 'slider' | 'image' | 'checkbox'
   | 'switch' | 'gridCell' | 'progressIndicator' | 'group' | 'radio' | 'tab' | 'menuItem' | 'option'
   | 'destination' | 'tabBar' | 'radioGroup' | 'comboBox' | 'dialog' | 'alertDialog' | 'table'
-  | 'grid' | 'cell' | 'columnHeader' | 'rowHeader';
+  | 'grid' | 'cell' | 'columnHeader' | 'rowHeader' | 'tree' | 'treeItem';
 
 export type ServerConnectionStateValue =
   'disconnected' | 'connecting' | 'connected' | 'reconnecting';

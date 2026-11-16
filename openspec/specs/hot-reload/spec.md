@@ -368,7 +368,7 @@ show them over itself without reloading.
 The server SHALL ask the project's MSBuild how to start eqc once for a run, as the app starts, and
 SHALL keep that eqc running, asking it to compile on each save. No MSBuild SHALL run for a save. The
 server SHALL own the process: eqc SHALL end when its standard input does, a stop or a compile past
-its limit SHALL kill it, and the next save SHALL start it again.
+its limit SHALL kill it, and the next save SHALL start it again, never waiting on the eqc that died.
 
 #### Scenario: A save
 
@@ -380,6 +380,11 @@ its limit SHALL kill it, and the next save SHALL start it again.
 - **WHEN** the running eqc exits between two saves
 - **THEN** the next save starts it again, with what MSBuild said at the start of the run, and compiles
 
+#### Scenario: eqc dies as a save finds it
+
+- **WHEN** the running eqc exits, and its exit is raised as the next save finds it gone
+- **THEN** the save starts eqc again and compiles, where the save and the exit each waited for the other and the hot reload hung for good
+
 #### Scenario: A compile past its limit, or a stop
 
 - **WHEN** a compile takes longer than its limit, or the app stops while one runs
@@ -390,6 +395,29 @@ its limit SHALL kill it, and the next save SHALL start it again.
 - **WHEN** a save does not compile, and the next one does
 - **THEN** the first sends its errors to the development overlay, and the second reloads the page with
   the fix, with no restart of the app or of eqc
+
+### Requirement: A served eqc keeps the project's compilation between saves
+
+A build of the eqc the server keeps running SHALL start from the compilation the build before it
+loaded, replacing in place the tree of each file whose text changed, and SHALL write exactly what a
+cold build writes after the same edit. A build SHALL load cold when a file was added or removed, when
+an input the SDK handed changed, or when a file of a project the app references changed.
+
+#### Scenario: A file's text changed
+
+- **WHEN** a save changes a constant one file declares and another file's component reads
+- **THEN** the warm build writes the component's module with the new value, byte for byte what a
+  cold build writes
+
+#### Scenario: A file added
+
+- **WHEN** a file was added since the last build
+- **THEN** the build loads cold, and writes the new file's module
+
+#### Scenario: A referenced project's file changed
+
+- **WHEN** a file of a project the app references changed
+- **THEN** the build loads cold
 
 ### Requirement: Hot reload ends with its host, stopped or not
 
@@ -456,3 +484,85 @@ that asks answers instead of waiting on a stream nothing will close.
 
 - **WHEN** the MSBuild the server asks exits, and something it started goes on holding its output
 - **THEN** the asking ends within its limit, and the save answers that eqc could not be started
+
+### Requirement: A desktop edit the window did not draw says how far it got
+
+A Photon app's hot reload SHALL say, as an edit arrives, how many types the edit changed and how many
+windows it woke to draw it. When the desktop measurement does not see a window draw an edit, its
+failure SHALL say what dotnet watch said after the save, what the app said of the edit, and whether
+dotnet watch is still running.
+
+#### Scenario: An edit that reached the app and was not drawn
+
+- **WHEN** the measuring tool saves an edit of the desktop sample, the app reports the edit applied and
+  the windows it woke, and no frame draws it before the limit
+- **THEN** the failure quotes dotnet watch's lines and the app's after the save, so the reader sees the
+  edit arrived and the window did not draw it
+
+#### Scenario: An edit that never reached the app
+
+- **WHEN** the save is followed by no line from the app's hot reload
+- **THEN** the failure says the app said nothing, so no edit reached it, and whether dotnet watch is
+  running or gone with its exit code
+
+### Requirement: A served eqc keeps one bun between saves, and a bundle writes what changed
+
+A served eqc SHALL hand every save's bundle to one bun process it starts with the first and keeps for
+the life of the server. A bundle SHALL bundle every entry point with splitting, and SHALL write a module,
+a chunk or a map only when its text changed, a map also when a map it composes with changed; only the
+maps it wrote SHALL be composed, and the files the bundle did not produce SHALL be removed after it has
+written. A bundle with no maps SHALL be the bytes bun's command line writes with the same flags.
+
+#### Scenario: A second bundle of what did not change
+
+- **WHEN** a kept bundler bundles two pages that share a module, and bundles them again unchanged
+- **THEN** the second bundle writes no file and removes none
+
+#### Scenario: One page changed
+
+- **WHEN** one of the two pages changes between two bundles
+- **THEN** that page's module is the one file written again, and the other page and the chunk they share
+  keep their text and their time
+
+#### Scenario: A TypeScript map changed under the same text
+
+- **WHEN** a module's TypeScript is the same text with another map between two bundles
+- **THEN** the module's map is composed again and leads to where the C# is now
+
+#### Scenario: What a publish copies
+
+- **WHEN** a bundle writes no maps
+- **THEN** every file it writes is the bytes bun's command line writes with the flags eqc handed it,
+  under the same names
+
+### Requirement: A served eqc compiles again only the files a save can have changed
+
+A build of the eqc the server keeps running SHALL compile again only the files whose text changed,
+the files whose last compile read one of them, and the files whose last compile failed, when the text
+outside every body of each changed file is the same as before the save. It SHALL compile every file
+when the text outside a body changed. Every module it writes SHALL be byte for byte what a cold build
+writes after the same edit.
+
+#### Scenario: A body of one screen changed
+
+- **WHEN** a save changes a text literal inside one component's `Build`
+- **THEN** the build compiles that file again and not the files that read nothing of it, and every
+  module is what a cold build writes
+
+#### Scenario: A body another file's compile reads changed
+
+- **WHEN** a save changes the body of a default interface member, or of a struct method another
+  file's component calls, declared in a file of its own
+- **THEN** the build compiles again the file that read that body, and its module is what a cold
+  build writes
+
+#### Scenario: A declaration changed
+
+- **WHEN** a save changes a constant, or a component's constructor that the generated factory calls
+- **THEN** the build compiles every file, and the modules that read the constant or call the factory
+  are what a cold build writes
+
+#### Scenario: A file not compiled again still reads its strings
+
+- **WHEN** a file that reads a resource string is not compiled again
+- **THEN** the culture catalogs the build writes still hold that string

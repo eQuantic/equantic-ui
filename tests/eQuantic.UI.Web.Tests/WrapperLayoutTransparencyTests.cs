@@ -42,10 +42,14 @@ public class WrapperLayoutTransparencyTests
         { "Pressable", new Pressable(CappedCard(), () => { }) },
         { "Hoverable", new Hoverable(CappedCard(), _ => { }) },
         { "DropTarget", new DropTarget(CappedCard(), _ => { }) },
+        { "ContextTarget", new ContextTarget(CappedCard(), _ => { }) },
+        { "Sortable", new Sortable(CappedCard(), "list", _ => { }) },
+        { "SortableItem", new SortableItem(CappedCard(), "item") },
         { "Link", new Link("/somewhere", CappedCard()) },
         { "Adjustable", new Adjustable(CappedCard(), _ => { }) },
         { "Progress", new Progress(CappedCard()) },
         { "LiveRegion", new LiveRegion(CappedCard()) },
+        { "Group", new Group(CappedCard()) { Label = "Shipping" } },
         // The third role-bearing host, and the one that forwarded NEITHER half (#241): its
         // block div took the container's width while the sheet inside kept its own.
         { "SheetSurface", new SheetSurface(CappedCard(), new SheetController()) },

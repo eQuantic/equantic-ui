@@ -29,12 +29,12 @@ public class B14TransitionTests
     /// live, and the clock they glide against.</summary>
     private sealed class Frames
     {
-        public BuildOwner Owner { get; } = ComponentBoundary.StructuralOwner();
+        public BuildOwner Owner { get; } = new ComponentBoundary().StructuralOwner();
 
         public TransitionClock Clock { get; } = new();
 
         public RealizeResult Draw(VisualNode root, float timeMs, bool reducedMotion = false) =>
-            PhotonRealizer.Realize(root, 1000, 100, PhotonTheme.Instance, ThemeMode.Light,
+            PhotonRealizer.Realize(root, 1000, 100, PhotonTheme.Instance, ThemeMode.Light, ContrastLevel.Standard,
                 new DisplayListBuilder(), timeMs: timeMs, reducedMotion: reducedMotion, owner: Owner,
                 transitions: Clock);
     }
@@ -129,8 +129,8 @@ public class S6TransitionClockTests
 {
     /// <summary>A node's position, kept by an owner as a host keeps it: where its tracks live.</summary>
     private static Element Position() =>
-        ComponentBoundary.StructuralOwner().Build(new Box(new BoxStyle()), new ComponentContext(PhotonTheme.Instance),
-            WindowSizeClass.Compact, rebuildAll: true);
+        new ComponentBoundary().StructuralOwner().Build(new Box(new BoxStyle()), new ComponentContext(PhotonTheme.Instance),
+            400f, rebuildAll: true);
 
     [Fact]
     public void ATrackFollowsItsSpecsDurationAndCurve()

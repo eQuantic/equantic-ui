@@ -248,7 +248,19 @@ public class PatternConformanceTests
             public Pt Corner { get { Reads++; return new Pt(1, 2); } }
             public object Boxed { get { Reads++; return 5L; } }
             public object Text { get { Reads++; return "xy"; } }
+            public string Missing { get { Reads++; return null; } }
             public bool Small() => Value is 2 or 1;
+            public bool Holds() => this is { Value: 2 or 1 };
+        }
+        public interface IValued { int Value { get; } }
+        public class Valued : IValued { public int Reads; public int Value { get { Reads++; return 1; } } }
+        public abstract class Shape { public abstract int Sides { get; } }
+        public class Triangle : Shape { public int Reads; public override int Sides { get { Reads++; return 3; } } }
+        public class Plain { public virtual int Value { get; set; } = 1; }
+        public class Counting : Plain
+        {
+            public int Reads;
+            public override int Value { get { Reads++; return base.Value; } set { base.Value = value; } }
         }
         """;
 
@@ -277,6 +289,55 @@ public class PatternConformanceTests
     [InlineData(false)]
     public void APatternReadsAMemberInputOnce(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Counted, typeAnnotations, CountedCases);
+
+    private static readonly (string Name, string Statements)[] MemberCountedCases =
+    [
+        ("an or inside a property pattern", "var c = new Counter(); var hit = c is { Value: 2 or 1 }; return c.Reads * 10 + (hit ? 1 : 0);"),                  // 11
+        ("two property patterns of one value", "var c = new Counter(); var hit = c is { Value: 1 } and { Value: > 0 }; return c.Reads * 10 + (hit ? 1 : 0);"), // 11
+        ("a binding", "var c = new Counter(); return c is { Value: > 0 and var v } ? c.Reads * 10 + v : -1;"),                                                 // 11
+        ("a nested pattern's alternatives", "var c = new Counter(); var hit = c is { Corner: { X: 2 } or { Y: 2 } }; return c.Reads * 10 + (hit ? 1 : 0);"), // 11
+        ("an extended property pattern", "var c = new Counter(); var hit = c is { Corner.X: 1, Corner.Y: 2 }; return c.Reads * 10 + (hit ? 1 : 0);"),        // 11
+        ("a member that answers null", "var c = new Counter(); var hit = c is { Missing: \"a\" or \"b\" }; return c.Reads * 10 + (hit ? 1 : 0);"),           // 10
+        ("the arms of a switch expression", "var c = new Counter(); var r = c switch { { Value: 2 } => 2, { Value: 1 } => 1, _ => 0 }; return c.Reads * 10 + r;"), // 11
+        ("an arm that stops before it", "var c = new Counter(); var r = c switch { { Text: char, Value: 5 } => 5, { Value: 2 } => 2, { Value: 1 } => 1, _ => 0 }; return c.Reads * 10 + r;"), // 21
+        ("a guard that fails", "var c = new Counter(); var r = c switch { { Value: var v } when v > 5 => v, { Value: var w } => w * 10, _ => 0 }; return c.Reads * 10 + r;"), // 20
+        ("the sections of a switch statement", "var c = new Counter(); switch (c) { case { Value: 2 }: return c.Reads * 10 + 2; case { Value: 1 }: return c.Reads * 10 + 1; default: return c.Reads * 10; }"), // 11
+        ("a section's guard that fails", "var c = new Counter(); switch (c) { case { Value: var v } when v > 5: return -1; case { Value: var w }: return c.Reads * 10 + w; default: return 0; }"), // 11
+        ("a member of this", "var c = new Counter(); var hit = c.Holds(); return c.Reads * 10 + (hit ? 1 : 0);"),                                           // 11
+        ("an element of a list pattern", "var cs = new[] { new Counter() }; var hit = cs is [{ Value: 2 or 1 }]; return cs[0].Reads * 10 + (hit ? 1 : 0);"), // 11
+        ("a part of a positional pattern", "var c = new Counter(); var hit = (c, 1) is ({ Value: 2 or 1 }, 1); return c.Reads * 10 + (hit ? 1 : 0);"),      // 11
+        ("an interface's property", "IValued c = new Valued(); var hit = c is { Value: 2 or 1 }; return ((Valued)c).Reads * 10 + (hit ? 1 : 0);"),          // 11
+        ("an abstract property", "Shape s = new Triangle(); var hit = s is { Sides: 4 or 3 }; return ((Triangle)s).Reads * 10 + (hit ? 1 : 0);"),           // 11
+        ("a virtual auto-property an override counts", "Plain p = new Counting(); var hit = p is { Value: 2 or 1 }; return ((Counting)p).Reads * 10 + (hit ? 1 : 0);"), // 11
+        ("an is in a loop", "var c = new Counter(); var hits = 0; for (var i = 0; i < 3; i++) if (c is { Value: 2 or 1 }) hits++; return c.Reads * 10 + hits;"), // 33
+        ("a switch expression in a loop", "var c = new Counter(); var sum = 0; for (var i = 0; i < 3; i++) sum += c switch { { Value: 2 } => 2, { Value: 1 } => 1, _ => 0 }; return c.Reads * 10 + sum;"), // 33
+        ("a switch statement in a loop", "var c = new Counter(); var sum = 0; for (var i = 0; i < 3; i++) { switch (c) { case { Value: 2 }: sum += 2; break; case { Value: 1 }: sum += 1; break; } } return c.Reads * 10 + sum;"), // 33
+    ];
+
+    /// <summary>
+    /// A MEMBER a pattern reads is read once per pattern-matching operation, as .NET's decision graph
+    /// reads it, however many alternatives, conjuncts, bindings, arms or sections read it: a getter that
+    /// counts its reads answers how many there were, a null it answers included, and each evaluation of
+    /// the operation reads it again. The member's path was written again at every mention, so the getter
+    /// ran once per mention (#1150).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void APatternReadsEachMemberOnce(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Counted, typeAnnotations, MemberCountedCases);
+
+    /// <summary>
+    /// A member whose read nobody can observe is written where the pattern reads it, as it was: a field,
+    /// and an auto-property the twin keeps under its own name, which no override can reach.
+    /// </summary>
+    [Theory]
+    [InlineData("var p = new Pt(1, 2); return p is { X: 1 or 2 };", "p.x === 1")]
+    [InlineData("var b = new Box(); return b is { N: 1 or 2 };", "b.n === 1")]
+    [InlineData("var b = new Box(); return b is { Size: > 0 and < 3 };", "b.size > 0")]
+    public void AMemberNobodyCanSeeRead_IsWrittenInPlace(string statements, string read) =>
+        Transpiler.TranspileStatements(statements, "record Pt(int X, int Y); class Box { public int N; public int Size { get; set; } }")
+            .Should().Contain(read).And.NotMatchRegex(@"\$p\d+_\d+");
 
     /// <summary>
     /// An input whose read nobody can observe, a name or a literal, is left out when the pattern names

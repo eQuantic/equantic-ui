@@ -206,6 +206,9 @@ public class FlutterParityPinTests
     private static bool EveryOneChildNodeIsA(string baseType) => Find(baseType) is { } shape
         && typeof(VisualNode).Assembly.GetExportedTypes()
             .Where(t => t is { IsAbstract: false } && typeof(VisualNode).IsAssignableFrom(t))
+            // A Theme holds a required child too, and is no wrapper: it is a value for a subtree,
+            // which the visitor answers once as its family, InheritedComponent, as it does a component.
+            .Where(t => !typeof(InheritedComponent).IsAssignableFrom(t))
             .Where(WrapsOneRequiredChild)
             .All(shape.IsAssignableFrom);
 
@@ -231,6 +234,12 @@ public class FlutterParityPinTests
         ["RenderSliver"] = () => Has("ListView") && Nothing("Sliver", "SliverList"),
         // Two axes, one viewport: the pinned bands are its own, and the scroll it carries is written
         // once for both targets.
+        ["ReorderableListView"] = () => HasMember("Sortable", "OnDropped") && HasMember("Sortable", "Accepts")
+            && HasMember("Sortable", "OnHovered") && HasMember("Sortable", "Group") && Has("SortableItem")
+            && HasMember("SortDrop", "Into"),
+        ["TreeSliver"] = () => HasMember("TreeView", "LoadChildren") && HasMember("TreeView", "OnToggled")
+            && HasMember("TreeNode", "Children") && HasMember("Pressable", "TreePlace")
+            && HasMember("Navigable", "OnTextSearch"),
         ["TableViewport"] = () => HasMember("TableViewport", "PinnedRows") && HasMember("TableViewport", "PinnedColumns")
             && Has("ITableScrollModel") && Has("TableScroll") && Nothing("Sliver", "TwoDimensionalScrollView"),
         // The shapes, ONE of three named: SingleChildNode holds the twenty-two wrappers whose child
@@ -246,7 +255,7 @@ public class FlutterParityPinTests
         // Box's is optional). WrapperNode and ProxyNode stay in the negative set they were in while this row
         // was a GAP — a SECOND wrapper base would change the shape surface just as much as a first.
         ["SingleChildRenderObjectWidget"] = () => EveryOneChildNodeIsA("SingleChildNode")
-            && Descendants("SingleChildNode") == 24 && Has("FlexNode")
+            && Descendants("SingleChildNode") == 28 && Has("FlexNode")
             && Nothing("MultiChildNode", "LeafNode", "WrapperNode", "ProxyNode"),
 
         // 2 — layout
@@ -305,6 +314,8 @@ public class FlutterParityPinTests
         ["GestureDetector"] = () => Has("Pressable") && Has("Draggable") && Has("Hoverable")
             && Has("Adjustable") && Has("Navigable"),
         ["RawGestureDetector"] = () => Nothing("RawGestureDetector"),
+        ["MenuAnchor"] = () => HasMember("ContextTarget", "OnRequested") && HasMember("ContextRequest", "At")
+            && HasMember("Anchored", "At") && Has("ContextMenu"),
         ["FocusNode"] = () => HasMember("Pressable", "InitialFocus") && Nothing("FocusNode", "FocusScope"),
         // The vocabulary's own word, and a realizer that honours it.
         ["InkWell.canRequestFocus"] = () => HasMember("Pressable", "CanRequestFocus")

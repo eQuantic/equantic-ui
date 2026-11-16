@@ -78,14 +78,17 @@ public sealed class DatePicker : StatefulComponent
         // whole reason the typed row can be trusted as the primary path rather than an escape.
         var invalid = _typing is { Length: > 0 } typed && Parse(typed) is null;
 
+        // The theme's Calendar slot, then the component's own (§3.10). The calendar in the panel reads it
+        // too.
+        var slot = theme.Calendar;
         var panel = new Box(new BoxStyle
         {
-            Background = theme.Surface,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
-            BorderWidth = 1,
-            BorderColor = theme.Border,
-            Elevation = 2,
-            Padding = EdgeInsets.All(Space.S3),
+            Background = slot?.PanelFill ?? theme.Surface,
+            CornerRadius = new CornerRadii(slot?.PanelRadius ?? theme.Shape(ShapeScale.Medium)),
+            BorderWidth = slot?.PanelBorderWidth ?? 1,
+            BorderColor = slot?.PanelBorderColor ?? theme.Border,
+            Elevation = slot?.PanelElevation ?? 2,
+            Padding = EdgeInsets.All(slot?.PanelPadding ?? Space.S3),
         }, new Calendar(Selected, Pick, Min, Max));
 
         // The opener is the ICON, and the field around it stays a field. Pressing the whole row
@@ -95,7 +98,8 @@ public sealed class DatePicker : StatefulComponent
         // a button of its own: the input is tabbed to and typed into, the button is tabbed to and
         // pressed, and the popover anchors where the glyph already was.
         VisualNode opener = new Anchored(
-            new Pressable(new Icon(Icons.Calendar, IconSize.Dense, theme.TextSecondary), Toggle)
+            new Pressable(new Icon(Icons.Calendar, slot?.OpenerIconSize ?? IconSize.Dense,
+                slot?.OpenerColor ?? theme.TextSecondary), Toggle)
             {
                 Label = SdkStrings.ChooseDate,
                 Expanded = _open,

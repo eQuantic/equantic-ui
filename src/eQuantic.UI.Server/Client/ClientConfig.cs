@@ -4,7 +4,8 @@ namespace eQuantic.UI.Server.Client;
 
 /// <summary>
 /// The configuration the shell hands the client as <c>window.__EQ_CONFIG</c>, read by the boot
-/// (<c>Resources/boot.ts</c>): the page this document drew, the build it came from, whether it was
+/// (<c>Resources/boot.ts</c>): the page this document drew, the module of the app's layout when it
+/// declared one (<see cref="UIOptions.UseLayout{TLayout}"/>), the build it came from, whether it was
 /// rendered on the server, whether the server streams rebuilds (<see cref="UIOptions.HotReloads(Microsoft.Extensions.Hosting.IHostEnvironment)"/>),
 /// the density it was rendered at (which hydration lowers at before it switches to the browser's own,
 /// #623), the theme cookie, the language-prefix policy, the route table, whether the server serves
@@ -13,6 +14,9 @@ namespace eQuantic.UI.Server.Client;
 /// </summary>
 internal sealed record ClientConfig(
     string? Page,
+    // Written when the app declared a layout alone: a page of an app without one carries no member for it.
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    string? Layout,
     string Version,
     bool Ssr,
     bool HotReload,

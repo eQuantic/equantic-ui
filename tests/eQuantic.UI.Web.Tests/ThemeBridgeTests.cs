@@ -130,17 +130,5 @@ public class ThemeBridgeTests
         sheet.GetProperty("gridline")[0].EnumerateArray().Select(v => v.GetDouble()).Take(3)
             .Should().Equal(0x12, 0x34, 0x56);
     }
-
-    /// <summary>Every member of the slot has a name on the wire: a member the record gains and the
-    /// bridge forgets is a colour the browser never draws.</summary>
-    [Fact]
-    public void EveryMemberOfTheSheetSlot_Crosses()
-    {
-        var named = ThemeBridge.SheetMembers(new SheetTheme()).Select(m => m.Name).ToList();
-
-        named.Should().Equal(typeof(SheetTheme).GetProperties()
-            .Where(p => p.PropertyType == typeof(ColorToken?))
-            .Select(p => char.ToLowerInvariant(p.Name[0]) + p.Name[1..]));
-    }
 }
 

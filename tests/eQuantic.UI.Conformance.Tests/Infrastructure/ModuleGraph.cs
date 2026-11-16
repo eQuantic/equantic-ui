@@ -68,7 +68,9 @@ public static class ModuleGraph
             .Where(result => result.Expected != result.Actual)
             .Select(result => $"{result.Name}: .NET {result.Expected}, JavaScript {result.Actual}")
             .ToList();
-        diverging.Should().BeEmpty(
+        // One line for each case that diverges: a collection's BeEmpty names only the first item it finds,
+        // and a fix is proved case by case against every case its old side failed.
+        string.Join("\n", diverging).Should().BeEmpty(
             $"every case answers as .NET does in the emitted {(typeAnnotations ? "TypeScript" : "JavaScript")}. The modules:\n"
             + string.Join("\n", modules.Select(module => $"// {module.ComponentName}\n{module.TypeScript}")));
     }
@@ -132,7 +134,8 @@ public static class ModuleGraph
                     File.WriteAllText(path, module.TypeScript);
                     return path;
                 }).ToList();
-                var bundled = ModuleBundler.Bundle(bun, dir, entries, Path.Combine(dir, "out"), written, SourceMapMode.None);
+                string? bundled;
+                using (var bundler = new ModuleBundler(bun, dir)) bundled = bundler.Bundle(entries, Path.Combine(dir, "out"), written, SourceMapMode.None);
                 bundled.Should().BeNull($"the emitted modules bundle:\n{bundled}");
                 importDir = "./out";
             }

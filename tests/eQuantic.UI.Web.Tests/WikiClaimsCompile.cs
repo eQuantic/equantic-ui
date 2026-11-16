@@ -1,3 +1,4 @@
+using eQuantic.UI.Components;
 using eQuantic.UI.Web;
 using eQuantic.UI.Primitives;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +20,7 @@ public class WikiClaimsCompile
         [ServerOnly]
         public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
             => _doc = await services.GetRequiredService<IDocs>()
-                .FindAsync(RouteValues.Current.Param("slug"), cancellationToken);
+                .FindAsync(services.GetRequiredService<RouteValues>().Param("slug"), cancellationToken);
 
         public override VisualNode Build(ComponentContext context)
         {
@@ -306,6 +307,100 @@ public class WikiClaimsCompile
         public override VisualNode Build(ComponentContext context) => Text("queue", TypeRole.BodyM);
     }
 
+    /// <summary>Components, "ContextTarget and ContextMenu: a menu asked for anywhere" (preview.69, #1531): a
+    /// file's card with its menu, and the blocks it is made of for a panel of another look.</summary>
+    private sealed class FileMenuPage : Primitives.StatefulComponent
+    {
+        private sealed record File(string Name);
+
+        private readonly File file = new("README.md");
+        private Point? _at;
+        private bool _open;
+
+        private static VisualNode FileCard(File file) => Text(file.Name, TypeRole.BodyM);
+
+        private static void Run(File file, int index) { }
+
+        public override VisualNode Build(ComponentContext context) =>
+            ContextMenu(
+                FileCard(file),
+                [new MenuItem("Rename"), new MenuItem("Delete") { Destructive = true }],
+                index => Run(file, index));
+
+        /// <summary>The blocks under it: a target under an anchored panel opened at the request's point.</summary>
+        public VisualNode OwnPanel(VisualNode panel) =>
+            new Anchored(ContextTarget(FileCard(file), request => SetState(() => (_at, _open) = (request.At, true))), panel)
+            {
+                At = _at,
+                Open = _open,
+                OnDismiss = () => SetState(() => _open = false),
+            };
+    }
+
+    /// <summary>Components, "Sortable: lists a pointer puts in order" (preview.69, #1535): a board's column.</summary>
+    private sealed class BoardColumnPage : Primitives.StatefulComponent
+    {
+        private readonly List<(string Id, string Title)> _cards = [("c1", "Draw the tree")];
+        private SortDrop? _landing;
+
+        private void Move(string item, string to, int index) { }
+
+        public override VisualNode Build(ComponentContext context) =>
+            Sortable(
+                Column(gap: Space.S2, children: [.. _cards.Select(card => SortableItem(Text(card.Title, TypeRole.BodyM), card.Id))]),
+                id: "todo",
+                onDropped: drop => SetState(() => Move(drop.Item, drop.To, drop.Index)),
+                group: "board",
+                onHovered: drop => SetState(() => _landing = drop),
+                accepts: drop => !drop.Item.StartsWith("locked", StringComparison.Ordinal));
+    }
+
+    /// <summary>Components, "TreeView: a tree the keyboard walks" (preview.69, #1530): a repository's
+    /// files, the top folder from the server and every folder below it loaded as it opens.</summary>
+    private sealed class FilesPage : Primitives.StatefulComponent
+    {
+        private sealed record Entry(string Path, string Name, bool IsDirectory);
+
+        private readonly List<Entry> Top = [];
+        private string? _open;
+
+        private Task<List<Entry>> ListFolder(string path) => Task.FromResult(new List<Entry>());
+
+        private TreeNode Node(Entry entry) => new(entry.Path, entry.Name)
+        {
+            Icon = entry.IsDirectory ? Icons.Menu : Icons.Copy,
+            IsLeaf = !entry.IsDirectory,
+        };
+
+        public override VisualNode Build(ComponentContext context) =>
+            TreeView(
+                roots: Top.Select(entry => new TreeNode(entry.Path, entry.Name)
+                {
+                    Icon = entry.IsDirectory ? Icons.Menu : Icons.Copy,
+                    IsLeaf = !entry.IsDirectory,
+                }).ToList(),
+                selectedKey: _open,
+                onPressed: node => SetState(() => _open = node.Key),
+                loadChildren: async folder => (await ListFolder(folder.Key)).Select(Node).ToList(),
+                label: "Repository",
+                height: SizeValue.Fill);
+
+        /// <summary>The vocabulary under it, for a composite of an app's own.</summary>
+        public static VisualNode OwnComposite() =>
+            new Navigable(_ => { }, [
+                new Pressable(Text("src", TypeRole.BodyM), () => { })
+                {
+                    Role = PressableRole.TreeItem,
+                    Expanded = false,
+                    TreePlace = new TreePlace(Level: 1, PositionInSet: 1, SizeOfSet: 1),
+                },
+            ])
+            {
+                Role = NavigableRole.Tree,
+                OnTextSearch = _ => { },
+            };
+    }
+
     /// <summary>
     /// The EmailRealizer page's welcome email, as the page writes it, with an address standing in
     /// for its generated <c>Assets.Logo</c>. Its logo gave a width and no height (#684), and its
@@ -573,4 +668,22 @@ public class WikiClaimsCompile
             SetState(() => _upload = upload);
         }
     }
+
+    /// <summary>ServerIntegration's UseLayout: a layout takes the page as its one constructor
+    /// parameter, keeps its own state, and reads the location the page is shown at.</summary>
+    private sealed class ConsoleLayout(VisualNode body) : Primitives.StatefulComponent
+    {
+        private bool _navOpen;
+
+        public override VisualNode Build(ComponentContext context) =>
+            Column(children: [
+                Button(_navOpen ? "Close menu" : "Menu", Variant.Secondary,
+                    onPressed: () => SetState(() => _navOpen = !_navOpen)),
+                Text($"You are at {Navigator.Of(context).Location}", TypeRole.Label),
+                body,
+            ]);
+    }
+
+    /// <summary>The declaration ServerIntegration shows, which refuses a layout that cannot take the page.</summary>
+    private static void DeclaresTheLayout(eQuantic.UI.Server.UIOptions options) => options.UseLayout<ConsoleLayout>();
 }

@@ -9,7 +9,7 @@
 import { HtmlElement } from '../core/types';
 import type { HtmlNode } from '../core/types';
 import type { ComponentChild, VisualNodeValue } from './nodes';
-import { ComponentInstanceStore, enterPass, exitPass } from './instance-store';
+import { ElementRoots, enterPass, exitPass } from './element-roots';
 import { lowerVisualNode } from './lowering';
 import {
   ambientLoweringContext,
@@ -36,7 +36,9 @@ export class VisualNodeComponent extends HtmlElement {
   private readonly node: VisualNodeValue | ComponentChild;
   private readonly theme?: AppTheme;
   private readonly typeScale: number;
-  private readonly _instances = new ComponentInstanceStore();
+  /** The element trees this bridge builds through when it renders outside a page. Nothing renders it
+   *  again but its own parent, so a mark in them waits for that render, as it always has. */
+  private readonly _instances = new ElementRoots(null);
 
   constructor(
     node: VisualNodeValue | ComponentChild,
@@ -60,10 +62,10 @@ export class VisualNodeComponent extends HtmlElement {
     // page's colours on the client, over the ones the server had drawn (#701).
     const ambientTheme = getPhotonTheme();
     const ambientScale = getPhotonTypeScale();
-    // Reconciler pass join (W6 slice 2): inside a host page render this JOINS the page's pass —
-    // the page owns retention (bridges are rebuilt every pass and cannot). Standalone (tests,
-    // direct embedding) this instance's own store carries retention across its renders.
-    enterPass(this._instances, null);
+    // Inside a host page render this JOINS the page's pass: the page owns the element trees, since
+    // bridges are rebuilt every render and cannot. Standalone (tests, direct embedding) this
+    // instance's own trees keep what it composes across its renders, and every render builds.
+    enterPass(this._instances, null, true);
     try {
       // Inside the try, so the finally that puts the ambient theme back covers every way out.
       if (this.theme) setPhotonTheme(this.theme, this.typeScale);

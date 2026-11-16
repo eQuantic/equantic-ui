@@ -117,8 +117,8 @@ public class ChildSlotsCoverageTests
             }
             try
             {
-                var owner = ComponentBoundary.Owner();
-                owner.Build(node!, Context, WindowSizeClass.Compact, rebuildAll: true);
+                var owner = new ComponentBoundary().Owner();
+                owner.Build(node!, Context, 400f, rebuildAll: true);
                 owner.EndFrame();
             }
             catch (Exception failure) when (failure.Message.Contains("knows no child slots", StringComparison.Ordinal)

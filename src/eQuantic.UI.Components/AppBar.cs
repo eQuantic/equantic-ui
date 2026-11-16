@@ -48,6 +48,8 @@ public sealed class AppBar : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
+        // The theme's Navigation slot, then the component's own (§3.10).
+        var slot = theme.Navigation;
         var row = new Row(gap: 0)
         {
             Width = SizeValue.Fill,
@@ -60,14 +62,16 @@ public sealed class AppBar : StatelessComponent
         // one level-1 on the page and the anchor a reader jumps to. The level is independent of the
         // type scale — the StyleOverride beside it is what the title LOOKS like — so declaring it
         // moves nothing on screen and gives the web its `h1` and the bridges their heading trait.
-        var title = new Text(Title, TypeRole.Title, theme.TextPrimary, maxLines: 1)
+        var title = new Text(Title, TypeRole.Title, slot?.TitleColor ?? theme.TextPrimary, maxLines: 1)
         {
             HeadingLevel = 1,
-            StyleOverride = new TypeStyle(20, 26, FontWeight.SemiBold, 0, 1.3f),
+            StyleOverride = new TypeStyle(slot?.TitleSize ?? 20, slot?.TitleLineHeight ?? 26,
+                slot?.TitleWeight ?? FontWeight.SemiBold, 0, 1.3f),
         };
+        var titleGap = slot?.TitleGap ?? Space.S2;
         var titlePad = new Box(new BoxStyle
         {
-            Padding = new EdgeInsets(Leading is null ? Space.S3 : Space.S2, 0, Space.S2, 0),
+            Padding = new EdgeInsets(Leading is null ? slot?.TitleInset ?? Space.S3 : titleGap, 0, titleGap, 0),
         }, title);
         row.Add(new Flexible(titlePad));
 
@@ -79,10 +83,10 @@ public sealed class AppBar : StatelessComponent
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Height = 56,
-            Padding = EdgeInsets.Symmetric(4, 0),
-            Background = Scrolled ? theme.Surface : null,
-            Elevation = Scrolled ? 2 : 0,
+            Height = slot?.AppBarHeight ?? 56,
+            Padding = EdgeInsets.Symmetric(slot?.AppBarPaddingX ?? 4, 0),
+            Background = Scrolled ? slot?.Background ?? theme.Surface : null,
+            Elevation = Scrolled ? slot?.ScrolledElevation ?? 2 : 0,
         }, row);
     }
 }

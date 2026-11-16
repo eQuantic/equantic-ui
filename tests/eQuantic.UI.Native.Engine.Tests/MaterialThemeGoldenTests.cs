@@ -40,7 +40,7 @@ public class MaterialThemeGoldenTests
     [Fact]
     public void Material_IsADistinctThemeThroughTheSameContract()
     {
-        MaterialTheme.Instance.Colors(Variant.Primary).Base.Resolve(ThemeMode.Light)
+        MaterialTheme.Instance.Colors(Variant.Primary).Base.Resolve(ThemeMode.Light, ContrastLevel.Standard)
             .Should().Be(Color.FromRgb(0x67, 0x50, 0xA4), "M3 baseline primary");
         MaterialTheme.Instance.Shape(ShapeScale.Large).Should().Be(16, "M3 large shape");
         MaterialTheme.Instance.Shape(ShapeScale.Large).Should()

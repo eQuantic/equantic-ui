@@ -12,8 +12,8 @@ namespace eQuantic.UI.Web;
 /// A frame is <see cref="Build"/>, <see cref="Lower"/> and <see cref="EndFrame"/>. A component is
 /// lowered from what its position built, by the instance the position keeps; a layer (an overlay's
 /// child, an anchored panel) is shown to the owner before it lowers, so what it holds builds in the
-/// slot that keeps it, and a layer not lowered leaves the tree when the frame ends. Of an adaptive node,
-/// the arm its element holds lowers from its positions and the others as a tree drawn once does.
+/// slot that keeps it, and a layer not lowered leaves the tree when the frame ends. Every arm of an
+/// adaptive node is a position, as the web draws them all behind their gates.
 /// </para>
 /// <para>
 /// Its components build through <see cref="ComponentBoundary"/> with a measurer that has no font, as
@@ -28,7 +28,7 @@ namespace eQuantic.UI.Web;
 /// </summary>
 public sealed class MarkupHost
 {
-    private readonly FontlessMeasurer _measurer = new();
+    private readonly FontlessMeasurer _measurer;
     private readonly ComponentContext _context;
 
     /// <summary>A live host: its owner calls the lifecycle hooks, and a <c>SetState</c> marks a
@@ -36,17 +36,27 @@ public sealed class MarkupHost
     /// <param name="theme">The theme every component of the tree builds and lowers with.</param>
     /// <param name="typeScale">The text scale the tree builds and lowers at.</param>
     /// <param name="density">The density the tree builds and lowers at.</param>
-    public MarkupHost(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable)
-        : this(theme, typeScale, density, live: true)
+    /// <param name="route">The route the tree is drawn for, which its components read from their context.</param>
+    /// <param name="boundary">The tree's error boundary, which a host arms with its report; a silent one
+    /// when null.</param>
+    public MarkupHost(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable, RouteValues? route = null,
+        ComponentBoundary? boundary = null)
+        : this(theme, typeScale, density, route, boundary, live: true)
     {
     }
 
-    private MarkupHost(IAppTheme theme, float typeScale, Density density, bool live)
+    private MarkupHost(IAppTheme theme, float typeScale, Density density, RouteValues? route, ComponentBoundary? boundary,
+        bool live)
     {
         ArgumentNullException.ThrowIfNull(theme);
         Theme = theme;
-        _context = new ComponentContext(theme, typeScale, density, _measurer.Measure);
-        Owner = live ? new BuildOwner(_measurer.Build) : BuildOwner.Structural(_measurer.Build);
+        Boundary = boundary ?? new ComponentBoundary();
+        _measurer = new FontlessMeasurer(Boundary);
+        _context = new ComponentContext(theme, typeScale, density, _measurer.Measure, route);
+        // The web draws every arm of an adaptive node behind its own media rule, so each is a position.
+        Owner = live
+            ? new BuildOwner(BuildAt, holdsEveryArm: true)
+            : BuildOwner.Structural(BuildAt, holdsEveryArm: true);
     }
 
     /// <summary>A structural host: a tree built for a request and never drawn again, whose owner calls
@@ -54,8 +64,70 @@ public sealed class MarkupHost
     /// <param name="theme">The theme every component of the tree builds and lowers with.</param>
     /// <param name="typeScale">The text scale the tree builds and lowers at.</param>
     /// <param name="density">The density the tree builds and lowers at.</param>
-    public static MarkupHost Structural(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable) =>
-        new(theme, typeScale, density, live: false);
+    /// <param name="route">The route the tree is drawn for.</param>
+    /// <param name="boundary">The tree's error boundary, which a host arms with its report; a silent one
+    /// when null.</param>
+    public static MarkupHost Structural(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable,
+        RouteValues? route = null, ComponentBoundary? boundary = null) =>
+        new(theme, typeScale, density, route, boundary, live: false);
+
+    /// <summary>The tree's error boundary (#1452): what its components build through, and where a failure
+    /// of one is reported, described and counted.</summary>
+    public ComponentBoundary Boundary { get; }
+
+    /// <summary>
+    /// The host of a write-once PAGE drawn for a request: structural, with the page component at its
+    /// root. The browser builds a page's own component by itself and only what it builds through an
+    /// owner, so a position's server data key is measured below the page (<see cref="ElementFrame.KeyOf"/>).
+    /// </summary>
+    /// <param name="theme">The theme every component of the tree builds and lowers with.</param>
+    /// <param name="typeScale">The text scale the tree builds and lowers at.</param>
+    /// <param name="density">The density the tree builds and lowers at.</param>
+    /// <param name="route">The route the page is drawn for: the request's.</param>
+    /// <param name="boundary">The request's error boundary, which the server arms with its report.</param>
+    public static MarkupHost ForPage(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable,
+        RouteValues? route = null, ComponentBoundary? boundary = null) =>
+        new(theme, typeScale, density, route, boundary, live: false) { KeyDepth = 1 };
+
+    /// <summary>
+    /// A tree drawn ONCE inside a render (#1404): an escape-hatch page's bridge, through a structural
+    /// host of its own, so its components have positions and each is named by where it stands, as the
+    /// browser names it (#1477), and what an earlier round loaded is put back on the fresh instance at
+    /// that position before it builds. Its atomic rules, density, route, expansion scope, gradients, faces,
+    /// link policy and error boundary are the render's: an escape-hatch page's bridge reads its page's route (#1395).
+    /// </summary>
+    internal static HtmlElement DrawOnce(VisualNode node, IAppTheme theme, float typeScale, RenderChannels channels)
+    {
+        var host = new MarkupHost(theme, typeScale, channels.Density, channels.Route, channels.Boundary, live: false)
+        {
+            Tree = channels.NextTree(),
+            PutBackFrom = channels.Expansion,
+        };
+        host.Build(node);
+        var lowered = host.Lower(channels);
+        host.EndFrame();
+        return lowered;
+    }
+
+    /// <summary>Which tree of its render this host draws, in the order the render draws them: what its
+    /// components' server data keys start with.</summary>
+    internal int Tree { get; init; }
+
+    /// <summary>The depth its components' server data keys are measured from (<see cref="ForPage"/>).</summary>
+    internal int KeyDepth { get; private init; }
+
+    /// <summary>What earlier rounds loaded, put back onto each fresh instance before it builds: set for
+    /// a tree drawn anew every round, an escape-hatch page's bridge.</summary>
+    internal ComponentExpansionScope? PutBackFrom { get; init; }
+
+    /// <summary>A component's build, through the measurer, after what an earlier round loaded for its
+    /// position is back on it.</summary>
+    private VisualNode BuildAt(UiComponent component, ComponentContext context, int depth)
+    {
+        if (PutBackFrom is { } scope && Owner.Building is { } position)
+            scope.PutBack(component, ElementFrame.KeyAt(position, Tree, KeyDepth));
+        return _measurer.Build(component, context, depth);
+    }
 
     /// <summary>The theme the tree builds and lowers with.</summary>
     public IAppTheme Theme { get; }
@@ -69,24 +141,23 @@ public sealed class MarkupHost
     /// was marked since, or every component with <paramref name="rebuildAll"/>.
     /// </summary>
     /// <param name="root">The tree's root node.</param>
-    /// <param name="sizeClass">The window size class an adaptive node's element resolves its arm for.
-    /// The markup is the same for every one, since every arm lowers behind its own gate; it decides
-    /// which arm keeps its instances from one frame to the next.</param>
     /// <param name="rebuildAll">Whether every component builds, not only the marked ones.</param>
     /// <returns>The root's position.</returns>
-    public Element Build(VisualNode root, WindowSizeClass sizeClass, bool rebuildAll = false) =>
-        Owner.Build(root, _context, sizeClass, rebuildAll);
+    /// <remarks>No window width is asked for: the owner holds every arm of an adaptive node, as the web
+    /// draws them all behind their gates, so no arm is resolved. The width handed on is never read.</remarks>
+    public Element Build(VisualNode root, bool rebuildAll = false) =>
+        Owner.Build(root, _context, float.PositiveInfinity, rebuildAll);
 
     /// <summary>
     /// Lowers the frame <see cref="Build"/> just built. With a render's <paramref name="channels"/>, every
-    /// element's style becomes atomic classes collected into its style sink, as <see cref="WebRealizer.Lower(VisualNode, IAppTheme, float, StyleSink?, Density)"/>
+    /// element's style becomes atomic classes collected into its style sink, as <see cref="WebRealizer.Lower(VisualNode, IAppTheme, float, StyleSink?, Density, ComponentBoundary?)"/>
     /// does, and the expansion scope, the gradients, the faces and the link policy are the render's (#1404).
     /// </summary>
     /// <exception cref="InvalidOperationException">Nothing was built yet.</exception>
     public HtmlElement Lower(RenderChannels? channels = null)
     {
         var root = Owner.Root ?? throw new InvalidOperationException("Nothing was built yet: call Build before Lower.");
-        var lowered = new WebLoweringVisitor(_context, _measurer, new ElementFrame(root), channels)
+        var lowered = new WebLoweringVisitor(_context, _measurer, new ElementFrame(root, Tree, KeyDepth), channels)
                           .Lower(root.Configuration, horizontalAxis: null)
                       ?? new RealizedElement("span");
         if (channels is not null)

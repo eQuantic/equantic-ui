@@ -42,8 +42,12 @@ public sealed class PhotonWindow
     /// two 8pt gaps, the 12pt margin before and a matching one after — the corner a title-bar
     /// toolbar keeps clear of, reported through <see cref="PhotonHost.WindowControlsInsets"/>.</summary>
     private const float TrafficLightsWidth = 74;
+
+    /// <summary>A Control-click asked for a menu and was answered: its release is the menu's, and presses nothing.</summary>
+    private bool _contextClickHeld;
     private const ulong EventTypeLeftMouseDown = 1;
     private const ulong EventTypeLeftMouseUp = 2;
+    private const ulong EventTypeRightMouseDown = 3;
     private const ulong EventTypeMouseMoved = 5;
     private const ulong EventTypeLeftMouseDragged = 6;
     private const ulong EventTypeMouseExited = 9;
@@ -98,7 +102,8 @@ public sealed class PhotonWindow
     /// </summary>
     public void Run(VisualNode root, IAppTheme theme, ThemeMode mode = ThemeMode.Light, int maxFrames = 0,
         eQuantic.UI.Native.Hosting.PhotonThemeController? themeController = null,
-        eQuantic.UI.Native.Hosting.PhotonCultureController? cultureController = null)
+        eQuantic.UI.Native.Hosting.PhotonCultureController? cultureController = null,
+        ComponentBoundary? boundary = null)
     {
         LoadFrameworks();
         using var backend = new MetalBackend();
@@ -174,8 +179,11 @@ public sealed class PhotonWindow
         // ONE builder for the loop's lifetime: Reset keeps every buffer's capacity, so a steady
         // 120 Hz stops growing fresh lists per frame.
         var frameBuilder = new DisplayListBuilder();
-        var host = new PhotonHost(root, theme, mode, _width, _height, textService)
+        var host = new PhotonHost(root, theme, mode, _width, _height, textService, boundary: boundary)
         {
+            // Increase Contrast, read from the system like the mode (#340): every token resolves
+            // with it, so the palette steps up where the theme says it does.
+            Contrast = Shell.Apple.AppleAppearance.Contrast(),
             // Production owns its frames: nothing retains a RealizeResult past the next render,
             // so each replaced tree feeds the next (LayoutNodePool).
             RecycleFrames = true,
@@ -337,6 +345,15 @@ public sealed class PhotonWindow
 
         while (true)
         {
+            // Each turn of the loop in a pool of its own. AppKit's own loop drains one per event, and this
+            // loop is the shell's: without one, whatever a turn autoreleased lived for as long as the
+            // process did. Measured with OBJC_DEBUG_MISSING_POOLS on the desktop sample, every frame left
+            // its drawable, its command buffer, its render pass descriptor and the GPU's render context
+            // behind, one of each per frame, 482 of each after 480 frames, and the events read here with
+            // them. With the pool none is left, and scripts/check-frame-pools.sh fails the samples job the
+            // day one is again (#1506). Drained on every way out of the turn, a break included.
+            using var pool = AutoreleasePool.Push();
+
             // Drain pending OS events; while idle (no motion, nothing dirty) block briefly on the
             // next event instead of spinning.
             // Self-test presents EVERY cycle (a static tree renders on demand only and would
@@ -446,6 +463,7 @@ public sealed class PhotonWindow
         {
             case EventTypeLeftMouseDown:
             case EventTypeLeftMouseUp:
+            case EventTypeRightMouseDown:
             case EventTypeMouseMoved:
             case EventTypeLeftMouseDragged:
             case EventTypeMouseExited:
@@ -473,13 +491,30 @@ public sealed class PhotonWindow
 
         switch (type)
         {
+            case EventTypeRightMouseDown:
+                // A secondary click asks for the menu of what it lands on (#1531); where nothing answers, AppKit's
+                // own handling of the event goes on as before.
+                host.ContextRequest(x, y);
+                break;
             case EventTypeLeftMouseDown:
+                var modifiers = MacKeys.ModifiersOf(SendULong(e, Sel("modifierFlags")));
+                // A Control-click is a Mac's secondary click (#1531). Answered, the release that follows it is the
+                // menu's, not a press's; answered by nothing, it presses as it always did.
+                if (modifiers == KeyModifiers.Control && host.ContextRequest(x, y))
+                {
+                    _contextClickHeld = true;
+                    break;
+                }
                 // Shift+click extends a sheet/text selection, ⌥ and a press adds a caret, ⌘ and a press follows a
                 // link: the same bits OnKeyDown reads, all four of them.
-                host.PressDown(x, y, (int)SendULong(e, Sel("clickCount")),
-                    MacKeys.ModifiersOf(SendULong(e, Sel("modifierFlags"))));
+                host.PressDown(x, y, (int)SendULong(e, Sel("clickCount")), modifiers);
                 break;
             case EventTypeLeftMouseUp:
+                if (_contextClickHeld)
+                {
+                    _contextClickHeld = false;
+                    break;
+                }
                 host.PressUp(x, y);
                 break;
             case EventTypeMouseMoved:

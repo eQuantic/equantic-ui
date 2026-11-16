@@ -446,6 +446,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public event Action<CodeRange>? SelectionChanged;
 
     /// <summary>
+    /// Raised once a <see cref="CodeCommand.Paste"/> has put the clipboard's text in the document. The web's
+    /// clipboard answers after the key that asked (<see cref="ITextClipboard.ReadAsync"/>), so the views are told
+    /// to draw the paste, and the app to hear it, as they are told of a definition gone to after its key (#1028).
+    /// </summary>
+    public event Action? Pasted;
+
+    /// <summary>
     /// Where along the line a vertical move AIMS: a count of cells on a monospaced grid, a distance in
     /// a measured one (<see cref="AdvanceOf"/>), -1 when no move aims. Moving down through a short line
     /// and on to a long one returns to where you started from — losing it on the short line is the
@@ -818,6 +825,37 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <inheritdoc />
     public int FocusVersion => _focusVersion;
 
+    /// <summary>How many lines on each side of the caret's line a screen reader is handed: a page of them,
+    /// as a code editor in a browser hands its reader, so a keystroke in a long file never rewrites all of
+    /// it and a reader moving by line still finds the next one there (#1333).</summary>
+    public const int ReadingLines = 10;
+
+    /// <inheritdoc />
+    /// <remarks>The lines around the primary caret, <see cref="ReadingLines"/> on each side, and the
+    /// primary selection inside them; an end of it beyond them stands at their start or their end.</remarks>
+    public TextReading Reading
+    {
+        get
+        {
+            var anchor = _document.Clamp(_selection.Anchor);
+            var focus = _document.Clamp(_selection.Focus);
+            var first = Math.Max(0, focus.Line - ReadingLines);
+            var last = Math.Min(_document.LineCount - 1, focus.Line + ReadingLines);
+            var lines = new List<string>(last - first + 1);
+            for (var line = first; line <= last; line++) lines.Add(_document.Line(line));
+            var text = string.Join("\n", lines);
+            int OffsetOf(CodePosition position)
+            {
+                if (position.Line < first) return 0;
+                if (position.Line > last) return text.Length;
+                var offset = position.Column;
+                for (var line = first; line < position.Line; line++) offset += lines[line - first].Length + 1;
+                return offset;
+            }
+            return new TextReading(text, OffsetOf(anchor), OffsetOf(focus));
+        }
+    }
+
     /// <summary>
     /// Asks for the keyboard: whichever host draws this editor gives it to the surface, as a click
     /// would, on its next frame (or its first, if it has not drawn it yet). What an IDE calls when a
@@ -991,7 +1029,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 // Claimed even when it finds nothing to paste: going on to another command could only do
                 // something nobody asked for.
                 if (clipboard is null) return false;
-                if (clipboard.Read() is { Length: > 0 } pasted) Paste(pasted);
+                _ = PasteFromAsync(clipboard);
                 return true;
             case CodeCommand.CompletionShow: return Completion.Invoke();
             case CodeCommand.CompletionNext: return Completion.IsOpen && Completion.Move(1);
@@ -2411,6 +2449,18 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// way goes back in as a line, above the caret's, never into the middle of one.
     /// </summary>
     private string? _wholeLineCopy;
+
+    /// <summary>
+    /// Pastes what <paramref name="clipboard"/> holds once it hands it over: at once on Photon, whose shells
+    /// answer at once, and on the web when the browser has, after the key that asked (#1028). A clipboard that
+    /// holds no text, or was refused it, pastes nothing.
+    /// </summary>
+    private async Task PasteFromAsync(ITextClipboard clipboard)
+    {
+        if (await clipboard.ReadAsync() is not { Length: > 0 } pasted) return;
+        Paste(pasted);
+        Pasted?.Invoke();
+    }
 
     /// <summary>
     /// Text from the clipboard, placed the way a paste places it: over the selection, or — when it is

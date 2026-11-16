@@ -25,23 +25,27 @@ public sealed class Table : StatelessComponent
     {
         var theme = context.Theme;
         var tracks = GridTrack.Repeat(Columns.Count, GridTrack.Flex());
+        // The theme's Table slot, then the component's own (§3.10).
+        var slot = theme.Table;
+        var gap = slot?.ColumnGap ?? Space.S3;
+        var padding = EdgeInsets.Symmetric(slot?.CellPaddingX ?? Space.S3, slot?.CellPaddingY ?? Space.S2);
 
-        var header = new Grid(tracks, gap: Space.S3) { Width = SizeValue.Fill };
+        var header = new Grid(tracks, gap: gap) { Width = SizeValue.Fill };
         foreach (var column in Columns)
-            header.Add(new Text(column, TypeRole.Label, theme.TextSecondary, maxLines: 1));
+            header.Add(new Text(column, TypeRole.Label, slot?.TableHeaderColor ?? theme.TextSecondary, maxLines: 1));
 
         var table = new Column(gap: 0) { Width = SizeValue.Fill };
         table.Add(new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Padding = EdgeInsets.Symmetric(Space.S3, Space.S2),
+            Padding = padding,
             BorderWidth = 0,
         }, header));
         table.Add(new Divider());
 
         for (var r = 0; r < Rows.Count; r++)
         {
-            var row = new Grid(tracks, gap: Space.S3) { Width = SizeValue.Fill };
+            var row = new Grid(tracks, gap: gap) { Width = SizeValue.Fill };
             var cells = Rows[r];
             for (var c = 0; c < Columns.Count; c++)
                 row.Add(new Text(c < cells.Count ? cells[c] : string.Empty, TypeRole.BodyM, maxLines: 1));
@@ -49,9 +53,9 @@ public sealed class Table : StatelessComponent
             table.Add(new Box(new BoxStyle
             {
                 Width = SizeValue.Fill,
-                MinHeight = 44,
-                Padding = EdgeInsets.Symmetric(Space.S3, Space.S2),
-                Hover = new StyleDiff { Background = theme.SurfaceSubtle },
+                MinHeight = slot?.RowMinHeight ?? 44,
+                Padding = padding,
+                Hover = new StyleDiff { Background = slot?.HoverFill ?? theme.SurfaceSubtle },
             }, row));
             if (r < Rows.Count - 1) table.Add(new Divider());
         }

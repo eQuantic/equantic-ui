@@ -8,10 +8,11 @@
  * `render()` like on any other component; the reconciler never learns about abstract nodes).
  */
 
-import type { AnchorPlacementValue, ComponentChild, ICanvasPainter, NavigableMoveValue } from './nodes';
+import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { NodeKind } from './node-kinds.generated';
 import type { TableCellRoleValue, TableRoleValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
+import type { AppTheme, ContextRequest } from './value-types';
 import { iconPaths } from './icons.generated';
 import type {
   BoxStyleValue,
@@ -29,7 +30,7 @@ import type { PickedFile } from './picked-file';
 export { CanvasPointer };
 import { floatText } from './css-values';
 import { lowerVisualNode } from './lowering';
-import { ambientLoweringContext } from './photon-context';
+import { ambientLoweringContext, registerThemeNode } from './photon-context';
 import {
   artworkAspect,
   CornerRadii,
@@ -41,6 +42,8 @@ import {
   StyleChannels,
   TableOffset,
   TableScrollRequest,
+  SortDrop,
+  TreePlace,
   WebContent,
 } from './value-types';
 import { Curve, Motion } from './design-system.generated';
@@ -86,11 +89,12 @@ export abstract class VisualNode {
 }
 
 /**
- * Anything a child slot accepts: a vocabulary node, or a shared COMPONENT instance (in C#,
- * `UiComponent : VisualNode` — on the runtime components live in their own class hierarchy, so the
- * union states the same truth structurally; the lowering expands components via `build`).
+ * Anything a child slot accepts: a vocabulary node, a component included, as in C#, where a slot is a
+ * `VisualNode` and `UiComponent : VisualNode`. It was a union with a structural `ComponentChild` while
+ * a component without state carried no node kind; every component is a node now, so the slot is the
+ * node and the element engine hands it to a position as it is.
  */
-export type VisualChild = VisualNode | ComponentChild;
+export type VisualChild = VisualNode;
 
 /** Mirror of the C# `StyleDiff` record (spec S5): a partial style applied over the base while
  * an interaction state is active — only the set members override. */
@@ -334,6 +338,8 @@ export class Anchored extends VisualNode {
   panel: VisualChild;
   // Transpiled C# enums arrive as camelCase STRINGS — the union documents the valid set.
   placement: AnchorPlacementValue | string = 'bottomStart';
+  /** A point of the anchor's box where the panel's corner stands instead of an edge (#1531). */
+  at: Point | null = null;
   gap = 4;
   open = false;
   onDismiss?: (() => void) | null;
@@ -355,6 +361,7 @@ export class Anchored extends VisualNode {
     panel: VisualChild,
     config?: {
       placement?: AnchorPlacementValue | string;
+      at?: Point | null;
       gap?: number;
       open?: boolean;
       onDismiss?: (() => void) | null;
@@ -462,7 +469,7 @@ interface AdaptiveConfig {
   key?: string | null;
 }
 
-/** Mirror of the C# `AdaptiveNode` (spec S6): up to three size-class variants. */
+/** Mirror of the C# `AdaptiveNode` (spec S6): up to three variants, switched at the node's own thresholds. */
 export class AdaptiveNode extends VisualNode {
   readonly nodeKind = 'adaptive';
   mediumFrom = 600;
@@ -476,6 +483,14 @@ export class AdaptiveNode extends VisualNode {
   ) {
     super();
     if (config) Object.assign(this, config);
+  }
+
+  /** The variant for a window `widthDp` wide, at this node's thresholds: the one every target holds and
+   * draws, the gates showing it at the same widths (C# twin: `ResolveWidth`, #1465). */
+  resolveWidth(widthDp: number): VisualNode {
+    if (this.expanded && widthDp >= this.expandedFrom) return this.expanded;
+    if (this.medium && widthDp >= this.mediumFrom) return this.medium;
+    return this.compact;
   }
 }
 
@@ -648,6 +663,8 @@ interface TextConfig {
   italic?: boolean;
   /** Tabular figures (tnum) — a changing number must not shift its row. */
   tabular?: boolean;
+  /** Drawn and never read (C# `Text.ExcludeFromSemantics`). */
+  excludeFromSemantics?: boolean;
   spans?: import('./nodes').TextRunValue[] | null;
   /** Fills the glyphs with a gradient instead of `color` (background-clip: text). */
   gradient?: LinearGradient | null;
@@ -671,6 +688,8 @@ export class Text extends VisualNode {
   /** The SLANTED cut for the whole paragraph (C# `Text.Italic`). */
   italic = false;
   tabular = false;
+  /** Drawn and never read (C# `Text.ExcludeFromSemantics`). */
+  excludeFromSemantics = false;
   spans: import('./nodes').TextRunValue[] | null = null;
   /** Spec S6: animates color changes (the design's transition-colors). */
   transition: TransitionSpec | null = null;
@@ -733,6 +752,8 @@ interface PressableConfig {
   canRequestFocus?: boolean;
   /** Composite-item role — the C# initializer `{ Role = PressableRole.Radio }` lands here. */
   role?: string;
+  /** Where a tree item stands — level, position in its set, the set's size (C# `TreePlace`). */
+  treePlace?: TreePlace | null;
 }
 
 export class Pressable extends VisualNode {
@@ -751,6 +772,8 @@ export class Pressable extends VisualNode {
   /** False: a press leaves the keyboard where it is, and the pressable leaves the Tab order. */
   canRequestFocus = true;
   role = 'button';
+  /** Where a tree item stands (C# `Pressable.TreePlace`), or null. */
+  treePlace: TreePlace | null = null;
 
   constructor(child: VisualChild, onPressed: (() => void) | null = null, config?: PressableConfig) {
     super();
@@ -923,9 +946,8 @@ export class Simulated extends VisualNode {
  */
 /**
  * A value for a subtree (the C# `InheritedComponent`, after Flutter's `InheritedWidget`): an app
- * subclasses it with the value it holds, and a component below reads it through its context. It draws
- * its child alone. Until the browser builds on the element engine (E3b) a context has no position to
- * look it up from, so `dependOn` and `find` answer null here, as C# answers on a context with none.
+ * subclasses it with the value it holds, and a component below reads it through its context
+ * (`context.dependOn(Score)`, which eqc writes with the type's twin, #1395). It draws its child alone.
  */
 export abstract class InheritedComponent extends VisualNode {
   readonly nodeKind = 'inherited';
@@ -937,9 +959,33 @@ export abstract class InheritedComponent extends VisualNode {
     if (config) Object.assign(this, config);
   }
 
-  /** Whether the components that depend on this value rebuild when a new one replaces `old`. */
-  protected abstract updateShouldNotify(old: InheritedComponent): boolean;
+  /**
+   * Whether the components that depend on this value rebuild when a new one replaces `old`. Public,
+   * as eqc writes C#'s `protected internal`: an app's override arrives without a modifier, and the
+   * element engine's `InheritedElement` asks it.
+   */
+  abstract updateShouldNotify(old: InheritedComponent): boolean;
 }
+
+/**
+ * A theme for a subtree (the C# `Theme`, after Flutter's `Theme`): the vocabulary's own inherited value.
+ * A component below it reads `context.theme` as this node's `value`, and builds again when a new one
+ * replaces it; a component with none above it reads its frame's (#1395).
+ */
+export class Theme extends InheritedComponent {
+  readonly value: AppTheme;
+
+  constructor(value: AppTheme, child: VisualChild, config?: EqConfig) {
+    super(child, config);
+    this.value = value;
+  }
+
+  updateShouldNotify(old: InheritedComponent): boolean {
+    return (old as Theme).value !== this.value;
+  }
+}
+// The context finds it by its class, which it cannot import: this module imports the context.
+registerThemeNode(Theme);
 
 export class InFlow extends VisualNode {
   readonly nodeKind = 'inFlow';
@@ -998,6 +1044,62 @@ export class DropTarget extends VisualNode {
     super();
     this.child = child;
     this.onDropped = onDropped;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `ContextTarget` (#1531): what a person can ask the menu of. */
+export class ContextTarget extends VisualNode {
+  readonly nodeKind = 'contextTarget';
+  child: VisualChild;
+  /** Where in the target's box the menu was asked for; `at` is null when the keyboard asked. */
+  onRequested: (request: ContextRequest) => void;
+  /** A disabled target answers nothing, and no target around it answers in its place. */
+  enabled = true;
+
+  constructor(child: VisualChild, onRequested: (request: ContextRequest) => void, config?: EqConfig) {
+    super();
+    this.child = child;
+    this.onRequested = onRequested;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `Sortable` (#1535): a list whose items a pointer puts in order, taking the items of
+ * the lists of its group. */
+export class Sortable extends VisualNode {
+  readonly nodeKind = 'sortable';
+  child: VisualChild;
+  id: string;
+  onDropped: (drop: SortDrop) => void;
+  group = '';
+  axis = 'vertical';
+  nests = false;
+  label = '';
+  onHovered: ((drop: SortDrop | null) => void) | null = null;
+  accepts: ((drop: SortDrop) => boolean) | null = null;
+  enabled = true;
+
+  constructor(child: VisualChild, id: string, onDropped: (drop: SortDrop) => void, config?: EqConfig) {
+    super();
+    this.child = child;
+    this.id = id;
+    this.onDropped = onDropped;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `SortableItem` (#1535): one item a pointer picks up, named by its id. */
+export class SortableItem extends VisualNode {
+  readonly nodeKind = 'sortableItem';
+  child: VisualChild;
+  id: string;
+  enabled = true;
+
+  constructor(child: VisualChild, id: string, config?: EqConfig) {
+    super();
+    this.child = child;
+    this.id = id;
     if (config) Object.assign(this, config);
   }
 }
@@ -1503,6 +1605,22 @@ export class LiveRegion extends VisualNode {
   }
 }
 
+/**
+ * Mirror of the C# `Group` node: a labelled group a reader names and then walks into. It draws
+ * nothing and adds no geometry.
+ */
+export class Group extends VisualNode {
+  readonly nodeKind = 'group';
+  child: VisualNode;
+  label = '';
+
+  constructor(child: VisualNode, config?: { label?: string }) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `Adjustable` node: the child answers to the arrow keys as ONE Tab stop. */
 export class Adjustable extends VisualNode {
   readonly nodeKind = 'adjustable';
@@ -1550,8 +1668,10 @@ export class Navigable extends VisualNode {
   readonly nodeKind = 'navigable';
   rows: VisualNode[];
   onMove: (move: NavigableMoveValue) => void;
+  /** A printable character typed while the composite holds the focus (C# `OnTextSearch`). */
+  onTextSearch: ((text: string) => void) | null = null;
   label = '';
-  role: 'grid' = 'grid';
+  role: 'grid' | 'tree' = 'grid';
   /** Whether rows[0] holds the column headers (a calendar's day-name row). */
   hasHeaderRow = false;
   /** The focused cell as [row, item] — announced through aria-activedescendant. A C# tuple
@@ -1562,8 +1682,9 @@ export class Navigable extends VisualNode {
     onMove: (move: NavigableMoveValue) => void,
     rows: VisualNode[],
     config?: {
+      onTextSearch?: ((text: string) => void) | null;
       label?: string;
-      role?: 'grid';
+      role?: 'grid' | 'tree';
       hasHeaderRow?: boolean;
       activeCell?: readonly number[] | null;
     },

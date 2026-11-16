@@ -4,6 +4,7 @@ using System.Text.Json;
 using eQuantic.UI.Codegen;
 using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Web;
 
 namespace eQuantic.UI.Web.Build;
 
@@ -40,6 +41,11 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("import type { ColorValue } from './nodes';");
         ts.AppendLine("import { DataPalette, DivergingScale, StatusScale } from './data-palette';");
         ts.AppendLine("import { MotionSpec } from './primitive-values';");
+        // Each slot the theme fills is built by its family's builder, named for its record
+        // (`ControlsTheme` → `controlsTheme`), from the JSON the bridge writes; imported only when used.
+        var builders = ThemeBridge.Slots(theme).Select(slot => Camel(slot.Slot.GetType().Name)).ToList();
+        if (builders.Count > 0)
+            ts.AppendLine($"import {{ {string.Join(", ", builders.Order(StringComparer.Ordinal))} }} from './theme-slots';");
         ts.AppendLine();
         ts.AppendLine("const c = (r: number, g: number, b: number, a: number): ColorValue => ({ r, g, b, a });");
         ts.AppendLine("const t = (light: ColorValue, dark: ColorValue): ColorToken => new ColorToken(light, dark);");
@@ -282,6 +288,10 @@ public static class DesignSystemTsGenerator
             ts.AppendLine($"  textFamily: {Family(text)},");
         if (theme.OnSelection is { } onSelection)
             ts.AppendLine($"  onSelection: {Token(onSelection)},");
+        // The component slots (docs/ELEMENT-TREE-PLAN.md §3.10) the theme fills, each built from the
+        // JSON the bridge writes for it, so a materialized theme and this one hold the same records.
+        foreach (var (name, slot) in ThemeBridge.Slots(theme))
+            ts.AppendLine($"  {name}: {Camel(slot.GetType().Name)}({ThemeBridge.SlotJson(slot)}),");
         ts.AppendLine("  colors(variant: string): VariantColors {");
         ts.AppendLine($"    return variantColors[variant] ?? variantColors.{Camel(nameof(Variant.Primary))};");
         ts.AppendLine("  },");
@@ -338,6 +348,7 @@ public static class DesignSystemTsGenerator
     private static string Color(Color color) => $"c({color.R}, {color.G}, {color.B}, {color.A})";
 
     private static string Num(float value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+
 
     /// <summary>A float as the double that holds it, every digit kept, as eqc writes a float constant.</summary>
     private static string Single(float value) => ((double)value).ToString("R", CultureInfo.InvariantCulture);

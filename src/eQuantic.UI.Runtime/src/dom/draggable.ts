@@ -14,34 +14,35 @@
  * offset to, so the box keeps its own `transform` and its hover's for the whole gesture (#511). The
  * inline value is the gesture's only while it lasts: a release or a cancel takes it away again and
  * the markup's rest, with the markup's glide, decides where the surface ends.
+ *
+ * `translate` resolves in the surface's parent's space, so that is where the finger is read
+ * (`gestureSpace`): along the track as it is drawn under a turned ancestor, and in the surface's own
+ * pixels under a scaled one, as Photon reads it (#1195, #1204).
  */
-const SLOP = 12; // Touch.PressCancelSlop — cross-pinned with the C# host
+import { gestureSpace } from './gesture-space';
+import { followPointer, pointerDownDelegate, SLOP } from './pointer-gesture';
 
-let installed = false;
+const delegate = pointerDownDelegate(onPointerDown);
 
 export function installDraggableController(): void {
-  if (installed || typeof document === 'undefined') return;
-  installed = true;
-  document.addEventListener('pointerdown', onPointerDown);
+  delegate.install();
 }
 
 export function resetDraggableController(): void {
-  if (typeof document === 'undefined') return;
-  installed = false;
-  document.removeEventListener('pointerdown', onPointerDown);
+  delegate.reset();
 }
 
 /**
- * The scale the surface's own `transform` draws it at along an axis, 1 when it has none. A browser
- * reports a transform with any 3D part (a `translateZ` layer hint) as `matrix3d`, whose first two
- * columns hold the same four numbers a `matrix` does.
+ * The surface's untransformed extent along the axis: its layout box, or, for an SVG element, which
+ * has no layout box of its own, the extent of what it draws in its own units. Neither holds a
+ * transform, the surface's own or an ancestor's.
  */
-function ownScale(surface: HTMLElement, horizontal: boolean): number {
-  const matrix = /^matrix(3d)?\(([^)]+)\)$/.exec(getComputedStyle(surface).transform);
-  if (!matrix) return 1;
-  const values = matrix[2].split(',').map(Number);
-  const [a, b, c, d] = matrix[1] ? [values[0], values[1], values[4], values[5]] : values;
-  return (horizontal ? Math.hypot(a, b) : Math.hypot(c, d)) || 1;
+function ownExtent(surface: Element, horizontal: boolean): number {
+  if (surface instanceof HTMLElement) return horizontal ? surface.offsetWidth : surface.offsetHeight;
+  const graphics = surface as Partial<SVGGraphicsElement>;
+  if (typeof graphics.getBBox !== 'function') return 0;
+  const box = graphics.getBBox();
+  return horizontal ? box.width : box.height;
 }
 
 function onPointerDown(down: Event): void {
@@ -58,81 +59,46 @@ function onPointerDown(down: Event): void {
   const moves = surface.getAttribute('data-eq-drag-moves') === '1';
 
   // What a NORMALIZED gesture divides by: the surface's own extent, which only the client can
-  // measure — a slider's track is fluid, so the component cannot know its width and the DOM can.
-  // The rect is what the finger crosses, so what scales the page around the surface stays in it,
-  // and the surface's OWN transform leaves it: a normalized rest is a `translate` percentage, which
-  // CSS resolves against the untransformed box and applies outside the surface's scale. Divided by
-  // the scaled rect, a 200px surface scaled to 0.5 read its rest of 0.25 as 25px, not the 50px it
-  // sits at, and jumped on the first move.
-  const box = surface.getBoundingClientRect();
-  const extent = (horizontal ? box.width : box.height) / ownScale(surface, horizontal);
-  // …and the percentage's own box, which is what a fraction is written back in.
-  const boxExtent = (horizontal ? surface.offsetWidth : surface.offsetHeight) || extent;
+  // measure — a slider's track is fluid, so the component cannot know its width and the DOM can. It
+  // is the untransformed box, the one a `translate` percentage resolves against, which is how the
+  // lowering writes a normalized rest, so a fraction is read and written back in the same pixels.
+  // It used to be the rect, which holds every transform the surface is drawn under: divided by a
+  // rect at its own `scale(.5)`, a 200px surface read its rest of 0.25 as 25px, not the 50px it sits
+  // at, and jumped on the first move (#702), and under a quarter turn the rect's width is the
+  // track's thickness (#1204).
+  const extent = ownExtent(surface, horizontal);
 
-  const start = horizontal ? (down as PointerEvent).clientX : (down as PointerEvent).clientY;
-  let active = false;
+  const space = gestureSpace(surface);
+  const pointer = down as PointerEvent;
+  const startX = pointer.clientX;
+  const startY = pointer.clientY;
+  const slop = space.onScreen(horizontal, SLOP);
+
+  // How far the finger has carried the surface along its own axis, in the space its offset is in.
+  const travelled = (ev: PointerEvent): number => space.along(horizontal, ev.clientX - startX, ev.clientY - startY);
 
   // Where the gesture now IS, measured from the rest it started at.
-  const travelOf = (ev: Event): number => {
-    const now = horizontal ? (ev as PointerEvent).clientX : (ev as PointerEvent).clientY;
-    const raw = now - start;
+  const travelOf = (ev: PointerEvent): number => {
+    const raw = travelled(ev);
     const at = rest + (normalized && extent > 0 ? raw / extent : raw);
     return Math.min(max, Math.max(min, at));
   };
 
-  const move = (ev: Event): void => {
-    const raw = (horizontal ? (ev as PointerEvent).clientX : (ev as PointerEvent).clientY) - start;
-    if (!active && Math.abs(raw) > SLOP) {
-      active = true;
+  followPointer(pointer, {
+    arms: (ev) => Math.abs(travelled(ev)) > slop,
+    armed: () => {
       if (follows) surface.style.transition = 'none';
-    }
-    if (!active) return;
-
-    // The browser's own scroll must not fight the gesture once it has armed.
-    ev.preventDefault();
-    const offset = travelOf(ev);
-    if (follows) {
-      const px = normalized ? offset * boxExtent : offset;
-      // Through setProperty: the property is newer than the CSSOM's named accessors, and the
-      // generic one writes it on every engine.
-      surface.style.setProperty('translate', horizontal ? `${px}px` : `0 ${px}px`);
-    }
-    if (moves) surface.dispatchEvent(new CustomEvent('eq-drag-moved', { detail: offset }));
-  };
-
-  const detach = (): void => {
-    document.removeEventListener('pointermove', move);
-    document.removeEventListener('pointerup', up);
-    document.removeEventListener('pointercancel', cancel);
-  };
-
-  // The system can take a gesture away without ever lifting the finger — a browser claiming the
-  // scroll, a call arriving. Nothing was decided, so nothing is reported: the surface returns to
-  // where the caller last put it, which is the rest its markup carries.
-  const cancel = (): void => {
-    detach();
-    if (!active) return;
-    active = false;
-    if (follows) handBack(surface);
-  };
-
-  const up = (ev: Event): void => {
-    detach();
-    if (!active) return;
-
-    // An activated drag swallows the click the browser fires after pointerup — a row's own buttons
-    // must not receive a tap that was really a swipe.
-    //
-    // The timer holds the DOCUMENT it registered on rather than reading the global when it fires,
-    // and the difference is the fifty milliseconds between the two. A page cannot lose `document`
-    // in that window, but a torn-down environment can: the suite's own teardown removed the global
-    // while this was pending, the callback threw `document is not defined` where nothing could
-    // catch it, and vitest failed a run in which all 134 files had passed. Deferred cleanup carries
-    // what it cleans up.
-    const host = document;
-    host.addEventListener('click', squashClick, { capture: true, once: true });
-    setTimeout(() => host.removeEventListener('click', squashClick, { capture: true }), 50);
-
+    },
+    move: (ev) => {
+      const offset = travelOf(ev);
+      if (follows) {
+        const px = normalized ? offset * extent : offset;
+        // Through setProperty: the property is newer than the CSSOM's named accessors, and the
+        // generic one writes it on every engine.
+        surface.style.setProperty('translate', horizontal ? `${px}px` : `0 ${px}px`);
+      }
+      if (moves) surface.dispatchEvent(new CustomEvent('eq-drag-moved', { detail: offset }));
+    },
     // Report, then let the RE-RENDER place it: the caller's new RestOffset is the truth about where
     // this belongs, and gliding to a guess here would fight the frame that follows. The gesture's
     // own offset is handed back AFTER the report, so a re-render the report runs has already written
@@ -140,13 +106,17 @@ function onPointerDown(down: Event): void {
     // leaves the rest where it was (a swipe short of opening) changes no markup at all, and the
     // surface still goes home: it used to stay where the finger left it, since nothing re-wrote the
     // inline offset the drag had set.
-    surface.dispatchEvent(new CustomEvent('eq-drag-released', { detail: travelOf(ev) }));
-    if (follows) handBack(surface);
-  };
-
-  document.addEventListener('pointermove', move, { passive: false });
-  document.addEventListener('pointerup', up);
-  document.addEventListener('pointercancel', cancel);
+    release: (ev) => {
+      surface.dispatchEvent(new CustomEvent('eq-drag-released', { detail: travelOf(ev) }));
+      if (follows) handBack(surface);
+    },
+    // The system can take a gesture away without ever lifting the finger — a browser claiming the
+    // scroll, a call arriving. Nothing was decided, so nothing is reported: the surface returns to
+    // where the caller last put it, which is the rest its markup carries.
+    cancel: () => {
+      if (follows) handBack(surface);
+    },
+  });
 }
 
 /**
@@ -156,9 +126,4 @@ function onPointerDown(down: Event): void {
 function handBack(surface: HTMLElement): void {
   surface.style.removeProperty('translate');
   surface.style.removeProperty('transition');
-}
-
-function squashClick(e: Event): void {
-  e.stopPropagation();
-  e.preventDefault();
 }

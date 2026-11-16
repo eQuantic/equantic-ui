@@ -47,6 +47,15 @@ public sealed class Navigable : VisualNode
     /// <see cref="Adjustable.OnAdjust"/> leaves the step's worth to its control.</summary>
     public Action<NavigableMove> OnMove { get; init; }
 
+    /// <summary>
+    /// A printable character typed while the composite holds the focus, with no modifier but Shift:
+    /// how a tree, a list or a menu jumps to an item by the first letters of its name (WAI-ARIA's
+    /// type-ahead, WPF's <c>TextSearch</c>). The COMPOSITE owns what the characters mean, how long a
+    /// search lasts and which item it lands on, as it owns what a move means. Space never arrives
+    /// here: it is a key of its own. Null, the default, leaves every character to the page.
+    /// </summary>
+    public Action<string>? OnTextSearch { get; init; }
+
     /// <summary>Announced by assistive tech as the composite's name ("July 2026").</summary>
     public string Label { get; init; } = "";
 

@@ -83,6 +83,10 @@ public interface IVisualNodeVisitor<in TState, out TResult>
     TResult Visit(Drawing node, TState state);
 
     TResult Visit(DropTarget node, TState state);
+    TResult Visit(Sortable node, TState state);
+    TResult Visit(SortableItem node, TState state);
+
+    TResult Visit(ContextTarget node, TState state);
 
     TResult Visit(Flexible node, TState state);
 
@@ -109,6 +113,8 @@ public interface IVisualNodeVisitor<in TState, out TResult>
     TResult Visit(Pinned node, TState state);
 
     TResult Visit(LiveRegion node, TState state);
+
+    TResult Visit(Group node, TState state);
 
     TResult Visit(Positioned node, TState state);
 

@@ -206,7 +206,19 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     // A drop area is layout-transparent too: the child owns every visual.
+    // A sortable list and its items mark their child and add no box (#1535): the web lowers no element
+    // of their own, so Photon lays them out as their children.
+    public LayoutNode Visit(Sortable node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
+
+    public LayoutNode Visit(SortableItem node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
+
     public LayoutNode Visit(DropTarget node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
+
+    // What a person asks the menu of is layout-transparent as well (#1531): the child owns every visual.
+    public LayoutNode Visit(ContextTarget node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     // A simulated state changes only what is DRAWN, so it takes no space of its own.
@@ -233,6 +245,12 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     // gives the host `fit-content` when the child does not ask to fill, and the box a reader
     // outlines has to be the box Photon lays out.
     public LayoutNode Visit(LiveRegion node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
+
+    // The sixth wrapper that emits a host of its own, inlined for the LiveRegion's reason: `LowerGroup`
+    // gives the host `fit-content` when the child does not ask to fill, and the box a reader outlines
+    // has to be the box Photon lays out.
+    public LayoutNode Visit(Group node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
 
     // INLINED like the three wrappers above it, and the reason this comment once said otherwise is

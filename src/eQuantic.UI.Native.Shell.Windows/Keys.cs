@@ -41,6 +41,8 @@ public static class WindowsKeys
             case 0x11 or 0xA2 or 0xA3: return "Control";
             case 0x12 or 0xA4 or 0xA5: return "Alt";
             case 0x5B or 0x5C: return "Meta";
+            // The Applications key, the keyboard's own way to ask for a menu (#1531): the DOM's name for it.
+            case 0x5D: return "ContextMenu";
         }
 
         // F1..F24 are contiguous from 0x70.

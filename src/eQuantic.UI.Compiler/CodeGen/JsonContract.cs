@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -52,7 +53,7 @@ internal static class JsonContract
             IPropertySymbol { IsStatic: false, IsImplicitlyDeclared: false } property => !IsWritten(property),
             _ => false,
         }) || (!type.IsRecord && type.InstanceConstructors.Any(constructor => constructor.Parameters.Length > 0
-            && constructor.DeclaringSyntaxReferences.Any(reference => reference.GetSyntax() is TypeDeclarationSyntax)));
+            && constructor.ReadDeclarations().Any(reference => reference.GetSyntax() is TypeDeclarationSyntax)));
 
     private static bool IsWritten(ISymbol member)
     {

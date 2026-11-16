@@ -22,6 +22,13 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// </para>
 ///
 /// <para>
+/// The gate runs once per contrast level (Foundations §01, "Contrast levels"). At More every floor
+/// is one APCA level up: 90 for Primary and Secondary text, 75 for Muted and every label on a fill or
+/// a Subtle, 30 for BorderStrong. Link is left where it is by the handoff's More palette, and keeps
+/// its floor of 60.
+/// </para>
+///
+/// <para>
 /// The APCA constants are 0.0.98G. The result is compared with a 0.05 tolerance because the palette
 /// was solved to land ON some floors, and a last-bit difference in <c>Math.Pow</c> between runtimes
 /// must not turn a pass into a failure.
@@ -36,12 +43,25 @@ public class DesignTokenApcaTests
         [Variant.Primary, Variant.Secondary, Variant.Destructive, Variant.Success, Variant.Warning,
          Variant.Info, Variant.Tertiary];
 
+    /// <summary>The floors of a level: body text, Muted, Link, labels, BorderStrong.</summary>
+    private readonly record struct Floors(double Body, double Muted, double Link, double Label, double BorderStrong);
+
+    private static readonly (ContrastLevel Level, Floors Floors)[] Levels =
+    [
+        (ContrastLevel.Standard, new Floors(Body: 75, Muted: 60, Link: 60, Label: 60, BorderStrong: 15)),
+        (ContrastLevel.More, new Floors(Body: 90, Muted: 75, Link: 60, Label: 75, BorderStrong: 30)),
+    ];
+
     [Fact]
     public void EveryPairClearsItsApcaFloor()
     {
         var failures = new List<string>();
-        foreach (var (mode, pick) in new (string, Func<ColorToken, Color>)[] { ("light", t => t.Light), ("dark", t => t.Dark) })
+        foreach (var (level, floors) in Levels)
+        foreach (var (side, themeMode) in new[] { ("light", ThemeMode.Light), ("dark", ThemeMode.Dark) })
         {
+            var mode = $"{side} · {level}";
+            Color pick(ColorToken token) => token.Resolve(themeMode, level);
+
             var grounds = new[] { ("Background", pick(Theme.Background)), ("Surface", pick(Theme.Surface)),
                 ("SurfaceSubtle", pick(Theme.SurfaceSubtle)) };
 
@@ -58,21 +78,21 @@ public class DesignTokenApcaTests
                     failures.Add($"{mode} · {what}: Lc {lc:F1}, floor {floor}");
             }
 
-            Text("TextPrimary", Theme.TextPrimary, 75);
-            Text("TextSecondary", Theme.TextSecondary, 75);
-            Text("TextMuted", Theme.TextMuted, 60);
-            Text("LinkColor", Theme.LinkColor, 60);
+            Text("TextPrimary", Theme.TextPrimary, floors.Body);
+            Text("TextSecondary", Theme.TextSecondary, floors.Body);
+            Text("TextMuted", Theme.TextMuted, floors.Muted);
+            Text("LinkColor", Theme.LinkColor, floors.Link);
 
             foreach (var variant in Filled)
             {
                 var colors = Theme.Colors(variant);
-                Check($"{variant} OnBase on Base", pick(colors.OnBase), pick(colors.Base), 60);
-                Check($"{variant} OnBase on Pressed", pick(colors.OnBase), pick(colors.Pressed), 60);
-                Check($"{variant} OnSubtle on Subtle", pick(colors.OnSubtle), pick(colors.Subtle), 60);
+                Check($"{variant} OnBase on Base", pick(colors.OnBase), pick(colors.Base), floors.Label);
+                Check($"{variant} OnBase on Pressed", pick(colors.OnBase), pick(colors.Pressed), floors.Label);
+                Check($"{variant} OnSubtle on Subtle", pick(colors.OnSubtle), pick(colors.Subtle), floors.Label);
             }
 
-            Check("BorderStrong on Surface", pick(Theme.BorderStrong), pick(Theme.Surface), 15);
-            Check("BorderStrong on Background", pick(Theme.BorderStrong), pick(Theme.Background), 15);
+            Check("BorderStrong on Surface", pick(Theme.BorderStrong), pick(Theme.Surface), floors.BorderStrong);
+            Check("BorderStrong on Background", pick(Theme.BorderStrong), pick(Theme.Background), floors.BorderStrong);
         }
 
         failures.Should().BeEmpty(

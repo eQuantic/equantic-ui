@@ -521,6 +521,6 @@ public class SheetControllerTests
     {
         public string? Held;
         public void Write(string text) => Held = text;
-        public string? Read() => Held;
+        public Task<string?> ReadAsync() => Task.FromResult(Held);
     }
 }

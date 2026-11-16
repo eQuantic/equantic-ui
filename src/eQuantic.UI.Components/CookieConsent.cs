@@ -76,12 +76,12 @@ public sealed class CookieConsent : StatefulComponent
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Padding = EdgeInsets.All(Space.S4),
+            Padding = theme.Notice?.ConsentPadding ?? EdgeInsets.All(Space.S4),
             Background = theme.Surface,
-            BorderWidth = 1,
+            BorderWidth = theme.Notice?.ConsentBorderWidth ?? 1,
             BorderColor = theme.Border,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Large)),
-            Elevation = 2,
+            CornerRadius = new CornerRadii(theme.Shape(theme.Notice?.ConsentShape ?? ShapeScale.Large)),
+            Elevation = theme.Notice?.ConsentElevation ?? 2,
         }, column);
     }
 

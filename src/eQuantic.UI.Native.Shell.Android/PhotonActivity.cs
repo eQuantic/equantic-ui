@@ -225,6 +225,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     /// </summary>
     protected override void OnDestroy()
     {
+        StopFollowingContrast();
         TakeDown();
         base.OnDestroy();
     }
@@ -323,6 +324,8 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         _host = new PhotonHost(app.Root(), app.Theme, Mode(), metrics.WidthPixels / scale,
             metrics.HeightPixels / scale, text)
         {
+            // The contrast level of Android 14, read from the system like the mode (#340).
+            Contrast = Contrast(),
             RecycleFrames = true,   // production owns its frames (LayoutNodePool)
             RenderScale = scale,
             TextRasterizer = text,
@@ -332,6 +335,9 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             // What Ctrl+C, X and V on a keyboard attached to the phone copy, cut and paste through.
             Clipboard = new AndroidClipboard(),
         };
+        // The window's error boundary (#1452), armed with the app's report.
+        app.ArmBoundary(_host.Boundary);
+        FollowContrast();
         cultureController?.Attach(_host.Invalidate);
 
         // The semantics bridge: TalkBack reads the SAME target-neutral tree the Apple shells read,
@@ -403,6 +409,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         base.OnConfigurationChanged(newConfig);
         if (_host is null) return;
         _host.Mode = Mode();
+        _host.Contrast = Contrast();
         var scale = Resources!.DisplayMetrics!.Density;
         _host.RenderScale = scale;
         if (_view?.Holder?.SurfaceFrame is { } frame && !frame.IsEmpty)
@@ -535,7 +542,7 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         if (forced == true && FramesPresented >= Application!.Options.MaxFrames)
         {
             ProbeAccessibility();
-            var contained = eQuantic.UI.Primitives.ComponentBoundary.Contained;
+            var contained = _host!.Boundary.Contained;
             var missing = eQuantic.UI.Primitives.FaceResolution.Unresolved;
             var summary = $"frames presented: {FramesPresented}";
             if (contained.Count > 0) summary += $" — CONTAINED: {string.Join(", ", contained)}";
@@ -793,7 +800,20 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         {
             case MotionEventActions.Down:
                 _kind = KindOf(e.GetToolType(0));
+                // A mouse's secondary button asks for the menu of what it lands on (#1531), and the rest of its
+                // gesture is the menu's, not a press's.
+                if (_kind == PointerKind.Mouse && (e.ButtonState & MotionEventButtonState.Secondary) != 0)
+                {
+                    _secondaryHeld = true;
+                    _host.ContextRequest(x, y, _kind);
+                    return true;
+                }
                 _host.PressDown(x, y, kind: _kind);
+                return true;
+            case MotionEventActions.Move when _secondaryHeld:
+                return true;
+            case MotionEventActions.Up or MotionEventActions.Cancel when _secondaryHeld:
+                _secondaryHeld = false;
                 return true;
             case MotionEventActions.Move:
                 _host.PointerMove(x, y, _kind);
@@ -819,6 +839,10 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     /// <summary>What the gesture in flight is, read from its tool when it lands and kept until it ends.</summary>
     private PointerKind _kind = PointerKind.Touch;
 
+    /// <summary>A mouse's secondary button is down: the gesture asked for a menu, and its moves and release are
+    /// the menu's (#1531).</summary>
+    private bool _secondaryHeld;
+
     /// <summary>
     /// A finger, a stylus, or a mouse's button: OnTouchEvent receives all three (a mouse's HOVER alone
     /// arrives as generic motion). A finger pans what it lands on and never hovers (spec S5); a mouse's
@@ -830,6 +854,55 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         MotionEventToolType.Stylus or MotionEventToolType.Eraser => PointerKind.Stylus,
         _ => PointerKind.Touch,
     };
+
+    /// <summary>
+    /// The contrast level Android 14 offers under Accessibility, Color and motion: 0 is standard,
+    /// 0.5 medium and 1 high, and anything above standard is the person asking for more (#340).
+    /// Earlier versions have no such setting.
+    /// </summary>
+    private ContrastLevel Contrast() =>
+        OperatingSystem.IsAndroidVersionAtLeast(34)
+        && GetSystemService(UiModeService) is global::Android.App.UiModeManager modes
+        && modes.Contrast > 0
+            ? ContrastLevel.More
+            : ContrastLevel.Standard;
+
+    private object? _contrastListener;
+
+    /// <summary>A change of the contrast level is no configuration change, so the activity is told
+    /// by the listener Android 14 has for it, and repaints with the new level.</summary>
+    private void FollowContrast()
+    {
+        if (!OperatingSystem.IsAndroidVersionAtLeast(34) || _contrastListener is not null) return;
+        if (GetSystemService(UiModeService) is not global::Android.App.UiModeManager modes || MainExecutor is not { } executor)
+            return;
+        var listener = new ContrastListener(this);
+        modes.AddContrastChangeListener(executor, listener);
+        _contrastListener = listener;
+    }
+
+    private void StopFollowingContrast()
+    {
+        if (!OperatingSystem.IsAndroidVersionAtLeast(34) || _contrastListener is not ContrastListener listener) return;
+        (GetSystemService(UiModeService) as global::Android.App.UiModeManager)?.RemoveContrastChangeListener(listener);
+        _contrastListener = null;
+    }
+
+    private void ContrastChanged()
+    {
+        if (_host is null) return;
+        var contrast = Contrast();
+        if (_host.Contrast == contrast) return;
+        _host.Contrast = contrast;
+        _host.Invalidate();
+    }
+
+    [SupportedOSPlatform("android34.0")]
+    private sealed class ContrastListener(PhotonActivity activity)
+        : Java.Lang.Object, global::Android.App.UiModeManager.IContrastChangeListener
+    {
+        public void OnContrastChanged(float contrast) => activity.ContrastChanged();
+    }
 
     private ThemeMode Mode()
     {

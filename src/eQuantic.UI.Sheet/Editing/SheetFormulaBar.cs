@@ -46,6 +46,13 @@ public sealed class SheetFormulaBar : ICodeSurfaceModel
     /// <inheritdoc />
     public int FocusVersion => _focusVersion;
 
+    /// <inheritdoc />
+    /// <remarks>What the bar shows: the entry while a cell is edited, from the bar or in the cell, and the
+    /// active cell's value at rest (#1333).</remarks>
+    public TextReading Reading => _sheet.Editing
+        ? _sheet.Entry.Reading
+        : new TextReading(_sheet.Document.GetCell(_sheet.ActiveCell), 0, 0);
+
     /// <summary>Asks for the keyboard: the bar's surface takes it on its next frame.</summary>
     public void RequestFocus() => _focusVersion++;
 

@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
+using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -74,8 +75,8 @@ internal static class TwinMethodName
         type.GetMembers().OfType<IMethodSymbol>()
             .Where(member => !member.IsOverride && TypedEquals(member))
             .OrderBy(member => member.MethodKind == MethodKind.ExplicitInterfaceImplementation ? 0 : 1)
-            .ThenBy(member => member.Locations.FirstOrDefault()?.SourceTree?.FilePath, StringComparer.Ordinal)
-            .ThenBy(member => member.Locations.FirstOrDefault()?.SourceSpan.Start ?? 0)
+            .ThenBy(member => member.ReadLocations().FirstOrDefault()?.SourceTree?.FilePath, StringComparer.Ordinal)
+            .ThenBy(member => member.ReadLocations().FirstOrDefault()?.SourceSpan.Start ?? 0)
             .ToList();
 
     /// <summary>The name a declared method holds, asked of its symbol where the model knows it, and its

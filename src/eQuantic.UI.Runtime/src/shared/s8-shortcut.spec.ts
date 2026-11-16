@@ -5,6 +5,7 @@ import { Reconciler } from '../dom/reconciler';
 import { photonTheme } from './design-system.generated';
 import type { LoweringContext } from './lowering';
 import type { AdaptiveNodeValue, AnchoredNode, VisualNodeValue } from './nodes';
+import { AdaptiveNode } from './vocabulary';
 
 const ctx: LoweringContext = { textPrimary: photonTheme.textPrimary };
 const marker = (): VisualNodeValue =>
@@ -103,8 +104,15 @@ describe('S8 shortcuts inside adaptive arms', () => {
 
   const find = (onPressed: () => void) => shortcut({ key: 'f', modifiers: 4 }, onPressed);
 
+  /** An adaptive node as transpiled code makes one: the element engine asks it for the arm it holds. */
   function adaptive(arms: Omit<AdaptiveNodeValue, 'nodeKind'>): VisualNodeValue {
-    return { nodeKind: 'adaptive', ...arms } as unknown as VisualNodeValue;
+    const { compact, medium, expanded, ...thresholds } = arms;
+    return new AdaptiveNode(
+      compact as never,
+      (medium ?? null) as never,
+      (expanded ?? null) as never,
+      thresholds,
+    ) as unknown as VisualNodeValue;
   }
 
   /** ⌘F through the window, as a person presses it; the event says whether anyone claimed it. */

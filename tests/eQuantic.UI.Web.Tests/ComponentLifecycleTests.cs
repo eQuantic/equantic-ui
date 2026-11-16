@@ -37,14 +37,14 @@ public class ComponentLifecycleTests
     /// <summary>One frame of a live tree: the build, then the frame's end, where the hooks run.</summary>
     private static void Frame(BuildOwner owner, VisualNode root)
     {
-        owner.Build(root, Context, WindowSizeClass.Compact, rebuildAll: true);
+        owner.Build(root, Context, 400f, rebuildAll: true);
         owner.EndFrame();
     }
 
     [Fact]
     public void AComponentEnteringTheTree_MountsOnce()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var component = new Tracked();
 
         Frame(owner, Holding(component));
@@ -60,10 +60,10 @@ public class ComponentLifecycleTests
     [Fact]
     public void TheMount_WaitsForTheFrameToEnd()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var component = new Tracked();
 
-        owner.Build(Holding(component), Context, WindowSizeClass.Compact, rebuildAll: true);
+        owner.Build(Holding(component), Context, 400f, rebuildAll: true);
 
         component.Mounts.Should().Be(0, "the tree it belongs to is not finished yet");
     }
@@ -76,7 +76,7 @@ public class ComponentLifecycleTests
     [Fact]
     public void ARetainedInstance_DoesNotMountAgain()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var first = new Tracked();
         Frame(owner, Holding(first));
 
@@ -97,7 +97,7 @@ public class ComponentLifecycleTests
     [Fact]
     public void APositionThatLeavesTheTree_Unmounts()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var component = new Tracked();
         Frame(owner, Holding(component));
 
@@ -113,7 +113,7 @@ public class ComponentLifecycleTests
     public void TheOutgoing_UnmountsBeforeTheIncomingMounts()
     {
         var order = new List<string>();
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         Frame(owner, Holding(new Ordered("leaving", order)));
 
         // The leaving one's position now holds a text; the arriving one takes the next.
@@ -135,7 +135,7 @@ public class ComponentLifecycleTests
     [Fact]
     public void TearingTheTreeDown_UnmountsEverythingStillIn()
     {
-        var owner = ComponentBoundary.Owner();
+        var owner = new ComponentBoundary().Owner();
         var a = new Tracked();
         var b = new Tracked();
         Frame(owner, Holding(a, b));
@@ -153,7 +153,7 @@ public class ComponentLifecycleTests
     [Fact]
     public void AStructuralTree_CallsNoHook()
     {
-        var owner = ComponentBoundary.StructuralOwner();
+        var owner = new ComponentBoundary().StructuralOwner();
         var component = new Tracked();
 
         Frame(owner, Holding(component));

@@ -23,7 +23,6 @@ namespace eQuantic.UI.Primitives;
 /// unmounts before what arrives mounts.
 /// </para>
 /// </summary>
-[ServerOnly]
 public sealed class BuildOwner
 {
     private readonly List<ComponentElement> _dirty = new();
@@ -36,6 +35,7 @@ public sealed class BuildOwner
     // The positions that read what a frame hands every build (the theme, the density, the type scale),
     // each knowing its index here, so one that leaves is taken out in one step.
     private readonly List<ComponentElement> _frameReaders = new();
+    private readonly List<ComponentElement> _routeReaders = new();
     private ComponentContext? _context;
     private int _building;
     // Whether the build phase of a frame is running, and which dirty position it is building: a value a
@@ -46,31 +46,62 @@ public sealed class BuildOwner
     private NodeElement? _showing;
     private int _deferredCursor = -1;
     private int _stamp;
-    private int _ids;
+    private readonly ElementIds _ids;
     private readonly Func<UiComponent, ComponentContext, int, VisualNode> _buildComponent;
 
     /// <summary>A live owner: the one a host keeps for the surface it draws.</summary>
     /// <param name="buildComponent">How a component builds: its <c>Build</c> for a context, at a depth
     /// of components, inside whatever boundary contains what it throws.</param>
-    public BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent)
-        : this(buildComponent, live: true)
+    /// <param name="holdsEveryArm">Whether an adaptive node's position holds every arm the node declares
+    /// (<see cref="HoldsEveryArm"/>).</param>
+    /// <param name="ids">The count the tree takes its ids from, shared with the other trees of a host
+    /// that names their nodes in one space; a count of the tree's own when none is handed.</param>
+    public BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool holdsEveryArm = false, ElementIds? ids = null)
+        : this(buildComponent, holdsEveryArm, ids, live: true)
     {
     }
 
-    private BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool live)
+    // LIVE LAST, so the twin's one constructor, which is this one's shape, takes a public call's
+    // arguments where they stand: JavaScript has one constructor, its signature is the widest, and the
+    // public form passes `holdsEveryArm` and `ids` second and third.
+    private BuildOwner(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool holdsEveryArm, ElementIds? ids, bool live)
     {
         ArgumentNullException.ThrowIfNull(buildComponent);
         _buildComponent = buildComponent;
+        _ids = ids ?? new ElementIds();
         Live = live;
+        HoldsEveryArm = holdsEveryArm;
     }
 
     /// <summary>An owner for a tree laid out once: it builds, and calls no lifecycle hook.</summary>
     /// <param name="buildComponent">How a component builds, as the live owner takes it.</param>
-    public static BuildOwner Structural(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent) => new(buildComponent, live: false);
+    /// <param name="holdsEveryArm">As the live owner takes it.</param>
+    /// <param name="ids">The count the tree takes its ids from, as the live owner takes it.</param>
+    public static BuildOwner Structural(Func<UiComponent, ComponentContext, int, VisualNode> buildComponent, bool holdsEveryArm = false, ElementIds? ids = null) =>
+        new(buildComponent, holdsEveryArm, ids, live: false);
 
-    /// <summary>Builds a component the way this owner was handed.</summary>
-    internal VisualNode BuildComponent(UiComponent component, ComponentContext context, int depth) =>
-        _buildComponent(component, context, depth);
+    /// <summary>
+    /// The position whose component is building now, through the build this owner was handed, and null
+    /// between builds. What a host reads in that build to know which position it is for: the server's
+    /// data for a component is handed to it by where it stands (<see cref="Element.SlotsBelow"/>), before
+    /// its build reads its fields.
+    /// </summary>
+    public ComponentElement? Building { get; private set; }
+
+    /// <summary>Builds <paramref name="position"/>'s component the way this owner was handed.</summary>
+    internal VisualNode BuildComponent(ComponentElement position)
+    {
+        var outer = Building;
+        Building = position;
+        try
+        {
+            return _buildComponent(position.Component, position.Context, position.ComponentDepth);
+        }
+        finally
+        {
+            Building = outer;
+        }
+    }
 
     /// <summary>Asked when a position becomes dirty outside a build: the host's cue to draw a frame.
     /// Raised on the thread the <c>SetState</c> ran on, which the dispatcher makes the UI thread.</summary>
@@ -105,8 +136,19 @@ public sealed class BuildOwner
     /// that would set state or start work for a tree nobody draws again.</summary>
     public bool Live { get; }
 
-    /// <summary>The window size class this frame resolves an adaptive node's arm against.</summary>
-    internal WindowSizeClass SizeClass { get; private set; }
+    /// <summary>
+    /// Whether an adaptive node's position holds EVERY arm the node declares, compact at slot 0, medium
+    /// at 1 and expanded at 2, rather than the one arm the frame's width resolves. A realizer that
+    /// draws every arm behind a gate of its own, as the web does with its media rules, needs each arm
+    /// it draws to be a position, or the arm on screen at some width would be one no element holds and
+    /// its stateful components would start again on every build. Photon draws one arm, and resolves it.
+    /// </summary>
+    public bool HoldsEveryArm { get; }
+
+    /// <summary>How wide the window is this frame, in dp: what an adaptive node's arm is resolved against, at
+    /// the node's own thresholds (<see cref="AdaptiveNode.ResolveWidth"/>), as the web's gates and Photon's
+    /// layout resolve it (#1465).</summary>
+    internal float WindowWidth { get; private set; }
 
     /// <summary>The context this frame was handed: the theme, density, type scale and measurer every
     /// position's own context reads (<see cref="ComponentElement.Context"/>).</summary>
@@ -130,11 +172,11 @@ public sealed class BuildOwner
     /// positions build, shallowest first, and a frame nothing marked builds nothing.
     /// </summary>
     /// <returns>The root's position, for the layout to measure against.</returns>
-    public Element Build(VisualNode root, ComponentContext context, WindowSizeClass sizeClass, bool rebuildAll)
+    public Element Build(VisualNode root, ComponentContext context, float windowWidth, bool rebuildAll)
     {
         var previous = _context;
         _context = context;
-        SizeClass = sizeClass;
+        WindowWidth = windowWidth;
         Frame++;
         RebuildingAll = rebuildAll;
         EnterBuild();
@@ -144,12 +186,15 @@ public sealed class BuildOwner
             // What a frame hands every build changed: the positions that read it build again, and only
             // they, where a density switch used to rebuild every component (docs/ELEMENT-TREE-PLAN.md, 3.4).
             if (previous is not null && FrameValuesDiffer(previous, context)) MarkFrameReaders();
+            // The route is read apart: a navigation within one page type builds what read the route, and
+            // not every reader of the theme.
+            if (previous is not null && !ReferenceEquals(previous.Route, context.Route)) MarkRouteReaders();
 
             if (Root is null || !Element.CanUpdate(Root.Configuration, root))
             {
                 if (Root is not null) Deactivate(Root);
                 Root = Element.Create(root);
-                Root.Mount(this, null);
+                Root.Mount(this, null, 0);
             }
             else if (rebuildAll || !ReferenceEquals(Root.Configuration, root))
             {
@@ -195,6 +240,31 @@ public sealed class BuildOwner
     private void MarkFrameReaders()
     {
         foreach (var reader in _frameReaders) reader.DependencyChanged();
+    }
+
+    /// <summary>A position read the frame's route, and builds again when the frame hands another.</summary>
+    internal void ReadRoute(ComponentElement reader)
+    {
+        if (reader.RouteReaderIndex >= 0) return;
+        reader.RouteReaderIndex = _routeReaders.Count;
+        _routeReaders.Add(reader);
+    }
+
+    /// <summary>A position that read the route left the tree: the last reader takes its place.</summary>
+    internal void ForgetRouteReader(ComponentElement reader)
+    {
+        var index = reader.RouteReaderIndex;
+        if (index < 0) return;
+        var last = _routeReaders[_routeReaders.Count - 1];
+        _routeReaders[index] = last;
+        last.RouteReaderIndex = index;
+        _routeReaders.RemoveAt(_routeReaders.Count - 1);
+        reader.RouteReaderIndex = -1;
+    }
+
+    private void MarkRouteReaders()
+    {
+        foreach (var reader in _routeReaders) reader.DependencyChanged();
     }
 
     /// <summary>
@@ -276,8 +346,8 @@ public sealed class BuildOwner
     internal int NextStamp() => ++_stamp;
 
     /// <summary>The next id of this tree (<see cref="Element.Id"/>, <see cref="NodeElement.PartId"/>),
-    /// counted from one, so zero is never an id.</summary>
-    internal int NextId() => ++_ids;
+    /// from the count it was handed.</summary>
+    internal int NextId() => _ids.Next();
 
     internal void Deactivate(Element element) => element.Deactivate();
 

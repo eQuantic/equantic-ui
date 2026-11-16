@@ -170,6 +170,12 @@ internal static class PhotonAccessibility
                 // heading reached VoiceOver with whatever the integer register held.
                 SendVoid(element, Sel("setAccessibilityDisclosureLevel:"), (ulong)node.HeadingLevel);
             }
+            // An outline row's LEVEL (#1529): AXDisclosureLevel counts from zero where the vocabulary's
+            // TreePlace counts from one, as UI Automation's and ARIA's do. The integer register, for
+            // the reason the heading's level above gives. Its index among its siblings has no AppKit
+            // attribute of its own; VoiceOver counts an outline's rows itself.
+            if (node.TreePlace is { } treePlace)
+                SendVoid(element, Sel("setAccessibilityDisclosureLevel:"), (ulong)Math.Max(0, treePlace.Level - 1));
             SendVoid(element, Sel("setAccessibilityEnabled:"), !node.Disabled);
             SendVoid(element, Sel("setAccessibilityParent:"), view);
             // The id, visible in Accessibility Inspector — the same identity every press, focus and

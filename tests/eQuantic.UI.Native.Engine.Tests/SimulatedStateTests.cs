@@ -20,7 +20,7 @@ public class SimulatedStateTests
     private static DisplayList Draw(VisualNode node)
     {
         var builder = new DisplayListBuilder();
-        PhotonRealizer.Realize(node, 200, 100, Theme, ThemeMode.Light, builder);
+        PhotonRealizer.Realize(node, 200, 100, Theme, ThemeMode.Light, ContrastLevel.Standard, builder);
         return builder.Build();
     }
 
@@ -34,7 +34,7 @@ public class SimulatedStateTests
 
     private static bool Paints(DisplayList list, ColorToken token)
     {
-        var color = token.Resolve(ThemeMode.Light);
+        var color = token.Resolve(ThemeMode.Light, ContrastLevel.Standard);
         foreach (var command in list.Commands)
             if (command.Kind == DrawCommandKind.FillRRect && command.Paint.Color == color) return true;
         return false;
@@ -103,8 +103,8 @@ public class SimulatedStateTests
         };
 
         var list = Draw(row);
-        var hoverColour = Theme.Colors(Variant.Primary).Base.Resolve(ThemeMode.Light);
-        var surface = Theme.Surface.Resolve(ThemeMode.Light);
+        var hoverColour = Theme.Colors(Variant.Primary).Base.Resolve(ThemeMode.Light, ContrastLevel.Standard);
+        var surface = Theme.Surface.Resolve(ThemeMode.Light, ContrastLevel.Standard);
 
         var hovered = 0;
         var resting = 0;

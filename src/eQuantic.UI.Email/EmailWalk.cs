@@ -10,7 +10,8 @@ namespace eQuantic.UI.Email;
 /// (<see cref="EmailTextVisitor"/>) — built from the same tree so they cannot drift. Seven words
 /// cross into that medium: <see cref="Column"/>, <see cref="Row"/>, <see cref="Text"/>,
 /// <see cref="Box"/>, <see cref="Image"/>, <see cref="Link"/>, and the component seam. They are
-/// abstract here, because each alternative writes them differently. The other THIRTY-FOUR are
+/// abstract here, because each alternative writes them differently; a <see cref="Group"/> reaches a
+/// message as the child it holds, in both. The other THIRTY-FOUR are
 /// refused, and refused IDENTICALLY — one <see cref="Refuse"/>, inherited by both.
 /// </para>
 ///
@@ -47,8 +48,28 @@ internal abstract partial class EmailWalk : IVisualNodeVisitor<Nothing, Nothing>
     /// </summary>
     public abstract Nothing Visit(UiComponent node, Nothing state);
 
-    /// <summary>A value for a subtree reaches a message as the child it holds.</summary>
-    public Nothing Visit(InheritedComponent node, Nothing state) => node.Child.Accept(this, state);
+    /// <summary>A value for a subtree reaches a message as the child it holds. A <see cref="Theme"/>
+    /// draws its child in the theme it holds, as on every other target: the components below it build
+    /// with that theme, and the colours the medium picks for its nodes are that theme's.</summary>
+    public Nothing Visit(InheritedComponent node, Nothing state) =>
+        node.Child.Accept(node is Theme theme ? Under(theme.Value) : this, state);
+
+    /// <summary>This walk, writing into the same body, for a subtree drawn in another theme.</summary>
+    private protected abstract EmailWalk Under(IAppTheme theme);
+
+    /// <summary>A labelled group reaches a message as the child it holds: it draws nothing, and the
+    /// heading a reader sees is the child's own.</summary>
+    public Nothing Visit(Group node, Nothing state) => node.Child.Accept(this, state);
+
+    /// <summary>What a person asks the menu of reaches a message as the child it holds: a message has no menu
+    /// to ask for, and the content is the same without one (#1531).</summary>
+    public Nothing Visit(ContextTarget node, Nothing state) => node.Child.Accept(this, state);
+    /// <summary>A list a pointer sorts is, in a message, the list as it stands (#1535): nothing in an email is
+    /// dragged, and nothing in the list needs it to be read.</summary>
+    public Nothing Visit(Sortable node, Nothing state) => node.Child.Accept(this, state);
+
+    /// <inheritdoc cref="Visit(Sortable, Nothing)"/>
+    public Nothing Visit(SortableItem node, Nothing state) => node.Child.Accept(this, state);
 
     /// <summary>
     /// The one refusal, loud and naming the node — the repo's rule: never a silent divergence. The

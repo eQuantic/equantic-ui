@@ -10,7 +10,8 @@ import { ColorToken, FluidSize, FontFamily, FontFile, TypeStyle, VariantColors, 
 import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
 import { DataPalette, DivergingScale, StatusScale } from './data-palette';
-import { SheetTheme } from './sheet-theme';
+import type { SheetTheme } from './sheet-theme';
+import { slotBuilders, type SlotData } from './theme-slots';
 
 type RgbaTuple = readonly [number, number, number, number];
 type TokenTuple = readonly [RgbaTuple, RgbaTuple];
@@ -61,6 +62,23 @@ export interface ThemeData {
   };
   /** The spreadsheet's slot, present only when the theme answers one, with the members it names. */
   sheet?: Partial<Record<keyof SheetTheme, TokenTuple>>;
+  /** The control ladder, present only when the theme answers one, with the members it names. */
+  controls?: SlotData;
+  /** The Button's slot, by the same rule. */
+  button?: SlotData;
+  /** The form controls' slots (E6b), by the same rule. */
+  iconButton?: SlotData;
+  input?: SlotData;
+  selectionControls?: SlotData;
+  segmented?: SlotData;
+  chip?: SlotData;
+  /** The navigation and collection families' slots and the document's (E6d), by the same rule. */
+  navigation?: SlotData;
+  list?: SlotData;
+  table?: SlotData;
+  badge?: SlotData;
+  calendar?: SlotData;
+  markdown?: SlotData;
 }
 
 const color = (t: RgbaTuple): ColorValue => ({ r: t[0], g: t[1], b: t[2], a: t[3] });
@@ -144,19 +162,19 @@ export function materializeTheme(data: ThemeData): AppTheme {
       token(data.data.status[3]),
     ),
   );
-  const code: Record<string, ColorToken> = {};
-  for (const [kind, color] of Object.entries(data.code ?? {})) code[kind] = token(color);
-  let sheet: SheetTheme | null = null;
-  if (data.sheet) {
-    sheet = new SheetTheme();
-    for (const [name, value] of Object.entries(data.sheet)) {
-      if (value) (sheet as unknown as Record<string, ColorToken>)[name] = token(value);
-    }
+  // Every slot, through its family's builder (theme-slots.ts): one the payload does not carry is null,
+  // as a theme that answers none.
+  const slots: Record<string, unknown> = {};
+  for (const [name, build] of Object.entries(slotBuilders)) {
+    const slot = (data as unknown as Record<string, SlotData | undefined>)[name];
+    slots[name] = slot ? build(slot) : null;
   }
+  const code: Record<string, ColorToken> = {};
+  for (const [kind, value] of Object.entries(data.code ?? {})) code[kind] = token(value);
   return {
     ...(surfaces as unknown as Pick<AppTheme, never>),
+    ...(slots as unknown as Pick<AppTheme, never>),
     data: palette,
-    sheet,
     disabledOpacity: data.disabledOpacity,
     monoFamily: data.monoFamily ? fontFamily(data.monoFamily) : undefined,
     textFamily: data.textFamily ? fontFamily(data.textFamily) : undefined,
@@ -171,6 +189,7 @@ export function materializeTheme(data: ThemeData): AppTheme {
       return elevations[Math.max(0, Math.min(5, Math.trunc(level)))];
     },
     code(kind: string): ColorToken {
+      // The server's palette, kind by kind (#936); a payload written before it crossed derives it.
       return code[kind] ?? codeTokenColor(this as unknown as AppTheme, kind);
     },
     shape(scale: string): number {

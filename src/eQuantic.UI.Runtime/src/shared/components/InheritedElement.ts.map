@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "InheritedElement.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Primitives/Elements/InheritedElement.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAYA;QAG+C;;QAD1B;QAC0B;;;IAD1B;IAC0B;;IAO3C;QAAuC;;;IAIvC;QAAoC;;;IAGpC;QAA8C;;;IAG9C;QAEI,4BAAwB;;;IAG5B;QAEI;;;IAGJ;QAEI;YAEI,YAAY;;YAIZ;YACA;YACA,4CAAuC;;QAG3C;;;IAIJ;QAEI;;;IAIJ;QAEI;;;IAGJ;QAEI,0CAAuC;;;IAG3C;QAEI,yBAAoB;QACpB;QACA;;;IAGJ;QAEI;;;IAxER"
+}

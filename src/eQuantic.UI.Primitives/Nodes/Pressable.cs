@@ -77,6 +77,14 @@ public sealed class Pressable : SingleChildNode
     /// </summary>
     public PressableRole Role { get; init; }
 
+    /// <summary>
+    /// Where a <see cref="PressableRole.TreeItem"/> stands in its tree: its level, its position among
+    /// its siblings and their count, all from one. The web lowers them to <c>aria-level</c>,
+    /// <c>aria-posinset</c> and <c>aria-setsize</c>, Photon to the item's semantics. Null states nothing,
+    /// and every other role ignores it: ARIA admits a level on a tree item and not on a button.
+    /// </summary>
+    public TreePlace? TreePlace { get; init; }
+
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

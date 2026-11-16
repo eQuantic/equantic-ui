@@ -231,7 +231,7 @@ public sealed class CodeBlock : StatelessComponent
     public static CodeMetrics MetricsFor(ComponentContext context, SizeVariant size,
         bool showLineNumbers, int lastLineNumber)
     {
-        var style = TypeStyle.OfSize(Sizing.LabelSize(size, context.Density),
+        var style = TypeStyle.OfSize(ControlMetrics.LabelSize(context, size),
             FontWeight.Regular) with { Mono = true };
         // The gutter is as wide as its widest number — measured, not guessed, because a file with
         // 1000 lines needs a column a file with 10 does not.

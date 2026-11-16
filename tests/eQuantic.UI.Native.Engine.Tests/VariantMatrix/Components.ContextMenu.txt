@@ -1,0 +1,42 @@
+## Comfortable
+### web
+<div class="eq-anchorhost">
+<div aria-haspopup="menu" class="eq-g7fowl" data-eq-context="off">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+### css
+.eq-16x7aca{display:block}
+.eq-g7fowl{pointer-events:auto}
+### semantics
+StaticText "x"
+### photon
+ContextMenu 0 0 480x24
+  Shortcut 0 0 480x24
+    Shortcut 0 0 480x24
+      Shortcut 0 0 480x24
+        Anchored 0 0 480x24
+          ContextTarget 0 0 480x24
+            Text 0 0 480x24 1 line(s)
+
+## Compact
+### web
+<div class="eq-anchorhost">
+<div aria-haspopup="menu" class="eq-g7fowl" data-eq-context="off">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+</div>
+### css
+.eq-16x7aca{display:block}
+.eq-g7fowl{pointer-events:auto}
+### semantics
+StaticText "x"
+### photon
+ContextMenu 0 0 480x24
+  Shortcut 0 0 480x24
+    Shortcut 0 0 480x24
+      Shortcut 0 0 480x24
+        Anchored 0 0 480x24
+          ContextTarget 0 0 480x24
+            Text 0 0 480x24 1 line(s)
+
