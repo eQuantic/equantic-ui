@@ -61,8 +61,10 @@ export function listWalk<T>(list: readonly T[]): IterableIterator<T> {
  * change is refused as .NET's enumerator refuses it through any face, and the sequence as it is otherwise. A
  * `T[]` behind a face keeps no version and walks as it is. A null is handed back, for the loop to refuse.
  */
-export function sequenceWalk<T>(source: Iterable<T>): Iterable<T> {
-  return Array.isArray(source) && !isFixedSize(source) ? new ListWalk(source as readonly T[]) : source;
+export function sequenceWalk<S>(source: S): S {
+  // Typed as the sequence it is handed: a list's walk yields the same elements, so a loop over either reads
+  // the element type the sequence declares.
+  return Array.isArray(source) && !isFixedSize(source) ? (new ListWalk(source) as unknown as S) : source;
 }
 
 /**

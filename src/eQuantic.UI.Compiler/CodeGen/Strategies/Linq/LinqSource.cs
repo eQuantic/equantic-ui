@@ -108,9 +108,11 @@ internal static class LinqSource
     internal static string Defer(string template, ExpressionSyntax source, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
-        var parameter = context.TypeAnnotations ? "$src: any" : "$src";
+        // `$src` carries no annotation: the runtime's `defer` types it as an array of the source's elements,
+        // which TypeScript reads from the source, so the template answers that element type, where an `any`
+        // lost it at every operator after it.
         var name = ReceiverParameter(source, context) is { } bound and not "source" ? $", {JsStringLiteral.Quote(bound)}" : "";
-        return $"{Eq.Query}.defer(({parameter}) => {template.Replace("{0}", "$src")}, {{0}}{name})";
+        return $"{Eq.Query}.defer(($src) => {template.Replace("{0}", "$src")}, {{0}}{name})";
     }
 
     /// <summary>The name of the parameter a receiver binds to: the extension's own first parameter.</summary>
