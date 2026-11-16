@@ -61,6 +61,35 @@ an HTML element?* If yes, the target's word IS the right word.
 The tell that a borrowed name is wrong is usually already in the tree: `CameraPreview.Alt` lowered
 to `aria-label` and never to `alt`, and `KeyModifiers.Alt` — the KEY — carried the same word.
 
+### Every component is composed, and takes the developer's content, builders and style
+
+A complex component is built from the base ones by WRAPPING: a capability is a node around any
+child (`Pressable`, `Draggable`, `Hoverable`, `ContextTarget`, `Sortable`), never a flag on one
+component, and the catalog is built from the same vocabulary an app has
+(`ARealizer_NeverReferencesTheLibraryItRealizes`). And every ready-made component goes further than
+its selectors, as Flutter's do:
+
+- **Content is a node.** Where a component draws what the developer gives it, the parameter is a
+  `VisualNode`, named as Flutter names it: `child`, `leading`, `title`, `subtitle`, `trailing`,
+  `content`, `actions`. A `string` converts to one, so `Button("Save")` still reads that way, and the
+  component hands its content the type, colour and icon size it resolved (Flutter's `DefaultTextStyle`
+  and `IconTheme`: the colour is `BoxStyle.Foreground`, the rest is #1577). `Label` is never content:
+  in this vocabulary it is the accessible name, a string.
+- **What a component repeats has a builder**: an option, a tab, a destination, a row or a cell is drawn
+  by `<part>Builder`, a `Func<int, VisualNode>`, as `ListView`'s `itemBuilder` already is. A part with a
+  name keeps the name as a string, because it is the part's accessible name, its typeahead key and the
+  closed field's text, and the component draws the name when no builder is given.
+- **The instance has a style**: `style:` takes the family's slot record (`ButtonTheme`, `InputTheme`…),
+  laid over the theme's with its `Merge`, as `Markdown.Style` already is. The record IS the whole
+  instance style: a look an instance needs and the record lacks is added to the record, where a theme
+  can set it for a subtree too, never as a knob of one component.
+- **All of it is a constructor parameter**, so the factory, which mirrors the constructor, reaches it.
+
+`CatalogCustomizationTests` holds it: a member of the catalog that carries text and a component with
+no style of its own fail unless their family's file under
+`tests/eQuantic.UI.Web.Tests/Coverage/catalog-customization/` lists them with a reason, and that list
+only shrinks. The design, and why each rule beat its alternative, is #1546's OpenSpec change.
+
 ### What the developer's csproj says
 
 `<Project Sdk="eQuantic.UI.Sdk">` and nothing else. No `PackageReference` — the SDK adds
