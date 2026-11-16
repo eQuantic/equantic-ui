@@ -65,8 +65,8 @@ to `aria-label` and never to `alt`, and `KeyModifiers.Alt` — the KEY — carri
 
 A complex component is built from the base ones by WRAPPING: a capability is a node around any
 child (`Pressable`, `Draggable`, `Hoverable`, `ContextTarget`, `Sortable`), never a flag on one
-component, and the catalog is built from the same vocabulary an app has
-(`ARealizer_NeverReferencesTheLibraryItRealizes`). And every ready-made component goes further than
+component, and no realizer knows a component of the catalog
+(`ARealizer_NeverReferencesTheLibraryItRealizes`), so each one is drawn from the vocabulary an app has. And every ready-made component goes further than
 its selectors, as Flutter's do:
 
 - **Content is a node.** Where a component draws what the developer gives it, the parameter is a

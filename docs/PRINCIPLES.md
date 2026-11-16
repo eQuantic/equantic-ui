@@ -154,12 +154,12 @@ deviation from the handoff a sample cannot avoid is a gap, not a compromise.
 
 A complex component is built from the base ones by wrapping one node in another: a capability is a
 node around any child (`Pressable`, `Draggable`, `ContextTarget`, `Sortable`), never a flag on one
-component, and the catalog is built from the vocabulary an app has
-(`ARealizer_NeverReferencesTheLibraryItRealizes`). Every ready-made component then takes the
+component, and no realizer knows a component of the catalog
+(`ARealizer_NeverReferencesTheLibraryItRealizes`), so each one is drawn from the vocabulary an app has. Every ready-made component then takes the
 developer's own content as a node (a `string` converts to one), a builder for what it repeats, and its
-family's theme slot record as `style`, all as constructor parameters. Measured when the rule was
-written: 28 of 55 components took what they show only as a `string`, and only `Markdown` took a style
-of its own. `CatalogCustomizationTests` holds the rule with a list per family that only shrinks.
+family's theme slot record as `style`, all as constructor parameters. Measured by its guard when the rule was
+written: 42 of the catalog's 65 components took text where a developer may want a node, and none took
+a style its factory reaches (`Markdown`'s has to be set by an initializer). `CatalogCustomizationTests` holds the rule with a list per family that only shrinks.
 
 At length: "Every component is composed, and takes the developer's content, builders and style" in
 [CLAUDE.md](../CLAUDE.md).

@@ -5,9 +5,9 @@ builders and style), under the epic #898 (1.0: the web SDK stable). Edgar decide
 into 1.0, because widening a constructor of a contract assembly is free in preview and costs a major once the
 version is stable.
 
-Measured on main on 2026-11-15: 28 of the catalog's 55 components take what they show only as a `string`
+Measured on main by this slice's guard: 42 of the catalog's 65 components take text where a developer may want a node
 (`Button(label)`, `ListItem(title, subtitle)`, `Dialog(title, body)`, `Tabs(labels)`, `Select(options)` and the
-rest), only `ListView` and `ListDetail` take a builder, and only `Markdown` takes a style of its own. Flutter takes
+rest), only `ListView` and `ListDetail` take a builder, and none takes a style its factory reaches (`Markdown`'s is an initializer's). Flutter takes
 a widget in each of those places, an `itemBuilder` for what a list repeats, and a `ButtonStyle` beside the
 widget. A developer who wants an icon beside a dialog's title, an option drawn with a flag, or one button in the
 brand's other colour has no way to say it today but to copy the component.

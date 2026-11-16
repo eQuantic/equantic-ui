@@ -2,8 +2,8 @@
 
 The composition half of #1545 already holds: every capability is a node that wraps any child (`Pressable`,
 `Draggable`, `Hoverable`, `ContextTarget`, `Sortable`), and `ARealizer_NeverReferencesTheLibraryItRealizes` keeps
-the catalog built from the vocabulary an app has. The customization half does not: 28 of 55 components take
-their content only as a `string`, two take a builder, one takes a style.
+every realizer from knowing a component of the catalog, so each one is drawn from the vocabulary an app has. The customization half does not: the guard of decision 8 finds text in
+42 of the catalog's 65 components, two take a builder, and none takes a style its factory reaches.
 
 Two mechanisms it needs are on main. The theme slots of #938 (`docs/ELEMENT-TREE-PLAN.md` §3.10): one record
 per family (`ButtonTheme`, `InputTheme`, `ListTheme`…), every member nullable, each with a `Merge` that lays one
@@ -110,7 +110,7 @@ never a property of one component. Where the theme needs the member per variant,
 keyed by `Variant`, which §3.10 already allows, and the instance names it for the variant it has.
 
 The records keep their names (`ButtonTheme`, not `ButtonStyle`). `Markdown.Style` is a `MarkdownTheme` already,
-and renaming eighteen records would touch every family slice's files at once.
+and renaming nineteen records would touch every family slice's files at once.
 
 Rejected: loose properties per component (`Chip(backgroundColor:, labelStyle:)`), Flutter's older shape, which
 multiplies with every component and that no theme can set; Material 3 moved buttons to `ButtonStyle` for that
