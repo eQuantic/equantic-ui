@@ -500,7 +500,8 @@ public sealed class PhotonWindow
                 var modifiers = MacKeys.ModifiersOf(SendULong(e, Sel("modifierFlags")));
                 // A Control-click is a Mac's secondary click (#1531). Answered, the release that follows it is the
                 // menu's, not a press's; answered by nothing, it presses as it always did.
-                if (modifiers == KeyModifiers.Control && host.ContextRequest(x, y))
+                if (modifiers == KeyModifiers.Control
+                    && host.ContextRequest(x, y, buttons: PointerButtons.Primary, modifiers: KeyModifiers.Control))
                 {
                     _contextClickHeld = true;
                     break;

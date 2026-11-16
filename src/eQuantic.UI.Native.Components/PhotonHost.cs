@@ -2092,6 +2092,8 @@ public sealed partial class PhotonHost
     public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse, KeyModifiers modifiers = KeyModifiers.None)
     {
         y += _lift;
+        // The listeners hear it beside everything below, which they change nothing of (#1562).
+        HearMove(new Point(x, y), kind, modifiers);
         MoveContext(new Point(x, y));
         // What the pointer holds is what a code surface hears with its hover (#1084): ⌘ over a name links it. Where it
         // is is kept through a drag, which hovers nothing, so a modifier changed after the release is heard there.
@@ -2352,6 +2354,8 @@ public sealed partial class PhotonHost
         y += _lift;
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
+        // The listeners under it hear the scroll, and the scroll views still take it (#1562).
+        HearScroll(point, across, down, modifiers);
         var leftAcross = across;
         var leftDown = down;
         var moved = false;
@@ -2621,6 +2625,8 @@ public sealed partial class PhotonHost
         _held = true;
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
+        // The listeners under the press hear it and follow it, beside the press itself (#1562).
+        HearDown(point, kind, PointerButtons.Primary, modifiers);
         // A press puts back an item the keyboard carries, wherever it lands (#1537).
         if (_sort is { ByKeyboard: true } carried) CancelSort(carried);
 
@@ -2884,6 +2890,7 @@ public sealed partial class PhotonHost
     /// </summary>
     public void PointerCancel(PointerKind kind = PointerKind.Mouse)
     {
+        HearCancel();
         // The press is over, released or not: the pointer moving next rests on the code again.
         _held = false;
         // The input sequence died with the finger still down — the finger is gone, so nothing
@@ -2974,6 +2981,7 @@ public sealed partial class PhotonHost
     public bool PressUp(float x, float y, PointerKind kind = PointerKind.Mouse)
     {
         y += _lift;
+        HearUp(new Point(x, y));
         _held = false;
         _contextHold = null;
         // Where a drag ended is where the pointer is (#1084): ⌘ pressed next, with no move, is heard there.

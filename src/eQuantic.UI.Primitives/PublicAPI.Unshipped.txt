@@ -1183,3 +1183,58 @@ override sealed eQuantic.UI.Primitives.ContextTarget.Accept<TState, TResult>(eQu
 static eQuantic.UI.Primitives.ContextRequest.operator !=(eQuantic.UI.Primitives.ContextRequest? left, eQuantic.UI.Primitives.ContextRequest? right) -> bool
 static eQuantic.UI.Primitives.ContextRequest.operator ==(eQuantic.UI.Primitives.ContextRequest? left, eQuantic.UI.Primitives.ContextRequest? right) -> bool
 const eQuantic.UI.Primitives.ContextTarget.HoldMs = 500 -> float
+eQuantic.UI.Primitives.HitTestBehavior
+eQuantic.UI.Primitives.HitTestBehavior.DeferToChild = 0 -> eQuantic.UI.Primitives.HitTestBehavior
+eQuantic.UI.Primitives.HitTestBehavior.Opaque = 1 -> eQuantic.UI.Primitives.HitTestBehavior
+eQuantic.UI.Primitives.HitTestBehavior.Translucent = 2 -> eQuantic.UI.Primitives.HitTestBehavior
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Listener! node, TState state) -> TResult
+eQuantic.UI.Primitives.Listener
+eQuantic.UI.Primitives.Listener.Behavior.get -> eQuantic.UI.Primitives.HitTestBehavior
+eQuantic.UI.Primitives.Listener.Behavior.init -> void
+eQuantic.UI.Primitives.Listener.Listener(eQuantic.UI.Primitives.VisualNode! child) -> void
+eQuantic.UI.Primitives.Listener.OnPointerCancel.get -> System.Action<eQuantic.UI.Primitives.PointerEvent!>?
+eQuantic.UI.Primitives.Listener.OnPointerCancel.init -> void
+eQuantic.UI.Primitives.Listener.OnPointerDown.get -> System.Action<eQuantic.UI.Primitives.PointerEvent!>?
+eQuantic.UI.Primitives.Listener.OnPointerDown.init -> void
+eQuantic.UI.Primitives.Listener.OnPointerHover.get -> System.Action<eQuantic.UI.Primitives.PointerEvent!>?
+eQuantic.UI.Primitives.Listener.OnPointerHover.init -> void
+eQuantic.UI.Primitives.Listener.OnPointerMove.get -> System.Action<eQuantic.UI.Primitives.PointerEvent!>?
+eQuantic.UI.Primitives.Listener.OnPointerMove.init -> void
+eQuantic.UI.Primitives.Listener.OnPointerScroll.get -> System.Action<eQuantic.UI.Primitives.PointerEvent!>?
+eQuantic.UI.Primitives.Listener.OnPointerScroll.init -> void
+eQuantic.UI.Primitives.Listener.OnPointerUp.get -> System.Action<eQuantic.UI.Primitives.PointerEvent!>?
+eQuantic.UI.Primitives.Listener.OnPointerUp.init -> void
+eQuantic.UI.Primitives.PointerButtons
+eQuantic.UI.Primitives.PointerButtons.Back = 8 -> eQuantic.UI.Primitives.PointerButtons
+eQuantic.UI.Primitives.PointerButtons.Forward = 16 -> eQuantic.UI.Primitives.PointerButtons
+eQuantic.UI.Primitives.PointerButtons.Middle = 4 -> eQuantic.UI.Primitives.PointerButtons
+eQuantic.UI.Primitives.PointerButtons.None = 0 -> eQuantic.UI.Primitives.PointerButtons
+eQuantic.UI.Primitives.PointerButtons.Primary = 1 -> eQuantic.UI.Primitives.PointerButtons
+eQuantic.UI.Primitives.PointerButtons.Secondary = 2 -> eQuantic.UI.Primitives.PointerButtons
+eQuantic.UI.Primitives.PointerEvent
+eQuantic.UI.Primitives.PointerEvent.<Clone>$() -> eQuantic.UI.Primitives.PointerEvent!
+eQuantic.UI.Primitives.PointerEvent.Buttons.get -> eQuantic.UI.Primitives.PointerButtons
+eQuantic.UI.Primitives.PointerEvent.Buttons.init -> void
+eQuantic.UI.Primitives.PointerEvent.Deconstruct(out eQuantic.UI.Primitives.PointerPhase Phase, out eQuantic.UI.Primitives.Point Position, out eQuantic.UI.Primitives.PointerKind Kind, out eQuantic.UI.Primitives.PointerButtons Buttons, out eQuantic.UI.Primitives.KeyModifiers Modifiers, out int Pointer, out eQuantic.UI.Primitives.Point ScrollDelta) -> void
+eQuantic.UI.Primitives.PointerEvent.Equals(eQuantic.UI.Primitives.PointerEvent? other) -> bool
+eQuantic.UI.Primitives.PointerEvent.Kind.get -> eQuantic.UI.Primitives.PointerKind
+eQuantic.UI.Primitives.PointerEvent.Kind.init -> void
+eQuantic.UI.Primitives.PointerEvent.Modifiers.get -> eQuantic.UI.Primitives.KeyModifiers
+eQuantic.UI.Primitives.PointerEvent.Modifiers.init -> void
+eQuantic.UI.Primitives.PointerEvent.Phase.get -> eQuantic.UI.Primitives.PointerPhase
+eQuantic.UI.Primitives.PointerEvent.Phase.init -> void
+eQuantic.UI.Primitives.PointerEvent.Pointer.get -> int
+eQuantic.UI.Primitives.PointerEvent.Pointer.init -> void
+eQuantic.UI.Primitives.PointerEvent.PointerEvent(eQuantic.UI.Primitives.PointerPhase Phase, eQuantic.UI.Primitives.Point Position, eQuantic.UI.Primitives.PointerKind Kind, eQuantic.UI.Primitives.PointerButtons Buttons, eQuantic.UI.Primitives.KeyModifiers Modifiers, int Pointer, eQuantic.UI.Primitives.Point ScrollDelta) -> void
+eQuantic.UI.Primitives.PointerEvent.Position.get -> eQuantic.UI.Primitives.Point
+eQuantic.UI.Primitives.PointerEvent.Position.init -> void
+eQuantic.UI.Primitives.PointerEvent.ScrollDelta.get -> eQuantic.UI.Primitives.Point
+eQuantic.UI.Primitives.PointerEvent.ScrollDelta.init -> void
+eQuantic.UI.Primitives.PointerPhase.Scroll = 6 -> eQuantic.UI.Primitives.PointerPhase
+override eQuantic.UI.Primitives.Listener.NodeKind.get -> string!
+override eQuantic.UI.Primitives.PointerEvent.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.PointerEvent.GetHashCode() -> int
+override eQuantic.UI.Primitives.PointerEvent.ToString() -> string!
+override sealed eQuantic.UI.Primitives.Listener.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+static eQuantic.UI.Primitives.PointerEvent.operator !=(eQuantic.UI.Primitives.PointerEvent? left, eQuantic.UI.Primitives.PointerEvent? right) -> bool
+static eQuantic.UI.Primitives.PointerEvent.operator ==(eQuantic.UI.Primitives.PointerEvent? left, eQuantic.UI.Primitives.PointerEvent? right) -> bool

@@ -812,6 +812,32 @@ public static class UI
         new ContextTarget(child, onRequested) { Enabled = enabled };
 
     /// <summary>
+    /// <paramref name="child"/>, hearing the raw pointer over it in its own coordinates: a press, its moves and its
+    /// end (followed wherever it goes), its cancel, a mouse or a pen passing over, and a wheel or a trackpad.
+    /// <paramref name="behavior"/> says where it hears: only where the child is hit (the default), anywhere in its
+    /// box hiding the listeners behind it, or anywhere in its box letting them hear too. It only listens: what is
+    /// inside still presses and scrolls.
+    /// </summary>
+    public static Listener Listener(VisualNode child,
+        Action<PointerEvent>? onPointerDown = null,
+        Action<PointerEvent>? onPointerMove = null,
+        Action<PointerEvent>? onPointerUp = null,
+        Action<PointerEvent>? onPointerCancel = null,
+        Action<PointerEvent>? onPointerHover = null,
+        Action<PointerEvent>? onPointerScroll = null,
+        HitTestBehavior behavior = HitTestBehavior.DeferToChild) =>
+        new Listener(child)
+        {
+            OnPointerDown = onPointerDown,
+            OnPointerMove = onPointerMove,
+            OnPointerUp = onPointerUp,
+            OnPointerCancel = onPointerCancel,
+            OnPointerHover = onPointerHover,
+            OnPointerScroll = onPointerScroll,
+            Behavior = behavior,
+        };
+
+    /// <summary>
     /// A menu of <paramref name="items"/> for what <paramref name="child"/> is, opened where a person asks for it
     /// (a secondary click, a long press, the menu key or Shift+F10), its choice handed to <paramref name="onSelect"/>.
     /// </summary>
