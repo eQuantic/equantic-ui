@@ -76,51 +76,35 @@ public class DocsIndexTests
         RegexOptions.Compiled);
 
     /// <summary>
-    /// The three shapes whose DECLARED NAME can be read out of a quoted line without parsing C#: a
-    /// property, a const or readonly field, and an enum member. Everything else the audits quote is a
-    /// call, a fragment, or a paraphrase with an elision in it — the audits quote to be READ, not to
-    /// be diffed, so a line this cannot name is one the instrument declines to judge rather than one
-    /// it fails. Narrow and certain beats wide and noisy: measured over the two audits, these three
-    /// find every wrong file and accuse none of the seventy-eight paraphrased lines.
+    /// The two shapes whose DECLARED NAME can be read out of a quoted line without parsing C#: a
+    /// property, and a const or readonly field. Everything else the audits quote is a call, a
+    /// fragment, or a paraphrase with an elision in it — the audits quote to be READ, not to be
+    /// diffed, so a line this cannot name is one the instrument declines to judge rather than one it
+    /// fails.
+    /// <para>
+    /// An enum member's shape, <c>Name = 0,</c>, was the third, and it is read no more (#1489): the
+    /// same text is an object initializer's assignment, and NOTHING in it tells the two apart.
+    /// <c>AppBar.cs   Height = 56,</c> sets a <c>BoxStyle</c> property that <c>AppBar</c> does not
+    /// declare. Only the citation could say which it was, and it said so by carrying a line number:
+    /// a citation that pointed at a LINE OF CODE did not have its assignment read. Since #1489 every
+    /// fenced citation points at a line of code, found by its quote, so the form would be read
+    /// nowhere, and a quote whose code is in the file is what
+    /// <see cref="Every_quoted_line_is_found_once_in_the_file_its_citation_names"/> checks already.
+    /// </para>
     /// </summary>
     private static readonly Regex[] DeclaredName =
     [
         new(@"(?<name>[A-Z]\w*)\s*\{\s*get", RegexOptions.Compiled),
         new(@"\b(?:const|readonly)\s+[\w?<>\[\].]+\s+(?<name>[A-Z]\w*)\s*=", RegexOptions.Compiled),
-        new(@"^(?<name>[A-Z]\w*)\s*=\s*-?\d+\s*,?$", RegexOptions.Compiled),
     ];
 
-    /// <summary>
-    /// The names a quoted line declares — ONE, because a line that quotes several at once is
-    /// declined rather than guessed at, and none at all when the line is an ASSIGNMENT that reads
-    /// like one.
-    /// <para>
-    /// <c>Name = 0,</c> is an enum member or an object initializer's assignment and NOTHING in the
-    /// text tells them apart. That is why reading every comma-separated assignment was rejected
-    /// (it accused <c>BottomSheet.cs   Width = 32, Height = 4,</c>), and the single-name form had
-    /// the identical defect one line further down: <c>AppBar.cs:72   Height = 56,</c> sets a
-    /// <c>BoxStyle</c> property that <c>AppBar</c> does not declare. Seven citations were being
-    /// judged that way and passing only because the old line-based source scan made the SAME
-    /// mistake symmetrically — two wrong readings cancelling, which is the shape of defect this PR
-    /// found in the layout lists.
-    /// </para>
-    /// <para>
-    /// What tells them apart is the citation, not the code: <paramref name="located"/> is true when
-    /// it points at a LINE OF CODE, which a number once said and since #1489 a quote the quote guard
-    /// settles says. Without one it names the file that
-    /// HOLDS the member, which is exactly the claim being checked. So the assignment form is read
-    /// only there. A property or a <c>const</c> is a declaration wherever it is quoted and is read
-    /// either way.
-    /// </para>
-    /// </summary>
-    private static IEnumerable<string> QuotedDeclarations(string code, bool located)
+    /// <summary>The name a quoted line declares: ONE, because a line that quotes several at once is
+    /// declined rather than guessed at.</summary>
+    private static IEnumerable<string> QuotedDeclarations(string code)
     {
         foreach (var pattern in DeclaredName)
-        {
-            if (pattern.Match(code) is not { Success: true } match) continue;
-            if (located && ReferenceEquals(pattern, DeclaredName[^1])) return [];
-            return [match.Groups["name"].Value];
-        }
+            if (pattern.Match(code) is { Success: true } match)
+                return [match.Groups["name"].Value];
 
         return [];
     }
@@ -263,8 +247,8 @@ public class DocsIndexTests
     /// <item>An evidence block that puts the PATH on its own line and the quoted code beneath it.
     /// Only the one-line <c>path␣␣code</c> form is read, so those blocks are unjudged — found by
     /// mutating one and watching the test stay green.</item>
-    /// <item>A citation carrying a <c>:line</c> whose quoted code is an assignment; see
-    /// <see cref="QuotedDeclarations"/> for why that form is read only without one.</item>
+    /// <item>A quoted assignment, <c>Name = 0,</c>, which an enum member and an initializer both
+    /// write; see <see cref="DeclaredName"/> for why that form is not read.</item>
     /// </list>
     /// </summary>
     [Fact]
@@ -288,11 +272,7 @@ public class DocsIndexTests
                 var cited = EvidenceLine.Match(line);
                 if (!cited.Success) continue;
 
-                // LOCATED by its number until #1489, and by its quote since: the quote guard finds the
-                // code in the file, so a quote it settles points at a line of code as surely as a
-                // number did, and its assignment is not read as a declaration either.
-                var code = cited.Groups["code"].Value;
-                var declarations = QuotedDeclarations(code, cited.Groups["at"].Success || Claim(code) is not null).ToArray();
+                var declarations = QuotedDeclarations(cited.Groups["code"].Value).ToArray();
                 if (declarations.Length == 0) continue;
 
                 var path = cited.Groups["path"].Value;
