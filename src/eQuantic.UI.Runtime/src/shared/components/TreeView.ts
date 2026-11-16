@@ -9,6 +9,7 @@ export class TreeView extends StatefulComponent {
     _loading: any = $eq.collections.hashSet();
     _failed: any = $eq.collections.hashSet();
     _started: any = $eq.collections.hashSet();
+    _stale: any = $eq.collections.hashSet();
     _inTree: boolean = false;
     _rows: TreeViewRow[] = [];
     _activeKey: any = null;
@@ -497,12 +498,14 @@ export class TreeView extends StatefulComponent {
                 this._loading.delete(node.key);
                 this._started.delete(node.key);
                 $eq.mapSet(this._loaded, node.key, children);
+                if (this._stale.delete(node.key)) this.startLoad(node);
             });
         } catch {
             this.setState(() => {
                 this._loading.delete(node.key);
                 this._started.delete(node.key);
                 $eq.collections.setAdd(this._failed, node.key);
+                if (this._stale.delete(node.key)) this.startLoad(node);
             });
         }
     }
@@ -577,7 +580,7 @@ export class TreeView extends StatefulComponent {
 
     beginEdit(key: string, creates: boolean, icon: any) {
         let node: any; 
-        if ((creates ? this.onCreated : this.onRenamed) == null || !((node = this.findNode(key)) != null) || this._busy.has(key)) return;
+        if ((creates ? this.onCreated : this.onRenamed) == null || !((node = this.findNode(key)) != null) || this._busy.has(key) || this.indexOfNode(key) < 0) return;
         if (creates) {
             if (node.isLeaf) return;
             this.toggle(node, true);
@@ -646,6 +649,10 @@ export class TreeView extends StatefulComponent {
     reloadChildren(key: string) {
         let node: any; 
         if (!this._loaded.has(key) || !((node = this.findNode(key)) != null) || !(node.children == null)) return;
+        if (this._started.has(key)) {
+            $eq.collections.setAdd(this._stale, key);
+            return;
+        }
         this.startLoad(node);
     }
 

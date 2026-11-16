@@ -195,12 +195,14 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
 
     private async Task Create(TreeNode folder, string name)
     {
+        // The kind asked for, read before the work: another creation may start before this one ends.
+        var isFolder = _creatingFolder;
         await Task.Delay(400);
         var path = $"{folder.Key}/{name}";
         SetState(() =>
         {
             if (!_added.TryGetValue(folder.Key, out var added)) _added[folder.Key] = added = [];
-            added.Add(new RepositoryEntry(path, name, _creatingFolder));
+            added.Add(new RepositoryEntry(path, name, isFolder));
             _said = $"Created {path}.";
         });
     }

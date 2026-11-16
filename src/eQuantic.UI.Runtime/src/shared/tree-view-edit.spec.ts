@@ -40,6 +40,12 @@ let loads = 0;
 
 /** The app's work: done unless a test holds it, so that test sees the node busy while it runs. */
 let work: Promise<void> = Promise.resolve();
+/** What a folder's load waits for: open unless a test holds it. */
+let held: Promise<void> = Promise.resolve();
+let release: () => void = () => undefined;
+function holdLoads(): void {
+  held = new Promise<void>((resolve) => (release = resolve));
+}
 let finish: () => void = () => undefined;
 function holdWork(): void {
   work = new Promise<void>((resolve) => (finish = resolve));
@@ -79,8 +85,9 @@ class EditHost extends StatefulComponent {
         {
           label: 'Files',
           loadChildren: async (node: TreeNode) => {
-            loads++;
-            return [leaf(`${node.key}/intro-${loads}.md`, `intro-${loads}.md`)];
+            const call = ++loads;
+            await held;
+            return [leaf(`${node.key}/intro-${call}.md`, `intro-${call}.md`)];
           },
           onRenamed: async (node: TreeNode, name: string) => {
             renamed.push(`${node.key}>${name}`);
@@ -151,6 +158,7 @@ describe('a TreeView edited in place, in the browser', () => {
     chosen.length = 0;
     loads = 0;
     work = Promise.resolve();
+    held = Promise.resolve();
   });
 
   it('renames by F2: the label selected in a field, a new name and Enter, and the keyboard back on the tree', async () => {
@@ -333,6 +341,42 @@ describe('a TreeView edited in place, in the browser', () => {
     await nextFrame();
     await nextFrame();
     expect(loads).toBe(2);
+  });
+
+  it('ignores a rename the app asks for a node the person cannot see, and keeps the keyboard where it was', async () => {
+    const container = mount();
+    tree(container).focus();
+    key(tree(container), 'ArrowDown');
+    await nextFrame();
+    key(tree(container), 'ArrowDown');
+    await nextFrame();
+    expect(active(container)).toBe('docs');
+    host.change(() => (host.edit = new TreeEditRequest(1, 'src/App.cs')));
+    await nextFrame();
+    await nextFrame();
+    expect(field(container)).toBeNull();
+    expect(active(container)).toBe('docs');
+  });
+
+  it('reads a folder again after a load that was running when the reload was asked', async () => {
+    const container = mount();
+    tree(container).focus();
+    key(tree(container), 'ArrowDown');
+    await nextFrame();
+    key(tree(container), 'ArrowDown');
+    await nextFrame();
+    key(tree(container), 'ArrowRight');
+    await until(() => container.querySelector('[aria-label="intro-1.md"]') !== null);
+
+    holdLoads();
+    host.change(() => (host.reload = new TreeReloadRequest(1, ['docs'])));
+    await until(() => loads === 2);
+    host.change(() => (host.reload = new TreeReloadRequest(2, ['docs'])));
+    await nextFrame();
+    expect(loads).toBe(2);
+    release();
+    await until(() => container.querySelector('[aria-label="intro-3.md"]') !== null);
+    expect(loads).toBe(3);
   });
 
   it('draws the app own row after the chevron, and keeps the tree item around it', async () => {

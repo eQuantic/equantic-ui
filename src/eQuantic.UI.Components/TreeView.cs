@@ -73,6 +73,10 @@ public sealed class TreeView : StatefulComponent
     /// <summary>The loads whose loader has been called: a load marked during a build waits for the tree
     /// to be mounted, and the server's one-frame render, which never mounts it, calls no loader.</summary>
     private readonly HashSet<string> _started = new();
+
+    /// <summary>The loads asked for again while they ran: each starts once more when it ends, so a reload never
+    /// leaves an older answer on screen.</summary>
+    private readonly HashSet<string> _stale = new();
     private bool _inTree;
 
     /// <summary>The visible rows of the last build, which the keyboard walks.</summary>
@@ -663,6 +667,7 @@ public sealed class TreeView : StatefulComponent
                 _loading.Remove(node.Key);
                 _started.Remove(node.Key);
                 _loaded[node.Key] = children;
+                if (_stale.Remove(node.Key)) StartLoad(node);
             });
         }
         catch (Exception)
@@ -672,6 +677,7 @@ public sealed class TreeView : StatefulComponent
                 _loading.Remove(node.Key);
                 _started.Remove(node.Key);
                 _failed.Add(node.Key);
+                if (_stale.Remove(node.Key)) StartLoad(node);
             });
         }
     }
@@ -757,11 +763,13 @@ public sealed class TreeView : StatefulComponent
     }
 
     /// <summary>Opens the field of a rename of <paramref name="key"/>, or of a new item under it, the node opened
-    /// first. Nothing without the app's callback, on a node the tree does not have, on a busy one, or for a new
-    /// item under a leaf. State only.</summary>
+    /// first. Nothing without the app's callback, on a node the person cannot see (its field would close on the
+    /// build that opened it, taking the keyboard with it), on a busy one, or for a new item under a leaf. State
+    /// only.</summary>
     private void BeginEdit(string key, bool creates, IconGlyph? icon)
     {
-        if ((creates ? OnCreated : OnRenamed) is null || FindNode(key) is not { } node || _busy.Contains(key)) return;
+        if ((creates ? OnCreated : OnRenamed) is null || FindNode(key) is not { } node || _busy.Contains(key)
+            || IndexOfNode(key) < 0) return;
         if (creates)
         {
             if (node.IsLeaf) return;
@@ -854,6 +862,12 @@ public sealed class TreeView : StatefulComponent
     private void ReloadChildren(string key)
     {
         if (!_loaded.ContainsKey(key) || FindNode(key) is not { } node || node.Children is not null) return;
+        // A load of it still running answers what was there before the change: it is read again when it ends.
+        if (_started.Contains(key))
+        {
+            _stale.Add(key);
+            return;
+        }
         StartLoad(node);
     }
 
