@@ -171,6 +171,21 @@ describe('a Listener, hearing the pointer in the browser', () => {
     ]);
   });
 
+  it('hears no hover from a press that went down outside it and is dragged over it', () => {
+    const child = filled();
+    const l = listener('L', 'defer', heard, child);
+    document.body.appendChild(l);
+    placeAt(l, 100, 0);
+    under(document.body);
+    pointer('pointerdown', 5, 5, { buttons: 1 });
+    under(child, l);
+
+    pointer('pointermove', 110, 5, { buttons: 1 });
+    pointer('pointerup', 110, 5);
+
+    expect(heard).toEqual([]);
+  });
+
   it('hears a wheel with its delta in dp', () => {
     const child = filled();
     const l = listener('L', 'defer', heard, child);
@@ -230,7 +245,10 @@ describe('what the browser counts as hit', () => {
       true,
       true,
     ]);
-    expect([layout, clear].map(isSolid)).toEqual([false, false]);
+    const layer = empty();
+    layer.setAttribute('tabindex', '-1');
+    document.body.append(layer);
+    expect([layout, clear, layer].map(isSolid)).toEqual([false, false, false]);
   });
 });
 

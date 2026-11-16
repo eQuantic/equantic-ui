@@ -54,7 +54,8 @@ public sealed partial class PhotonHost
             TellFollowed(followed, PointerPhase.Move, point, _listenedKind, _listenedButtons, modifiers);
             return;
         }
-        if (kind == PointerKind.Touch || _lastFrame is not { PointerTargets: { Count: > 0 } targets }) return;
+        // A press that went down outside every listener is held, and followed by none of them: no hover either.
+        if (kind == PointerKind.Touch || _held || _lastFrame is not { PointerTargets: { Count: > 0 } targets }) return;
         foreach (var index in HeardAt(targets, point))
             Tell(targets[index], PointerPhase.Hover, point, kind, PointerButtons.None, modifiers, default);
     }

@@ -5651,23 +5651,17 @@ function lowerListener(node: ListenerNode, context: LoweringContext, path: strin
   });
   host.attributes['data-eq-listener'] =
     node.behavior === 'opaque' ? 'opaque' : node.behavior === 'translucent' ? 'translucent' : 'defer';
+  const callbacks: Partial<Record<string, ((event: HeardPointer) => void) | null | undefined>> = {
+    down: node.onPointerDown,
+    move: node.onPointerMove,
+    up: node.onPointerUp,
+    cancel: node.onPointerCancel,
+    hover: node.onPointerHover,
+    scroll: node.onPointerScroll,
+  };
   host.events['eq-pointer'] = ((ev: Event) => {
     const heard = (ev as CustomEvent<HeardPointer>).detail;
-    const callback =
-      heard.phase === 'down'
-        ? node.onPointerDown
-        : heard.phase === 'move'
-          ? node.onPointerMove
-          : heard.phase === 'up'
-            ? node.onPointerUp
-            : heard.phase === 'cancel'
-              ? node.onPointerCancel
-              : heard.phase === 'hover'
-                ? node.onPointerHover
-                : heard.phase === 'scroll'
-                  ? node.onPointerScroll
-                  : null;
-    callback?.(heard);
+    callbacks[heard.phase]?.(heard);
   }) as unknown as EventHandler;
   installPointerListener();
   const child = lowerNode(node.child, context, null, path + '/0');

@@ -17,9 +17,14 @@ import { Point, PointerEvent as HeardPointer } from '../shared/value-types';
 import { listenerHits, type UnderEntry } from './listener-hits';
 
 const LISTENER = '[data-eq-listener]';
-/** What answers the pointer whatever it paints: a control, a field, an editable, a focusable element. */
+/**
+ * What answers the pointer whatever it paints: a control, a field, an editable, an element Tab reaches. An element
+ * taken out of the Tab order (`tabindex="-1"`, a modal layer, a roving item) answers only as what it is: the
+ * pressable among them carries `eq-pressable`, and a layer that holds nothing answers nothing, as on Photon.
+ */
 const ANSWERS =
-  'button, a[href], input, textarea, select, [contenteditable=""], [contenteditable="true"], [tabindex]';
+  'button, a[href], input, textarea, select, [contenteditable=""], [contenteditable="true"], ' +
+  '[tabindex]:not([tabindex="-1"]), .eq-pressable';
 /** What draws by being what it is: an image, a vector (and what it holds), a canvas, a video, a frame. */
 const DRAWS = 'img, picture, svg, svg *, canvas, video, iframe';
 /** `ScrollView.WheelLine`'s web twin: how many dp a wheel's line is (table-viewports.ts measures the same). */
@@ -72,7 +77,9 @@ function onMove(event: PointerEvent): void {
     tell(pressed.listeners, 'move', event, pressed.kind, event.buttons, ORIGIN);
     return;
   }
-  if (event.pointerType === 'touch') return;
+  // A hover is a pointer passing over with nothing pressed: a finger never hovers, and a press that went down
+  // outside every listener is followed by none of them.
+  if (event.pointerType === 'touch' || event.buttons !== 0) return;
   const listeners = heardAt(event.clientX, event.clientY);
   if (listeners.length > 0) tell(listeners, 'hover', event, kindOf(event), 0, ORIGIN);
 }

@@ -42,12 +42,13 @@ None.
 ## Impact
 
 - **Vocabulary**: `Listener`, `PointerEvent`, `PointerButtons`, `HitTestBehavior`, `PointerPhase.Scroll`; one
-  visitor member. `PublicAPI.Unshipped.txt` moves, additions only. The node count of the coverage suites
-  grows by one.
+  visitor member, declared in each project's `PublicAPI.Unshipped.feat-any-subtree-hears-the-raw-pointer.txt`,
+  additions only. The node count of the coverage suites grows by one.
 - **Components**: the `UI.Listener` factory.
-- **Web realizer and its twin**: the listener's mark and event; `dom/pointer-listener.ts` and its hit rule.
-- **Photon**: the paint walk's listener and target records, and the host's dispatch. No shell changes: the
-  shells already deliver every phase the listener reports.
+- **Web realizer and its twin**: the listener's mark and event; `dom/pointer-listener.ts`, and the hit rule in `dom/listener-hits.ts`.
+- **Photon** (experimental): the paint walk's listener and target records, and the host's dispatch from the
+  phases the shells already deliver. `PhotonHost.ContextRequest` widens to take the button and the keys the shell
+  saw, both optional, and the macOS shell passes the primary button and Control for a Control-click.
 - **eqc, SDKs, templates**: nothing. The developer surface does not move.
 - **Docs**: the wiki's Components page in every language, two parity rows, a ledger entry.
 

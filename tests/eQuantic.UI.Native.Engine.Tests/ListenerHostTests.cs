@@ -168,6 +168,25 @@ public class ListenerHostTests
     }
 
     [Fact]
+    public void APressThatWentDownOutside_HoversNothingItIsDraggedOver()
+    {
+        var (host, page) = Open(p =>
+        {
+            var row = new Row(gap: 0);
+            row.Add(Filled(100, 100));
+            row.Add(p.Hears("L", Filled(200, 100)));
+            return row;
+        });
+        var box = Listener(host);
+
+        host.PressDown(box.X - 50, box.Y + 5);
+        host.PointerMove(box.X + 10, box.Y + 5);
+        host.PressUp(box.X + 10, box.Y + 5);
+
+        page.Heard.Should().BeEmpty();
+    }
+
+    [Fact]
     public void AWheelOverTheListener_IsHeardWithItsDelta()
     {
         var (host, page) = Open(p => p.Hears("L", Filled(200, 100)));
