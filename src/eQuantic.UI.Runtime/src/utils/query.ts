@@ -19,7 +19,7 @@ import { count as collectionCount, LinkedList, Queue, Stack } from './collection
 import { Dictionary } from './dictionary';
 import { exception } from './exceptions';
 import { HashSet } from './hash-set';
-import { listEach, listWalk } from './list-version';
+import { isAList, listEach, listWalk } from './list-version';
 import { SortedMap, SortedSet } from './sorted';
 import { isFixedSize } from './view';
 
@@ -78,7 +78,8 @@ export class Query<T> implements Iterable<T> {
 export function walk<T>(source: Iterable<T> | string | null | undefined, parameter = 'source'): Iterable<T> {
   if (source == null) throw nullArgument(parameter);
   if (typeof source === 'string') return source.split('') as unknown as T[];
-  if (Array.isArray(source)) return isFixedSize(source) ? source : listWalk(source);
+  if (isAList(source)) return listWalk(source as T[]);
+  if (Array.isArray(source)) return source;
   if (typeof (source as { [Symbol.iterator]?: unknown })[Symbol.iterator] !== 'function') {
     throw new TypeError(`A sequence was expected: ${Object.prototype.toString.call(source)}`);
   }
@@ -95,13 +96,13 @@ export function eachOf<T>(source: Iterable<T> | string | null | undefined, sink:
     return;
   }
   if (source == null) throw nullArgument(parameter);
+  if (isAList(source)) {
+    listEach(source as T[], sink);
+    return;
+  }
   if (typeof source === 'string' || (Array.isArray(source) && isFixedSize(source))) {
     const items = source as ArrayLike<T>;
     for (let index = 0; index < items.length; index++) if (!sink(items[index])) return;
-    return;
-  }
-  if (Array.isArray(source)) {
-    listEach(source as T[], sink);
     return;
   }
   for (const item of walk(source, parameter)) if (!sink(item)) return;

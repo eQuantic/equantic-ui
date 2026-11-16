@@ -59,7 +59,7 @@ public class ListStrategyTests
     [Fact]
     public void AForEach_WithNoModel_IsTheReceiversOwn() =>
         new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression("items.ForEach(x => Use(x))"))
-            .Should().Be("items.forEach((x) => Use(x))");
+            .Should().Be("items.forEach((x) => use(x))");
 
     /// <summary>With no model, a named argument could fill either of a range's parameters: a build error
     /// rather than a guess, which put a named collection in the index's place.</summary>

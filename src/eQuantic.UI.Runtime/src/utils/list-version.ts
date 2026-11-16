@@ -55,6 +55,18 @@ export function listWalk<T>(list: readonly T[]): IterableIterator<T> {
   return new ListWalk(list);
 }
 
+/** The walk every plain array takes, which a list's twin does and a live view does not. */
+const ARRAY_WALK = Array.prototype[Symbol.iterator];
+
+/**
+ * Whether `value` is a list, walked through its version: an array that walks as an array does. A `T[]` behind
+ * a face keeps no version, and a live view (a sorted list's `Keys`, a dictionary's `Values`) is an array too,
+ * which walks itself and refuses a change in its collection's own words.
+ */
+export function isAList(value: unknown): value is unknown[] {
+  return Array.isArray(value) && !isFixedSize(value) && value[Symbol.iterator] === ARRAY_WALK;
+}
+
 /**
  * The walk `foreach` takes over a sequence held as an interface a `List<T>` answers to (`IEnumerable<T>`,
  * `IList<T>`, `IReadOnlyList<T>`…) or as a class derived from it: a list's own walk when the value is one, so a
@@ -64,8 +76,9 @@ export function listWalk<T>(list: readonly T[]): IterableIterator<T> {
 export function sequenceWalk<S>(source: S): S {
   // Typed as the sequence it is handed: a list's walk yields the same elements, so a loop over either reads
   // the element type the sequence declares.
-  return Array.isArray(source) && !isFixedSize(source) ? (new ListWalk(source) as unknown as S) : source;
+  return isAList(source) ? (new ListWalk(source) as unknown as S) : source;
 }
+
 
 /**
  * {@link listWalk}'s iterator, written by hand: a `foreach` over a list is the walk every page takes, and a
