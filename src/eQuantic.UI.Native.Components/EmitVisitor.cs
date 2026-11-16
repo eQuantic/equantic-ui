@@ -97,8 +97,6 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         {
             var opacity = opacityNow < 1f ? opacityNow : (float?)null;
             if (opacity is { } layerAlpha) s.Builder.PushLayer(layerAlpha);
-            // The layer is no paint of the node around this one.
-            targets?.Settle(s.Builder.CommandCount);
             var transformed = !transformNow.IsIdentity;
             var drawn = s;
             if (transformed)
@@ -109,6 +107,9 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
                 drawn = s with { Input = s.Input.Under(matrix) };
             }
 
+            // Neither the layer nor the transform is paint of the node around this one: settled past both, whatever
+            // each writes (today the layer writes a command and the transform none).
+            targets?.Settle(s.Builder.CommandCount);
             EnterTarget(targets, drawn);
             Dispatch(drawn);
             targets?.Leave(s.Builder.CommandCount);
