@@ -53,6 +53,7 @@ public class ReleaseContractTests
     [InlineData("eQuantic.UI.Primitives", "2.0.0-preview.1", true, false, true)]
     [InlineData("eQuantic.UI.Primitives", "2.0.0", true, false, true)]
     [InlineData("eQuantic.UI.Primitives", "1.1.0+5a1b2c3", true, false, false)]
+    [InlineData("eQuantic.UI.Primitives", "1.1.0", false, false, true)]
     [InlineData("eQuantic.UI.Primitives", "1.1.0", false, true, true)]
     [InlineData("eQuantic.UI.Compiler", "1.1.0", true, true, true)]
     public void AStableVersionRemovesNoContractMember_AndTheBuildSaysSo(

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -56,9 +55,11 @@ internal sealed partial class RuntimeBudget
             foreach (var file in Directory.GetFiles(folder, "*.json").Order(StringComparer.Ordinal))
             {
                 using var delta = JsonDocument.Parse(File.ReadAllText(file));
+                if (!delta.RootElement.TryGetProperty("deltaBytes", out var bytes) || !bytes.TryGetInt64(out var count))
+                    throw new InvalidDataException($"{Path.GetFileName(file)} is not a delta: it needs an integer deltaBytes");
                 deltas.Add(new Delta(
                     Path.GetFileNameWithoutExtension(file),
-                    delta.RootElement.GetProperty("deltaBytes").GetInt64(),
+                    count,
                     delta.RootElement.TryGetProperty("bought", out var bought) ? bought.GetString() ?? "" : ""));
             }
         }
@@ -76,8 +77,8 @@ internal sealed partial class RuntimeBudget
     /// </summary>
     public static void Record(string root, string change, long measured, string bought)
     {
-        var others = Load(root).Deltas.Where(delta => delta.Change != change);
-        var budget = Load(root).BaseBytes + others.Sum(delta => delta.Bytes);
+        var recorded = Load(root);
+        var budget = recorded.BaseBytes + recorded.Deltas.Where(delta => delta.Change != change).Sum(delta => delta.Bytes);
         var folder = Path.Combine(root, DeltaFolder);
         Directory.CreateDirectory(folder);
         var json = JsonSerializer.Serialize(new { deltaBytes = measured - budget, bought },
@@ -95,14 +96,10 @@ internal sealed partial class RuntimeBudget
         var name = Environment.GetEnvironmentVariable("EQ_BUDGET_CHANGE");
         if (string.IsNullOrWhiteSpace(name))
         {
-            using var git = Process.Start(new ProcessStartInfo("git", ["-C", root, "rev-parse", "--abbrev-ref", "HEAD"])
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            })!;
-            name = git.StandardOutput.ReadToEnd().Trim();
-            git.WaitForExit();
-            if (git.ExitCode != 0 || name is "" or "HEAD" or "main") return null;
+            var (exitCode, output, _) = ChildProcess.Run("git", ["-C", root, "rev-parse", "--abbrev-ref", "HEAD"],
+                TimeSpan.FromMinutes(1));
+            name = output.Trim();
+            if (exitCode != 0 || name is "" or "HEAD" or "main") return null;
         }
 
         name = name.Replace('/', '-');

@@ -484,6 +484,14 @@ public class DocsIndexTests
                 // folders (`component.ts       # Component base class`) quotes nothing, and with no
                 // number in a citation nothing else tells the two apart.
                 var citations = EvidenceQuote.Matches(line);
+                var where = $"{Path.GetRelativePath(root, file)}:{lineNumber}";
+
+                // A number is refused wherever it stands in a fence, at the line's start or not, so it
+                // cannot come back in as `(cf. File.cs:12  code)`.
+                foreach (Match numbered in citations.Where(cited => cited.Groups["at"].Success))
+                    wrong.Add($"{where} → {numbered.Groups["path"].Value}{numbered.Groups["at"].Value} names a line: drop the "
+                        + "number, the quote finds the line, and a number makes every change above it rewrite this citation");
+
                 if (citations.Count == 0 || citations[0].Index > 6 || line[..citations[0].Index].Trim().Length > 0)
                     continue;
 
@@ -492,16 +500,10 @@ public class DocsIndexTests
                 // second citation into the first one's claim.
                 var starts = citations.Select(next => next.Index)
                     .Concat(CitedLine.Matches(line).Select(next => next.Index)).ToArray();
-                var where = $"{Path.GetRelativePath(root, file)}:{lineNumber}";
                 foreach (Match cited in citations)
                 {
                     var path = cited.Groups["path"].Value;
-                    if (cited.Groups["at"].Success)
-                    {
-                        wrong.Add($"{where} → {path}{cited.Groups["at"].Value} names a line: drop the number, the quote "
-                            + "finds the line, and a number makes every change above it rewrite this citation");
-                        continue;
-                    }
+                    if (cited.Groups["at"].Success) continue; // refused above
 
                     var from = cited.Index + cited.Length;
                     var to = starts.Where(start => start > cited.Index).DefaultIfEmpty(line.Length).Min();
@@ -592,8 +594,6 @@ public class DocsIndexTests
                     var rooted = path.Contains('/', StringComparison.Ordinal);
                     var candidates = (rooted ? [Path.Combine(root, path)] : sources[Path.GetFileName(path)].ToArray())
                         .Where(File.Exists).ToArray();
-                    if (candidates.Length == 0) continue; // the overshoot guard already reports a path that is not there
-
                     var where = $"{Path.GetRelativePath(root, file)}:{lineNumber}";
                     if (cited.Groups["at"].Success)
                     {
@@ -601,6 +601,8 @@ public class DocsIndexTests
                             + "the member locates the citation, and a number makes every change above it rewrite this one");
                         continue;
                     }
+
+                    if (candidates.Length == 0) continue; // the overshoot guard already reports a path that is not there
 
                     if (!candidates.Any(candidate => DeclarationSpans(candidate).ContainsKey(member)))
                         misplaced.Add($"{where} → {path} does not declare {member}");
