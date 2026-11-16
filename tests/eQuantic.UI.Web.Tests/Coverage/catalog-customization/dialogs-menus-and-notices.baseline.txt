@@ -1,0 +1,35 @@
+# Dialogs, sheets, menus, notices and the badge family. Their slice is #1550. The format is README.md's.
+# owns: Avatar Badge Banner BottomSheet ContextMenu CookieConsent Dialog Drawer EmptyState Menu Popover Toast Tooltip DialogAction MenuItem
+Avatar  style  #1550: BadgeTheme
+Avatar.ImageSource  text  kept: an address, never drawn as text
+Avatar.Initials  text  #1550: the avatar's child, a node (Flutter's CircleAvatar)
+Avatar.Name  text  kept: the seed of the avatar's tint, never drawn
+Badge  style  #1550: BadgeTheme
+Banner  style  #1550: NoticeTheme
+Banner.Body  text  #1550: the banner's content, a node
+Banner.Title  text  #1550: the banner's title, a node
+BottomSheet  style  #1550: ModalTheme
+ContextMenu  style  #1550: MenuTheme
+CookieConsent  style  #1550: NoticeTheme
+CookieConsent.AcceptLabel  text  #1550: the accept action's child, a node
+CookieConsent.Body  text  #1550: the card's content, a node
+CookieConsent.PolicyHref  text  kept: an address, never drawn as text
+CookieConsent.PolicyLabel  text  #1550: the policy link's child, a node
+CookieConsent.RejectLabel  text  #1550: the reject action's child, a node
+CookieConsent.Title  text  #1550: the card's title, a node
+Dialog  style  #1550: ModalTheme
+Dialog.Body  text  #1550: the dialog's content, a node (Flutter's AlertDialog content)
+Dialog.Title  text  #1550: the dialog's title, a node
+DialogAction.Label  text  #1550: a dialog's actions are nodes (Flutter's AlertDialog actions)
+Drawer  style  #1550: ModalTheme
+EmptyState  style  #1550: BadgeTheme
+EmptyState.Body  text  #1550: the empty state's content, a node
+EmptyState.Title  text  #1550: the empty state's title, a node
+Menu  style  #1550: MenuTheme
+MenuItem.Label  text  kept: an item's name, its accessible name and typeahead key; the item builder draws it (#1550)
+Popover  style  #1550: MenuTheme
+Toast  style  #1550: NoticeTheme
+Toast.ActionLabel  text  #1550: the toast's action, a node
+Toast.Message  text  #1550: the toast's content, a node
+Tooltip  style  #1550: MenuTheme
+Tooltip.Text  text  #1550: the tooltip's content, a node

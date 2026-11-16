@@ -147,3 +147,19 @@ would write without a transpiler; when it fails, isolate the smallest case, file
 expected and what came out (the `EQ` diagnostic or the JavaScript emitted), and fix it in the SDK, or
 leave the app waiting behind a fence that names the issue. The samples exist to find these: every
 deviation from the handoff a sample cannot avoid is a gap, not a compromise.
+
+## What a ready-made component owes the developer
+
+### 15. Composed from the base, and customized all the way
+
+A complex component is built from the base ones by wrapping one node in another: a capability is a
+node around any child (`Pressable`, `Draggable`, `ContextTarget`, `Sortable`), never a flag on one
+component, and no realizer knows a component of the catalog
+(`ARealizer_NeverReferencesTheLibraryItRealizes`), so each one is drawn from the vocabulary an app has. Every ready-made component then takes the
+developer's own content as a node (a `string` converts to one), a builder for what it repeats, and its
+family's theme slot record as `style`, all as constructor parameters. Measured by its guard when the rule was
+written: 42 of the catalog's 65 components took text where a developer may want a node, and none took
+a style its factory reaches (`Markdown`'s has to be set by an initializer). `CatalogCustomizationTests` holds the rule with a list per family that only shrinks.
+
+At length: "Every component is composed, and takes the developer's content, builders and style" in
+[CLAUDE.md](../CLAUDE.md).
