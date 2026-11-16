@@ -14,11 +14,12 @@ internal sealed partial class WebLoweringVisitor
     /// <summary>
     /// A Stack child as the STACK sees it: a component is expanded to what it builds, so a
     /// `Positioned` returned by one still positions. Only for the positioning decision — the node
-    /// that comes back is lowered normally.
+    /// that comes back is lowered normally, inside the position of the component that built it
+    /// (<see cref="ElementFrame.Enter"/>), null when no component did or the tree has no frame.
     /// </summary>
-    private VisualNode ResolveForPositioning(VisualNode child)
+    private (VisualNode Node, ComponentElement? Within) ResolveForPositioning(VisualNode child)
     {
-        if (child is not UiComponent component) return child;
+        if (child is not UiComponent component) return (child, null);
 
         // NAMED HERE TOO, because this is the one place a component is expanded WITHOUT the
         // ordinary component visit: the stack has to know whether what the child builds is a
@@ -28,11 +29,18 @@ internal sealed partial class WebLoweringVisitor
         // think twice about using. Both sides skipped it identically, so nothing drifted, which is
         // exactly why it would never have been noticed. In a frame of a live tree the name goes to
         // the instance the position keeps, as Visit(UiComponent) gives it.
+        // Each step of a chain of components is read inside the position the step before it found,
+        // as Visit(UiComponent) reads it, so the chain descends to where its engine stopped it.
         if (_frame is { } frame)
         {
             var (kept, built, position) = frame.At(component);
             _channels?.Expansion?.Name(kept, frame.KeyOf(position));
-            return built is not null ? ResolveForPositioning(built) : child;
+            if (built is null) return (child, null);
+            using (frame.Enter(position))
+            {
+                var (node, within) = ResolveForPositioning(built);
+                return (node, within ?? position);
+            }
         }
 
         // Through the boundary's bound rather than a hop count of this method's own: the loop
@@ -91,7 +99,9 @@ internal sealed partial class WebLoweringVisitor
         // flow: a corner button rendered ABOVE the slab it belonged to, silently, which is worse
         // than not rendering at all.
         var asked = _measurer.Asks;
-        var child = ResolveForPositioning(raw);
+        var (child, within) = ResolveForPositioning(raw);
+        // What the component built is lowered inside its position, as Visit(UiComponent) lowers it.
+        using var entered = _frame?.Enter(within) ?? default;
         // Counted HERE for a component this stack expanded itself, to see a Positioned through it:
         // Visit(UiComponent) never runs for one, so a measured component in a Stack was adopted with
         // the zeros it was built on. Counted before the resolved node lowers, so the components

@@ -131,3 +131,72 @@ describe('component boundary', () => {
     expect(rendered).toContain('TypeError');
   });
 });
+
+/**
+ * The OTHER way a component fails to produce a subtree: it never throws. One whose build answers
+ * itself, or a box around itself, stands at every position of the chain the element engine builds
+ * until its bound contains it, and a lowering that found a component by its instance alone met the
+ * outermost position at every step and walked back into it for ever. The C# `ComponentBoundaryTests`
+ * run the same cases through a `MarkupHost`, whose lowering reads a frame as this one does (#1544).
+ */
+describe('component boundary, for a component that never stops building', () => {
+  let errors: unknown[][];
+
+  beforeEach(() => {
+    errors = [];
+    vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      errors.push(args);
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  class OuroborosCard extends StatelessComponent {
+    build(): unknown {
+      return this;
+    }
+  }
+
+  /** The same instance again, one node down: what it builds is a box around itself. */
+  class MirrorCard extends StatelessComponent {
+    build(): unknown {
+      return { nodeKind: 'box', style: {}, child: this };
+    }
+  }
+
+  const row = (...children: unknown[]): VisualNodeValue =>
+    ({ nodeKind: 'row', gap: 8, main: 'start', cross: 'start', children }) as unknown as VisualNodeValue;
+
+  const stack = (...children: unknown[]): VisualNodeValue =>
+    ({ nodeKind: 'stack', children, align: 'center' }) as unknown as VisualNodeValue;
+
+  it('contains a component that builds itself, and draws its siblings', () => {
+    const rendered = flatten(lowerVisualNode(row(text('before'), new OuroborosCard(), text('after')), ctx));
+
+    expect(rendered).toContain('before');
+    expect(rendered).toContain('after');
+    expect(rendered).toContain('could not be displayed');
+  });
+
+  it('contains a component that builds a box around itself', () => {
+    const rendered = flatten(lowerVisualNode(row(new MirrorCard()), ctx));
+
+    expect(rendered).toContain('could not be displayed');
+  });
+
+  it('contains them through a stack, which reads a component through to what it built', () => {
+    const rendered = flatten(lowerVisualNode(stack(text('behind'), new OuroborosCard(), new MirrorCard()), ctx));
+
+    expect(rendered).toContain('behind');
+    expect(rendered).toContain('could not be displayed');
+  });
+
+  it('reports the chain once, where the engine contained it', () => {
+    lowerVisualNode(new OuroborosCard() as unknown as VisualNodeValue, ctx);
+
+    expect(errors).toHaveLength(1);
+    expect(String(errors[0][0])).toContain('OuroborosCard');
+  });
+});
