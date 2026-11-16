@@ -31,6 +31,7 @@ export class BuildOwner {
         this._dirtyCursor = -1;
         this._showing = null;
         this._deferredCursor = -1;
+        this._drewOnly = null;
         this._stamp = 0;
         this._ids = null!;
         this._buildComponent = null!;
@@ -67,6 +68,7 @@ export class BuildOwner {
     _dirtyCursor!: number;
     _showing!: NodeElement | null;
     _deferredCursor!: number;
+    _drewOnly!: Element[] | null;
     _stamp!: number;
     _ids!: ElementIds;
     _buildComponent!: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode;
@@ -88,6 +90,13 @@ export class BuildOwner {
 
     get context(): BuildContext {
         return this._context ?? $eq.exceptions.raise($eq.exceptions.create(['System.InvalidOperationException', 'System.SystemException', 'System.Exception'], 'A component built before its owner\'s frame began.'));
+    }
+
+    get waitsForALayer(): boolean {
+        for (const element of this._dirtyDeferred) {
+            if (element.isActive && element.dirty) return true;
+        }
+        return false;
     }
 
     static $slots: any = null;
@@ -204,13 +213,20 @@ export class BuildOwner {
         for (const reader of this._routeReaders) reader.dependencyChanged();
     }
 
+    drewOnly(parts: Element[]) {
+        return this._drewOnly = parts;
+    }
+
     endFrame() {
+        let parts = this._drewOnly;
+        this._drewOnly = null;
         for (let i = this._deferred.length - 1; i >= 0; i--) {
             let holder = this._deferred[i];
             if (!holder.isActive) {
                 $eq.collections.listRemoveAt(this._deferred, i);
                 continue;
             }
+            if (!(parts == null) && !BuildOwner.standsIn(holder, parts)) continue;
             holder.sweepDeferred(this.frame);
         }
         this.rebuildingAll = false;
@@ -225,7 +241,17 @@ export class BuildOwner {
         this.buildRequested?.();
     }
 
+    static standsIn(element: Element, parts: Element[]) {
+        for (let at: Element | null = element; !(at == null); at = at.parent) {
+            for (const part of parts) {
+                if ((at === part)) return true;
+            }
+        }
+        return false;
+    }
+
     unmountAll() {
+        this._drewOnly = null;
         let root: any; 
         if ((root = this.root) != null) {
             this.deactivate(root);
