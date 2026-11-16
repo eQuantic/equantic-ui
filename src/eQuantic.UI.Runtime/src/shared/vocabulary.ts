@@ -1629,9 +1629,10 @@ export class MergeSemantics extends VisualNode {
   readonly nodeKind = 'mergeSemantics';
   child: VisualNode;
 
-  constructor(child: VisualNode) {
+  constructor(child: VisualNode, config?: EqConfig) {
     super();
     this.child = child;
+    if (config) Object.assign(this, config);
   }
 }
 
