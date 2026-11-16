@@ -144,3 +144,45 @@ record's ceiling, floor(345,013 × 1.01) = 348,463. #1458 was measured over `mai
 #1458 stays inside #1500's ceiling, 1,616 bytes under it, and records nothing. Its 806 bytes are the
 table's fit, the same 2,595 raw bytes it added over 1973005e6 above, which gzip packs a little
 differently beside different neighbours.
+
+## Since the base of #1489
+
+From #1489 the budget is the base the last release folded, 357,702 bytes, and a delta per change. `main`
+at 62e5680d2 measures 357,984, inside that base's 1%.
+
+| Pull request | Merge | Before | After | Gzip | Raw | What it delivered | In proportion |
+|---|---|---:|---:|---:|---:|---|---|
+| #1584 | | 357,984 | 361,662 | +3,678 | +28,881 | a LINQ query runs when it is walked, and a list changed while it is walked throws, as .NET's do | yes |
+
+It records a delta of 3,960 bytes, measured against the base rather than against `main`, which had grown
+282 bytes past it. It is the largest single growth the runtime has had, so it answers the three
+questions a reader asks of it.
+
+**What the bytes buy.** An app observes two things it did not before. A query's callbacks run when the
+query is walked, one element at a time and only as far as its answer: a `Where` then a `Select`
+interleave, `Any`, `First` and `Take` stop where they answer, and a query made before an `Add` reads the
+added element (#685). And a list changed while a `foreach`, a query or `List.ForEach` walks it throws
+.NET's `InvalidOperationException`, where the walk went on, and a loop that added as it went never ended
+(#863).
+
+**Where they go.** The LINQ walker, `utils/query.ts`, is about 1.9 KB of the 3,678 (1,990 gzipped on its
+own). `List<T>`'s version is the rest, about 1.8 KB: its module, `utils/list-version.ts` (757 on its own),
+and the 754 call sites the runtime's transpiled components now write through it (398 `listAdd`, 146
+`listWalk`, 105 `sequenceWalk`, 64 `listClear` and 41 `listSet`), which cost 1,076 bytes against the inline
+forms they replaced, measured by writing them back and bundling again.
+
+**Why not smaller.** Three cheaper shapes were weighed, and none keeps .NET's semantics for less:
+
+- *The version paid only by the lists that are enumerated.* Only the writes can move. A walk is the
+  enumeration itself, so its 251 call sites stay, and an element written through the indexer cannot be
+  seen on an array without a Proxy, so `listSet` stays. Writing `Add` and `Clear` back inline (`push`,
+  `splice(0)`) and letting a list's first walk install the version on that list saves 459 bytes, measured,
+  before the installer's own code is paid back, and it gives every walked list an own `push` property, a
+  change of shape on the runtime's busiest arrays. About 0.1% of the runtime, for that risk: not taken.
+- *The walker in a module only the pages that use LINQ load.* Nine of the runtime's own components use
+  it, `Dialog` and `Select` among them, and `seq` recognizes a query for every LINQ helper, so nearly
+  every page would load that module. It would save nothing.
+- *A walker that walks one way.* Each operator walks pulled, by a generator, for a `foreach`, and pushed,
+  a call per element, for `ToList`, `Count`, `First` and the others. A chain of generators cost five to
+  nine times what the array methods did, measured when the walker was written, so the pushed half is what
+  keeps a query's cost near theirs.
