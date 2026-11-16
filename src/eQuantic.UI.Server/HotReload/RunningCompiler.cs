@@ -139,18 +139,29 @@ internal sealed class RunningCompiler : IModuleCompiler
 
     private Process? ReadyOnce()
     {
-        Process? dead;
+        Process? current;
         lock (_gate)
         {
             if (_disposed) return null;
-            if (_eqc is { HasExited: false } running) return running;
-            dead = _eqc;
-            _eqc = null;
+            current = _eqc;
         }
-        // Released outside the gate: releasing a process takes its own lock, which its exit event holds while
-        // it reads the compile in flight through the gate. Released under the gate, the save waited on the
-        // event and the event on the save, and the hot reload hung for good (#1491).
-        dead?.Dispose();
+        // Asked and released outside the gate. The process's exit event runs inside the process's own lock and
+        // reads the compile in flight through the gate, and both asking whether it exited, when nothing has
+        // seen the exit yet, and releasing it take that lock. Under the gate, the save waited on the event
+        // and the event on the save, and the hot reload hung for good (#1491): releasing was moved out first
+        // (#1496), and asking still hung a save that was the first to see eqc dead.
+        if (current is not null)
+        {
+            if (StillRunning(current)) return current;
+            lock (_gate)
+            {
+                // Dispose took it out and releases it itself. Otherwise it is still the one running: only
+                // this, which one save at a time runs, and Dispose change it.
+                if (_disposed) return null;
+                _eqc = null;
+            }
+            current.Dispose();
+        }
 
         // Found outside the gate, since asking MSBuild takes seconds and Dispose must be able to stop it.
         var start = _start ??= _discover(this);
@@ -169,6 +180,20 @@ internal sealed class RunningCompiler : IModuleCompiler
             eqc.BeginErrorReadLine();
             _eqc = eqc;
             return eqc;
+        }
+    }
+
+    /// <summary>Whether <paramref name="eqc"/> is still running; false once a Dispose that ran beside the
+    /// asking has released it.</summary>
+    private static bool StillRunning(Process eqc)
+    {
+        try
+        {
+            return !eqc.HasExited;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
         }
     }
 
