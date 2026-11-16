@@ -60,6 +60,17 @@
                           PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
         <AdditionalFiles Include="PublicAPI.Shipped.txt" />
         <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
+        <!--
+          A FILE PER CHANGE (#1489). Every change used to add its lines at the end of the one
+          Unshipped file, so any two pull requests that each added a public member conflicted there,
+          and GitHub's merge and the merge queue read no merge=union. Each change writes its own,
+          PublicAPI.Unshipped.<branch>.txt beside the project (scripts/public-api.sh update names it),
+          and the analyzer reads every AdditionalFiles item whose NAME starts with
+          PublicAPI.Unshipped: RS0016, RS0017, *REMOVED* and RS0025 (one entry in two files) all hold
+          across them, measured on 5.6.0. `ship` folds them into Shipped at a release, as
+          fold-ledger.sh folds docs/ledger/.
+        -->
+        <AdditionalFiles Include="PublicAPI.Unshipped.*.txt" />
     </ItemGroup>
 
     <!--
@@ -103,7 +114,7 @@
         <_EqSurface Condition="'$(_EqSurface)' == '' AND $(MSBuildProjectName.StartsWith('eQuantic.UI.Native.'))">experimental</_EqSurface>
         <_EqSurface Condition="'$(_EqSurface)' == '' AND ('$(MSBuildProjectName)' == 'eQuantic.UI.Compiler' OR '$(MSBuildProjectName)' == 'eQuantic.UI.Codegen')">tool</_EqSurface>
         <_EqSurface Condition="'$(_EqSurface)' == ''">contract</_EqSurface>
-        <_EqUnshippedFile Condition="'$(_EqUnshippedFile)' == ''">$(MSBuildProjectDirectory)/PublicAPI.Unshipped.txt</_EqUnshippedFile>
+        <_EqApiDirectory Condition="'$(_EqApiDirectory)' == ''">$(MSBuildProjectDirectory)</_EqApiDirectory>
     </PropertyGroup>
 
     <!--
@@ -129,8 +140,9 @@
 
       The preview's rule (CLAUDE.md, "No member survives to keep an old shape alive") removes a member
       the day its shape changes, and it holds while the version carries a prerelease label. The day
-      the label goes, at the 1.0 cut, the promise starts: a contract project's PublicAPI.Unshipped.txt
-      holds no *REMOVED* line, since the release would break every app that upgrades. The way on is an
+      the label goes, at the 1.0 cut, the promise starts: no PublicAPI.Unshipped file of a contract
+      project, the project's own nor any change's (#1489), holds a *REMOVED* line, since the release
+      would break every app that upgrades. The way on is an
       [Obsolete] that names the major it leaves in, and the removal itself in that major's preview.
       Read here, at the build, so it fails the pull request that removes the member and not the
       release a week later, and the release's own step needs no check of its own.
@@ -147,7 +159,7 @@
     -->
     <UsingTask TaskName="EqRefuseRemovalAtStableVersion" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
         <ParameterGroup>
-            <Unshipped ParameterType="System.String" Required="true" />
+            <Unshipped ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" />
             <Project ParameterType="System.String" Required="true" />
             <Version ParameterType="System.String" Required="true" />
         </ParameterGroup>
@@ -155,12 +167,16 @@
             <Using Namespace="System.Linq" />
             <Code Type="Fragment" Language="cs"><![CDATA[
                 const string Mark = "*REMOVED*";
-                var removed = System.IO.File.Exists(Unshipped)
-                    ? System.IO.File.ReadAllLines(Unshipped).Where(line => line.StartsWith(Mark)).Select(line => line.Substring(Mark.Length)).ToList()
-                    : new System.Collections.Generic.List<string>();
+                var removed = (Unshipped ?? new Microsoft.Build.Framework.ITaskItem[0])
+                    .Select(item => item.GetMetadata("FullPath"))
+                    .Where(System.IO.File.Exists)
+                    .SelectMany(file => System.IO.File.ReadAllLines(file)
+                        .Where(line => line.StartsWith(Mark))
+                        .Select(line => line.Substring(Mark.Length) + " (" + System.IO.Path.GetFileName(file) + ")"))
+                    .ToList();
                 if (removed.Count > 0)
                     Log.LogError(
-                        Project + " is part of the contract, and its PublicAPI.Unshipped.txt removes " + removed.Count
+                        Project + " is part of the contract, and its PublicAPI.Unshipped files remove " + removed.Count
                         + " member(s) at version " + Version + ", which carries no prerelease label: " + string.Join(" | ", removed.Take(3))
                         + (removed.Count > 3 ? " | ..." : "")
                         + ". A stable version removes no member of the contract. Mark the member [Obsolete] with an EQO id, a URL and the major it leaves in (CLAUDE.md),"
@@ -171,7 +187,12 @@
 
     <Target Name="EqStableVersionRemovesNoContractMember" BeforeTargets="CoreCompile"
             Condition="'$(_EqDeclaresPublicApi)' == 'true' AND '$(_EqSurface)' == 'contract' AND $([System.Text.RegularExpressions.Regex]::IsMatch('$(Version)', '^[0-9]+[.][0-9]+[.][0-9]+([+].*)?$')) AND !$([System.Text.RegularExpressions.Regex]::IsMatch('$(Version)', '^[0-9]+[.]0[.]0([+].*)?$'))">
-        <EqRefuseRemovalAtStableVersion Unshipped="$(_EqUnshippedFile)" Project="$(MSBuildProjectName)" Version="$(Version)" />
+        <!-- Every Unshipped file, the project's own and each change's: one of them alone let a removal
+             written into a change's file through the 1.0 guard (#1489). -->
+        <ItemGroup>
+            <_EqUnshippedFiles Include="$(_EqApiDirectory)/PublicAPI.Unshipped*.txt" />
+        </ItemGroup>
+        <EqRefuseRemovalAtStableVersion Unshipped="@(_EqUnshippedFiles)" Project="$(MSBuildProjectName)" Version="$(Version)" />
     </Target>
 
     <!--

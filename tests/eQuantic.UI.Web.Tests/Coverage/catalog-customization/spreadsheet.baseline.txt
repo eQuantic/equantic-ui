@@ -1,0 +1,6 @@
+# The spreadsheet and its parts. No family slice holds it yet: what is owed is the parent's, #1545. The format is README.md's.
+# owns: FormulaBar NameBox Spreadsheet StatusBar
+FormulaBar  style  kept: a part of the Spreadsheet, styled by the sheet's slot through it
+NameBox  style  kept: a part of the Spreadsheet, styled by the sheet's slot through it
+Spreadsheet  style  #1545: SheetTheme
+StatusBar  style  kept: a part of the Spreadsheet, styled by the sheet's slot through it
