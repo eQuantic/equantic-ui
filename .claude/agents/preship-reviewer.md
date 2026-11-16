@@ -49,7 +49,7 @@ For each area the diff touches, the matching file among
 ### 3. The duties the diff brings
 
 The table "Duties the diff brings" in `.claude/skills/pipeline/SKILL.md`: for each row whose
-condition the diff meets, is what it carries in the diff? A `PublicAPI.Unshipped.txt` that moved is
+condition the diff meets, is what it carries in the diff? A `PublicAPI.Unshipped*.txt` that moved is
 the API review: read every line of it, and find the migration line for each `*REMOVED*`. A changed
 `assets/readme/captures.json` with no changed picture is a defect.
 

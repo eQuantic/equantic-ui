@@ -151,7 +151,7 @@ leaves only in a major, after at least one minor carrying `[Obsolete(message, Di
 UrlFormat = …)]` whose URL says what to write instead and whose message names the major it is
 removed in, and the removal itself is made in
 that major's preview, where this rule holds again. Three guards switch on the version by themselves:
-the build of a contract project refuses a `*REMOVED*` line in its `PublicAPI.Unshipped.txt` at any
+the build of a contract project refuses a `*REMOVED*` line in any of its `PublicAPI.Unshipped` files at any
 stable version but a major's first, `x.0.0`, where the removals ship
 (`EqStableVersionRemovesNoContractMember`, `Directory.Build.targets`), `NoOldShapeSurvivesTests`
 reads the source of every contract project and refuses an `[Obsolete]` that does not say all three, and `DeveloperSurfaceContractTests` refuses a
@@ -338,7 +338,12 @@ file of its own under `docs/ledger/`, never into `docs/LEDGER.md`: every pull re
 its line at the chronology's end, so any two open ones conflicted there on every merge, and a merge
 GitHub performs reads no `.gitattributes` that could resolve it (#892). A release folds the files
 into the chronology (`./scripts/fold-ledger.sh`), and `LedgerTests` fails on a file that is not one
-dated entry and on a chronology no fold wrote.
+dated entry and on a chronology no fold wrote. Two more files had that shape and take that cure
+(#1489): a change declares its public API in `PublicAPI.Unshipped.<branch>.txt` beside each project,
+the file `./scripts/public-api.sh update` writes, and a change that moves the served runtime past
+its budget writes its own delta under `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime/`, and
+a release folds both. A third rewrote itself whenever a cited line moved: a citation in the audits
+names the file and the code, never the line, and `DocsIndexTests` finds the code.
 
 The pictures in the root `README.md` are captures of the samples, and a picture is taken again when
 the screen it shows changes. `assets/readme/captures.json` names the files each picture's screen is
@@ -701,8 +706,9 @@ src/
 ### Bundle Strategy
 
 What a build actually writes under `wwwroot/_equantic/` (sizes are not quoted here: the served
-runtime's is recorded in `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime.json`, which the
-suite compares, and CI reports the page modules' on every pull request):
+runtime's is recorded as a base in `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime.json` and a
+delta per change beside it, which the suite compares, and CI reports the page modules' on every pull
+request):
 
 1. **runtime.js** — virtual DOM, events, state, the server-actions bridge AND the shared component
    library, whose transpiled modules ship INSIDE it (`[RuntimeProvided]`); eqc routes
@@ -932,8 +938,9 @@ the bump and before the tag, is:
 ./scripts/public-api.sh ship
 ```
 
-which folds each project's `PublicAPI.Unshipped.txt` into its `Shipped.txt` — an addition moves
-across, a `*REMOVED*` line cancels the entry it names. THOSE `*REMOVED*` LINES ARE THE BREAKS, and
+which folds every `PublicAPI.Unshipped*.txt` of each project, its own and each change's (#1489), into
+its `Shipped.txt`, and removes the changes' files — an addition moves across, a `*REMOVED*` line
+cancels the entry it names. THOSE `*REMOVED*` LINES ARE THE BREAKS, and
 `git diff v<previous>..v<this> -- '**/PublicAPI.Shipped.txt'` is the whole change of surface,
 retirements and additions together. Copy them into the annotated tag's message and the wiki's
 [Upgrading](https://github.com/eQuantic/equantic-ui/wiki/Upgrading) page (both languages); write
@@ -962,6 +969,17 @@ writes every waiting entry into the chronology of `docs/LEDGER.md`, in order of 
 file and records the chronology in `docs/ledger/folded.json`. It writes nothing when one file is
 not an entry. The line that says the release happened is an event like another: a file, written
 after the tag, that the next release folds.
+
+**And the served runtime's budget.** A change that moved the served runtime past its budget wrote a
+delta of its own under `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime/`, saying what its
+bytes bought (#1489), and the release folds them into the base in the same commit:
+
+```bash
+./scripts/fold-runtime-budget.sh
+```
+
+prints each delta with what it bought, for the notes, writes the sum into `served-runtime.json` and
+removes the deltas. It writes nothing when one file is not a delta.
 
 ## Compiler Boundaries (Server vs Client)
 
