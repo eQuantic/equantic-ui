@@ -27,6 +27,7 @@ import {
   BoxStyle,
   Column,
   ContextTarget,
+  Listener,
   Sortable,
   SortableItem,
   Draggable,
@@ -356,6 +357,9 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'context-target-disabled': still(
       new ContextTarget(new Box(new BoxStyle({ height: 40 })), () => {}, { enabled: false }),
     ),
+    listener: still(new Listener(new Box(new BoxStyle({ width: SizeValue.fill, height: 40 })))),
+    'listener-opaque': still(new Listener(new Box(new BoxStyle({ height: 40 })), { behavior: 'opaque' })),
+    'listener-translucent': still(new Listener(new Box(new BoxStyle({ height: 40 })), { behavior: 'translucent' })),
     'anchored-at': still(
       new Anchored(new Box(new BoxStyle({ width: 200, height: 40 })), new Box(new BoxStyle({ width: 120, height: 80 })), {
         at: new Point(120, 30),
