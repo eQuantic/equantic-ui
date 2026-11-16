@@ -35,6 +35,7 @@ export {
   Hoverable,
   DropTarget,
   ContextTarget,
+  Listener,
   Sortable,
   SortableItem,
   Flexible,
@@ -72,6 +73,7 @@ export {
   Shortcut,
   KeyChord,
   KeyModifiers,
+  PointerButtons,
   CuratedIcons,
   Draggable,
   SafeArea,
@@ -135,6 +137,7 @@ export { RouteValues } from './route-values';
 // these, and eqc routes every Primitives name here.
 export {
   ContextRequest,
+  PointerEvent,
   FaceName,
   Point,
   Rect,

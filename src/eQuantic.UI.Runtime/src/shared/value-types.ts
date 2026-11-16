@@ -31,7 +31,12 @@ import type {
   TableTheme,
 } from './theme-slots';
 import { hashesByValue } from '../utils/hash';
-import { FontWeightNumbers, type FontWeightValue } from './enums.generated';
+import {
+  FontWeightNumbers,
+  type FontWeightValue,
+  type PointerKindValue,
+  type PointerPhaseValue,
+} from './enums.generated';
 
 /**
  * Companion of the C# `Color` struct — the statics transpiled code references. The surface must
@@ -248,6 +253,40 @@ export class ContextRequest {
 
   constructor(at: Point | null = null) {
     this.at = at;
+  }
+}
+
+/**
+ * Mirror of the C# `PointerEvent` record (#1562): what a `Listener` hears of a pointer, in its own coordinates. The
+ * DOM's own `PointerEvent` is a different thing, and this one shadows it only where it is imported.
+ */
+export class PointerEvent {
+  readonly phase: PointerPhaseValue;
+  readonly position: Point;
+  readonly kind: PointerKindValue;
+  /** The C# `[Flags] PointerButtons`, numeric: Flutter's constants, which are also the DOM's `buttons` bits. */
+  readonly buttons: number;
+  /** The C# `[Flags] KeyModifiers`, numeric. */
+  readonly modifiers: number;
+  readonly pointer: number;
+  readonly scrollDelta: Point;
+
+  constructor(
+    phase: PointerPhaseValue,
+    position: Point,
+    kind: PointerKindValue,
+    buttons: number,
+    modifiers: number,
+    pointer: number,
+    scrollDelta: Point,
+  ) {
+    this.phase = phase;
+    this.position = position;
+    this.kind = kind;
+    this.buttons = buttons;
+    this.modifiers = modifiers;
+    this.pointer = pointer;
+    this.scrollDelta = scrollDelta;
   }
 }
 

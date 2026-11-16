@@ -28,6 +28,7 @@ import { installDraggableController } from '../dom/draggable';
 import { installSortableController } from '../dom/sortable';
 import { dropHandlers, installDropGuard } from '../dom/file-drop';
 import { installContextController } from '../dom/context-request';
+import { installPointerListener } from '../dom/pointer-listener';
 import { MOUNTED_HOOK, clickWithEvent } from '../dom/reconciler';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import {
@@ -110,6 +111,7 @@ import type {
   HoverableNode,
   DropTargetNode,
   ContextTargetNode,
+  ListenerNode,
   SortableItemNode,
   SortDropValue,
   SortableNode,
@@ -148,7 +150,7 @@ import { declareScrollViewport } from './scroll-viewports';
 import { declareTableViewport, tableCellPlace } from './table-viewports';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
-import type { ContextRequest } from './value-types';
+import type { ContextRequest, PointerEvent as HeardPointer } from './value-types';
 import { writtenDestination } from '../utils/link-scheme';
 import { declareFamily } from './face-declarations';
 import { DISPOSABLE, nodeStateFor, positionOf, type NodeState } from './node-states';
@@ -788,6 +790,8 @@ function lowerNodeKind(
       return lowerDropTarget(node as unknown as DropTargetNode, context, path);
     case 'contextTarget':
       return lowerContextTarget(node as unknown as ContextTargetNode, context, path);
+    case 'listener':
+      return lowerListener(node as unknown as ListenerNode, context, path);
     case 'sortable':
       return lowerSortable(node as unknown as SortableNode, context, horizontalAxis, path);
     case 'sortableItem':
@@ -4178,6 +4182,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'hoverable':
     case 'dropTarget':
     case 'contextTarget':
+    case 'listener':
     case 'sortable':
     case 'sortableItem':
     case 'adjustable':
@@ -4249,6 +4254,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as DropTargetNode).child);
     case 'contextTarget':
       return fills((node as ContextTargetNode).child);
+    case 'listener':
+      return fills((node as unknown as ListenerNode).child);
     case 'sortable':
       return fills((node as unknown as SortableNode).child);
     case 'sortableItem':
@@ -5626,6 +5633,46 @@ function showCursorAfterRender(rest: CodeRest): void {
   };
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(show);
   if (typeof setTimeout === 'function') setTimeout(show, 48);
+}
+
+/**
+ * What hears the raw pointer over a subtree (#1562, the C# LowerListener twin): the same layout-transparent div as a
+ * context target, marked `data-eq-listener` with its behaviour, which the pointer controller (dom/pointer-listener.ts)
+ * hit-tests and tells as `eq-pointer`, turned here into the C# callback of the event's phase.
+ */
+function lowerListener(node: ListenerNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const cap = capsAt(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : undefined,
+    'max-width': sizeValue(cap),
+    'pointer-events': 'auto',
+    height: fill.height ? '100%' : undefined,
+  });
+  host.attributes['data-eq-listener'] =
+    node.behavior === 'opaque' ? 'opaque' : node.behavior === 'translucent' ? 'translucent' : 'defer';
+  host.events['eq-pointer'] = ((ev: Event) => {
+    const heard = (ev as CustomEvent<HeardPointer>).detail;
+    const callback =
+      heard.phase === 'down'
+        ? node.onPointerDown
+        : heard.phase === 'move'
+          ? node.onPointerMove
+          : heard.phase === 'up'
+            ? node.onPointerUp
+            : heard.phase === 'cancel'
+              ? node.onPointerCancel
+              : heard.phase === 'hover'
+                ? node.onPointerHover
+                : heard.phase === 'scroll'
+                  ? node.onPointerScroll
+                  : null;
+    callback?.(heard);
+  }) as unknown as EventHandler;
+  installPointerListener();
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
 }
 
 /**
