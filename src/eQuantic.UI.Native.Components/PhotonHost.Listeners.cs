@@ -60,12 +60,13 @@ public sealed partial class PhotonHost
             Tell(targets[index], PointerPhase.Hover, point, kind, PointerButtons.None, modifiers, default);
     }
 
-    /// <summary>The followed press lifted at <paramref name="point"/>: an up, with nothing held any more.</summary>
-    private void HearUp(Point point)
+    /// <summary>The followed press lifted at <paramref name="point"/> with <paramref name="modifiers"/> held: an up,
+    /// with no button held any more.</summary>
+    private void HearUp(Point point, KeyModifiers modifiers)
     {
         if (_listening is not { } followed) return;
         _listening = null;
-        TellFollowed(followed, PointerPhase.Up, point, _listenedKind, PointerButtons.None, _pointerModifiers);
+        TellFollowed(followed, PointerPhase.Up, point, _listenedKind, PointerButtons.None, modifiers);
     }
 
     /// <summary>The system took the followed press away: a cancel, where it was last.</summary>

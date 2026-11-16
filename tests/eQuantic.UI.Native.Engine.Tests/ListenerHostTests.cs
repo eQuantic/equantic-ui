@@ -212,6 +212,19 @@ public class ListenerHostTests
     }
 
     [Fact]
+    public void AControlClick_HoldsControlOnItsDownAndItsUp()
+    {
+        var (host, page) = Open(p => new ContextTarget(p.Hears("L", Filled(200, 100)), _ => { }));
+        var box = Listener(host);
+
+        host.ContextRequest(box.X + 10, box.Y + 6, buttons: PointerButtons.Primary, modifiers: KeyModifiers.Control);
+
+        page.Heard.Select(h => (h.Event.Phase, h.Event.Buttons, h.Event.Modifiers)).Should().Equal(
+            (PointerPhase.Down, PointerButtons.Primary, KeyModifiers.Control),
+            (PointerPhase.Up, PointerButtons.None, KeyModifiers.Control));
+    }
+
+    [Fact]
     public void ACancelledPress_IsHeardAsACancelWhereItWasLast()
     {
         var (host, page) = Open(p => p.Hears("L", Filled(200, 100)));

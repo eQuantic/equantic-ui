@@ -2981,7 +2981,7 @@ public sealed partial class PhotonHost
     public bool PressUp(float x, float y, PointerKind kind = PointerKind.Mouse)
     {
         y += _lift;
-        HearUp(new Point(x, y));
+        HearUp(new Point(x, y), _pointerModifiers);
         _held = false;
         _contextHold = null;
         // Where a drag ended is where the pointer is (#1084): ⌘ pressed next, with no move, is heard there.

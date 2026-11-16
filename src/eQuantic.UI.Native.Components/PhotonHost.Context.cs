@@ -34,7 +34,8 @@ public sealed partial class PhotonHost
         if (kind != PointerKind.Touch && (buttons != PointerButtons.Primary || answered))
         {
             HearDown(point, kind, buttons, modifiers);
-            HearUp(point);
+            // One click: the up holds the keys its down held.
+            HearUp(point, modifiers);
         }
         return answered;
     }
