@@ -4,6 +4,14 @@
 #   ./scripts/public-api.sh update   after changing a public signature — writes what changed
 #   ./scripts/public-api.sh ship     at a release — folds Unshipped into Shipped
 #
+# A FILE PER CHANGE (#1489). `update` writes into PublicAPI.Unshipped.<branch>.txt beside each
+# project, named by the whole branch with its `/` as `-`, never into the project's own Unshipped:
+# every change used to append to that one file, so any two pull requests that each added a public
+# member conflicted there, and the merge queue ejected one of them. The analyzer reads every file
+# whose name starts with PublicAPI.Unshipped, and `ship` folds them all, as fold-ledger.sh folds
+# docs/ledger/. On main or a detached HEAD there is no branch to name the file, so `update` refuses
+# unless EQ_API_CHANGE names it.
+#
 # WHY A SCRIPT AT ALL, when the analyzer ships a code fix: `dotnet format` applies the ADDITION
 # (RS0016) and not the REMOVAL. Measured on a clean compile — "Formatted 0 of 158 files" — because
 # RS0017 is reported against the .txt file rather than against any C#, so there is no document for
@@ -36,6 +44,65 @@ usage() {
     exit 2
 }
 
+# The name of the change's own file: the branch, whole and with its `/` as `-`, so two branches never
+# share one (`feat/a-x` and `fix/a-x` are two files). EQ_API_CHANGE names it where no branch does.
+change_name() {
+    local name="${EQ_API_CHANGE:-}"
+    if [ -z "$name" ]; then
+        name="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+        case "$name" in
+            ""|HEAD|main)
+                echo "update writes into the change's own PublicAPI.Unshipped.<name>.txt, and ${name:-this checkout} names no change." >&2
+                echo "Run it on the change's branch, or name the change: EQ_API_CHANGE=<name> $0 update" >&2
+                return 1 ;;
+        esac
+    fi
+    name="${name//\//-}"
+    if ! printf '%s' "$name" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._-]*$'; then
+        echo "The change's name \"$name\" is not a file name a build reads back: use letters, digits, '.', '-' and '_'." >&2
+        return 1
+    fi
+    printf '%s' "$name"
+}
+
+# The change's file in a project's folder, created with the header the analyzer expects.
+change_file() {
+    local file="$1/PublicAPI.Unshipped.$CHANGE.txt"
+    [ -f "$file" ] || printf '#nullable enable\n' > "$file"
+    printf '%s' "$file"
+}
+
+# Every Unshipped file of a project's folder: its own and each change's.
+unshipped_files() {
+    local file
+    for file in "$1"/PublicAPI.Unshipped.txt "$1"/PublicAPI.Unshipped.*.txt; do
+        [ -f "$file" ] && printf '%s\n' "$file"
+    done
+}
+
+# Whether ENTRY (exactly) is a line of any Unshipped file of the folder.
+declared_unshipped() {
+    local dir="$1" entry="$2" file
+    while IFS= read -r file; do
+        grep -Fxq -- "$entry" "$file" && return 0
+    done < <(unshipped_files "$dir")
+    return 1
+}
+
+# A change's file that holds nothing but its header declares nothing, so it goes.
+remove_empty_change_files() {
+    local csproj dir file
+    for csproj in $(projects); do
+        dir="$(dirname "$csproj")"
+        for file in "$dir"/PublicAPI.Unshipped.*.txt; do
+            [ -f "$file" ] || continue
+            grep -qvxE '#nullable enable|[[:space:]]*' "$file" && continue
+            rm -f "$file"
+            echo "  removed ${file#"$ROOT"/}: it declares nothing"
+        done
+    done
+}
+
 # WHAT APPEARED: RS0016 names a signature that is not declared, and the entry it wants is quoted in
 # the message — so the entry is read from the build rather than written by the analyzer's own fix.
 #
@@ -50,7 +117,7 @@ usage() {
 # Reading both directions out of the build instead means ONE mechanism and one parser, and neither
 # half can drift from what the compiler actually said.
 declare_new_entries() {
-    local line path entry dir shipped unshipped declared=0
+    local line path entry dir shipped declared=0
     while IFS= read -r line; do
         path="${line%%(*}"
         entry="${line#*error RS0016: Symbol \'}"
@@ -58,16 +125,14 @@ declare_new_entries() {
         [ -n "$entry" ] || continue
 
         # RS0016 is reported against the SOURCE file, so the project is the src/<Name> it sits in.
-
-
         dir="$ROOT/$(printf '%s' "${path#"$ROOT"/}" | cut -d/ -f1,2)"
         shipped="$dir/PublicAPI.Shipped.txt"
-        unshipped="$dir/PublicAPI.Unshipped.txt"
-        [ -f "$shipped" ] && [ -f "$unshipped" ] || continue
+        [ -f "$shipped" ] && [ -f "$dir/PublicAPI.Unshipped.txt" ] || continue
 
-        grep -Fxq "$entry" "$shipped" && continue
-        grep -Fxq "$entry" "$unshipped" && continue
-        printf '%s\n' "$entry" >> "$unshipped"
+        # Declared once, across every file: an entry two files hold is RS0025.
+        grep -Fxq -- "$entry" "$shipped" && continue
+        declared_unshipped "$dir" "$entry" && continue
+        printf '%s\n' "$entry" >> "$(change_file "$dir")"
         declared=$((declared + 1))
     done < <(rebuild_all | grep -E "error RS0016: Symbol '" | sort -u)
     echo "  $declared entries declared"
@@ -88,24 +153,26 @@ declare_new_entries() {
 # `-v quiet` prints errors and swallows warnings. The build fails on purpose; only its output is
 # wanted.
 retire_missing_entries() {
-    local line path entry dir shipped unshipped retired=0
+    local line path entry dir shipped retired=0
     while IFS= read -r line; do
         path="${line%%(*}"
         entry="${line#*error RS0017: Symbol \'}"
         entry="${entry%%\' is part of*}"
         [ -n "$entry" ] && [ -f "$path" ] || continue
 
+        # The diagnostic names the FILE that declares the entry: Shipped, the project's own
+        # Unshipped, or a change's.
         dir="$(dirname "$path")"
         shipped="$dir/PublicAPI.Shipped.txt"
-        unshipped="$dir/PublicAPI.Unshipped.txt"
 
-        if grep -Fxq "$entry" "$shipped"; then
-            grep -Fxq "*REMOVED*$entry" "$unshipped" || printf '*REMOVED*%s\n' "$entry" >> "$unshipped"
+        if [ "$path" = "$shipped" ] && grep -Fxq -- "$entry" "$shipped"; then
+            declared_unshipped "$dir" "*REMOVED*$entry" \
+                || printf '*REMOVED*%s\n' "$entry" >> "$(change_file "$dir")"
             echo "  retired (shipped)   ${dir##*/}: $entry"
             retired=$((retired + 1))
-        elif grep -Fxq "$entry" "$unshipped"; then
-            grep -Fxv "$entry" "$unshipped" > "$unshipped.tmp" && mv "$unshipped.tmp" "$unshipped"
-            echo "  dropped (unshipped) ${dir##*/}: $entry"
+        elif grep -Fxq -- "$entry" "$path"; then
+            grep -Fxv -- "$entry" "$path" > "$path.tmp" && mv "$path.tmp" "$path"
+            echo "  dropped (unshipped) ${dir##*/}/${path##*/}: $entry"
             retired=$((retired + 1))
         fi
     done < <(rebuild_all | grep -E "error RS0017: Symbol '" | sort -u)
@@ -203,6 +270,8 @@ ensure_declaration_files() {
 # running it again.
 update() {
     local round=0 retired declared
+    CHANGE="$(change_name)" || return 1
+    echo "Writing into PublicAPI.Unshipped.$CHANGE.txt beside each project that changed."
     : > "$UNEXPLAINED"
     ensure_declaration_files
     while :; do
@@ -218,12 +287,14 @@ update() {
         esac
         [ "$round" -lt 8 ] || { echo "Stopped at $round rounds — something is not settling." >&2; return 1; }
     done
+    remove_empty_change_files
     report_unexplained_failures || return 1
     echo "Declared what changed. Read the diff before committing it — that IS the API review."
 }
 
 # THE RELEASE STEP: what was unshipped has now shipped. A `*REMOVED*` pair cancels — the retired
-# entry leaves Shipped and the marker leaves Unshipped — and everything else moves across.
+# entry leaves Shipped and the marker leaves Unshipped — and everything else moves across. Every
+# Unshipped file folds, the project's own and each change's, and a change's file goes once folded.
 ship() {
     local csproj dir shipped unshipped missing=""
     for csproj in $(projects); do
@@ -247,10 +318,13 @@ ship() {
         shipped="$dir/PublicAPI.Shipped.txt"
         unshipped="$dir/PublicAPI.Unshipped.txt"
 
-        python3 - "$shipped" "$unshipped" <<'PY'
+        python3 - "$shipped" "$unshipped" "$dir"/PublicAPI.Unshipped.*.txt <<'PY'
+import os
 import sys
 
 shipped_path, unshipped_path = sys.argv[1], sys.argv[2]
+# A glob that matched nothing is its own pattern: only files that exist are a change's.
+changes = [path for path in sys.argv[3:] if os.path.isfile(path)]
 header = "#nullable enable"
 
 def entries(path):
@@ -258,7 +332,7 @@ def entries(path):
         return [line.rstrip("\n") for line in handle if line.strip() and line.strip() != header]
 
 shipped = entries(shipped_path)
-unshipped = entries(unshipped_path)
+unshipped = entries(unshipped_path) + [entry for path in changes for entry in entries(path)]
 
 removed = {line[len("*REMOVED*"):] for line in unshipped if line.startswith("*REMOVED*")}
 added = [line for line in unshipped if not line.startswith("*REMOVED*")]
@@ -273,9 +347,12 @@ with open(shipped_path, "w", encoding="utf-8") as handle:
 
 with open(unshipped_path, "w", encoding="utf-8") as handle:
     handle.write(header + "\n")
+
+for path in changes:
+    os.remove(path)
 PY
     done
-    echo "Folded Unshipped into Shipped. The *REMOVED* lines you just retired are the release's breaks."
+    echo "Folded every Unshipped file into Shipped. The *REMOVED* lines you just retired are the release's breaks."
 }
 
 case "${1:-}" in
