@@ -8,7 +8,7 @@ export class SheetKeymap {
         let shift = (modifiers & 1) !== 0;
         if (command && !(clipboard == null) && key.length === 1 && (modifiers & 2) === 0) {
             {
-                let copied: any; let cut: any; let pasted: any;
+                let copied: any; let cut: any;
                 switch ($eq.text.toLower(key[0], true)) {
                     case 'c':
                         if ((($0) => (($0 != null && $0.length > 0) && (copied = $0, true)))(sheet.copyText())) clipboard.write(copied);
@@ -19,7 +19,7 @@ export class SheetKeymap {
                         sheet.cut();
                         return true;
                     case 'v':
-                        if ((($0) => (($0 != null && $0.length > 0) && (pasted = $0, true)))(clipboard.read())) sheet.paste(pasted);
+                        sheet.pasteFromAsync(clipboard);
                         return true;
                 }
             }

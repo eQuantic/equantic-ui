@@ -190,14 +190,14 @@ public class WindowsShellTests
     // ---- Clipboard ----------------------------------------------------------------------------------------
 
     [WindowsFact]
-    public void TheClipboardRoundTripsText()
+    public async Task TheClipboardRoundTripsText()
     {
         var clipboard = new WindowsClipboard();
-        var before = clipboard.Read();
+        var before = await clipboard.ReadAsync();
         try
         {
             clipboard.Write("héllo, 🌍");
-            clipboard.Read().Should().Be("héllo, 🌍");
+            (await clipboard.ReadAsync()).Should().Be("héllo, 🌍");
         }
         finally
         {

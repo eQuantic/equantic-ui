@@ -21,14 +21,14 @@ public class SheetSurfaceModelTests
     {
         public string? Held;
         public void Write(string text) => Held = text;
-        public string? Read() => Held;
+        public Task<string?> ReadAsync() => Task.FromResult(Held);
     }
 
     /// <summary>A clipboard another program holds: every write is refused.</summary>
     private sealed class RefusingClipboard : ITextClipboard
     {
         public void Write(string text) => throw new IOException("the clipboard is held by another program");
-        public string? Read() => null;
+        public Task<string?> ReadAsync() => Task.FromResult<string?>(null);
     }
 
     private static ISheetSurfaceModel Press(SheetController sheet, Point at,
@@ -557,6 +557,38 @@ public class SheetSurfaceModelTests
         sheet.Selection = new SheetRange(new CellRef(5, 5));
         model.HandleKey("v", KeyModifiers.Command, KeyboardConvention.Standard, clipboard).Should().BeTrue();
         sheet.Document.GetCell(new CellRef(6, 6)).Should().Be("4");
+    }
+
+    /// <summary>A clipboard that answers when it is told to, as a host's that reads later would.</summary>
+    private sealed class LateClipboard : ITextClipboard
+    {
+        private readonly TaskCompletionSource<string?> _answer = new();
+        public void Write(string text) { }
+        public Task<string?> ReadAsync() => _answer.Task;
+        public void Answer(string? text) => _answer.SetResult(text);
+    }
+
+    /// <summary>⌘V pastes when the clipboard answers, after the key, and only then tells the sheet's views to
+    /// build again (#1028).</summary>
+    [Fact]
+    public void APasteWhoseClipboardAnswersLater_LandsWhenItAnswers_AndRefreshesTheViews()
+    {
+        var sheet = new SheetController(rows: 50, cols: 8);
+        sheet.Selection = new SheetRange(new CellRef(1, 1));
+        var clipboard = new LateClipboard();
+        var refreshed = 0;
+        sheet.Refreshed += () => refreshed++;
+        ISheetSurfaceModel model = sheet;
+
+        model.HandleKey("v", KeyModifiers.Command, KeyboardConvention.Standard, clipboard).Should().BeTrue();
+        sheet.Document.GetCell(new CellRef(1, 1)).Should().Be("", "nothing has arrived yet");
+        refreshed.Should().Be(0);
+
+        clipboard.Answer("x\ty");
+
+        sheet.Document.GetCell(new CellRef(1, 1)).Should().Be("x");
+        sheet.Document.GetCell(new CellRef(1, 2)).Should().Be("y");
+        refreshed.Should().Be(1);
     }
 
     [Fact]

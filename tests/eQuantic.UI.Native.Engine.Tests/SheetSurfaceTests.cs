@@ -46,7 +46,7 @@ public class SheetSurfaceTests
     {
         public string? Held;
         public void Write(string text) => Held = text;
-        public string? Read() => Held;
+        public Task<string?> ReadAsync() => Task.FromResult(Held);
     }
 
     private static (PhotonHost Host, Page Page) Open(int firstRow = 0)

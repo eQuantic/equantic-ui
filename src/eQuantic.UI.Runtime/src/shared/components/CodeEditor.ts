@@ -255,6 +255,7 @@ export class CodeEditor extends StatefulComponent {
         editor.scrollRequested = $eq.delegates.combine(editor.scrollRequested, () => this.setState(() => {}));
         editor.definitions.changed = $eq.delegates.combine(editor.definitions.changed, () => this.setState(() => {}));
         editor.folding.changed = $eq.delegates.combine(editor.folding.changed, () => this.setState(() => {}));
+        editor.pasted = $eq.delegates.combine(editor.pasted, () => this.setState(() => this.notify(editor)));
         editor.openRequested = $eq.delegates.combine(editor.openRequested, $eq.delegates.bound(this, this.opened));
         return editor;
     }

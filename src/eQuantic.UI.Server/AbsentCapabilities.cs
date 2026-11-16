@@ -49,7 +49,7 @@ internal static class AbsentCapabilities
 
     internal sealed class Clipboard : ITextClipboard
     {
-        public string? Read() => null;
+        public Task<string?> ReadAsync() => Task.FromResult<string?>(null);
 
         public void Write(string text)
         {
