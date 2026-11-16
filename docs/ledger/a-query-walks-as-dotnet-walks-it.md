@@ -5,6 +5,9 @@
   made before its walk. A deferred operator now checks its arguments when called and answers a query the runtime
   walks one element at a time, and an answering operator stops where it answers. A `List<T>` carries a version every
   change .NET counts moves, so a `foreach`, a query and `List.ForEach` refuse a list changed under them with .NET's
-  `InvalidOperationException`. Measured on both sides by `LazyQueryConformanceTests` and
+  `InvalidOperationException`, a list held as an interface it answers to included. The browser keeps that refusal
+  under every walk, as .NET in WebAssembly does; .NET on a server reads a list under a `Where` or a `Select` by a
+  span for `ToList`, `Count`, `First` and the other terminals it overrides, and those cases are listed with that
+  reason in `ListSpanDivergenceConformanceTests`. Measured on both sides by `LazyQueryConformanceTests` and
   `ListVersionConformanceTests`. Proposed and archived through OpenSpec (`openspec/specs/transpiler-sequences`,
   `openspec/specs/runtime-collections`).

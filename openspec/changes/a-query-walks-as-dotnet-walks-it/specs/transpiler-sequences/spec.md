@@ -38,3 +38,18 @@ answers.
 
 - **WHEN** `var q = l.OrderBy(x => x);` over `{ 3, 1 }`, then `l.Add(2)`, and `q` is joined
 - **THEN** it answers `1,2,3`, as .NET's, where it answered `1,3`
+
+#### Scenario: A query held in a local
+
+- **WHEN** `var q = l.Select(x => { log += x; return x; });` over `{ 1, 2, 3 }`, then `q.First()`
+- **THEN** the log is `1`, as when the query is written in place
+
+#### Scenario: Select's index overload
+
+- **WHEN** `l.Select((x, i) => { log += x; return x; }).Last()` runs over `{ 1, 2, 3 }`
+- **THEN** the log is `123`, as .NET's plain iterator runs it, where a projection without the index reads the last element alone
+
+#### Scenario: A callback that changes the list under a terminal operator
+
+- **WHEN** `l.Where(x => { if (x == 1) l.Add(9); return true; }).ToList()` runs over `{ 1, 2, 3 }`
+- **THEN** it throws `InvalidOperationException`, .NET's documented contract and what .NET in WebAssembly answers; .NET on a server, whose LINQ is optimized for speed, reads the list by a span and answers 3, and the case is listed with that reason

@@ -13,6 +13,14 @@
 - [x] 2.2 foreach over a list, a query over one and List.ForEach compare it
 - [x] 2.3 Prove it on both sides: `ListVersionConformanceTests` over every change .NET counts and every one it does not
 
-## 3. Documentation
+## 3. What the review and the measurement found
 
-- [x] 3.1 One ledger entry under `docs/ledger/` citing #685 and #863, and the wiki's LINQ and List<T> rows in every language they are written in
+- [x] 3.1 A query held in a local stops where one written in place does; Select's index overload reads no count nor element alone
+- [x] 3.2 A foreach over a list held as an interface or a derived class refuses a change (`sequenceWalk`)
+- [x] 3.3 With no model, ToList and ToArray over a query read it into an array; a guessed ForEach is the receiver's own; a guess claims only a call some List<T> overload takes
+- [x] 3.4 The span paths of .NET's speed-optimized LINQ are listed with their reason in `ListSpanDivergenceConformanceTests`, both sides asserted
+
+## 4. Documentation
+
+- [x] 4.1 One ledger entry under `docs/ledger/` citing #685 and #863, and the wiki's LINQ and List<T> rows in every language they are written in
+- [x] 4.2 The wiki says a callback that changes its list throws on the web, as .NET in WebAssembly does

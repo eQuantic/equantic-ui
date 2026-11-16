@@ -27,3 +27,8 @@ at every step and after the last, and SHALL throw .NET's `InvalidOperationExcept
 
 - **WHEN** `l[1] = 5` runs over `new List<int> { 1 }`
 - **THEN** it throws .NET's `ArgumentOutOfRangeException`, where the array grew
+
+#### Scenario: A list held as an interface it answers to
+
+- **WHEN** a `foreach` walks `IEnumerable<int> e = l` (or an `IList<int>`, an `IReadOnlyList<int>`) and its body adds to `l`
+- **THEN** the next step throws `InvalidOperationException`, as .NET's list enumerator does through every face, while a set or an array held so walks as it is

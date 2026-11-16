@@ -26,7 +26,17 @@ in the browser as no .NET iterator walks them.
 - A `List<T>` carries a version that every change .NET counts moves (`Add`, `Insert`, a `Remove` that
   finds, `RemoveAt`, a range that is not empty, `Clear`, `Sort`, `Reverse`, a write through the
   indexer, which now checks its index). `foreach` over a list and a query over one compare it at every
-  step and refuse a change, and `List.ForEach` refuses a change its action makes.
+  step and refuse a change, and `List.ForEach` refuses a change its action makes. So does a `foreach`
+  over a list held as an interface it answers to (`IEnumerable<T>`, `IList<T>`, `IReadOnlyList<T>`…) or
+  as a class derived from it, as .NET's list enumerator refuses the change through every face.
+- A query held in a local, a field or a method's answer stops where .NET's stops, as one written in
+  place does, and `Select`'s index overload runs every selector before the element that answers, as
+  .NET's plain iterator does, with no count nor element read alone.
+- The browser refuses a change under every walk, which is .NET's documented contract and what .NET in
+  WebAssembly answers, whose LINQ is optimized for size. .NET on a server reads a list under a `Where` or
+  a `Select` by a span for `ToList`, `ToArray`, `Count`, `First`, `Last`, `ElementAt` and `Any()`, an
+  optimization it does not promise; those cases are listed, each with that reason, in
+  `ListSpanDivergenceConformanceTests`, which asserts both sides.
 
 For a developer: a query and a loop over a list run their callbacks in the order .NET runs them and
 fail where .NET fails. No public surface and no developer surface moves; eqc's own surface gains the
@@ -44,5 +54,6 @@ runtime entry points it calls (`$eq.query.*`, `$eq.collections.list*`).
 - eqc (`Linq/*` strategies, `ListMethodStrategy`, the `foreach` and local declaration strategies, the
   IR migration baseline, which shrinks by the two strategies the table now answers) and the runtime
   (`utils/query.ts`, `utils/list-version.ts`, `utils/collections.ts`, `utils/list.ts`). The served
-  runtime grows by the query walker. Realizers, the Photon shells and the SDKs are untouched.
+  runtime grows by the query walker and by the shared components' lists, which add, clear and walk
+  through the list's version (about 3.8 KB gzipped, recorded as this change's budget delta). Realizers, the Photon shells and the SDKs are untouched.
 - Principles: .NET's semantics, measured on both sides by the conformance suite.
