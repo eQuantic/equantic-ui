@@ -1018,8 +1018,9 @@ jobs:
       # because it edits the samples' sources while it runs: the steps above read what the builds wrote.
       # The desktop holds the bar's budget and fails over it. The web is tens of seconds over the bar, and
       # fails over a ceiling that only comes down as the slices of #900 make each part of it faster.
-      # The step takes 2 to 4 minutes. Its limit leaves a desktop edit room to wait out its 300 seconds
-      # twice and still report, and ends a step that would hold the runner until it died (#1473).
+      # The step takes 2 to 4 minutes. Its limit leaves the desktop room to start slowly and wait out one
+      # undrawn edit's 300 seconds, which ends its runs and reports why, and ends a step that would hold
+      # the runner until it died (#1473). A run slower than that is cut before its report, and fails anyway.
       - name: Edit to view, timed on both samples
         shell: bash
         timeout-minutes: 15
