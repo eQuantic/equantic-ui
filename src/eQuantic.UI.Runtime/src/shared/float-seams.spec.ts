@@ -16,6 +16,7 @@ import type { DraggableNode, ScrollViewNode } from './nodes';
 import { commitScrollViewports } from './scroll-viewports';
 import { photonTheme } from './design-system.generated';
 import { CanvasPointer } from './canvas-pointer';
+import { Point } from './value-types';
 
 /** A double that is not a single, so a seam that passes it through is visible. */
 const RAW = 0.1;
@@ -96,6 +97,16 @@ describe('the runtime hands C# a single wherever C# says float', () => {
     handlerOf(lowered, 'eq-drag-released')(new CustomEvent('eq-drag-released', { detail: RAW }));
 
     expect(seen).toEqual([SINGLE]);
+  });
+
+  // Where a person asked for a menu (#1531): the context controller builds the point from the pointer's
+  // coordinates, and the twin rounds it as the C# `Point` holds it.
+  it('Point', () => {
+    const point = new Point(10 + RAW, 6 + RAW);
+
+    expect(point.x).toBe(Math.fround(10 + RAW));
+    expect(point.y).toBe(Math.fround(6 + RAW));
+    expect(point.x).not.toBe(10 + RAW);
   });
 
   // The pointer twin is written by hand, so its members answer what the C# record's do, measured

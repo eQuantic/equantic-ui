@@ -34,6 +34,7 @@ export {
   TableSpans,
   Hoverable,
   DropTarget,
+  ContextTarget,
   Sortable,
   SortableItem,
   Flexible,
@@ -133,6 +134,7 @@ export { RouteValues } from './route-values';
 // Same promise, same failure shape: a page writing BoxStyle.Transform / .Pattern / .Glow names
 // these, and eqc routes every Primitives name here.
 export {
+  ContextRequest,
   FaceName,
   Point,
   Rect,

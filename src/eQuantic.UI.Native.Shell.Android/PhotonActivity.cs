@@ -800,7 +800,20 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         {
             case MotionEventActions.Down:
                 _kind = KindOf(e.GetToolType(0));
+                // A mouse's secondary button asks for the menu of what it lands on (#1531), and the rest of its
+                // gesture is the menu's, not a press's.
+                if (_kind == PointerKind.Mouse && (e.ButtonState & MotionEventButtonState.Secondary) != 0)
+                {
+                    _secondaryHeld = true;
+                    _host.ContextRequest(x, y, _kind);
+                    return true;
+                }
                 _host.PressDown(x, y, kind: _kind);
+                return true;
+            case MotionEventActions.Move when _secondaryHeld:
+                return true;
+            case MotionEventActions.Up or MotionEventActions.Cancel when _secondaryHeld:
+                _secondaryHeld = false;
                 return true;
             case MotionEventActions.Move:
                 _host.PointerMove(x, y, _kind);
@@ -825,6 +838,10 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
 
     /// <summary>What the gesture in flight is, read from its tool when it lands and kept until it ends.</summary>
     private PointerKind _kind = PointerKind.Touch;
+
+    /// <summary>A mouse's secondary button is down: the gesture asked for a menu, and its moves and release are
+    /// the menu's (#1531).</summary>
+    private bool _secondaryHeld;
 
     /// <summary>
     /// A finger, a stylus, or a mouse's button: OnTouchEvent receives all three (a mouse's HOVER alone

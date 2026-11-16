@@ -143,7 +143,11 @@ internal sealed partial class EmitVisitor
                 : new Box(new BoxStyle { MinWidth = s.Node.Bounds.Width }, anchored.Panel);
         var b = s.Node.Bounds;
         var gap = anchored.Gap;
-        layer.Add(anchored.Placement switch
+        // A panel at a point of the anchor (#1531): its top-left corner there, plus the gap on both axes, as a
+        // menu opens where the pointer asked for it.
+        layer.Add(anchored.At is { } at
+            ? new Positioned(panel, top: b.Y + at.Y + gap, start: b.X + at.X + gap)
+            : anchored.Placement switch
         {
             AnchorPlacement.BottomEnd => new Positioned(panel, top: b.Bottom + gap, end: s.Motion.ViewportW - b.Right),
             AnchorPlacement.TopStart => new Positioned(panel, bottom: s.Motion.ViewportH - b.Y + gap, start: b.X),

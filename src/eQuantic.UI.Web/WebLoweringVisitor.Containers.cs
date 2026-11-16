@@ -434,12 +434,19 @@ internal sealed partial class WebLoweringVisitor
         // the panel vanishes before the pointer reaches it. Click-open panels keep the margin
         // (padding would catch the outside-tap on the gap strip).
         var bridge = anchored.OpenOnHover;
+        // A panel at a point of the anchor (#1531) takes no edge's class: its corner stands at the point, plus the
+        // gap on both axes, as Photon places it. TS twin: lowerAnchored.
+        var at = anchored.At;
+        if (at is not null) top = false;
         var panel = new RealizedElement("div")
         {
-            ClassName = "eq-anchor-panel " + PlacementClass(anchored.Placement)
+            ClassName = "eq-anchor-panel" + (at is null ? " " + PlacementClass(anchored.Placement) : "")
                 + (anchored.MatchAnchorWidth ? " eq-anchor-match" : ""),
             Style = new HtmlStyle
             {
+                Top = at is { } point ? TokenCss.Px(point.Y) : null,
+                Left = at is { } corner ? TokenCss.Px(corner.X) : null,
+                MarginLeft = at is not null && !bridge ? TokenCss.Px(anchored.Gap) : null,
                 MarginTop = !top && !bridge ? TokenCss.Px(anchored.Gap) : null,
                 MarginBottom = top && !bridge ? TokenCss.Px(anchored.Gap) : null,
                 PaddingTop = !top && bridge ? TokenCss.Px(anchored.Gap) : null,

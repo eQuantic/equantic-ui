@@ -803,6 +803,23 @@ public static class UI
         new DropTarget(child, onDropped) { OnDragOverChanged = onDragOverChanged, Enabled = enabled };
 
     /// <summary>
+    /// What a person can ask the menu of: <paramref name="onRequested"/> hears a secondary click, a finger held
+    /// still, or the menu key or Shift+F10 with the focus inside, with where in the child's box the pointer asked
+    /// (none for the keyboard). Open a menu there with an <c>Anchored</c> placed <c>At</c> that point, or use
+    /// <c>ContextMenu</c>, which does it.
+    /// </summary>
+    public static ContextTarget ContextTarget(VisualNode child, Action<ContextRequest> onRequested, bool enabled = true) =>
+        new ContextTarget(child, onRequested) { Enabled = enabled };
+
+    /// <summary>
+    /// A menu of <paramref name="items"/> for what <paramref name="child"/> is, opened where a person asks for it
+    /// (a secondary click, a long press, the menu key or Shift+F10), its choice handed to <paramref name="onSelect"/>.
+    /// </summary>
+    public static ContextMenu ContextMenu(VisualNode child, IReadOnlyList<MenuItem> items, Action<int>? onSelect = null,
+        bool enabled = true) =>
+        new ContextMenu(child, items, onSelect) { Enabled = enabled };
+
+    /// <summary>
     /// A whole file upload: an area files are dropped on, a button that asks for them, and a row for each
     /// with its progress and its controls, each file sent under <paramref name="policy"/> and handed to
     /// <paramref name="onCompleted"/> once it arrived.

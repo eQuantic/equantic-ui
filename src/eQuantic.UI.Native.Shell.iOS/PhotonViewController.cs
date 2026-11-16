@@ -202,8 +202,19 @@ public sealed class PhotonViewController : UIViewController
         _tracking = touch;
         _kind = KindOf(touch);
         var point = touch.LocationInView(View);
+        // A pointer's secondary click asks for the menu of what it lands on (#1531), and the rest of its gesture
+        // is the menu's, not a press's. A finger's long press is the host's to count.
+        if (_kind == PointerKind.Mouse && evt is not null && (evt.ButtonMask & UIEventButtonMask.Secondary) != 0)
+        {
+            _secondaryHeld = true;
+            _host.ContextRequest((float)point.X, (float)point.Y, _kind);
+            return;
+        }
         _host.PressDown((float)point.X, (float)point.Y, kind: _kind);
     }
+
+    /// <summary>A pointer's secondary click is down: its moves and its release are the menu's (#1531).</summary>
+    private bool _secondaryHeld;
 
     /// <summary>
     /// A finger, the Pencil, or the pointer of a trackpad or a mouse on an iPad, which arrives as a touch
@@ -219,7 +230,7 @@ public sealed class PhotonViewController : UIViewController
 
     public override void TouchesMoved(NSSet touches, UIEvent? evt)
     {
-        if (Tracked(touches) is not { } point || _host is null) return;
+        if (Tracked(touches) is not { } point || _host is null || _secondaryHeld) return;
         _host.PointerMove((float)point.X, (float)point.Y, _kind);
     }
 
@@ -227,6 +238,11 @@ public sealed class PhotonViewController : UIViewController
     {
         if (Tracked(touches) is not { } point || _host is null) return;
         _tracking = null;
+        if (_secondaryHeld)
+        {
+            _secondaryHeld = false;
+            return;
+        }
         _host.PressUp((float)point.X, (float)point.Y, _kind);
     }
 
@@ -239,6 +255,11 @@ public sealed class PhotonViewController : UIViewController
     {
         if (Tracked(touches) is null || _host is null) return;
         _tracking = null;
+        if (_secondaryHeld)
+        {
+            _secondaryHeld = false;
+            return;
+        }
         _host.PointerCancel(_kind);
     }
 

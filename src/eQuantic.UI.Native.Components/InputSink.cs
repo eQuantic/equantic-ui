@@ -161,6 +161,22 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     }
 
     /// <summary>
+    /// What a person may ask the menu of, registered WHEREVER it is: the keyboard finds it by the focus inside it,
+    /// and only the part on screen takes a pointer's request.
+    /// </summary>
+    public void Add(ContextRegion region)
+    {
+        var placed = Place(region.Bounds);
+        Note(regions.Contexts, regions.Contexts.Count, region.Bounds, region.Bounds);
+        regions.Contexts.Add(region with
+        {
+            Bounds = placed,
+            Visible = !Visible(placed) ? placed with { Width = 0, Height = 0 }
+                : Clip is { } clip ? Intersect(clip, placed) : placed,
+        });
+    }
+
+    /// <summary>
     /// A sortable list or item, registered WHEREVER it is (see <see cref="SortRegion"/>): placing an item
     /// counts the ones scrolled out of sight, and only the part on screen takes a press.
     /// </summary>

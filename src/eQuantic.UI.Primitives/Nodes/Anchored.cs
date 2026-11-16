@@ -35,6 +35,13 @@ public sealed class Anchored : VisualNode
 
     public AnchorPlacement Placement { get; init; } = AnchorPlacement.BottomStart;
 
+    /// <summary>
+    /// A point of the anchor's box, relative to its top-left corner, where the panel's top-left corner stands
+    /// (plus <see cref="Gap"/> on both axes) instead of along the edge <see cref="Placement"/> names: a menu
+    /// opened where the pointer asked for it (#1531, <see cref="ContextRequest.At"/>). Null keeps the placement.
+    /// </summary>
+    public Point? At { get; init; }
+
     /// <summary>Distance (dp) between anchor and panel on the placement axis.</summary>
     public float Gap { get; init; } = DefaultGap;
 

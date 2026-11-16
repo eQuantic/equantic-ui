@@ -60,6 +60,7 @@ public class LayoutTransparencyTests
         new DragDismiss(c),
         new Draggable(c),
         new DropTarget(c, _ => { }),
+        new ContextTarget(c, _ => { }),
         new Sortable(c, "list", _ => { }),
         new SortableItem(c, "item"),
         new Flexible(c),

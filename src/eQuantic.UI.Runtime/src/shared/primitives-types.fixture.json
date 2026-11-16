@@ -92,6 +92,8 @@
   "Column",
   "ComponentContext",
   "ComponentElement",
+  "ContextRequest",
+  "ContextTarget",
   "ControlsTheme",
   "CornerRadii",
   "CuratedIcons",

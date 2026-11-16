@@ -362,6 +362,9 @@ public sealed partial class PhotonHost
         _lastTimeMs = timeMs;
         // A carried item's hold, lean and the scroll under it advance before the frame shows them (#1537).
         var sortScrolled = TickSort(timeMs);
+        // A finger's hold over what a person may ask the menu of becomes a long press here (#1531), after the
+        // sort's: a hold that lifted a sortable item is the lift's.
+        TickContext(timeMs);
         // The tree lays out above what the system covers, and a SafeArea at the bottom pads only
         // what the keyboard leaves of the home indicator: the keyboard is already in its way.
         var height = MathF.Max(0, Height - _viewInsets.Bottom);
@@ -461,6 +464,9 @@ public sealed partial class PhotonHost
         // A finger holding a sortable item is due a frame when its hold is long enough (#1537).
         if (SortDueMs() is { } holdDue)
             _nextFrameDueMs = _nextFrameDueMs is { } due ? MathF.Min(due, holdDue) : holdDue;
+        // A finger holding a target is due a frame when its hold is long enough (#1531).
+        if (ContextDueMs() is { } contextDue)
+            _nextFrameDueMs = _nextFrameDueMs is { } soonest ? MathF.Min(soonest, contextDue) : contextDue;
         // Said once per edit, on the frame that draws it, as the web's server says each rebuild: the
         // person sees how long an edit took to reach the window, and the edit-to-view measurement
         // (#900) reads the same line. The shell presents this frame next, within a vsync.
@@ -2086,6 +2092,7 @@ public sealed partial class PhotonHost
     public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse, KeyModifiers modifiers = KeyModifiers.None)
     {
         y += _lift;
+        MoveContext(new Point(x, y));
         // What the pointer holds is what a code surface hears with its hover (#1084): ⌘ over a name links it. Where it
         // is is kept through a drag, which hovers nothing, so a modifier changed after the release is heard there.
         _pointerModifiers = modifiers;
@@ -2681,6 +2688,9 @@ public sealed partial class PhotonHost
         _sort = null;
         if (_drag is null) PressSort(point, kind);
 
+        // A finger pressing what a person may ask the menu of is a candidate long press (#1531).
+        PressContext(point, kind);
+
         // …and the topmost SCROLLABLE surface, the same way. A drag surface is the more specific
         // gesture and keeps priority; where there is none, a finger scrolls. Under a finger's candidate
         // pan of a table it is the scroller AROUND the table, which takes what the table cannot follow
@@ -2882,6 +2892,7 @@ public sealed partial class PhotonHost
 
         _pan = null;
         _panBeside = null;
+        _contextHold = null;
         CancelPointerSort();
         if (_tablePress is { } table)
         {
@@ -2964,6 +2975,7 @@ public sealed partial class PhotonHost
     {
         y += _lift;
         _held = false;
+        _contextHold = null;
         // Where a drag ended is where the pointer is (#1084): ⌘ pressed next, with no move, is heard there.
         if (kind == PointerKind.Mouse) _pointerAt = new Point(x, y);
         // The canvas that took the press gets the release, wherever it happens — a drag that ends
@@ -3545,6 +3557,9 @@ public sealed partial class PhotonHost
             NeedsRender = true;
             return true;
         }
+
+        // The menu key or Shift+F10 asks the target around the focus for its menu (#1531).
+        if (RequestByKeyboard(key, modifiers)) return true;
 
         // A SPREADSHEET under the selection speaks Excel: arrows move (⌘ jumps to the data edge,
         // ⇧ extends), Tab/Enter walk, Delete clears, ⌘C/⌘V are TSV through the platform clipboard.

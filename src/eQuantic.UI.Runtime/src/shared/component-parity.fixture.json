@@ -807,6 +807,86 @@
       ]
     }
   ],
+  "context-target": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-akjizx eq-g7fowl",
+        "data-eq-context": "on"
+      },
+      "events": [
+        "eq-context-requested"
+      ],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-cl6mtg eq-kngwsg"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "context-target-disabled": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-g7fowl",
+        "data-eq-context": "off"
+      },
+      "events": [
+        "eq-context-requested"
+      ],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-bo3n4y eq-cl6mtg eq-kngwsg"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "anchored-at": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-anchorhost"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-16go7cf eq-1eb13m5 eq-bo3n4y eq-cl6mtg eq-kngwsg"
+          },
+          "events": [],
+          "children": []
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1qofvsb eq-1wvuxop eq-6imbev eq-anchor-panel eq-z2ug1"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1eb13m5 eq-1na110w eq-bo3n4y eq-dxu01k eq-kngwsg"
+              },
+              "events": [],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "pinned-scrolled": [
     {
       "tag": "div",
@@ -3070,6 +3150,46 @@
                       ]
                     }
                   ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "context-menu-closed": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-anchorhost"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "aria-haspopup": "menu",
+            "class": "eq-g7fowl",
+            "data-eq-context": "on"
+          },
+          "events": [
+            "eq-context-requested"
+          ],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "row",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
                 }
               ]
             }

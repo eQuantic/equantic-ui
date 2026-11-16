@@ -234,6 +234,7 @@ internal sealed partial class WebLoweringVisitor(
     public HtmlElement? Visit(Hoverable hoverable, bool? horizontalAxis) => LowerHoverable(hoverable);
 
     public HtmlElement? Visit(DropTarget target, bool? horizontalAxis) => LowerDropTarget(target);
+    public HtmlElement? Visit(ContextTarget target, bool? horizontalAxis) => LowerContextTarget(target);
 
     public HtmlElement? Visit(Sortable sortable, bool? horizontalAxis) => LowerSortable(sortable, horizontalAxis);
 

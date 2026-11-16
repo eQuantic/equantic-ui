@@ -476,6 +476,7 @@ internal sealed partial class WebLoweringVisitor
         Pressable pressable => CapsAt(pressable.Child),
         Hoverable hoverable => CapsAt(hoverable.Child),
         DropTarget target => CapsAt(target.Child),
+        ContextTarget target => CapsAt(target.Child),
         Sortable sortable => CapsAt(sortable.Child),
         SortableItem item => CapsAt(item.Child),
         Adjustable adjustable => CapsAt(adjustable.Child),
@@ -984,6 +985,37 @@ internal sealed partial class WebLoweringVisitor
         };
         foreach (var drag in (ReadOnlySpan<string>)["dragenter", "dragover", "dragleave", "drop"])
             element.CustomEvents[drag] = ClientDispatches;
+        if (Lower(target.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
+            element.Children.Add(child);
+        return element;
+    }
+
+    /// <summary>
+    /// What a person asks the menu of (<see cref="ContextTarget"/>, #1531): the same layout-transparent div as a
+    /// drop area, marked for the runtime's context controller (<c>dom/context-request.ts</c>), which answers the
+    /// browser's <c>contextmenu</c> and a finger's hold over it and dispatches the request. The server declares
+    /// the event and runs none; the client twin (<c>lowerContextTarget</c>) turns it into the C# callback.
+    /// </summary>
+    private HtmlElement LowerContextTarget(ContextTarget target)
+    {
+        var fills = Fills(target.Child);
+        var cap = CapsAt(target.Child);
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = fills.Width ? "100%" : null,
+                MaxWidth = Size(cap),
+                // A target, saying so because `none` inherits from any transparent row above it.
+                PointerEvents = "auto",
+                Height = fills.Height ? "100%" : null,
+            },
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["data-eq-context"] = target.Enabled ? "on" : "off",
+            },
+        };
+        element.CustomEvents["eq-context-requested"] = ClientDispatches;
         if (Lower(target.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
             element.Children.Add(child);
         return element;

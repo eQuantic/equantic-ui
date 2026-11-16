@@ -134,6 +134,8 @@ public sealed partial class PhotonHost
         _pan = null;
         _panBeside = null;
         _drag = null;
+        // A finger's hold that lifted the item asks for no menu (#1531).
+        _contextHold = null;
         NeedsRender = true;
         return true;
     }

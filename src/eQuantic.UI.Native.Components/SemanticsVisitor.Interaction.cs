@@ -293,6 +293,9 @@ internal sealed partial class SemanticsVisitor
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(Hoverable node, LayoutNode laidOut) => Wraps;
 
+    /// <summary>What a person asks the menu of reads as its child: the request is a gesture, not a role.</summary>
+    public bool Visit(ContextTarget node, LayoutNode laidOut) => Wraps;
+
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(DropTarget node, LayoutNode laidOut) => Wraps;
     /// <summary>A named list is a labelled GROUP, read and then walked into, as the web's role=group says it
