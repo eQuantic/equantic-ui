@@ -89,7 +89,8 @@ public class DocsIndexTests
     /// a citation that pointed at a LINE OF CODE did not have its assignment read. Since #1489 every
     /// fenced citation points at a line of code, found by its quote, so the form would be read
     /// nowhere, and a quote whose code is in the file is what
-    /// <see cref="Every_quoted_line_is_found_once_in_the_file_its_citation_names"/> checks already.
+    /// <see cref="Every_quoted_line_is_found_once_in_the_file_its_citation_names"/> checks already, a short
+    /// one such as <c>Top = 0,</c> included: in the file at least once.
     /// </para>
     /// </summary>
     private static readonly Regex[] DeclaredName =
@@ -489,7 +490,9 @@ public class DocsIndexTests
                     var to = starts.Where(start => start > cited.Index).DefaultIfEmpty(line.Length).Min();
                     var quoted = line[from..to];
                     var claim = Claim(quoted);
-                    if (claim is null) continue;
+                    var whole = Whole(quoted);
+                    var elided = quoted.Contains("...", StringComparison.Ordinal) || quoted.Contains('…');
+                    if (claim is null && (elided || whole.Length == 0)) continue;
 
                     var rooted = path.Contains('/', StringComparison.Ordinal);
                     var candidates = (rooted ? [Path.Combine(root, path)] : sources[Path.GetFileName(path)].ToArray())
@@ -497,6 +500,15 @@ public class DocsIndexTests
                     if (candidates.Length == 0)
                     {
                         if (rooted) wrong.Add($"{where} → {path} (no such file)");
+                        continue;
+                    }
+
+                    // A SHORT quote (`Top = 0,`) may occur anywhere, so it locates nothing and once is not
+                    // asked of it. Not at all is still wrong: the file it names does not hold it.
+                    if (claim is null)
+                    {
+                        if (candidates.All(candidate => Occurrences(Collapsed(candidate), whole) == 0))
+                            wrong.Add($"{where} → {path} does not hold \"{whole}\" at all");
                         continue;
                     }
 
@@ -508,7 +520,6 @@ public class DocsIndexTests
                         continue;
                     }
 
-                    var whole = Whole(quoted);
                     if (candidates.Sum(candidate => Occurrences(Collapsed(candidate), whole)) == 1) continue;
                     wrong.Add($"{where} → {path} holds \"{claim}\" {found} times, so the quote locates nothing: "
                         + "lengthen it with the lines around the one it means, joined by \\n");
