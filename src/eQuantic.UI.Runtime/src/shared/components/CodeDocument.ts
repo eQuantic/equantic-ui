@@ -67,18 +67,18 @@ export class CodeDocument {
             let c = text[i];
             if (c === '\r') {
                 if (i + 1 < text.length && text[i + 1] === '\n') i++;
-                lines.push(current.toString());
+                $eq.collections.listAdd(lines, current.toString());
                 current.clear();
                 continue;
             }
             if (c === '\n') {
-                lines.push(current.toString());
+                $eq.collections.listAdd(lines, current.toString());
                 current.clear();
                 continue;
             }
             current.append(c);
         }
-        lines.push(current.toString());
+        $eq.collections.listAdd(lines, current.toString());
         return new CodeDocument(lines);
     }
 
@@ -133,20 +133,20 @@ export class CodeDocument {
             let end = this.clamp(range.end);
             let inserted = CodeDocument.fromText(text);
             let lines: string[] = ($eq.collections.listCapacity(this._lines.length + inserted.lineCount), []);
-            for (let i = 0; i < start.line; i++) lines.push(this._lines[i]);
+            for (let i = 0; i < start.line; i++) $eq.collections.listAdd(lines, this._lines[i]);
             let head = this._lines[start.line].slice(0, start.column);
             let tail = this._lines[end.line].slice(end.column);
             if (inserted.lineCount === 1) {
-                lines.push(head + inserted.line(0) + tail);
+                $eq.collections.listAdd(lines, head + inserted.line(0) + tail);
                 caret = new CodePosition(start.line, start.column + inserted.line(0).length);
             } else {
-                lines.push(head + inserted.line(0));
-                for (let i = 1; i < inserted.lineCount - 1; i++) lines.push(inserted.line(i));
+                $eq.collections.listAdd(lines, head + inserted.line(0));
+                for (let i = 1; i < inserted.lineCount - 1; i++) $eq.collections.listAdd(lines, inserted.line(i));
                 let last = inserted.line(inserted.lineCount - 1);
-                lines.push(last + tail);
+                $eq.collections.listAdd(lines, last + tail);
                 caret = new CodePosition(start.line + inserted.lineCount - 1, last.length);
             }
-            for (let i = end.line + 1; i < this._lines.length; i++) lines.push(this._lines[i]);
+            for (let i = end.line + 1; i < this._lines.length; i++) $eq.collections.listAdd(lines, this._lines[i]);
             return new CodeDocument(lines);
         })();
         return { $: $r, caret };

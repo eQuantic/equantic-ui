@@ -133,7 +133,7 @@ export class TreeView extends StatefulComponent {
         if (!this._seeded) {
             this._seeded = true;
             let keys: any; 
-            if ((keys = this.expandedKeys) != null) for (const key of keys) $eq.collections.setAdd(this._open, key);
+            if ((keys = this.expandedKeys) != null) for (const key of $eq.collections.sequenceWalk(keys)) $eq.collections.setAdd(this._open, key);
         }
         let path: any; 
         if ((($0) => (($0 != null && $eq.collections.count($0) > 0) && (path = $0, true)))(this.revealPath) && !TreeView.samePath(path, this._revealed)) {
@@ -147,7 +147,7 @@ export class TreeView extends StatefulComponent {
         if (this._activeIsStatus && (statusKey = this._activeKey) != null && !this.hasStatusRow(statusKey)) this._activeIsStatus = false;
         let active = this.activeIndex();
         let items: VisualNode[] = [];
-        for (let i = 0; i < this._rows.length; i++) items.push(this.buildRow(context, this._rows[i], i === active && this._keyboard));
+        for (let i = 0; i < this._rows.length; i++) $eq.collections.listAdd(items, this.buildRow(context, this._rows[i], i === active && this._keyboard));
         let tree: VisualNode = new Navigable($eq.delegates.bound(this, this.move), items, { role: 'tree', label: this.label, activeCell: active >= 0 ? [active, 0] : null, onTextSearch: $eq.delegates.bound(this, this.search).bind(this) });
         tree = new Shortcut(tree, KeyChord.enter, $eq.delegates.bound(this, this.pressActive), { focusScoped: true, enabled: active >= 0 });
         let height: any; 
@@ -231,7 +231,7 @@ export class TreeView extends StatefulComponent {
     addLevel(rows: TreeViewRow[], nodes: TreeNode[], parent: any, level: number) {
         for (let i = 0; i < $eq.collections.count(nodes); i++) {
             let node = $eq.collections.item(nodes, i);
-            rows.push(new TreeViewRow(node.key, node, parent, level, i + 1, $eq.collections.count(nodes)));
+            $eq.collections.listAdd(rows, new TreeViewRow(node.key, node, parent, level, i + 1, $eq.collections.count(nodes)));
             if (!this._open.has(node.key)) continue;
             let children = this.childrenOf(node);
             if (!(children == null)) {
@@ -239,7 +239,7 @@ export class TreeView extends StatefulComponent {
                 continue;
             }
             if (!this._loading.has(node.key) && !this._failed.has(node.key)) this.startLoad(node);
-            rows.push(new TreeViewRow(node.key, null, node.key, level + 1, 1, 1));
+            $eq.collections.listAdd(rows, new TreeViewRow(node.key, null, node.key, level + 1, 1, 1));
         }
     }
 
@@ -248,7 +248,7 @@ export class TreeView extends StatefulComponent {
     }
 
     findIn(nodes: TreeNode[], key: string, deep: boolean) {
-        for (const node of nodes) {
+        for (const node of $eq.collections.sequenceWalk(nodes)) {
             if (node.key === key) return node;
             if (!deep || node.isLeaf) continue;
             let loaded: any; 
@@ -266,7 +266,7 @@ export class TreeView extends StatefulComponent {
     }
 
     hasStatusRow(key: string) {
-        for (const row of this._rows) if (row.isStatus && row.key === key) return true;
+        for (const row of $eq.collections.listWalk(this._rows)) if (row.isStatus && row.key === key) return true;
         return false;
     }
 

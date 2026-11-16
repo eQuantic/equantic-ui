@@ -40,7 +40,7 @@ export class DataTable extends StatelessComponent {
             table.add(empty);
             return table;
         }
-        for (const row of this.rows) table.add(this.body(theme, tracks, row));
+        for (const row of $eq.collections.sequenceWalk(this.rows)) table.add(this.body(theme, tracks, row));
         for (let i = 0; i < this.pendingRows; i++) table.add(this.pending(theme, tracks, i));
         return table;
     }

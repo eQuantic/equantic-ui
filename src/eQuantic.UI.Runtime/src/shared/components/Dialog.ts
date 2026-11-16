@@ -47,7 +47,7 @@ export class Dialog extends StatelessComponent {
         let layers = new Stack('topStart', { width: SizeValue.fill, height: SizeValue.fill });
         layers.add(scrim);
         layers.add(centering);
-        let layer = new Overlay(new Presence(layers), { label: this.title, alert: this.actions.some((action) => action.variant === 'destructive') });
+        let layer = new Overlay(new Presence(layers), { label: this.title, alert: $eq.query.any(this.actions, (action) => action.variant === 'destructive') });
         let escape: any; 
         return this.dismissible && (escape = this.onDismiss) != null ? new Shortcut(layer, KeyChord.escape, escape) : layer;
     }

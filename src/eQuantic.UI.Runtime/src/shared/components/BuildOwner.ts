@@ -167,41 +167,41 @@ export class BuildOwner {
     readFrame(reader: ComponentElement) {
         if (reader.frameReaderIndex >= 0) return;
         reader.frameReaderIndex = this._frameReaders.length;
-        this._frameReaders.push(reader);
+        $eq.collections.listAdd(this._frameReaders, reader);
     }
 
     forgetFrameReader(reader: ComponentElement) {
         let index = reader.frameReaderIndex;
         if (index < 0) return;
         let last = this._frameReaders[this._frameReaders.length - 1];
-        this._frameReaders[index] = last;
+        $eq.collections.listSet(this._frameReaders, index, last);
         last.frameReaderIndex = index;
         $eq.collections.listRemoveAt(this._frameReaders, this._frameReaders.length - 1);
         reader.frameReaderIndex = -1;
     }
 
     markFrameReaders() {
-        for (const reader of this._frameReaders) reader.dependencyChanged();
+        for (const reader of $eq.collections.listWalk(this._frameReaders)) reader.dependencyChanged();
     }
 
     readRoute(reader: ComponentElement) {
         if (reader.routeReaderIndex >= 0) return;
         reader.routeReaderIndex = this._routeReaders.length;
-        this._routeReaders.push(reader);
+        $eq.collections.listAdd(this._routeReaders, reader);
     }
 
     forgetRouteReader(reader: ComponentElement) {
         let index = reader.routeReaderIndex;
         if (index < 0) return;
         let last = this._routeReaders[this._routeReaders.length - 1];
-        this._routeReaders[index] = last;
+        $eq.collections.listSet(this._routeReaders, index, last);
         last.routeReaderIndex = index;
         $eq.collections.listRemoveAt(this._routeReaders, this._routeReaders.length - 1);
         reader.routeReaderIndex = -1;
     }
 
     markRouteReaders() {
-        for (const reader of this._routeReaders) reader.dependencyChanged();
+        for (const reader of $eq.collections.listWalk(this._routeReaders)) reader.dependencyChanged();
     }
 
     endFrame() {
@@ -214,14 +214,14 @@ export class BuildOwner {
             holder.sweepDeferred(this.frame);
         }
         this.rebuildingAll = false;
-        for (const element of this._dirtyDeferred) {
-            if (element.isActive && element.dirty) this._dirtyNextFrame.push(element);
+        for (const element of $eq.collections.listWalk(this._dirtyDeferred)) {
+            if (element.isActive && element.dirty) $eq.collections.listAdd(this._dirtyNextFrame, element);
         }
-        this._dirtyDeferred.splice(0);
+        $eq.collections.listClear(this._dirtyDeferred);
         this.flushLifecycle();
         if (this._dirtyNextFrame.length === 0) return;
-        for (const element of this._dirtyNextFrame) this._dirty.push(element);
-        this._dirtyNextFrame.splice(0);
+        for (const element of $eq.collections.listWalk(this._dirtyNextFrame)) $eq.collections.listAdd(this._dirty, element);
+        $eq.collections.listClear(this._dirtyNextFrame);
         this.buildRequested?.();
     }
 
@@ -231,11 +231,11 @@ export class BuildOwner {
             this.deactivate(root);
             this.root = null;
         }
-        this._deferred.splice(0);
-        this._dirty.splice(0);
-        this._dirtyNextFrame.splice(0);
-        this._dirtyDeferred.splice(0);
-        this._mounting.splice(0);
+        $eq.collections.listClear(this._deferred);
+        $eq.collections.listClear(this._dirty);
+        $eq.collections.listClear(this._dirtyNextFrame);
+        $eq.collections.listClear(this._dirtyDeferred);
+        $eq.collections.listClear(this._mounting);
         this.flushLifecycle();
     }
 
@@ -270,20 +270,20 @@ export class BuildOwner {
     }
 
     queueMount(element: ComponentElement) {
-        return this._mounting.push(element);
+        return $eq.collections.listAdd(this._mounting, element);
     }
 
     queueUnmount(component: StatefulComponent) {
-        return this._unmounting.push(component);
+        return $eq.collections.listAdd(this._unmounting, component);
     }
 
     trackDeferred(element: NodeElement) {
-        return this._deferred.push(element);
+        return $eq.collections.listAdd(this._deferred, element);
     }
 
     scheduleDependent(element: ComponentElement) {
         if (!(this._showing == null)) {
-            if (this._deferredCursor >= 0 && (BuildOwner.deferredHolderOf(element) === this._showing)) BuildOwner.insertBehind(this._deferredScratch, this._deferredCursor, element); else this._dirtyDeferred.push(element);
+            if (this._deferredCursor >= 0 && (BuildOwner.deferredHolderOf(element) === this._showing)) BuildOwner.insertBehind(this._deferredScratch, this._deferredCursor, element); else $eq.collections.listAdd(this._dirtyDeferred, element);
             return;
         }
         if (!this._inFrameBuild) {
@@ -291,7 +291,7 @@ export class BuildOwner {
             return;
         }
         if (this._dirtyCursor < 0) {
-            this._dirty.push(element);
+            $eq.collections.listAdd(this._dirty, element);
             return;
         }
         BuildOwner.insertBehind(this._dirty, this._dirtyCursor, element);
@@ -305,10 +305,10 @@ export class BuildOwner {
 
     schedule(element: ComponentElement) {
         if (this._building > 0) {
-            this._dirtyNextFrame.push(element);
+            $eq.collections.listAdd(this._dirtyNextFrame, element);
             return;
         }
-        this._dirty.push(element);
+        $eq.collections.listAdd(this._dirty, element);
         this.buildRequested?.();
     }
 
@@ -320,24 +320,24 @@ export class BuildOwner {
             let element = this._dirty[i];
             if (!this.waitsToBuild(element)) continue;
             if (!(BuildOwner.deferredHolderOf(element) == null)) {
-                this._dirtyDeferred.push(element);
+                $eq.collections.listAdd(this._dirtyDeferred, element);
                 continue;
             }
             element.rebuild(false);
         }
         this._dirtyCursor = -1;
-        this._dirty.splice(0);
+        $eq.collections.listClear(this._dirty);
     }
 
     buildDeferred(holder: NodeElement) {
         if (this._dirtyDeferred.length === 0) return;
         let mine = this._deferredScratch;
-        mine.splice(0);
+        $eq.collections.listClear(mine);
         for (let i = this._dirtyDeferred.length - 1; i >= 0; i--) {
             let element = this._dirtyDeferred[i];
             if (element.isActive && !(BuildOwner.deferredHolderOf(element) === holder)) continue;
             $eq.collections.listRemoveAt(this._dirtyDeferred, i);
-            if (element.isActive) mine.push(element);
+            if (element.isActive) $eq.collections.listAdd(mine, element);
         }
         $eq.collections.listSortBy(mine, BuildOwner.byDepth, 'System.Comparison`1[eQuantic.UI.Primitives.ComponentElement]');
         try {
@@ -348,7 +348,7 @@ export class BuildOwner {
         } finally {
             this._deferredCursor = -1;
         }
-        mine.splice(0);
+        $eq.collections.listClear(mine);
     }
 
     waitsToBuild(element: ComponentElement) {
@@ -364,13 +364,13 @@ export class BuildOwner {
     }
 
     flushLifecycle() {
-        for (const component of this._unmounting) component.notifyUnmounted();
-        this._unmounting.splice(0);
-        for (const element of this._mounting) {
+        for (const component of $eq.collections.listWalk(this._unmounting)) component.notifyUnmounted();
+        $eq.collections.listClear(this._unmounting);
+        for (const element of $eq.collections.listWalk(this._mounting)) {
             let stateful: any; 
             if ((($0) => (($0 instanceof StatefulComponent && $0.mountedAt != null && $0.mountedAt.isActive === true) && (stateful = $0, true)))(element.component)) stateful.notifyMounted();
         }
-        this._mounting.splice(0);
+        $eq.collections.listClear(this._mounting);
     }
 
     toString(): string {

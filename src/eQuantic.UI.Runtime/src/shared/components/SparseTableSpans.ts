@@ -11,7 +11,7 @@ export class SparseTableSpans extends TableSpans {
         this.count = Math.max(0, count);
         this.extent = Math.max(0, extent);
         let kept: number[] = [];
-        for (const index of extents.keys()) if (index >= 0 && index < this.count) kept.push(index);
+        for (const index of $eq.collections.sequenceWalk(extents.keys())) if (index >= 0 && index < this.count) $eq.collections.listAdd(kept, index);
         $eq.collections.listSort(kept, $eq.collections.order('value', 'comparable'));
         this._indices = kept.slice();
         this._extents = new Array(this._indices.length).fill(0);

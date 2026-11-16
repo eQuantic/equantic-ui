@@ -35,7 +35,7 @@ export class PythonLanguage {
                 $slots.reserved = $eq.collections.hashSetOf(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
                 $slots.builtins = $eq.collections.hashSetOf(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
                 $slots.constants = $eq.collections.hashSetOf(['True', 'False', 'None', 'self', 'cls']);
-                $slots.words = [...[...$eq.linq.seq(PythonLanguage.reserved, 'first'), ...$eq.linq.seq(PythonLanguage.builtins, 'second')], ...$eq.linq.seq(PythonLanguage.constants, 'second')].slice();
+                $slots.words = $eq.linq.toArray($eq.query.concat($eq.query.concat(PythonLanguage.reserved, PythonLanguage.builtins), PythonLanguage.constants));
             } catch ($error) {
                 PythonLanguage.$slots = null;
                 throw PythonLanguage.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.PythonLanguage', $error);
@@ -170,10 +170,10 @@ export class PythonLanguage {
     static add(into: CodeToken[], start: number, length: number, kind: CodeTokenKindValue) {
         if (length <= 0) return;
         if (into.length > 0 && into[into.length - 1].kind === kind && into[into.length - 1].end === start) {
-            (into[into.length - 1] = $eq.withPatch(into[into.length - 1], { length: into[into.length - 1].length + length }));
+            $eq.collections.listSet(into, into.length - 1, $eq.withPatch(into[into.length - 1], { length: into[into.length - 1].length + length }));
             return;
         }
-        into.push(new CodeToken(start, length, kind));
+        $eq.collections.listAdd(into, new CodeToken(start, length, kind));
     }
 
     toString(): string {
