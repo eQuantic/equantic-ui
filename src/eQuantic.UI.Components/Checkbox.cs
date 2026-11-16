@@ -6,7 +6,8 @@ namespace eQuantic.UI.Components;
 /// The design system's Checkbox (spec B11), CONTROLLED: the owner holds the value and passes
 /// <see cref="Checked"/> + <see cref="OnChanged"/>. Box 22×22 · Radius.Xs — unchecked: 2dp
 /// BorderStrong; checked: Primary fill + 16dp check glyph. The WHOLE row (box + 15/400 label,
-/// gap 12) is the target, hit ≥ 48 via the Pressable contract. Tristate is real: a "select all"
+/// gap 12) is the target, hit ≥ 48 via the Pressable contract. The label wraps to every line it
+/// needs, never clipped, with the box level with its first line. Tristate is real: a "select all"
 /// that is only partly true shows the DASH, never a tick. v1 fence: the scale-pop motion joins
 /// later; Error tints the border Destructive.
 /// </summary>
@@ -60,10 +61,24 @@ public sealed class Checkbox : StatelessComponent
             BorderColor = borderColor,
         }, boxContent);
 
-        var row = new Row(gap: slot?.LabelGap ?? Space.S3) { Cross = CrossAlign.Center };
-        row.Add(box);
+        // The label is read whole, on as many lines as it needs: a consent cut at its second line is
+        // a consent nobody read. It keeps its own width and SHRINKS, wrapping, when the row has less
+        // (weight 0, shrink 1): a weight would stretch every checkbox across whatever row it sits
+        // in. The box sits on its FIRST line, as Banner's glyph does (spec B18), with their centres
+        // level: whichever of the two is shorter drops by half the difference, so a one-line label
+        // draws as it always did.
+        var row = new Row(gap: slot?.LabelGap ?? Space.S3) { Cross = CrossAlign.Start };
         if (Label is { } label)
-            row.Add(new Text(label, TypeRole.BodyM, Disabled ? theme.TextMuted : theme.TextPrimary, maxLines: 2));
+        {
+            var drop = (theme.Type(TypeRole.BodyM).LineHeight - side) / 2;
+            row.Add(drop > 0 ? new Box(new BoxStyle { Padding = new EdgeInsets(0, drop, 0, 0) }, box) : box);
+            VisualNode text = new Text(label, TypeRole.BodyM, Disabled ? theme.TextMuted : theme.TextPrimary);
+            row.Add(new Flexible(drop < 0 ? new Box(new BoxStyle { Padding = new EdgeInsets(0, -drop, 0, 0) }, text) : text, flex: 0));
+        }
+        else
+        {
+            row.Add(box);
+        }
 
         // The STATE goes in aria-checked, never in the name. A label-less checkbox announcing
         // "Checked" twice over was noise, and a name that CHANGED with the state read as a

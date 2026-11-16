@@ -45,6 +45,25 @@ public class Wave2ComponentTests
             .Should().Contain($"border: 2px solid {TokenCss.Value(Theme.Colors(Variant.Destructive).Base)}");
     }
 
+    /// <summary>
+    /// The label is read whole: it was clamped at two lines, and a long consent lost its end behind
+    /// an ellipsis on a phone. It shrinks and wraps beside the box, which sits on its first line.
+    /// </summary>
+    [Fact]
+    public void Checkbox_LabelWrapsWhole_BesideABoxOnItsFirstLine()
+    {
+        const string label = "I agree that you keep these details to contact me about the service, as the privacy policy explains.";
+        var row = Render(new Checkbox(false, () => { }, label)).Children[0];
+
+        var styles = Subtree(row).Select(node => node.Attributes.GetValueOrDefault("style") ?? "").ToList();
+        styles.Should().NotContain(style => style.Contains("line-clamp"), "a label is never cut short");
+        row.Attributes["style"].Should().Contain("align-items: flex-start", "the box sits beside the first line, not the middle");
+        Subtree(row).Should().Contain(node => node.TextContent == label);
+    }
+
+    private static IEnumerable<HtmlNode> Subtree(HtmlNode node) =>
+        new[] { node }.Concat(node.Children.SelectMany(Subtree));
+
     [Fact]
     public void Switch_TrackAndThumbPosition()
     {

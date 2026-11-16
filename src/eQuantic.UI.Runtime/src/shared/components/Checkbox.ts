@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, IconGlyph, Pressable, Row, Sizing, StatelessComponent, Text, VisualNode, VisualNodeExtensions } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, Pressable, Row, Sizing, StatelessComponent, Text, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Checkbox extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Checkbox';
@@ -34,10 +34,16 @@ export class Checkbox extends StatelessComponent {
         let glyph: VisualNode | null = this.indeterminate ? new Icon(IconGlyph.fromIcons('minus'), 16, primary.onBase) : this.checked ? new Icon(IconGlyph.fromIcons('check'), 16, primary.onBase) : null;
         let boxContent = (glyph == null ? null : VisualNodeExtensions.centered(glyph));
         let box = new Box(new BoxStyle({ width: side, height: side, background: filled ? primary.base : null, cornerRadius: new CornerRadii(slot?.checkboxRadius ?? theme.shape('extraSmall')), borderWidth: filled ? 0 : slot?.borderWidth ?? 2, borderColor: borderColor }), boxContent);
-        let row = new Row(slot?.labelGap ?? 12, 'start', 'center', false, null, null, { cross: 'center' });
-        row.add(box);
+        let row = new Row(slot?.labelGap ?? 12, 'start', 'center', false, null, null, { cross: 'start' });
         let label: any; 
-        if ((label = this.label) != null) row.add(new Text(label, 'bodyM', this.disabled ? theme.textMuted : theme.textPrimary, 2));
+        if ((label = this.label) != null) {
+            let drop = Math.fround(Math.fround(theme.type('bodyM').lineHeight - side) / 2);
+            row.add(drop > 0 ? new Box(new BoxStyle({ padding: new EdgeInsets(0, drop, 0, 0) }), box) : box);
+            let text: VisualNode = new Text(label, 'bodyM', this.disabled ? theme.textMuted : theme.textPrimary);
+            row.add(new Flexible(drop < 0 ? new Box(new BoxStyle({ padding: new EdgeInsets(0, -drop, 0, 0) }), text) : text, 0));
+        } else {
+            row.add(box);
+        }
         return new Pressable(row, this.disabled ? null : this.onChanged, { disabled: this.disabled, role: 'checkbox', selected: this.checked, mixed: this.indeterminate, label: this.label });
     }
 }
