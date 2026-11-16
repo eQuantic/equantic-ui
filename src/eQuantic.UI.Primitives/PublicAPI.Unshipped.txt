@@ -1183,3 +1183,34 @@ override sealed eQuantic.UI.Primitives.ContextTarget.Accept<TState, TResult>(eQu
 static eQuantic.UI.Primitives.ContextRequest.operator !=(eQuantic.UI.Primitives.ContextRequest? left, eQuantic.UI.Primitives.ContextRequest? right) -> bool
 static eQuantic.UI.Primitives.ContextRequest.operator ==(eQuantic.UI.Primitives.ContextRequest? left, eQuantic.UI.Primitives.ContextRequest? right) -> bool
 const eQuantic.UI.Primitives.ContextTarget.HoldMs = 500 -> float
+eQuantic.UI.Primitives.BoxConstraints
+eQuantic.UI.Primitives.BoxConstraints.<Clone>$() -> eQuantic.UI.Primitives.BoxConstraints!
+eQuantic.UI.Primitives.BoxConstraints.Equals(eQuantic.UI.Primitives.BoxConstraints? other) -> bool
+override eQuantic.UI.Primitives.BoxConstraints.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.BoxConstraints.GetHashCode() -> int
+override eQuantic.UI.Primitives.BoxConstraints.ToString() -> string!
+static eQuantic.UI.Primitives.BoxConstraints.operator !=(eQuantic.UI.Primitives.BoxConstraints? left, eQuantic.UI.Primitives.BoxConstraints? right) -> bool
+static eQuantic.UI.Primitives.BoxConstraints.operator ==(eQuantic.UI.Primitives.BoxConstraints? left, eQuantic.UI.Primitives.BoxConstraints? right) -> bool
+static readonly eQuantic.UI.Primitives.BoxConstraints.Unbounded -> eQuantic.UI.Primitives.BoxConstraints!
+eQuantic.UI.Primitives.BoxConstraints.BoxConstraints(float minWidth = 0, float maxWidth = Infinity, float minHeight = 0, float maxHeight = Infinity) -> void
+eQuantic.UI.Primitives.BoxConstraints.MinWidth.get -> float
+eQuantic.UI.Primitives.BoxConstraints.MaxWidth.get -> float
+eQuantic.UI.Primitives.BoxConstraints.MinHeight.get -> float
+eQuantic.UI.Primitives.BoxConstraints.MaxHeight.get -> float
+static eQuantic.UI.Primitives.BoxConstraints.Tight(eQuantic.UI.Primitives.Size size) -> eQuantic.UI.Primitives.BoxConstraints!
+static eQuantic.UI.Primitives.BoxConstraints.Loose(eQuantic.UI.Primitives.Size size) -> eQuantic.UI.Primitives.BoxConstraints!
+eQuantic.UI.Primitives.BoxConstraints.IsTight.get -> bool
+eQuantic.UI.Primitives.BoxConstraints.HasBoundedWidth.get -> bool
+eQuantic.UI.Primitives.BoxConstraints.HasBoundedHeight.get -> bool
+eQuantic.UI.Primitives.BoxConstraints.Biggest.get -> eQuantic.UI.Primitives.Size
+eQuantic.UI.Primitives.BoxConstraints.Smallest.get -> eQuantic.UI.Primitives.Size
+eQuantic.UI.Primitives.BoxConstraints.Constrain(eQuantic.UI.Primitives.Size size) -> eQuantic.UI.Primitives.Size
+eQuantic.UI.Primitives.BoxConstraints.Enforce(eQuantic.UI.Primitives.BoxConstraints! parent) -> eQuantic.UI.Primitives.BoxConstraints!
+eQuantic.UI.Primitives.BoxConstraints.Loosen() -> eQuantic.UI.Primitives.BoxConstraints!
+eQuantic.UI.Primitives.BoxConstraints.Deflate(eQuantic.UI.Primitives.EdgeInsets insets) -> eQuantic.UI.Primitives.BoxConstraints!
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.LayoutBuilder! node, TState state) -> TResult
+eQuantic.UI.Primitives.LayoutBuilder
+eQuantic.UI.Primitives.LayoutBuilder.LayoutBuilder(System.Func<eQuantic.UI.Primitives.BoxConstraints!, eQuantic.UI.Primitives.VisualNode!>! builder) -> void
+override sealed eQuantic.UI.Primitives.LayoutBuilder.NodeKind.get -> string!
+eQuantic.UI.Primitives.LayoutBuilder.Builder.get -> System.Func<eQuantic.UI.Primitives.BoxConstraints!, eQuantic.UI.Primitives.VisualNode!>!
+override sealed eQuantic.UI.Primitives.LayoutBuilder.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult

@@ -345,6 +345,9 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     /// <summary>Resolved into geometry: the variant IS this node by the time paint runs.</summary>
     public Nothing Visit(AdaptiveNode node, EmitState s) { Descend(s); return Nothing.Value; }
 
+    /// <summary>The builder's child, which the layout built and measured: the node draws nothing of its own.</summary>
+    public Nothing Visit(LayoutBuilder node, EmitState s) { Descend(s); return Nothing.Value; }
+
     /// <summary>Resolved into geometry: a weight the flex pass already spent.</summary>
     public Nothing Visit(Flexible node, EmitState s) { Descend(s); return Nothing.Value; }
 
