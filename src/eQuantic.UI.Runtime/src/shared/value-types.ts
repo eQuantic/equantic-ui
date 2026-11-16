@@ -934,6 +934,7 @@ export class ScrollRequest {
 hashesByValue(
   ColorToken,
   ContextRequest,
+  PointerEvent,
   SortDrop,
   TableOffset,
   TableRange,
