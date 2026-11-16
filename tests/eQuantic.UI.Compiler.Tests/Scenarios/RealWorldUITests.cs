@@ -64,8 +64,9 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        result.Should().Contain("filter");
-        result.Should().Contain("map");
+        // Where and Select are the runtime's lazy queries, which Sum walks (#685).
+        result.Should().Contain("$eq.query.where(this.items, (x) => x.isActive)");
+        result.Should().Contain("$eq.query.select(");
         result.Should().Contain("reduce");
         // `Price` is a DECIMAL, and a decimal is a runtime Decimal rather than a JS number, so
         // `_a + _b` here would concatenate their text instead of adding them. This assertion used
@@ -88,12 +89,12 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        result.Should().Contain("filter");
+        result.Should().Contain("$eq.query.where(");
         // default(OrderStatus) is its zero member, New (#380). This asserted `!== undefined`, which
         // every status passes, so the filter kept the orders C# drops.
         result.Should().Contain("!== 'new'");
         result.Should().Contain("sort");
-        result.Should().Contain("slice(0, 10)");
+        result.Should().Contain("$eq.query.take(").And.Contain("'new')), 10)");
     }
 
     // ============ Null Safety Scenarios ============
@@ -145,8 +146,8 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        result.Should().Contain("some");
-        result.Should().Contain("push");
+        result.Should().Contain("$eq.query.any(this.items, (x) => x.id === this.newItem.id)");
+        result.Should().Contain("$eq.collections.listAdd(this.items, this.newItem)");
         result.Should().Contain("sort");
     }
 
@@ -336,13 +337,13 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        // LINQ should be concise
-        result.Should().Contain("filter");
-        result.Should().Contain("map");
+        // LINQ should be concise: the runtime's lazy queries (#685)
+        result.Should().Contain("$eq.query.where(");
+        result.Should().Contain("$eq.query.select(");
 
-        // Manual loop should remain explicit
+        // Manual loop should remain explicit, the list's Add moving its version (#863)
         result.Should().Contain("for");
-        result.Should().Contain("push");
+        result.Should().Contain("$eq.collections.listAdd(manualResult, item.id)");
     }
 
     // ============ Type Casting and Filtering ============
@@ -361,7 +362,7 @@ public class RealWorldUITests
         var result = TestHelper.ConvertCodeBlock(code);
 
         result.Should().Contain("filter(($x) => $x instanceof User)");
-        result.Should().Contain("filter((u) =>");
+        result.Should().Contain("$eq.query.where(").And.Contain(", (u) => u.isActive)");
         result.Should().Contain("sort");
     }
 
@@ -382,7 +383,7 @@ public class RealWorldUITests
 
         result.Should().Contain("[0]");
         result.Should().Contain("($0[$0.length - 1] ?? null))(this.items)");
-        result.Should().Contain("length > 0");
+        result.Should().Contain("$eq.query.any(this.items)");
         result.Should().Contain("?? 0");
     }
 

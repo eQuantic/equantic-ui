@@ -100,9 +100,9 @@ public class TupleAndAnonymousObjectLoweringTests
     {
         // A Set kept every anonymous object, each a reference of its own.
         TestHelper.ConvertExpression("new[] { new { A = 1 } }.Distinct()")
-            .Should().Be("[...$eq.collections.hashSet(true, [$eq.anonymous({ a: 1 })])]");
+            .Should().Be("$eq.query.defer(($src) => [...$eq.collections.hashSet(true, $src)], [$eq.anonymous({ a: 1 })])");
         TestHelper.ConvertExpression("new[] { new { L = new[] { 1 } } }.Distinct()")
-            .Should().Be("[...$eq.collections.hashSet($eq.collections.memberEquality({ l: false }), [$eq.anonymous({ l: [1] })])]");
+            .Should().Be("$eq.query.defer(($src) => [...$eq.collections.hashSet($eq.collections.memberEquality({ l: false }), $src)], [$eq.anonymous({ l: [1] })])");
     }
 
     [Fact]
