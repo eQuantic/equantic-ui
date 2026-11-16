@@ -227,6 +227,86 @@ public class RunningCompilerTests
         holder.Join(TimeSpan.FromSeconds(10));
     }
 
+    /// <summary>
+    /// A save that is the FIRST to see eqc dead never asks the process while it holds the compiler's gate.
+    /// Asking a process whether it exited raises its exit event when nothing has seen the exit yet, and
+    /// raising it takes the process's own lock, which the exit event of the process watcher holds while it
+    /// reads the compile in flight through the gate: a save that asked under the gate waited on the event
+    /// while the event waited on it (#1491, which #1496 did not cure, since its test had already seen the
+    /// exit before the save looked). Here eqc is killed through a handle of its own, so the compiler's
+    /// process has not seen the exit, and its lock is held, as the watcher's event holds it, from before
+    /// the kill until the save has run.
+    /// </summary>
+    [Fact]
+    public async Task ASaveThatIsTheFirstToSeeEqcDead_NeverHoldsTheGateWhileItAsksTheProcess()
+    {
+        var compiler = new RunningCompiler(_ => Answering(Compiled));
+        compiler.Compile(TimeSpan.FromSeconds(30)).Compiled.Should().BeTrue();
+        var watched = compiler.Running!;
+        var pid = watched.Id;
+
+        using var held = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var holder = new Thread(() =>
+        {
+            lock (watched)
+            {
+                held.Set();
+                release.Wait(TimeSpan.FromSeconds(60));
+            }
+        });
+        holder.Start();
+        held.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
+        using (var other = Process.GetProcessById(pid)) other.Kill(entireProcessTree: true);
+        SpinWait.SpinUntil(() => !Running(pid), TimeSpan.FromSeconds(10));
+
+        var next = Task.Run(() => compiler.Compile(TimeSpan.FromSeconds(30)));
+        // Long enough for the save to reach the dead eqc and ask it.
+        await Task.Delay(500);
+        var reached = true;
+        try
+        {
+            await Task.Run(() => compiler.ProcessId).WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        catch (TimeoutException)
+        {
+            reached = false;
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        reached.Should().BeTrue("the save asks the dead process without the gate, which the process's exit event needs");
+        (await next.WaitAsync(TimeSpan.FromSeconds(30))).Compiled.Should().BeTrue();
+        holder.Join(TimeSpan.FromSeconds(10));
+        compiler.Dispose();
+    }
+
+    /// <summary>
+    /// eqc killed, and the save after it, round after round, each under a deadline: every killed eqc's exit
+    /// event races the save that finds it dead, as when eqc dies under a server. A round that hangs fails
+    /// naming itself, and the compiler is then left as it is, since releasing it would wait on the gate the
+    /// hung save holds (#1491).
+    /// </summary>
+    [Fact]
+    public async Task AnEqcKilledRoundAfterRound_IsStartedAgainByEverySave()
+    {
+        var compiler = new RunningCompiler(_ => Answering(Compiled));
+        for (var round = 1; round <= 60; round++)
+        {
+            var save = Task.Run(() => compiler.Compile(TimeSpan.FromSeconds(30)));
+            if (await Task.WhenAny(save, Task.Delay(TimeSpan.FromSeconds(45))) != save)
+                throw new TimeoutException($"round {round}: the save after eqc was killed never answered");
+            (await save).Compiled.Should().BeTrue($"round {round} compiles on an eqc started again");
+
+            var pid = compiler.ProcessId!.Value;
+            using (var other = Process.GetProcessById(pid)) other.Kill(entireProcessTree: true);
+            SpinWait.SpinUntil(() => !Running(pid), TimeSpan.FromSeconds(10));
+        }
+        compiler.Dispose();
+    }
+
     /// <summary>A compile past its limit stops eqc rather than leaving it to write beside the next one.</summary>
     [Fact]
     public void ACompilePastItsLimit_StopsEqc_NotAbandoned()
