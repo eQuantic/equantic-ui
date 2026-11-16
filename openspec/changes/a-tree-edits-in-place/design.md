@@ -43,8 +43,10 @@ selecting only a file's name without its extension; multiple selection; dragging
   focused one's `aria-activedescendant` names; Photon's host from the region of the focused composite's active
   cell. Any composite gets it, a tree, a grid or a list of the app's own.
 - **A field's keys are the field's.** The web's composite answered every keydown that bubbled to its host, so an
-  arrow or a letter typed into a field inside it moved the tree instead. It now answers only a key whose target
-  is its host.
+  arrow or a letter typed into a field inside it moved the tree instead. It now leaves a key typed into a field to
+  the field, and only that: a calendar's cell a press focused still sends its keys up, as it always did. A tree
+  item's press keeps the keyboard on the tree by cancelling the item's own focus, and leaves a press inside its
+  field alone.
 - **The instance style is the family's record.** A tree is of the list family, whose slot (`ListTheme`, #938)
   already holds the quiet fill and the chevron's colour the tree reads. The tree's measures join it, and
   `TreeView.Style` is laid over `IAppTheme.List` with `ListTheme.Merge`, as #1545 asks of every component.

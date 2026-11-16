@@ -54,7 +54,8 @@ builders and style) settled for this slice.
 - **Vocabulary**: `Navigable.FocusVersion`, `TextEntry.SelectOnFocus`, the tree's members of `ListTheme`; additions
   only in `PublicAPI.Unshipped.txt`.
 - **Components**: `TreeView`'s new members, `TreeRowState`, `TreeEditRequest`, `TreeReloadRequest`; the `UI.TreeView`
-  factory keeps its parameters (the new members are init slots).
+  factory takes each new member as an optional parameter, as it takes the loader, so the declarative surface reaches
+  them. The tree's own SDK string, `TreeItemName`, names its fields.
 - **Web**: `dom/context-request.ts` follows the active descendant; the lowering's composite leaves a field's keys to
   it and honours a focus version; the entry selects on focus.
 - **Photon**: the keyboard's context request follows the active cell; a focus version moves the host's focus; a

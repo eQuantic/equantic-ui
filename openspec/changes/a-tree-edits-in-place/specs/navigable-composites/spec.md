@@ -2,8 +2,9 @@
 
 ### Requirement: A key typed into a field inside a composite is the field's
 
-A `Navigable` SHALL move and search only on a key its own one stop receives. A key typed into a text field inside
-it (an arrow, Home, End, a letter) SHALL reach the field alone, on the web as on Photon.
+A key typed into a text field inside a `Navigable` (an arrow, Home, End, a letter) SHALL reach the field alone: the
+composite SHALL neither move nor search on it, on the web as on Photon. A press inside such a field SHALL put the
+caret where it pressed and leave the keyboard in the field.
 
 #### Scenario: Typing in a tree's rename field
 

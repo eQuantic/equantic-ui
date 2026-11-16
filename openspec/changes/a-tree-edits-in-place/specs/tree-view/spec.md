@@ -4,8 +4,8 @@
 
 When the tree has an `OnRenamed`, F2 with the tree focused, or a new `TreeEditRequest` naming a node, SHALL replace
 that node's label with a text field holding the label, all of it selected, with the keyboard in it. Enter, or the
-field losing the keyboard, SHALL call `OnRenamed` with the node and the name typed, unless the name is empty, only
-spaces, or the label unchanged, which SHALL cancel. Escape SHALL cancel. After Enter or Escape the keyboard SHALL
+field losing the keyboard, SHALL call `OnRenamed` with the node and the name typed without the spaces around it,
+unless that name is empty or the label unchanged, which SHALL cancel. Escape SHALL cancel. After Enter or Escape the keyboard SHALL
 be back on the tree, its active item the node. Without `OnRenamed`, F2 and a rename request SHALL do nothing.
 
 #### Scenario: F2, a new name and Enter
@@ -23,8 +23,8 @@ be back on the tree, its active item the node. Without `OnRenamed`, F2 and a ren
 
 When the tree has an `OnCreated`, a new `TreeEditRequest` with `Creates` SHALL open the node it names (loading its
 children if it must) and show a text field as the first row under it, at its children's indentation, with the
-request's `Icon`. Enter, or the field losing the keyboard, SHALL call `OnCreated` with the node and the name typed,
-unless it is empty or only spaces; Escape or an empty name SHALL drop the field. After Enter or Escape the keyboard
+request's `Icon`. Enter, or the field losing the keyboard, SHALL call `OnCreated` with the node and the name typed
+without the spaces around it, unless that name is empty; Escape or an empty name SHALL drop the field. After Enter or Escape the keyboard
 SHALL be back on the tree.
 
 #### Scenario: A new file in a closed folder
@@ -90,7 +90,8 @@ node, its level, whether it is open, whether it is selected and whether it is bu
 place of the icon and the label, while the tree keeps the row's indentation, chevron, fill, focus ring and every
 state a reader hears; a row being edited SHALL show the tree's own content. `Style` SHALL be laid over the theme's
 `ListTheme` and the tree SHALL read from the result its row height, indentation, horizontal padding, gap, row shape,
-icon colour, chevron colour, hover fill and label colour, each falling back to its default when null.
+icon colour, chevron colour, hover fill and label colour, each falling back to its default when null. The chevron
+SHALL keep the tree's own size, not the accordion's.
 
 #### Scenario: A row with a badge
 
