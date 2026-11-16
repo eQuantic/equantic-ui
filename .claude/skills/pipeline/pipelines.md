@@ -51,7 +51,7 @@ behaviour.
 | 3 | Documentation | `docs-writer` | citations, the ledger, the duties of the diff | the docs guards pass |
 | 4 | Gate | the reviewers, then `prover` | reports only | nothing a pin scanned before is out of its sight now |
 
-The change sets `skip_specs: true` only when neither `PublicAPI.Unshipped.txt` nor the developer
+The change sets `skip_specs: true` only when neither `PublicAPI.Unshipped*.txt` nor the developer
 surface baseline moves. When one does, it is a break of the preview: the proposal names what goes,
 what replaces it and the migration line. No old shape is kept beside the new one.
 
