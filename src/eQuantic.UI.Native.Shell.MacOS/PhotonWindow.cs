@@ -513,7 +513,9 @@ public sealed class PhotonWindow
             case EventTypeLeftMouseUp:
                 if (_contextClickHeld)
                 {
+                    // The release is the menu's, not a press's: the host hears the button let go, and nothing pressed.
                     _contextClickHeld = false;
+                    host.PointerCancel();
                     break;
                 }
                 host.PressUp(x, y);

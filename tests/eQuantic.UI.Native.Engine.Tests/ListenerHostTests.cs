@@ -225,6 +225,38 @@ public class ListenerHostTests
     }
 
     [Fact]
+    public void AnAnsweredControlClick_HoversNothingUntilItsReleaseIsCancelled()
+    {
+        var (host, page) = Open(p => new ContextTarget(p.Hears("L", Filled(200, 100)), _ => { }));
+        var box = Listener(host);
+
+        host.ContextRequest(box.X + 10, box.Y + 6, buttons: PointerButtons.Primary, modifiers: KeyModifiers.Control);
+        host.PointerMove(box.X + 20, box.Y + 6);
+        host.PointerCancel();
+        host.PointerMove(box.X + 30, box.Y + 6);
+
+        page.Heard.Select(h => (h.Event.Phase, h.Event.Position.X)).Should().Equal(
+            (PointerPhase.Down, 10f), (PointerPhase.Up, 10f), (PointerPhase.Hover, 30f));
+    }
+
+    [Fact]
+    public void ASecondaryClickWhileAPressIsFollowed_KeepsThePressFollowed()
+    {
+        var (host, page) = Open(p => p.Hears("L", Filled(200, 100)));
+        var box = Listener(host);
+
+        host.PressDown(box.X + 10, box.Y + 6);
+        host.ContextRequest(box.X + 20, box.Y + 6);
+        host.PointerMove(box.X + 30, box.Y + 6);
+        host.PressUp(box.X + 30, box.Y + 6);
+
+        page.Heard.Select(h => (h.Event.Phase, h.Event.Buttons)).Should().Equal(
+            (PointerPhase.Down, PointerButtons.Primary),
+            (PointerPhase.Move, PointerButtons.Primary),
+            (PointerPhase.Up, PointerButtons.None));
+    }
+
+    [Fact]
     public void ACancelledPress_IsHeardAsACancelWhereItWasLast()
     {
         var (host, page) = Open(p => p.Hears("L", Filled(200, 100)));

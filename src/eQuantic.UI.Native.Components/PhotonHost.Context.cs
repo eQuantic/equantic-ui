@@ -30,13 +30,18 @@ public sealed partial class PhotonHost
         var point = new Point(x, y);
         var answered = RequestAt(point);
         // The listeners under the click hear it as the button the shell saw, its down and its up at once (#1562). A
-        // Control-click nothing answered presses as it always did, and the listeners hear that press instead.
-        if (kind != PointerKind.Touch && (buttons != PointerButtons.Primary || answered))
+        // Control-click nothing answered presses as it always did, and the listeners hear that press instead. A click
+        // while a press is followed is a second button on the same pointer, which a browser reports as no new down:
+        // the press stays followed.
+        if (kind != PointerKind.Touch && _listening is null && (buttons != PointerButtons.Primary || answered))
         {
             HearDown(point, kind, buttons, modifiers);
             // One click: the up holds the keys its down held.
             HearUp(point, modifiers);
         }
+        // An answered Control-click keeps its button down for the menu, and the shell ends it with PointerCancel rather
+        // than a press's up: until then the pointer is held, and its moves hover nothing.
+        if (answered && buttons == PointerButtons.Primary) _held = true;
         return answered;
     }
 
