@@ -152,9 +152,9 @@ at 62e5680d2 measures 357,984, inside that base's 1%.
 
 | Pull request | Merge | Before | After | Gzip | Raw | What it delivered | In proportion |
 |---|---|---:|---:|---:|---:|---|---|
-| #1584 | | 357,984 | 361,662 | +3,678 | +28,881 | a LINQ query runs when it is walked, and a list changed while it is walked throws, as .NET's do | yes |
+| #1584 | | 357,984 | 361,698 | +3,714 | +29,011 | a LINQ query runs when it is walked, and a list changed while it is walked throws, as .NET's do | yes |
 
-It records a delta of 3,960 bytes, measured against the base rather than against `main`, which had grown
+It records a delta of 3,996 bytes, measured against the base rather than against `main`, which had grown
 282 bytes past it. It is the largest single growth the runtime has had, so it answers the three
 questions a reader asks of it.
 
@@ -165,7 +165,7 @@ added element (#685). And a list changed while a `foreach`, a query or `List.For
 .NET's `InvalidOperationException`, where the walk went on, and a loop that added as it went never ended
 (#863).
 
-**Where they go.** The LINQ walker, `utils/query.ts`, is about 1.9 KB of the 3,678 (1,990 gzipped on its
+**Where they go.** The LINQ walker, `utils/query.ts`, is about 1.9 KB of the 3,714 (1,990 gzipped on its
 own). `List<T>`'s version is the rest, about 1.8 KB: its module, `utils/list-version.ts` (757 on its own),
 and the 754 call sites the runtime's transpiled components now write through it (398 `listAdd`, 146
 `listWalk`, 105 `sequenceWalk`, 64 `listClear` and 41 `listSet`), which cost 1,076 bytes against the inline
