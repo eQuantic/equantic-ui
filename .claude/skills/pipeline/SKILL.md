@@ -32,7 +32,7 @@ step; two or more, or the person asking for it, make the whole delivery high-eff
 
 | Question | High when |
 |---|---|
-| How far does it reach? | a `PublicAPI.Unshipped.txt` or the developer surface baseline moves, both targets change, or ten files or more |
+| How far does it reach? | a `PublicAPI.Unshipped*.txt` or the developer surface baseline moves, both targets change, or ten files or more |
 | Can it be taken back? | a vocabulary enum, the hydration contract, a package's shape, what a published tool reads |
 | Has it been done here? | a mechanism with no row in `docs/FLUTTER-PARITY.md` and no sibling in the tree |
 | Does it guard something? | server actions, the client boundary, content security, signing, publishing, a hook |
