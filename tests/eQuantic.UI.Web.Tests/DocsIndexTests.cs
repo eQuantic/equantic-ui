@@ -724,9 +724,14 @@ public class DocsIndexTests
 
         """;
 
-    /// <summary>Any citation at all — the shape the two anchored guards look for, minus the anchor.</summary>
+    /// <summary>
+    /// Any citation at all — the shape the two anchored guards look for, minus the anchor. What
+    /// follows it is LOOKED AT, never taken: taken, it swallowed the next citation of the same
+    /// sentence, so <c>(ScrollClock.cs:67 ScrollTo, ScrollClock.cs:82 Fling)</c> counted one and hid
+    /// the second. 53 of the audit's prose citations were hidden that way until #1489 found them.
+    /// </summary>
     private static readonly Regex AnyCitation = new(
-        @"(?<!\w)(?<path>(?:[\w.-]+/)*[\w.-]+\.(?:cs|ts)):(?<from>\d+)(?:-(?<to>\d+))?(?<after>.{0,40})",
+        @"(?<!\w)(?<path>(?:[\w.-]+/)*[\w.-]+\.(?:cs|ts)):(?<from>\d+)(?:-(?<to>\d+))?(?=(?<after>.{0,40}))",
         RegexOptions.Compiled);
 
     /// <summary>The member name a citation may carry, read from what follows it.</summary>
