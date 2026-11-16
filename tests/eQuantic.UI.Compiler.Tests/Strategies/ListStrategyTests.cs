@@ -7,11 +7,14 @@ namespace eQuantic.UI.Compiler.Tests.Strategies;
 
 public class ListStrategyTests
 {
+    /// <summary>An <c>Add</c>, a <c>Clear</c> and a <c>ForEach</c> go through the runtime, which moves the
+    /// list's version on a change and compares it on a walk, as .NET's list does (#863): they were the
+    /// array's <c>push</c>, <c>splice(0)</c> and <c>forEach</c>, which know no version.</summary>
     [Fact]
-    public void Add_MapsToPush()
+    public void Add_MovesTheListsVersion()
     {
         var result = TestHelper.ConvertExpression("list.Add(item)");
-        result.Should().Be("this.list.push(this.item)");
+        result.Should().Be("$eq.collections.listAdd(this.list, this.item)");
     }
 
     /// <summary>
@@ -33,6 +36,22 @@ public class ListStrategyTests
     [InlineData("list.InsertRange(0, items)", "$eq.collections.insertRange(list, 0, items)")]
     public void ARange_WithNoModel_IsTheRuntimes(string code, string expected) =>
         new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
+
+    /// <summary>
+    /// With no model, a call is guessed a list's only where a list's method of its name takes as many
+    /// arguments: a two-argument <c>Add</c> is another type's own method, called as it is, where it was
+    /// claimed by the list's and failed the build (EQ1004) once a list's <c>Add</c> moved its version.
+    /// </summary>
+    [Theory]
+    [InlineData("note.Add(part, 2)", "note.add(part, 2)")]
+    [InlineData("note.ForEach(a, b)", "note.forEach(a, b)")]
+    [InlineData("note.Clear(1)", "note.clear(1)")]
+    public void ACallNoListMethodTakes_WithNoModel_IsNotTheLists(string code, string expected)
+    {
+        var converter = new CSharpToJsConverter();
+        converter.ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
+        converter.Diagnostics.Should().NotContain(d => d.Code == "EQ1004");
+    }
 
     /// <summary>With no model, a named argument could fill either of a range's parameters: a build error
     /// rather than a guess, which put a named collection in the index's place.</summary>
@@ -68,10 +87,10 @@ public class ListStrategyTests
     }
 
     [Fact]
-    public void Clear_MapsToSpliceZero()
+    public void Clear_MovesTheListsVersion()
     {
         var result = TestHelper.ConvertExpression("list.Clear()");
-        result.Should().Be("this.list.splice(0)");
+        result.Should().Be("$eq.collections.listClear(this.list)");
     }
 
     [Fact]
@@ -171,10 +190,10 @@ public class ListStrategyTests
     }
 
     [Fact]
-    public void ForEach_MapsToForEach()
+    public void ForEach_ComparesTheListsVersion()
     {
         var result = TestHelper.ConvertExpression("list.ForEach(x => Console.WriteLine(x))");
-        result.Should().Be("this.list.forEach((x) => console.log(x))");
+        result.Should().Be("$eq.collections.listForEach(this.list, (x) => console.log(x))");
     }
 
     [Fact]

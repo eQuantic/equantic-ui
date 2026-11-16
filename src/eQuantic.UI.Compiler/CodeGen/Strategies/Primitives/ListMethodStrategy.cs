@@ -49,6 +49,17 @@ public class ListMethodStrategy : IExpressionIrStrategy
         "Exists", "TrueForAll", "Sort", "ForEach", "GetRange", "CopyTo", "BinarySearch", "Reverse"
     };
 
+    /// <summary>
+    /// How many arguments each of those methods takes, in any of its overloads, read from .NET's own
+    /// <c>List&lt;T&gt;</c>. A call no model binds is guessed a list's only where a list's method of its name
+    /// takes as many: <c>note.Add(part, height)</c> is some other type's <c>Add</c>, never a list's.
+    /// </summary>
+    private static readonly Dictionary<string, HashSet<int>> Arities = typeof(List<>)
+        .GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+        .Where(method => SupportedMethods.Contains(method.Name))
+        .GroupBy(method => method.Name)
+        .ToDictionary(overloads => overloads.Key, overloads => overloads.Select(method => method.GetParameters().Length).ToHashSet());
+
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         if (node is not InvocationExpressionSyntax invocation)
@@ -73,7 +84,7 @@ public class ListMethodStrategy : IExpressionIrStrategy
         // Name decides ONLY where guessing is honest — see ConversionContext.CanGuess. Under an
         // AUTHORITATIVE model, in-tree-but-unbindable is reported (EQ2006), never guessed.
         if (symbol == null && context.CanGuess(node))
-            return true;
+            return Arities.TryGetValue(methodName, out var counts) && counts.Contains(invocation.ArgumentList.Arguments.Count);
 
         return false;
     }
