@@ -233,6 +233,22 @@ built-ins as members, no hold), and its probe from `Nothing("GestureArena", "Ges
 a long press, as it does for the context hold. The web schedules one `setTimeout` to the router's next
 deadline and calls `Tick(performance.now())`.
 
+### 6b. A pointer event carries its time
+
+`PointerEvent` gains `TimeMs`, Flutter's `timeStamp`: the moment the platform saw the event, in milliseconds
+on a monotonic clock, so a recognizer measures a fling's velocity (#1560 needs it in 1.0, and widening the
+record after 1.0 would cost a major). The unit is the same on every target and the origin is each target's
+own, which is all a difference of two times needs.
+
+- **Web**: the DOM event's `timeStamp` (a `DOMHighResTimeStamp`, milliseconds since the time origin, monotonic).
+- **Photon**: the shell's own event time when it hands one to the host (the pointer entry points take an
+  optional `timeMs`; the macOS shell passes `NSEvent.timestamp`, seconds since boot, as milliseconds), and
+  the host's monotonic clock (`Stopwatch`) when it does not. A test passes its own times.
+
+The record widens and its old constructor and `Deconstruct` go, in preview (`PointerEvent` has not shipped:
+its entries leave the #1562 change's `PublicAPI.Unshipped` file). The time is pinned in the value twin's
+fixture as every member is.
+
 ### 7. The sample: a long press that then drags, inside a scroll view
 
 `samples/DefaultUIDashboard/Gestures/HoldThenDrag.cs`: tracks one pointer; `StartDeadline(ContextTarget.HoldMs)`
@@ -263,11 +279,11 @@ linked `Compile Include`, .NET's own mechanism for one file in two projects, rat
 
 ## Open Questions
 
-- **The arena's HOLD (a double tap).** Left out: on the web a press that wins after a held arena needs its
-  `click` replayed after the browser already fired it, a synthetic `click` on its element. Edgar's call
-  whether 1.0 needs a custom double tap; if so, it is its own slice.
-- **A timestamp on `PointerEvent`.** A recognizer measuring a fling needs each event's time; Flutter's carry
-  `timeStamp`. Widening `PointerEvent` is a break the preview allows (a `Listener`'s event changes shape), and
-  the long press does not need it. Left out unless Edgar wants velocity in this slice.
-- **Fields, code and sheet surfaces as members.** Left out (Decision 4). Their selection drags would have to
-  wait for the slop to join, which changes how every text selection feels.
+- **The arena's HOLD (a double tap).** Not in this slice, and recommended for 1.0 as the slice right after it
+  (the coordinator, 2026-11-17, pending Edgar). This slice is built so that HOLD is an ADDITION: the arena's
+  entry keeps the state a hold needs (open, closed, held, swept) as one value rather than two booleans, the
+  sweep is one method a hold can defer, and no member's contract assumes the arena resolves at the up. On the
+  web, a press that wins after a held arena needs its `click` replayed, a synthetic `click` on its element.
+- **Fields, code and sheet surfaces as members.** Out of 1.0 (the coordinator, 2026-11-17): internal behaviour,
+  and bringing them in later changes no signature. Their selection drags would have to wait for the slop to
+  join, which changes how every text selection feels.

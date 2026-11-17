@@ -169,3 +169,15 @@ clock.
 
 - **WHEN** a card's button is tapped and released within 100 ms
 - **THEN** its `OnPressed` runs once, and the recognizer hears `RejectGesture`
+
+### Requirement: A pointer event carries its time
+
+Every `PointerEvent` SHALL carry `TimeMs`, the moment the platform saw it, in milliseconds on a monotonic
+clock: the DOM event's `timeStamp` on the web, and on Photon the shell's own event time or, when the shell
+hands none, the host's monotonic clock. The unit SHALL be the same on every target, so the difference of two
+events' times is the time between them.
+
+#### Scenario: Two moves a recognizer measures
+
+- **WHEN** a pointer moves twice over a listener, 16 ms apart as the platform saw them
+- **THEN** the second move's `TimeMs` is 16 more than the first's, on the web and on Photon

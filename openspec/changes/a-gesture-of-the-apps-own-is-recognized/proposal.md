@@ -74,13 +74,17 @@ never joins the arena.
 - **Photon** (experimental): the paint walk records detectors as pointer targets; `PhotonHost` routes
   presses, moves, ups, cancels and frame ticks through the router, and its press, drag, pan, table pan, sort
   and context hold become members. The host's frame-due answer includes the router's next deadline.
+- **A pointer event carries its time**: `PointerEvent.TimeMs`, monotonic milliseconds as the platform saw
+  the event (the web's `timeStamp`, the Photon shell's event time or the host's clock), so a recognizer
+  measures velocity. The record widens: an app that constructs a `PointerEvent` passes the time; one that
+  reads it changes nothing. `PointerEvent` has not shipped yet.
 - **SDKs, templates, developer surface**: nothing moves. `developer-surface.baseline.txt` is unchanged.
 - **Samples**: the dashboard gains a screen whose cards a long press lifts and a drag moves, inside a scroll
   view; the same recognizer's source runs in a Photon host test.
 - **Docs**: the wiki's Components page in every language it is written in, the two parity rows and their
   probes in `FlutterParityPinTests`, a ledger entry.
 
-No break: nothing an app writes today changes meaning. A `Pressable`, `Draggable` or scroll view with no
+One break, in preview and before `PointerEvent` ever shipped: its constructor takes the time. Migration: `new PointerEvent(phase, position, kind, buttons, modifiers, pointer, scrollDelta)` becomes `new PointerEvent(phase, position, kind, buttons, modifiers, pointer, scrollDelta, timeMs)`. Otherwise nothing an app writes today changes meaning. A `Pressable`, `Draggable` or scroll view with no
 detector around it resolves exactly as before, because an arena with one candidate gives it the pointer.
 
 Rules of `docs/PRINCIPLES.md` followed: 1 (a gesture with no line of JavaScript), 4 (the arena is written once
