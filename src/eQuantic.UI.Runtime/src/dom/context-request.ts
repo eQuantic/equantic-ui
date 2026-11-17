@@ -15,6 +15,7 @@
  *   hold that lifted a sortable item is the lift's, and asks for nothing.
  */
 import { ContextRequest, Point } from '../shared/value-types';
+import { activeItemOf } from './active-item';
 
 /** `ContextTarget.HoldMs`: how long a finger holds a target still to ask for its menu (cross-pinned with C#). */
 export const HOLD_MS = 500;
@@ -91,15 +92,6 @@ function onKeyDown(ev: KeyboardEvent): void {
   ev.preventDefault();
   keyboardAskedAt = performance.now();
   ask(target, null);
-}
-
-/** Where the keyboard is inside a composite whose focus stays on its one stop: the element its
- * `aria-activedescendant` names, when the composite holds it; otherwise nothing. */
-function activeItemOf(focused: Element | null): Element | null {
-  const id = focused?.getAttribute?.('aria-activedescendant');
-  if (!id) return null;
-  const item = document.getElementById(id);
-  return item && focused!.contains(item) ? item : null;
 }
 
 function onPointerDown(down: PointerEvent): void {

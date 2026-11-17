@@ -565,6 +565,18 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
       ),
       presses: [0, 1],
     },
+    'tree-moves': {
+      node: Object.assign(
+        new TreeView([
+          Object.assign(new TreeNode('src', 'src'), {
+            children: [Object.assign(new TreeNode('src/App.cs', 'App.cs'), { isLeaf: true })],
+          }),
+          Object.assign(new TreeNode('README.md', 'README.md'), { isLeaf: true }),
+        ]),
+        { label: 'Files', expandedKeys: ['src'], onMoved: async () => undefined },
+      ),
+      presses: [],
+    },
     'accordion-switches': {
       node: new Accordion(
         [

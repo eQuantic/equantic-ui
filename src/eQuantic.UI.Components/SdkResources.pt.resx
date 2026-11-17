@@ -312,6 +312,12 @@
   <data name="SortDropped" xml:space="preserve">
     <value>Largou {0} na posição {1} de {2} em {3}.</value>
   </data>
+  <data name="SortMovedInto" xml:space="preserve">
+    <value>{0} está dentro de {1}.</value>
+  </data>
+  <data name="SortDroppedInto" xml:space="preserve">
+    <value>Largou {0} dentro de {1}.</value>
+  </data>
   <data name="SortCancelled" xml:space="preserve">
     <value>{0} voltou ao lugar onde estava.</value>
   </data>

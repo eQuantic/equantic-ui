@@ -15,6 +15,10 @@ namespace eQuantic.Console;
 /// create under a folder, and "Delete" deletes, each busy for a moment as a server would make it. The changes are
 /// this page's, laid over what the server lists: the sample's repository is every visitor's.
 /// </para>
+/// <para>
+/// A node moves by drag, or by Space and the arrows on the keyboard's node (#1533): before, after or inside another,
+/// never into the read-only <c>samples</c> folder nor out of it.
+/// </para>
 /// </summary>
 [Page("/files", Title = "Files — eQuantic Console")]
 public sealed class FilesScreen : StatefulComponent, IServerPrefetch
@@ -29,6 +33,7 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
     private readonly Dictionary<string, string> _renamed = new();
     private readonly Dictionary<string, List<RepositoryEntry>> _added = new();
     private readonly HashSet<string> _deleted = new();
+    private List<MovedEntry> _moves = [];
 
     private TreeEditRequest? _edit;
     private TreeReloadRequest? _reload;
@@ -64,8 +69,8 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
             Text("Files", TypeRole.Heading, theme.TextPrimary),
             Text("Folders load from the server the first time they open. Tab reaches the tree; the arrows "
                 + "walk and open it, Enter opens a file, and typing a name jumps to it. Every node has a menu: "
-                + "right-click it, hold it, or press the menu key on it. F2 renames. Drag the gap beside the "
-                + "tree to resize it.",
+                + "right-click it, hold it, or press the menu key on it. F2 renames. Drag a node, or press Space "
+                + "on it and walk it with the arrows, to move it. Drag the gap beside the tree to resize it.",
                 TypeRole.BodyM, theme.TextSecondary),
             Row(gap: 0, children: [
                 Box(new BoxStyle
@@ -90,7 +95,9 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
                     reload: _reload,
                     busyKeys: _busy,
                     menuBuilder: MenuFor,
-                    onMenuSelect: Choose)),
+                    onMenuSelect: Choose,
+                    onMoved: Move,
+                    canMove: CanMove)),
                 Splitter(),
                 Column(gap: Space.S2, children: [
                     OpenFile(context),
@@ -157,20 +164,60 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
         return Apply(folder.Key, entries).Select(Node).ToList();
     }
 
-    /// <summary>A folder's entries as this page left them: renamed, added to, deleted from.</summary>
+    /// <summary>A folder's entries as this page left them: renamed, added to, deleted from, moved.</summary>
     private List<RepositoryEntry> Apply(string folder, List<RepositoryEntry> entries)
     {
         var shown = new List<RepositoryEntry>();
         foreach (var entry in entries)
-        {
-            if (_deleted.Contains(entry.Path)) continue;
-            shown.Add(_renamed.TryGetValue(entry.Path, out var name) ? entry with { Name = name } : entry);
-        }
+            if (!_deleted.Contains(entry.Path) && !Moved(entry.Path)) shown.Add(Named(entry));
         if (_added.TryGetValue(folder, out var added))
             foreach (var entry in added)
-                if (!_deleted.Contains(entry.Path))
-                    shown.Add(_renamed.TryGetValue(entry.Path, out var name) ? entry with { Name = name } : entry);
+                if (!_deleted.Contains(entry.Path) && !Moved(entry.Path)) shown.Add(Named(entry));
+        // What this page moved here, each after the sibling it was dropped after.
+        foreach (var moved in _moves)
+        {
+            if (moved.Parent != folder || _deleted.Contains(moved.Entry.Path)) continue;
+            var at = 0;
+            if (moved.After is { } after)
+                for (var i = 0; i < shown.Count; i++)
+                    if (shown[i].Path == after) at = i + 1;
+            shown.Insert(at, Named(moved.Entry));
+        }
         return shown;
+    }
+
+    private RepositoryEntry Named(RepositoryEntry entry) =>
+        _renamed.TryGetValue(entry.Path, out var name) ? entry with { Name = name } : entry;
+
+    private bool Moved(string path) => _moves.Any(moved => moved.Entry.Path == path);
+
+    /// <summary>The folder an entry is in now: where this page moved it, or the one its path names.</summary>
+    private string FolderOf(string path)
+    {
+        foreach (var moved in _moves)
+            if (moved.Entry.Path == path) return moved.Parent;
+        var cut = path.LastIndexOf('/');
+        return cut < 0 ? "" : path.Substring(0, cut);
+    }
+
+    /// <summary>The samples are read-only: the folder stays where it is, nothing lands in it and nothing leaves it.</summary>
+    private static bool CanMove(TreeMove move) =>
+        !InSamples(move.Node.Key) && !(move.Parent is { } parent && InSamples(parent.Key));
+
+    private static bool InSamples(string path) => path == "samples" || path.StartsWith("samples/", StringComparison.Ordinal);
+
+    /// <summary>A move as a server makes it: a moment's work, then the node shown where it was dropped.</summary>
+    private async Task Move(TreeMove move)
+    {
+        await Task.Delay(400);
+        var node = move.Node;
+        var entry = new RepositoryEntry(node.Key, node.Label, !node.IsLeaf);
+        SetState(() =>
+        {
+            _moves = _moves.Where(moved => moved.Entry.Path != node.Key).ToList();
+            _moves.Add(new MovedEntry(entry, move.Parent?.Key ?? "", move.After?.Key));
+            _said = move.Parent is { } parent ? $"Moved {node.Label} into {parent.Label}." : $"Moved {node.Label} to the top.";
+        });
     }
 
     private static IReadOnlyList<MenuItem> MenuFor(TreeNode node) => node.IsLeaf
@@ -237,8 +284,7 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
     {
         SetState(() => _busy = [node.Key]);
         await Task.Delay(400);
-        var cut = node.Key.LastIndexOf('/');
-        var parent = cut < 0 ? "" : node.Key.Substring(0, cut);
+        var parent = FolderOf(node.Key);
         SetState(() =>
         {
             _deleted.Add(node.Key);

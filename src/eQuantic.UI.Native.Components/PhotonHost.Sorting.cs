@@ -420,8 +420,8 @@ public sealed partial class PhotonHost
         }
         if (sort.KeyList is not { } at) return false;
         var vertical = at.Node.Axis != DragAxis.Horizontal;
-        if (key == (vertical ? "ArrowDown" : "ArrowRight")) MoveKeyed(sort, at.List, at.Node, sort.KeyIndex + 1);
-        else if (key == (vertical ? "ArrowUp" : "ArrowLeft")) MoveKeyed(sort, at.List, at.Node, sort.KeyIndex - 1);
+        if (key == (vertical ? "ArrowDown" : "ArrowRight")) StepKeyed(sort, at.List, at.Node, 1);
+        else if (key == (vertical ? "ArrowUp" : "ArrowLeft")) StepKeyed(sort, at.List, at.Node, -1);
         else if (key == (vertical ? "ArrowRight" : "ArrowDown") || key == (vertical ? "ArrowLeft" : "ArrowUp"))
         {
             var step = key == (vertical ? "ArrowRight" : "ArrowDown") ? 1 : -1;
@@ -440,12 +440,14 @@ public sealed partial class PhotonHost
         return true;
     }
 
-    /// <summary>Space on the focused item, or inside it, picks it up for the keyboard, when its list takes
-    /// sorting. Answers whether it did.</summary>
+    /// <summary>Space on the focused item, or inside it, or on a composite whose active item it is (a tree's
+    /// stop, #1533), picks it up for the keyboard, when its list takes sorting. Answers whether it did.</summary>
     private bool CarryByKeyboard()
     {
-        if (_sort is not null || _focusedAt is not { } focused || _textAt is not null
+        if (_sort is not null || _focusedAt is not { } stop || _textAt is not null
             || _lastFrame is not { SortRegions: { Count: > 0 } regions }) return false;
+        // A composite keeps the focus on its one stop and names its active item: the item is that one.
+        var focused = ActiveItemOf(stop) ?? stop;
         for (var i = regions.Count - 1; i >= 0; i--)
         {
             if (regions[i].Node is not SortableItem item) continue;
@@ -464,16 +466,45 @@ public sealed partial class PhotonHost
         return false;
     }
 
+    /// <summary>One place along the list, through the places inside the items when the list nests, by the
+    /// arithmetic the web runs too (<see cref="SortPlacement.KeyStep"/>), passing over the places the list
+    /// refuses, as a pointer passes over them. At the end the item keeps the place it holds.</summary>
+    private void StepKeyed(SortGesture sort, Element list, Sortable node, int step)
+    {
+        var others = CountIn(list, sort.Item);
+        var index = sort.KeyIndex;
+        var into = sort.KeyInto;
+        while (true)
+        {
+            var (nextIndex, nextInto) = SortPlacement.KeyStep(index, into, step, others, node.Nests);
+            if (nextIndex == index && nextInto == into) break;
+            index = nextIndex;
+            into = nextInto;
+            if (node.Accepts?.Invoke(KeyedDrop(sort, node, index, into)) != false) break;
+        }
+        MoveKeyed(sort, list, node, index, into);
+    }
+
+    /// <summary>The drop a keyboard's place means, its item inside named from the ids <see cref="CountIn"/> left
+    /// in order.</summary>
+    private SortDrop KeyedDrop(SortGesture sort, Sortable node, int index, int into)
+    {
+        var inside = into >= 0 && into < _sortIds.Count ? _sortIds[into] : null;
+        return new SortDrop(sort.ItemNode.Id, sort.SourceNode.Id, node.Id, index) { Into = inside };
+    }
+
     /// <summary>The place a key asks for, kept inside the list and offered to its guard; a place it refuses
     /// leaves the item where it is.</summary>
-    private void MoveKeyed(SortGesture sort, Element list, Sortable node, int index)
+    private void MoveKeyed(SortGesture sort, Element list, Sortable node, int index, int into = -1)
     {
         var count = CountIn(list, sort.Item) + 1;
         var place = SortPlacement.Step(index, 0, count);
-        var drop = new SortDrop(sort.ItemNode.Id, sort.SourceNode.Id, node.Id, place);
+        var drop = KeyedDrop(sort, node, place, into);
+        var inside = drop.Into;
         if (node.Accepts?.Invoke(drop) == false) return;
         sort.KeyList = (list, node);
         sort.KeyIndex = place;
+        sort.KeyInto = inside is null ? -1 : into;
         Report(sort, (list, node, drop));
     }
 

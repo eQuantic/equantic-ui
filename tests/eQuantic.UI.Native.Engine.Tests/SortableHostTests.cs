@@ -29,6 +29,7 @@ public class SortableHostTests
         public Func<SortDrop, bool>? Guard { get; set; }
         public int Asked { get; set; }
         public float? ColumnHeight { get; set; }
+        public bool Nests { get; set; }
 
         public override VisualNode Build(ComponentContext context)
         {
@@ -56,6 +57,7 @@ public class SortableHostTests
                 VisualNode list = new Sortable(body, id, Drop)
                 {
                     Group = Group,
+                    Nests = Nests,
                     OnHovered = drop => Hovered.Add((id, drop)),
                     Accepts = guard is null ? null : drop =>
                     {
@@ -368,5 +370,40 @@ public class SortableHostTests
         host.KeyDown("Tab").Should().BeTrue("Tab puts the card back and moves the focus on");
         board.Hovered[^1].Drop.Should().BeNull();
         board.Dropped.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void TheKeyboard_StepsThroughThePlacesInsideCards_InAListThatNests()
+    {
+        var (host, board) = Open(new Board { Nests = true });
+        host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder(), 32);
+
+        host.KeyDown(" ").Should().BeTrue();
+        // Below a1's own place comes the place inside a2, then the one after it (#1533).
+        host.KeyDown("ArrowDown").Should().BeTrue();
+        board.Hovered[^1].Should().Be(("todo", new SortDrop("a1", "todo", "todo", 0) { Into = "a2" }));
+        host.KeyDown("ArrowDown").Should().BeTrue();
+        board.Hovered[^1].Should().Be(("todo", new SortDrop("a1", "todo", "todo", 1)));
+        host.KeyDown("ArrowUp").Should().BeTrue();
+        host.KeyDown("Enter").Should().BeTrue();
+
+        board.Dropped.Should().ContainSingle().Which.Should().Be(new SortDrop("a1", "todo", "todo", 0) { Into = "a2" });
+    }
+
+    [Fact]
+    public void TheKeyboard_PassesOverAPlaceTheListRefuses_AsAPointerDoes()
+    {
+        var (host, board) = Open(new Board { Guard = drop => drop.Index != 1 });
+        host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder(), 32);
+
+        host.KeyDown(" ");
+        host.KeyDown("ArrowDown").Should().BeTrue();
+        board.Hovered[^1].Should().Be(("todo", new SortDrop("a1", "todo", "todo", 2)),
+            "the refused position 2 is passed over (#1533)");
+        // At the end, the card keeps the place it holds.
+        host.KeyDown("ArrowDown").Should().BeTrue();
+        board.Hovered[^1].Should().Be(("todo", new SortDrop("a1", "todo", "todo", 2)));
     }
 }

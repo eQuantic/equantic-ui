@@ -16,7 +16,9 @@
 import { SortPlacement } from '../shared/components/SortPlacement';
 import { SortDrop } from '../shared/value-types';
 import { str } from '../utils/culture';
+import { activeItemOf } from './active-item';
 import { followPointer, pointerDownDelegate } from './pointer-gesture';
+import { holdShortcuts } from './shortcuts';
 
 const delegate = pointerDownDelegate(onPointerDown);
 let keyboardInstalled = false;
@@ -122,9 +124,13 @@ function onPointerDown(down: PointerEvent): void {
     gesture.cancel();
   };
 
+  // The keys are the carry's while the item is carried: an app's chord sits them out.
+  let releaseShortcuts = (): void => undefined;
+
   const end = (): void => {
     cancelAnimationFrame(frame);
     host.removeEventListener('keydown', escape, true);
+    releaseShortcuts();
     copy?.remove();
     copy = null;
     item.style.removeProperty('opacity');
@@ -140,6 +146,7 @@ function onPointerDown(down: PointerEvent): void {
     holdMs: down.pointerType === 'touch' ? SortPlacement.holdMs : undefined,
     armed: () => {
       copy = lift(item);
+      releaseShortcuts = holdShortcuts();
       host.addEventListener('keydown', escape, true);
       frame = requestAnimationFrame(scroll);
       place();
@@ -272,9 +279,10 @@ function scrollerOf(list: HTMLElement): HTMLElement | null {
 
 // ---- The keyboard (#1536) ------------------------------------------------------------------------------
 //
-// With the focus on an item or inside it, Space picks it up; the arrows along the list's axis move it one
-// place, the cross arrows to the neighbouring list of its group; Space or Enter drops it; Escape, Tab or a
-// press puts it back. Every place is offered to the list's guard and reported as a pointer's are, and each
+// With the focus on an item or inside it, or on a composite whose active item it is (a tree's host, #1533),
+// Space picks it up; the arrows along the list's axis move it one place (in a list that nests, through the
+// places inside the items too), the cross arrows to the neighbouring list of its group; Space or Enter drops
+// it; Escape, Tab or a press puts it back. Every place is offered to the list's guard and reported as a pointer's are, and each
 // step is said through one polite live region, in the reader's language, from the SDK's own strings.
 
 /** The SDK's words for a step, with its holes filled. */
@@ -302,7 +310,7 @@ function announce(text: string): void {
 /** The focused control of an item says how to sort it: its description names the keys. */
 function describe(ev: FocusEvent): void {
   const focused = ev.target as HTMLElement | null;
-  const item = focused?.closest?.('[data-eq-sort-item]');
+  const item = (activeItemOf(focused) ?? focused)?.closest?.('[data-eq-sort-item]');
   if (!focused || !item || item.hasAttribute('data-eq-sort-off') || focused.closest(FIELD)) return;
   if (!instructions || !instructions.isConnected) {
     instructions = document.createElement('div');
@@ -341,17 +349,25 @@ let carrying: { cancel(): void } | null = null;
 function onKeyDown(ev: KeyboardEvent): void {
   if (carrying || ev.key !== ' ' || ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey) return;
   const target = ev.target as Element | null;
-  const item = target?.closest?.('[data-eq-sort-item]') as HTMLElement | null;
-  if (!item || item.hasAttribute('data-eq-sort-off') || target?.closest(FIELD)) return;
+  if (target?.closest?.(FIELD)) return;
+  // A composite keeps the focus on its one stop and names its active item: the item is that one.
+  const active = activeItemOf(target);
+  const item = (active ?? target)?.closest?.('[data-eq-sort-item]') as HTMLElement | null;
+  if (!item || item.hasAttribute('data-eq-sort-off')) return;
   const source = listOf(item);
   if (!source || source.hasAttribute('data-eq-sort-off')) return;
   // Space is the sort's here, not the button's: the press it would make on its release is held off too.
   ev.preventDefault();
   ev.stopImmediatePropagation();
-  carryByKeyboard(item, source);
+  carryByKeyboard(item, source, active !== null);
 }
 
-function carryByKeyboard(item: HTMLElement, source: HTMLElement): void {
+/** The item a place lands inside, among a list's items with the carried one left out. */
+function intoItem(list: HTMLElement, carried: HTMLElement, into: number): HTMLElement | null {
+  return into < 0 ? null : (itemsOf(list).filter((other) => other !== carried)[into] ?? null);
+}
+
+function carryByKeyboard(item: HTMLElement, source: HTMLElement, fromComposite: boolean): void {
   const host = document;
   const id = item.getAttribute('data-eq-sort-item') ?? '';
   const from = source.getAttribute('data-eq-sort-id') ?? '';
@@ -359,19 +375,32 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement): void {
   const name = nameOf(item);
   let list = source;
   let index = itemsOf(source).indexOf(item);
+  let into = -1;
 
   const countIn = (target: HTMLElement): number => itemsOf(target).filter((other) => other !== item).length + 1;
-  const dropAt = (target: HTMLElement, at: number): SortDrop =>
-    new SortDrop(id, from, target.getAttribute('data-eq-sort-id') ?? '', at);
+  const dropAt = (target: HTMLElement, at: number, inside = -1): SortDrop => {
+    const to = target.getAttribute('data-eq-sort-id') ?? '';
+    const holder = intoItem(target, item, inside);
+    return holder
+      ? new SortDrop(id, from, to, at, { into: holder.getAttribute('data-eq-sort-item') })
+      : new SortDrop(id, from, to, at);
+  };
+  /** What a reader hears for a place: its position, or the item it is inside. */
+  const sayPlace = (moved: string, inside: string): string => {
+    const holder = intoItem(list, item, into);
+    return holder
+      ? say(inside, name, nameOf(holder))
+      : say(moved, name, index + 1, countIn(list), labelOf(list));
+  };
 
   item.style.opacity = String(SortPlacement.liftedOpacity);
   item.setAttribute('data-eq-sort-lifted', '');
   list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: dropAt(list, index) }));
   announce(say('SortPickedUp', name, index + 1, countIn(list), labelOf(list)));
 
-  const moveTo = (target: HTMLElement, at: number): void => {
+  const moveTo = (target: HTMLElement, at: number, inside = -1): void => {
     const clamped = SortPlacement.step(at, 0, countIn(target));
-    const drop = dropAt(target, clamped);
+    const drop = dropAt(target, clamped, inside);
     if (!accepts(target, drop)) {
       announce(say('SortRefused', name));
       return;
@@ -379,8 +408,27 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement): void {
     if (target !== list) list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: null }));
     list = target;
     index = clamped;
+    into = inside;
     list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: drop }));
-    announce(say('SortMoved', name, index + 1, countIn(list), labelOf(list)));
+    announce(sayPlace('SortMoved', 'SortMovedInto'));
+  };
+
+  /** One place along the list, through the places inside the items when the list nests (C# twin:
+   * `SortPlacement.KeyStep`, which Photon runs too), passing over the places the list refuses, as a pointer
+   * passes over them: a refused folder never stops the keyboard. At the end it says the place it holds. */
+  const stepAlong = (step: number): void => {
+    const nests = list.getAttribute('data-eq-sort-nests') === '1';
+    const others = countIn(list) - 1;
+    let at = index;
+    let inside = into;
+    for (;;) {
+      const [nextAt, nextInside] = SortPlacement.keyStep(at, inside, step, others, nests);
+      if (nextAt === at && nextInside === inside) break;
+      at = nextAt;
+      inside = nextInside;
+      if (accepts(list, dropAt(list, at, inside))) break;
+    }
+    moveTo(list, at, inside);
   };
 
   const neighbour = (step: number): HTMLElement | null => {
@@ -399,7 +447,11 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement): void {
     }
   };
 
+  // The keys are the carry's while the item is carried: an app's chord (a tree's Enter) sits them out.
+  const releaseShortcuts = holdShortcuts();
+
   const end = (): void => {
+    releaseShortcuts();
     host.removeEventListener('keydown', key, true);
     host.removeEventListener('pointerdown', cancel, true);
     item.style.removeProperty('opacity');
@@ -414,12 +466,14 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement): void {
   }
 
   const drop = (): void => {
-    const landed = dropAt(list, index);
+    const landed = dropAt(list, index, into);
     const at = list;
-    const said = say('SortDropped', name, index + 1, countIn(list), labelOf(list));
+    const said = sayPlace('SortDropped', 'SortDroppedInto');
     end();
     at.dispatchEvent(new CustomEvent('eq-sort-dropped', { detail: landed }));
     announce(said);
+    // A composite keeps the focus on its one stop, and follows its moved item itself.
+    if (fromComposite) return;
     // The app builds the item where it went, perhaps as a new element: the keyboard follows it there.
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
@@ -442,10 +496,10 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement): void {
     const back = vertical ? 'ArrowLeft' : 'ArrowUp';
     switch (ev.key) {
       case next:
-        moveTo(list, index + 1);
+        stepAlong(1);
         break;
       case previous:
-        moveTo(list, index - 1);
+        stepAlong(-1);
         break;
       case across:
       case back: {

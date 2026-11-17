@@ -1,9 +1,13 @@
-import { $eq, Anchored, Box, BoxStyle, BuildContext, Color, ColorToken, ContextRequest, ContextTarget, ControlMetrics, CornerRadii, DateTime, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, ListTheme, MenuItem, MenuPanel, Navigable, NavigableMoveValue, Pressable, Row, ScrollRequest, ScrollView, SdkStrings, Shortcut, SizeValue, StatefulComponent, StyleDiff, Text, TextEntry, TreeNode, TreePlace, TreeRowState, TreeViewRow, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Anchored, Box, BoxStyle, BuildContext, Color, ColorToken, ContextRequest, ContextTarget, ControlMetrics, CornerRadii, DateTime, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, ListTheme, MenuItem, MenuPanel, Navigable, NavigableMoveValue, Positioned, Pressable, Row, ScrollRequest, ScrollView, SdkStrings, Shortcut, SizeValue, Sortable, SortableItem, SortDrop, Stack, StatefulComponent, StyleDiff, Text, TextEntry, TreeMove, TreeNode, TreePlace, TreeRowState, TreeViewRow, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TreeView extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TreeView';
     static searchPauseMs: number = 700;
     static rowsPerPageWithoutViewport: number = 10;
+    static openUnderPauseMs: number = 700;
+    static dropInto: number = 1;
+    static dropBefore: number = 2;
+    static dropAfter: number = 3;
     _open: any = $eq.collections.hashSet();
     _loaded: any = $eq.collections.dictionary();
     _loading: any = $eq.collections.hashSet();
@@ -35,6 +39,10 @@ export class TreeView extends StatefulComponent {
     _menuItems: MenuItem[] = [];
     _menuHighlight: number = 0;
     _activeParent: any = null;
+    _dropKey: any = null;
+    _dropKind: number = 0;
+    _pauseKey: any = null;
+    _pauseSerial: number = 0;
     _scrollToActive: boolean = false;
     _offset: number = 0;
     _viewport: number = 0;
@@ -50,6 +58,8 @@ export class TreeView extends StatefulComponent {
     _busyKeys: any = null;
     _menuBuilder: ((value: TreeNode) => MenuItem[]) | null = null;
     _onMenuSelect: ((arg1: TreeNode, arg2: number) => void) | null = null;
+    _onMoved: ((value: TreeMove) => void) | null = null;
+    _canMove: ((value: TreeMove) => boolean) | null = null;
     _loadChildren: ((value: TreeNode) => TreeNode[]) | null = null;
     _onToggled: ((arg1: TreeNode, arg2: boolean) => void) | null = null;
     _expandedKeys: any = null;
@@ -185,6 +195,22 @@ export class TreeView extends StatefulComponent {
         this._onMenuSelect = value;
     }
 
+    get onMoved() {
+        return this._onMoved;
+    }
+
+    set onMoved(value) {
+        this._onMoved = value;
+    }
+
+    get canMove() {
+        return this._canMove;
+    }
+
+    set canMove(value) {
+        this._canMove = value;
+    }
+
     static $slots: any = null;
     static $failure: any = null;
 
@@ -259,6 +285,9 @@ export class TreeView extends StatefulComponent {
         for (let i = 0; i < this._rows.length; i++) items.push(this.buildRow(context, slot, this._rows[i], i === active && this._keyboard));
         let tree: VisualNode = new Navigable($eq.delegates.bound(this, this.move), items, { role: 'tree', label: this.label, activeCell: active >= 0 ? [active, 0] : null, onTextSearch: $eq.delegates.bound(this, this.search).bind(this), focusVersion: this._focusVersion });
         let editing = !(this._editKey == null);
+        if (!(this.onMoved == null)) {
+            tree = new Sortable(tree, 'tree', $eq.delegates.bound(this, this.dropped), { axis: 'vertical', nests: true, label: this.label, accepts: $eq.delegates.bound(this, this.accepts).bind(this), onHovered: $eq.delegates.bound(this, this.hovered).bind(this), enabled: !editing });
+        }
         let menuOpen = !(this._menuKey == null);
         let activeNode = active >= 0 ? this._rows[active].node : null;
         let activeFree = !(activeNode == null) && !this._busy.has(activeNode.key);
@@ -302,6 +331,8 @@ export class TreeView extends StatefulComponent {
         this._busyKeys = fresh.busyKeys;
         this._menuBuilder = fresh.menuBuilder;
         this._onMenuSelect = fresh.onMenuSelect;
+        this._onMoved = fresh.onMoved;
+        this._canMove = fresh.canMove;
     }
 
     onMount() {
@@ -341,12 +372,17 @@ export class TreeView extends StatefulComponent {
         } }
         let quietFill = slot?.quietFill ?? theme.surfaceSubtle;
         let quiet = selected || busy || renaming ? null : new StyleDiff({ background: quietFill });
-        let surface = this.rowSurface(context, slot, row.level, content, selected ? theme.colors('primary').subtle : null, ringed && !renaming, busy, quiet);
-        let item: VisualNode = new Pressable(surface, busy || renaming ? null : () => this.press(row, false), { role: 'treeItem', label: label, selected: node == null ? null : selected, expanded: chevron ? open : null, treePlace: new TreePlace(row.level, row.position, row.count), disabled: busy });
+        let mark = !(node == null) && this._dropKey === node.key ? this._dropKind : 0;
+        let fill = selected ? theme.colors('primary').subtle : mark === TreeView.dropInto ? theme.selection : null;
+        let plain = this.rowSurface(context, slot, row.level, content, fill, ringed && !renaming, busy, quiet, mark === TreeView.dropInto ? TreeView.dropColor(context, slot) : null);
+        let surface = mark === TreeView.dropBefore || mark === TreeView.dropAfter ? this.dropLine(context, slot, row.level, plain, mark === TreeView.dropAfter) : plain;
+        let key = node == null ? `status/${row.key}` : node.key;
+        let item: VisualNode = new Pressable(surface, busy || renaming ? null : () => this.press(row, false), { key: key, role: 'treeItem', label: label, selected: node == null ? null : selected, expanded: chevron ? open : null, treePlace: new TreePlace(row.level, row.position, row.count), disabled: busy });
         if (node == null) return item;
-        if (!(this.menuBuilder == null)) item = new ContextTarget(item, (request) => this.requestMenu(node, request), { enabled: !busy && !renaming });
+        if (!(this.onMoved == null)) item = new SortableItem(item, node.key, { key: key, enabled: !busy && this._editKey == null });
+        if (!(this.menuBuilder == null)) item = new ContextTarget(item, (request) => this.requestMenu(node, request), { key: key, enabled: !busy && !renaming });
         if (this._menuKey === node.key) {
-            item = new Anchored(item, MenuPanel.build(context, this._menuItems, true, this._menuHighlight, $eq.delegates.bound(this, this.chooseMenu)), { at: this._menuAt, placement: 'bottomStart', open: true, onDismiss: $eq.delegates.bound(this, this.closeMenu).bind(this), panelRole: 'menu', activeIndex: this._menuHighlight });
+            item = new Anchored(item, MenuPanel.build(context, this._menuItems, true, this._menuHighlight, $eq.delegates.bound(this, this.chooseMenu)), { key: key, at: this._menuAt, placement: 'bottomStart', open: true, onDismiss: $eq.delegates.bound(this, this.closeMenu).bind(this), panelRole: 'menu', activeIndex: this._menuHighlight });
         }
         return item;
     }
@@ -357,7 +393,7 @@ export class TreeView extends StatefulComponent {
         if ((glyph = this._editIcon) != null) content.add(new Icon(glyph, 20, slot?.treeIconColor ?? context.theme.textSecondary));
         content.add(new Flexible(this.field(context)));
         let surface = this.rowSurface(context, slot, row.level, content, null, false, false, null);
-        return new Pressable(surface, null, { role: 'treeItem', label: SdkStrings.treeItemName, treePlace: new TreePlace(row.level, row.position, row.count) });
+        return new Pressable(surface, null, { key: `field/${row.key}`, role: 'treeItem', label: SdkStrings.treeItemName, treePlace: new TreePlace(row.level, row.position, row.count) });
     }
 
     static content(context: BuildContext, slot: any, chevron: boolean, open: boolean) {
@@ -367,11 +403,11 @@ export class TreeView extends StatefulComponent {
         return content;
     }
 
-    rowSurface(context: BuildContext, slot: any, level: number, content: VisualNode, fill: any, ringed: boolean, busy: boolean, quiet: any) {
+    rowSurface(context: BuildContext, slot: any, level: number, content: VisualNode, fill: any, ringed: boolean, busy: boolean, quiet: any, marked: any = null) {
         let theme = context.theme;
         let padding = slot?.treePaddingX ?? 8;
         let indent = slot?.treeIndent ?? 16;
-        return new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fixed(this._rowHeight), padding: new EdgeInsets(Math.fround(padding + Math.fround(Math.fround(level - 1) * indent)), 0, padding, 0), cornerRadius: new CornerRadii(theme.shape(slot?.treeRowShape ?? 'small')), background: fill, borderWidth: 2, borderColor: ringed ? theme.focusRing : new ColorToken(Color.transparent), opacity: busy ? theme.disabledOpacity : null, hover: quiet, pressed: quiet }), content);
+        return new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fixed(this._rowHeight), padding: new EdgeInsets(Math.fround(padding + Math.fround(Math.fround(level - 1) * indent)), 0, padding, 0), cornerRadius: new CornerRadii(theme.shape(slot?.treeRowShape ?? 'small')), background: fill, borderWidth: 2, borderColor: marked ?? (ringed ? theme.focusRing : new ColorToken(Color.transparent)), opacity: busy ? theme.disabledOpacity : null, hover: quiet, pressed: quiet }), content);
     }
 
     field(context: BuildContext) {
@@ -656,6 +692,144 @@ export class TreeView extends StatefulComponent {
     parentOf(key: string) {
         let at = this.indexOfNode(key);
         return at >= 0 ? this._rows[at].parentKey : null;
+    }
+
+    static dropColor(context: BuildContext, slot: any) {
+        return slot?.treeDropColor ?? context.theme.focusRing;
+    }
+
+    dropLine(context: BuildContext, slot: any, level: number, surface: VisualNode, after: boolean) {
+        let start = Math.fround((slot?.treePaddingX ?? 8) + Math.fround(Math.fround(level - 1) * (slot?.treeIndent ?? 16)));
+        let line = new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fixed(2), background: TreeView.dropColor(context, slot) }));
+        let stack = new Stack('topStart', { width: SizeValue.fill, height: SizeValue.fixed(this._rowHeight) });
+        stack.add(surface);
+        stack.add(after ? new Positioned(line, null, 0, 0, start) : new Positioned(line, 0, 0, null, start));
+        return stack;
+    }
+
+    othersThan(carried: string) {
+        let others: TreeViewRow[] = [];
+        for (const row of this._rows) if (!(row.node == null) && row.key !== carried) others.push(row);
+        return others;
+    }
+
+    nodeOf(key: any) {
+        if (key == null) return null;
+        let at = this.indexOfNode(key);
+        return at >= 0 ? this._rows[at].node : null;
+    }
+
+    siblingBefore(rows: TreeViewRow[], index: number, parent: any) {
+        for (let i = index - 1; i >= 0; i--) {
+            let node: any; 
+            if (!((node = $eq.collections.item(rows, i).node) != null)) continue;
+            if (node.key === parent) return null;
+            if ($eq.collections.item(rows, i).parentKey === parent) return node;
+        }
+        return null;
+    }
+
+    static placeOf(drop: SortDrop, others: TreeViewRow[]): [number, number] {
+        let into: any; 
+        if ((into = drop.into) != null) {
+            for (let i = 0; i < others.length; i++) if (others[i].key === into) return [TreeView.dropInto, i];
+            return [0, -1];
+        }
+        if (drop.index < others.length) return [TreeView.dropBefore, drop.index];
+        return others.length > 0 ? [TreeView.dropAfter, others.length - 1] : [0, -1];
+    }
+
+    moveOf(drop: SortDrop) {
+        let node: any; 
+        if (!((node = this.nodeOf(drop.item)) != null)) return null;
+        let others = this.othersThan(drop.item);
+        let [kind, at] = TreeView.placeOf(drop, others);
+        if (kind === TreeView.dropInto) return new TreeMove(node, others[at].node, null);
+        if (kind === TreeView.dropBefore) {
+            let parent = others[at].parentKey;
+            return new TreeMove(node, this.nodeOf(parent), this.siblingBefore(others, at, parent));
+        }
+        if (kind === TreeView.dropAfter) return new TreeMove(node, this.nodeOf(others[at].parentKey), others[at].node);
+        return drop.into == null ? new TreeMove(node, null, null) : null;
+    }
+
+    accepts(drop: SortDrop) {
+        let move: any; 
+        if (!((move = this.moveOf(drop)) != null) || (($0) => ($0 != null && $0.isLeaf === true))(move.parent)) return false;
+        for (let at = (move.parent?.key ?? null); !(at == null); at = this.parentOf(at)) if (at === move.node.key) return false;
+        return this.canMove?.(move) ?? true;
+    }
+
+    hovered(drop: any) {
+        let key: string | null = null;
+        let kind = 0;
+        if (!(drop == null)) {
+            let others = this.othersThan(drop.item);
+            let [placed, at] = TreeView.placeOf(drop, others);
+            kind = placed;
+            key = at >= 0 ? others[at].key : null;
+        }
+        let folder: any; 
+        let pause = kind === TreeView.dropInto && (folder = this.nodeOf(key)) != null && !this._open.has(folder.key) && this.hasChevron(folder) ? key : null;
+        this.setState(() => {
+            this._dropKey = key;
+            this._dropKind = kind;
+        });
+        if (pause === this._pauseKey) return;
+        this._pauseKey = pause;
+        this._pauseSerial++;
+        if (!(pause == null)) this.openAfterPause(pause, this._pauseSerial);
+    }
+
+    async openAfterPause(key: string, serial: number) {
+        await $eq.task.delay(TreeView.openUnderPauseMs);
+        let folder: any; 
+        if (serial !== this._pauseSerial || this._pauseKey !== key || !((folder = this.nodeOf(key)) != null)) return;
+        this.setState(() => {
+            this.toggle(folder, true);
+            this._pauseKey = null;
+        });
+        this.onToggled?.(folder, true);
+    }
+
+    dropped(drop: SortDrop) {
+        let move = this.moveOf(drop);
+        this._pauseKey = null;
+        this._pauseSerial++;
+        this.setState(() => {
+            this._dropKey = null;
+            this._dropKind = 0;
+        });
+        let handler: any; 
+        if (move == null || !((handler = this.onMoved) != null)) return;
+        let from = this.parentOf(move.node.key);
+        let at = this.indexOfNode(move.node.key);
+        if (from === (move.parent?.key ?? null) && at >= 0 && (this.siblingBefore(this._rows, at, from)?.key ?? null) === (move.after?.key ?? null)) return;
+        this.runMove(handler, move, from);
+    }
+
+    async runMove(handler: (value: TreeMove) => void, move: TreeMove, from: any) {
+        let key = move.node.key;
+        let to = move.parent;
+        let opens = !(to == null) && !this._open.has(to.key);
+        this.setState(() => {
+            $eq.collections.setAdd(this._working, key);
+            if (opens) this.toggle(to!, true);
+        });
+        if (opens) this.onToggled?.(to!, true);
+        let done = false;
+        try {
+            await handler(move);
+            done = true;
+        } catch {
+            done = false;
+        }
+        this.setState(() => {
+            this._working.delete(key);
+            if (!done) return;
+            if (!(from == null)) this.reloadChildren(from);
+            if (!(to == null) && to.key !== from) this.reloadChildren(to.key);
+        });
     }
 
     requestMenu(node: TreeNode, request: ContextRequest) {

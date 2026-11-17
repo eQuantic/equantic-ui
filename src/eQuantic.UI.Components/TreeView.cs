@@ -54,6 +54,13 @@ namespace eQuantic.UI.Components;
 /// indentation, chevron, fill and focus ring, and what a reader hears). v1 fences: one selected node, no
 /// virtualization.
 /// </para>
+/// <para>
+/// A NODE MOVES BY DRAG (#1533): with <see cref="OnMoved"/>, the tree is a nesting <see cref="Sortable"/> and
+/// each node row a <see cref="SortableItem"/>, so a pointer or the keyboard carries a node before, after or
+/// inside another, and the app is told the node, its new parent and the sibling it lands after. A place that
+/// would put a node inside itself is never offered, <see cref="CanMove"/> may refuse more, and a closed folder
+/// held under a carried node opens.
+/// </para>
 /// </summary>
 public sealed class TreeView : StatefulComponent
 {
@@ -62,6 +69,15 @@ public sealed class TreeView : StatefulComponent
 
     /// <summary>The rows a page moves by when the tree does not know its viewport.</summary>
     private const int RowsPerPageWithoutViewport = 10;
+
+    /// <summary>How long a carried node held inside a closed folder waits before opening it: Finder's
+    /// spring-loading is of that order.</summary>
+    private const int OpenUnderPauseMs = 700;
+
+    /// <summary>What a carried node does at a row: lands inside it, before it, or after it (the last row).</summary>
+    private const int DropInto = 1;
+    private const int DropBefore = 2;
+    private const int DropAfter = 3;
 
     private static readonly IReadOnlyList<TreeNode> NoChildren = new List<TreeNode>();
 
@@ -124,6 +140,15 @@ public sealed class TreeView : StatefulComponent
     /// <summary>The parent of the keyboard's node at the last build: where the keyboard goes when its node
     /// leaves the tree (renamed, deleted).</summary>
     private string? _activeParent;
+
+    /// <summary>The row a carried node would land at, and how (<see cref="DropInto"/>, <see cref="DropBefore"/>,
+    /// <see cref="DropAfter"/>), drawn while it is carried.</summary>
+    private string? _dropKey;
+    private int _dropKind;
+
+    /// <summary>The closed folder a carried node is held inside, and which wait is the live one.</summary>
+    private string? _pauseKey;
+    private int _pauseSerial;
 
     private bool _scrollToActive;
     private float _offset;
@@ -225,6 +250,19 @@ public sealed class TreeView : StatefulComponent
     /// <summary>The node whose menu it was and the index of the item chosen; the menu closes first.</summary>
     public Action<TreeNode, int>? OnMenuSelect { get => _onMenuSelect; init => _onMenuSelect = value; }
 
+    /// <summary>
+    /// Moves a node where a pointer or the keyboard dropped it: its new parent (null at the top level) and the
+    /// sibling it lands after (null when it lands first; a node dropped inside another lands first). Without it,
+    /// no node is carried. While the task runs the node is busy; when it ends, the tree reads the children it
+    /// loaded for the old and the new parent again, and the new parent is open.
+    /// </summary>
+    public Func<TreeMove, Task>? OnMoved { get => _onMoved; init => _onMoved = value; }
+
+    /// <summary>The app's guard, asked for every place a carried node could land, after the tree's own (a node
+    /// never lands inside a leaf, nor inside itself or one of its descendants): a place it refuses is neither shown
+    /// nor dropped on. Null takes every place.</summary>
+    public Func<TreeMove, bool>? CanMove { get => _canMove; init => _canMove = value; }
+
     private Func<TreeRowState, VisualNode>? _rowBuilder;
     private ListTheme? _style;
     private Func<TreeNode, string, Task>? _onRenamed;
@@ -234,6 +272,8 @@ public sealed class TreeView : StatefulComponent
     private IReadOnlyList<string>? _busyKeys;
     private Func<TreeNode, IReadOnlyList<MenuItem>>? _menuBuilder;
     private Action<TreeNode, int>? _onMenuSelect;
+    private Func<TreeMove, Task>? _onMoved;
+    private Func<TreeMove, bool>? _canMove;
     private Func<TreeNode, Task<IReadOnlyList<TreeNode>>>? _loadChildren;
     private Action<TreeNode, bool>? _onToggled;
     private IReadOnlyList<string>? _expandedKeys;
@@ -263,6 +303,8 @@ public sealed class TreeView : StatefulComponent
         _busyKeys = fresh.BusyKeys;
         _menuBuilder = fresh.MenuBuilder;
         _onMenuSelect = fresh.OnMenuSelect;
+        _onMoved = fresh.OnMoved;
+        _canMove = fresh.CanMove;
     }
 
     protected override void OnMount()
@@ -333,6 +375,20 @@ public sealed class TreeView : StatefulComponent
             FocusVersion = _focusVersion,
         };
         var editing = _editKey is not null;
+        // A tree that moves its nodes is a nesting sortable, whose items are the node rows (#1533): the pointer's
+        // drag, the keyboard's, the lift and the edge scroll are the sortable's, on every target.
+        if (OnMoved is not null)
+        {
+            tree = new Sortable(tree, "tree", Dropped)
+            {
+                Axis = DragAxis.Vertical,
+                Nests = true,
+                Label = Label,
+                Accepts = Accepts,
+                OnHovered = Hovered,
+                Enabled = !editing,
+            };
+        }
         var menuOpen = _menuKey is not null;
         var activeNode = active >= 0 ? _rows[active].Node : null;
         var activeFree = activeNode is not null && !_busy.Contains(activeNode.Key);
@@ -420,11 +476,22 @@ public sealed class TreeView : StatefulComponent
         // NOT on the selected row, whose fill IS its state (the list's rule, #616), nor on a row that takes no
         // press.
         var quiet = selected || busy || renaming ? null : new StyleDiff { Background = quietFill };
-        var surface = RowSurface(context, slot, row.Level, content, selected ? theme.Colors(Variant.Primary).Subtle : null,
-            ringed && !renaming, busy, quiet);
+        // A carried node would land here (#1533): inside this row's node, ringed over the selection tint; or
+        // before or after it, a line along its edge. Drawn over the surface, so no row moves under the pointer.
+        var mark = node is not null && _dropKey == node.Key ? _dropKind : 0;
+        var fill = selected ? theme.Colors(Variant.Primary).Subtle : mark == DropInto ? theme.Selection : (ColorToken?)null;
+        var plain = RowSurface(context, slot, row.Level, content, fill, ringed && !renaming, busy, quiet,
+            mark == DropInto ? DropColor(context, slot) : null);
+        var surface = mark == DropBefore || mark == DropAfter
+            ? DropLine(context, slot, row.Level, plain, after: mark == DropAfter)
+            : plain;
 
+        // Each row is keyed by what it shows, at every layer around it, so a row is the same element on every target
+        // while rows open above it: a carried node, a pressed one and a hovered one stay with their node (#1533).
+        var key = node is null ? $"status/{row.Key}" : node.Key;
         VisualNode item = new Pressable(surface, busy || renaming ? null : () => Press(row, fromKeyboard: false))
         {
+            Key = key,
             Role = PressableRole.TreeItem,
             Label = label,
             // A status item is not a node: it is neither picked nor opened.
@@ -434,14 +501,18 @@ public sealed class TreeView : StatefulComponent
             Disabled = busy,
         };
         if (node is null) return item;
+        // A node row is what a tree that moves its nodes carries; the creation field and the status rows are not.
+        if (OnMoved is not null)
+            item = new SortableItem(item, node.Key) { Key = key, Enabled = !busy && _editKey is null };
         // A target per row, so a pointer asks for the menu of the row it is over and the keyboard for the menu
         // of the tree's active item; ONE menu open, built when it opens.
         if (MenuBuilder is not null)
-            item = new ContextTarget(item, request => RequestMenu(node, request)) { Enabled = !busy && !renaming };
+            item = new ContextTarget(item, request => RequestMenu(node, request)) { Key = key, Enabled = !busy && !renaming };
         if (_menuKey == node.Key)
         {
             item = new Anchored(item, MenuPanel.Build(context, _menuItems, true, _menuHighlight, ChooseMenu))
             {
+                Key = key,
                 At = _menuAt,
                 Placement = AnchorPlacement.BottomStart,
                 Open = true,
@@ -463,6 +534,7 @@ public sealed class TreeView : StatefulComponent
         var surface = RowSurface(context, slot, row.Level, content, null, false, false, null);
         return new Pressable(surface, null)
         {
+            Key = $"field/{row.Key}",
             Role = PressableRole.TreeItem,
             Label = SdkStrings.TreeItemName,
             TreePlace = new TreePlace(row.Level, row.Position, row.Count),
@@ -487,7 +559,7 @@ public sealed class TreeView : StatefulComponent
     /// person sees), its fill, and the focus ring, always drawn and transparent unless the keyboard is here, so it
     /// never moves the content when it appears.</summary>
     private VisualNode RowSurface(ComponentContext context, ListTheme? slot, int level, VisualNode content,
-        ColorToken? fill, bool ringed, bool busy, StyleDiff? quiet)
+        ColorToken? fill, bool ringed, bool busy, StyleDiff? quiet, ColorToken? marked = null)
     {
         var theme = context.Theme;
         var padding = slot?.TreePaddingX ?? Space.S2;
@@ -500,7 +572,7 @@ public sealed class TreeView : StatefulComponent
             CornerRadius = new CornerRadii(theme.Shape(slot?.TreeRowShape ?? ShapeScale.Small)),
             Background = fill,
             BorderWidth = 2,
-            BorderColor = ringed ? theme.FocusRing : new ColorToken(Color.Transparent),
+            BorderColor = marked ?? (ringed ? theme.FocusRing : new ColorToken(Color.Transparent)),
             Opacity = busy ? theme.DisabledOpacity : null,
             Hover = quiet,
             Pressed = quiet,
@@ -877,6 +949,195 @@ public sealed class TreeView : StatefulComponent
     {
         var at = IndexOfNode(key);
         return at >= 0 ? _rows[at].ParentKey : null;
+    }
+
+    // ---- moving a node (#1533) ----------------------------------------------------------------------------
+
+    /// <summary>The colour of the line and the ring that say where a carried node lands.</summary>
+    private static ColorToken DropColor(ComponentContext context, ListTheme? slot) =>
+        slot?.TreeDropColor ?? context.Theme.FocusRing;
+
+    /// <summary>The row's surface with the line along its top edge (its bottom edge for the last row), from the
+    /// row's own indentation: the level the carried node would take.</summary>
+    private VisualNode DropLine(ComponentContext context, ListTheme? slot, int level, VisualNode surface, bool after)
+    {
+        var start = (slot?.TreePaddingX ?? Space.S2) + (level - 1) * (slot?.TreeIndent ?? Space.S4);
+        var line = new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = SizeValue.Fixed(2),
+            Background = DropColor(context, slot),
+        });
+        var stack = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fixed(_rowHeight) };
+        stack.Add(surface);
+        stack.Add(after ? new Positioned(line, bottom: 0, start: start, end: 0) : new Positioned(line, top: 0, start: start, end: 0));
+        return stack;
+    }
+
+    /// <summary>The node rows a carried node is placed among, the carried one left out: the sortable's items, in
+    /// the order the sortable counts them.</summary>
+    private List<TreeViewRow> OthersThan(string carried)
+    {
+        var others = new List<TreeViewRow>();
+        foreach (var row in _rows)
+            if (row.Node is not null && row.Key != carried) others.Add(row);
+        return others;
+    }
+
+    /// <summary>The node a visible row shows, by its key.</summary>
+    private TreeNode? NodeOf(string? key)
+    {
+        if (key is null) return null;
+        var at = IndexOfNode(key);
+        return at >= 0 ? _rows[at].Node : null;
+    }
+
+    /// <summary>The sibling a visible node comes after under its parent, or null when it is the first.</summary>
+    private TreeNode? SiblingBefore(IReadOnlyList<TreeViewRow> rows, int index, string? parent)
+    {
+        for (var i = index - 1; i >= 0; i--)
+        {
+            if (rows[i].Node is not { } node) continue;
+            if (node.Key == parent) return null;
+            if (rows[i].ParentKey == parent) return node;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Where a sortable's place stands among the node rows a carried node is placed among: inside the row at
+    /// <c>At</c>, before it, or after it as the last; <c>(0, -1)</c> when there is no such row. The one reading both
+    /// the drawn place and the reported move take, so the two never part.
+    /// </summary>
+    private static (int Kind, int At) PlaceOf(SortDrop drop, List<TreeViewRow> others)
+    {
+        if (drop.Into is { } into)
+        {
+            for (var i = 0; i < others.Count; i++)
+                if (others[i].Key == into) return (DropInto, i);
+            return (0, -1);
+        }
+        if (drop.Index < others.Count) return (DropBefore, drop.Index);
+        return others.Count > 0 ? (DropAfter, others.Count - 1) : (0, -1);
+    }
+
+    /// <summary>
+    /// The move a sortable's place means: inside a node, as its first child; before a row, among that row's
+    /// siblings, after the nearest earlier one; after the last row, among its siblings. Null when the carried node
+    /// is not a visible one.
+    /// </summary>
+    private TreeMove? MoveOf(SortDrop drop)
+    {
+        if (NodeOf(drop.Item) is not { } node) return null;
+        var others = OthersThan(drop.Item);
+        var (kind, at) = PlaceOf(drop, others);
+        if (kind == DropInto) return new TreeMove(node, others[at].Node, null);
+        if (kind == DropBefore)
+        {
+            var parent = others[at].ParentKey;
+            return new TreeMove(node, NodeOf(parent), SiblingBefore(others, at, parent));
+        }
+        if (kind == DropAfter) return new TreeMove(node, NodeOf(others[at].ParentKey), others[at].Node);
+        // Nothing to land among: the top level, unless the node it was to land inside is gone.
+        return drop.Into is null ? new TreeMove(node, null, null) : null;
+    }
+
+    /// <summary>The tree's guard, then the app's: a node never lands inside a leaf, nor inside itself or one of its
+    /// descendants.</summary>
+    private bool Accepts(SortDrop drop)
+    {
+        if (MoveOf(drop) is not { } move || move.Parent is { IsLeaf: true }) return false;
+        for (var at = move.Parent?.Key; at is not null; at = ParentOf(at))
+            if (at == move.Node.Key) return false;
+        return CanMove?.Invoke(move) ?? true;
+    }
+
+    /// <summary>Where a carried node would land, drawn; and a closed folder it is held inside opens after a pause.</summary>
+    private void Hovered(SortDrop? drop)
+    {
+        string? key = null;
+        var kind = 0;
+        if (drop is not null)
+        {
+            var others = OthersThan(drop.Item);
+            var (placed, at) = PlaceOf(drop, others);
+            kind = placed;
+            key = at >= 0 ? others[at].Key : null;
+        }
+        var pause = kind == DropInto && NodeOf(key) is { } folder && !_open.Contains(folder.Key) && HasChevron(folder)
+            ? key
+            : null;
+        SetState(() =>
+        {
+            _dropKey = key;
+            _dropKind = kind;
+        });
+        if (pause == _pauseKey) return;
+        _pauseKey = pause;
+        _pauseSerial++;
+        if (pause is not null) OpenAfterPause(pause, _pauseSerial);
+    }
+
+    private async void OpenAfterPause(string key, int serial)
+    {
+        await Task.Delay(OpenUnderPauseMs);
+        if (serial != _pauseSerial || _pauseKey != key || NodeOf(key) is not { } folder) return;
+        SetState(() =>
+        {
+            Toggle(folder, true);
+            _pauseKey = null;
+        });
+        OnToggled?.Invoke(folder, true);
+    }
+
+    /// <summary>A node dropped where the sortable says: the app moves it, unless it is where it already was.</summary>
+    private void Dropped(SortDrop drop)
+    {
+        var move = MoveOf(drop);
+        _pauseKey = null;
+        _pauseSerial++;
+        SetState(() =>
+        {
+            _dropKey = null;
+            _dropKind = 0;
+        });
+        if (move is null || OnMoved is not { } handler) return;
+        var from = ParentOf(move.Node.Key);
+        var at = IndexOfNode(move.Node.Key);
+        if (from == move.Parent?.Key && at >= 0 && SiblingBefore(_rows, at, from)?.Key == move.After?.Key) return;
+        RunMove(handler, move, from);
+    }
+
+    /// <summary>The app's move, with the node busy while it runs and its new parent open; then the children the
+    /// tree loaded for both parents are read again.</summary>
+    private async void RunMove(Func<TreeMove, Task> handler, TreeMove move, string? from)
+    {
+        var key = move.Node.Key;
+        var to = move.Parent;
+        var opens = to is not null && !_open.Contains(to.Key);
+        SetState(() =>
+        {
+            _working.Add(key);
+            if (opens) Toggle(to!, true);
+        });
+        if (opens) OnToggled?.Invoke(to!, true);
+        var done = false;
+        try
+        {
+            await handler(move);
+            done = true;
+        }
+        catch (Exception)
+        {
+            done = false;
+        }
+        SetState(() =>
+        {
+            _working.Remove(key);
+            if (!done) return;
+            if (from is not null) ReloadChildren(from);
+            if (to is not null && to.Key != from) ReloadChildren(to.Key);
+        });
     }
 
     // ---- The menu per node ------------------------------------------------------------------------
