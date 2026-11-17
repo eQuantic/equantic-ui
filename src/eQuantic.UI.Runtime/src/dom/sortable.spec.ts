@@ -102,6 +102,23 @@ function drag(container: HTMLElement, id: string, path: [number, number][], rele
   if (release) pointer(document, 'pointerup', path[path.length - 1][0], path[path.length - 1][1]);
 }
 
+describe('SortPlacement.keyStep, the twin both targets run (#1533)', () => {
+  it('steps through the places inside the items of a list that nests, kept inside it', () => {
+    // Two other items (a, b): before a, inside a, before b, inside b, after b.
+    expect(SortPlacement.keyStep(0, -1, 1, 2, true)).toEqual([0, 0]);
+    expect(SortPlacement.keyStep(0, 0, 1, 2, true)).toEqual([1, -1]);
+    expect(SortPlacement.keyStep(1, 1, 1, 2, true)).toEqual([2, -1]);
+    expect(SortPlacement.keyStep(2, -1, 1, 2, true)).toEqual([2, -1]);
+    expect(SortPlacement.keyStep(2, -1, -1, 2, true)).toEqual([1, 1]);
+    expect(SortPlacement.keyStep(0, -1, -1, 2, true)).toEqual([0, -1]);
+  });
+
+  it('moves one index in a list that does not nest', () => {
+    expect(SortPlacement.keyStep(0, -1, 1, 2, false)).toEqual([1, -1]);
+    expect(SortPlacement.keyStep(2, -1, 1, 2, false)).toEqual([2, -1]);
+  });
+});
+
 describe('lists a pointer sorts', () => {
   beforeEach(() => {
     vi.stubGlobal('requestAnimationFrame', () => 0);
