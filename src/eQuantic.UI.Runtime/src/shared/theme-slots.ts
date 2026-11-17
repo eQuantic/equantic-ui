@@ -505,6 +505,7 @@ export class ListTheme {
   treeGap: number | null = null;
   treeRowShape: ShapeScaleValue | null = null;
   treeIconColor: ColorToken | null = null;
+  treeDropColor: ColorToken | null = null;
 
   constructor(config?: Partial<ListTheme>) {
     if (config) Object.assign(this, config);

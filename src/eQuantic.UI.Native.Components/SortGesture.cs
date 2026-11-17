@@ -64,4 +64,7 @@ internal sealed class SortGesture(Element item, SortableItem itemNode, Element s
     /// <summary>The list a keyboard's carry is in, and the place in it.</summary>
     public (Element List, Sortable Node)? KeyList { get; set; }
     public int KeyIndex { get; set; }
+
+    /// <summary>The item of that list a keyboard's carry is inside, by its place among the others, or -1.</summary>
+    public int KeyInto { get; set; } = -1;
 }

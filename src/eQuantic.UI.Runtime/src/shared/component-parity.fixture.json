@@ -47497,6 +47497,7 @@
           "children": [
             {
               "tag": "div",
+              "key": "src",
               "attrs": {
                 "aria-expanded": "false",
                 "aria-label": "src",
@@ -47590,6 +47591,7 @@
             },
             {
               "tag": "div",
+              "key": "README.md",
               "attrs": {
                 "aria-label": "README.md",
                 "aria-level": "1",
@@ -47685,6 +47687,7 @@
           "children": [
             {
               "tag": "div",
+              "key": "src",
               "attrs": {
                 "aria-expanded": "true",
                 "aria-label": "src",
@@ -47778,6 +47781,7 @@
             },
             {
               "tag": "div",
+              "key": "src/App.cs",
               "attrs": {
                 "aria-label": "App.cs",
                 "aria-level": "2",
@@ -47849,6 +47853,7 @@
             },
             {
               "tag": "div",
+              "key": "src/Ui.cs",
               "attrs": {
                 "aria-label": "Ui.cs",
                 "aria-level": "2",
@@ -47920,6 +47925,7 @@
             },
             {
               "tag": "div",
+              "key": "README.md",
               "attrs": {
                 "aria-label": "README.md",
                 "aria-level": "1",
@@ -48015,6 +48021,7 @@
           "children": [
             {
               "tag": "div",
+              "key": "src",
               "attrs": {
                 "aria-expanded": "true",
                 "aria-label": "src",
@@ -48108,6 +48115,7 @@
             },
             {
               "tag": "div",
+              "key": "src/App.cs",
               "attrs": {
                 "aria-label": "App.cs",
                 "aria-level": "2",
@@ -48179,6 +48187,7 @@
             },
             {
               "tag": "div",
+              "key": "src/Ui.cs",
               "attrs": {
                 "aria-label": "Ui.cs",
                 "aria-level": "2",
@@ -48250,6 +48259,7 @@
             },
             {
               "tag": "div",
+              "key": "README.md",
               "attrs": {
                 "aria-label": "README.md",
                 "aria-level": "1",
@@ -48258,6 +48268,279 @@
                 "aria-setsize": "2",
                 "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
                 "id": "eq-cell-1ea4rf1-3-0",
+                "role": "treeitem",
+                "tabindex": "-1"
+              },
+              "events": [
+                "click",
+                "mousedown"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-18tlusk eq-1eb13m5 eq-1su9m49 eq-1yf2q3w eq-5ew4ww eq-a51p1u eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-teoc5m"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-96qelu eq-bo3n4y eq-i95eb9 eq-kngwsg"
+                          },
+                          "events": [],
+                          "children": []
+                        },
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-168ghzj eq-5ew4ww"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "span",
+                              "attrs": {
+                                "class": "eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-type-bodym"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "#text",
+                                  "text": "README.md",
+                                  "attrs": {},
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tree-moves": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "aria-label": "Files",
+            "data-eq-sort": "",
+            "data-eq-sort-axis": "y",
+            "data-eq-sort-id": "tree",
+            "data-eq-sort-label": "Files",
+            "data-eq-sort-nests": "1",
+            "role": "tree",
+            "tabindex": "0"
+          },
+          "events": [
+            "eq-sort-accepts",
+            "eq-sort-dropped",
+            "eq-sort-hovered",
+            "keydown"
+          ],
+          "children": [
+            {
+              "tag": "div",
+              "key": "src",
+              "attrs": {
+                "aria-expanded": "true",
+                "aria-label": "src",
+                "aria-level": "1",
+                "aria-posinset": "1",
+                "aria-selected": "false",
+                "aria-setsize": "2",
+                "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
+                "data-eq-sort-item": "src",
+                "id": "eq-cell-2auxxe-0-0",
+                "role": "treeitem",
+                "tabindex": "-1"
+              },
+              "events": [
+                "click",
+                "mousedown"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-18tlusk eq-1eb13m5 eq-1su9m49 eq-1yf2q3w eq-5ew4ww eq-a51p1u eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-teoc5m"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-96qelu eq-bo3n4y eq-g7fowl eq-i95eb9"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "svg",
+                              "attrs": {
+                                "aria-hidden": "true",
+                                "class": "eq-115fhry eq-16x7aca eq-96qelu eq-i95eb9",
+                                "fill": "currentColor",
+                                "viewBox": "0 0 24 24"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "path",
+                                  "attrs": {
+                                    "d": "m16.59 8.59-4.59 4.58-4.59-4.58L6 10l6 6 6-6z"
+                                  },
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-168ghzj eq-5ew4ww"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "span",
+                              "attrs": {
+                                "class": "eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-type-bodym"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "#text",
+                                  "text": "src",
+                                  "attrs": {},
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "key": "src/App.cs",
+              "attrs": {
+                "aria-label": "App.cs",
+                "aria-level": "2",
+                "aria-posinset": "1",
+                "aria-selected": "false",
+                "aria-setsize": "1",
+                "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
+                "data-eq-sort-item": "src/App.cs",
+                "id": "eq-cell-2auxxe-1-0",
+                "role": "treeitem",
+                "tabindex": "-1"
+              },
+              "events": [
+                "click",
+                "mousedown"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-18tlusk eq-1eb13m5 eq-1su9m49 eq-5ew4ww eq-a51p1u eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-n7cy6y eq-teoc5m"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-96qelu eq-bo3n4y eq-i95eb9 eq-kngwsg"
+                          },
+                          "events": [],
+                          "children": []
+                        },
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-168ghzj eq-5ew4ww"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "span",
+                              "attrs": {
+                                "class": "eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-type-bodym"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "#text",
+                                  "text": "App.cs",
+                                  "attrs": {},
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "key": "README.md",
+              "attrs": {
+                "aria-label": "README.md",
+                "aria-level": "1",
+                "aria-posinset": "2",
+                "aria-selected": "false",
+                "aria-setsize": "2",
+                "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
+                "data-eq-sort-item": "README.md",
+                "id": "eq-cell-2auxxe-2-0",
                 "role": "treeitem",
                 "tabindex": "-1"
               },
