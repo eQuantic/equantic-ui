@@ -5816,6 +5816,19 @@ function lowerSortable(
   }
   if (node.nests) child.attributes['data-eq-sort-nests'] = '1';
   if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
+  // The words a reader hears while the keyboard sorts (#1564), which the controller reads from the list the item
+  // was picked up from. A list with none says nothing. C# twin: LowerSortable.
+  const words = node.announcements;
+  if (words) {
+    child.attributes['data-eq-sort-say-instructions'] = words.instructions;
+    child.attributes['data-eq-sort-say-picked-up'] = words.pickedUp;
+    child.attributes['data-eq-sort-say-moved'] = words.moved;
+    child.attributes['data-eq-sort-say-moved-into'] = words.movedInto;
+    child.attributes['data-eq-sort-say-refused'] = words.refused;
+    child.attributes['data-eq-sort-say-dropped'] = words.dropped;
+    child.attributes['data-eq-sort-say-dropped-into'] = words.droppedInto;
+    child.attributes['data-eq-sort-say-put-back'] = words.putBack;
+  }
   const dropped = node.onDropped;
   child.events['eq-sort-dropped'] = ((ev: Event) =>
     dropped((ev as CustomEvent<SortDropValue>).detail)) as unknown as EventHandler;

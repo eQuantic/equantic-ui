@@ -1,4 +1,4 @@
-import { $eq, CalendarNames } from "../runtime-exports";
+import { $eq, CalendarNames, SortAnnouncements } from "../runtime-exports";
 
 export class SdkStrings {
     static get dismiss(): string {
@@ -223,6 +223,10 @@ export class SdkStrings {
 
     static get treeItemName(): string {
         return $eq.str('SdkResources', 'TreeItemName');
+    }
+
+    static get sorting(): SortAnnouncements {
+        return new SortAnnouncements($eq.str('SdkResources', 'SortInstructions'), $eq.str('SdkResources', 'SortPickedUp'), $eq.str('SdkResources', 'SortMoved'), $eq.str('SdkResources', 'SortMovedInto'), $eq.str('SdkResources', 'SortRefused'), $eq.str('SdkResources', 'SortDropped'), $eq.str('SdkResources', 'SortDroppedInto'), $eq.str('SdkResources', 'SortCancelled'));
     }
 
     static get uploadWaiting(): string {

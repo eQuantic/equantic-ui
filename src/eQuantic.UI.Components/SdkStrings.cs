@@ -302,6 +302,18 @@ public static class SdkStrings
     /// <summary>The name a tree's rename or new-item field is read by.</summary>
     public static string TreeItemName => SdkResources.TreeItemName;
 
+    /// <summary>What a reader hears while a sortable list's item is sorted by the keyboard, in the reader's
+    /// culture: the words <c>UI.Sortable</c> gives a list when the app gives none (#1564).</summary>
+    public static SortAnnouncements Sorting => new(
+        SdkResources.SortInstructions,
+        SdkResources.SortPickedUp,
+        SdkResources.SortMoved,
+        SdkResources.SortMovedInto,
+        SdkResources.SortRefused,
+        SdkResources.SortDropped,
+        SdkResources.SortDroppedInto,
+        SdkResources.SortCancelled);
+
     public static string UploadWaiting => SdkResources.UploadWaiting;
 
     /// <summary>How far a file got: "3.2 MB of 12 MB".</summary>

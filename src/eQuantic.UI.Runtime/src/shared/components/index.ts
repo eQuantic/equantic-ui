@@ -216,6 +216,7 @@ export { SheetSummary } from './SheetSummary';
 export { Skeleton } from './Skeleton';
 export { Slider } from './Slider';
 export { SortPlacement } from './SortPlacement';
+export { SortWords } from './SortWords';
 export { SparseTableSpans } from './SparseTableSpans';
 export { Spreadsheet } from './Spreadsheet';
 export { SpreadsheetsUI } from './SpreadsheetsUI';

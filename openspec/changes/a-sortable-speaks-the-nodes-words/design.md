@@ -33,11 +33,18 @@ strings, each with the holes .NET's composite format numbers: `{0}` the item's n
 from one, `{2}` the count and `{3}` the list's name; for a place inside, `{1}` the item it lands inside. They are the
 `SdkResources` texts as they are, so `SdkStrings.Sorting` is a straight read of the eight keys.
 
-`SortAnnouncements.Fill(text, holes)` fills them: each `{n}` takes the n-th hole, a hole the text never names is
-left out, and a `{n}` past the holes stays as it is written. It is not `string.Format`, which throws on a stray brace
-and would let an app's words crash a key press. The record lives in `Primitives/Sorting/`, which the runtime embeds
-as `SortPlacement` already is, so the browser's controller runs the transpiled `Fill` and the Photon host the C#:
-one rule for both.
+`SortWords.Fill(text, holes)` fills them in one pass: each `{n}` takes the n-th hole, so a hole's own value is never
+read as a hole (a file called `{1}.txt`), a hole the text never names is left out, and a `{n}` past the holes stays as
+it is written. It is not `string.Format`, which throws on a stray brace and would let an app's words crash a key
+press. `SortWords` lives in `Primitives/Sorting/`, which the runtime embeds as `SortPlacement` already is, so the
+browser's controller runs the transpiled `Fill` and the Photon host the C#: one rule for both.
+
+The record itself lives beside `SortDrop` in `Primitives/Nodes/`, with a hand-written mirror in the runtime, as
+`SortDrop` has. In `Sorting/` it would be compiled from source into the runtime's twin build beside the Primitives
+assembly that already holds it, and `Sortable`'s constructor, which takes the assembly's type, would stop binding
+there: the transpiler then emits `Object.assign(new Sortable(…))` with no model, and a method group handed to it
+loses its `this` (the tree's `Dropped`, found by its twin's diff). `SortPlacement` escapes that because no member of
+the assembly takes one.
 
 Alternatives: a `Func<SortStep, string>` would let an app compute words, but a function cannot cross to the
 browser's controller as data on an element, and the steps are sentences, not computations. A text per step on the

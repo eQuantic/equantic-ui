@@ -1088,6 +1088,19 @@ internal sealed partial class WebLoweringVisitor
         }
         if (sortable.Nests) child.RawAttributes["data-eq-sort-nests"] = "1";
         if (!sortable.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
+        // The words a reader hears while the keyboard sorts (#1564), which the controller reads from the list the
+        // item was picked up from. A list with none says nothing.
+        if (sortable.Announcements is { } words)
+        {
+            child.RawAttributes["data-eq-sort-say-instructions"] = words.Instructions;
+            child.RawAttributes["data-eq-sort-say-picked-up"] = words.PickedUp;
+            child.RawAttributes["data-eq-sort-say-moved"] = words.Moved;
+            child.RawAttributes["data-eq-sort-say-moved-into"] = words.MovedInto;
+            child.RawAttributes["data-eq-sort-say-refused"] = words.Refused;
+            child.RawAttributes["data-eq-sort-say-dropped"] = words.Dropped;
+            child.RawAttributes["data-eq-sort-say-dropped-into"] = words.DroppedInto;
+            child.RawAttributes["data-eq-sort-say-put-back"] = words.PutBack;
+        }
         child.CustomEvents["eq-sort-dropped"] = ClientDispatches;
         if (sortable.OnHovered is not null) child.CustomEvents["eq-sort-hovered"] = ClientDispatches;
         if (sortable.Accepts is not null) child.CustomEvents["eq-sort-accepts"] = ClientDispatches;

@@ -502,12 +502,26 @@ export interface SortDropValue {
   readonly into: string | null;
 }
 
+/** The value a C# `SortAnnouncements` crosses as (#1564): the words a reader hears while the keyboard sorts,
+ * the record's transpiled twin (`components/SortAnnouncements`). */
+export interface SortAnnouncementsValue {
+  readonly instructions: string;
+  readonly pickedUp: string;
+  readonly moved: string;
+  readonly movedInto: string;
+  readonly refused: string;
+  readonly dropped: string;
+  readonly droppedInto: string;
+  readonly putBack: string;
+}
+
 /** Wire shape of the C# `Sortable` (#1535) — a list whose items a pointer puts in order. */
 export interface SortableNode extends VisualNodeValue {
   nodeKind: 'sortable';
   child: VisualNodeValue;
   id: string;
   onDropped: (drop: SortDropValue) => void;
+  announcements?: SortAnnouncementsValue | null;
   group?: string;
   axis?: string;
   nests?: boolean;

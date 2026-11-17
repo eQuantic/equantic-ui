@@ -1,7 +1,7 @@
 ## 1. The words on the node
 
-- [ ] 1.1 `SortAnnouncements` in `Primitives/Sorting/`: the eight texts and `Fill`, whose twin the runtime embeds
-  (`EQ_UPDATE_TRANSPILED=1`).
+- [ ] 1.1 `SortAnnouncements` in `Primitives/Nodes/` with its mirror in `value-types.ts`; `SortWords.Fill` in
+  `Primitives/Sorting/`, whose twin the runtime embeds (`EQ_UPDATE_TRANSPILED=1`).
 - [ ] 1.2 `Sortable(child, id, onDropped, announcements = null)` and its `Announcements`; the doc says what a null
   record does, and that Photon carries an item by drag and by keyboard.
 - [ ] 1.3 `SdkStrings.Sorting` from the eight `SdkResources` keys; `UI.Sortable`'s `announcements`, filled with it

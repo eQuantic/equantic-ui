@@ -78,7 +78,7 @@ it holds words.
 
 `Sortable` SHALL carry what a reader hears while its items are sorted by the keyboard as `SortAnnouncements`: the
 instructions, and the texts for picked up, moved, moved inside, refused, dropped, dropped inside and put back, each
-with numbered holes filled by `SortAnnouncements.Fill` on both targets (`{0}` the item's name; for a place `{1}` its
+with numbered holes filled by `SortWords.Fill` on both targets (`{0}` the item's name; for a place `{1}` its
 position from one, `{2}` the count and `{3}` the list's name; for a place inside `{1}` the item it lands inside).
 `UI.Sortable` SHALL fill them with the SDK's words in the reader's culture when the app gives none, and SHALL use
 the app's when it does. Both realizers SHALL read the words from the node, never from a catalog of their own, and a

@@ -60,7 +60,7 @@ import {
   VectorPaint,
   VectorShape,
 } from './vocabulary';
-import { Point, SizeValue, StyleChannels, TableRange, Transform2D } from './value-types';
+import { Point, SizeValue, SortAnnouncements, StyleChannels, TableRange, Transform2D } from './value-types';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
 import { ContextMenu } from './components/ContextMenu';
@@ -544,6 +544,16 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         ),
         'todo',
         () => undefined,
+        new SortAnnouncements(
+          'Pressione Espaço & solte "já".',
+          'Took {0}.',
+          '{0} now {1}/{2} in {3}.',
+          '{0} in {1}.',
+          'Not there.',
+          'Left {0} at {1}.',
+          'Left {0} in {1}.',
+          'Back <{0}>.',
+        ),
         { group: 'board', onHovered: () => undefined },
       ),
     ),

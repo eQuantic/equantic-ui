@@ -23,6 +23,7 @@ import type {
   EdgeInsetsValue,
   LiveRegionUrgencyValue,
   MainAlignValue,
+  SortAnnouncementsValue,
   TypeStyleValue,
 } from './nodes';
 import { CanvasPointer } from './canvas-pointer';
@@ -1094,6 +1095,7 @@ export class Sortable extends VisualNode {
   child: VisualChild;
   id: string;
   onDropped: (drop: SortDrop) => void;
+  announcements: SortAnnouncementsValue | null;
   group = '';
   axis = 'vertical';
   nests = false;
@@ -1102,11 +1104,18 @@ export class Sortable extends VisualNode {
   accepts: ((drop: SortDrop) => boolean) | null = null;
   enabled = true;
 
-  constructor(child: VisualChild, id: string, onDropped: (drop: SortDrop) => void, config?: EqConfig) {
+  constructor(
+    child: VisualChild,
+    id: string,
+    onDropped: (drop: SortDrop) => void,
+    announcements: SortAnnouncementsValue | null = null,
+    config?: EqConfig,
+  ) {
     super();
     this.child = child;
     this.id = id;
     this.onDropped = onDropped;
+    this.announcements = announcements;
     if (config) Object.assign(this, config);
   }
 }
