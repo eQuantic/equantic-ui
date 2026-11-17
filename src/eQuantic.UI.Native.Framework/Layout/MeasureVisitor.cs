@@ -221,6 +221,10 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(ContextTarget node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
+    // A listener only hears the pointer over its child (#1562): the child's box is its box.
+    public LayoutNode Visit(Listener node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
+
     // A simulated state changes only what is DRAWN, so it takes no space of its own.
     public LayoutNode Visit(Simulated node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);

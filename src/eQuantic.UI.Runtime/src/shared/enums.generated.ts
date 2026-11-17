@@ -112,6 +112,8 @@ export type FontWeightValue =
 
 export type GradientDirectionValue = 'toRight' | 'toBottom' | 'toBottomRight' | 'toBottomLeft';
 
+export type HitTestBehaviorValue = 'deferToChild' | 'opaque' | 'translucent';
+
 export type HydratedMemberKindValue = 'field' | 'property' | 'capturedParameter' | 'backingField';
 
 export type IconGlyphStyleValue = 'fill' | 'stroke';
@@ -151,7 +153,7 @@ export type PointerCursorValue =
 
 export type PointerKindValue = 'mouse' | 'touch' | 'stylus';
 
-export type PointerPhaseValue = 'down' | 'move' | 'up' | 'hover' | 'exit' | 'cancel';
+export type PointerPhaseValue = 'down' | 'move' | 'up' | 'hover' | 'exit' | 'cancel' | 'scroll';
 
 export type PresenceMotionValue = 'fade' | 'slideUp';
 

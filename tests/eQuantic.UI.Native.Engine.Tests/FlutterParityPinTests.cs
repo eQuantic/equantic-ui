@@ -255,7 +255,7 @@ public class FlutterParityPinTests
         // Box's is optional). WrapperNode and ProxyNode stay in the negative set they were in while this row
         // was a GAP — a SECOND wrapper base would change the shape surface just as much as a first.
         ["SingleChildRenderObjectWidget"] = () => EveryOneChildNodeIsA("SingleChildNode")
-            && Descendants("SingleChildNode") == 28 && Has("FlexNode")
+            && Descendants("SingleChildNode") == 29 && Has("FlexNode")
             && Nothing("MultiChildNode", "LeafNode", "WrapperNode", "ProxyNode"),
 
         // 2 — layout
@@ -308,8 +308,10 @@ public class FlutterParityPinTests
         ["SpringSimulation"] = () => Has("SpringSpec") && Nothing("FrictionSimulation"),
 
         // 5 — gestures and focus
-        ["Listener"] = () => HasMember("Canvas", "OnPointerDown"),
-        ["HitTestBehavior"] = () => Nothing("HitTestBehavior"),
+        // A wrapper over any node, with Flutter's six callbacks and the behaviour that says where it hears (#1562).
+        ["Listener"] = () => HasMember("Listener", "OnPointerDown") && HasMember("Listener", "OnPointerScroll")
+            && Has("PointerEvent"),
+        ["HitTestBehavior"] = () => Has("HitTestBehavior") && HasMember("Listener", "Behavior"),
         ["GestureArena"] = () => Nothing("GestureArena", "GestureRecognizer"),
         ["GestureDetector"] = () => Has("Pressable") && Has("Draggable") && Has("Hoverable")
             && Has("Adjustable") && Has("Navigable"),

@@ -10,9 +10,9 @@
 
 import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { NodeKind } from './node-kinds.generated';
-import type { TableCellRoleValue, TableRoleValue } from './enums.generated';
+import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
-import type { AppTheme, ContextRequest } from './value-types';
+import type { AppTheme, ContextRequest, PointerEvent } from './value-types';
 import { iconPaths } from './icons.generated';
 import type {
   BoxStyleValue,
@@ -1065,6 +1065,28 @@ export class ContextTarget extends VisualNode {
   }
 }
 
+/**
+ * Mirror of the C# `Listener` (#1562): any subtree hears the raw pointer, in its own coordinates, where its
+ * `behavior` says it is hit.
+ */
+export class Listener extends VisualNode {
+  readonly nodeKind = 'listener';
+  child: VisualChild;
+  onPointerDown: ((event: PointerEvent) => void) | null = null;
+  onPointerMove: ((event: PointerEvent) => void) | null = null;
+  onPointerUp: ((event: PointerEvent) => void) | null = null;
+  onPointerCancel: ((event: PointerEvent) => void) | null = null;
+  onPointerHover: ((event: PointerEvent) => void) | null = null;
+  onPointerScroll: ((event: PointerEvent) => void) | null = null;
+  behavior: HitTestBehaviorValue = 'deferToChild';
+
+  constructor(child: VisualChild, config?: EqConfig) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `Sortable` (#1535): a list whose items a pointer puts in order, taking the items of
  * the lists of its group. */
 export class Sortable extends VisualNode {
@@ -1276,6 +1298,16 @@ export const KeyModifiers = {
   /** ⌘ on Apple, Ctrl elsewhere — the platform command key. */
   command: 4,
   control: 8,
+} as const;
+
+/** Mirror of the C# `[Flags] PointerButtons` (#1562): Flutter's constants, which are also the DOM's `buttons`. */
+export const PointerButtons = {
+  none: 0,
+  primary: 1,
+  secondary: 2,
+  middle: 4,
+  back: 8,
+  forward: 16,
 } as const;
 
 /** Mirror of the C# `Shortcut` (spec S8): a chord that is live while this subtree is mounted. */
