@@ -23,15 +23,21 @@ busy node nor any node while a field is open.
 - **THEN** `OnMoved` receives a `TreeMove` whose `Node` is `Ui.cs`, whose `Parent` is `src` and whose `After` is
   `App.cs`
 
-### Requirement: A node never lands inside itself, and the app may refuse a place
+### Requirement: A node never lands inside a file or inside itself, and the app may refuse a place
 
-A place whose new parent is the carried node or one of its descendants SHALL NOT be offered. Every other place SHALL be
-offered to `CanMove` first; a place it refuses SHALL be neither shown nor dropped on.
+A place whose new parent is a leaf, or the carried node, or one of its descendants SHALL NOT be offered. Every other
+place SHALL be offered to `CanMove` first; a place it refuses SHALL be neither shown nor dropped on.
 
-#### Scenario: A folder over its own child
+#### Scenario: A folder before its own child
 
-- **WHEN** `src` is open and holds `App.cs`, and the person carries `src` over the middle of `App.cs` and releases it
+- **WHEN** `src` is open and holds `App.cs` and `Program.cs`, and the person carries `src` over the top quarter of
+  `Program.cs` and releases it
 - **THEN** no indicator was drawn there and `OnMoved` did not run
+
+#### Scenario: A file over a file
+
+- **WHEN** the person carries `README.md` over the middle of the leaf `App.cs` and releases it
+- **THEN** `OnMoved` did not run
 
 #### Scenario: The app refuses a folder
 
@@ -58,7 +64,9 @@ it must, as a press would. Moving to another place, dropping or ending the drag 
 #### Scenario: Spring-loading a folder
 
 - **WHEN** the person carries `README.md` over the middle of the closed `docs` and holds it there for a second
-- **THEN** `docs` opens and its children are shown under it while `README.md` is still carried
+- **THEN** `docs` opens and its children are shown under it while `README.md` is still carried, and the row
+  carried and dimmed is still `README.md`'s: each row is keyed by its node, so the rows that open take elements of
+  their own
 
 ### Requirement: The app's move keeps the node busy, and the parents are read again
 

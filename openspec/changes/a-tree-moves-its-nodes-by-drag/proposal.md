@@ -14,8 +14,8 @@ in a list that nests, so the tree is built on it rather than beside it.
   inside it. A line at the landing row's indentation, or a ring and a tint on the row it lands inside, says where.
   The drop reaches the app as a `TreeMove`: the node, its new parent (null at the top level) and the sibling it
   lands after (null when it lands first). A node dropped inside another lands as its first child.
-- **The tree guards against cycles, and the app guards the rest.** A place that would put a node inside itself or
-  one of its descendants is never offered. `CanMove` is asked for every other place: a place it refuses is neither
+- **The tree guards against cycles, and the app guards the rest.** A place that would put a node inside a leaf, or
+  inside itself or one of its descendants, is never offered. `CanMove` is asked for every other place: a place it refuses is neither
   shown nor dropped on (across Spaces, say).
 - **A closed folder opens under a pause.** A node carried inside a closed node that has children, and held there a
   moment, opens it, loading its children if it must, so the person can drop deeper.

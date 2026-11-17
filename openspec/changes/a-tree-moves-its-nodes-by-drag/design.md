@@ -42,8 +42,9 @@ A drop at the place the node already holds (same parent, same `After`) is no mov
 
 ### The cycle guard is the tree's, the rest is the app's
 
-`Accepts` refuses a move whose new parent is the node itself or one of its descendants, found by walking the
-visible rows' parents up from the new parent; then it asks `CanMove`. A refused place is neither drawn nor dropped
+`Accepts` refuses a move whose new parent is a leaf (the sortable nests into every item, and a file holds nothing),
+or the node itself or one of its descendants, found by walking the visible rows' parents up from the new parent;
+then it asks `CanMove`. A refused place is neither drawn nor dropped
 on, as the sortable already promises.
 
 ### The indicator is drawn on the row, never between rows
