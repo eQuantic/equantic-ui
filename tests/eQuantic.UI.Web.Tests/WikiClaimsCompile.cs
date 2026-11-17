@@ -355,6 +355,31 @@ public class WikiClaimsCompile
                 accepts: drop => !drop.Item.StartsWith("locked", StringComparison.Ordinal));
     }
 
+    /// <summary>Components, "Sortable", the words are the list's (#1564): a column that says the keyboard's steps
+    /// in the app's own words.</summary>
+    private sealed class OwnWordsColumnPage : Primitives.StatefulComponent
+    {
+        private readonly List<(string Id, string Title)> _cards = [("c1", "Draw the tree")];
+
+        private void Move(string item, string to, int index) { }
+
+        public override VisualNode Build(ComponentContext context) =>
+            Sortable(
+                Column(gap: Space.S2, children: [.. _cards.Select(card => SortableItem(Text(card.Title, TypeRole.BodyM), card.Id))]),
+                id: "todo",
+                onDropped: drop => SetState(() => Move(drop.Item, drop.To, drop.Index)),
+                label: "To do",
+                announcements: new SortAnnouncements(
+                    Instructions: "Space picks the card up, the arrows move it, Space drops it.",
+                    PickedUp: "{0} lifted from {3}.",
+                    Moved: "{0}: slot {1} of {2}.",
+                    MovedInto: "{0} on top of {1}.",
+                    Refused: "{0} cannot go there.",
+                    Dropped: "{0} placed in {3}, slot {1}.",
+                    DroppedInto: "{0} placed on {1}.",
+                    PutBack: "{0} is back where it was."));
+    }
+
     /// <summary>Components, "TreeView: a tree the keyboard walks" (preview.69, #1530): a repository's
     /// files, the top folder from the server and every folder below it loaded as it opens.</summary>
     private sealed class FilesPage : Primitives.StatefulComponent
