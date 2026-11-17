@@ -8,7 +8,8 @@
  *   a field inside a target keeps its own (its copy and paste are the field's).
  * - The menu key or Shift+F10: answered at the keydown, with no point, for the target around the focus. The
  *   browser's `contextmenu` that would follow is held off, and a browser that fires none for Shift+F10 (Safari)
- *   is answered all the same.
+ *   is answered all the same. A composite that keeps the focus on its one stop (a tree, a grid) names where the
+ *   keyboard is with `aria-activedescendant`, and the target around THAT item answers (#1532).
  * - A finger held still for `HOLD_MS`: counted here, since iOS Safari fires no `contextmenu` for a long press
  *   and Android Chrome does, so a touch's `contextmenu` over a target is held off and both phones ask once. A
  *   hold that lifted a sortable item is the lift's, and asks for nothing.
@@ -82,11 +83,23 @@ function onKeyDown(ev: KeyboardEvent): void {
   const menuKey = ev.key === 'ContextMenu' && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey && !ev.altKey;
   const shiftF10 = ev.key === 'F10' && ev.shiftKey && !ev.ctrlKey && !ev.metaKey && !ev.altKey;
   if ((!menuKey && !shiftF10) || ev.defaultPrevented) return;
-  const target = targetOf(document.activeElement);
-  if (!target || document.activeElement?.closest(FIELD)) return;
+  const focused = document.activeElement;
+  if (focused?.closest(FIELD)) return;
+  // From the active item up: a disabled target around it (a busy row's) answers nothing, as anywhere else.
+  const target = targetOf(activeItemOf(focused) ?? focused);
+  if (!target) return;
   ev.preventDefault();
   keyboardAskedAt = performance.now();
   ask(target, null);
+}
+
+/** Where the keyboard is inside a composite whose focus stays on its one stop: the element its
+ * `aria-activedescendant` names, when the composite holds it; otherwise nothing. */
+function activeItemOf(focused: Element | null): Element | null {
+  const id = focused?.getAttribute?.('aria-activedescendant');
+  if (!id) return null;
+  const item = document.getElementById(id);
+  return item && focused!.contains(item) ? item : null;
 }
 
 function onPointerDown(down: PointerEvent): void {

@@ -1227,6 +1227,8 @@ interface TextEntryConfig {
   role?: string;
   /** Takes focus on mount (the command-palette contract). */
   autofocus?: boolean;
+  /** Selects all of the text whenever the entry takes the keyboard (C# `SelectOnFocus`). */
+  selectOnFocus?: boolean;
   /** Line count: 1 (default) is single-line; more makes it a textarea that tall. */
   lines?: number;
 }
@@ -1249,6 +1251,7 @@ export class TextEntry extends VisualNode {
   obscure = false;
   role = 'bodyL';
   autofocus = false;
+  selectOnFocus = false;
   lines = 1;
 
   constructor(
@@ -1709,6 +1712,8 @@ export class Navigable extends VisualNode {
   /** The focused cell as [row, item] — announced through aria-activedescendant. A C# tuple
    * crosses as a plain array, so that is the type; the realizer reads exactly two entries. */
   activeCell: readonly number[] | null = null;
+  /** A version higher than the last one built takes the keyboard to the composite's stop (C# `FocusVersion`). */
+  focusVersion = 0;
 
   constructor(
     onMove: (move: NavigableMoveValue) => void,
@@ -1719,6 +1724,7 @@ export class Navigable extends VisualNode {
       role?: 'grid' | 'tree';
       hasHeaderRow?: boolean;
       activeCell?: readonly number[] | null;
+      focusVersion?: number;
     },
   ) {
     super();

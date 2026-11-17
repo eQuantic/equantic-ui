@@ -424,6 +424,7 @@ public sealed partial class PhotonHost
         _announcer.Observe(_lastFrame, timeMs);
         AdoptAutofocus();
         AdoptFocusRequests();
+        AdoptCompositeFocus();
         // A subscribed frame ticker IS motion: frames keep flowing while anyone wants them, and the
         // loop goes idle the moment the last subscription is disposed. Motion builds nothing, as no
         // request does unless something marked a position. A position still waiting to build keeps
@@ -1378,6 +1379,43 @@ public sealed partial class PhotonHost
     private readonly System.Runtime.CompilerServices.ConditionalWeakTable<ICodeSurfaceModel,
         System.Runtime.CompilerServices.StrongBox<int>> _focusRequests = new();
 
+    /// <summary>The focus version each composite's position was last built with (<see cref="Navigable.FocusVersion"/>).</summary>
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<Element,
+        System.Runtime.CompilerServices.StrongBox<int>> _compositeFocus = new();
+
+    /// <summary>
+    /// Gives a composite's one stop the keyboard when its <see cref="Navigable.FocusVersion"/> is higher than the
+    /// one its position was last built with: a field inside it closed, and the keyboard goes back where it came
+    /// from, as the web's host takes it. The first frame of a position only records the version. Nothing is
+    /// scrolled: the composite is where the person was.
+    /// </summary>
+    private void AdoptCompositeFocus()
+    {
+        if (_lastFrame is null) return;
+        var stops = _lastFrame.FocusStops;
+        for (var i = 0; i < stops.Count; i++)
+        {
+            var stop = stops[i];
+            if (stop.Grid is not { } grid) continue;
+            if (!_compositeFocus.TryGetValue(stop.Element, out var built))
+            {
+                _compositeFocus.Add(stop.Element, new System.Runtime.CompilerServices.StrongBox<int>(grid.FocusVersion));
+                continue;
+            }
+            if (grid.FocusVersion <= built.Value)
+            {
+                built.Value = grid.FocusVersion;
+                continue;
+            }
+            built.Value = grid.FocusVersion;
+            EndEditing();
+            _focused = null;
+            FocusOn(stop);
+            _focusVisible = true;
+            NeedsRender = true;
+        }
+    }
+
     private readonly System.Runtime.CompilerServices.ConditionalWeakTable<ISheetSurfaceModel,
         System.Runtime.CompilerServices.StrongBox<int>> _sheetFocusRequests = new();
 
@@ -1394,9 +1432,10 @@ public sealed partial class PhotonHost
         // a form where four boxes all look like the active one.
         if (changed) EndEditing();
         _textAt = field.Element;
-        // Where the pointer fell, or the end of the text when it arrived by Tab.
+        // Where the pointer fell, or the end of the text when it arrived by Tab — all of it selected when the
+        // field asks to be (TextEntry.SelectOnFocus), so what is typed first replaces it.
         Caret = caret ?? FieldText.Of(at, entry).Length;
-        _anchor = caret is null ? null : _caret;
+        _anchor = caret is null ? (entry.SelectOnFocus && _caret > 0 ? 0 : null) : _caret;
         _focused = null;
         ForgetFocus();
         if (changed) field.Entry.OnFocusChanged?.Invoke(true);

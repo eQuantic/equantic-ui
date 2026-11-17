@@ -320,4 +320,7 @@
   <data name="TreeLoadFailed" xml:space="preserve">
     <value>Não foi possível carregar. Tentar de novo</value>
   </data>
+  <data name="TreeItemName" xml:space="preserve">
+    <value>Nome</value>
+  </data>
 </root>

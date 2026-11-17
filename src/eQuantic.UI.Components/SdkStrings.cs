@@ -299,6 +299,9 @@ public static class SdkStrings
     public static string TreeLoading => SdkResources.TreeLoading;
     public static string TreeLoadFailed => SdkResources.TreeLoadFailed;
 
+    /// <summary>The name a tree's rename or new-item field is read by.</summary>
+    public static string TreeItemName => SdkResources.TreeItemName;
+
     public static string UploadWaiting => SdkResources.UploadWaiting;
 
     /// <summary>How far a file got: "3.2 MB of 12 MB".</summary>

@@ -10,6 +10,11 @@ namespace eQuantic.Console;
 /// arrows walk and open it, Enter opens a file, and typing a name's first letters jumps to it. The
 /// <c>flaky</c> folder fails its first load, to show the item that loads it again. The open file has a context
 /// menu (#1531).
+/// <para>
+/// Every node has a menu, and the tree edits in place (#1532): F2 or "Rename" renames, "New file" and "New folder"
+/// create under a folder, and "Delete" deletes, each busy for a moment as a server would make it. The changes are
+/// this page's, laid over what the server lists: the sample's repository is every visitor's.
+/// </para>
 /// </summary>
 [Page("/files", Title = "Files — eQuantic Console")]
 public sealed class FilesScreen : StatefulComponent, IServerPrefetch
@@ -19,6 +24,17 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
 
     private string? _open;
     private string? _said;
+
+    // This page's changes, laid over the server's listing.
+    private readonly Dictionary<string, string> _renamed = new();
+    private readonly Dictionary<string, List<RepositoryEntry>> _added = new();
+    private readonly HashSet<string> _deleted = new();
+
+    private TreeEditRequest? _edit;
+    private TreeReloadRequest? _reload;
+    private int _requests;
+    private bool _creatingFolder;
+    private List<string> _busy = [];
 
     /// <summary>How wide the tree is: the gap beside it drags it wider or narrower (#1562).</summary>
     private float _treeWidth = 320;
@@ -47,8 +63,9 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
         Column(gap: Space.S4, children: [
             Text("Files", TypeRole.Heading, theme.TextPrimary),
             Text("Folders load from the server the first time they open. Tab reaches the tree; the arrows "
-                + "walk and open it, Enter opens a file, and typing a name jumps to it. The open file has a menu: "
-                + "right-click it, hold it, or press the menu key on it. Drag the gap beside the tree to resize it.",
+                + "walk and open it, Enter opens a file, and typing a name jumps to it. Every node has a menu: "
+                + "right-click it, hold it, or press the menu key on it. F2 renames. Drag the gap beside the "
+                + "tree to resize it.",
                 TypeRole.BodyM, theme.TextSecondary),
             Row(gap: 0, children: [
                 Box(new BoxStyle
@@ -61,12 +78,19 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
                     CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
                 },
                 TreeView(
-                    roots: Top.Select(Node).ToList(),
+                    roots: Apply("", Top).Select(Node).ToList(),
                     selectedKey: _open,
                     onPressed: Open,
                     loadChildren: Load,
                     label: "Repository",
-                    height: SizeValue.Fill)),
+                    height: SizeValue.Fill,
+                    onRenamed: Rename,
+                    onCreated: Create,
+                    edit: _edit,
+                    reload: _reload,
+                    busyKeys: _busy,
+                    menuBuilder: MenuFor,
+                    onMenuSelect: Choose)),
                 Splitter(),
                 Column(gap: Space.S2, children: [
                     OpenFile(context),
@@ -130,7 +154,99 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
     private async Task<IReadOnlyList<TreeNode>> Load(TreeNode folder)
     {
         var entries = await ListFolder(folder.Key);
-        return entries.Select(Node).ToList();
+        return Apply(folder.Key, entries).Select(Node).ToList();
+    }
+
+    /// <summary>A folder's entries as this page left them: renamed, added to, deleted from.</summary>
+    private List<RepositoryEntry> Apply(string folder, List<RepositoryEntry> entries)
+    {
+        var shown = new List<RepositoryEntry>();
+        foreach (var entry in entries)
+        {
+            if (_deleted.Contains(entry.Path)) continue;
+            shown.Add(_renamed.TryGetValue(entry.Path, out var name) ? entry with { Name = name } : entry);
+        }
+        if (_added.TryGetValue(folder, out var added))
+            foreach (var entry in added)
+                if (!_deleted.Contains(entry.Path))
+                    shown.Add(_renamed.TryGetValue(entry.Path, out var name) ? entry with { Name = name } : entry);
+        return shown;
+    }
+
+    private static IReadOnlyList<MenuItem> MenuFor(TreeNode node) => node.IsLeaf
+        ? [new MenuItem("Rename"), new MenuItem("Copy path"), new MenuItem("Delete") { Destructive = true }]
+        : [new MenuItem("New file"), new MenuItem("New folder"), new MenuItem("Rename"),
+            new MenuItem("Delete") { Destructive = true }];
+
+    private void Choose(TreeNode node, int index)
+    {
+        switch (MenuFor(node)[index].Label)
+        {
+            case "Rename":
+                SetState(() => _edit = new TreeEditRequest(++_requests, node.Key));
+                break;
+            case "New file":
+            case "New folder":
+                var folder = MenuFor(node)[index].Label == "New folder";
+                SetState(() =>
+                {
+                    _creatingFolder = folder;
+                    _edit = new TreeEditRequest(++_requests, node.Key)
+                    {
+                        Creates = true,
+                        Icon = folder ? LucideIcons.Folder : LucideIcons.File,
+                    };
+                });
+                break;
+            case "Copy path":
+                SetState(() => _said = $"Copied {node.Key}");
+                break;
+            case "Delete":
+                Delete(node);
+                break;
+        }
+    }
+
+    /// <summary>A rename as a server makes it: a moment's work, then the name this page shows.</summary>
+    private async Task Rename(TreeNode node, string name)
+    {
+        await Task.Delay(400);
+        SetState(() =>
+        {
+            _renamed[node.Key] = name;
+            _said = $"Renamed {node.Label} to {name}.";
+        });
+    }
+
+    private async Task Create(TreeNode folder, string name)
+    {
+        // The kind asked for, read before the work: another creation may start before this one ends.
+        var isFolder = _creatingFolder;
+        await Task.Delay(400);
+        var path = $"{folder.Key}/{name}";
+        SetState(() =>
+        {
+            if (!_added.TryGetValue(folder.Key, out var added)) _added[folder.Key] = added = [];
+            added.Add(new RepositoryEntry(path, name, isFolder));
+            _said = $"Created {path}.";
+        });
+    }
+
+    /// <summary>A deletion the app makes itself: the node busy for a moment, then gone, and its folder read again.</summary>
+    private async void Delete(TreeNode node)
+    {
+        SetState(() => _busy = [node.Key]);
+        await Task.Delay(400);
+        var cut = node.Key.LastIndexOf('/');
+        var parent = cut < 0 ? "" : node.Key.Substring(0, cut);
+        SetState(() =>
+        {
+            _deleted.Add(node.Key);
+            _busy = [];
+            if (_open == node.Key) _open = null;
+            _reload = new TreeReloadRequest(++_requests, [parent]);
+            _said = $"Deleted {node.Key}.";
+        });
     }
 
     private void Open(TreeNode node)

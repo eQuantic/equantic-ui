@@ -64,6 +64,13 @@ public sealed class TextEntry : VisualNode
     public bool Autofocus { get; init; }
 
     /// <summary>
+    /// Selects all of the text whenever the entry takes the keyboard, by <see cref="Autofocus"/> or by Tab,
+    /// so what is typed first replaces it: a rename field's, an address bar's. A press inside the entry still
+    /// puts the caret where it pressed.
+    /// </summary>
+    public bool SelectOnFocus { get; init; }
+
+    /// <summary>
     /// How many lines of text the field holds. <c>1</c> (the default) is the single-line entry;
     /// anything greater makes it a MULTI-LINE field of exactly that many lines tall — the message
     /// box of a contact form, a note, a description. The count is the field's HEIGHT, not a limit:
