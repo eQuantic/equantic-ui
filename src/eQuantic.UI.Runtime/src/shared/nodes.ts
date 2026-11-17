@@ -53,6 +53,8 @@ import type {
   PointerPhaseValue,
   SizeKindValue,
   TableCellRoleValue,
+  TextAlignmentValue,
+  TypeRoleValue,
   TableRoleValue,
   VectorPaintKindValue,
 } from './enums.generated';
@@ -235,6 +237,15 @@ export interface GridNode {
   children: VisualNodeValue[];
 }
 
+/** The C# `ContentStyle` (#1577): the look a box hands the text and icons inside it. */
+export interface ContentStyleValue {
+  role?: TypeRoleValue | null;
+  type?: TypeStyleValue | null;
+  maxLines?: number | null;
+  align?: TextAlignmentValue | null;
+  iconSize?: number | null;
+}
+
 export interface BoxStyleValue {
   width?: SizeValueValue;
   height?: SizeValueValue;
@@ -247,6 +258,8 @@ export interface BoxStyleValue {
   background?: ColorTokenValue | null;
   /** C# `BoxStyle.Foreground` (#614). */
   foreground?: ColorTokenValue | null;
+  /** C# `BoxStyle.Content` (#1577): what a text and an icon that name none take from this box. */
+  content?: ContentStyleValue | null;
   cornerRadius?: CornerRadiiValue;
   borderWidth?: number;
   borderColor?: ColorTokenValue;
@@ -418,14 +431,15 @@ export interface TextNode extends VisualNodeValue {
   /** Drawn and never read: a reader passes over it (C# `Text.ExcludeFromSemantics`). */
   excludeFromSemantics?: boolean;
   /** `TypeRole` as a camelCase member string ('display' | 'heading' | … | 'bodyL' | 'caption'). */
-  role: string;
+  role?: string | null;
   color?: ColorTokenValue | null;
-  maxLines: number;
+  /** Null takes the box's (C# `Text.MaxLines`, #1577). */
+  maxLines?: number | null;
   styleOverride?: TypeStyleValue | null;
   /** Fills the glyphs with a gradient instead of `color` (background-clip: text). */
   gradient?: LinearGradientValue | null;
   /** Line alignment within the paragraph ('start' | 'center' | 'end') — CSS text-align twin. */
-  align?: string;
+  align?: string | null;
   /** Monospace face (code, versions) — the platform mono stack on web. */
   /** Tabular figures (tnum) — a changing number must not shift its row. */
   tabular?: boolean;
@@ -1077,7 +1091,8 @@ export interface IconNode extends VisualNodeValue {
   nodeKind: 'icon';
   /** The RESOLVED glyph — curated names resolve at construction, pack glyphs arrive whole. */
   glyph: IconGlyphValue;
-  size: number;
+  /** Null takes the box's `content.iconSize`, and 24 where none states one (C# `Icon.Size`, #1577). */
+  size?: number | null;
   color?: ColorTokenValue | null;
   label?: string | null;
 }
