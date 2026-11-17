@@ -968,6 +968,7 @@ hashesByValue(
   ColorToken,
   ContextRequest,
   PointerEvent,
+  SortAnnouncements,
   SortDrop,
   TableOffset,
   TableRange,
