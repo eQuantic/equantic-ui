@@ -319,6 +319,12 @@
   <data name="SortDropped" xml:space="preserve">
     <value>Dropped {0} at position {1} of {2} in {3}.</value>
   </data>
+  <data name="SortMovedInto" xml:space="preserve">
+    <value>{0} is inside {1}.</value>
+  </data>
+  <data name="SortDroppedInto" xml:space="preserve">
+    <value>Dropped {0} inside {1}.</value>
+  </data>
   <data name="SortCancelled" xml:space="preserve">
     <value>Put {0} back where it was.</value>
   </data>

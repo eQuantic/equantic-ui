@@ -137,13 +137,32 @@ function candidates(event: KeyboardEvent): string[] {
   return out;
 }
 
+/** How many gestures own the keyboard right now: while one does, no chord fires. */
+let holds = 0;
+
+/**
+ * Holds every chord off while a gesture owns the keyboard (an item carried by a sortable, #1533), and answers how
+ * to let them go again, once. The C# twin asks the carry first and stops there (PhotonHost.KeyDown, #1537): a
+ * carried item's Enter drops it and its Escape puts it back, and neither reaches an app's chord, a tree's Enter or
+ * a dialog's Escape.
+ */
+export function holdShortcuts(): () => void {
+  holds++;
+  let held = true;
+  return () => {
+    if (!held) return;
+    held = false;
+    holds--;
+  };
+}
+
 function install(): void {
   if (installed || typeof window === 'undefined') return;
   installed = true;
   window.addEventListener(
     'keydown',
     (event: KeyboardEvent) => {
-      if (active.length === 0) return;
+      if (active.length === 0 || holds > 0) return;
       const spellings = candidates(event);
       let handled = false;
       // A LIFO walk: the last binding listed wins the chord, among the ones on screen: of two
@@ -181,4 +200,5 @@ export function claimedByShortcut(event: Event): boolean {
 export function resetShortcuts(): void {
   pending = [];
   active = [];
+  holds = 0;
 }

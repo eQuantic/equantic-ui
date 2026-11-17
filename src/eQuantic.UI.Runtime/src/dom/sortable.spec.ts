@@ -27,6 +27,7 @@ class Board extends StatefulComponent {
     private readonly refuse: string | null = null,
     private readonly group = 'board',
     private readonly doneCards: string[] = [],
+    private readonly guard: ((drop: SortDrop) => boolean) | null = null,
   ) {
     super();
   }
@@ -44,7 +45,7 @@ class Board extends StatefulComponent {
         nests: this.nests,
         label: id === 'todo' ? 'To do' : 'Done',
         onHovered: (drop: SortDrop | null) => hovered.push(drop),
-        accepts: this.refuse ? (drop: SortDrop) => !drop.item.startsWith(this.refuse!) : null,
+        accepts: this.guard ?? (this.refuse ? (drop: SortDrop) => !drop.item.startsWith(this.refuse!) : null),
       });
     };
     row.add(column('todo', ['a', 'b', 'c', 'locked-1']) as never);
@@ -308,6 +309,57 @@ describe('lists a pointer sorts', () => {
       expect(said()).toBe('locked-1 cannot go there.');
       press('Enter');
       expect(dropped[0].to).toBe('todo');
+    });
+
+    it('steps through the places inside the items in a list that nests, and says them (#1533)', () => {
+      const container = mount(new Board(true));
+      item(container, 'c').focus();
+      press(' ');
+      expect(said()).toBe('Picked up c, position 3 of 4 in To do.');
+      // Before c's own place come, going up: inside b, then before b.
+      press('ArrowUp');
+      expect(said()).toBe('c is inside b.');
+      expect(last(hovered)?.into).toBe('b');
+      press('ArrowUp');
+      expect(said()).toBe('c is at position 2 of 4 in To do.');
+      expect(last(hovered)?.into ?? null).toBeNull();
+      press('ArrowDown');
+      press(' ');
+      expect([dropped[0].item, dropped[0].index, dropped[0].into]).toEqual(['c', 1, 'b']);
+      expect(said()).toBe('Dropped c inside b.');
+    });
+
+    it('passes over a place the list refuses, as a pointer does (#1533)', () => {
+      const container = mount(new Board(false, null, 'board', [], (drop: SortDrop) => drop.index !== 1));
+      item(container, 'c').focus();
+      press(' ');
+      press('ArrowUp');
+      expect(said()).toBe('c is at position 1 of 4 in To do.');
+      expect(last(hovered)?.index).toBe(0);
+      // At the top, the place it holds is said again rather than refused.
+      press('ArrowUp');
+      expect(said()).toBe('c is at position 1 of 4 in To do.');
+    });
+
+    it("starts from a composite's active item, and leaves the focus on the composite (#1533)", () => {
+      vi.stubGlobal('requestAnimationFrame', (frame: FrameRequestCallback) => {
+        frame(0);
+        return 0;
+      });
+      const container = mount(new Board());
+      const list = container.querySelector('[data-eq-sort-id="todo"]') as HTMLElement;
+      // A composite's one stop, naming its active item, as a tree's host does.
+      list.setAttribute('tabindex', '0');
+      item(container, 'b').id = 'todo-b';
+      list.setAttribute('aria-activedescendant', 'todo-b');
+      list.focus();
+
+      press(' ');
+      expect(said()).toBe('Picked up b, position 2 of 4 in To do.');
+      press('ArrowDown');
+      press(' ');
+      expect([dropped[0].item, dropped[0].index]).toEqual(['b', 2]);
+      expect(document.activeElement).toBe(list);
     });
 
     it('leaves Space in a field, and a chord, to the page', () => {

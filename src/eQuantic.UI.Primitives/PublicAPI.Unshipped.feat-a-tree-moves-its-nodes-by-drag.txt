@@ -1,0 +1,2 @@
+#nullable enable
+static eQuantic.UI.Primitives.SortPlacement.KeyStep(int index, int into, int step, int others, bool nests) -> (int Index, int Into)

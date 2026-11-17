@@ -6,8 +6,10 @@ With the focus on a `SortableItem` or inside it, or on a composite whose active 
 one (a tree's, a grid's), Space SHALL pick the item up; an arrow along the list's axis SHALL move it one place in its
 list; an arrow across the axis SHALL move it to the previous or next list of its group in document order, at the same
 position or the last; Space or Enter SHALL drop it, reporting the `SortDrop` to the list it is in; Escape, Tab or a
-pointer's press SHALL put it back with no drop. Each place SHALL be offered to the list's `Accepts` first, a refused
-place SHALL NOT be taken, and the list SHALL report each place through `OnHovered` and `null` when the item leaves it.
+pointer's press SHALL put it back with no drop. Each place SHALL be offered to the list's `Accepts` first and a
+refused place SHALL NOT be taken: an arrow along the axis SHALL pass over the places the list refuses to the next one
+it accepts, as a pointer passes over them, and keep the place it holds when none is left that way. The list SHALL
+report each place through `OnHovered` and `null` when the item leaves it.
 Each step SHALL be announced through one polite live region, from the SDK's strings in the reader's language, naming
 the item, its position, the count and the list's `Label`. After a drop the focus SHALL return to the item, or stay on
 the composite whose active item it was.
@@ -24,6 +26,12 @@ the composite whose active item it was.
 
 - **WHEN** the person picks card `a` up with Space, presses ArrowDown and then Escape
 - **THEN** no `OnDropped` ran, the list last reported `null`, and the live region says `a` was put back
+
+#### Scenario: The keyboard passes over a refused place
+
+- **WHEN** a list holds `a`, `b` and `c`, its `Accepts` refuses position 2, and the person picks `c` up with Space
+  and presses ArrowUp
+- **THEN** `c` passes over position 2 to position 1, and the live region says that `c` is at position 1 of 3
 
 #### Scenario: A composite's active item is picked up
 
