@@ -28,6 +28,9 @@ internal sealed class SortGesture(Element item, SortableItem itemNode, Element s
     /// <summary>Whether the keyboard carries it rather than a pointer.</summary>
     public bool ByKeyboard { get; init; }
 
+    /// <summary>What a reader hears the item called, in each step a keyboard's carry says (#1564).</summary>
+    public string Name { get; init; } = "";
+
     /// <summary>The frame time a finger's press was first seen at, which its hold is counted from: a press
     /// carries no time of its own, so the frame it asks for stamps it.</summary>
     public float? PressedAtMs { get; set; }
