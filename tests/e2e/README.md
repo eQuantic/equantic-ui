@@ -107,6 +107,18 @@ screen returns its content only:
 3. **What the payments screen owns still answers inside the layout**: ⌘K opens its palette, its sandbox
    switch and "New payment" answer, now that the screen draws them instead of the frame.
 
+### `listener.spec.ts`
+
+The `/files` screen resizes its tree by the gap beside it, a `Listener` over an empty box (#1562):
+
+1. **The gap follows a drag that runs past it**: the press goes down in the 16 px gap and moves a hundred
+   past it, and the tree is a hundred wider. The gap draws nothing, so it hears the press only because it is
+   `Opaque`, and every move but the first lands outside it, so it hears them only because a press is followed.
+2. **The same gap, deferring, hears nothing**: its mark changed to `defer`, the browser's own hit test with
+   the real computed styles finds nothing drawn in the gap, and the same drag moves nothing.
+3. **A press elsewhere moves nothing**: a press that went down on the screen's description and is dragged
+   across the gap was never the gap's.
+
 `E2E_PORT` runs the server on another port, beside another checkout's.
 
 ## Estrutura
@@ -117,6 +129,7 @@ tests/e2e/
 ├── tests/
 │   ├── app-layout.spec.ts     # The app's layout stays mounted (#1129)
 │   ├── contrast.spec.ts       # Contrast levels in a real browser (#340)
+│   ├── listener.spec.ts       # A listener in a real browser (#1562)
 │   ├── content-security.spec.ts # The strict policy in a real browser (#1270)
 │   ├── passkeys.spec.ts       # Passkeys through IPasskeys (#1017)
 │   ├── uploads.spec.ts        # Uploads through FileUpload (#1215)

@@ -477,6 +477,7 @@ internal sealed partial class WebLoweringVisitor
         Hoverable hoverable => CapsAt(hoverable.Child),
         DropTarget target => CapsAt(target.Child),
         ContextTarget target => CapsAt(target.Child),
+        Listener listener => CapsAt(listener.Child),
         Sortable sortable => CapsAt(sortable.Child),
         SortableItem item => CapsAt(item.Child),
         Adjustable adjustable => CapsAt(adjustable.Child),
@@ -1020,6 +1021,46 @@ internal sealed partial class WebLoweringVisitor
             element.Children.Add(child);
         return element;
     }
+
+    /// <summary>
+    /// What hears the raw pointer over a subtree (<see cref="Listener"/>, #1562): the same layout-transparent div
+    /// as a context target, marked with its behaviour for the runtime's pointer controller
+    /// (<c>dom/pointer-listener.ts</c>), which hit-tests the listeners under every pointer event and dispatches
+    /// what each one hears. The server declares the event and runs none; the client twin (<c>lowerListener</c>)
+    /// turns it into the C# callbacks.
+    /// </summary>
+    private HtmlElement LowerListener(Listener listener)
+    {
+        var fills = Fills(listener.Child);
+        var cap = CapsAt(listener.Child);
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = fills.Width ? "100%" : null,
+                MaxWidth = Size(cap),
+                // In the browser's hit test, saying so because `none` inherits from any transparent row above it.
+                PointerEvents = "auto",
+                Height = fills.Height ? "100%" : null,
+            },
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["data-eq-listener"] = ListenerMark(listener.Behavior),
+            },
+        };
+        element.CustomEvents["eq-pointer"] = ClientDispatches;
+        if (Lower(listener.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
+            element.Children.Add(child);
+        return element;
+    }
+
+    /// <summary>The behaviour as the runtime's controller reads it from the mark (the client twin writes the same).</summary>
+    private static string ListenerMark(HitTestBehavior behavior) => behavior switch
+    {
+        HitTestBehavior.Opaque => "opaque",
+        HitTestBehavior.Translucent => "translucent",
+        _ => "defer",
+    };
 
     /// <summary>
     /// A list a pointer sorts (#1535, TS twin: <c>lowerSortable</c>): no element of its own, its CHILD marked as
