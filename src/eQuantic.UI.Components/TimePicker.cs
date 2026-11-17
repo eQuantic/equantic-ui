@@ -18,7 +18,7 @@ public sealed class TimePicker : StatefulComponent
     private int _highlight;
 
     public TimePicker(TimeOnly? selected = null, Action<TimeOnly>? onChanged = null,
-        int stepMinutes = 30, TimeOnly? min = null, TimeOnly? max = null, string label = "")
+        int stepMinutes = 30, TimeOnly? min = null, TimeOnly? max = null, string label = "", InputTheme? style = null)
     {
         Selected = selected;
         OnChanged = onChanged;
@@ -26,6 +26,7 @@ public sealed class TimePicker : StatefulComponent
         Min = min;
         Max = max;
         Label = label;
+        Style = style;
     }
 
     public TimeOnly? Selected { get; private set; }
@@ -34,6 +35,11 @@ public sealed class TimePicker : StatefulComponent
     public TimeOnly? Min { get; private set; }
     public TimeOnly? Max { get; private set; }
     public string Label { get; private set; }
+
+    /// <summary>This picker's own look, laid over the theme's <see cref="IAppTheme.Input"/> slot with
+    /// <see cref="InputTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's.</summary>
+    public InputTheme? Style { get; private set; }
+
     /// <summary>Backed by a field, so <see cref="AdoptConfig"/> can carry it: this instance is kept
     /// across the parent's rebuilds, and an <c>init</c> accessor cannot be written from there.</summary>
     public bool Disabled { get => _disabled; init => _disabled = value; }
@@ -48,6 +54,7 @@ public sealed class TimePicker : StatefulComponent
         Min = fresh.Min;
         Max = fresh.Max;
         Label = fresh.Label;
+        Style = fresh.Style;
         _disabled = fresh.Disabled;
     }
 
@@ -59,10 +66,10 @@ public sealed class TimePicker : StatefulComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        // The theme's Input slot, then its control ladder, then the component's own (§3.10): the field
+        // The instance's style over the theme's Input slot, then its control ladder, then the component's own (§3.10): the field
         // and each row of its panel share the padding and the gap, and a row is the field's height
         // unless the slot names its own.
-        var input = theme.Input;
+        var input = InputTheme.Merge(theme.Input, Style);
         var height = ControlMetrics.Height(context, SizeVariant.Medium, input?.Controls);
         var paddingX = input?.PickerPaddingX ?? Space.S3;
         var gap = input?.PickerGap ?? Space.S2;

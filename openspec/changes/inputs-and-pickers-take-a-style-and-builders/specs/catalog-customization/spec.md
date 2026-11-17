@@ -2,9 +2,9 @@
 
 ### Requirement: An input or a picker takes its family's record as its style
 
-Each of `TextInput`, `SearchField`, `Select`, `FormInput`, `FileUpload`, `CultureSwitcher`, `DatePicker`,
-`TimePicker` and `DateTimePicker` SHALL take `style`, an `InputTheme`; `Calendar` SHALL take a `CalendarTheme`;
-`SegmentedControl` and `Stepper` SHALL take a `SegmentedTheme`. The component SHALL lay the record over its
+Each of `TextInput`, `SearchField`, `Select`, `FormInput`, `FileUpload`, `DatePicker`, `TimePicker` and
+`DateTimePicker` SHALL take `style`, an `InputTheme`; `Calendar` SHALL take a `CalendarTheme`;
+`SegmentedControl`, `Stepper` and `CultureSwitcher` SHALL take a `SegmentedTheme`. The component SHALL lay the record over its
 theme's slot with the record's `Merge`, so a member the instance sets wins and a member it leaves null is the
 theme's. A component that composes another SHALL hand its style down. With no style, the output SHALL be what
 it was.

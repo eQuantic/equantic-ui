@@ -16,16 +16,28 @@ namespace eQuantic.UI.Components;
 public sealed class SegmentedControl : StatelessComponent
 {
     public SegmentedControl(IReadOnlyList<string> segments, int selectedIndex,
-        Action<int>? onChanged = null)
+        Action<int>? onChanged = null, SegmentedTheme? style = null, Func<int, VisualNode>? segmentBuilder = null)
     {
         Segments = segments;
         SelectedIndex = selectedIndex;
         OnChanged = onChanged;
+        Style = style;
+        SegmentBuilder = segmentBuilder;
     }
 
     public IReadOnlyList<string> Segments { get; init; }
     public int SelectedIndex { get; init; }
     public Action<int>? OnChanged { get; init; }
+
+    /// <summary>This control's own look, laid over the theme's <see cref="IAppTheme.Segmented"/> slot with
+    /// <see cref="SegmentedTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's.</summary>
+    public SegmentedTheme? Style { get; init; }
+
+    /// <summary>
+    /// Draws a segment's CONTENT, by its index in <see cref="Segments"/>. The control keeps the chrome (the
+    /// thumb, the track, the press), and the segment's text stays its accessible name. Null draws the text.
+    /// </summary>
+    public Func<int, VisualNode>? SegmentBuilder { get; init; }
 
     public SizeVariant Size { get; init; } = SizeVariant.Medium;
     public bool Disabled { get; init; }
@@ -36,8 +48,8 @@ public sealed class SegmentedControl : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        // The theme's Segmented slot, then its control ladder, then the component's own (§3.10).
-        var slot = theme.Segmented;
+        // The instance's style over the theme's Segmented slot, then its control ladder, then the component's own (§3.10).
+        var slot = SegmentedTheme.Merge(theme.Segmented, Style);
         var ladder = slot?.Controls;
         var height = ControlMetrics.Height(context, Size, ladder);
         var inset = slot?.Inset ?? 3f;                    // the track's lip around the thumb
@@ -65,12 +77,16 @@ public sealed class SegmentedControl : StatelessComponent
                 Main = MainAlign.Center,
                 Cross = CrossAlign.Center,
             };
-            label.Add(new Text(Segments[index], TypeRole.Label,
-                selected ? theme.TextPrimary : theme.TextSecondary, maxLines: 1)
-            {
-                StyleOverride = theme.Type(TypeRole.Label).WithSize(ControlMetrics.LabelSize(context, Size, ladder)),
-                Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
-            });
+            // The developer's content, when they drew it; the segment's text otherwise.
+            if (SegmentBuilder is { } builder)
+                label.Add(builder(index));
+            else
+                label.Add(new Text(Segments[index], TypeRole.Label,
+                    selected ? theme.TextPrimary : theme.TextSecondary, maxLines: 1)
+                {
+                    StyleOverride = theme.Type(TypeRole.Label).WithSize(ControlMetrics.LabelSize(context, Size, ladder)),
+                    Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
+                });
 
             var segment = new Box(new BoxStyle
             {

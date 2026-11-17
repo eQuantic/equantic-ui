@@ -21,7 +21,7 @@ public sealed class FormInput : StatelessComponent
 {
     public FormInput(FormController form, string name, string label = "",
         string? placeholder = null, string? helper = null, Icons? leading = null,
-        SizeVariant size = SizeVariant.Large)
+        SizeVariant size = SizeVariant.Large, InputTheme? style = null)
     {
         Form = form;
         Name = name;
@@ -30,6 +30,7 @@ public sealed class FormInput : StatelessComponent
         Helper = helper;
         Leading = leading;
         Size = size;
+        Style = style;
     }
 
     public FormController Form { get; init; }
@@ -47,6 +48,10 @@ public sealed class FormInput : StatelessComponent
 
     public Icons? Leading { get; init; }
     public SizeVariant Size { get; init; }
+
+    /// <summary>The field's own look, handed to the <see cref="TextInput"/> it draws.</summary>
+    public InputTheme? Style { get; init; }
+
     public bool Obscure { get; init; }
     public bool Autofocus { get; init; }
     public bool Disabled { get; init; }
@@ -60,7 +65,7 @@ public sealed class FormInput : StatelessComponent
         if (field is null) return new Box();
 
         return new TextInput(field.Value, value => Form.Set(Name, value), Label,
-            Placeholder, Helper, field.VisibleError, Leading, Size)
+            Placeholder, Helper, field.VisibleError, Leading, Size, style: Style)
         {
             Obscure = Obscure,
             Autofocus = Autofocus,

@@ -36,12 +36,13 @@ public sealed class Calendar : StatefulComponent
     private DateOnly? _cursor;
 
     public Calendar(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
-        DateOnly? min = null, DateOnly? max = null)
+        DateOnly? min = null, DateOnly? max = null, CalendarTheme? style = null)
     {
         Selected = selected;
         OnChanged = onChanged;
         Min = min;
         Max = max;
+        Style = style;
         _month = FirstOfMonth(selected ?? Today());
     }
 
@@ -49,6 +50,10 @@ public sealed class Calendar : StatefulComponent
     public Action<DateOnly>? OnChanged { get; private set; }
     public DateOnly? Min { get; private set; }
     public DateOnly? Max { get; private set; }
+
+    /// <summary>This calendar's own look, laid over the theme's <see cref="IAppTheme.Calendar"/> slot with
+    /// <see cref="CalendarTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's.</summary>
+    public CalendarTheme? Style { get; private set; }
 
     /// <summary>
     /// The grid's accessible name. Defaults to the month on screen, which is what a screen reader
@@ -69,6 +74,7 @@ public sealed class Calendar : StatefulComponent
         OnChanged = fresh.OnChanged;
         Min = fresh.Min;
         Max = fresh.Max;
+        Style = fresh.Style;
         _label = fresh.Label;
 
         // A CONTROLLED calendar: the app moved the selection, so the view follows it. Without this
@@ -94,8 +100,8 @@ public sealed class Calendar : StatefulComponent
         var theme = context.Theme;
         var first = CalendarNames.FirstDayOfWeek;
         var monthTitle = $"{CalendarNames.MonthNames[_month.Month - 1]} {_month.Year}";
-        // The theme's Calendar slot, then the component's own (§3.10).
-        var slot = theme.Calendar;
+        // The instance's style over the theme's Calendar slot, then the component's own (§3.10).
+        var slot = CalendarTheme.Merge(theme.Calendar, Style);
         var cellSize = slot?.CellSize ?? CellSize;
 
         var header = new Row(gap: slot?.HeaderGap ?? Space.S1) { Cross = CrossAlign.Center, Width = SizeValue.Fill };
@@ -130,7 +136,7 @@ public sealed class Calendar : StatefulComponent
         {
             var weekRow = new Row(gap: 0) { Width = SizeValue.Fill };
             for (var column = 0; column < 7; column++)
-                weekRow.Add(Cell(start.AddDays(week * 7 + column), context));
+                weekRow.Add(Cell(start.AddDays(week * 7 + column), context, slot));
             rows.Add(weekRow);
         }
 
@@ -148,10 +154,9 @@ public sealed class Calendar : StatefulComponent
 
     /// <summary>One day. Outside the month it is a hole rather than a greyed number (C15: other
     /// month days hidden) — the grid keeps its shape without offering somewhere to go.</summary>
-    private VisualNode Cell(DateOnly day, ComponentContext context)
+    private VisualNode Cell(DateOnly day, ComponentContext context, CalendarTheme? slot)
     {
         var theme = context.Theme;
-        var slot = theme.Calendar;
         var cellSize = slot?.CellSize ?? CellSize;
         var size = SizeValue.Fixed(cellSize);
         if (day.Month != _month.Month) return new Box(new BoxStyle { Width = size, Height = size });

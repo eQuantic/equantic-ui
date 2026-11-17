@@ -15,14 +15,15 @@ draws it.
 
 - **Style.** Every component of the family takes `style:`, its family's slot record, laid over the theme's
   with the record's `Merge`, the first step of §3.10's order, as `Markdown` already does with `MarkdownTheme`:
-  - `InputTheme`: `TextInput`, `SearchField`, `Select`, `FormInput`, `FileUpload`, `CultureSwitcher`,
-    `DatePicker`, `TimePicker`, `DateTimePicker`;
+  - `InputTheme`: `TextInput`, `SearchField`, `Select`, `FormInput`, `FileUpload`, `DatePicker`,
+    `TimePicker`, `DateTimePicker`;
   - `CalendarTheme`: `Calendar`;
-  - `SegmentedTheme`: `SegmentedControl`, `Stepper`.
+  - `SegmentedTheme`: `SegmentedControl`, `Stepper`, and `CultureSwitcher`, which draws a segmented control
+    for three languages or fewer and a menu past that, never a field.
   The two pickers whose panel is a calendar (`DatePicker`, `DateTimePicker`) take `calendarStyle:` too, a
   `CalendarTheme` for the panel, since one record cannot carry both looks. A component that composes another
-  hands its style down: `FormInput` to its `TextInput`, `CultureSwitcher` to its `Select`, `DateTimePicker` to
-  its two pickers.
+  hands its style down: `FormInput` to its `TextInput`, `CultureSwitcher` to its segmented control, `DateTimePicker`
+  to its two pickers.
 - **Builders.** What the family repeats is drawn by a builder over the part's index, `Func<int, VisualNode>`:
   - `Select(optionBuilder:)` draws an option's content, by the option's index in the list `selectedIndex` and
     `onChanged` count (the ungrouped options, then each group's in order). The option's text stays its

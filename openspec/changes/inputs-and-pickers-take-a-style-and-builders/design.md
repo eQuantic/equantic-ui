@@ -11,7 +11,10 @@ half waits for #1577, which makes a string a node and hands content the look its
 Every component reads its slot in one place today (`var slot = theme.Input;`), and the merge replaces that
 read: `var slot = InputTheme.Merge(theme.Input, Style);`. Everything the component derives from the slot then
 follows the instance's record, with nothing else changed. A component that read no slot of its own
-(`FormInput`, `CultureSwitcher`, `DateTimePicker`) composes one that does, and hands its style down. A component
+(`FormInput`, `CultureSwitcher`, `DateTimePicker`) composes one that does, and hands its style down.
+`CultureSwitcher` composes a `SegmentedControl` for three languages or fewer and a menu on a button past
+that, never a field, so its record is `SegmentedTheme`, handed to the segments; the menu takes the menu's
+own theme, which a style of the switcher does not reach. A component
 that draws something the record names but read it from the theme's tokens until now (`FileUpload`'s border and
 fill) reads the merged slot first and the tokens after, so a style it is handed reaches what it draws.
 

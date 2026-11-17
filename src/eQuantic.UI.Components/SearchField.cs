@@ -15,12 +15,13 @@ public sealed class SearchField : StatelessComponent
     // The default cannot live IN the signature: a default parameter is a compile-time constant,
     // and the placeholder is SDK vocabulary the localization seam owns (I18N-PLAN D14).
     public SearchField(string query, Action<string>? onChanged = null,
-        string? placeholder = null, Action? onSubmit = null)
+        string? placeholder = null, Action? onSubmit = null, InputTheme? style = null)
     {
         Query = query;
         OnChanged = onChanged;
         Placeholder = placeholder ?? SdkStrings.SearchPlaceholder;
         OnSubmit = onSubmit;
+        Style = style;
     }
 
     public string Query { get; init; }
@@ -28,11 +29,15 @@ public sealed class SearchField : StatelessComponent
     public string Placeholder { get; init; }
     public Action? OnSubmit { get; init; }
 
+    /// <summary>This field's own look, laid over the theme's <see cref="IAppTheme.Input"/> slot with
+    /// <see cref="InputTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's.</summary>
+    public InputTheme? Style { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        // The theme's Input slot, then its control ladder, then the component's own (§3.10).
-        var slot = theme.Input;
+        // The instance's style over the theme's Input slot, then its control ladder, then the component's own (§3.10).
+        var slot = InputTheme.Merge(theme.Input, Style);
         var height = ControlMetrics.Height(context, SizeVariant.Medium, slot?.Controls);
         var fill = slot?.SearchFill ?? theme.SurfaceSubtle;
         var iconSize = slot?.IconSize ?? IconSize.Dense;
