@@ -15,4 +15,7 @@ namespace eQuantic.UI.Native.Components;
 /// <param name="Layer">What the pass lays out against the viewport and paints above the page.</param>
 /// <param name="Holder">The position whose deferred slot holds the layer's content. Never null for
 /// a node the layout measured; the pass refuses one that is.</param>
-internal readonly record struct QueuedLayer(Overlay Layer, NodeElement? Holder);
+/// <param name="Content">The look in effect where the node that queued the layer stands
+/// (<see cref="EmitState.Content"/>, #1577): the layer is laid out and painted under it, so a panel
+/// shown in a layer of its own looks as it would in place, where the web lowers it.</param>
+internal readonly record struct QueuedLayer(Overlay Layer, NodeElement? Holder, ContentStyle? Content);

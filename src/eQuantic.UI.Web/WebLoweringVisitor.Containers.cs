@@ -953,7 +953,7 @@ internal sealed partial class WebLoweringVisitor
             else AppendDiff(element, StyleSink.ControlPressed, pressed, box.Style);
         }
 
-        if (box.Child is not null && Lower(box.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
+        if (box.Child is not null && LowerUnderItsLook(box) is { } child)
         {
             // A box with a DECIDED height hands that height to an auto-sized container child — the
             // native twin of this is the block stretch the layout engine applies on both axes. CSS
@@ -971,6 +971,22 @@ internal sealed partial class WebLoweringVisitor
             element.Children.Add(child);
         }
         return element;
+    }
+
+    /// <summary>The box's child, lowered with the box's look laid over the look around it (#1577), and
+    /// the look around it back after, whatever the child's lowering did.</summary>
+    private HtmlElement? LowerUnderItsLook(Box box)
+    {
+        var around = _content;
+        _content = ContentStyle.Merge(around, box.Style.Content);
+        try
+        {
+            return Lower(box.Child!, horizontalAxis: null, LoweringPath.Child);
+        }
+        finally
+        {
+            _content = around;
+        }
     }
 
     /// <summary>Whether this box bounds its child by a cap alone: a height cap, no decided height,

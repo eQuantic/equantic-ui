@@ -51,7 +51,7 @@ export class CodeGoToView {
     }
 
     static said(theme: any, metrics: CodeBlock$CodeMetrics, saying: string) {
-        return new LiveRegion(CodeGoToView.panel(theme, new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(8, 4) }), new Text(saying, 'labelSmall', theme.textMuted, 0, 'start', false, false, null, 0, { styleOverride: $eq.withPatch(metrics.style, { mono: false }) }))));
+        return new LiveRegion(CodeGoToView.panel(theme, new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(8, 4) }), new Text(saying, 'labelSmall', theme.textMuted, null, null, false, false, null, 0, { styleOverride: $eq.withPatch(metrics.style, { mono: false }) }))));
     }
 
     static list(theme: any, metrics: CodeBlock$CodeMetrics, goTo: CodeGoTo, width: number, top: number, pick: (int: number) => void) {
@@ -78,12 +78,12 @@ export class CodeGoToView {
         let row = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
         let kind: any; 
         if ((kind = entry.kind) != null) row.add(CodeCompletionView.glyph(theme, metrics, CodeGoToView.kindOf(kind)));
-        row.add(new Text(name, 'labelSmall', ink, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(name, entry.matches, ink, accent) }));
+        row.add(new Text(name, 'labelSmall', ink, 1, null, false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(name, entry.matches, ink, accent) }));
         let room = columns - CodeLineCells.widthOf(name, 4) - 2;
         let held: any; 
         if ((($0) => (($0 != null && $0.length > 0) && (held = $0, true)))(entry.container) && room >= 2) {
             let container = CodeCompletionView.fit(held, room);
-            row.add(new Text(container, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(container, entry.containerMatches, theme.textMuted, accent) }));
+            row.add(new Text(container, 'labelSmall', theme.textMuted, 1, null, false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(container, entry.containerMatches, theme.textMuted, accent) }));
         }
         let container2: any; 
         return new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: metrics.lineHeight, padding: EdgeInsets.symmetric(8, 0), background: selected ? theme.colors('primary').subtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), pressed, { role: 'option', selected: selected, canRequestFocus: false, label: (($0) => (($0 != null && $0.length > 0) && (container2 = $0, true)))(entry.container) ? entry.name + ', ' + container2 : entry.name });

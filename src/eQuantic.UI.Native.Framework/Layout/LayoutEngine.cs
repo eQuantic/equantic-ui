@@ -381,8 +381,14 @@ public static class LayoutEngine
     /// Null (a test, a tool, a layout done once) builds the tree here first, with an owner that
     /// calls no lifecycle hook, so there is one measurement whoever asks.
     /// </param>
+    /// <param name="around">
+    /// The look in effect where <paramref name="root"/> stands in the vocabulary tree
+    /// (<see cref="BoxStyle.Content"/>, #1577): null for the page, which no box encloses, and for an
+    /// overlay layer the look of the boxes above the node that queued it, so a panel shown in a layer
+    /// of its own measures in the look it would have had in place.
+    /// </param>
     public static LayoutNode Layout(VisualNode root, float viewportWidth, float viewportHeight, LayoutContext context,
-        StretchKind rootStretch = StretchKind.None, Element? rootElement = null)
+        StretchKind rootStretch = StretchKind.None, Element? rootElement = null, ContentStyle? around = null)
     {
         rootElement ??= new ComponentBoundary().StructuralOwner().Build(root, context.Components, viewportWidth, rebuildAll: true);
         context.WindowWidth = viewportWidth;
@@ -390,11 +396,11 @@ public static class LayoutEngine
         // ONE visitor per CONTEXT, which is what lets the context be a field on it and only the
         // constraints and the position travel down. A frame runs several Layout calls (the page plus
         // each Overlay subtree) and they share this context, so they share its visitor.
-        var node = context.MeasurePass.Measure(
+        var node = context.MeasurePass.MeasureRoot(
             root,
             LayoutConstraints.Of(viewportWidth, viewportHeight).Stretched(rootStretch, StretchKind.None),
-            context,
-            rootElement);
+            rootElement,
+            around);
         Absolutize(node, 0, 0);
         return node;
     }

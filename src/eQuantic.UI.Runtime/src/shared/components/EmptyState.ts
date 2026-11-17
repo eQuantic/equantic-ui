@@ -28,7 +28,7 @@ export class EmptyState extends StatelessComponent {
         let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill, cross: 'center', padding: EdgeInsets.symmetric(slot?.emptyPaddingX ?? 16, slot?.emptyPaddingY ?? 48) });
         column.add(well);
         column.add(Spacer.fixed(slot?.wellGap ?? 16));
-        column.add(new Text(this.title, 'title', slot?.emptyTitleColor ?? theme.textPrimary, 2, 'start', false, false, null, 0, { styleOverride: new TypeStyle(slot?.emptyTitleSize ?? 20, slot?.emptyTitleLineHeight ?? 26, slot?.emptyTitleWeight ?? 'semiBold', 0, Math.fround(1.3)) }));
+        column.add(new Text(this.title, 'title', slot?.emptyTitleColor ?? theme.textPrimary, 2, null, false, false, null, 0, { styleOverride: new TypeStyle(slot?.emptyTitleSize ?? 20, slot?.emptyTitleLineHeight ?? 26, slot?.emptyTitleWeight ?? 'semiBold', 0, Math.fround(1.3)) }));
         let body: any; 
         if ((body = this.body) != null) {
             column.add(Spacer.fixed(slot?.bodyGap ?? 6));

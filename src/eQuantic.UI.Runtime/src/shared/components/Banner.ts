@@ -28,9 +28,9 @@ export class Banner extends StatelessComponent {
         let lineHeight = slot?.bannerLineHeight ?? 18;
         let glyph: IconsValue = (() => { const $s = this.status; if ($s === 'success') return 'checkCircle'; if ($s === 'warning') return 'warning'; if ($s === 'destructive') return 'error'; return 'info'; })();
         let column = new Column(slot?.bannerGap ?? 4);
-        column.add(new Text(this.title, 'caption', tint.onSubtle, 2, 'start', false, false, null, 0, { styleOverride: new TypeStyle(textSize, lineHeight, slot?.bannerTitleWeight ?? 'semiBold', 0, Math.fround(1.3)) }));
+        column.add(new Text(this.title, 'caption', tint.onSubtle, 2, null, false, false, null, 0, { styleOverride: new TypeStyle(textSize, lineHeight, slot?.bannerTitleWeight ?? 'semiBold', 0, Math.fround(1.3)) }));
         if (this.body != null) {
-            column.add(new Text(this.body, 'caption', tint.onSubtle, 4, 'start', false, false, null, 0, { styleOverride: new TypeStyle(textSize, lineHeight, slot?.bannerBodyWeight ?? 'regular', 0, Math.fround(1.3)) }));
+            column.add(new Text(this.body, 'caption', tint.onSubtle, 4, null, false, false, null, 0, { styleOverride: new TypeStyle(textSize, lineHeight, slot?.bannerBodyWeight ?? 'regular', 0, Math.fround(1.3)) }));
         }
         if (this.primaryAction != null || this.secondaryAction != null) {
             let actions = new Row(8);

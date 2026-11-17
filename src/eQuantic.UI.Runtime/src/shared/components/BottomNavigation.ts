@@ -46,7 +46,7 @@ export class BottomNavigation extends StatelessComponent {
             let pill = new Box(new BoxStyle({ width: slot?.barPillWidth ?? 56, height: slot?.barPillHeight ?? 26, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(slot?.pillRadius ?? theme.shape('full')), pressed: isActive ? null : new StyleDiff({ background: primary.subtle.withOpacity(slot?.pillPressOpacity ?? Math.fround(0.4)) }) }), pillContent);
             let column = new Column(slot?.pillLabelGap ?? 2, 'start', 'stretch', false, null, null, { height: SizeValue.fill, main: 'center', cross: 'center' });
             column.add(pill);
-            column.add(new Text(item.label, 'caption', tint, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(slot?.barLabelSize ?? 11, slot?.barLabelLineHeight ?? 14, slot?.barLabelWeight ?? 'bold', slot?.barLabelTracking ?? Math.fround(0.1), Math.fround(1.3)) }));
+            column.add(new Text(item.label, 'caption', tint, 1, null, false, false, null, 0, { styleOverride: new TypeStyle(slot?.barLabelSize ?? 11, slot?.barLabelLineHeight ?? 14, slot?.barLabelWeight ?? 'bold', slot?.barLabelTracking ?? Math.fround(0.1), Math.fround(1.3)) }));
             row.add(new Flexible(new Pressable(column, this.onSelect == null ? null : () => this.onSelect!(index), { label: item.label, role: 'destination', selected: isActive })));
         }
         return new Box(new BoxStyle({ width: SizeValue.fill, height: slot?.barHeight ?? 56, background: slot?.background ?? theme.surface }), row);

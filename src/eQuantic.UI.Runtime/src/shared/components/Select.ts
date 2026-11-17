@@ -61,7 +61,7 @@ export class Select extends StatefulComponent {
             if ($eq.collections.count(group.options) === 0) continue;
             if (!(!$eq.text.hasNonWhiteSpace(group.label))) {
                 rows = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-                rows.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(paddingX, 4), width: SizeValue.fill }), new Text(group.label, 'caption', theme.textMuted, 1, 'start', false, false, null, 0, { excludeFromSemantics: true })));
+                rows.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(paddingX, 4), width: SizeValue.fill }), new Text(group.label, 'caption', theme.textMuted, 1, null, false, false, null, 0, { excludeFromSemantics: true })));
                 list.add(new Group(rows, { label: group.label }));
             }
             for (const option of group.options) rows.add(this.optionRow(theme, option, index++, gap, paddingX, rowHeight));

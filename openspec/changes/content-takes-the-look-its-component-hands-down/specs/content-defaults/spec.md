@@ -39,8 +39,8 @@ An `Icon` that names no size SHALL take the nearest box's `Content.IconSize`, an
 
 #### Scenario: An icon in a button's row
 
-- **WHEN** a box states `IconSize = 18` and holds `Icon(Icons.Plus)`
-- **THEN** the icon is 18 by 18 on every target
+- **WHEN** a box states `IconSize = 20` and holds `Icon(Icons.Plus)`
+- **THEN** the icon is 20 by 20 on every target
 
 ### Requirement: A string is a node
 

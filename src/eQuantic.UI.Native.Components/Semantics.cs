@@ -34,7 +34,7 @@ public static class SemanticsTree
             // page flow keeps: announced here it carries the overlay root's bounds and sits
             // immediately before its own descendants, which is the whole of what a group means.
             if (i < frame.OverlayLayers.Count) visitor.AnnounceOverlay(frame.OverlayLayers[i], frame.OverlayRoots[i]);
-            Walk(frame.OverlayRoots[i], visitor);
+            visitor.WalkUnder(frame.OverlayRoots[i], i < frame.OverlayLooks.Count ? frame.OverlayLooks[i] : null);
         }
         return nodes;
     }

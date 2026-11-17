@@ -18,17 +18,17 @@ export class CodeSignatureCard {
         let room = note.fit();
         let labelLines = note.linesOf(signature.label, note.code, Math.fround(room - counterWidth));
         let first = new Row(8, 'start', 'start', false, null, null, { width: SizeValue.fill });
-        first.add(new Flexible(new Text(signature.label, 'labelSmall', theme.textPrimary, labelLines, 'start', false, false, null, 0, { mono: true, styleOverride: note.code, spans: CodeSignatureCard.marked(theme, signature, active) })));
-        if (!(counter == null)) first.add(new Text(counter, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { styleOverride: note.prose }));
+        first.add(new Flexible(new Text(signature.label, 'labelSmall', theme.textPrimary, labelLines, null, false, false, null, 0, { mono: true, styleOverride: note.code, spans: CodeSignatureCard.marked(theme, signature, active) })));
+        if (!(counter == null)) first.add(new Text(counter, 'labelSmall', theme.textMuted, 1, null, false, false, null, 0, { styleOverride: note.prose }));
         note.add(first, Math.max(Math.fround(Math.fround(labelLines) * note.codeLine), counter == null ? 0 : note.proseLine));
         if (!(about == null)) {
             let lines = note.linesOf(about, note.prose, room);
-            note.add(new Text(about, 'labelSmall', theme.textSecondary, lines, 'start', false, false, null, 0, { styleOverride: note.prose, spans: CodeSignatureCard.described(theme, parameter!) }), Math.fround(Math.fround(lines) * note.proseLine));
+            note.add(new Text(about, 'labelSmall', theme.textSecondary, lines, null, false, false, null, 0, { styleOverride: note.prose, spans: CodeSignatureCard.described(theme, parameter!) }), Math.fround(Math.fround(lines) * note.proseLine));
         }
         let documented: any; 
         if ((($0) => (($0 != null && $0.length > 0) && (documented = $0, true)))(signature.documentation)) {
             let lines = note.linesOf(documented, note.prose, room);
-            note.add(new Text(documented, 'labelSmall', theme.textMuted, lines, 'start', false, false, null, 0, { styleOverride: note.prose }), Math.fround(Math.fround(lines) * note.proseLine));
+            note.add(new Text(documented, 'labelSmall', theme.textMuted, lines, null, false, false, null, 0, { styleOverride: note.prose }), Math.fround(Math.fround(lines) * note.proseLine));
         }
         return note.build(true);
     }

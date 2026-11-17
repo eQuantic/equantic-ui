@@ -16,6 +16,12 @@ namespace eQuantic.UI.Email;
 /// </summary>
 internal sealed class EmailVisitor(ComponentContext context, StringBuilder html) : EmailWalk
 {
+    /// <summary>The look the boxes above the node being written state, each laid over the one around it
+    /// (<see cref="BoxStyle.Content"/>, <see cref="ContentStyle.Merge"/>, #1577): what a <see cref="Text"/>
+    /// that names no role, no line limit or no alignment is written in. Set around a box's child and
+    /// restored after it, and handed to the walk a subtree in another theme is written by.</summary>
+    private ContentStyle? _content;
+
     /// <inheritdoc/>
     public override Nothing Visit(UiComponent node, Nothing state)
     {
@@ -26,7 +32,7 @@ internal sealed class EmailVisitor(ComponentContext context, StringBuilder html)
     /// <inheritdoc/>
     private protected override EmailWalk Under(IAppTheme theme) =>
         new EmailVisitor(new ComponentContext(theme, context.TypeScale, context.Density,
-            route: context.Route, inFlow: context.InFlow), html);
+            route: context.Route, inFlow: context.InFlow), html) { _content = _content };
 
     /// <summary>
     /// A Column is a table with one row per child. Its gap — which no email engine implements as a
@@ -105,20 +111,23 @@ internal sealed class EmailVisitor(ComponentContext context, StringBuilder html)
             throw new NotSupportedException(
                 "Gradient text cannot be realized in an email — no client paints it. Give the "
                 + "email's text a solid color.");
-        if (node.MaxLines > 0)
+        // What it names, else what the boxes above it state (#1577): a line limit a box states is
+        // as unrealizable here as one the text names.
+        var look = node.Under(_content);
+        if (look.MaxLines > 0)
             throw new NotSupportedException(
                 "MaxLines cannot be realized in an email — no client clamps lines, so the whole "
                 + "text would show. Shorten the content for this medium instead.");
 
         var theme = context.Theme;
-        var style = node.Resolve(theme);
+        var style = node.Resolve(theme, _content);
         var ink = Literal(node.Color ?? theme.TextPrimary, theme);
 
         // text-align applies to blocks, so an aligned paragraph gets a block wrapper; a start-
         // aligned one (the default) stays inline and composes inside Rows and Links unchanged.
-        var aligned = node.Align != TextAlignment.Start;
+        var aligned = look.Align != TextAlignment.Start;
         if (aligned)
-            html.Append($"<div style=\"text-align: {(node.Align == TextAlignment.Center ? "center" : "right")}\">");
+            html.Append($"<div style=\"text-align: {(look.Align == TextAlignment.Center ? "center" : "right")}\">");
 
         // A heading level keeps its ELEMENT — outline navigation in the clients and screen readers
         // that offer it — with margin zeroed so the tag is semantics, not layout.
@@ -185,7 +194,20 @@ internal sealed class EmailVisitor(ComponentContext context, StringBuilder html)
 
         html.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse: collapse\">")
             .Append($"<tr><td style=\"{cell}\">");
-        if (node.Child is { } child) child.Accept(this, state);
+        if (node.Child is { } child)
+        {
+            // Its look over the look around it, for its child only (#1577).
+            var around = _content;
+            _content = ContentStyle.Merge(around, node.Style.Content);
+            try
+            {
+                child.Accept(this, state);
+            }
+            finally
+            {
+                _content = around;
+            }
+        }
         html.Append("</td></tr></table>");
         return state;
     }

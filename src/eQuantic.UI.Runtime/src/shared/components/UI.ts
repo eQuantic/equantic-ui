@@ -45,7 +45,7 @@ export class UI {
         return new Box(style, child);
     }
 
-    static text(content: string, role: TypeRoleValue = 'bodyL', color: ColorToken | null = null, maxLines: number = 0, align: TextAlignmentValue = 'start', mono: boolean = false, tabular: boolean = false, styleOverride: TypeStyle | null = null, headingLevel: number = 0) {
+    static text(content: string, role: TypeRoleValue | null = null, color: ColorToken | null = null, maxLines: number | null = null, align: TextAlignmentValue | null = null, mono: boolean = false, tabular: boolean = false, styleOverride: TypeStyle | null = null, headingLevel: number = 0) {
         return new Text(content, role, color, maxLines, align, mono, tabular, styleOverride, headingLevel);
     }
 
@@ -61,7 +61,7 @@ export class UI {
         return new Link(destination, child, { label: label, current: current });
     }
 
-    static icon(glyph: IconGlyph, size: number = 24, color: ColorToken | null = null, label: string | null = null) {
+    static icon(glyph: IconGlyph, size: number | null = null, color: ColorToken | null = null, label: string | null = null) {
         return new Icon(glyph, size, color, label);
     }
 

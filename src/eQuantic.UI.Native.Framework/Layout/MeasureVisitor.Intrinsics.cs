@@ -33,11 +33,11 @@ internal sealed partial class MeasureVisitor
         Text text => LongestWordWidth(text, ctx),
         Box box => box.Style.Width.Kind == SizeKind.Fixed
             ? box.Style.Width.Value
-            : (box.Child is null ? 0 : MinContentWidth(box.Child, element?.ChildAt(0), ctx)) + InsetsOf(box.Style).Horizontal,
+            : BoxMinContent(box, element, ctx),
         Row row => RowMinContent(row, element, ctx),
         Column column => ColumnMinContent(column, element, ctx),
         Image image => image.Width,
-        Icon icon => icon.Size,
+        Icon icon => icon.SizeUnder(_content),
         Vector vector => vector.Size,
         // A drawing's floor is its dp width, or nothing when it fills — a canvas's rule.
         Drawing drawing => drawing.Width.Kind == SizeKind.Fixed ? drawing.Width.Value : 0,
@@ -62,6 +62,23 @@ internal sealed partial class MeasureVisitor
         _ => 0,
     };
 
+    /// <summary>A box's floor: its child's under the box's look (#1577), as <see cref="MeasureBox"/>
+    /// measures it, plus its padding and border.</summary>
+    private float BoxMinContent(Box box, Element? element, LayoutContext ctx)
+    {
+        if (box.Child is null) return InsetsOf(box.Style).Horizontal;
+        var around = _content;
+        _content = ContentStyle.Merge(around, box.Style.Content);
+        try
+        {
+            return MinContentWidth(box.Child, element?.ChildAt(0), ctx) + InsetsOf(box.Style).Horizontal;
+        }
+        finally
+        {
+            _content = around;
+        }
+    }
+
     private float RowMinContent(Row row, Element? element, LayoutContext ctx)
     {
         if (row.Width.Kind == SizeKind.Fixed) return row.Width.Value;
@@ -83,7 +100,7 @@ internal sealed partial class MeasureVisitor
     /// <summary>The widest single word — text wraps between words and never inside one.</summary>
     private float LongestWordWidth(Text text, LayoutContext ctx)
     {
-        var style = text.Resolve(ctx.Theme).AtWindow(ctx.WindowWidth);
+        var style = text.Resolve(ctx.Theme, _content).AtWindow(ctx.WindowWidth);
         var widest = 0f;
         foreach (var word in text.PlainContent.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             widest = MathF.Max(widest,

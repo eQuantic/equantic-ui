@@ -115,9 +115,10 @@ public static class UI
     public static Box Box(BoxStyle style = default, VisualNode? child = null) =>
         new Box(style, child);
 
-    /// <summary>A shaped paragraph (spec A8) — role-driven type, token color.</summary>
-    public static Text Text(string content, TypeRole role = TypeRole.BodyL, ColorToken? color = null,
-        int maxLines = 0, TextAlignment align = TextAlignment.Start, bool mono = false,
+    /// <summary>A shaped paragraph (spec A8) — role-driven type, token color. A role, a line limit or an
+    /// alignment it names none of is the box's around it, else BodyL, no limit and the start (#1577).</summary>
+    public static Text Text(string content, TypeRole? role = null, ColorToken? color = null,
+        int? maxLines = null, TextAlignment? align = null, bool mono = false,
         bool tabular = false, TypeStyle? styleOverride = null, int headingLevel = 0) =>
         new Text(content, role, color, maxLines, align, mono, tabular, styleOverride, headingLevel);
 
@@ -185,7 +186,7 @@ public static class UI
     /// factory named after the type, which is the rule the extra name was working around.
     /// </para>
     /// </summary>
-    public static Icon Icon(IconGlyph glyph, float size = 24, ColorToken? color = null, string? label = null) =>
+    public static Icon Icon(IconGlyph glyph, float? size = null, ColorToken? color = null, string? label = null) =>
         new Icon(glyph, size, color, label);
 
     /// <summary>A vector shape at any size — an icon freed of the size whitelist, and of the

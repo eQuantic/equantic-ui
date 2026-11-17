@@ -59,7 +59,7 @@ export class Pagination extends StatelessComponent {
         let slot = theme.navigation;
         let cell = slot?.pageCellSize ?? 30;
         let centered = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center' });
-        centered.add(new Text($eq.text.format(page, null, undefined, undefined, 'int32'), 'caption', current ? theme.colors('primary').onBase : slot?.pageColor ?? theme.textSecondary, 1, 'start', false, false, null, 0, { tabular: true }));
+        centered.add(new Text($eq.text.format(page, null, undefined, undefined, 'int32'), 'caption', current ? theme.colors('primary').onBase : slot?.pageColor ?? theme.textSecondary, 1, null, false, false, null, 0, { tabular: true }));
         let box = new Box(new BoxStyle({ width: cell, height: cell, background: current ? theme.colors('primary').base : null, cornerRadius: new CornerRadii(slot?.pageRadius ?? theme.shape('small')), hover: current ? null : new StyleDiff({ background: slot?.quietFill ?? theme.surfaceSubtle }), transition: TransitionSpec.of(1, Motion.press) }), centered);
         return new Pressable(box, current ? null : () => this.onChanged?.(page), { label: `Page ${$eq.text.format(page, null, undefined, undefined, 'int32')}`, selected: current });
     }

@@ -32,7 +32,7 @@ internal sealed partial class SemanticsVisitor
         // walks: the sentence, then the things inside it you can follow. Announced at the identity
         // the input route gives it, so the bridge's activate arrives at the same link the keyboard
         // stops on — a stop nothing names is the empty offer #256 spent two rounds removing.
-        foreach (var link in RichTextRuns.LinksOf(laidOut, node))
+        foreach (var link in RichTextRuns.LinksOf(laidOut, node.Under(_content).Align))
             _nodes.Add(new SemanticNode(SemanticRole.Link, link.Id, link.Bounds, link.Text, null, false));
 
         return announced;

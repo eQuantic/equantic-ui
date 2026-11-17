@@ -44,6 +44,27 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
     /// rather than travelling down with each visit.</summary>
     private readonly List<SemanticNode> _nodes = nodes;
 
+    /// <summary>The look the boxes above the node being read state (<see cref="BoxStyle.Content"/>,
+    /// #1577), the one the layout measured it in and the paint drew it in: set around a box's children
+    /// (<c>Visit(Box)</c>) and around an overlay layer's root (<see cref="WalkUnder"/>).</summary>
+    private ContentStyle? _content;
+
+    /// <summary>Walks a root laid out on its own, an overlay layer's, under <paramref name="around"/>,
+    /// the look where the layer was queued.</summary>
+    internal void WalkUnder(LayoutNode root, ContentStyle? around)
+    {
+        var outer = _content;
+        _content = around;
+        try
+        {
+            SemanticsTree.Walk(root, this);
+        }
+        finally
+        {
+            _content = outer;
+        }
+    }
+
     /// <summary>The id a bridge names a node by: its position's. Every node the build made has one,
     /// and a node a reader can land on that has none is the engine gone wrong, refused here as the
     /// paint walk refuses it, rather than named 0 beside another such node.</summary>

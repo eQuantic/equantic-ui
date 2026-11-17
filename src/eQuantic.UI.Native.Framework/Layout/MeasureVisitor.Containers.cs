@@ -379,7 +379,26 @@ internal sealed partial class MeasureVisitor
             padding.Bottom + ((sides & BorderSides.Bottom) != 0 ? border : 0));
     }
 
+    /// <summary>
+    /// A box, measured with its look laid over the look around it (<see cref="BoxStyle.Content"/>,
+    /// <see cref="ContentStyle.Merge"/>, #1577) for as long as its child is measured, and the look
+    /// around it back after, whatever the child's measurement did.
+    /// </summary>
     private LayoutNode MeasureBox(Box box, LayoutConstraints constraints, LayoutContext ctx, Element? at)
+    {
+        var around = _content;
+        _content = ContentStyle.Merge(around, box.Style.Content);
+        try
+        {
+            return MeasureBoxUnderItsLook(box, constraints, ctx, at);
+        }
+        finally
+        {
+            _content = around;
+        }
+    }
+
+    private LayoutNode MeasureBoxUnderItsLook(Box box, LayoutConstraints constraints, LayoutContext ctx, Element? at)
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);
         var (stretchW, stretchH) = (constraints.Width.Stretch, constraints.Height.Stretch);

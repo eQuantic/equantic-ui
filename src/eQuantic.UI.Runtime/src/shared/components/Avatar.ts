@@ -61,7 +61,7 @@ export class Avatar extends StatelessComponent {
         let clipped = this.initials.length > 2 ? $eq.text.substring(this.initials, 0, 2) : this.initials;
         let hasInitials = clipped.length > 0;
         let glyphSize = ControlMetrics.atSize((slot?.avatarGlyphSize ?? null), this.size) ?? (() => { const $s = this.size; if ($s === 'small') return 16; if ($s === 'medium') return 20; if ($s === 'large') return 24; return 32; })();
-        let face = hasInitials ? new Text(clipped, 'caption', tint.onSubtle, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(labelSize, labelSize, slot?.avatarLabelWeight ?? 'semiBold', 0, Math.fround(1.3)) }) : new Icon(IconGlyph.fromIcons('person'), glyphSize, slot?.avatarGlyphColor ?? theme.textMuted);
+        let face = hasInitials ? new Text(clipped, 'caption', tint.onSubtle, 1, null, false, false, null, 0, { styleOverride: new TypeStyle(labelSize, labelSize, slot?.avatarLabelWeight ?? 'semiBold', 0, Math.fround(1.3)) }) : new Icon(IconGlyph.fromIcons('person'), glyphSize, slot?.avatarGlyphColor ?? theme.textMuted);
         let content = VisualNodeExtensions.centered(face);
         let circle = new Box(new BoxStyle({ width: side, height: side, background: hasInitials ? tint.subtle : slot?.avatarFill ?? theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')) }), content);
         return this.status === 'none' ? circle : this.withStatusDot(circle, side, theme);

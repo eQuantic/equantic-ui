@@ -19,8 +19,26 @@ internal sealed partial class SemanticsVisitor
     /// <inheritdoc cref="PureLayout"/>
     public bool Visit(Anchored node, LayoutNode laidOut) => PureLayout;
 
-    /// <inheritdoc cref="PureLayout"/>
-    public bool Visit(Box node, LayoutNode laidOut) => PureLayout;
+    /// <summary>
+    /// Pure layout, which says nothing of its own; its children are walked HERE rather than by the
+    /// tree's descent, because the look the box states (<see cref="BoxStyle.Content"/>, #1577) is in
+    /// effect for them and only for them, as on the paint walk: a linked run's place in a paragraph
+    /// follows the alignment the paragraph takes from it.
+    /// </summary>
+    public bool Visit(Box node, LayoutNode laidOut)
+    {
+        var around = _content;
+        _content = ContentStyle.Merge(around, node.Style.Content);
+        try
+        {
+            foreach (var child in laidOut) SemanticsTree.Walk(child, this);
+        }
+        finally
+        {
+            _content = around;
+        }
+        return Consumed;
+    }
 
     /// <inheritdoc cref="PureLayout"/>
     public bool Visit(Column node, LayoutNode laidOut) => PureLayout;
