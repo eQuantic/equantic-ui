@@ -191,6 +191,15 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
 
     private bool Moved(string path) => _moves.Any(moved => moved.Entry.Path == path);
 
+    /// <summary>The folder an entry is in now: where this page moved it, or the one its path names.</summary>
+    private string FolderOf(string path)
+    {
+        foreach (var moved in _moves)
+            if (moved.Entry.Path == path) return moved.Parent;
+        var cut = path.LastIndexOf('/');
+        return cut < 0 ? "" : path.Substring(0, cut);
+    }
+
     /// <summary>The samples are read-only: the folder stays where it is, nothing lands in it and nothing leaves it.</summary>
     private static bool CanMove(TreeMove move) =>
         !InSamples(move.Node.Key) && !(move.Parent is { } parent && InSamples(parent.Key));
@@ -275,8 +284,7 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
     {
         SetState(() => _busy = [node.Key]);
         await Task.Delay(400);
-        var cut = node.Key.LastIndexOf('/');
-        var parent = cut < 0 ? "" : node.Key.Substring(0, cut);
+        var parent = FolderOf(node.Key);
         SetState(() =>
         {
             _deleted.Add(node.Key);
