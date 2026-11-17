@@ -83,5 +83,9 @@ from two new SDK strings.
 - The keyboard in an open folder reaches the same place twice (inside the folder, then before its first child). It
   is the same move, said two ways; skipping it would make the arithmetic know about trees.
 - Photon still does not speak the keyboard's steps (#1564); the places are the same, the words come with that slice.
+- Between the last child of an open folder and the folder's next, shallower sibling there is one index, read as
+  "before the sibling": a node becomes the last child of an open folder only at the tree's end. Reading the depth
+  from the pointer's position across the axis, as Notion's sidebar does, changes what a sortable reports on both
+  targets, so it is a slice of its own (#1594).
 - A drop inside a folder lands first, which an app that sorts its folders by name does not mind, and an app that
   orders by hand sees where it went.

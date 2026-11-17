@@ -191,11 +191,11 @@ public sealed class FilesScreen : StatefulComponent, IServerPrefetch
 
     private bool Moved(string path) => _moves.Any(moved => moved.Entry.Path == path);
 
-    /// <summary>The samples are read-only: nothing lands in them and nothing leaves them.</summary>
+    /// <summary>The samples are read-only: the folder stays where it is, nothing lands in it and nothing leaves it.</summary>
     private static bool CanMove(TreeMove move) =>
-        !InSamples(move.Node.Key) && !(move.Parent is { } parent && (parent.Key == "samples" || InSamples(parent.Key)));
+        !InSamples(move.Node.Key) && !(move.Parent is { } parent && InSamples(parent.Key));
 
-    private static bool InSamples(string path) => path.StartsWith("samples/", StringComparison.Ordinal);
+    private static bool InSamples(string path) => path == "samples" || path.StartsWith("samples/", StringComparison.Ordinal);
 
     /// <summary>A move as a server makes it: a moment's work, then the node shown where it was dropped.</summary>
     private async Task Move(TreeMove move)

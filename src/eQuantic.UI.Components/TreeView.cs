@@ -1005,6 +1005,23 @@ public sealed class TreeView : StatefulComponent
     }
 
     /// <summary>
+    /// Where a sortable's place stands among the node rows a carried node is placed among: inside the row at
+    /// <c>At</c>, before it, or after it as the last; <c>(0, -1)</c> when there is no such row. The one reading both
+    /// the drawn place and the reported move take, so the two never part.
+    /// </summary>
+    private static (int Kind, int At) PlaceOf(SortDrop drop, List<TreeViewRow> others)
+    {
+        if (drop.Into is { } into)
+        {
+            for (var i = 0; i < others.Count; i++)
+                if (others[i].Key == into) return (DropInto, i);
+            return (0, -1);
+        }
+        if (drop.Index < others.Count) return (DropBefore, drop.Index);
+        return others.Count > 0 ? (DropAfter, others.Count - 1) : (0, -1);
+    }
+
+    /// <summary>
     /// The move a sortable's place means: inside a node, as its first child; before a row, among that row's
     /// siblings, after the nearest earlier one; after the last row, among its siblings. Null when the carried node
     /// is not a visible one.
@@ -1013,16 +1030,16 @@ public sealed class TreeView : StatefulComponent
     {
         if (NodeOf(drop.Item) is not { } node) return null;
         var others = OthersThan(drop.Item);
-        if (drop.Into is { } into)
-            return NodeOf(into) is { } holder ? new TreeMove(node, holder, null) : null;
-        if (drop.Index < others.Count)
+        var (kind, at) = PlaceOf(drop, others);
+        if (kind == DropInto) return new TreeMove(node, others[at].Node, null);
+        if (kind == DropBefore)
         {
-            var parent = others[drop.Index].ParentKey;
-            return new TreeMove(node, NodeOf(parent), SiblingBefore(others, drop.Index, parent));
+            var parent = others[at].ParentKey;
+            return new TreeMove(node, NodeOf(parent), SiblingBefore(others, at, parent));
         }
-        if (others.Count == 0) return new TreeMove(node, null, null);
-        var last = others[others.Count - 1];
-        return new TreeMove(node, NodeOf(last.ParentKey), last.Node);
+        if (kind == DropAfter) return new TreeMove(node, NodeOf(others[at].ParentKey), others[at].Node);
+        // Nothing to land among: the top level, unless the node it was to land inside is gone.
+        return drop.Into is null ? new TreeMove(node, null, null) : null;
     }
 
     /// <summary>The tree's guard, then the app's: a node never lands inside a leaf, nor inside itself or one of its
@@ -1043,21 +1060,9 @@ public sealed class TreeView : StatefulComponent
         if (drop is not null)
         {
             var others = OthersThan(drop.Item);
-            if (drop.Into is { } into)
-            {
-                key = into;
-                kind = DropInto;
-            }
-            else if (drop.Index < others.Count)
-            {
-                key = others[drop.Index].Key;
-                kind = DropBefore;
-            }
-            else if (others.Count > 0)
-            {
-                key = others[others.Count - 1].Key;
-                kind = DropAfter;
-            }
+            var (placed, at) = PlaceOf(drop, others);
+            kind = placed;
+            key = at >= 0 ? others[at].Key : null;
         }
         var pause = kind == DropInto && NodeOf(key) is { } folder && !_open.Contains(folder.Key) && HasChevron(folder)
             ? key

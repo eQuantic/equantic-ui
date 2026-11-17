@@ -729,22 +729,28 @@ export class TreeView extends StatefulComponent {
         return null;
     }
 
+    static placeOf(drop: SortDrop, others: TreeViewRow[]): [number, number] {
+        let into: any; 
+        if ((into = drop.into) != null) {
+            for (let i = 0; i < others.length; i++) if (others[i].key === into) return [TreeView.dropInto, i];
+            return [0, -1];
+        }
+        if (drop.index < others.length) return [TreeView.dropBefore, drop.index];
+        return others.length > 0 ? [TreeView.dropAfter, others.length - 1] : [0, -1];
+    }
+
     moveOf(drop: SortDrop) {
         let node: any; 
         if (!((node = this.nodeOf(drop.item)) != null)) return null;
         let others = this.othersThan(drop.item);
-        let into: any; 
-        if ((into = drop.into) != null) {
-            let holder: any; 
-            return (holder = this.nodeOf(into)) != null ? new TreeMove(node, holder, null) : null;
+        let [kind, at] = TreeView.placeOf(drop, others);
+        if (kind === TreeView.dropInto) return new TreeMove(node, others[at].node, null);
+        if (kind === TreeView.dropBefore) {
+            let parent = others[at].parentKey;
+            return new TreeMove(node, this.nodeOf(parent), this.siblingBefore(others, at, parent));
         }
-        if (drop.index < others.length) {
-            let parent = others[drop.index].parentKey;
-            return new TreeMove(node, this.nodeOf(parent), this.siblingBefore(others, drop.index, parent));
-        }
-        if (others.length === 0) return new TreeMove(node, null, null);
-        let last = others[others.length - 1];
-        return new TreeMove(node, this.nodeOf(last.parentKey), last.node);
+        if (kind === TreeView.dropAfter) return new TreeMove(node, this.nodeOf(others[at].parentKey), others[at].node);
+        return drop.into == null ? new TreeMove(node, null, null) : null;
     }
 
     accepts(drop: SortDrop) {
@@ -759,17 +765,9 @@ export class TreeView extends StatefulComponent {
         let kind = 0;
         if (!(drop == null)) {
             let others = this.othersThan(drop.item);
-            let into: any; 
-            if ((into = drop.into) != null) {
-                key = into;
-                kind = TreeView.dropInto;
-            } else if (drop.index < others.length) {
-                key = others[drop.index].key;
-                kind = TreeView.dropBefore;
-            } else if (others.length > 0) {
-                key = others[others.length - 1].key;
-                kind = TreeView.dropAfter;
-            }
+            let [placed, at] = TreeView.placeOf(drop, others);
+            kind = placed;
+            key = at >= 0 ? others[at].key : null;
         }
         let folder: any; 
         let pause = kind === TreeView.dropInto && (folder = this.nodeOf(key)) != null && !this._open.has(folder.key) && this.hasChevron(folder) ? key : null;
