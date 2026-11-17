@@ -128,6 +128,10 @@ public sealed record ListTheme
     /// <summary>A tree node's icon colour (<see cref="IAppTheme.TextSecondary"/>).</summary>
     public ColorToken? TreeIconColor { get; init; }
 
+    /// <summary>The colour of the line and the ring that say where a carried tree node lands
+    /// (<see cref="IAppTheme.FocusRing"/>).</summary>
+    public ColorToken? TreeDropColor { get; init; }
+
     /// <summary>
     /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
     /// names wins, what it leaves null is <paramref name="under"/>'s. Null when
@@ -168,5 +172,6 @@ public sealed record ListTheme
             TreeGap = over.TreeGap ?? under.TreeGap,
             TreeRowShape = over.TreeRowShape ?? under.TreeRowShape,
             TreeIconColor = over.TreeIconColor ?? under.TreeIconColor,
+            TreeDropColor = over.TreeDropColor ?? under.TreeDropColor,
         };
 }

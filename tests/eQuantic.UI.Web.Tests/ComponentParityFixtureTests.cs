@@ -268,6 +268,15 @@ public class ComponentParityFixtureTests
             },
             new TreeNode("README.md", "README.md") { IsLeaf = true },
         ], "src/Ui.cs") { Label = "Files" }, [0, 1]),
+        // A tree that moves its nodes (#1533): a nesting sortable around the composite, and each node row an item,
+        // marked the same on both sides (the list's id, axis and nesting, each row's id), and keyed by its node.
+        ("tree-moves", new TreeView([
+            new TreeNode("src", "src")
+            {
+                Children = [new TreeNode("src/App.cs", "App.cs") { IsLeaf = true }],
+            },
+            new TreeNode("README.md", "README.md") { IsLeaf = true },
+        ]) { Label = "Files", ExpandedKeys = ["src"], OnMoved = _ => Task.CompletedTask }, NoPresses),
 
         // A COMPOSITE, and the first case here whose tree is a grid: 31 cells, seven column
         // headers, a roving tab order, and a selection stated as an attribute. Pinned under a

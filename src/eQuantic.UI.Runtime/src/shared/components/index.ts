@@ -232,6 +232,7 @@ export { TimePicker } from './TimePicker';
 export { Toast } from './Toast';
 export { Tooltip } from './Tooltip';
 export { TreeEditRequest } from './TreeEditRequest';
+export { TreeMove } from './TreeMove';
 export { TreeNode } from './TreeNode';
 export { TreeReloadRequest } from './TreeReloadRequest';
 export { TreeRowState } from './TreeRowState';
