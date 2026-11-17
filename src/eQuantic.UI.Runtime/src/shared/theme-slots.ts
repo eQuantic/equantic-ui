@@ -471,7 +471,7 @@ export class NavigationTheme {
   }
 }
 
-/** The list family's slot: ListItem, List, Divider, Accordion and SwipeableRow. */
+/** The list family's slot: ListItem, List, Divider, Accordion, SwipeableRow and TreeView. */
 export class ListTheme {
   quietFill: ColorToken | null = null;
   itemHeight: number | null = null;
@@ -499,6 +499,12 @@ export class ListTheme {
   swipeActionGap: number | null = null;
   swipeIconSize: number | null = null;
   swipeSurface: ColorToken | null = null;
+  treeRowHeight: number | null = null;
+  treeIndent: number | null = null;
+  treePaddingX: number | null = null;
+  treeGap: number | null = null;
+  treeRowShape: ShapeScaleValue | null = null;
+  treeIconColor: ColorToken | null = null;
 
   constructor(config?: Partial<ListTheme>) {
     if (config) Object.assign(this, config);

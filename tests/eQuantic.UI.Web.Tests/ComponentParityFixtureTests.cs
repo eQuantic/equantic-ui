@@ -107,6 +107,11 @@ public class ComponentParityFixtureTests
         // declared by the server and attached by the client; and a panel opened at a point of its anchor.
         ("context-target", new ContextTarget(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), _ => { }), NoPresses),
         ("context-target-disabled", new ContextTarget(new Box(new BoxStyle { Height = 40 }), _ => { }) { Enabled = false }, NoPresses),
+        // What hears the raw pointer (#1562): the same transparent div, marked with its behaviour, with the pointer's
+        // event declared by the server and attached by the client.
+        ("listener", new Listener(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 })), NoPresses),
+        ("listener-opaque", new Listener(new Box(new BoxStyle { Height = 40 })) { Behavior = HitTestBehavior.Opaque }, NoPresses),
+        ("listener-translucent", new Listener(new Box(new BoxStyle { Height = 40 })) { Behavior = HitTestBehavior.Translucent }, NoPresses),
         ("anchored-at", new Anchored(new Box(new BoxStyle { Width = 200, Height = 40 }), new Box(new BoxStyle { Width = 120, Height = 80 }))
         {
             At = new Point(120, 30),

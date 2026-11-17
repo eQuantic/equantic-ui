@@ -651,9 +651,12 @@ public class TypeScriptEmitter
                         // Camel-cased here and read as written there, `string Label` was
                         // `constructor(label…)` beside a body reading `Label` (a ReferenceError at `new`),
                         // and `@default` bound `default`, a module that did not parse.
+                        // Through the signature writers, which leave the annotation out in plain JavaScript:
+                        // spelled here by hand, `tag?: any` and `size: any = 2` reached the `.js` and bun
+                        // refused the module (#1574).
                         var paramList = string.Join(", ", passed.Select(p => p.DefaultValueNode != null
-                            ? $"{p.Name.ToJsIdentifier()}: any = {_converter.ConvertExpression(p.DefaultValueNode, p.Type)}"
-                            : $"{p.Name.ToJsIdentifier()}?: any"));
+                            ? Lowering.ParamWithDefault(p.Name.ToJsIdentifier(), "any", _converter.ConvertExpression(p.DefaultValueNode, p.Type))
+                            : OptionalParam(p.Name.ToJsIdentifier(), "any")));
                         // The trailing config object is `props`, unless the C# constructor already binds
                         // that name: then `constructor(props, props)`, or a body's `let props` beside the
                         // parameter, did not parse. A `$` in front is a name no C# binding and no renamed

@@ -30,4 +30,10 @@ public enum PointerPhase : byte
     /// lands: a drag ends where it stood and a gesture that commits on release is dropped.
     /// </summary>
     Cancel = 5,
+
+    /// <summary>
+    /// A wheel or a trackpad scrolled over the surface (Flutter's <c>PointerScrollEvent</c>), by a delta the
+    /// event carries (#1562). A signal rather than a press: it has no down and no up.
+    /// </summary>
+    Scroll = 6,
 }

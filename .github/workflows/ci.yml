@@ -739,6 +739,10 @@ jobs:
     # runs in the merge queue, on main, on a tag and by hand, never on a pull request's push (#1385).
     if: ${{ !cancelled() && github.event_name != 'pull_request' && needs.changes.outputs.code != 'false' && needs.test-runtime.result == 'success' }}
     runs-on: macos-latest
+    # The job takes 15 to 23 minutes. Three merge groups held a runner 60 minutes instead, the edit-to-view
+    # step sitting until the runner died with no log, and the queue waited on each (#1473). A job's limit
+    # is enforced by the service, so it holds even where a starved runner cannot end its own step.
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
@@ -1020,8 +1024,12 @@ jobs:
       # because it edits the samples' sources while it runs: the steps above read what the builds wrote.
       # The desktop holds the bar's budget and fails over it. The web is tens of seconds over the bar, and
       # fails over a ceiling that only comes down as the slices of #900 make each part of it faster.
+      # The step takes 2 to 4 minutes. Its limit leaves the desktop room to start slowly and wait out one
+      # undrawn edit's 300 seconds, which ends its runs and reports why, and ends a step that would hold
+      # the runner until it died (#1473). A run slower than that is cut before its report, and fails anyway.
       - name: Edit to view, timed on both samples
         shell: bash
+        timeout-minutes: 15
         run: |
           set -uo pipefail
           status=0

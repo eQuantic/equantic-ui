@@ -27,6 +27,7 @@ import {
   BoxStyle,
   Column,
   ContextTarget,
+  Listener,
   Sortable,
   SortableItem,
   Draggable,
@@ -356,6 +357,9 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'context-target-disabled': still(
       new ContextTarget(new Box(new BoxStyle({ height: 40 })), () => {}, { enabled: false }),
     ),
+    listener: still(new Listener(new Box(new BoxStyle({ width: SizeValue.fill, height: 40 })))),
+    'listener-opaque': still(new Listener(new Box(new BoxStyle({ height: 40 })), { behavior: 'opaque' })),
+    'listener-translucent': still(new Listener(new Box(new BoxStyle({ height: 40 })), { behavior: 'translucent' })),
     'anchored-at': still(
       new Anchored(new Box(new BoxStyle({ width: 200, height: 40 })), new Box(new BoxStyle({ width: 120, height: 80 })), {
         at: new Point(120, 30),
@@ -847,9 +851,16 @@ function canonical(node: HtmlNode): unknown {
   // it emits neither the channel key nor the listener that reports back through it. Recognised by
   // the key itself rather than by tag, and only there — a scroll handler anywhere else still counts.
   const scrollView = 'data-eq-scroll' in (node.attributes ?? {});
+  // A COMPOSITE's mount hook is the client's alone: it keeps the host it gives the keyboard back to
+  // (Navigable.FocusVersion, #1532), and the server has no keyboard to give. Recognised by the composite's
+  // own role, and only there: a mount hook anywhere else still counts.
+  const composite = node.attributes?.role === 'tree' || node.attributes?.role === 'grid';
   result.events = Object.keys(node.events ?? {})
     .filter(
-      (name) => !(entry && CLIENT_ONLY_EVENTS.has(name)) && !(scrollView && name === 'scroll'),
+      (name) =>
+        !(entry && CLIENT_ONLY_EVENTS.has(name)) &&
+        !(scrollView && name === 'scroll') &&
+        !(composite && name === 'eq:mounted'),
     )
     .sort();
   result.children = (node.children ?? []).map(canonical);

@@ -697,12 +697,18 @@ public static class UI
         new ListView(count, itemExtent, itemBuilder) { Width = width, Height = height };
 
     /// <summary>A tree of nodes, loaded as they open, walked by the keyboard as the WAI-ARIA tree pattern;
-    /// given a height, it scrolls and keeps the keyboard's item in view (#1530).</summary>
+    /// given a height, it scrolls and keeps the keyboard's item in view (#1530). Its nodes are renamed and
+    /// created in place, open a menu each, and its rows are built by the app when it gives a builder (#1532).</summary>
     public static TreeView TreeView(IReadOnlyList<TreeNode> roots, string? selectedKey = null,
-        Action<TreeNode>? onPressed = null, Func<TreeNode, Task<IReadOnlyList<TreeNode>>>? loadChildren = null,
+        Action<TreeNode>? onPressed = null, ListTheme? style = null,
+        Func<TreeNode, Task<IReadOnlyList<TreeNode>>>? loadChildren = null,
         Action<TreeNode, bool>? onToggled = null, IReadOnlyList<string>? expandedKeys = null,
-        IReadOnlyList<string>? revealPath = null, string label = "", SizeValue? height = null) =>
-        new TreeView(roots, selectedKey, onPressed)
+        IReadOnlyList<string>? revealPath = null, string label = "", SizeValue? height = null,
+        Func<TreeRowState, VisualNode>? rowBuilder = null,
+        Func<TreeNode, string, Task>? onRenamed = null, Func<TreeNode, string, Task>? onCreated = null,
+        TreeEditRequest? edit = null, TreeReloadRequest? reload = null, IReadOnlyList<string>? busyKeys = null,
+        Func<TreeNode, IReadOnlyList<MenuItem>>? menuBuilder = null, Action<TreeNode, int>? onMenuSelect = null) =>
+        new TreeView(roots, selectedKey, onPressed, style)
         {
             LoadChildren = loadChildren,
             OnToggled = onToggled,
@@ -710,6 +716,14 @@ public static class UI
             RevealPath = revealPath,
             Label = label,
             Height = height,
+            RowBuilder = rowBuilder,
+            OnRenamed = onRenamed,
+            OnCreated = onCreated,
+            Edit = edit,
+            Reload = reload,
+            BusyKeys = busyKeys,
+            MenuBuilder = menuBuilder,
+            OnMenuSelect = onMenuSelect,
         };
 
     /// <summary>A list beside a detail on a wide window, one pane at a time on a phone (spec B4).
@@ -810,6 +824,32 @@ public static class UI
     /// </summary>
     public static ContextTarget ContextTarget(VisualNode child, Action<ContextRequest> onRequested, bool enabled = true) =>
         new ContextTarget(child, onRequested) { Enabled = enabled };
+
+    /// <summary>
+    /// <paramref name="child"/>, hearing the raw pointer over it in its own coordinates: a press, its moves and its
+    /// end (followed wherever it goes), its cancel, a mouse or a pen passing over, and a wheel or a trackpad.
+    /// <paramref name="behavior"/> says where it hears: only where the child is hit (the default), anywhere in its
+    /// box hiding the listeners behind it, or anywhere in its box letting them hear too. It only listens: what is
+    /// inside still presses and scrolls.
+    /// </summary>
+    public static Listener Listener(VisualNode child,
+        Action<PointerEvent>? onPointerDown = null,
+        Action<PointerEvent>? onPointerMove = null,
+        Action<PointerEvent>? onPointerUp = null,
+        Action<PointerEvent>? onPointerCancel = null,
+        Action<PointerEvent>? onPointerHover = null,
+        Action<PointerEvent>? onPointerScroll = null,
+        HitTestBehavior behavior = HitTestBehavior.DeferToChild) =>
+        new Listener(child)
+        {
+            OnPointerDown = onPointerDown,
+            OnPointerMove = onPointerMove,
+            OnPointerUp = onPointerUp,
+            OnPointerCancel = onPointerCancel,
+            OnPointerHover = onPointerHover,
+            OnPointerScroll = onPointerScroll,
+            Behavior = behavior,
+        };
 
     /// <summary>
     /// A menu of <paramref name="items"/> for what <paramref name="child"/> is, opened where a person asks for it
