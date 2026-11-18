@@ -68,7 +68,7 @@ public class LocalFunctionCrossingTests
         var page = Transpile(HelperSource);
 
         page.Should().NotContain("this.row", "a local function is a function in scope, not a member");
-        page.Should().Contain(".map(row)", "the method group IS the local, passed by name");
+        page.Should().Contain("$eq.query.select(RowsPage.items, row)", "the method group IS the local, passed by name");
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ public class LocalFunctionCrossingTests
         var page = Transpile(HelperSource);
 
         var declaration = page.IndexOf("const row = ", StringComparison.Ordinal);
-        var use = page.IndexOf(".map(row)", StringComparison.Ordinal);
+        var use = page.IndexOf("$eq.query.select(RowsPage.items, row)", StringComparison.Ordinal);
 
         declaration.Should().BeGreaterThan(-1, "the local function has to be emitted at all");
         declaration.Should().BeLessThan(use,

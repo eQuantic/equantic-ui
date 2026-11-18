@@ -65,9 +65,9 @@ public class QuerySyntaxTests
         var js = TestHelper.ConvertCodeBlock(
             "var q = from s in (from t in list1 where t.Length > 0 select t.ToUpper()) where s.Length > 2 select s;");
 
-        js.Should().Contain("this.list1.filter(");
-        js.Should().Contain(".map(");
-        js.Split(".filter(").Length.Should().Be(3, "both the inner and the outer where lower to filter");
+        js.Should().Contain("$eq.query.where(this.list1, ");
+        js.Should().Contain("$eq.query.select(");
+        js.Split("$eq.query.where(").Length.Should().Be(3, "both the inner and the outer where lower to the runtime's lazy where (#685)");
         js.Should().NotContainAny(new[] { "Where", "Select" });
     }
 

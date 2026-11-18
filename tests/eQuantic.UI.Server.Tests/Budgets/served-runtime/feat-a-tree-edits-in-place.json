@@ -1,0 +1,4 @@
+{
+  "deltaBytes": 5376,
+  "bought": "A tree that renames and creates its nodes in place, opens a menu per node, shows its busy nodes and takes the app row builder and style, a composite that takes the keyboard back and leaves a field its keys, and a menu key that reaches the active item (#1532): 3,083 bytes, measured against main at 251d00f73 (359,995). The other 2,293 are main growth since the base, inside its 1%, which this delta carries."
+}

@@ -29,7 +29,7 @@ export class CodeDiffer {
             while (i < a.length && removed[i]) i++;
             while (j < b.length && added[j]) j++;
             if (i === fromI && j === fromJ) throw $eq.exceptions.create(['System.InvalidOperationException', 'System.SystemException', 'System.Exception'], 'The two sides of the diff lost their alignment.');
-            changes.push(new CodeLineChange(fromI, i - fromI, fromJ, j - fromJ, CodeDiffer.innerChanges(original, fromI, i - fromI, modified, fromJ, j - fromJ)));
+            $eq.collections.listAdd(changes, new CodeLineChange(fromI, i - fromI, fromJ, j - fromJ, CodeDiffer.innerChanges(original, fromI, i - fromI, modified, fromJ, j - fromJ)));
         }
         return changes;
     }
@@ -174,7 +174,7 @@ export class CodeDiffer {
             while (i < a.length && removed[i]) i++;
             while (j < b.length && added[j]) j++;
             if (i === fromI && j === fromJ) throw $eq.exceptions.create(['System.InvalidOperationException', 'System.SystemException', 'System.Exception'], 'The two sides of the diff lost their alignment.');
-            inner.push(new CodeInnerChange(CodeDiffer.span(aTexts, aLines, aColumns, fromI, i, originalEnd), CodeDiffer.span(bTexts, bLines, bColumns, fromJ, j, modifiedEnd)));
+            $eq.collections.listAdd(inner, new CodeInnerChange(CodeDiffer.span(aTexts, aLines, aColumns, fromI, i, originalEnd), CodeDiffer.span(bTexts, bLines, bColumns, fromJ, j, modifiedEnd)));
         }
         return inner;
     }
@@ -182,9 +182,9 @@ export class CodeDiffer {
     static tokenize(lines: string[], start: number, count: number, texts: string[], tokenLines: number[], tokenColumns: number[]) {
         for (let line = start; line < start + count; line++) {
             if (line > start) {
-                texts.push('\n');
-                tokenLines.push(line - 1);
-                tokenColumns.push($eq.collections.item(lines, line - 1).length);
+                $eq.collections.listAdd(texts, '\n');
+                $eq.collections.listAdd(tokenLines, line - 1);
+                $eq.collections.listAdd(tokenColumns, $eq.collections.item(lines, line - 1).length);
                 if (texts.length > CodeDiffer.innerTokenLimit) return false;
             }
             let text = $eq.collections.item(lines, line);
@@ -198,9 +198,9 @@ export class CodeDiffer {
                 } else {
                     column += column + 1 < text.length && (/^[\uD800-\uDBFF]$/.test(text[column]) && /^[\uDC00-\uDFFF]$/.test(text[column + 1])) ? 2 : 1;
                 }
-                texts.push($eq.text.substring(text, begin, column - begin));
-                tokenLines.push(line);
-                tokenColumns.push(begin);
+                $eq.collections.listAdd(texts, $eq.text.substring(text, begin, column - begin));
+                $eq.collections.listAdd(tokenLines, line);
+                $eq.collections.listAdd(tokenColumns, begin);
                 if (texts.length > CodeDiffer.innerTokenLimit) return false;
             }
         }

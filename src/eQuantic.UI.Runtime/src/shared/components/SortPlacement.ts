@@ -41,5 +41,12 @@ export class SortPlacement {
     static step(index: number, step: number, count: number) {
         return Math.max(0, Math.min(index + step, count - 1));
     }
+
+    static keyStep(index: number, into: number, step: number, others: number, nests: boolean): [number, number] {
+        if (!nests) return [SortPlacement.step(index, step, others + 1), -1];
+        let place = into >= 0 ? into * 2 + 1 : index * 2;
+        place = Math.max(0, Math.min(place + step, others * 2));
+        return place % 2 === 1 ? [Math.trunc((place - 1) / 2), Math.trunc((place - 1) / 2)] : [Math.trunc(place / 2), -1];
+    }
 }
 

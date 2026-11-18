@@ -10,7 +10,7 @@ export class CodeJumpList {
         this._jumping = false;
         this._editor = editor;
         this._heard = editor.selection;
-        this._places.push(this._heard);
+        $eq.collections.listAdd(this._places, this._heard);
         this._index = 0;
         editor.changed = $eq.delegates.combine(editor.changed, $eq.delegates.bound(this, this.carry));
         editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, $eq.delegates.bound(this, this.heard));
@@ -59,9 +59,9 @@ export class CodeJumpList {
     }
 
     reset() {
-        this._places.splice(0);
+        $eq.collections.listClear(this._places);
         this._heard = this._editor.selection;
-        this._places.push(this._heard);
+        $eq.collections.listAdd(this._places, this._heard);
         this._index = 0;
     }
 
@@ -85,20 +85,20 @@ export class CodeJumpList {
         let lines = Math.abs(selection.start.line - this._heard.start.line);
         let newPlace = lines >= CodeJumpList.distance || this._jumping && lines > 0;
         this._heard = selection;
-        if (newPlace && this._places[this._index].start.line !== selection.start.line) this.add(selection); else this._places[this._index] = selection;
+        if (newPlace && this._places[this._index].start.line !== selection.start.line) this.add(selection); else $eq.collections.listSet(this._places, this._index, selection);
     }
 
     add(place: CodeRange) {
         if (this._index < this._places.length - 1) $eq.collections.listRemoveRange(this._places, this._index + 1, this._places.length - this._index - 1);
-        this._places.push(place);
+        $eq.collections.listAdd(this._places, place);
         if (this._places.length > CodeJumpList.capacity) $eq.collections.listRemoveAt(this._places, 0);
         this._index = this._places.length - 1;
     }
 
     carry(change: CodeChange) {
         if (change.replaced) return;
-        for (const edit of change.edits) {
-            for (let i = 0; i < this._places.length; i++) this._places[i] = CodeJumpList.carried(edit, this._places[i]);
+        for (const edit of $eq.collections.sequenceWalk(change.edits)) {
+            for (let i = 0; i < this._places.length; i++) $eq.collections.listSet(this._places, i, CodeJumpList.carried(edit, this._places[i]));
             this._heard = CodeJumpList.carried(edit, this._heard);
         }
     }

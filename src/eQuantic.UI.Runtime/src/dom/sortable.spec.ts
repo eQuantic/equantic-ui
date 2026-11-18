@@ -10,8 +10,10 @@ import { StatefulComponent } from '../core/component';
 import { photonTheme } from '../shared/design-system.generated';
 import { setPhotonTheme } from '../shared/photon-context';
 import { Column, Row, Sortable, SortableItem, Text } from '../shared/vocabulary';
-import type { SortDrop } from '../shared/value-types';
+import { SortAnnouncements, type SortDrop } from '../shared/value-types';
+import { SdkStrings } from '../shared/components/SdkStrings';
 import { SortPlacement } from '../shared/components/SortPlacement';
+import { SortWords } from '../shared/components/SortWords';
 import { resetSortableController } from './sortable';
 
 setPhotonTheme(photonTheme);
@@ -27,6 +29,11 @@ class Board extends StatefulComponent {
     private readonly refuse: string | null = null,
     private readonly group = 'board',
     private readonly doneCards: string[] = [],
+    private readonly guard: ((drop: SortDrop) => boolean) | null = null,
+    // The words a list is given, the SDK's as `UI.Sortable` gives them unless a test gives its own (#1564).
+    private readonly words: SortAnnouncements | null = SdkStrings.sorting,
+    // The done column's own words, when a test gives it words of its own.
+    private readonly doneWords: SortAnnouncements | null | undefined = undefined,
   ) {
     super();
   }
@@ -39,17 +46,22 @@ class Board extends StatefulComponent {
         const item = new SortableItem(new Text(card) as never, card);
         list.add(item as never);
       }
-      return new Sortable(list as never, id, (drop: SortDrop) => dropped.push(drop), {
+      const words = id === 'done' && this.doneWords !== undefined ? this.doneWords : this.words;
+      return new Sortable(list as never, id, (drop: SortDrop) => dropped.push(drop), words, {
         group: this.group,
         nests: this.nests,
         label: id === 'todo' ? 'To do' : 'Done',
         onHovered: (drop: SortDrop | null) => hovered.push(drop),
-        accepts: this.refuse ? (drop: SortDrop) => !drop.item.startsWith(this.refuse!) : null,
+        accepts: this.guard ?? (this.refuse ? (drop: SortDrop) => !drop.item.startsWith(this.refuse!) : null),
       });
     };
     row.add(column('todo', ['a', 'b', 'c', 'locked-1']) as never);
     row.add(column('done', this.doneCards) as never);
-    row.add(new Sortable(new Column(0) as never, 'other', (drop: SortDrop) => dropped.push(drop), { group: 'else' }) as never);
+    row.add(
+      new Sortable(new Column(0) as never, 'other', (drop: SortDrop) => dropped.push(drop), this.words, {
+        group: 'else',
+      }) as never,
+    );
     return row as never;
   }
 }
@@ -100,6 +112,23 @@ function drag(container: HTMLElement, id: string, path: [number, number][], rele
   for (const [x, y] of path) pointer(document, 'pointermove', x, y);
   if (release) pointer(document, 'pointerup', path[path.length - 1][0], path[path.length - 1][1]);
 }
+
+describe('SortPlacement.keyStep, the twin both targets run (#1533)', () => {
+  it('steps through the places inside the items of a list that nests, kept inside it', () => {
+    // Two other items (a, b): before a, inside a, before b, inside b, after b.
+    expect(SortPlacement.keyStep(0, -1, 1, 2, true)).toEqual([0, 0]);
+    expect(SortPlacement.keyStep(0, 0, 1, 2, true)).toEqual([1, -1]);
+    expect(SortPlacement.keyStep(1, 1, 1, 2, true)).toEqual([2, -1]);
+    expect(SortPlacement.keyStep(2, -1, 1, 2, true)).toEqual([2, -1]);
+    expect(SortPlacement.keyStep(2, -1, -1, 2, true)).toEqual([1, 1]);
+    expect(SortPlacement.keyStep(0, -1, -1, 2, true)).toEqual([0, -1]);
+  });
+
+  it('moves one index in a list that does not nest', () => {
+    expect(SortPlacement.keyStep(0, -1, 1, 2, false)).toEqual([1, -1]);
+    expect(SortPlacement.keyStep(2, -1, 1, 2, false)).toEqual([2, -1]);
+  });
+});
 
 describe('lists a pointer sorts', () => {
   beforeEach(() => {
@@ -310,6 +339,101 @@ describe('lists a pointer sorts', () => {
       expect(dropped[0].to).toBe('todo');
     });
 
+    it('steps through the places inside the items in a list that nests, and says them (#1533)', () => {
+      const container = mount(new Board(true));
+      item(container, 'c').focus();
+      press(' ');
+      expect(said()).toBe('Picked up c, position 3 of 4 in To do.');
+      // Before c's own place come, going up: inside b, then before b.
+      press('ArrowUp');
+      expect(said()).toBe('c is inside b.');
+      expect(last(hovered)?.into).toBe('b');
+      press('ArrowUp');
+      expect(said()).toBe('c is at position 2 of 4 in To do.');
+      expect(last(hovered)?.into ?? null).toBeNull();
+      press('ArrowDown');
+      press(' ');
+      expect([dropped[0].item, dropped[0].index, dropped[0].into]).toEqual(['c', 1, 'b']);
+      expect(said()).toBe('Dropped c inside b.');
+    });
+
+    it('passes over a place the list refuses, as a pointer does (#1533)', () => {
+      const container = mount(new Board(false, null, 'board', [], (drop: SortDrop) => drop.index !== 1));
+      item(container, 'c').focus();
+      press(' ');
+      press('ArrowUp');
+      expect(said()).toBe('c is at position 1 of 4 in To do.');
+      expect(last(hovered)?.index).toBe(0);
+      // At the top, the place it holds is said again rather than refused.
+      press('ArrowUp');
+      expect(said()).toBe('c is at position 1 of 4 in To do.');
+    });
+
+    it("starts from a composite's active item, and leaves the focus on the composite (#1533)", () => {
+      vi.stubGlobal('requestAnimationFrame', (frame: FrameRequestCallback) => {
+        frame(0);
+        return 0;
+      });
+      const container = mount(new Board());
+      const list = container.querySelector('[data-eq-sort-id="todo"]') as HTMLElement;
+      // A composite's one stop, naming its active item, as a tree's host does.
+      list.setAttribute('tabindex', '0');
+      item(container, 'b').id = 'todo-b';
+      list.setAttribute('aria-activedescendant', 'todo-b');
+      list.focus();
+
+      press(' ');
+      expect(said()).toBe('Picked up b, position 2 of 4 in To do.');
+      press('ArrowDown');
+      press(' ');
+      expect([dropped[0].item, dropped[0].index]).toEqual(['b', 2]);
+      expect(document.activeElement).toBe(list);
+    });
+
+    it("says each step, and describes the item, in the list's own words when the app gives them (#1564)", () => {
+      const words = new SortAnnouncements(
+        'Use Space.',
+        'Took {0} ({1}/{2}, {3}).',
+        '{0} now {1}/{2}.',
+        '{0} in {1}.',
+        'Not there.',
+        'Left {0} at {1}.',
+        'Left {0} in {1}.',
+        'Back.',
+      );
+      const doneWords = new SortAnnouncements('Other.', 'Other.', 'Other.', 'Other.', 'Other.', 'Other.', 'Other.', 'Other.');
+      const container = mount(new Board(false, null, 'board', ['d'], null, words, doneWords));
+      const a = item(container, 'a');
+      a.focus();
+      const described = document.getElementById(a.getAttribute('aria-describedby')!.split(' ').pop()!);
+      expect(described?.textContent).toBe('Use Space.');
+      press(' ');
+      expect(said()).toBe('Took a (1/4, To do).');
+      press('ArrowDown');
+      expect(said()).toBe('a now 2/4.');
+      // Another list of the group: the carry still speaks in the words of the list it started from.
+      press('ArrowRight');
+      expect(said()).toBe('a now 2/2.');
+      press(' ');
+      expect(said()).toBe('Left a at 2.');
+      a.focus();
+      press(' ');
+      press('Escape');
+      expect(said()).toBe('Back.');
+    });
+
+    it('says nothing, and describes nothing, for a list given no words (#1564)', () => {
+      const container = mount(new Board(false, null, 'board', [], null, null));
+      const a = item(container, 'a');
+      a.focus();
+      expect(a.getAttribute('aria-describedby') ?? '').not.toContain('eq-sort-instructions');
+      press(' ');
+      press('ArrowDown');
+      press(' ');
+      expect(dropped[0].index).toBe(1);
+      expect(said()).toBe('');
+    });
+
     it('leaves Space in a field, and a chord, to the page', () => {
       const container = mount(new Board());
       item(container, 'a').focus();
@@ -318,5 +442,22 @@ describe('lists a pointer sorts', () => {
       expect(chord.defaultPrevented).toBe(false);
       expect(item(container, 'a').style.opacity).toBe('');
     });
+  });
+});
+
+/** The holes of a step's words, filled by the rule both targets run (C# twin: `SortWords.Fill`, the same cases in
+ * `SortWordsTests`). */
+describe('SortWords.fill (#1564)', () => {
+  it.each([
+    ['Picked up {0}, position {1} of {2} in {3}.', ['a', '1', '3', 'To do'], 'Picked up a, position 1 of 3 in To do.'],
+    ['{1} before {0}', ['a', 'b'], 'b before a'],
+    ['Left out: {0}.', ['a', 'b', 'c'], 'Left out: a.'],
+    ['Past the holes: {4}.', ['a'], 'Past the holes: {4}.'],
+    ['A stray { brace } and {x}.', ['a'], 'A stray { brace } and {x}.'],
+    ['Unclosed {0', ['a'], 'Unclosed {0'],
+    ['{0} is {1}', ['{1}.txt', 'here'], '{1}.txt is here'],
+    ['{}{0}{10}', ['a'], '{}a{10}'],
+  ])('fills %j', (text, holes, expected) => {
+    expect(SortWords.fill(text, holes)).toBe(expected);
   });
 });

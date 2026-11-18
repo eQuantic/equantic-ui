@@ -21,12 +21,13 @@ public class FinalLinqTests : StrategyTestBase
         Assert.Contains("JSON.stringify(other)", js);
     }
 
+    /// <summary>DefaultIfEmpty is a ternary over its source, run when its query is walked (#685).</summary>
     [Fact]
-    public void DefaultIfEmpty_ConvertsToTernary()
+    public void DefaultIfEmpty_DefersATernary()
     {
         var code = "list.DefaultIfEmpty(0)";
         var js = Convert(code);
-        Assert.Contains("list.length > 0", js);
-        Assert.Contains(": [0]", js);
+        Assert.Contains("$eq.query.defer(($src) => ($src.length > 0 ? $src : [$1]), $0)", js);
+        Assert.Contains("(list, 0)", js);
     }
 }

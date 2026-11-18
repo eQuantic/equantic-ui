@@ -32,9 +32,11 @@ public class DefaultIfEmptyStrategy : IConversionStrategy
             ? context.Converter.ConvertExpression(args[0].Expression)
             : DefaultValue.OfElement(context.SemanticHelper.GetType(memberAccess.Expression), context);
 
-        // The source read ONCE (see LastStrategy).
-        return JsExprWriter.Write(JsExpr.Template("({0}.length > 0 ? {0} : [{1}])",
-            [LinqSource.Ir(memberAccess.Expression, context), JsExpr.Opaque(defaultVal)]));
+        // Asked when the query is walked, of the source as it is then (#685); the filler is evaluated when
+        // the operator is called, as C# evaluates an argument.
+        return JsExprWriter.Write(JsExpr.Template(
+            LinqSource.Defer("({0}.length > 0 ? {0} : [{1}])", memberAccess.Expression, context),
+            [LinqSource.Lazy(memberAccess.Expression, context), JsExpr.Opaque(defaultVal)]));
     }
 
     public int Priority => 10;

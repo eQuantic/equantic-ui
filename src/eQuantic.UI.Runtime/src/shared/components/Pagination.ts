@@ -48,8 +48,8 @@ export class Pagination extends StatelessComponent {
         }
         let current = Math.min(Math.max(currentPage, 1), pageCount);
         let pages = [1];
-        for (let page = current - Pagination.window; page <= current + Pagination.window; page++) if (page > 1 && page < pageCount && !pages.includes(page)) pages.push(page);
-        if (pageCount > 1) pages.push(pageCount);
+        for (let page = current - Pagination.window; page <= current + Pagination.window; page++) if (page > 1 && page < pageCount && !pages.includes(page)) $eq.collections.listAdd(pages, page);
+        if (pageCount > 1) $eq.collections.listAdd(pages, pageCount);
         let ordered = new Array(pages.length).fill(0);
         for (let i = 0; i < pages.length; i++) ordered[i] = pages[i];
         return ordered;

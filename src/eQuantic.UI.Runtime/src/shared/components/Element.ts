@@ -30,7 +30,7 @@ export abstract class Element {
 
     slotsBelow(depth: number) {
         let slots: number[] = [];
-        for (let at: Element | null = this; !(at == null) && at.depth > depth; at = at.parent) slots.push(at.slot);
+        for (let at: Element | null = this; !(at == null) && at.depth > depth; at = at.parent) $eq.collections.listAdd(slots, at.slot);
         $eq.collections.listReverse(slots);
         return $eq.text.join('.', slots, ($value) => $eq.text.format($value, null, undefined, undefined, 'int32'));
     }
