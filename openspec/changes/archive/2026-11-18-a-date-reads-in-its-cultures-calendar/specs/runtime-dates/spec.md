@@ -38,6 +38,12 @@ the Gregorian calendar's in every culture.
 - **THEN** each is read as .NET reads it, the era's name or its abbreviation before or after the date,
   and a date with ar-SA's Arabic comma, which .NET refuses, is refused
 
+#### Scenario: A designator beside a date
+
+- **WHEN** `1/15/2024 PM` and `PM 1/15/2024` are read in en-US, and `15/1/2024 م` where the Gregorian
+  calendar's era is spelled as the PM designator, as Linux's ar-SA writes it
+- **THEN** each is the 15th of January 2024 at noon, as in .NET, and `PM` alone names no moment
+
 #### Scenario: The ISO form is Gregorian in every culture
 
 - **WHEN** `2024-01-15T10:30:00` and `2024-01-15` are read in ar-SA

@@ -85,7 +85,7 @@ public class CultureCalendarConformanceTests
             "2567-01-15T10:30:00", "1445-02-30T10:00", "Monday 2024-01-15T10:00", "15 January 2567", "January 2567"),
         // The era's name and its abbreviation, before the date, after it and beside it, as .NET reads them in
         // every culture, and another calendar's era refused.
-        Moment + "var g = d.ToString(\"gg\"); var s = \"\"; foreach (var t in new[] { d.ToString(\"d\") + \" \" + g, g + \" \" + d.ToString(\"d\"), d.ToString(\"d\") + g, d.ToString(\"d\") + \" AD\", d.ToString(\"d\") + \" A\", d.ToString(\"d\") + \" A.D.\" }) s += (DateTime.TryParse(t, out var v) ? v.ToString(\"o\") : \"no\") + \"|\"; return s;",
+        Moment + "var g = d.ToString(\"gg\"); var s = \"\"; foreach (var t in new[] { d.ToString(\"d\") + \" \" + g, g + \" \" + d.ToString(\"d\"), d.ToString(\"d\") + g, d.ToString(\"d\") + \" AD\", d.ToString(\"d\") + \" A\", d.ToString(\"d\") + \" A.D.\", g + \" \" + d.ToString(\"d\") + \" \" + g + \" \" + g, d.ToString(\"d\") + \" \" + d.ToString(\"tt\") }) s += (DateTime.TryParse(t, out var v) ? v.ToString(\"o\") : \"no\") + \"|\"; return s;",
         // A date of two numbers is of this year as the culture's calendar counts it.
         Each("DateTime.TryParse(t, out var v)", "15/1", "1/5", "1/15", "12/30"),
         // What the culture writes reads back, its long forms where .NET reads them.

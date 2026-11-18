@@ -7,7 +7,8 @@
   them. The writer writes a date's year, month, day and era in it and refuses a day it does not write in its own
   words; the reader reads a date's numbers, this year and a year of two digits in it, and the ISO form in the
   Gregorian calendar, as .NET does, and the era's name or abbreviation beside a date, as .NET reads it in every
-  culture. A calendar of eras or of a thirteenth month is refused by the server rather than
+  culture, an era spelled as a designator being the designator; a designator beside a date with no clock is that
+  date's noon or midnight (`1/15/2024 PM`), where the browser refused it. A calendar of eras or of a thirteenth month is refused by the server rather than
   written in Gregorian numbers. Measured on both sides by `CultureCalendarConformanceTests` in four cultures, and over
   each calendar's whole range by `CalendarBridgeTests`. Proposed and archived through OpenSpec
   (`openspec/specs/runtime-dates`).

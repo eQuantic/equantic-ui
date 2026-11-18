@@ -195,8 +195,10 @@ function shapesOf(culture: DateTimeFormatData): Shapes {
   const point = pointIsClock && dateSeparator !== '.' ? [] : ['.'];
   return {
     calendar: calendarOf(culture.calendar),
+    // An era spelled as a designator is the designator, as .NET reads it: Linux's ar-SA counts in the
+    // Gregorian calendar, whose era `م` is its PM too, and `15/1/2024 م` is noon.
     eras: [...new Set([culture.eraName, culture.abbreviatedEraName].map((era) => era.trim().toLowerCase()))]
-      .filter((era) => era.length > 0)
+      .filter((era) => era.length > 0 && !designators.some((designator) => designator.text.toLowerCase() === era))
       .sort((a, b) => b.length - a.length),
     dateSeparators: ['/', '-', ...point, dateSeparator].filter((s) => s.length > 0),
     timeSeparators: [':', own(culture.timeSeparator)].filter((s) => s.length > 0),
@@ -392,6 +394,8 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
     // A word is named where .NET's lexer meets it, before a clock out of range is.
     return isLetter(text[cursor.at]) ? { refused: 'word', index: cursor.at } : FORMAT;
   }
+  // A designator is a clock only beside a date: `PM` alone names no moment.
+  if (raw !== null && raw.parts.length === 0 && date === null) return FORMAT;
   const clock = raw === null ? null : clockOf(raw);
   if (clock !== null && refused(clock)) return clock;
   return { date, clock, zone };
@@ -471,8 +475,8 @@ function readDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
     cursor.take([',']);
     cursor.space();
   }
-  // The era before the date, as .NET reads it there: `พ.ศ. 15/1/2567` (#1191).
-  if (cursor.word(shapes.eras)) cursor.space();
+  // The era before the date, as .NET reads it there, as often as it is written: `พ.ศ. 15/1/2567` (#1191).
+  while (cursor.word(shapes.eras)) cursor.space();
   const named = readNamedDate(cursor, shapes);
   const read = named === 'none' ? readNumericDate(cursor, shapes) : named;
   if (read === 'none') {
@@ -569,10 +573,16 @@ function endOfDate(cursor: Cursor, shapes: Shapes): void {
   cursor.space();
   if (!cursor.word(shapes.words)) cursor.at = before;
   // The era after the date, which a culture's short date writes where its calendar is not the Gregorian
-  // one (ar-SA's on Windows, `3/7/1445 هـ`), and which .NET reads after any date (#1191).
-  const beforeEra = cursor.at;
-  cursor.space();
-  if (!cursor.word(shapes.eras)) cursor.at = beforeEra;
+  // one (ar-SA's on Windows, `3/7/1445 هـ`), and which .NET reads after any date, as often as it is
+  // written (#1191).
+  for (;;) {
+    const beforeEra = cursor.at;
+    cursor.space();
+    if (!cursor.word(shapes.eras)) {
+      cursor.at = beforeEra;
+      break;
+    }
+  }
   const end = shapes.dateEnd.length > 0 ? shapes.dateEnd : shapes.dateSeparator === '.' ? null : '.';
   const last = cursor.at;
   cursor.space();
@@ -741,12 +751,23 @@ interface RawClock {
 function readClockAndDesignator(cursor: Cursor, shapes: Shapes): RawClock | 'invalid' | null {
   const start = cursor.at;
   let pm = readDesignator(cursor, shapes);
-  if (pm !== null) cursor.space();
+  if (pm !== null) {
+    cursor.space();
+    // A designator before a date is that date's noon or midnight, as .NET reads `PM 1/15/2024`: the
+    // date's first number is no hour.
+    const at = cursor.at;
+    const date = readDate(cursor, shapes);
+    cursor.at = at;
+    if (typeof date === 'object') return { parts: Object.assign([], { fraction: 0 }), pm };
+  }
   const parts = readClock(cursor, shapes);
   if (parts === null) {
     if (pm === null) return null;
+    // A designator with no clock: noon or midnight of a date beside it, as .NET reads `1/15/2024 PM`,
+    // and no moment alone, which the caller refuses where no date comes.
     cursor.at = start;
-    return 'invalid';
+    readDesignator(cursor, shapes);
+    return { parts: Object.assign([], { fraction: 0 }), pm };
   }
   if (parts === 'invalid') return 'invalid';
   if (pm === null) {
@@ -760,6 +781,8 @@ function readClockAndDesignator(cursor: Cursor, shapes: Shapes): RawClock | 'inv
 
 /** The time of day a clock and its designator name, or why they name none. */
 function clockOf({ parts, pm }: RawClock): ReadClock | Refusal {
+  // A designator alone is the first hour of its half of the day.
+  if (parts.length === 0) return { hour: pm ? 12 : 0, minute: 0, second: 0, fraction: 0 };
   // The hours alone are a clock only with a designator.
   if (parts.length === 1 && pm === null) return FORMAT;
   let [hour] = parts;
