@@ -329,4 +329,13 @@
   <data name="TreeItemName" xml:space="preserve">
     <value>Nombre</value>
   </data>
+  <data name="SortByColumn" xml:space="preserve">
+    <value>Ordenar por {0}</value>
+  </data>
+  <data name="ResizeColumn" xml:space="preserve">
+    <value>Cambiar el tamaño de {0}</value>
+  </data>
+  <data name="TableColumns" xml:space="preserve">
+    <value>Columnas</value>
+  </data>
 </root>

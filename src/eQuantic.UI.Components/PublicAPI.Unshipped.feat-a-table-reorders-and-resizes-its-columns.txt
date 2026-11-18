@@ -1,0 +1,21 @@
+#nullable enable
+*REMOVED*static eQuantic.UI.Components.UI.Adjustable(eQuantic.UI.Primitives.VisualNode! child, System.Action<int>! onAdjust, eQuantic.UI.Primitives.RangeValue? value = null, eQuantic.UI.Primitives.AdjustableRole role = eQuantic.UI.Primitives.AdjustableRole.Slider, string? valueText = null) -> eQuantic.UI.Primitives.Adjustable!
+*REMOVED*eQuantic.UI.Components.DataColumn.DataColumn(string! Header, eQuantic.UI.Primitives.GridTrack Track, eQuantic.UI.Primitives.TextAlignment Align = eQuantic.UI.Primitives.TextAlignment.Start, bool Sortable = false) -> void
+*REMOVED*eQuantic.UI.Components.DataColumn.Deconstruct(out string! Header, out eQuantic.UI.Primitives.GridTrack Track, out eQuantic.UI.Primitives.TextAlignment Align, out bool Sortable) -> void
+eQuantic.UI.Components.DataTable.ColumnOrder.get -> System.Collections.Generic.IReadOnlyList<int>?
+eQuantic.UI.Components.DataTable.ColumnOrder.init -> void
+eQuantic.UI.Components.DataTable.OnColumnsReordered.get -> System.Action<System.Collections.Generic.IReadOnlyList<int>!>?
+eQuantic.UI.Components.DataTable.OnColumnsReordered.init -> void
+eQuantic.UI.Components.DataTable.OnColumnResized.get -> System.Action<int, float>?
+eQuantic.UI.Components.DataTable.OnColumnResized.init -> void
+eQuantic.UI.Components.DataColumn.DataColumn(string! Header, eQuantic.UI.Primitives.GridTrack Track, eQuantic.UI.Primitives.TextAlignment Align = eQuantic.UI.Primitives.TextAlignment.Start, bool Sortable = false, float MinWidth = 64, float MaxWidth = 1024) -> void
+eQuantic.UI.Components.DataColumn.Deconstruct(out string! Header, out eQuantic.UI.Primitives.GridTrack Track, out eQuantic.UI.Primitives.TextAlignment Align, out bool Sortable, out float MinWidth, out float MaxWidth) -> void
+eQuantic.UI.Components.DataColumn.MinWidth.get -> float
+eQuantic.UI.Components.DataColumn.MinWidth.init -> void
+eQuantic.UI.Components.DataColumn.MaxWidth.get -> float
+eQuantic.UI.Components.DataColumn.MaxWidth.init -> void
+static eQuantic.UI.Components.SdkStrings.SortByColumn(string! column) -> string!
+static eQuantic.UI.Components.SdkStrings.ResizeColumn(string! column) -> string!
+static eQuantic.UI.Components.SdkStrings.TableColumns.get -> string!
+static eQuantic.UI.Components.UI.Adjustable(eQuantic.UI.Primitives.VisualNode! child, System.Action<int>! onAdjust, eQuantic.UI.Primitives.RangeValue? value = null, eQuantic.UI.Primitives.AdjustableRole role = eQuantic.UI.Primitives.AdjustableRole.Slider, string? valueText = null, eQuantic.UI.Primitives.DragAxis axis = eQuantic.UI.Primitives.DragAxis.Horizontal) -> eQuantic.UI.Primitives.Adjustable!
+override eQuantic.UI.Components.DataTable.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void

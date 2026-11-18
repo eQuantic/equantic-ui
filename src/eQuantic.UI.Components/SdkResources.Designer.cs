@@ -571,5 +571,20 @@ namespace eQuantic.UI.Components
         {
             get { return ResourceManager.GetString("UploadAnnounceFailed", Culture)!; }
         }
+
+        internal static string SortByColumn
+        {
+            get { return ResourceManager.GetString("SortByColumn", Culture)!; }
+        }
+
+        internal static string ResizeColumn
+        {
+            get { return ResourceManager.GetString("ResizeColumn", Culture)!; }
+        }
+
+        internal static string TableColumns
+        {
+            get { return ResourceManager.GetString("TableColumns", Culture)!; }
+        }
 }
 }

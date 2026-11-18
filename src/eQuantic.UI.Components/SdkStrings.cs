@@ -302,6 +302,20 @@ public static class SdkStrings
     /// <summary>The name a tree's rename or new-item field is read by.</summary>
     public static string TreeItemName => SdkResources.TreeItemName;
 
+    // DataTable — the name a heading that sorts is read by, the name of a column's resize handle, and
+    // the name of the header row a person reorders the columns in (#1538).
+
+    /// <summary>A heading that sorts: "Sort by Amount".</summary>
+    public static string SortByColumn(string column) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.SortByColumn, column);
+
+    /// <summary>A column's resize handle: "Resize Amount".</summary>
+    public static string ResizeColumn(string column) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ResizeColumn, column);
+
+    /// <summary>The header row whose columns a person reorders, as the keyboard's steps name it.</summary>
+    public static string TableColumns => SdkResources.TableColumns;
+
     /// <summary>What a reader hears while a sortable list's item is sorted by the keyboard, in the reader's
     /// culture: the words <c>UI.Sortable</c> gives a list when the app gives none (#1564).</summary>
     public static SortAnnouncements Sorting => new(

@@ -380,6 +380,23 @@ public class WikiClaimsCompile
                     PutBack: "{0} is back where it was."));
     }
 
+    /// <summary>Components, "DataTable: columns a person orders and sizes" (#1538): a table whose page keeps the
+    /// order a person leaves its columns in and the widths they give them.</summary>
+    private sealed class OrderedColumnsPage : Primitives.StatefulComponent
+    {
+        private readonly DataColumn[] _columns = [new("Name", GridTrack.Flex()), new("Size", GridTrack.Fixed(120))];
+        private IReadOnlyList<int>? _order;
+
+        public override VisualNode Build(ComponentContext context) =>
+            new DataTable(_columns, [])
+            {
+                ColumnOrder = _order,
+                OnColumnsReordered = order => SetState(() => _order = order),
+                OnColumnResized = (column, width) => SetState(() =>
+                    _columns[column] = _columns[column] with { Track = GridTrack.Fixed(width) }),
+            };
+    }
+
     /// <summary>Components, "TreeView: a tree the keyboard walks" (preview.69, #1530): a repository's
     /// files, the top folder from the server and every folder below it loaded as it opens.</summary>
     private sealed class FilesPage : Primitives.StatefulComponent

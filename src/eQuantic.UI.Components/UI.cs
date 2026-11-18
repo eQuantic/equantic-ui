@@ -377,8 +377,8 @@ public static class UI
     /// </summary>
     public static Adjustable Adjustable(VisualNode child, Action<int> onAdjust,
         RangeValue? value = null, AdjustableRole role = AdjustableRole.Slider,
-        string? valueText = null) =>
-        new Adjustable(child, onAdjust) { Value = value, Role = role, ValueText = valueText };
+        string? valueText = null, DragAxis axis = DragAxis.Horizontal) =>
+        new Adjustable(child, onAdjust) { Value = value, Role = role, ValueText = valueText, Axis = axis };
 
     /// <summary>
     /// The 2-D twin of <see cref="Adjustable"/>: one Tab stop for the whole thing, and a keyboard
