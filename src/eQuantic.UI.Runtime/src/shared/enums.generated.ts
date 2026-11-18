@@ -110,6 +110,8 @@ export type FontWeightValue =
   'thin' | 'extraLight' | 'light' | 'regular' | 'medium' | 'semiBold' | 'bold' | 'extraBold'
   | 'black';
 
+export type GestureDispositionValue = 'accepted' | 'rejected';
+
 export type GradientDirectionValue = 'toRight' | 'toBottom' | 'toBottomRight' | 'toBottomLeft';
 
 export type HitTestBehaviorValue = 'deferToChild' | 'opaque' | 'translucent';

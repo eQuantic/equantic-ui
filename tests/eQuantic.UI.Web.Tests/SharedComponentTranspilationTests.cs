@@ -50,6 +50,8 @@ public class SharedComponentTranspilationTests
             .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Elements"), "*.cs"))
             // The arithmetic of a sort (#1537): the browser's controller and the Photon host place an item by it.
             .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Sorting"), "*.cs"))
+            // The gesture arena and the recognizer an app subclasses (#1563): the browser runs the arena Photon runs.
+            .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Gestures"), "*.cs"))
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToArray();
 
@@ -407,6 +409,9 @@ public class SharedComponentTranspilationTests
         var nestedPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "NestedReconciler.cs");
         var boundPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "BoundReceivers.cs");
         var shapesPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "EmissionShapes.cs");
+        // The arena's members as an app writes them (#1563): real files, compiled into this suite for the C# side of
+        // the arena's fixture, and transpiled here for the browser's.
+        var gestureFixtures = GestureFixtureSources(root);
         var trees = sourcePaths
             .Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path))
             .ToList();
@@ -414,6 +419,7 @@ public class SharedComponentTranspilationTests
         trees.Add(CSharpSyntaxTree.ParseText(NestedReconcilerSource, path: nestedPath));
         trees.Add(CSharpSyntaxTree.ParseText(BoundReceiversSource, path: boundPath));
         trees.Add(CSharpSyntaxTree.ParseText(EmissionShapesSource, path: shapesPath));
+        trees.AddRange(gestureFixtures.Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path)));
         // The shared sources build with <ImplicitUsings> — mirror the generated global usings, or
         // `Action?` fails to bind (CS0246) and the semantic paths silently degrade.
         trees.Add(SdkImplicitUsings.Tree());
@@ -452,7 +458,8 @@ public class SharedComponentTranspilationTests
             .Append((counterPath, compiler.CompileSource(SharedCounterSource, counterPath)))
             .Append((nestedPath, compiler.CompileSource(NestedReconcilerSource, nestedPath)))
             .Append((boundPath, compiler.CompileSource(BoundReceiversSource, boundPath)))
-            .Append((shapesPath, compiler.CompileSource(EmissionShapesSource, shapesPath)));
+            .Append((shapesPath, compiler.CompileSource(EmissionShapesSource, shapesPath)))
+            .Concat(gestureFixtures.Select(path => (path, compiler.CompileFile(path))));
         foreach (var (path, results) in compilations)
         {
             foreach (var result in results)
@@ -473,6 +480,14 @@ public class SharedComponentTranspilationTests
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
         "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain",
+        "ArenaProbe", "ArenaMember",
+    ];
+
+    /// <summary>The arena's members as an app writes them (#1563), files of this suite's own.</summary>
+    private static string[] GestureFixtureSources(string root) =>
+    [
+        Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "ArenaProbe.cs"),
+        Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "ArenaMember.cs"),
     ];
 
     /// <summary>The source this asks about, kept HERE rather than pointed at a production class.

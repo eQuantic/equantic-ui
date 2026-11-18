@@ -1,0 +1,163 @@
+{
+  "about": "The arena's cases (#1563), run by GestureArenaFixtureTests against the C# GestureRouter and by gesture-arena.spec.ts against its transpiled twin. Members are listed in hit order, the innermost first: a probe is an ArenaProbe recognizer kept by the router for a detector named like it, whose box starts at its origin; a plain member is a gesture of the SDK's (ArenaMember), which resolves through the entry the down hands it. Each step says what was heard while it ran, in order, and a tick may say when the next deadline is due.",
+  "cases": [
+    {
+      "name": "a lone gesture of the SDK's wins at the close, as it did before any arena",
+      "members": [{ "name": "press", "plain": true }],
+      "built": [],
+      "steps": [
+        { "down": [10, 6], "heard": ["press.accept 1"] },
+        { "up": [10, 6], "heard": [] }
+      ]
+    },
+    {
+      "name": "a lone recognizer wins at the close and still hears its pointer",
+      "members": [{ "name": "probe" }],
+      "built": ["probe.create"],
+      "steps": [
+        { "down": [10, 6], "heard": ["probe.add 1 10,6", "probe.accept 1"] },
+        { "move": [30, 6], "heard": ["probe.move 1 30,6"] },
+        { "up": [30, 6], "heard": ["probe.up 1 30,6"] }
+      ]
+    },
+    {
+      "name": "the first to accept wins, and each hears in its own box, past the box's edge",
+      "members": [
+        { "name": "inner", "origin": [50, 100] },
+        { "name": "outer", "origin": [40, 90], "onMove": "accepted" }
+      ],
+      "built": ["inner.create", "outer.create"],
+      "steps": [
+        { "down": [60, 106], "heard": ["inner.add 1 10,6", "outer.add 1 20,16"] },
+        { "move": [260, 106], "heard": ["inner.move 1 210,6", "outer.move 1 220,16", "inner.reject 1", "outer.accept 1"] },
+        { "move": [270, 106], "heard": ["outer.move 1 230,16"] },
+        { "up": [270, 106], "heard": ["outer.up 1 230,16"] }
+      ]
+    },
+    {
+      "name": "at the up with nothing decided, the first member wins: the innermost",
+      "members": [{ "name": "inner" }, { "name": "outer" }],
+      "built": ["inner.create", "outer.create"],
+      "steps": [
+        { "down": [10, 6], "heard": ["inner.add 1 10,6", "outer.add 1 10,6"] },
+        { "up": [12, 6], "heard": ["inner.up 1 12,6", "outer.up 1 12,6", "inner.accept 1", "outer.reject 1"] }
+      ]
+    },
+    {
+      "name": "a tap on a button inside a detector presses it: the press is the first member at the sweep",
+      "members": [{ "name": "press", "plain": true }, { "name": "detector", "deadline": 500, "atDeadline": "accepted" }],
+      "built": ["detector.create"],
+      "steps": [
+        { "down": [10, 6], "heard": ["detector.add 1 10,6"] },
+        { "tick": 1000, "heard": [], "next": 1500 },
+        { "tick": 1080, "heard": [], "next": 1500 },
+        { "up": [10, 6], "heard": ["detector.up 1 10,6", "press.accept 1", "detector.reject 1"] },
+        { "tick": 1600, "heard": [], "next": null }
+      ]
+    },
+    {
+      "name": "the last one left wins at the rejection that leaves it alone, before the up",
+      "members": [{ "name": "a" }, { "name": "b" }, { "name": "c" }],
+      "built": ["a.create", "b.create", "c.create"],
+      "steps": [
+        { "down": [10, 6], "heard": ["a.add 1 10,6", "b.add 1 10,6", "c.add 1 10,6"] },
+        { "resolve": "a", "as": "rejected", "heard": ["a.reject 1"] },
+        { "move": [11, 6], "heard": ["b.move 1 11,6", "c.move 1 11,6"] },
+        { "resolve": "b", "as": "rejected", "heard": ["b.reject 1", "c.accept 1"] },
+        { "up": [11, 6], "heard": ["c.up 1 11,6"] }
+      ]
+    },
+    {
+      "name": "a member that accepts while the arena is open wins when it closes",
+      "members": [{ "name": "inner" }, { "name": "outer", "onAdd": "accepted" }, { "name": "pan", "plain": true }],
+      "built": ["inner.create", "outer.create"],
+      "steps": [
+        { "down": [10, 6], "heard": ["inner.add 1 10,6", "outer.add 1 10,6", "inner.reject 1", "pan.reject 1", "outer.accept 1"] },
+        { "resolve": "pan", "as": "accepted", "heard": [] },
+        { "up": [10, 6], "heard": ["outer.up 1 10,6"] }
+      ]
+    },
+    {
+      "name": "a cancel takes the pointer from every member",
+      "members": [{ "name": "press", "plain": true }, { "name": "detector" }, { "name": "pan", "plain": true }],
+      "built": ["detector.create"],
+      "steps": [
+        { "down": [10, 6], "heard": ["detector.add 1 10,6"] },
+        { "cancel": [14, 6], "heard": ["detector.cancel 1 14,6", "press.reject 1", "detector.reject 1", "pan.reject 1"] }
+      ]
+    },
+    {
+      "name": "a hold takes a button's press: the deadline counts from the first tick after the down",
+      "members": [{ "name": "press", "plain": true }, { "name": "detector", "deadline": 500, "atDeadline": "accepted" }],
+      "built": ["detector.create"],
+      "steps": [
+        { "tick": 900, "heard": [], "next": null },
+        { "down": [10, 6], "heard": ["detector.add 1 10,6"] },
+        { "tick": 1000, "heard": [], "next": 1500 },
+        { "tick": 1499, "heard": [], "next": 1500 },
+        { "tick": 1500, "heard": ["detector.deadline 1 tracking 1", "detector.called by build 1", "press.reject 1", "detector.accept 1"], "next": null },
+        { "move": [70, 46], "heard": ["detector.move 1 70,46"] },
+        { "up": [70, 46], "heard": ["detector.up 1 70,46"] }
+      ]
+    },
+    {
+      "name": "a drag that arms first takes the pointer, and the recognizer's deadline never passes",
+      "members": [{ "name": "drag", "plain": true }, { "name": "detector", "deadline": 500, "atDeadline": "accepted" }],
+      "built": ["detector.create"],
+      "steps": [
+        { "down": [10, 6], "heard": ["detector.add 1 10,6"] },
+        { "tick": 0, "heard": [], "next": 500 },
+        { "move": [50, 6], "heard": ["detector.move 1 50,6"] },
+        { "resolve": "drag", "as": "accepted", "heard": ["detector.reject 1", "drag.accept 1"], "next": null },
+        { "move": [60, 6], "heard": [] },
+        { "tick": 600, "heard": [], "next": null },
+        { "up": [60, 6], "heard": [] }
+      ]
+    },
+    {
+      "name": "a pointer the recognizer does not allow never enters the arena for it",
+      "members": [{ "name": "press", "plain": true }, { "name": "detector", "primaryOnly": true }],
+      "built": ["detector.create"],
+      "steps": [
+        { "down": [10, 6], "buttons": 2, "heard": ["press.accept 1"] },
+        { "move": [20, 6], "heard": [] },
+        { "up": [20, 6], "heard": [] }
+      ]
+    },
+    {
+      "name": "a rebuild during a hold keeps the recognizer, and the latest build's callback runs",
+      "members": [{ "name": "detector", "deadline": 500 }, { "name": "pan", "plain": true }],
+      "built": ["detector.create"],
+      "steps": [
+        { "down": [10, 6], "heard": ["detector.add 1 10,6"] },
+        { "tick": 0, "heard": [], "next": 500 },
+        { "rebuild": true, "heard": [] },
+        { "rebuild": true, "heard": [] },
+        { "tick": 500, "heard": ["detector.deadline 1 tracking 1", "detector.called by build 3"], "next": null },
+        { "resolve": "pan", "as": "accepted", "heard": ["detector.reject 1", "pan.accept 1"] }
+      ]
+    },
+    {
+      "name": "a recognizer that stops tracking hears no more and its deadline drops, but it stays in the arena",
+      "members": [{ "name": "inner", "deadline": 300 }, { "name": "outer" }],
+      "built": ["inner.create", "outer.create"],
+      "steps": [
+        { "down": [10, 6], "heard": ["inner.add 1 10,6", "outer.add 1 10,6"] },
+        { "tick": 0, "heard": [], "next": 300 },
+        { "stop": "inner", "heard": [], "next": null },
+        { "move": [12, 6], "heard": ["outer.move 1 12,6"] },
+        { "up": [12, 6], "heard": ["outer.up 1 12,6", "inner.accept 1", "outer.reject 1"] }
+      ]
+    },
+    {
+      "name": "a pointer whose up never came is cancelled when it goes down again",
+      "members": [{ "name": "inner" }, { "name": "outer" }],
+      "built": ["inner.create", "outer.create"],
+      "steps": [
+        { "down": [10, 6], "heard": ["inner.add 1 10,6", "outer.add 1 10,6"] },
+        { "down": [20, 6], "heard": ["inner.reject 1", "outer.reject 1", "inner.add 1 20,6", "outer.add 1 20,6"] },
+        { "up": [20, 6], "heard": ["inner.up 1 20,6", "outer.up 1 20,6", "inner.accept 1", "outer.reject 1"] }
+      ]
+    }
+  ]
+}

@@ -838,6 +838,17 @@ public static class UI
         };
 
     /// <summary>
+    /// <paramref name="child"/>, with gestures of the app's own over it: each of <paramref name="gestures"/> makes a
+    /// recognizer, written in C# from the raw pointer, which the detector keeps across rebuilds and which competes
+    /// for each pointer that goes down on it with the SDK's own gestures under it. <paramref name="behavior"/> says
+    /// where it is hit, as a listener's does.
+    /// </summary>
+    public static RawGestureDetector RawGestureDetector(VisualNode child,
+        IReadOnlyList<GestureRecognizerFactory> gestures,
+        HitTestBehavior behavior = HitTestBehavior.DeferToChild) =>
+        new RawGestureDetector(child, gestures) { Behavior = behavior };
+
+    /// <summary>
     /// A menu of <paramref name="items"/> for what <paramref name="child"/> is, opened where a person asks for it
     /// (a secondary click, a long press, the menu key or Shift+F10), its choice handed to <paramref name="onSelect"/>.
     /// </summary>

@@ -112,6 +112,7 @@ import type {
   DropTargetNode,
   ContextTargetNode,
   ListenerNode,
+  RawGestureDetectorNode,
   SortableItemNode,
   SortDropValue,
   SortableNode,
@@ -792,6 +793,8 @@ function lowerNodeKind(
       return lowerContextTarget(node as unknown as ContextTargetNode, context, path);
     case 'listener':
       return lowerListener(node as unknown as ListenerNode, context, path);
+    case 'rawGestureDetector':
+      return lowerRawGestureDetector(node as unknown as RawGestureDetectorNode, context, path);
     case 'sortable':
       return lowerSortable(node as unknown as SortableNode, context, horizontalAxis, path);
     case 'sortableItem':
@@ -4183,6 +4186,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'dropTarget':
     case 'contextTarget':
     case 'listener':
+    case 'rawGestureDetector':
     case 'sortable':
     case 'sortableItem':
     case 'adjustable':
@@ -4256,6 +4260,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as ContextTargetNode).child);
     case 'listener':
       return fills((node as unknown as ListenerNode).child);
+    case 'rawGestureDetector':
+      return fills((node as unknown as RawGestureDetectorNode).child);
     case 'sortable':
       return fills((node as unknown as SortableNode).child);
     case 'sortableItem':
@@ -5664,6 +5670,24 @@ function lowerListener(node: ListenerNode, context: LoweringContext, path: strin
     callbacks[heard.phase]?.(heard);
   }) as unknown as EventHandler;
   installPointerListener();
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
+/**
+ * Gestures of the app's own over a subtree (#1563, the C# LowerRawGestureDetector twin): the same layout-transparent
+ * div as a listener, the child's box being its box. The arena's controller is not wired on the web yet, so the
+ * detector recognizes nothing and its child presses, drags and scrolls as it would without it.
+ */
+function lowerRawGestureDetector(node: RawGestureDetectorNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const cap = capsAt(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : undefined,
+    'max-width': sizeValue(cap),
+    height: fill.height ? '100%' : undefined,
+  });
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;

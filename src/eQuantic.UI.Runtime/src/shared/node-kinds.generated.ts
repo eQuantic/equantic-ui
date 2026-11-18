@@ -13,6 +13,7 @@ export type NodeKind =
   | 'column' | 'contextTarget' | 'dragDismiss' | 'draggable' | 'drawing' | 'dropTarget' | 'flexible'
   | 'grid' | 'group' | 'hoverable' | 'icon' | 'image' | 'inFlow' | 'inView' | 'link' | 'listener'
   | 'liveRegion' | 'loopMotion' | 'navigable' | 'overlay' | 'pinned' | 'positioned' | 'presence'
-  | 'pressable' | 'progress' | 'row' | 'safeArea' | 'scrollView' | 'sheetSurface' | 'shortcut'
-  | 'simulated' | 'sortable' | 'sortableItem' | 'spacer' | 'spinner' | 'stack' | 'tableViewCell'
-  | 'tableViewport' | 'text' | 'textEntry' | 'vector' | 'webFrame' | 'component' | 'inherited';
+  | 'pressable' | 'progress' | 'rawGestureDetector' | 'row' | 'safeArea' | 'scrollView'
+  | 'sheetSurface' | 'shortcut' | 'simulated' | 'sortable' | 'sortableItem' | 'spacer' | 'spinner'
+  | 'stack' | 'tableViewCell' | 'tableViewport' | 'text' | 'textEntry' | 'vector' | 'webFrame'
+  | 'component' | 'inherited';

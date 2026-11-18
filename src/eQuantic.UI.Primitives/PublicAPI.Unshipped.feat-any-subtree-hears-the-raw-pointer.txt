@@ -30,7 +30,6 @@ eQuantic.UI.Primitives.PointerEvent
 eQuantic.UI.Primitives.PointerEvent.<Clone>$() -> eQuantic.UI.Primitives.PointerEvent!
 eQuantic.UI.Primitives.PointerEvent.Buttons.get -> eQuantic.UI.Primitives.PointerButtons
 eQuantic.UI.Primitives.PointerEvent.Buttons.init -> void
-eQuantic.UI.Primitives.PointerEvent.Deconstruct(out eQuantic.UI.Primitives.PointerPhase Phase, out eQuantic.UI.Primitives.Point Position, out eQuantic.UI.Primitives.PointerKind Kind, out eQuantic.UI.Primitives.PointerButtons Buttons, out eQuantic.UI.Primitives.KeyModifiers Modifiers, out int Pointer, out eQuantic.UI.Primitives.Point ScrollDelta) -> void
 eQuantic.UI.Primitives.PointerEvent.Equals(eQuantic.UI.Primitives.PointerEvent? other) -> bool
 eQuantic.UI.Primitives.PointerEvent.Kind.get -> eQuantic.UI.Primitives.PointerKind
 eQuantic.UI.Primitives.PointerEvent.Kind.init -> void
@@ -40,7 +39,6 @@ eQuantic.UI.Primitives.PointerEvent.Phase.get -> eQuantic.UI.Primitives.PointerP
 eQuantic.UI.Primitives.PointerEvent.Phase.init -> void
 eQuantic.UI.Primitives.PointerEvent.Pointer.get -> int
 eQuantic.UI.Primitives.PointerEvent.Pointer.init -> void
-eQuantic.UI.Primitives.PointerEvent.PointerEvent(eQuantic.UI.Primitives.PointerPhase Phase, eQuantic.UI.Primitives.Point Position, eQuantic.UI.Primitives.PointerKind Kind, eQuantic.UI.Primitives.PointerButtons Buttons, eQuantic.UI.Primitives.KeyModifiers Modifiers, int Pointer, eQuantic.UI.Primitives.Point ScrollDelta) -> void
 eQuantic.UI.Primitives.PointerEvent.Position.get -> eQuantic.UI.Primitives.Point
 eQuantic.UI.Primitives.PointerEvent.Position.init -> void
 eQuantic.UI.Primitives.PointerEvent.ScrollDelta.get -> eQuantic.UI.Primitives.Point

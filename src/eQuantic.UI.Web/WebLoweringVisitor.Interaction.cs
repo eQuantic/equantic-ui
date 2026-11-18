@@ -478,6 +478,7 @@ internal sealed partial class WebLoweringVisitor
         DropTarget target => CapsAt(target.Child),
         ContextTarget target => CapsAt(target.Child),
         Listener listener => CapsAt(listener.Child),
+        RawGestureDetector detector => CapsAt(detector.Child),
         Sortable sortable => CapsAt(sortable.Child),
         SortableItem item => CapsAt(item.Child),
         Adjustable adjustable => CapsAt(adjustable.Child),
@@ -1050,6 +1051,30 @@ internal sealed partial class WebLoweringVisitor
         };
         element.CustomEvents["eq-pointer"] = ClientDispatches;
         if (Lower(listener.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
+            element.Children.Add(child);
+        return element;
+    }
+
+    /// <summary>
+    /// Gestures of the app's own over a subtree (<see cref="RawGestureDetector"/>, #1563): the same layout-transparent
+    /// div as a listener, the child's box being its box. The arena's controller is not wired on the web yet, so the
+    /// detector recognizes nothing and its child presses, drags and scrolls as it would without it. The client twin
+    /// is <c>lowerRawGestureDetector</c>.
+    /// </summary>
+    private HtmlElement LowerRawGestureDetector(RawGestureDetector detector)
+    {
+        var fills = Fills(detector.Child);
+        var cap = CapsAt(detector.Child);
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = fills.Width ? "100%" : null,
+                MaxWidth = Size(cap),
+                Height = fills.Height ? "100%" : null,
+            },
+        };
+        if (Lower(detector.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
             element.Children.Add(child);
         return element;
     }

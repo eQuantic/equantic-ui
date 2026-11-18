@@ -13,6 +13,7 @@ import type { NodeKind } from './node-kinds.generated';
 import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
 import type { AppTheme, ContextRequest, PointerEvent } from './value-types';
+import type { GestureRecognizerFactory } from './components/GestureRecognizerFactory';
 import { iconPaths } from './icons.generated';
 import type {
   BoxStyleValue,
@@ -1299,6 +1300,24 @@ export const KeyModifiers = {
   command: 4,
   control: 8,
 } as const;
+
+/**
+ * Mirror of the C# `RawGestureDetector` (#1563): gestures of the app's own over any subtree, each factory making a
+ * recognizer the detector keeps across rebuilds; `behavior` says where it is hit, as a listener's does.
+ */
+export class RawGestureDetector extends VisualNode {
+  readonly nodeKind = 'rawGestureDetector';
+  child: VisualChild;
+  gestures: readonly GestureRecognizerFactory[];
+  behavior: HitTestBehaviorValue = 'deferToChild';
+
+  constructor(child: VisualChild, gestures: readonly GestureRecognizerFactory[], config?: EqConfig) {
+    super();
+    this.child = child;
+    this.gestures = gestures;
+    if (config) Object.assign(this, config);
+  }
+}
 
 /** Mirror of the C# `[Flags] PointerButtons` (#1562): Flutter's constants, which are also the DOM's `buttons`. */
 export const PointerButtons = {

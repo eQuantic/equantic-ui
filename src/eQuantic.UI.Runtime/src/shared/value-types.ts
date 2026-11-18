@@ -270,6 +270,8 @@ export class PointerEvent {
   readonly modifiers: number;
   readonly pointer: number;
   readonly scrollDelta: Point;
+  /** When the platform saw it, in milliseconds on a monotonic clock (#1563): the DOM event's `timeStamp`. */
+  readonly timeMs: number;
 
   constructor(
     phase: PointerPhaseValue,
@@ -279,6 +281,7 @@ export class PointerEvent {
     modifiers: number,
     pointer: number,
     scrollDelta: Point,
+    timeMs: number,
   ) {
     this.phase = phase;
     this.position = position;
@@ -287,6 +290,7 @@ export class PointerEvent {
     this.modifiers = modifiers;
     this.pointer = pointer;
     this.scrollDelta = scrollDelta;
+    this.timeMs = timeMs;
   }
 }
 

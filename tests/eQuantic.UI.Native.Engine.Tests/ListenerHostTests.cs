@@ -160,11 +160,11 @@ public class ListenerHostTests
         var (host, page) = Open(p => p.Hears("L", Filled(200, 100)));
         var box = Listener(host);
 
-        host.PointerMove(box.X + 5, box.Y + 5, PointerKind.Touch);
-        host.PointerMove(box.X + 7, box.Y + 8);
+        host.PointerMove(box.X + 5, box.Y + 5, PointerKind.Touch, timeMs: 30);
+        host.PointerMove(box.X + 7, box.Y + 8, timeMs: 40);
 
         page.Heard.Should().ContainSingle().Which.Event.Should().Be(new PointerEvent(PointerPhase.Hover,
-            new Point(7, 8), PointerKind.Mouse, PointerButtons.None, KeyModifiers.None, 1, Point.Zero));
+            new Point(7, 8), PointerKind.Mouse, PointerButtons.None, KeyModifiers.None, 1, Point.Zero, 40));
     }
 
     [Fact]
@@ -192,10 +192,55 @@ public class ListenerHostTests
         var (host, page) = Open(p => p.Hears("L", Filled(200, 100)));
         var box = Listener(host);
 
-        host.ScrollBy(box.X + 5, box.Y + 5, across: 0, down: 48);
+        host.ScrollBy(box.X + 5, box.Y + 5, across: 0, down: 48, timeMs: 1234.5);
 
         page.Heard.Should().ContainSingle().Which.Event.Should().Be(new PointerEvent(PointerPhase.Scroll,
-            new Point(5, 5), PointerKind.Mouse, PointerButtons.None, KeyModifiers.None, 1, new Point(0, 48)));
+            new Point(5, 5), PointerKind.Mouse, PointerButtons.None, KeyModifiers.None, 1, new Point(0, 48), 1234.5));
+    }
+
+    /// <summary>A pointer event carries the time the shell saw it (#1563): two moves 16 ms apart, as the macOS shell
+    /// hands them from <c>NSEvent.timestamp</c>, read 16 apart, a press's whole life included.</summary>
+    [Fact]
+    public void TheShellsTime_ReachesTheListener_SoTwoMoves16MsApartRead16Apart()
+    {
+        var (host, page) = Open(p => p.Hears("L", Filled(200, 100)));
+        var box = Listener(host);
+        // A Mac's uptime in milliseconds: past what a float holds to the millisecond.
+        const double boot = 864_000_123.25;
+
+        host.PressDown(box.X + 10, box.Y + 6, timeMs: boot);
+        host.PointerMove(box.X + 20, box.Y + 6, timeMs: boot + 16);
+        host.PointerMove(box.X + 30, box.Y + 6, timeMs: boot + 32);
+        host.PressUp(box.X + 30, box.Y + 6, timeMs: boot + 40);
+        host.ContextRequest(box.X + 10, box.Y + 6, timeMs: boot + 500);
+
+        page.Heard.Select(h => (h.Event.Phase, h.Event.TimeMs)).Should().Equal(
+            (PointerPhase.Down, boot),
+            (PointerPhase.Move, boot + 16),
+            (PointerPhase.Move, boot + 32),
+            (PointerPhase.Up, boot + 40),
+            (PointerPhase.Down, boot + 500),
+            (PointerPhase.Up, boot + 500));
+        (page.Heard[2].Event.TimeMs - page.Heard[1].Event.TimeMs).Should().Be(16);
+    }
+
+    /// <summary>A shell that hands no time is timed by the host's own monotonic clock (#1563): it never runs
+    /// backwards, and it counts milliseconds.</summary>
+    [Fact]
+    public void WithNoTimeFromTheShell_TheHostsOwnClockTimesTheEvent()
+    {
+        var (host, page) = Open(p => p.Hears("L", Filled(200, 100)));
+        var box = Listener(host);
+
+        host.PressDown(box.X + 10, box.Y + 6);
+        host.PointerMove(box.X + 20, box.Y + 6);
+        Thread.Sleep(20);
+        host.PointerMove(box.X + 30, box.Y + 6);
+        host.PointerCancel();
+
+        var times = page.Heard.Select(h => h.Event.TimeMs).ToList();
+        times.Should().HaveCount(4).And.BeInAscendingOrder().And.OnlyContain(time => time >= 0);
+        (times[2] - times[1]).Should().BeGreaterThanOrEqualTo(20, "the clock counts milliseconds, and 20 of them passed");
     }
 
     [Fact]

@@ -90,6 +90,8 @@ public interface IVisualNodeVisitor<in TState, out TResult>
 
     TResult Visit(Listener node, TState state);
 
+    TResult Visit(RawGestureDetector node, TState state);
+
     TResult Visit(Flexible node, TState state);
 
     TResult Visit(Grid node, TState state);

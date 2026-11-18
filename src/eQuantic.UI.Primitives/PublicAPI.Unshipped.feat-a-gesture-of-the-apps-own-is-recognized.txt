@@ -1,0 +1,55 @@
+#nullable enable
+eQuantic.UI.Primitives.GestureArena
+eQuantic.UI.Primitives.GestureArena.GestureArena() -> void
+eQuantic.UI.Primitives.GestureArena.Add(int pointer, eQuantic.UI.Primitives.IGestureArenaMember! member) -> eQuantic.UI.Primitives.GestureArenaEntry!
+eQuantic.UI.Primitives.GestureArena.IsOpen(int pointer) -> bool
+eQuantic.UI.Primitives.GestureArena.Close(int pointer) -> void
+eQuantic.UI.Primitives.GestureArena.Sweep(int pointer) -> void
+eQuantic.UI.Primitives.GestureArena.Cancel(int pointer) -> void
+eQuantic.UI.Primitives.GestureArenaEntry.Pointer.get -> int
+eQuantic.UI.Primitives.GestureArenaEntry.Resolve(eQuantic.UI.Primitives.GestureDisposition disposition) -> void
+eQuantic.UI.Primitives.GestureArenaEntry
+eQuantic.UI.Primitives.GestureDisposition.Accepted = 0 -> eQuantic.UI.Primitives.GestureDisposition
+eQuantic.UI.Primitives.GestureDisposition.Rejected = 1 -> eQuantic.UI.Primitives.GestureDisposition
+eQuantic.UI.Primitives.GestureDisposition
+eQuantic.UI.Primitives.GestureRecognizer.StartDeadline(double milliseconds) -> void
+eQuantic.UI.Primitives.GestureRecognizer
+eQuantic.UI.Primitives.GestureRecognizer.GestureRecognizer() -> void
+eQuantic.UI.Primitives.GestureRecognizer.TrackedPointers.get -> System.Collections.Generic.IReadOnlyList<int>!
+virtual eQuantic.UI.Primitives.GestureRecognizer.IsPointerAllowed(eQuantic.UI.Primitives.PointerEvent! down) -> bool
+virtual eQuantic.UI.Primitives.GestureRecognizer.AddAllowedPointer(eQuantic.UI.Primitives.PointerEvent! down) -> void
+abstract eQuantic.UI.Primitives.GestureRecognizer.HandleEvent(eQuantic.UI.Primitives.PointerEvent! ev) -> void
+virtual eQuantic.UI.Primitives.GestureRecognizer.AcceptGesture(int pointer) -> void
+virtual eQuantic.UI.Primitives.GestureRecognizer.RejectGesture(int pointer) -> void
+virtual eQuantic.UI.Primitives.GestureRecognizer.DidExceedDeadline(int pointer) -> void
+eQuantic.UI.Primitives.GestureRecognizer.Resolve(eQuantic.UI.Primitives.GestureDisposition disposition) -> void
+eQuantic.UI.Primitives.GestureRecognizer.ResolvePointer(int pointer, eQuantic.UI.Primitives.GestureDisposition disposition) -> void
+eQuantic.UI.Primitives.GestureRecognizer.StopTrackingPointer(int pointer) -> void
+eQuantic.UI.Primitives.GestureRecognizerFactory
+eQuantic.UI.Primitives.GestureRecognizerFactoryWithHandlers<T>
+eQuantic.UI.Primitives.GestureRecognizerFactoryWithHandlers<T>.GestureRecognizerFactoryWithHandlers(System.Func<T!>! create, System.Action<T!>! initialize) -> void
+eQuantic.UI.Primitives.GestureRouter.Route(eQuantic.UI.Primitives.PointerEvent! ev, System.Func<object!, eQuantic.UI.Primitives.PointerEvent!>? inBoxOf = null) -> void
+eQuantic.UI.Primitives.GestureRouter.Tick(double nowMs) -> void
+eQuantic.UI.Primitives.GestureRouter.NextDeadlineMs.get -> double?
+eQuantic.UI.Primitives.GestureRouter
+eQuantic.UI.Primitives.GestureRouter.GestureRouter() -> void
+eQuantic.UI.Primitives.GestureRouter.Arena.get -> eQuantic.UI.Primitives.GestureArena!
+eQuantic.UI.Primitives.GestureRouter.Recognizers(object! position, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.GestureRecognizerFactory!>! gestures) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.GestureRecognizer!>!
+eQuantic.UI.Primitives.GestureRouter.Forget(object! position) -> void
+eQuantic.UI.Primitives.GestureRouter.Down(eQuantic.UI.Primitives.PointerEvent! down, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.IGestureArenaMember!>! members, System.Func<object!, eQuantic.UI.Primitives.PointerEvent!>? inBoxOf = null) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.GestureArenaEntry?>!
+eQuantic.UI.Primitives.IGestureArenaMember.AcceptGesture(int pointer) -> void
+eQuantic.UI.Primitives.IGestureArenaMember.RejectGesture(int pointer) -> void
+eQuantic.UI.Primitives.IGestureArenaMember
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.RawGestureDetector! node, TState state) -> TResult
+eQuantic.UI.Primitives.PointerEvent.Deconstruct(out eQuantic.UI.Primitives.PointerPhase Phase, out eQuantic.UI.Primitives.Point Position, out eQuantic.UI.Primitives.PointerKind Kind, out eQuantic.UI.Primitives.PointerButtons Buttons, out eQuantic.UI.Primitives.KeyModifiers Modifiers, out int Pointer, out eQuantic.UI.Primitives.Point ScrollDelta, out double TimeMs) -> void
+eQuantic.UI.Primitives.PointerEvent.PointerEvent(eQuantic.UI.Primitives.PointerPhase Phase, eQuantic.UI.Primitives.Point Position, eQuantic.UI.Primitives.PointerKind Kind, eQuantic.UI.Primitives.PointerButtons Buttons, eQuantic.UI.Primitives.KeyModifiers Modifiers, int Pointer, eQuantic.UI.Primitives.Point ScrollDelta, double TimeMs) -> void
+eQuantic.UI.Primitives.PointerEvent.TimeMs.get -> double
+eQuantic.UI.Primitives.PointerEvent.TimeMs.init -> void
+eQuantic.UI.Primitives.RawGestureDetector
+override eQuantic.UI.Primitives.RawGestureDetector.NodeKind.get -> string!
+eQuantic.UI.Primitives.RawGestureDetector.RawGestureDetector(eQuantic.UI.Primitives.VisualNode! child, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.GestureRecognizerFactory!>! gestures) -> void
+eQuantic.UI.Primitives.RawGestureDetector.Gestures.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.GestureRecognizerFactory!>!
+eQuantic.UI.Primitives.RawGestureDetector.Gestures.init -> void
+eQuantic.UI.Primitives.RawGestureDetector.Behavior.get -> eQuantic.UI.Primitives.HitTestBehavior
+eQuantic.UI.Primitives.RawGestureDetector.Behavior.init -> void
+override sealed eQuantic.UI.Primitives.RawGestureDetector.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult

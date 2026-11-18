@@ -299,6 +299,10 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     // A listener draws nothing and registers nothing of its own: the walk records it as a pointer target (#1562).
     public Nothing Visit(Listener node, EmitState s) { Descend(s); return Nothing.Value; }
 
+    // A detector draws nothing and registers nothing of its own (#1563): the arena's wiring records it as a pointer
+    // target, and until then a detector with no arena is its child.
+    public Nothing Visit(RawGestureDetector node, EmitState s) { Descend(s); return Nothing.Value; }
+
     // Each registers where it was drawn for the host to carry an item by, and a carried item is dimmed in
     // its place under the copy that follows the pointer (#1537).
     public Nothing Visit(Sortable node, EmitState s) { EmitSortable(node, s); return Nothing.Value; }

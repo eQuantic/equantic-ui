@@ -21,9 +21,12 @@ public sealed partial class PhotonHost
     /// the request, at the point in its own box. Answers whether one did, so a shell that answers nothing can let
     /// the platform's own menu open. <paramref name="buttons"/> and <paramref name="modifiers"/> are what the shell
     /// saw, which the listeners under the point hear (#1562): a Control-click is the primary button with Control held.
+    /// <paramref name="timeMs"/> is when the shell saw the click, in milliseconds on its monotonic clock (#1563);
+    /// without it, the host's own clock.
     /// </summary>
     public bool ContextRequest(float x, float y, PointerKind kind = PointerKind.Mouse,
-        PointerButtons buttons = PointerButtons.Secondary, KeyModifiers modifiers = KeyModifiers.None)
+        PointerButtons buttons = PointerButtons.Secondary, KeyModifiers modifiers = KeyModifiers.None,
+        double? timeMs = null)
     {
         y += _lift;
         _contextHold = null;
@@ -35,9 +38,10 @@ public sealed partial class PhotonHost
         // the press stays followed.
         if (kind != PointerKind.Touch && _listening is null && (buttons != PointerButtons.Primary || answered))
         {
-            HearDown(point, kind, buttons, modifiers);
-            // One click: the up holds the keys its down held.
-            HearUp(point, modifiers);
+            var time = PointerTime(timeMs);
+            HearDown(point, kind, buttons, modifiers, time);
+            // One click: the up holds the keys its down held, at the time its down was seen.
+            HearUp(point, modifiers, time);
         }
         // An answered Control-click keeps its button down for the menu, and the shell ends it with PointerCancel rather
         // than a press's up: until then the pointer is held, and its moves hover nothing.

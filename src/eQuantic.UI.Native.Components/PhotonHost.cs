@@ -2089,11 +2089,14 @@ public sealed partial class PhotonHost
     /// A <see cref="PointerKind.Touch"/> move drives drags, pans and selections exactly the same —
     /// it only skips the hover resolution at the tail (spec S5: hover never fires on touch).
     /// </summary>
-    public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse, KeyModifiers modifiers = KeyModifiers.None)
+    /// <param name="timeMs">When the shell saw the move, in milliseconds on its monotonic clock (#1563); without it,
+    /// the host's own clock.</param>
+    public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse, KeyModifiers modifiers = KeyModifiers.None,
+        double? timeMs = null)
     {
         y += _lift;
         // The listeners hear it beside everything below, which they change nothing of (#1562).
-        HearMove(new Point(x, y), kind, modifiers);
+        HearMove(new Point(x, y), kind, modifiers, PointerTime(timeMs));
         MoveContext(new Point(x, y));
         // What the pointer holds is what a code surface hears with its hover (#1084): ⌘ over a name links it. Where it
         // is is kept through a drag, which hovers nothing, so a modifier changed after the release is heard there.
@@ -2348,14 +2351,16 @@ public sealed partial class PhotonHost
     /// movement, or the vertical one when there is none, as a mouse with one wheel expects. Returns true
     /// (and marks the frame dirty) when something moved or began to glide.
     /// </summary>
+    /// <param name="timeMs">When the shell saw the scroll, in milliseconds on its monotonic clock (#1563); without
+    /// it, the host's own clock.</param>
     public bool ScrollBy(float x, float y, float across, float down, bool stepped = true,
-        KeyModifiers modifiers = KeyModifiers.None)
+        KeyModifiers modifiers = KeyModifiers.None, double? timeMs = null)
     {
         y += _lift;
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
         // The listeners under it hear the scroll, and the scroll views still take it (#1562).
-        HearScroll(point, across, down, modifiers);
+        HearScroll(point, across, down, modifiers, PointerTime(timeMs));
         var leftAcross = across;
         var leftDown = down;
         var moved = false;
@@ -2618,15 +2623,17 @@ public sealed partial class PhotonHost
     /// the next frame renders its pressed token swap. Returns whether a region captured the press.
     /// (v1 fence: drag-slop/cancel and fling join the gesture system.)
     /// </summary>
+    /// <param name="timeMs">When the shell saw the press, in milliseconds on its monotonic clock (#1563); without
+    /// it, the host's own clock.</param>
     public bool PressDown(float x, float y, int clickCount = 1, KeyModifiers modifiers = KeyModifiers.None,
-        PointerKind kind = PointerKind.Mouse)
+        PointerKind kind = PointerKind.Mouse, double? timeMs = null)
     {
         y += _lift;
         _held = true;
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
         // The listeners under the press hear it and follow it, beside the press itself (#1562).
-        HearDown(point, kind, PointerButtons.Primary, modifiers);
+        HearDown(point, kind, PointerButtons.Primary, modifiers, PointerTime(timeMs));
         // A press puts back an item the keyboard carries, wherever it lands (#1537).
         if (_sort is { ByKeyboard: true } carried) CancelSort(carried);
 
@@ -2888,9 +2895,11 @@ public sealed partial class PhotonHost
     /// nothing is reported: the press drops and the surface glides back to where the caller last
     /// put it. The web controller answers <c>pointercancel</c> the same way.
     /// </summary>
-    public void PointerCancel(PointerKind kind = PointerKind.Mouse)
+    /// <param name="timeMs">When the shell saw the cancel, in milliseconds on its monotonic clock (#1563); without
+    /// it, the host's own clock.</param>
+    public void PointerCancel(PointerKind kind = PointerKind.Mouse, double? timeMs = null)
     {
-        HearCancel();
+        HearCancel(PointerTime(timeMs));
         // The press is over, released or not: the pointer moving next rests on the code again.
         _held = false;
         // The input sequence died with the finger still down — the finger is gone, so nothing
@@ -2978,10 +2987,12 @@ public sealed partial class PhotonHost
     /// Ends a press: fires <c>OnPressed</c> when the release lands inside the pressed node's region
     /// (release outside cancels), clears the pressed visual either way.
     /// </summary>
-    public bool PressUp(float x, float y, PointerKind kind = PointerKind.Mouse)
+    /// <param name="timeMs">When the shell saw the release, in milliseconds on its monotonic clock (#1563); without
+    /// it, the host's own clock.</param>
+    public bool PressUp(float x, float y, PointerKind kind = PointerKind.Mouse, double? timeMs = null)
     {
         y += _lift;
-        HearUp(new Point(x, y), _pointerModifiers);
+        HearUp(new Point(x, y), _pointerModifiers, PointerTime(timeMs));
         _held = false;
         _contextHold = null;
         // Where a drag ended is where the pointer is (#1084): ⌘ pressed next, with no move, is heard there.

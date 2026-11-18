@@ -917,6 +917,25 @@
       ]
     }
   ],
+  "raw-gesture-detector": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-akjizx"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-cl6mtg eq-kngwsg"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
   "anchored-at": [
     {
       "tag": "div",
