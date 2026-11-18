@@ -93,7 +93,7 @@ export class BuildOwner {
     }
 
     get waitsForALayer(): boolean {
-        for (const element of this._dirtyDeferred) {
+        for (const element of $eq.collections.listWalk(this._dirtyDeferred)) {
             if (element.isActive && element.dirty) return true;
         }
         return false;
@@ -148,6 +148,7 @@ export class BuildOwner {
         this._context = context;
         this.windowWidth = windowWidth;
         this.frame++;
+        this._drewOnly = null;
         this.rebuildingAll = rebuildAll;
         this.enterBuild();
         this._inFrameBuild = true;
@@ -243,7 +244,7 @@ export class BuildOwner {
 
     static standsIn(element: Element, parts: Element[]) {
         for (let at: Element | null = element; !(at == null); at = at.parent) {
-            for (const part of parts) {
+            for (const part of $eq.collections.sequenceWalk(parts)) {
                 if ((at === part)) return true;
             }
         }
