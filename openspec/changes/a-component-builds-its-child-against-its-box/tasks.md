@@ -15,8 +15,8 @@
 
 - [x] 3.1 C#: the server writes the filling box with nothing in it
 - [x] 3.2 TS: the `BoxConstraints` twin, cross-pinned by the primitive values fixture; the node's twin; node kinds and transpiled modules regenerated
-- [ ] 3.3 TS: the lowering writes the empty box until the position holds a measurement, then shows the builder's child in the slot; the pass's commit measures each marked box under size containment, observes its resizes, and marks the component above to build when the constraints changed
-- [ ] 3.4 Check: vitest drives a builder through a measured box, a resize, an unchanged size and a hydration of the server's markup; the parity fixture holds a builder; after #1575, another component's build leaves the builder's components mounted
+- [x] 3.3 TS: the lowering writes the empty box until the position holds a measurement, then shows the builder's child in the slot; the pass's commit measures each marked box under size containment, observes its resizes, and marks the component above to build when the constraints changed
+- [x] 3.4 Check: vitest drives a builder in a page through its first measurement, a narrower room, an unchanged one and another component building alone (#1575), each failing without containment or without the room's comparison; the server's box is the empty filling box the browser's first lowering writes, and the parity spec skips the client-only mark
 
 ## 4. Both targets, one answer
 
