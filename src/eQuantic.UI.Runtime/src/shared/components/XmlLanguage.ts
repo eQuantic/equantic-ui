@@ -20,10 +20,10 @@ export class XmlLanguage {
         if (state === XmlLanguage.inComment) {
             let close = $eq.text.indexOf(line, '-->', 'ordinal');
             if (close < 0) {
-                into.push(new CodeToken(0, line.length, 'comment'));
+                $eq.collections.listAdd(into, new CodeToken(0, line.length, 'comment'));
                 return XmlLanguage.inComment;
             }
-            into.push(new CodeToken(0, close + 3, 'comment'));
+            $eq.collections.listAdd(into, new CodeToken(0, close + 3, 'comment'));
             i = close + 3;
         }
         while (i < line.length) {
@@ -36,19 +36,19 @@ export class XmlLanguage {
                 if ($eq.text.startsWith(line.slice(i), '<!--', 'ordinal')) {
                     let close = $eq.text.indexOf(line, '-->', i, 'ordinal');
                     if (close < 0) {
-                        into.push(new CodeToken(i, line.length - i, 'comment'));
+                        $eq.collections.listAdd(into, new CodeToken(i, line.length - i, 'comment'));
                         return XmlLanguage.inComment;
                     }
-                    into.push(new CodeToken(i, close + 3 - i, 'comment'));
+                    $eq.collections.listAdd(into, new CodeToken(i, close + 3 - i, 'comment'));
                     i = close + 3;
                     continue;
                 }
                 let nameStart = i + 1;
                 while (nameStart < line.length && (line[nameStart] === '/' || line[nameStart] === '?' || line[nameStart] === '!')) nameStart++;
-                into.push(new CodeToken(i, nameStart - i, 'punctuation'));
+                $eq.collections.listAdd(into, new CodeToken(i, nameStart - i, 'punctuation'));
                 let nameEnd = nameStart;
                 while (nameEnd < line.length && (CodeDocument.isWordChar(line[nameEnd]) || line[nameEnd] === '-' || line[nameEnd] === ':')) nameEnd++;
-                if (nameEnd > nameStart) into.push(new CodeToken(nameStart, nameEnd - nameStart, 'keyword'));
+                if (nameEnd > nameStart) $eq.collections.listAdd(into, new CodeToken(nameStart, nameEnd - nameStart, 'keyword'));
                 i = nameEnd;
                 continue;
             }
@@ -56,7 +56,7 @@ export class XmlLanguage {
                 let end = i + 1;
                 while (end < line.length && line[end] !== c) end++;
                 if (end < line.length) end++;
-                into.push(new CodeToken(i, end - i, 'string'));
+                $eq.collections.listAdd(into, new CodeToken(i, end - i, 'string'));
                 i = end;
                 continue;
             }
@@ -64,11 +64,11 @@ export class XmlLanguage {
                 let end = i;
                 while (end < line.length && (CodeDocument.isWordChar(line[end]) || line[end] === '-' || line[end] === ':')) end++;
                 let kind: CodeTokenKindValue = XmlLanguage.nextNonSpace(line, end) === '=' ? 'property' : 'plain';
-                into.push(new CodeToken(i, end - i, kind));
+                $eq.collections.listAdd(into, new CodeToken(i, end - i, kind));
                 i = end;
                 continue;
             }
-            into.push(new CodeToken(i, 1, ((c === '>' || c === '/') || c === '=') ? 'punctuation' : 'plain'));
+            $eq.collections.listAdd(into, new CodeToken(i, 1, ((c === '>' || c === '/') || c === '=') ? 'punctuation' : 'plain'));
             i++;
         }
         return XmlLanguage.normal;

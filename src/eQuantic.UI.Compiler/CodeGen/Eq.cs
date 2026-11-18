@@ -530,6 +530,23 @@ public static class Eq
     public const string ListAddRange = "$eq.collections.addRange";
     /// <summary><c>List&lt;T&gt;.InsertRange</c>: as <see cref="ListAddRange"/>, the index checked as .NET checks it.</summary>
     public const string ListInsertRange = "$eq.collections.insertRange";
+    /// <summary>LINQ's operators as .NET runs them (<c>utils/query.ts</c>): each checks its arguments when it is
+    /// called and reads its source one element at a time when it is walked (#685).</summary>
+    public const string Query = "$eq.query";
+    /// <summary>A walk over a <c>List&lt;T&gt;</c> that compares the list's version at every step, as .NET's
+    /// enumerator does (#863).</summary>
+    public const string ListWalk = "$eq.collections.listWalk";
+    /// <summary>The walk a <c>foreach</c> takes over a sequence held as an interface a list answers to, or as a
+    /// class derived from a list: a list's own walk when the value is one, the sequence as it is otherwise (#863).</summary>
+    public const string SequenceWalk = "$eq.collections.sequenceWalk";
+    /// <summary><c>List&lt;T&gt;.Add</c>: appends and moves the version.</summary>
+    public const string ListAdd = "$eq.collections.listAdd";
+    /// <summary><c>List&lt;T&gt;.Clear</c>: empties the list and moves the version.</summary>
+    public const string ListClear = "$eq.collections.listClear";
+    /// <summary><c>List&lt;T&gt;</c>'s indexer written: the index checked, the version moved.</summary>
+    public const string ListSet = "$eq.collections.listSet";
+    /// <summary><c>List&lt;T&gt;.ForEach</c>: refuses a change the action makes, as .NET's does.</summary>
+    public const string ListForEach = "$eq.collections.listForEach";
     /// <summary><c>List&lt;T&gt;.Insert</c> and <c>IList&lt;T&gt;.Insert</c>: the index checked as .NET checks it (#1160).</summary>
     public const string ListInsert = "$eq.collections.listInsert";
 

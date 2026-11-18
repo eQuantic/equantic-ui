@@ -35,7 +35,7 @@ public class LinqTableStrategy : IExpressionIrStrategy
         // being dropped. A ToDictionary of three arguments no model binds has no shape of its own: its
         // third is a comparer, which nothing can judge without a model, and ConvertIr refuses it.
         var shaped = Shaped(name.Identifier.ValueText, invocation, context).Count;
-        if (Template(name.Identifier.ValueText, shaped) is null
+        if (Template(name.Identifier.ValueText, shaped) is null && Lazy(name.Identifier.ValueText, shaped) is null
             && !IsToDictionaryWithAComparer(name.Identifier.ValueText, shaped)
             && name.Identifier.ValueText != "ToHashSet") return false;
 
@@ -62,7 +62,24 @@ public class LinqTableStrategy : IExpressionIrStrategy
             if (comparer.RefusesAsUntranslatable(name.Identifier.ValueText, context)) return JsExpr.Opaque(invocation.ToString());
         var shaped = Shaped(name.Identifier.ValueText, invocation, context);
 
-        var receiver = LinqSource.Ir(receiverSyntax, context);
+        // A deferred operator reads its source one element at a time, when it is walked (#685): the source
+        // is handed over as it is, and the runtime walks it, a list through its version.
+        if (Lazy(name.Identifier.ValueText, shaped.Count) is { } lazy)
+        {
+            // Select's index overload is a plain iterator in .NET, with no count nor element read alone, so
+            // the runtime is told which overload C# chose.
+            if (name.Identifier.ValueText == "Select" && SelectsByIndex(invocation, context))
+                lazy = $"{Eq.Query}.select({{0}}, {{1}}, true)";
+            context.UsedHelpers.Add(Eq.Import);
+            var parts = new[] { LinqSource.Lazy(receiverSyntax, context) }
+                .Concat(shaped.Select(argument => LinqSource.LazyArgument(argument, invocation, context)))
+                .ToArray();
+            return JsExpr.Template(BindNamedArguments(lazy, shaped, invocation, context), parts);
+        }
+
+        // A deferred operator's source is read when its query is walked, so it is handed as it is (below).
+        var deferred = LinqSource.Deferred(name.Identifier.ValueText);
+        var receiver = deferred ? LinqSource.Lazy(receiverSyntax, context) : LinqSource.Ir(receiverSyntax, context);
         var args = shaped
             .Select(a => LinqSource.Argument(a, invocation, context))
             .ToArray();
@@ -96,6 +113,10 @@ public class LinqTableStrategy : IExpressionIrStrategy
         if (name.Identifier.ValueText == "ToLookup" && context.TypeAnnotations)
             template = template.Replace("($groups, $item)", "($groups: any[], $item)");
         if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
+
+        // A deferred operator runs when its query is walked: the source handed as it is and read as an
+        // array then, the arguments evaluated now, as C# evaluates them (#685).
+        if (deferred) template = LinqSource.Defer(template, receiverSyntax, context);
 
         // {0} is the receiver; {1}… the arguments. The writer binds whatever is reused.
         return JsExpr.Template(BindNamedArguments(template, shaped, invocation, context),
@@ -247,6 +268,35 @@ public class LinqTableStrategy : IExpressionIrStrategy
         return JsExpr.Call(JsExpr.Identifier(Eq.HashSet), JsExpr.Literal(ElementEquality.Of(element, invocation, context) ?? "false"),
             context.Converter.ConvertIr(receiver));
     }
+
+    /// <summary>Whether the <c>Select</c> C# bound takes its element's index, <c>Func&lt;TSource, int, TResult&gt;</c>.</summary>
+    private static bool SelectsByIndex(InvocationExpressionSyntax invocation, ConversionContext context) =>
+        context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters: [.., var selector] }
+        && selector.Type is INamedTypeSymbol { TypeArguments.Length: 3 };
+
+    /// <summary>
+    /// The operators the runtime runs as .NET runs them (<c>utils/query.ts</c>): each checks its arguments
+    /// when it is called and reads its source one element at a time when it is walked, each element only
+    /// after the callback before it returned (#685). The answering ones stop at the element that answers.
+    /// </summary>
+    internal static string? Lazy(string name, int count) => (name, count) switch
+    {
+        ("Where", 1) => $"{Eq.Query}.where({{0}}, {{1}})",
+        ("Select", 1) => $"{Eq.Query}.select({{0}}, {{1}})",
+        ("SelectMany", 1) => $"{Eq.Query}.selectMany({{0}}, {{1}})",
+        ("SelectMany", 2) => $"{Eq.Query}.selectMany({{0}}, {{1}}, {{2}})",
+        ("Concat", 1) => $"{Eq.Query}.concat({{0}}, {{1}})",
+        ("Append", 1) => $"{Eq.Query}.append({{0}}, {{1}})",
+        ("Prepend", 1) => $"{Eq.Query}.prepend({{0}}, {{1}})",
+        ("TakeWhile", 1) => $"{Eq.Query}.takeWhile({{0}}, {{1}})",
+        ("SkipWhile", 1) => $"{Eq.Query}.skipWhile({{0}}, {{1}})",
+        ("Any", 0) => $"{Eq.Query}.any({{0}})",
+        ("Any", 1) => $"{Eq.Query}.any({{0}}, {{1}})",
+        ("All", 1) => $"{Eq.Query}.all({{0}}, {{1}})",
+        ("Skip", 1) => $"{Eq.Query}.skip({{0}}, {{1}})",
+        ("Take", 1) => $"{Eq.Query}.take({{0}}, {{1}})",
+        _ => null,
+    };
 
     private static string? Template(string name, int argCount) => (name, argCount) switch
     {

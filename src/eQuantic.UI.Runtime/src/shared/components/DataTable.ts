@@ -56,7 +56,7 @@ export class DataTable extends StatefulComponent {
             table.add(empty);
             return table;
         }
-        for (const row of this._config.rows) table.add(this.body(theme, tracks, order, row));
+        for (const row of $eq.collections.sequenceWalk(this._config.rows)) table.add(this.body(theme, tracks, order, row));
         for (let i = 0; i < this._config.pendingRows; i++) table.add(this.pending(theme, tracks, order, i));
         return table;
     }
@@ -70,12 +70,12 @@ export class DataTable extends StatefulComponent {
         let order: number[] = [];
         let given: any; 
         if ((given = this._config.columnOrder) != null) {
-            for (const position of given) {
-                if (position >= 0 && position < $eq.collections.count(this._config.columns) && !order.includes(position)) order.push(position);
+            for (const position of $eq.collections.sequenceWalk(given)) {
+                if (position >= 0 && position < $eq.collections.count(this._config.columns) && !order.includes(position)) $eq.collections.listAdd(order, position);
             }
         }
         for (let i = 0; i < $eq.collections.count(this._config.columns); i++) {
-            if (!order.includes(i)) order.push(i);
+            if (!order.includes(i)) $eq.collections.listAdd(order, i);
         }
         return order;
     }
@@ -167,8 +167,8 @@ export class DataTable extends StatefulComponent {
 
     static without(order: number[], column: number) {
         let others: number[] = [];
-        for (const index of order) {
-            if (index !== column) others.push(index);
+        for (const index of $eq.collections.listWalk(order)) {
+            if (index !== column) $eq.collections.listAdd(others, index);
         }
         return others;
     }
@@ -218,7 +218,7 @@ export class DataTable extends StatefulComponent {
             let toggle = this._config.onToggleRow;
             grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(selected, () => toggle?.(row), null, { disabled: toggle == null })), 'center', slot));
         }
-        for (const index of order) {
+        for (const index of $eq.collections.listWalk(order)) {
             grid.add(DataTable.cell(index < $eq.collections.count(row.cells) ? $eq.collections.item(row.cells, index) : new Box(new BoxStyle()), $eq.collections.item(this._config.columns, index).align, slot));
         }
         let box = new Box(new BoxStyle({ width: SizeValue.fill, minHeight: slot?.dataRowHeight ?? 52, background: selected ? theme.colors('primary').subtle : null, borderWidth: slot?.borderWidth ?? 1, borderColor: slot?.borderColor ?? theme.border, hover: new StyleDiff({ background: slot?.hoverFill ?? theme.surfaceSubtle }), transition: TransitionSpec.of(1, Motion.press) }), grid, { key: row.key });

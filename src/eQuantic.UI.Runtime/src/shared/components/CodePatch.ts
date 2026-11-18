@@ -5,7 +5,7 @@ export class CodePatch {
         const close = () => {
             if (open && (hunks.length > 0 || binary || !(originalPath == null) || !(modifiedPath == null))) {
                 let $n0: CodePatchFile; 
-                files.push(($n0 = new CodePatchFile(originalPath, modifiedPath, hunks), $n0.binary = binary, $n0));
+                $eq.collections.listAdd(files, ($n0 = new CodePatchFile(originalPath, modifiedPath, hunks), $n0.binary = binary, $n0));
             }
             originalPath = null;
             modifiedPath = null;
@@ -85,13 +85,13 @@ export class CodePatch {
             let mark = line.length > 0 ? line[0] : ' ';
             let content = line.length > 0 ? line.slice(1) : '';
             if (mark === '-') {
-                body.push(new CodePatchLine('removed', content));
+                $eq.collections.listAdd(body, new CodePatchLine('removed', content));
                 original++;
             } else if (mark === '+') {
-                body.push(new CodePatchLine('added', content));
+                $eq.collections.listAdd(body, new CodePatchLine('added', content));
                 modified++;
             } else if (mark === ' ') {
-                body.push(new CodePatchLine('context', content));
+                $eq.collections.listAdd(body, new CodePatchLine('context', content));
                 original++;
                 modified++;
             } else break;
@@ -99,7 +99,7 @@ export class CodePatch {
         }
         while (i < lines.length && lines[i].startsWith('\\')) i++;
         let $n1: CodePatchHunk; 
-        hunks.push(($n1 = new CodePatchHunk(header[1] === 0 ? header[0] : header[0] - 1, header[1], header[3] === 0 ? header[2] : header[2] - 1, header[3], header[4], body), $n1.header = headerLine, $n1));
+        $eq.collections.listAdd(hunks, ($n1 = new CodePatchHunk(header[1] === 0 ? header[0] : header[0] - 1, header[1], header[3] === 0 ? header[2] : header[2] - 1, header[3], header[4], body), $n1.header = headerLine, $n1));
         return i;
     }
 

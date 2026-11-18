@@ -31,7 +31,7 @@ export class IndentationFoldProvider {
                 if (this.depthOf(document, next) <= indent) break;
                 last = next;
             }
-            if (last > line) folds.push(new CodeFold(line, last));
+            if (last > line) $eq.collections.listAdd(folds, new CodeFold(line, last));
         }
         return folds;
     }
