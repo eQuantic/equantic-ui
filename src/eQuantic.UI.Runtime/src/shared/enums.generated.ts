@@ -256,6 +256,7 @@ export type {
     FileSaveOutcomeValue as $FileSaveOutcomeValue,
     FontWeightValue as $FontWeightValue,
     GradientDirectionValue as $GradientDirectionValue,
+    HitTestBehaviorValue as $HitTestBehaviorValue,
     HydratedMemberKindValue as $HydratedMemberKindValue,
     IconGlyphStyleValue as $IconGlyphStyleValue,
     IconsValue as $IconsValue,
