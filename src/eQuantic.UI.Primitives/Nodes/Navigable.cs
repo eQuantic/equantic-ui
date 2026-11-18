@@ -71,6 +71,15 @@ public sealed class Navigable : VisualNode
     /// to WITHOUT the focus ever leaving the composite's one stop.</summary>
     public (int Row, int Item)? ActiveCell { get; init; }
 
+    /// <summary>
+    /// Takes the keyboard to the composite's one stop when it is higher than the version the composite was
+    /// last built with, on every target: how a component gives the keyboard back to its composite after a
+    /// field inside it closed (Flutter's <c>FocusNode.requestFocus</c>). A tree is built again and again, so
+    /// the version is what makes data an event, as a <see cref="ScrollRequest"/>'s is. The first build only
+    /// records it, so a composite mounted with any version takes nothing.
+    /// </summary>
+    public int FocusVersion { get; init; }
+
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

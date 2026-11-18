@@ -1,0 +1,107 @@
+{
+  "about": "The listeners' hit rule (#1562), run by the C# ListenerHits (ListenerHitsFixtureTests) and by the TypeScript listenerHits (listener-hits.spec.ts). Each case is what lies under one point, in paint order: an entry painted later is above the ones before it, and an entry's children are inside it. A listener has a behavior; a solid draws or answers. hear lists the ids of the listeners that hear, in the order they are told.",
+  "cases": [
+    {
+      "name": "a deferring listener hears what lands on the text it holds",
+      "under": [{ "id": "L", "listener": "deferToChild", "children": [{ "children": [{ "solid": true }] }] }],
+      "hear": ["L"]
+    },
+    {
+      "name": "a deferring listener hears nothing in the gap of the column it holds",
+      "under": [{ "id": "L", "listener": "deferToChild", "children": [{}] }],
+      "hear": []
+    },
+    {
+      "name": "an opaque listener hears in the gap of the column it holds",
+      "under": [{ "id": "L", "listener": "opaque", "children": [{}] }],
+      "hear": ["L"]
+    },
+    {
+      "name": "a translucent listener hears in the gap of the column it holds",
+      "under": [{ "id": "L", "listener": "translucent", "children": [{}] }],
+      "hear": ["L"]
+    },
+    {
+      "name": "a deferring listener hears in a gap over a fill its child draws",
+      "under": [{ "id": "L", "listener": "deferToChild", "children": [{ "solid": true, "children": [{}] }] }],
+      "hear": ["L"]
+    },
+    {
+      "name": "nested deferring listeners over a text both hear, the inner first",
+      "under": [
+        { "id": "outer", "listener": "deferToChild", "children": [{ "id": "inner", "listener": "deferToChild", "children": [{ "solid": true }] }] }
+      ],
+      "hear": ["inner", "outer"]
+    },
+    {
+      "name": "an opaque inner listener over empty space is the outer one's child hit",
+      "under": [
+        { "id": "outer", "listener": "deferToChild", "children": [{ "id": "inner", "listener": "opaque", "children": [{}] }] }
+      ],
+      "hear": ["inner", "outer"]
+    },
+    {
+      "name": "a translucent inner listener over empty space is not the outer one's child hit",
+      "under": [
+        { "id": "outer", "listener": "deferToChild", "children": [{ "id": "inner", "listener": "translucent", "children": [{}] }] }
+      ],
+      "hear": ["inner"]
+    },
+    {
+      "name": "a translucent listener over empty space lets the listener behind it hear",
+      "under": [
+        { "id": "lower", "listener": "deferToChild", "children": [{ "solid": true }] },
+        { "id": "upper", "listener": "translucent", "children": [{}] }
+      ],
+      "hear": ["upper", "lower"]
+    },
+    {
+      "name": "an opaque listener over empty space hides the listener behind it",
+      "under": [
+        { "id": "lower", "listener": "deferToChild", "children": [{ "solid": true }] },
+        { "id": "upper", "listener": "opaque", "children": [{}] }
+      ],
+      "hear": ["upper"]
+    },
+    {
+      "name": "a deferring listener over empty space is passed over for the listener behind it",
+      "under": [
+        { "id": "lower", "listener": "deferToChild", "children": [{ "solid": true }] },
+        { "id": "upper", "listener": "deferToChild", "children": [{}] }
+      ],
+      "hear": ["lower"]
+    },
+    {
+      "name": "a translucent listener whose child is hit hides the listener behind it",
+      "under": [
+        { "id": "lower", "listener": "deferToChild", "children": [{ "solid": true }] },
+        { "id": "upper", "listener": "translucent", "children": [{ "solid": true }] }
+      ],
+      "hear": ["upper"]
+    },
+    {
+      "name": "something drawn above a listener, outside it, hides it",
+      "under": [{ "id": "L", "listener": "opaque", "children": [{}] }, { "solid": true }],
+      "hear": []
+    },
+    {
+      "name": "empty space above a listener, outside it, hides nothing",
+      "under": [{ "id": "L", "listener": "deferToChild", "children": [{ "solid": true }] }, {}],
+      "hear": ["L"]
+    },
+    {
+      "name": "a fill behind a listener, around it, hides nothing",
+      "under": [{ "solid": true, "children": [{ "id": "L", "listener": "opaque", "children": [{}] }] }],
+      "hear": ["L"]
+    },
+    {
+      "name": "two translucent listeners over a deferring one, all over empty space: the two hear, the topmost first",
+      "under": [
+        { "id": "bottom", "listener": "deferToChild", "children": [{}] },
+        { "id": "middle", "listener": "translucent", "children": [{}] },
+        { "id": "top", "listener": "translucent", "children": [{}] }
+      ],
+      "hear": ["top", "middle"]
+    }
+  ]
+}

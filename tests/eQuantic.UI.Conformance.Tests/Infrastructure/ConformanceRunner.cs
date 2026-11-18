@@ -65,6 +65,19 @@ public static class ConformanceRunner
             + $"host's newline, which is the only difference this overload excuses: {why}");
     }
 
+    /// <summary>
+    /// A divergence kept on purpose, listed with its reason: the browser answers <paramref name="browser"/> and
+    /// .NET answers otherwise. It fails when either side moves, so the browser's answer never drifts unseen, and a
+    /// row leaves the list the day .NET answers as the browser does.
+    /// </summary>
+    public static void AssertStatementsDivergeAsListed(string csharpStatements, string browser, string reason)
+    {
+        var (jsBlock, actual, expected) = RunStatements(csharpStatements, "");
+        var listed = DotNetEvaluator.ToJson(browser);
+        actual.Should().Be(listed, $"the browser's answer to `{csharpStatements}` (transpiled to JS `{jsBlock}`) is listed: {reason}");
+        expected.Should().NotBe(listed, $".NET now answers `{csharpStatements}` as the browser does, so the row leaves the list: {reason}");
+    }
+
     private static (string JsBlock, string Actual, string Expected) RunStatements(string csharpStatements, string prelude,
         string? culture = null)
     {

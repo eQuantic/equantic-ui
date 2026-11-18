@@ -328,6 +328,15 @@ public readonly record struct NativeRole(
         SemanticRole.TreeItem =>
             new("AXRow", "android.view.View", UIKitTrait.Button,
                 Activatable: true, Adjustable: false, AppKitSubrole: "AXOutlineRow"),
+
+        // A SPLITTER (#1538), the focusable separator the web half writes: Core-AAM gives ARIA's
+        // separator AXSplitter on AppKit, which VoiceOver moves with its adjust keys as it moves a
+        // slider, and the value rides AXValue with AXMinValue and AXMaxValue as a slider's does. UIKit
+        // and Android have no splitter, so it is what each offers for a value a reader moves: the
+        // adjustable trait, and the SeekBar class whose RangeInfo carries the range.
+        SemanticRole.Splitter =>
+            new("AXSplitter", "android.widget.SeekBar", UIKitTrait.Adjustable,
+                Activatable: false, Adjustable: true),
     };
 #pragma warning restore CS8524
 }

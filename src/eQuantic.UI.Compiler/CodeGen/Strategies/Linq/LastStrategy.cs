@@ -51,6 +51,18 @@ public class LastStrategy : IConversionStrategy
             ? DefaultValue.OfElement(context.SemanticHelper.GetType(memberAccess.Expression), context)
             : null;
 
+        // Over a query the runtime walks lazily, a projection of a list reads its last element alone, as
+        // .NET's does, and anything else is walked once (#685).
+        if (LinqSource.IsQuery(memberAccess.Expression, context))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var query = JsExprWriter.Write(LinqSource.Lazy(memberAccess.Expression, context));
+            var test = args.Count > 0 ? context.Converter.ConvertExpression(args[0].Expression) : "undefined";
+            return elementDefault is null
+                ? args.Count > 0 ? $"{Eq.Query}.last({query}, {test})" : $"{Eq.Query}.last({query})"
+                : $"{Eq.Query}.last({query}, {test}, {{ value: {elementDefault} }})";
+        }
+
         if (args.Count > 0)
         {
             // Last(predicate) -> filter then get last

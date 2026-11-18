@@ -13,7 +13,14 @@ internal sealed partial class EmitVisitor
 {
     private void EmitSortable(Sortable node, EmitState s)
     {
-        if (s.Node.Element is { } at) s.Input.Add(new SortRegion(s.Node.Bounds, s.Node.Bounds, at, node));
+        if (s.Node.Element is { } at)
+        {
+            s.Input.Add(new SortRegion(s.Node.Bounds, s.Node.Bounds, at, node, s.Node));
+            // What the keyboard's carry last said in this list's words (#1564) is a polite live region's text,
+            // recorded here because this walk runs once a frame, as a spreadsheet's moves are (#1081).
+            if (NodeStates.Find<LiveRegionState>(at) is { Words: { } words })
+                s.Input.Add(new LiveRegionMark(at, "", LiveRegionUrgency.Polite, s.Node, words));
+        }
         Descend(s);
     }
 
@@ -24,7 +31,7 @@ internal sealed partial class EmitVisitor
             Descend(s);
             return;
         }
-        s.Input.Add(new SortRegion(s.Node.Bounds, s.Node.Bounds, at, node));
+        s.Input.Add(new SortRegion(s.Node.Bounds, s.Node.Bounds, at, node, s.Node));
         if (NodeStates.Find<SortLiftState>(at) is not { Lifted: true } lift)
         {
             Descend(s);

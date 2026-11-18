@@ -15,6 +15,8 @@ import {
   removeDelegate,
   removeFromEvent,
 } from './utils/delegates';
+import { listAdd, listClear, listForEach, listSet, listWalk, sequenceWalk } from './utils/list-version';
+import * as query from './utils/query';
 import { hydrate } from './utils/hydrate';
 import { twinJson } from './utils/twin-json';
 import { long } from './utils/long';
@@ -370,6 +372,9 @@ export const $eq = {
    * the overloads a sibling's lowering mistook: Average by its element type, FirstOrDefault,
    * LastOrDefault and SingleOrDefault with a default value, SequenceEqual by the default equality, and
    * Zip's tuples. */
+  /** LINQ's operators as .NET runs them, each reading its source one element at a time when it is
+   * walked (#685) — see utils/query. */
+  query,
   linq: {
     average,
     enumerable,
@@ -608,6 +613,13 @@ export const $eq = {
     addRange,
     insertRange,
     /** `List<T>.Insert`, `RemoveAt`, `RemoveRange` and `GetRange`, each position checked as .NET checks it (#1160). */
+    /** A `List<T>`'s version, moved by every change and compared at every step of a walk (#863). */
+    listWalk,
+    sequenceWalk,
+    listAdd,
+    listClear,
+    listSet,
+    listForEach,
     listInsert,
     listRemoveAt,
     listRemoveRange,

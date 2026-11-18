@@ -16,11 +16,11 @@ export class MarkdownParser {
                 let body: string[] = [];
                 i++;
                 while (i < lines.length && !$eq.text.startsWith($eq.text.trimStart(lines[i]), '```', 'ordinal')) {
-                    body.push(lines[i]);
+                    $eq.collections.listAdd(body, lines[i]);
                     i++;
                 }
                 let $n0: MarkdownBlock; 
-                blocks.push(($n0 = new MarkdownBlock(), $n0.kind = 'code', $n0.lang = lang.length === 0 ? 'text' : lang, $n0.raw = $eq.text.join('\n', body), $n0));
+                $eq.collections.listAdd(blocks, ($n0 = new MarkdownBlock(), $n0.kind = 'code', $n0.lang = lang.length === 0 ? 'text' : lang, $n0.raw = $eq.text.join('\n', body), $n0));
                 continue;
             }
             if (trimmed.length === 0) {
@@ -42,36 +42,36 @@ export class MarkdownParser {
                     }
                     $eq.collections.setAdd(usedIds, unique);
                     let $n1: MarkdownBlock; 
-                    blocks.push(($n1 = new MarkdownBlock(), $n1.kind = 'heading', $n1.level = level > 4 ? 4 : level, $n1.text = MarkdownParser.strip(text), $n1.runs = MarkdownParser.inline(text), $n1.id = unique, $n1));
+                    $eq.collections.listAdd(blocks, ($n1 = new MarkdownBlock(), $n1.kind = 'heading', $n1.level = level > 4 ? 4 : level, $n1.text = MarkdownParser.strip(text), $n1.runs = MarkdownParser.inline(text), $n1.id = unique, $n1));
                     continue;
                 }
             }
             if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
                 paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
                 let $n2: MarkdownBlock; 
-                blocks.push(($n2 = new MarkdownBlock(), $n2.kind = 'rule', $n2));
+                $eq.collections.listAdd(blocks, ($n2 = new MarkdownBlock(), $n2.kind = 'rule', $n2));
                 continue;
             }
             if ($eq.text.startsWith(trimmed, '|', 'ordinal') && i + 1 < lines.length && MarkdownParser.isAlignmentRow(lines[i + 1])) {
                 paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
                 let $n3: MarkdownBlock; 
                 let table = ($n3 = new MarkdownBlock(), $n3.kind = 'table', $n3);
-                for (const cell of MarkdownParser.splitRow(trimmed)) {
+                for (const cell of $eq.collections.listWalk(MarkdownParser.splitRow(trimmed))) {
                     let $n4: MarkdownCell; 
-                    table.head.push(($n4 = new MarkdownCell(), $n4.runs = MarkdownParser.inline(cell), $n4));
+                    $eq.collections.listAdd(table.head, ($n4 = new MarkdownCell(), $n4.runs = MarkdownParser.inline(cell), $n4));
                 }
                 i += 2;
                 while (i < lines.length && $eq.text.startsWith($eq.text.trim(lines[i]), '|', 'ordinal')) {
                     let row = new MarkdownRow();
-                    for (const cell of MarkdownParser.splitRow($eq.text.trim(lines[i]))) {
+                    for (const cell of $eq.collections.listWalk(MarkdownParser.splitRow($eq.text.trim(lines[i])))) {
                         let $n5: MarkdownCell; 
-                        row.cells.push(($n5 = new MarkdownCell(), $n5.runs = MarkdownParser.inline(cell), $n5));
+                        $eq.collections.listAdd(row.cells, ($n5 = new MarkdownCell(), $n5.runs = MarkdownParser.inline(cell), $n5));
                     }
-                    table.rows.push(row);
+                    $eq.collections.listAdd(table.rows, row);
                     i++;
                 }
                 i--;
-                blocks.push(table);
+                $eq.collections.listAdd(blocks, table);
                 continue;
             }
             if ($eq.text.startsWith(trimmed, '>', 'ordinal')) {
@@ -85,7 +85,7 @@ export class MarkdownParser {
                 }
                 i--;
                 let $n6: MarkdownBlock; 
-                blocks.push(($n6 = new MarkdownBlock(), $n6.kind = 'quote', $n6.runs = MarkdownParser.inline($eq.text.trim(quoted)), $n6));
+                $eq.collections.listAdd(blocks, ($n6 = new MarkdownBlock(), $n6.kind = 'quote', $n6.runs = MarkdownParser.inline($eq.text.trim(quoted)), $n6));
                 continue;
             }
             let bullet = MarkdownParser.bulletOf(line);
@@ -98,7 +98,7 @@ export class MarkdownParser {
                     if (mark == null) {
                         if (list.items.length > 0 && $eq.text.startsWith(lines[i], '  ', 'ordinal') && $eq.text.trim(lines[i]).length > 0 && !$eq.text.startsWith($eq.text.trimStart(lines[i]), '```', 'ordinal')) {
                             let last = (($0) => $0[$0.length - 1])(list.items);
-                            for (const run of MarkdownParser.inline(' ' + $eq.text.trim(lines[i]))) last.runs.push(run);
+                            for (const run of $eq.collections.listWalk(MarkdownParser.inline(' ' + $eq.text.trim(lines[i])))) $eq.collections.listAdd(last.runs, run);
                             i++;
                             continue;
                         }
@@ -106,11 +106,11 @@ export class MarkdownParser {
                     }
                     let indent = lines[i].length - $eq.text.trimStart(lines[i]).length;
                     let $n8: MarkdownListItem; 
-                    list.items.push(($n8 = new MarkdownListItem(), $n8.runs = MarkdownParser.inline(mark.content), $n8.depth = indent >= 2 ? 1 : 0, $n8.marker = mark.marker, $n8));
+                    $eq.collections.listAdd(list.items, ($n8 = new MarkdownListItem(), $n8.runs = MarkdownParser.inline(mark.content), $n8.depth = indent >= 2 ? 1 : 0, $n8.marker = mark.marker, $n8));
                     i++;
                 }
                 i--;
-                blocks.push(list);
+                $eq.collections.listAdd(blocks, list);
                 continue;
             }
             paragraph = paragraph.length === 0 ? trimmed : paragraph + ' ' + trimmed;
@@ -134,7 +134,7 @@ export class MarkdownParser {
         let joined = $eq.text.trim(paragraph);
         if (joined.length === 0) return '';
         let $n9: MarkdownBlock; 
-        blocks.push(($n9 = new MarkdownBlock(), $n9.kind = 'paragraph', $n9.runs = MarkdownParser.inline(joined), $n9));
+        $eq.collections.listAdd(blocks, ($n9 = new MarkdownBlock(), $n9.kind = 'paragraph', $n9.runs = MarkdownParser.inline(joined), $n9));
         return '';
     }
 
@@ -146,18 +146,18 @@ export class MarkdownParser {
             let line = lines[i];
             if ($eq.text.startsWith($eq.text.trimStart(line), '```', 'ordinal')) {
                 fenced = !fenced;
-                clean.push(line);
+                $eq.collections.listAdd(clean, line);
                 continue;
             }
             if (fenced) {
-                clean.push(line);
+                $eq.collections.listAdd(clean, line);
                 continue;
             }
             let text = line;
             if (open) {
                 let close = $eq.text.indexOf(text, '-->', 'ordinal');
                 if (close < 0) {
-                    clean.push('');
+                    $eq.collections.listAdd(clean, '');
                     continue;
                 }
                 text = text.slice(close + 3);
@@ -174,7 +174,7 @@ export class MarkdownParser {
                 }
                 text = text.slice(0, start) + text.slice(end + 3);
             }
-            clean.push($eq.text.trimEnd(text));
+            $eq.collections.listAdd(clean, $eq.text.trimEnd(text));
         }
         return clean;
     }
@@ -201,13 +201,13 @@ export class MarkdownParser {
             let ch = t[i];
             if (ch === '`') inCode = !inCode;
             if (ch === '|' && !inCode) {
-                cells.push($eq.text.trim(cell));
+                $eq.collections.listAdd(cells, $eq.text.trim(cell));
                 cell = '';
                 continue;
             }
             cell += ch;
         }
-        cells.push($eq.text.trim(cell));
+        $eq.collections.listAdd(cells, $eq.text.trim(cell));
         return cells;
     }
 
@@ -238,7 +238,7 @@ export class MarkdownParser {
                 if (end > i) {
                     buffer = MarkdownParser.flushText(runs, buffer);
                     let $n12: MarkdownRun; 
-                    runs.push(($n12 = new MarkdownRun(), $n12.text = text.slice(i + 1, end), $n12.code = true, $n12));
+                    $eq.collections.listAdd(runs, ($n12 = new MarkdownRun(), $n12.text = text.slice(i + 1, end), $n12.code = true, $n12));
                     i = end + 1;
                     continue;
                 }
@@ -262,9 +262,9 @@ export class MarkdownParser {
                 let end = $eq.text.indexOf(text, '**', i + 2, 'ordinal');
                 if (end > i) {
                     buffer = MarkdownParser.flushText(runs, buffer);
-                    for (const run of MarkdownParser.inline(text.slice(i + 2, end))) {
+                    for (const run of $eq.collections.listWalk(MarkdownParser.inline(text.slice(i + 2, end)))) {
                         run.bold = true;
-                        runs.push(run);
+                        $eq.collections.listAdd(runs, run);
                     }
                     i = end + 2;
                     continue;
@@ -282,9 +282,9 @@ export class MarkdownParser {
                 }
                 if (end > i + 1) {
                     buffer = MarkdownParser.flushText(runs, buffer);
-                    for (const run of MarkdownParser.inline(text.slice(i + 1, end))) {
+                    for (const run of $eq.collections.listWalk(MarkdownParser.inline(text.slice(i + 1, end)))) {
                         run.italic = true;
-                        runs.push(run);
+                        $eq.collections.listAdd(runs, run);
                     }
                     i = end + 1;
                     continue;
@@ -299,14 +299,14 @@ export class MarkdownParser {
 
     static strip(text: string) {
         let flat = '';
-        for (const run of MarkdownParser.inline(text)) flat += run.text;
+        for (const run of $eq.collections.listWalk(MarkdownParser.inline(text))) flat += run.text;
         return flat;
     }
 
     static flushText(runs: MarkdownRun[], buffer: string) {
         if (buffer.length > 0) {
             let $n13: MarkdownRun; 
-            runs.push(($n13 = new MarkdownRun(), $n13.text = buffer, $n13));
+            $eq.collections.listAdd(runs, ($n13 = new MarkdownRun(), $n13.text = buffer, $n13));
         }
         return '';
     }
@@ -324,12 +324,12 @@ export class MarkdownParser {
         let inner = MarkdownParser.inline(label);
         if (inner.length === 0) {
             let $n15: MarkdownRun; 
-            runs.push(($n15 = new MarkdownRun(), $n15.text = label, $n15.href = href, $n15));
+            $eq.collections.listAdd(runs, ($n15 = new MarkdownRun(), $n15.text = label, $n15.href = href, $n15));
             return;
         }
-        for (const run of inner) {
+        for (const run of $eq.collections.listWalk(inner)) {
             run.href = href;
-            runs.push(run);
+            $eq.collections.listAdd(runs, run);
         }
     }
 }

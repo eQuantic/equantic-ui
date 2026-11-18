@@ -312,6 +312,12 @@
   <data name="SortDropped" xml:space="preserve">
     <value>Largou {0} na posição {1} de {2} em {3}.</value>
   </data>
+  <data name="SortMovedInto" xml:space="preserve">
+    <value>{0} está dentro de {1}.</value>
+  </data>
+  <data name="SortDroppedInto" xml:space="preserve">
+    <value>Largou {0} dentro de {1}.</value>
+  </data>
   <data name="SortCancelled" xml:space="preserve">
     <value>{0} voltou ao lugar onde estava.</value>
   </data>
@@ -320,5 +326,17 @@
   </data>
   <data name="TreeLoadFailed" xml:space="preserve">
     <value>Não foi possível carregar. Tentar de novo</value>
+  </data>
+  <data name="TreeItemName" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="SortByColumn" xml:space="preserve">
+    <value>Ordenar por {0}</value>
+  </data>
+  <data name="ResizeColumn" xml:space="preserve">
+    <value>Redimensionar {0}</value>
+  </data>
+  <data name="TableColumns" xml:space="preserve">
+    <value>Colunas</value>
   </data>
 </root>

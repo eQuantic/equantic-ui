@@ -1,4 +1,4 @@
-import { CodeLanguageRules, CodeToken } from "../runtime-exports";
+import { $eq, CodeLanguageRules, CodeToken } from "../runtime-exports";
 
 export class PlainTextLanguage {
     static $interfaces = ['eQuantic.UI.Code.ICodeLanguage'];
@@ -10,7 +10,7 @@ export class PlainTextLanguage {
     }
 
     tokenize(line: string, _state: number, into: CodeToken[]) {
-        if (line.length > 0) into.push(new CodeToken(0, line.length, 'plain'));
+        if (line.length > 0) $eq.collections.listAdd(into, new CodeToken(0, line.length, 'plain'));
         return 0;
     }
 

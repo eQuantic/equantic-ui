@@ -472,14 +472,18 @@ public sealed class PaymentsPage : StatefulComponent
 
     // ---- Table -----------------------------------------------------------------------------
 
-    private static readonly DataColumn[] Columns =
+    // The columns a person may reorder and, but for the customer's, which takes what the others leave,
+    // resize (#1538): the page keeps the order and the widths the table reports, as Space's list does.
+    private readonly DataColumn[] _columns =
     [
-        new("Customer", GridTrack.Flex(1.6f), Sortable: true),
-        new("Method", GridTrack.Flex()),
-        new("Date", GridTrack.Flex(), Sortable: true),
-        new("Status", GridTrack.Flex(), Sortable: true),
+        new("Customer", GridTrack.Flex(), Sortable: true),
+        new("Method", GridTrack.Fixed(120)),
+        new("Date", GridTrack.Fixed(120), Sortable: true),
+        new("Status", GridTrack.Fixed(120), Sortable: true),
         new("Amount", GridTrack.Fixed(140), TextAlignment.End, Sortable: true),
     ];
+
+    private IReadOnlyList<int>? _columnOrder;
 
     private VisualNode TableCard(IAppTheme theme)
     {
@@ -496,11 +500,15 @@ public sealed class PaymentsPage : StatefulComponent
             onPressed: () => SetState(() => _notice = "Advanced filters live in the full console.")));
 
         var visible = Visible();
-        var table = new DataTable(Columns, visible.Select(RowOf).ToArray())
+        var table = new DataTable(_columns, visible.Select(RowOf).ToArray())
         {
             SortColumn = _sortColumn,
             SortDirection = _sortDirection,
             OnSort = OnSort,
+            ColumnOrder = _columnOrder,
+            OnColumnsReordered = order => SetState(() => _columnOrder = order),
+            OnColumnResized = (column, width) => SetState(() =>
+                _columns[column] = _columns[column] with { Track = GridTrack.Fixed(width) }),
             Selection = _selected,
             OnToggleRow = row => SetState(() =>
             {
