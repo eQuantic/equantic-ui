@@ -396,6 +396,15 @@ public class EveryProgramTheSdksStartTests
         var (directory, environment, record) = Prepare("Phone", "dotnet");
         Directory.CreateDirectory(Path.Combine(directory, "tools $x"));
         File.WriteAllText(Path.Combine(directory, "tools $x", "eqicon.dll"), "");
+        // The five mipmaps the Android icon target names as its outputs, which it touches after eqicon has
+        // written them: the recorder writes nothing, so they are here before it runs.
+        string[] buckets = ["mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi"];
+        foreach (var bucket in buckets)
+        {
+            var mipmap = Path.Combine(directory, "generated $g", "android", "res", $"mipmap-{bucket}", "ic_launcher.png");
+            Directory.CreateDirectory(Path.GetDirectoryName(mipmap)!);
+            File.WriteAllText(mipmap, "");
+        }
         try
         {
             var probe = Path.Combine(directory, "probe.proj");
@@ -411,8 +420,12 @@ public class EveryProgramTheSdksStartTests
                     ("_EqAssetsGenerated", "$(MSBuildProjectDirectory)/generated $g"),
                     ("_EqCapabilityPlist", "$(MSBuildProjectDirectory)/obj/eQuantic/Capabilities.plist")),
                 new XElement("ItemGroup", new XElement("IntermediateAssembly", new XAttribute("Include", "obj/Cash$Flow.dll"))),
+                new XElement("ItemGroup", buckets.Select(bucket => new XElement("AndroidResource",
+                    new XAttribute("Include", $"$(_EqAssetsGenerated)/android/res/mipmap-{bucket}/ic_launcher.png"),
+                    new XAttribute("EqAppIcon", "true")))),
                 UsingTasks(shipped),
                 Target(shipped, "_EQuanticAppIconInputs"),
+                Target(shipped, "_EQuanticAndroidIconArguments"),
                 Target(shipped, "EQuanticAndroidIcon"),
                 Target(shipped, "EQuanticCapabilityManifest"),
                 Target(shipped, "EQuanticAppIcon"))).Save(probe);
