@@ -14,8 +14,8 @@
  * never applies a drop: the list is the app's, and the next build shows where the item went.
  */
 import { SortPlacement } from '../shared/components/SortPlacement';
-import { SortDrop } from '../shared/value-types';
-import { str } from '../utils/culture';
+import { SortWords } from '../shared/components/SortWords';
+import { SortAnnouncements, SortDrop } from '../shared/value-types';
 import { activeItemOf } from './active-item';
 import { followPointer, pointerDownDelegate } from './pointer-gesture';
 import { holdShortcuts } from './shortcuts';
@@ -283,18 +283,39 @@ function scrollerOf(list: HTMLElement): HTMLElement | null {
 // Space picks it up; the arrows along the list's axis move it one place (in a list that nests, through the
 // places inside the items too), the cross arrows to the neighbouring list of its group; Space or Enter drops
 // it; Escape, Tab or a press puts it back. Every place is offered to the list's guard and reported as a pointer's are, and each
-// step is said through one polite live region, in the reader's language, from the SDK's own strings.
+// step is said through one polite live region, in the words of the list the item was picked up from (#1564): the node's
+// `Announcements`, which the lowering writes on the list's element, the SDK's in the reader's language unless the app
+// gave its own. A list with none says nothing.
 
-/** The SDK's words for a step, with its holes filled. */
-function say(key: string, ...holes: (string | number)[]): string {
-  return str('SdkResources', key).replace(/\{(\d+)\}/g, (_, at: string) => String(holes[Number(at)] ?? ''));
+/** The words a list was given, built back from its element, or null for a list given none. */
+function wordsOf(list: HTMLElement | null): SortAnnouncements | null {
+  const say = (step: string): string | null => list?.getAttribute(`data-eq-sort-say-${step}`) ?? null;
+  const pickedUp = say('picked-up');
+  if (pickedUp === null) return null;
+  return new SortAnnouncements(
+    say('instructions') ?? '',
+    pickedUp,
+    say('moved') ?? '',
+    say('moved-into') ?? '',
+    say('refused') ?? '',
+    say('dropped') ?? '',
+    say('dropped-into') ?? '',
+    say('put-back') ?? '',
+  );
+}
+
+/** A step's words with its holes filled, by the rule written once (C# twin: `SortWords.Fill`, which Photon runs). */
+function fill(text: string, ...holes: (string | number)[]): string {
+  return SortWords.fill(text, holes.map(String));
 }
 
 let announcer: HTMLElement | null = null;
 let instructions: HTMLElement | null = null;
 
-/** Said once through the one live region, visually hidden (`eq-announcement`, as a spreadsheet's). */
+/** Said once through the one live region, visually hidden (`eq-announcement`, as a spreadsheet's). Words left
+ * empty say nothing. */
 function announce(text: string): void {
+  if (text === '') return;
   if (!announcer || !announcer.isConnected) {
     announcer = document.createElement('div');
     announcer.className = 'eq-announcement';
@@ -307,18 +328,20 @@ function announce(text: string): void {
   announcer.textContent = text;
 }
 
-/** The focused control of an item says how to sort it: its description names the keys. */
+/** The focused control of an item says how to sort it: its description names the keys, in its list's words. */
 function describe(ev: FocusEvent): void {
   const focused = ev.target as HTMLElement | null;
   const item = (activeItemOf(focused) ?? focused)?.closest?.('[data-eq-sort-item]');
   if (!focused || !item || item.hasAttribute('data-eq-sort-off') || focused.closest(FIELD)) return;
+  const said = wordsOf(listOf(item))?.instructions ?? '';
+  if (said === '') return;
   if (!instructions || !instructions.isConnected) {
     instructions = document.createElement('div');
     instructions.id = 'eq-sort-instructions';
     instructions.hidden = true;
     document.body.appendChild(instructions);
   }
-  instructions.textContent = say('SortInstructions');
+  instructions.textContent = said;
   const described = (focused.getAttribute('aria-describedby') ?? '').split(' ').filter(Boolean);
   if (!described.includes(instructions.id))
     focused.setAttribute('aria-describedby', [...described, instructions.id].join(' '));
@@ -373,6 +396,10 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement, fromComposite: 
   const from = source.getAttribute('data-eq-sort-id') ?? '';
   const group = source.getAttribute('data-eq-sort') ?? '';
   const name = nameOf(item);
+  // One carry, one voice: every step is said in the words of the list the item was picked up from.
+  const words = wordsOf(source);
+  const say = (text: string | undefined, ...holes: (string | number)[]): string =>
+    words && text ? fill(text, ...holes) : '';
   let list = source;
   let index = itemsOf(source).indexOf(item);
   let into = -1;
@@ -386,7 +413,7 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement, fromComposite: 
       : new SortDrop(id, from, to, at);
   };
   /** What a reader hears for a place: its position, or the item it is inside. */
-  const sayPlace = (moved: string, inside: string): string => {
+  const sayPlace = (moved: string | undefined, inside: string | undefined): string => {
     const holder = intoItem(list, item, into);
     return holder
       ? say(inside, name, nameOf(holder))
@@ -396,13 +423,13 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement, fromComposite: 
   item.style.opacity = String(SortPlacement.liftedOpacity);
   item.setAttribute('data-eq-sort-lifted', '');
   list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: dropAt(list, index) }));
-  announce(say('SortPickedUp', name, index + 1, countIn(list), labelOf(list)));
+  announce(say(words?.pickedUp, name, index + 1, countIn(list), labelOf(list)));
 
   const moveTo = (target: HTMLElement, at: number, inside = -1): void => {
     const clamped = SortPlacement.step(at, 0, countIn(target));
     const drop = dropAt(target, clamped, inside);
     if (!accepts(target, drop)) {
-      announce(say('SortRefused', name));
+      announce(say(words?.refused, name));
       return;
     }
     if (target !== list) list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: null }));
@@ -410,7 +437,7 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement, fromComposite: 
     index = clamped;
     into = inside;
     list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: drop }));
-    announce(sayPlace('SortMoved', 'SortMovedInto'));
+    announce(sayPlace(words?.moved, words?.movedInto));
   };
 
   /** One place along the list, through the places inside the items when the list nests (C# twin:
@@ -462,13 +489,13 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement, fromComposite: 
 
   function cancel(): void {
     end();
-    announce(say('SortCancelled', name));
+    announce(say(words?.putBack, name));
   }
 
   const drop = (): void => {
     const landed = dropAt(list, index, into);
     const at = list;
-    const said = sayPlace('SortDropped', 'SortDroppedInto');
+    const said = sayPlace(words?.dropped, words?.droppedInto);
     end();
     at.dispatchEvent(new CustomEvent('eq-sort-dropped', { detail: landed }));
     announce(said);

@@ -247,9 +247,12 @@ public class ComponentParityFixtureTests
         // group with its heading and its options, numbered across the group on both producers.
         ("select-grouped-opens", new Select(["Lisboa"], 0, groups: [new OptionGroup("A seguir", ["Braga", "Faro"])]), [0]),
         // A LIST A POINTER SORTS (#1535): no element of its own, its column marked, and the reports the
-        // browser's controller dispatches declared by the server.
+        // browser's controller dispatches declared by the server. Its words (#1564) are attributes both sides
+        // write, escaped alike.
         ("sortable-column", new Sortable(Stack(0, new SortableItem(new Text("a", TypeRole.BodyM, Theme.TextPrimary), "a"),
-            new SortableItem(new Text("b", TypeRole.BodyM, Theme.TextPrimary), "b")), "todo", _ => { })
+            new SortableItem(new Text("b", TypeRole.BodyM, Theme.TextPrimary), "b")), "todo", _ => { },
+            new SortAnnouncements("Pressione Espaço & solte \"já\".", "Took {0}.", "{0} now {1}/{2} in {3}.", "{0} in {1}.",
+                "Not there.", "Left {0} at {1}.", "Left {0} in {1}.", "Back <{0}>."))
         {
             Group = "board",
             OnHovered = _ => { },

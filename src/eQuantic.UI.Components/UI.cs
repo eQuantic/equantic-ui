@@ -791,12 +791,14 @@ public static class UI
             Current = current,
         };
 
-    /// <summary>A list whose items a pointer puts in order, and which takes the items of the lists of its
-    /// group; the drop is the app's to apply (#1535).</summary>
-    public static Sortable Sortable(VisualNode child, string id, Action<SortDrop> onDropped, string group = "",
-        DragAxis axis = DragAxis.Vertical, bool nests = false, Action<SortDrop?>? onHovered = null,
-        Func<SortDrop, bool>? accepts = null, bool enabled = true, string label = "") =>
-        new Sortable(child, id, onDropped)
+    /// <summary>A list whose items a pointer and the keyboard put in order, and which takes the items of the lists
+    /// of its group; the drop is the app's to apply (#1535). Each step of the keyboard's is said in
+    /// <paramref name="announcements"/>, the SDK's words in the reader's culture when the app gives none (#1564).</summary>
+    public static Sortable Sortable(VisualNode child, string id, Action<SortDrop> onDropped,
+        SortAnnouncements? announcements = null, string group = "", DragAxis axis = DragAxis.Vertical,
+        bool nests = false, Action<SortDrop?>? onHovered = null, Func<SortDrop, bool>? accepts = null,
+        bool enabled = true, string label = "") =>
+        new Sortable(child, id, onDropped, announcements ?? SdkStrings.Sorting)
         {
             Label = label,
             Group = group,

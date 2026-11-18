@@ -875,6 +875,39 @@ export class SortDrop {
   }
 }
 
+/** Mirror of the C# `SortAnnouncements` (#1564): what a reader hears while a sortable list's item is sorted by the
+ * keyboard, the instructions and each step's words with their numbered holes (`SortWords.fill` fills them). */
+export class SortAnnouncements {
+  readonly instructions: string;
+  readonly pickedUp: string;
+  readonly moved: string;
+  readonly movedInto: string;
+  readonly refused: string;
+  readonly dropped: string;
+  readonly droppedInto: string;
+  readonly putBack: string;
+
+  constructor(
+    instructions = '',
+    pickedUp = '',
+    moved = '',
+    movedInto = '',
+    refused = '',
+    dropped = '',
+    droppedInto = '',
+    putBack = '',
+  ) {
+    this.instructions = instructions;
+    this.pickedUp = pickedUp;
+    this.moved = moved;
+    this.movedInto = movedInto;
+    this.refused = refused;
+    this.dropped = dropped;
+    this.droppedInto = droppedInto;
+    this.putBack = putBack;
+  }
+}
+
 /** Mirror of the C# `TreePlace`: where one item of a tree stands, its level and its position among its
  * siblings of how many, all from one. Built bare it is the struct's default, three zeros
  * (`[ZeroConstructs]`). */
@@ -935,6 +968,7 @@ hashesByValue(
   ColorToken,
   ContextRequest,
   PointerEvent,
+  SortAnnouncements,
   SortDrop,
   TableOffset,
   TableRange,

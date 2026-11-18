@@ -143,6 +143,7 @@ export {
   Rect,
   ScrollRequest,
   Size,
+  SortAnnouncements,
   SortDrop,
   TableOffset,
   TableRange,

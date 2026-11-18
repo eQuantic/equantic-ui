@@ -47008,7 +47008,15 @@
         "class": "eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp",
         "data-eq-sort": "board",
         "data-eq-sort-axis": "y",
-        "data-eq-sort-id": "todo"
+        "data-eq-sort-id": "todo",
+        "data-eq-sort-say-dropped": "Left {0} at {1}.",
+        "data-eq-sort-say-dropped-into": "Left {0} in {1}.",
+        "data-eq-sort-say-instructions": "Pressione Espa\u00E7o \u0026 solte \u0022j\u00E1\u0022.",
+        "data-eq-sort-say-moved": "{0} now {1}/{2} in {3}.",
+        "data-eq-sort-say-moved-into": "{0} in {1}.",
+        "data-eq-sort-say-picked-up": "Took {0}.",
+        "data-eq-sort-say-put-back": "Back \u003C{0}\u003E.",
+        "data-eq-sort-say-refused": "Not there."
       },
       "events": [
         "eq-sort-dropped",
@@ -48351,6 +48359,14 @@
             "data-eq-sort-id": "tree",
             "data-eq-sort-label": "Files",
             "data-eq-sort-nests": "1",
+            "data-eq-sort-say-dropped": "Dropped {0} at position {1} of {2} in {3}.",
+            "data-eq-sort-say-dropped-into": "Dropped {0} inside {1}.",
+            "data-eq-sort-say-instructions": "Press Space to pick it up, the arrow keys to move it, and Space again to drop it.",
+            "data-eq-sort-say-moved": "{0} is at position {1} of {2} in {3}.",
+            "data-eq-sort-say-moved-into": "{0} is inside {1}.",
+            "data-eq-sort-say-picked-up": "Picked up {0}, position {1} of {2} in {3}.",
+            "data-eq-sort-say-put-back": "Put {0} back where it was.",
+            "data-eq-sort-say-refused": "{0} cannot go there.",
             "role": "tree",
             "tabindex": "0"
           },

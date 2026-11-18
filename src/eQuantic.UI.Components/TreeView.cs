@@ -379,7 +379,7 @@ public sealed class TreeView : StatefulComponent
         // drag, the keyboard's, the lift and the edge scroll are the sortable's, on every target.
         if (OnMoved is not null)
         {
-            tree = new Sortable(tree, "tree", Dropped)
+            tree = new Sortable(tree, "tree", Dropped, SdkStrings.Sorting)
             {
                 Axis = DragAxis.Vertical,
                 Nests = true,

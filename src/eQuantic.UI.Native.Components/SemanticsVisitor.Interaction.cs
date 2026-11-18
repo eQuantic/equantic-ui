@@ -302,10 +302,17 @@ internal sealed partial class SemanticsVisitor
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(DropTarget node, LayoutNode laidOut) => Wraps;
     /// <summary>A named list is a labelled GROUP, read and then walked into, as the web's role=group says it
-    /// (#1536); an unnamed one wraps its child and says nothing of its own.</summary>
-    public bool Visit(Sortable node, LayoutNode laidOut) => node.Label.Length == 0
-        ? Wraps
-        : AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
+    /// (#1536); an unnamed one wraps its child and says nothing of its own. Once the keyboard's carry has
+    /// spoken in it (#1564), the list is the polite live region a shell marks, a group with no name when it has
+    /// none, so Android has the node TalkBack reads the step from.</summary>
+    public bool Visit(Sortable node, LayoutNode laidOut)
+    {
+        var speaks = NodeStates.Find<LiveRegionState>(laidOut.Element) is { Words: not null };
+        return node.Label.Length == 0 && !speaks
+            ? Wraps
+            : AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false,
+                Live: speaks ? LiveRegionUrgency.Polite : null));
+    }
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(SortableItem node, LayoutNode laidOut) => Wraps;
 
