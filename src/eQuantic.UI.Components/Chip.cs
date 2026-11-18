@@ -20,13 +20,14 @@ public enum ChipKind : byte
 public sealed class Chip : StatelessComponent
 {
     public Chip(string label, ChipKind kind = ChipKind.Filter, bool selected = false,
-        Action? onPressed = null, Action? onRemove = null)
+        Action? onPressed = null, Action? onRemove = null, ChipTheme? style = null)
     {
         Label = label;
         Kind = kind;
         Selected = selected;
         OnPressed = onPressed;
         OnRemove = onRemove;
+        Style = style;
     }
 
     public string Label { get; init; }
@@ -38,13 +39,20 @@ public sealed class Chip : StatelessComponent
     /// <summary>Status tint for Tag chips (Subtle pair); ignored by Filter (Primary-driven).</summary>
     public Variant Variant { get; init; } = Variant.Secondary;
 
+    /// <summary>
+    /// This chip's own style, member by member ahead of the theme's <see cref="IAppTheme.Chip"/>
+    /// slot: a member left null is the slot's, and one the slot leaves null is the default.
+    /// </summary>
+    public ChipTheme? Style { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
         var tint = theme.Colors(Variant);
-        // The theme's Chip slot, then its control ladder, then the component's own (§3.10).
-        var slot = theme.Chip;
+        // The chip's own style over the theme's Chip slot, then its control ladder, then the
+        // component's own (§3.10).
+        var slot = ChipTheme.Merge(theme.Chip, Style);
         var quietFill = slot?.Fill ?? theme.SurfaceSubtle;
 
         // B8's frames: an unselected filter chip is OUTLINED (no fill, a BorderStrong edge), and the

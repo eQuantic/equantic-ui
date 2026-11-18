@@ -12,11 +12,13 @@ namespace eQuantic.UI.Components;
 /// </summary>
 public sealed class Checkbox : StatelessComponent
 {
-    public Checkbox(bool @checked, Action? onChanged = null, string? label = null)
+    public Checkbox(bool @checked, Action? onChanged = null, string? label = null,
+        SelectionControlsTheme? style = null)
     {
         Checked = @checked;
         OnChanged = onChanged;
         Label = label;
+        Style = style;
     }
 
     public bool Checked { get; init; }
@@ -35,12 +37,19 @@ public sealed class Checkbox : StatelessComponent
     /// </summary>
     public bool Indeterminate { get; init; }
 
+    /// <summary>
+    /// This checkbox's own style, member by member ahead of the theme's <see cref="IAppTheme.SelectionControls"/>
+    /// slot: a member left null is the slot's, and one the slot leaves null is the default.
+    /// </summary>
+    public SelectionControlsTheme? Style { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
-        // The theme's Selection slot, then the component's own (§3.10); the box varies by density alone.
-        var slot = theme.SelectionControls;
+        // The checkbox's own style over the theme's Selection slot, then the component's own (§3.10);
+        // the box varies by density alone.
+        var slot = SelectionControlsTheme.Merge(theme.SelectionControls, Style);
         var side = ControlMetrics.AtDensity(slot?.Box, context.Density) ?? Sizing.SelectionBox(context.Density);
 
         var borderColor = Error ? theme.Colors(Variant.Destructive).Base : slot?.BorderColor ?? theme.BorderStrong;

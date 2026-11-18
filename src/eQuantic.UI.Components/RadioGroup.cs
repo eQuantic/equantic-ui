@@ -15,14 +15,18 @@ namespace eQuantic.UI.Components;
 public sealed class RadioGroup : StatelessComponent
 {
     public RadioGroup(IReadOnlyList<string> options, int selected, Action<int>? onChanged = null,
-        string? label = null)
+        string? label = null, Func<int, VisualNode>? optionBuilder = null, SelectionControlsTheme? style = null)
     {
         Options = options;
         Selected = selected;
         OnChanged = onChanged;
         Label = label;
+        OptionBuilder = optionBuilder;
+        Style = style;
     }
 
+    /// <summary>The options' names: each one's accessible name, and what it shows when no
+    /// <see cref="OptionBuilder"/> draws it.</summary>
     public IReadOnlyList<string> Options { get; init; }
     public int Selected { get; init; }
     public Action<int>? OnChanged { get; init; }
@@ -32,13 +36,27 @@ public sealed class RadioGroup : StatelessComponent
 
     public bool Disabled { get; init; }
 
+    /// <summary>
+    /// Draws what an option shows, by its index, beside the ring the group keeps: an icon and a line
+    /// of help, a price beside the name. The option's name in <see cref="Options"/> stays its accessible
+    /// name, and the content takes the option's colour where it names none. Null draws the name.
+    /// </summary>
+    public Func<int, VisualNode>? OptionBuilder { get; init; }
+
+    /// <summary>
+    /// This group's own style, member by member ahead of the theme's
+    /// <see cref="IAppTheme.SelectionControls"/> slot: a member left null is the slot's, and one the slot
+    /// leaves null is the default.
+    /// </summary>
+    public SelectionControlsTheme? Style { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
-        // The theme's Selection slot, then the component's own (§3.10); the ring and its dot vary by
-        // density alone.
-        var slot = theme.SelectionControls;
+        // The group's own style over the theme's Selection slot, then the component's own (§3.10); the
+        // ring and its dot vary by density alone.
+        var slot = SelectionControlsTheme.Merge(theme.SelectionControls, Style);
         var side = ControlMetrics.AtDensity(slot?.RadioSize, context.Density)
             ?? ControlMetrics.AtDensity(slot?.Box, context.Density)
             ?? Sizing.SelectionBox(context.Density);
@@ -76,8 +94,12 @@ public sealed class RadioGroup : StatelessComponent
                 Height = slot?.RadioRowHeight ?? 44,
             };
             row.Add(circle);
-            row.Add(new Text(Options[i], TypeRole.BodyM,
-                Disabled ? theme.TextMuted : theme.TextPrimary, maxLines: 1));
+            var textColor = Disabled ? theme.TextMuted : theme.TextPrimary;
+            // The builder draws the content and the group keeps the chrome: the ring, the row's target
+            // and its name. The content takes the option's colour from the box around it.
+            row.Add(OptionBuilder is { } build
+                ? new Box(new BoxStyle { Foreground = textColor }, build(index))
+                : new Text(Options[i], TypeRole.BodyM, textColor, maxLines: 1));
 
             // The selected row presses to nothing, exactly as a native radio does — and each row
             // states what it is: a radio, checked or not, outside the tab order (the group is

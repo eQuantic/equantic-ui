@@ -2367,11 +2367,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: new Slider(value, onChanged, min: 0, max: 100, step: null, haptics: true) ... + haptic per detent; min/max edges get a firmer haptic.
-- **Code**: there is no haptics parameter and no haptic feedback anywhere in the framework — the constructor takes only value and onChanged (Slider.cs Slider.Slider), and a case-insensitive grep for "haptic" across src/ matches nothing outside node_modules.
+- **Code**: there is no haptics parameter and no haptic feedback anywhere in the framework — the constructor takes only the value, onChanged and its style (Slider.cs Slider.Slider), and a case-insensitive grep for "haptic" across src/ matches nothing outside node_modules.
 - **Evidence**:
 
   ```
-  Slider.cs  public Slider(float value, Action<float>? onChanged = null)
+  Slider.cs  public Slider(float value, Action<float>? onChanged = null, SelectionControlsTheme? style = null)
   Slider.cs  Value = value;  OnChanged = onChanged;
   ```
 
@@ -3266,11 +3266,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Checkbox.cs`
 - **Handoff**: `new Checkbox(checked, onChanged, label: "…", tristate: false)`
-- **Code**: There is no `tristate` slot. The third state is modelled as an explicit `Indeterminate` init property that states the current mixed value rather than enabling a mode, and the cycle "mixed → checked → unchecked" is left entirely to the caller (OnChanged is a bare `Action`, and the doc says "Pressing it is the caller's call"). Checkbox.cs:15, :36.
+- **Code**: There is no `tristate` slot. The third state is modelled as an explicit `Indeterminate` init property that states the current mixed value rather than enabling a mode, and the cycle "mixed → checked → unchecked" is left entirely to the caller (OnChanged is a bare `Action`, and the doc says "Pressing it is the caller's call"). Checkbox.cs:15, :38.
 - **Evidence**:
 
   ```
-  Checkbox.cs:15 — `public Checkbox(bool @checked, Action? onChanged = null, string? label = null)`; Checkbox.cs:36 — `public bool Indeterminate { get; init; }`
+  Checkbox.cs:15 — `public Checkbox(bool @checked, Action? onChanged = null, string? label = null,`; Checkbox.cs:38 — `public bool Indeterminate { get; init; }`
   ```
 
 ### B12 Switch · documented-deviation · **unverified**

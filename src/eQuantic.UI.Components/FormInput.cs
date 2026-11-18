@@ -89,13 +89,14 @@ public sealed class FormInput : StatelessComponent
 public sealed class FormSubmit : StatelessComponent
 {
     public FormSubmit(FormController form, string label, Func<Task> onSubmit,
-        Variant variant = Variant.Primary, SizeVariant size = SizeVariant.Medium)
+        Variant variant = Variant.Primary, SizeVariant size = SizeVariant.Medium, ButtonTheme? style = null)
     {
         Form = form;
         Label = label;
         OnSubmit = onSubmit;
         Variant = variant;
         Size = size;
+        Style = style;
     }
 
     public FormController Form { get; init; }
@@ -107,8 +108,14 @@ public sealed class FormSubmit : StatelessComponent
     /// <summary>Fills the row it sits in — what a dialog's confirm button does.</summary>
     public bool Wide { get; init; }
 
+    /// <summary>
+    /// The submit button's own style, which the <see cref="Button"/> it builds lays over the theme's
+    /// <see cref="IAppTheme.Button"/> slot.
+    /// </summary>
+    public ButtonTheme? Style { get; init; }
+
     public override VisualNode Build(ComponentContext context) =>
-        new Button(Label, Variant, Size)
+        new Button(Label, Variant, Size, style: Style)
         {
             Loading = Form.Submitting,
             Expand = Wide,

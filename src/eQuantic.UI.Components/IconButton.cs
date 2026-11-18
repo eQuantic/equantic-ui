@@ -44,13 +44,14 @@ public sealed class IconButton : StatelessComponent
     /// </para>
     /// </summary>
     public IconButton(Icon glyph, string label, IconButtonKind kind = IconButtonKind.Standard,
-        SizeVariant size = SizeVariant.Medium, Action? onPressed = null)
+        SizeVariant size = SizeVariant.Medium, Action? onPressed = null, IconButtonTheme? style = null)
     {
         Glyph = glyph;
         Label = label;
         Kind = kind;
         Size = size;
         OnPressed = onPressed;
+        Style = style;
     }
 
     /// <summary>The glyph, as a NODE — <c>Icon(Icons.Close)</c> or <c>Icon(LucideIcons.Power)</c>,
@@ -63,6 +64,12 @@ public sealed class IconButton : StatelessComponent
     public Action? OnPressed { get; init; }
     public bool Disabled { get; init; }
 
+    /// <summary>
+    /// This button's own style, member by member ahead of the theme's <see cref="IAppTheme.IconButton"/>
+    /// slot: a member left null is the slot's, and one the slot leaves null is the default.
+    /// </summary>
+    public IconButtonTheme? Style { get; init; }
+
     /// <summary>Toggle state — swaps the glyph to <see cref="SelectedGlyph"/> and tints Primary.</summary>
     public bool Selected { get; init; }
 
@@ -73,8 +80,9 @@ public sealed class IconButton : StatelessComponent
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
-        // The theme's IconButton slot, then its control ladder, then the component's own (§3.10).
-        var slot = theme.IconButton;
+        // The button's own style over the theme's IconButton slot, then its control ladder, then the
+        // component's own (§3.10).
+        var slot = IconButtonTheme.Merge(theme.IconButton, Style);
         var side = ControlMetrics.Height(context, Size, slot?.Controls);
         var iconSize = ControlMetrics.AtSize(slot?.IconSize, Size) ?? Size switch
         {

@@ -24,16 +24,24 @@ public sealed class ProgressBar : StatefulComponent
 
     private bool _snapNext;
 
-    public ProgressBar(float? value = null, Variant variant = Variant.Primary)
+    public ProgressBar(float? value = null, Variant variant = Variant.Primary, ProgressTheme? style = null)
     {
         Value = value;
         Variant = variant;
+        Style = style;
     }
 
     /// <summary>Progress 0..1 (clamped); <c>null</c> = indeterminate.</summary>
     public float? Value { get; private set; }
 
     public Variant Variant { get; private set; }
+
+    /// <summary>
+    /// This bar's own style, member by member ahead of the theme's <see cref="IAppTheme.Progress"/> slot:
+    /// a member left null is the slot's, and one the slot leaves null is the default. Adopted with the
+    /// rest of the configuration, since this instance is retained across its parent's builds.
+    /// </summary>
+    public ProgressTheme? Style { get; private set; }
 
     /// <summary>
     /// 8dp meter styling (goal/quota) instead of the 4dp default.
@@ -72,6 +80,7 @@ public sealed class ProgressBar : StatefulComponent
         _snapNext = fresh.Value is { } incoming && Value is { } current && incoming < current;
         Value = fresh.Value;
         Variant = fresh.Variant;
+        Style = fresh.Style;
         // The rest of the configuration too, or a parent that renames the bar keeps announcing the
         // old name: this instance is RETAINED, so what Build reads is whatever was adopted here.
         _label = fresh.Label;
@@ -82,8 +91,9 @@ public sealed class ProgressBar : StatefulComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        // The progress slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
-        var slot = theme.Progress;
+        // The bar's own style over the progress slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value either
+        // names, or today's.
+        var slot = ProgressTheme.Merge(theme.Progress, Style);
         var height = Prominent ? slot?.ProminentBarHeight ?? 8f : slot?.BarHeight ?? 4f;
         var ends = new CornerRadii(theme.Shape(slot?.BarShape ?? ShapeScale.Full));
         var trackColor = slot?.TrackColor ?? theme.SurfaceSubtle;

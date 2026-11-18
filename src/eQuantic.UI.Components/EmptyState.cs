@@ -97,22 +97,30 @@ public sealed class Skeleton : StatelessComponent
     /// <summary>Spec B16 shimmer clock: every skeleton shares the phase (one document/frame clock).</summary>
     private const int ShimmerDurationMs = 1400;
 
-    public Skeleton(SkeletonShape shape, float width, float height = 0)
+    public Skeleton(SkeletonShape shape, float width, float height = 0, ProgressTheme? style = null)
     {
         Shape = shape;
         Width = width;
         Height = height;
+        Style = style;
     }
 
     public SkeletonShape Shape { get; init; }
     public float Width { get; init; }
     public float Height { get; init; }
 
+    /// <summary>
+    /// This placeholder's own style, member by member ahead of the theme's <see cref="IAppTheme.Progress"/>
+    /// slot: a member left null is the slot's, and one the slot leaves null is the default.
+    /// </summary>
+    public ProgressTheme? Style { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        // The progress slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
-        var slot = theme.Progress;
+        // Its own style over the progress slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value either names,
+        // or today's.
+        var slot = ProgressTheme.Merge(theme.Progress, Style);
         var highlight = slot?.SkeletonHighlight ?? theme.SurfaceHighlight;
         var height = Shape switch
         {

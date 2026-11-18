@@ -16,18 +16,25 @@ namespace eQuantic.UI.Components;
 public sealed class Button : StatelessComponent
 {
     public Button(string label, Variant variant = Variant.Primary, SizeVariant size = SizeVariant.Medium,
-        Action? onPressed = null)
+        Action? onPressed = null, ButtonTheme? style = null)
     {
         Label = label;
         Variant = variant;
         Size = size;
         OnPressed = onPressed;
+        Style = style;
     }
 
     public string Label { get; init; }
     public Variant Variant { get; init; }
     public SizeVariant Size { get; init; }
     public Action? OnPressed { get; init; }
+
+    /// <summary>
+    /// This button's own style, member by member ahead of the theme's <see cref="IAppTheme.Button"/>
+    /// slot: a member left null is the slot's, and one the slot leaves null is the default.
+    /// </summary>
+    public ButtonTheme? Style { get; init; }
 
     /// <summary>Disabled = the 38% opacity group over the resolved style (spec §01) + presses swallowed.</summary>
     public bool Disabled { get; init; }
@@ -56,9 +63,10 @@ public sealed class Button : StatelessComponent
     {
         var theme = context.Theme;
         var colors = theme.Colors(Variant);
-        // The theme's Button slot, then its control ladder, then the component's own (§3.10): the
-        // ladder through ControlMetrics, which reads the button's own rungs ahead of the theme's.
-        var slot = theme.Button;
+        // The button's own style over the theme's Button slot, then its control ladder, then the
+        // component's own (§3.10): the ladder through ControlMetrics, which reads the button's own
+        // rungs ahead of the theme's.
+        var slot = ButtonTheme.Merge(theme.Button, Style);
         var ladder = slot?.Controls;
         var height = ControlMetrics.Height(context, Size, ladder);
         var padX = ControlMetrics.PaddingX(context, Size, ladder);

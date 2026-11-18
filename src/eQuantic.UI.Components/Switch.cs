@@ -13,10 +13,11 @@ namespace eQuantic.UI.Components;
 /// </summary>
 public sealed class Switch : StatelessComponent
 {
-    public Switch(bool on, Action? onChanged = null)
+    public Switch(bool on, Action? onChanged = null, SelectionControlsTheme? style = null)
     {
         On = on;
         OnChanged = onChanged;
+        Style = style;
     }
 
     /// <summary>Track 52, thumb 26, inset 3 each side — what is left is what the thumb can cross.</summary>
@@ -31,12 +32,18 @@ public sealed class Switch : StatelessComponent
     /// though pointing both at the same words is better.</summary>
     public string? Label { get; init; }
 
+    /// <summary>
+    /// This switch's own style, member by member ahead of the theme's <see cref="IAppTheme.SelectionControls"/>
+    /// slot: a member left null is the slot's, and one the slot leaves null is the default.
+    /// </summary>
+    public SelectionControlsTheme? Style { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        // The theme's Selection slot, then the component's own (§3.10); the track and the knob vary by
-        // density alone, and the knob travels the track's slack.
-        var slot = theme.SelectionControls;
+        // The switch's own style over the theme's Selection slot, then the component's own (§3.10); the
+        // track and the knob vary by density alone, and the knob travels the track's slack.
+        var slot = SelectionControlsTheme.Merge(theme.SelectionControls, Style);
         var trackFill = On ? theme.Colors(Variant.Primary).Base : slot?.SwitchOffTrack ?? theme.BorderStrong;
         if (Disabled) trackFill = trackFill.WithOpacity(theme.DisabledOpacity);
 

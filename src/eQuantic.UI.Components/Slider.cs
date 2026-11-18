@@ -46,10 +46,11 @@ public sealed class Slider : StatelessComponent
     /// border grew as the thumb shrank, so the white face was 16dp across instead of 22.</summary>
     private const float ThumbBorder = 1;
 
-    public Slider(float value, Action<float>? onChanged = null)
+    public Slider(float value, Action<float>? onChanged = null, SelectionControlsTheme? style = null)
     {
         Value = value;
         OnChanged = onChanged;
+        Style = style;
     }
 
     public float Value { get; init; }
@@ -78,6 +79,12 @@ public sealed class Slider : StatelessComponent
     /// </summary>
     public string? ValueText { get; init; }
 
+    /// <summary>
+    /// This slider's own style, member by member ahead of the theme's <see cref="IAppTheme.SelectionControls"/>
+    /// slot: a member left null is the slot's, and one the slot leaves null is the default.
+    /// </summary>
+    public SelectionControlsTheme? Style { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
@@ -98,8 +105,8 @@ public sealed class Slider : StatelessComponent
         var step = Step > 0 ? Step : span / 10f;
         var accent = theme.Colors(Variant).Base;
         var fill = Disabled ? theme.BorderStrong : accent;
-        // The theme's Selection slot, then the component's own (§3.10).
-        var slot = theme.SelectionControls;
+        // The slider's own style over the theme's Selection slot, then the component's own (§3.10).
+        var slot = SelectionControlsTheme.Merge(theme.SelectionControls, Style);
         var thumbSize = slot?.SliderThumbSize ?? ThumbSize;
         var trackHeight = slot?.SliderTrackHeight ?? TrackHeight;
 

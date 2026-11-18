@@ -18,16 +18,23 @@ public sealed class PullToRefresh : StatelessComponent
     /// <summary>How far the content must travel before the release counts as a request.</summary>
     public const float Threshold = 64;
 
-    public PullToRefresh(VisualNode child, Action? onRefresh = null)
+    public PullToRefresh(VisualNode child, Action? onRefresh = null, ProgressTheme? style = null)
     {
         Child = child;
         OnRefresh = onRefresh;
+        Style = style;
     }
 
     public VisualNode Child { get; init; }
     public Action? OnRefresh { get; init; }
 
     public bool Refreshing { get; init; }
+
+    /// <summary>
+    /// This refresh's own style, member by member ahead of the theme's <see cref="IAppTheme.Progress"/>
+    /// slot: a member left null is the slot's, and one the slot leaves null is the default.
+    /// </summary>
+    public ProgressTheme? Style { get; init; }
 
     public override VisualNode Build(ComponentContext context)
     {
@@ -40,8 +47,10 @@ public sealed class PullToRefresh : StatelessComponent
             Main = MainAlign.Center,
             Cross = CrossAlign.Center,
         };
-        // The progress slot (docs/ELEMENT-TREE-PLAN.md §3.10) sizes the spinner; the threshold is behaviour.
-        indicator.Add(new Spinner(theme.Progress?.RefreshSpinner ?? IconSize.Dense, theme.Colors(Variant.Primary).Base));
+        // Its own style over the progress slot (docs/ELEMENT-TREE-PLAN.md §3.10) sizes the spinner; the
+        // threshold is behaviour.
+        var slot = ProgressTheme.Merge(theme.Progress, Style);
+        indicator.Add(new Spinner(slot?.RefreshSpinner ?? IconSize.Dense, theme.Colors(Variant.Primary).Base));
 
         var content = new Box(new BoxStyle
         {

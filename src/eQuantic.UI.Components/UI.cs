@@ -494,8 +494,8 @@ public static class UI
 
     /// <summary>The design-system Button (spec A12) without <c>new</c>.</summary>
     public static Button Button(string label, Variant variant = Variant.Primary,
-        SizeVariant size = SizeVariant.Medium, Action? onPressed = null) =>
-        new Button(label, variant, size, onPressed);
+        SizeVariant size = SizeVariant.Medium, Action? onPressed = null, ButtonTheme? style = null) =>
+        new Button(label, variant, size, onPressed, style);
 
     /// <summary>The GDPR/LGPD consent card — drawn while the visitor's answer is unknown, gone after
     /// it; <paramref name="policyHref"/> adds the privacy-policy link the card should never lack.</summary>
@@ -508,8 +508,8 @@ public static class UI
 
     /// <summary>Compact tag/filter control.</summary>
     public static Chip Chip(string label, ChipKind kind = ChipKind.Filter, bool selected = false,
-        Action? onPressed = null, Action? onRemove = null) =>
-        new Chip(label, kind, selected, onPressed, onRemove);
+        Action? onPressed = null, Action? onRemove = null, ChipTheme? style = null) =>
+        new Chip(label, kind, selected, onPressed, onRemove, style);
 
     /// <summary>Count badge (spec A11).</summary>
     public static Badge Badge(int count = 0, int max = 99, Variant variant = Variant.Destructive) =>
@@ -539,21 +539,21 @@ public static class UI
     /// <summary>A check, with the tail a form row needs: the accessible name it announces, and the
     /// disabled bit a batch operation turns on across a whole list.</summary>
     public static Checkbox Checkbox(bool @checked, Action? onChanged = null, string? label = null,
-        bool disabled = false) =>
-        new Checkbox(@checked, onChanged, label) { Disabled = disabled };
+        SelectionControlsTheme? style = null, bool disabled = false) =>
+        new Checkbox(@checked, onChanged, label, style) { Disabled = disabled };
 
     /// <summary>Binary toggle. <paramref name="label"/> is what assistive tech announces — a list of
     /// switches with no names is a list of identical controls — and <paramref name="disabled"/> is
     /// what makes them inert while a batch applies.</summary>
-    public static Switch Switch(bool on, Action? onChanged = null, string? label = null,
-        bool disabled = false) =>
-        new Switch(on, onChanged) { Label = label, Disabled = disabled };
+    public static Switch Switch(bool on, Action? onChanged = null, SelectionControlsTheme? style = null,
+        string? label = null, bool disabled = false) =>
+        new Switch(on, onChanged, style) { Label = label, Disabled = disabled };
 
     /// <summary>Continuous value control.</summary>
     public static Slider Slider(float value, Action<float>? onChanged = null,
-        float min = 0, float max = 1, float step = 0, string label = "", string? valueText = null,
-        bool disabled = false, Variant variant = Variant.Primary) =>
-        new Slider(value, onChanged)
+        SelectionControlsTheme? style = null, float min = 0, float max = 1, float step = 0, string label = "",
+        string? valueText = null, bool disabled = false, Variant variant = Variant.Primary) =>
+        new Slider(value, onChanged, style)
         {
             Min = min,
             Max = max,
@@ -616,8 +616,8 @@ public static class UI
     /// value that went missing.
     /// </summary>
     public static ProgressBar ProgressBar(float? value = null, Variant variant = Variant.Primary,
-        string label = "", string? valueText = null, bool prominent = false) =>
-        new ProgressBar(value, variant) { Label = label, ValueText = valueText, Prominent = prominent };
+        ProgressTheme? style = null, string label = "", string? valueText = null, bool prominent = false) =>
+        new ProgressBar(value, variant, style) { Label = label, ValueText = valueText, Prominent = prominent };
 
     /// <summary>Hairline separator.</summary>
     public static Divider Divider(DividerInset inset = DividerInset.None,
@@ -650,8 +650,8 @@ public static class UI
     /// </summary>
     public static IconButton IconButton(Icon glyph, string label,
         IconButtonKind kind = IconButtonKind.Standard, SizeVariant size = SizeVariant.Medium,
-        Action? onPressed = null) =>
-        new IconButton(glyph, label, kind, size, onPressed);
+        Action? onPressed = null, IconButtonTheme? style = null) =>
+        new IconButton(glyph, label, kind, size, onPressed, style);
 
     /// <summary>The nothing-here state (spec B12).</summary>
     public static EmptyState EmptyState(Icon icon, string title, string? body = null) =>
@@ -753,8 +753,9 @@ public static class UI
         new Tooltip(child, text);
 
     /// <summary>Loading placeholder (spec B16).</summary>
-    public static Skeleton Skeleton(SkeletonShape shape, float width, float height = 0) =>
-        new Skeleton(shape, width, height);
+    public static Skeleton Skeleton(SkeletonShape shape, float width, float height = 0,
+        ProgressTheme? style = null) =>
+        new Skeleton(shape, width, height, style);
 
     /// <summary>
     /// A table that builds only the cells in view: the extents of its <paramref name="rows"/> and

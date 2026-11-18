@@ -1,25 +1,14 @@
-# Buttons, chips, selection controls and progress. Their slice is #1547. The format is README.md's.
+# Buttons, chips, selection controls and progress. Their style and builders are #1606, their content #1607. The format is README.md's.
 # owns: Button Checkbox Chip FormSubmit IconButton ProgressBar PullToRefresh RadioGroup Skeleton Slider Switch
-Button  style  #1547: ButtonTheme
-Button.Label  text  #1547: the button's child, a node
-Checkbox  style  #1547: SelectionControlsTheme
-Checkbox.Label  text  #1547: the text beside the box, a node
-Chip  style  #1547: ChipTheme
-Chip.Label  text  #1547: the chip's child, a node
-FormSubmit  style  #1547: ButtonTheme
-FormSubmit.Label  text  #1547: the submit button's child, a node
-IconButton  style  #1547: IconButtonTheme
+Button.Label  text  #1607: the button's child, a node
+Checkbox.Label  text  #1607: the text beside the box, a node
+Chip.Label  text  #1607: the chip's child, a node
+FormSubmit.Label  text  #1607: the submit button's child, a node
 IconButton.Label  text  kept: the accessible name of a control whose content is an icon
-ProgressBar  style  #1547: ProgressTheme
 ProgressBar.Label  text  kept: what the progress is for, its accessible name
 ProgressBar.ValueText  text  kept: the progress in words, what a reader announces instead of the ratio
-PullToRefresh  style  #1547: ProgressTheme
-RadioGroup  style  #1547: SelectionControlsTheme
-RadioGroup.Label  text  #1547: the group's heading, a node
-RadioGroup.Options  text  kept: an option's name, its accessible name; the option builder draws it (#1547)
-Skeleton  style  #1547: ProgressTheme
-Slider  style  #1547: SelectionControlsTheme
+RadioGroup.Label  text  #1607: the group's heading, a node
+RadioGroup.Options  text  kept: an option's name, its accessible name; optionBuilder draws what it shows
 Slider.Label  text  kept: what the slider sets, its accessible name
 Slider.ValueText  text  kept: the value in words, what a reader announces instead of the number
-Switch  style  #1547: SelectionControlsTheme
 Switch.Label  text  kept: what the switch is for, its accessible name
