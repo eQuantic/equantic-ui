@@ -1,5 +1,5 @@
-invariant {"numberFormat":{"numberDecimalSeparator":".","numberGroupSeparator":",","numberGroupSizes":[3],"numberDecimalDigits":2,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"\u00A4","currencyDecimalSeparator":".","currencyGroupSeparator":",","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":0,"currencyNegativePattern":0,"percentSymbol":"%","percentDecimalSeparator":".","percentGroupSeparator":",","percentGroupSizes":[3],"percentDecimalDigits":2,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"Infinity","negativeInfinitySymbol":"-Infinity"},"dateTimeFormat":{"shortDatePattern":"MM/dd/yyyy","longDatePattern":"dddd, dd MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"MMMM dd","yearMonthPattern":"yyyy MMMM","dateSeparator":"/","timeSeparator":":","eraName":"A.D.","firstDayOfWeek":0,"dayNames":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"abbreviatedDayNames":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"monthNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"monthGenitiveNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthGenitiveNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"amDesignator":"AM","pmDesignator":"PM"}}
-culture en-US {"numberFormat":{"numberDecimalSeparator":".","numberGroupSeparator":",","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"$","currencyDecimalSeparator":".","currencyGroupSeparator":",","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":0,"currencyNegativePattern":1,"percentSymbol":"%","percentDecimalSeparator":".","percentGroupSeparator":",","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":1,"percentNegativePattern":1,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"M/d/yyyy","longDatePattern":"dddd, MMMM d, yyyy","shortTimePattern":"h:mm\u202Ftt","longTimePattern":"h:mm:ss\u202Ftt","monthDayPattern":"MMMM d","yearMonthPattern":"MMMM yyyy","dateSeparator":"/","timeSeparator":":","eraName":"AD","firstDayOfWeek":0,"dayNames":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"abbreviatedDayNames":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"monthNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"monthGenitiveNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthGenitiveNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"amDesignator":"AM","pmDesignator":"PM"}}
+invariant {"numberFormat":{"numberDecimalSeparator":".","numberGroupSeparator":",","numberGroupSizes":[3],"numberDecimalDigits":2,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"\u00A4","currencyDecimalSeparator":".","currencyGroupSeparator":",","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":0,"currencyNegativePattern":0,"percentSymbol":"%","percentDecimalSeparator":".","percentGroupSeparator":",","percentGroupSizes":[3],"percentDecimalDigits":2,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"Infinity","negativeInfinitySymbol":"-Infinity"},"dateTimeFormat":{"shortDatePattern":"MM/dd/yyyy","longDatePattern":"dddd, dd MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"MMMM dd","yearMonthPattern":"yyyy MMMM","dateSeparator":"/","timeSeparator":":","eraName":"A.D.","firstDayOfWeek":0,"dayNames":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"abbreviatedDayNames":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"monthNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"monthGenitiveNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthGenitiveNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"amDesignator":"AM","pmDesignator":"PM","calendar":{"name":"System.Globalization.GregorianCalendar","twoDigitYearMax":2049,"yearOffset":0}}}
+culture en-US {"numberFormat":{"numberDecimalSeparator":".","numberGroupSeparator":",","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"$","currencyDecimalSeparator":".","currencyGroupSeparator":",","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":0,"currencyNegativePattern":1,"percentSymbol":"%","percentDecimalSeparator":".","percentGroupSeparator":",","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":1,"percentNegativePattern":1,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"M/d/yyyy","longDatePattern":"dddd, MMMM d, yyyy","shortTimePattern":"h:mm\u202Ftt","longTimePattern":"h:mm:ss\u202Ftt","monthDayPattern":"MMMM d","yearMonthPattern":"MMMM yyyy","dateSeparator":"/","timeSeparator":":","eraName":"AD","firstDayOfWeek":0,"dayNames":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"abbreviatedDayNames":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"monthNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"monthGenitiveNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthGenitiveNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"amDesignator":"AM","pmDesignator":"PM","calendar":{"name":"System.Globalization.GregorianCalendar","twoDigitYearMax":2049,"yearOffset":0}}}
 num|en-US|1234.5||1234.5
 num|en-US|1234.5|N|1,234.500
 num|en-US|1234.5|N0|1,234
@@ -156,7 +156,7 @@ date|en-US|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
 date|en-US|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
 date|en-US|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|en-US|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
-culture pt-BR {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":".","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"R$","currencyDecimalSeparator":",","currencyGroupSeparator":".","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":2,"currencyNegativePattern":9,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":".","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":1,"percentNegativePattern":1,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"dd/MM/yyyy","longDatePattern":"dddd, d \u0027de\u0027 MMMM \u0027de\u0027 yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d \u0027de\u0027 MMMM","yearMonthPattern":"MMMM \u0027de\u0027 yyyy","dateSeparator":"/","timeSeparator":":","eraName":"d.C.","firstDayOfWeek":0,"dayNames":["domingo","segunda-feira","ter\u00E7a-feira","quarta-feira","quinta-feira","sexta-feira","s\u00E1bado"],"abbreviatedDayNames":["dom.","seg.","ter.","qua.","qui.","sex.","s\u00E1b."],"monthNames":["janeiro","fevereiro","mar\u00E7o","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"],"abbreviatedMonthNames":["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."],"monthGenitiveNames":["janeiro","fevereiro","mar\u00E7o","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"],"abbreviatedMonthGenitiveNames":["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."],"amDesignator":"AM","pmDesignator":"PM"}}
+culture pt-BR {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":".","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"R$","currencyDecimalSeparator":",","currencyGroupSeparator":".","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":2,"currencyNegativePattern":9,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":".","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":1,"percentNegativePattern":1,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"dd/MM/yyyy","longDatePattern":"dddd, d \u0027de\u0027 MMMM \u0027de\u0027 yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d \u0027de\u0027 MMMM","yearMonthPattern":"MMMM \u0027de\u0027 yyyy","dateSeparator":"/","timeSeparator":":","eraName":"d.C.","firstDayOfWeek":0,"dayNames":["domingo","segunda-feira","ter\u00E7a-feira","quarta-feira","quinta-feira","sexta-feira","s\u00E1bado"],"abbreviatedDayNames":["dom.","seg.","ter.","qua.","qui.","sex.","s\u00E1b."],"monthNames":["janeiro","fevereiro","mar\u00E7o","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"],"abbreviatedMonthNames":["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."],"monthGenitiveNames":["janeiro","fevereiro","mar\u00E7o","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"],"abbreviatedMonthGenitiveNames":["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."],"amDesignator":"AM","pmDesignator":"PM","calendar":{"name":"System.Globalization.GregorianCalendar","twoDigitYearMax":2049,"yearOffset":0}}}
 num|pt-BR|1234.5||1234,5
 num|pt-BR|1234.5|N|1.234,500
 num|pt-BR|1234.5|N0|1.234
@@ -313,7 +313,7 @@ date|pt-BR|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
 date|pt-BR|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
 date|pt-BR|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|pt-BR|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
-culture de-DE {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":".","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"\u20AC","currencyDecimalSeparator":",","currencyGroupSeparator":".","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":".","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"dd.MM.yyyy","longDatePattern":"dddd, d. MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d. MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":".","timeSeparator":":","eraName":"n. Chr.","firstDayOfWeek":1,"dayNames":["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"],"abbreviatedDayNames":["So","Mo","Di","Mi","Do","Fr","Sa"],"monthNames":["Januar","Februar","M\u00E4rz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],"abbreviatedMonthNames":["Jan","Feb","M\u00E4r","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"],"monthGenitiveNames":["Januar","Februar","M\u00E4rz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],"abbreviatedMonthGenitiveNames":["Jan.","Feb.","M\u00E4rz","Apr.","Mai","Juni","Juli","Aug.","Sept.","Okt.","Nov.","Dez."],"amDesignator":"AM","pmDesignator":"PM"}}
+culture de-DE {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":".","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"\u20AC","currencyDecimalSeparator":",","currencyGroupSeparator":".","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":".","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"dd.MM.yyyy","longDatePattern":"dddd, d. MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d. MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":".","timeSeparator":":","eraName":"n. Chr.","firstDayOfWeek":1,"dayNames":["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"],"abbreviatedDayNames":["So","Mo","Di","Mi","Do","Fr","Sa"],"monthNames":["Januar","Februar","M\u00E4rz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],"abbreviatedMonthNames":["Jan","Feb","M\u00E4r","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"],"monthGenitiveNames":["Januar","Februar","M\u00E4rz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],"abbreviatedMonthGenitiveNames":["Jan.","Feb.","M\u00E4rz","Apr.","Mai","Juni","Juli","Aug.","Sept.","Okt.","Nov.","Dez."],"amDesignator":"AM","pmDesignator":"PM","calendar":{"name":"System.Globalization.GregorianCalendar","twoDigitYearMax":2049,"yearOffset":0}}}
 num|de-DE|1234.5||1234,5
 num|de-DE|1234.5|N|1.234,500
 num|de-DE|1234.5|N0|1.234
@@ -470,7 +470,7 @@ date|de-DE|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
 date|de-DE|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
 date|de-DE|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|de-DE|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
-culture es-ES {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":".","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"\u20AC","currencyDecimalSeparator":",","currencyGroupSeparator":".","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":".","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"d/M/yyyy","longDatePattern":"dddd, d \u0027de\u0027 MMMM \u0027de\u0027 yyyy","shortTimePattern":"H:mm","longTimePattern":"H:mm:ss","monthDayPattern":"d \u0027de\u0027 MMMM","yearMonthPattern":"MMMM \u0027de\u0027 yyyy","dateSeparator":"/","timeSeparator":":","eraName":"d. C.","firstDayOfWeek":1,"dayNames":["domingo","lunes","martes","mi\u00E9rcoles","jueves","viernes","s\u00E1bado"],"abbreviatedDayNames":["dom","lun","mar","mi\u00E9","jue","vie","s\u00E1b"],"monthNames":["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"],"abbreviatedMonthNames":["ene","feb","mar","abr","may","jun","jul","ago","sept","oct","nov","dic"],"monthGenitiveNames":["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"],"abbreviatedMonthGenitiveNames":["ene","feb","mar","abr","may","jun","jul","ago","sept","oct","nov","dic"],"amDesignator":"a.\u202Fm.","pmDesignator":"p.\u202Fm."}}
+culture es-ES {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":".","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"\u20AC","currencyDecimalSeparator":",","currencyGroupSeparator":".","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":".","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"d/M/yyyy","longDatePattern":"dddd, d \u0027de\u0027 MMMM \u0027de\u0027 yyyy","shortTimePattern":"H:mm","longTimePattern":"H:mm:ss","monthDayPattern":"d \u0027de\u0027 MMMM","yearMonthPattern":"MMMM \u0027de\u0027 yyyy","dateSeparator":"/","timeSeparator":":","eraName":"d. C.","firstDayOfWeek":1,"dayNames":["domingo","lunes","martes","mi\u00E9rcoles","jueves","viernes","s\u00E1bado"],"abbreviatedDayNames":["dom","lun","mar","mi\u00E9","jue","vie","s\u00E1b"],"monthNames":["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"],"abbreviatedMonthNames":["ene","feb","mar","abr","may","jun","jul","ago","sept","oct","nov","dic"],"monthGenitiveNames":["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"],"abbreviatedMonthGenitiveNames":["ene","feb","mar","abr","may","jun","jul","ago","sept","oct","nov","dic"],"amDesignator":"a.\u202Fm.","pmDesignator":"p.\u202Fm.","calendar":{"name":"System.Globalization.GregorianCalendar","twoDigitYearMax":2049,"yearOffset":0}}}
 num|es-ES|1234.5||1234,5
 num|es-ES|1234.5|N|1.234,500
 num|es-ES|1234.5|N0|1.234
@@ -627,7 +627,7 @@ date|es-ES|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
 date|es-ES|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
 date|es-ES|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|es-ES|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
-culture sv-SE {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":"\u00A0","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"\u2212","positiveSign":"\u002B","currencySymbol":"kr","currencyDecimalSeparator":",","currencyGroupSeparator":"\u00A0","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":"\u00A0","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"\u2212\u221E"},"dateTimeFormat":{"shortDatePattern":"yyyy-MM-dd","longDatePattern":"dddd d MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":"-","timeSeparator":":","eraName":"e.Kr.","firstDayOfWeek":1,"dayNames":["s\u00F6ndag","m\u00E5ndag","tisdag","onsdag","torsdag","fredag","l\u00F6rdag"],"abbreviatedDayNames":["s\u00F6n","m\u00E5n","tis","ons","tors","fre","l\u00F6r"],"monthNames":["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"],"abbreviatedMonthNames":["jan.","feb.","mars","apr.","maj","juni","juli","aug.","sep.","okt.","nov.","dec."],"monthGenitiveNames":["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"],"abbreviatedMonthGenitiveNames":["jan.","feb.","mars","apr.","maj","juni","juli","aug.","sep.","okt.","nov.","dec."],"amDesignator":"fm","pmDesignator":"em"}}
+culture sv-SE {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":"\u00A0","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"\u2212","positiveSign":"\u002B","currencySymbol":"kr","currencyDecimalSeparator":",","currencyGroupSeparator":"\u00A0","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":"\u00A0","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"\u2212\u221E"},"dateTimeFormat":{"shortDatePattern":"yyyy-MM-dd","longDatePattern":"dddd d MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":"-","timeSeparator":":","eraName":"e.Kr.","firstDayOfWeek":1,"dayNames":["s\u00F6ndag","m\u00E5ndag","tisdag","onsdag","torsdag","fredag","l\u00F6rdag"],"abbreviatedDayNames":["s\u00F6n","m\u00E5n","tis","ons","tors","fre","l\u00F6r"],"monthNames":["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"],"abbreviatedMonthNames":["jan.","feb.","mars","apr.","maj","juni","juli","aug.","sep.","okt.","nov.","dec."],"monthGenitiveNames":["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"],"abbreviatedMonthGenitiveNames":["jan.","feb.","mars","apr.","maj","juni","juli","aug.","sep.","okt.","nov.","dec."],"amDesignator":"fm","pmDesignator":"em","calendar":{"name":"System.Globalization.GregorianCalendar","twoDigitYearMax":2049,"yearOffset":0}}}
 num|sv-SE|1234.5||1234,5
 num|sv-SE|1234.5|N|1 234,500
 num|sv-SE|1234.5|N0|1 234
@@ -784,7 +784,7 @@ date|sv-SE|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
 date|sv-SE|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
 date|sv-SE|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|sv-SE|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
-culture fr-FR {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":"\u202F","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"\u20AC","currencyDecimalSeparator":",","currencyGroupSeparator":"\u202F","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":"\u202F","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"dd/MM/yyyy","longDatePattern":"dddd d MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":"/","timeSeparator":":","eraName":"ap. J.-C.","firstDayOfWeek":1,"dayNames":["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"],"abbreviatedDayNames":["dim.","lun.","mar.","mer.","jeu.","ven.","sam."],"monthNames":["janvier","f\u00E9vrier","mars","avril","mai","juin","juillet","ao\u00FBt","septembre","octobre","novembre","d\u00E9cembre"],"abbreviatedMonthNames":["janv.","f\u00E9vr.","mars","avr.","mai","juin","juil.","ao\u00FBt","sept.","oct.","nov.","d\u00E9c."],"monthGenitiveNames":["janvier","f\u00E9vrier","mars","avril","mai","juin","juillet","ao\u00FBt","septembre","octobre","novembre","d\u00E9cembre"],"abbreviatedMonthGenitiveNames":["janv.","f\u00E9vr.","mars","avr.","mai","juin","juil.","ao\u00FBt","sept.","oct.","nov.","d\u00E9c."],"amDesignator":"AM","pmDesignator":"PM"}}
+culture fr-FR {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":"\u202F","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"\u20AC","currencyDecimalSeparator":",","currencyGroupSeparator":"\u202F","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":"\u202F","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"dd/MM/yyyy","longDatePattern":"dddd d MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":"/","timeSeparator":":","eraName":"ap. J.-C.","firstDayOfWeek":1,"dayNames":["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"],"abbreviatedDayNames":["dim.","lun.","mar.","mer.","jeu.","ven.","sam."],"monthNames":["janvier","f\u00E9vrier","mars","avril","mai","juin","juillet","ao\u00FBt","septembre","octobre","novembre","d\u00E9cembre"],"abbreviatedMonthNames":["janv.","f\u00E9vr.","mars","avr.","mai","juin","juil.","ao\u00FBt","sept.","oct.","nov.","d\u00E9c."],"monthGenitiveNames":["janvier","f\u00E9vrier","mars","avril","mai","juin","juillet","ao\u00FBt","septembre","octobre","novembre","d\u00E9cembre"],"abbreviatedMonthGenitiveNames":["janv.","f\u00E9vr.","mars","avr.","mai","juin","juil.","ao\u00FBt","sept.","oct.","nov.","d\u00E9c."],"amDesignator":"AM","pmDesignator":"PM","calendar":{"name":"System.Globalization.GregorianCalendar","twoDigitYearMax":2049,"yearOffset":0}}}
 num|fr-FR|1234.5||1234,5
 num|fr-FR|1234.5|N|1 234,500
 num|fr-FR|1234.5|N0|1 234
@@ -941,7 +941,7 @@ date|fr-FR|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
 date|fr-FR|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
 date|fr-FR|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|fr-FR|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
-culture ar-EG {"numberFormat":{"numberDecimalSeparator":"\u066B","numberGroupSeparator":"\u066C","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"\u061C-","positiveSign":"\u061C\u002B","currencySymbol":"\u062C.\u0645.\u200F","currencyDecimalSeparator":"\u066B","currencyGroupSeparator":"\u066C","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"\u066A\u061C","percentDecimalSeparator":"\u066B","percentGroupSeparator":"\u066C","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":1,"percentNegativePattern":1,"perMilleSymbol":"\u0609","nanSymbol":"\u0644\u064A\u0633\u00A0\u0631\u0642\u0645\u064B\u0627","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"\u061C-\u221E"},"dateTimeFormat":{"shortDatePattern":"d\u200F/M\u200F/yyyy","longDatePattern":"dddd\u060C d MMMM\u060C yyyy","shortTimePattern":"h:mm\u00A0tt","longTimePattern":"h:mm:ss\u00A0tt","monthDayPattern":"d MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":"\u200F/","timeSeparator":":","eraName":"\u0645","firstDayOfWeek":6,"dayNames":["\u0627\u0644\u0623\u062D\u062F","\u0627\u0644\u0627\u062B\u0646\u064A\u0646","\u0627\u0644\u062B\u0644\u0627\u062B\u0627\u0621","\u0627\u0644\u0623\u0631\u0628\u0639\u0627\u0621","\u0627\u0644\u062E\u0645\u064A\u0633","\u0627\u0644\u062C\u0645\u0639\u0629","\u0627\u0644\u0633\u0628\u062A"],"abbreviatedDayNames":["\u0623\u062D\u062F","\u0627\u062B\u0646\u064A\u0646","\u062B\u0644\u0627\u062B\u0627\u0621","\u0623\u0631\u0628\u0639\u0627\u0621","\u062E\u0645\u064A\u0633","\u062C\u0645\u0639\u0629","\u0633\u0628\u062A"],"monthNames":["\u064A\u0646\u0627\u064A\u0631","\u0641\u0628\u0631\u0627\u064A\u0631","\u0645\u0627\u0631\u0633","\u0623\u0628\u0631\u064A\u0644","\u0645\u0627\u064A\u0648","\u064A\u0648\u0646\u064A\u0648","\u064A\u0648\u0644\u064A\u0648","\u0623\u063A\u0633\u0637\u0633","\u0633\u0628\u062A\u0645\u0628\u0631","\u0623\u0643\u062A\u0648\u0628\u0631","\u0646\u0648\u0641\u0645\u0628\u0631","\u062F\u064A\u0633\u0645\u0628\u0631"],"abbreviatedMonthNames":["\u064A\u0646\u0627\u064A\u0631","\u0641\u0628\u0631\u0627\u064A\u0631","\u0645\u0627\u0631\u0633","\u0623\u0628\u0631\u064A\u0644","\u0645\u0627\u064A\u0648","\u064A\u0648\u0646\u064A\u0648","\u064A\u0648\u0644\u064A\u0648","\u0623\u063A\u0633\u0637\u0633","\u0633\u0628\u062A\u0645\u0628\u0631","\u0623\u0643\u062A\u0648\u0628\u0631","\u0646\u0648\u0641\u0645\u0628\u0631","\u062F\u064A\u0633\u0645\u0628\u0631"],"monthGenitiveNames":["\u064A\u0646\u0627\u064A\u0631","\u0641\u0628\u0631\u0627\u064A\u0631","\u0645\u0627\u0631\u0633","\u0623\u0628\u0631\u064A\u0644","\u0645\u0627\u064A\u0648","\u064A\u0648\u0646\u064A\u0648","\u064A\u0648\u0644\u064A\u0648","\u0623\u063A\u0633\u0637\u0633","\u0633\u0628\u062A\u0645\u0628\u0631","\u0623\u0643\u062A\u0648\u0628\u0631","\u0646\u0648\u0641\u0645\u0628\u0631","\u062F\u064A\u0633\u0645\u0628\u0631"],"abbreviatedMonthGenitiveNames":["\u064A\u0646\u0627\u064A\u0631","\u0641\u0628\u0631\u0627\u064A\u0631","\u0645\u0627\u0631\u0633","\u0623\u0628\u0631\u064A\u0644","\u0645\u0627\u064A\u0648","\u064A\u0648\u0646\u064A\u0648","\u064A\u0648\u0644\u064A\u0648","\u0623\u063A\u0633\u0637\u0633","\u0633\u0628\u062A\u0645\u0628\u0631","\u0623\u0643\u062A\u0648\u0628\u0631","\u0646\u0648\u0641\u0645\u0628\u0631","\u062F\u064A\u0633\u0645\u0628\u0631"],"amDesignator":"\u0635","pmDesignator":"\u0645"}}
+culture ar-EG {"numberFormat":{"numberDecimalSeparator":"\u066B","numberGroupSeparator":"\u066C","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"\u061C-","positiveSign":"\u061C\u002B","currencySymbol":"\u062C.\u0645.\u200F","currencyDecimalSeparator":"\u066B","currencyGroupSeparator":"\u066C","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"\u066A\u061C","percentDecimalSeparator":"\u066B","percentGroupSeparator":"\u066C","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":1,"percentNegativePattern":1,"perMilleSymbol":"\u0609","nanSymbol":"\u0644\u064A\u0633\u00A0\u0631\u0642\u0645\u064B\u0627","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"\u061C-\u221E"},"dateTimeFormat":{"shortDatePattern":"d\u200F/M\u200F/yyyy","longDatePattern":"dddd\u060C d MMMM\u060C yyyy","shortTimePattern":"h:mm\u00A0tt","longTimePattern":"h:mm:ss\u00A0tt","monthDayPattern":"d MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":"\u200F/","timeSeparator":":","eraName":"\u0645","firstDayOfWeek":6,"dayNames":["\u0627\u0644\u0623\u062D\u062F","\u0627\u0644\u0627\u062B\u0646\u064A\u0646","\u0627\u0644\u062B\u0644\u0627\u062B\u0627\u0621","\u0627\u0644\u0623\u0631\u0628\u0639\u0627\u0621","\u0627\u0644\u062E\u0645\u064A\u0633","\u0627\u0644\u062C\u0645\u0639\u0629","\u0627\u0644\u0633\u0628\u062A"],"abbreviatedDayNames":["\u0623\u062D\u062F","\u0627\u062B\u0646\u064A\u0646","\u062B\u0644\u0627\u062B\u0627\u0621","\u0623\u0631\u0628\u0639\u0627\u0621","\u062E\u0645\u064A\u0633","\u062C\u0645\u0639\u0629","\u0633\u0628\u062A"],"monthNames":["\u064A\u0646\u0627\u064A\u0631","\u0641\u0628\u0631\u0627\u064A\u0631","\u0645\u0627\u0631\u0633","\u0623\u0628\u0631\u064A\u0644","\u0645\u0627\u064A\u0648","\u064A\u0648\u0646\u064A\u0648","\u064A\u0648\u0644\u064A\u0648","\u0623\u063A\u0633\u0637\u0633","\u0633\u0628\u062A\u0645\u0628\u0631","\u0623\u0643\u062A\u0648\u0628\u0631","\u0646\u0648\u0641\u0645\u0628\u0631","\u062F\u064A\u0633\u0645\u0628\u0631"],"abbreviatedMonthNames":["\u064A\u0646\u0627\u064A\u0631","\u0641\u0628\u0631\u0627\u064A\u0631","\u0645\u0627\u0631\u0633","\u0623\u0628\u0631\u064A\u0644","\u0645\u0627\u064A\u0648","\u064A\u0648\u0646\u064A\u0648","\u064A\u0648\u0644\u064A\u0648","\u0623\u063A\u0633\u0637\u0633","\u0633\u0628\u062A\u0645\u0628\u0631","\u0623\u0643\u062A\u0648\u0628\u0631","\u0646\u0648\u0641\u0645\u0628\u0631","\u062F\u064A\u0633\u0645\u0628\u0631"],"monthGenitiveNames":["\u064A\u0646\u0627\u064A\u0631","\u0641\u0628\u0631\u0627\u064A\u0631","\u0645\u0627\u0631\u0633","\u0623\u0628\u0631\u064A\u0644","\u0645\u0627\u064A\u0648","\u064A\u0648\u0646\u064A\u0648","\u064A\u0648\u0644\u064A\u0648","\u0623\u063A\u0633\u0637\u0633","\u0633\u0628\u062A\u0645\u0628\u0631","\u0623\u0643\u062A\u0648\u0628\u0631","\u0646\u0648\u0641\u0645\u0628\u0631","\u062F\u064A\u0633\u0645\u0628\u0631"],"abbreviatedMonthGenitiveNames":["\u064A\u0646\u0627\u064A\u0631","\u0641\u0628\u0631\u0627\u064A\u0631","\u0645\u0627\u0631\u0633","\u0623\u0628\u0631\u064A\u0644","\u0645\u0627\u064A\u0648","\u064A\u0648\u0646\u064A\u0648","\u064A\u0648\u0644\u064A\u0648","\u0623\u063A\u0633\u0637\u0633","\u0633\u0628\u062A\u0645\u0628\u0631","\u0623\u0643\u062A\u0648\u0628\u0631","\u0646\u0648\u0641\u0645\u0628\u0631","\u062F\u064A\u0633\u0645\u0628\u0631"],"amDesignator":"\u0635","pmDesignator":"\u0645","calendar":{"name":"System.Globalization.GregorianCalendar","twoDigitYearMax":2049,"yearOffset":0}}}
 num|ar-EG|1234.5||1234٫5
 num|ar-EG|1234.5|N|1٬234٫500
 num|ar-EG|1234.5|N0|1٬234
@@ -1098,6 +1098,477 @@ date|ar-EG|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
 date|ar-EG|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
 date|ar-EG|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|ar-EG|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
+culture th-TH {"numberFormat":{"numberDecimalSeparator":".","numberGroupSeparator":",","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"\u0E3F","currencyDecimalSeparator":".","currencyGroupSeparator":",","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":0,"currencyNegativePattern":1,"percentSymbol":"%","percentDecimalSeparator":".","percentGroupSeparator":",","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":1,"percentNegativePattern":1,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"d/M/yyyy","longDatePattern":"dddd\u0E17\u0E35\u0E48 d MMMM g yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":"/","timeSeparator":":","eraName":"\u0E1E.\u0E28.","firstDayOfWeek":0,"dayNames":["\u0E27\u0E31\u0E19\u0E2D\u0E32\u0E17\u0E34\u0E15\u0E22\u0E4C","\u0E27\u0E31\u0E19\u0E08\u0E31\u0E19\u0E17\u0E23\u0E4C","\u0E27\u0E31\u0E19\u0E2D\u0E31\u0E07\u0E04\u0E32\u0E23","\u0E27\u0E31\u0E19\u0E1E\u0E38\u0E18","\u0E27\u0E31\u0E19\u0E1E\u0E24\u0E2B\u0E31\u0E2A\u0E1A\u0E14\u0E35","\u0E27\u0E31\u0E19\u0E28\u0E38\u0E01\u0E23\u0E4C","\u0E27\u0E31\u0E19\u0E40\u0E2A\u0E32\u0E23\u0E4C"],"abbreviatedDayNames":["\u0E2D\u0E32\u0E17\u0E34\u0E15\u0E22\u0E4C","\u0E08\u0E31\u0E19\u0E17\u0E23\u0E4C","\u0E2D\u0E31\u0E07\u0E04\u0E32\u0E23","\u0E1E\u0E38\u0E18","\u0E1E\u0E24\u0E2B\u0E31\u0E2A","\u0E28\u0E38\u0E01\u0E23\u0E4C","\u0E40\u0E2A\u0E32\u0E23\u0E4C"],"monthNames":["\u0E21\u0E01\u0E23\u0E32\u0E04\u0E21","\u0E01\u0E38\u0E21\u0E20\u0E32\u0E1E\u0E31\u0E19\u0E18\u0E4C","\u0E21\u0E35\u0E19\u0E32\u0E04\u0E21","\u0E40\u0E21\u0E29\u0E32\u0E22\u0E19","\u0E1E\u0E24\u0E29\u0E20\u0E32\u0E04\u0E21","\u0E21\u0E34\u0E16\u0E38\u0E19\u0E32\u0E22\u0E19","\u0E01\u0E23\u0E01\u0E0E\u0E32\u0E04\u0E21","\u0E2A\u0E34\u0E07\u0E2B\u0E32\u0E04\u0E21","\u0E01\u0E31\u0E19\u0E22\u0E32\u0E22\u0E19","\u0E15\u0E38\u0E25\u0E32\u0E04\u0E21","\u0E1E\u0E24\u0E28\u0E08\u0E34\u0E01\u0E32\u0E22\u0E19","\u0E18\u0E31\u0E19\u0E27\u0E32\u0E04\u0E21"],"abbreviatedMonthNames":["\u0E21.\u0E04.","\u0E01.\u0E1E.","\u0E21\u0E35.\u0E04.","\u0E40\u0E21.\u0E22.","\u0E1E.\u0E04.","\u0E21\u0E34.\u0E22.","\u0E01.\u0E04.","\u0E2A.\u0E04.","\u0E01.\u0E22.","\u0E15.\u0E04.","\u0E1E.\u0E22.","\u0E18.\u0E04."],"monthGenitiveNames":["\u0E21\u0E01\u0E23\u0E32\u0E04\u0E21","\u0E01\u0E38\u0E21\u0E20\u0E32\u0E1E\u0E31\u0E19\u0E18\u0E4C","\u0E21\u0E35\u0E19\u0E32\u0E04\u0E21","\u0E40\u0E21\u0E29\u0E32\u0E22\u0E19","\u0E1E\u0E24\u0E29\u0E20\u0E32\u0E04\u0E21","\u0E21\u0E34\u0E16\u0E38\u0E19\u0E32\u0E22\u0E19","\u0E01\u0E23\u0E01\u0E0E\u0E32\u0E04\u0E21","\u0E2A\u0E34\u0E07\u0E2B\u0E32\u0E04\u0E21","\u0E01\u0E31\u0E19\u0E22\u0E32\u0E22\u0E19","\u0E15\u0E38\u0E25\u0E32\u0E04\u0E21","\u0E1E\u0E24\u0E28\u0E08\u0E34\u0E01\u0E32\u0E22\u0E19","\u0E18\u0E31\u0E19\u0E27\u0E32\u0E04\u0E21"],"abbreviatedMonthGenitiveNames":["\u0E21.\u0E04.","\u0E01.\u0E1E.","\u0E21\u0E35.\u0E04.","\u0E40\u0E21.\u0E22.","\u0E1E.\u0E04.","\u0E21\u0E34.\u0E22.","\u0E01.\u0E04.","\u0E2A.\u0E04.","\u0E01.\u0E22.","\u0E15.\u0E04.","\u0E1E.\u0E22.","\u0E18.\u0E04."],"amDesignator":"AM","pmDesignator":"PM","calendar":{"name":"System.Globalization.ThaiBuddhistCalendar","twoDigitYearMax":2572,"yearOffset":543}}}
+num|th-TH|1234.5||1234.5
+num|th-TH|1234.5|N|1,234.500
+num|th-TH|1234.5|N0|1,234
+num|th-TH|1234.5|N2|1,234.50
+num|th-TH|1234.5|F|1234.500
+num|th-TH|1234.5|F2|1234.50
+num|th-TH|1234.5|F0|1234
+num|th-TH|1234.5|P|123,450.000%
+num|th-TH|1234.5|P1|123,450.0%
+num|th-TH|1234.5|P0|123,450%
+num|th-TH|1234.5|C|฿1,234.50
+num|th-TH|1234.5|C2|฿1,234.50
+num|th-TH|1234.5|C0|฿1,234
+num|th-TH|1234.5|E2|1.23E+003
+num|th-TH|1234.5|#,##0.00|1,234.50
+num|th-TH|1234.5|0.0%|123450.0%
+num|th-TH|-1234.5||-1234.5
+num|th-TH|-1234.5|N|-1,234.500
+num|th-TH|-1234.5|N0|-1,234
+num|th-TH|-1234.5|N2|-1,234.50
+num|th-TH|-1234.5|F|-1234.500
+num|th-TH|-1234.5|F2|-1234.50
+num|th-TH|-1234.5|F0|-1234
+num|th-TH|-1234.5|P|-123,450.000%
+num|th-TH|-1234.5|P1|-123,450.0%
+num|th-TH|-1234.5|P0|-123,450%
+num|th-TH|-1234.5|C|-฿1,234.50
+num|th-TH|-1234.5|C2|-฿1,234.50
+num|th-TH|-1234.5|C0|-฿1,234
+num|th-TH|-1234.5|E2|-1.23E+003
+num|th-TH|-1234.5|#,##0.00|-1,234.50
+num|th-TH|-1234.5|0.0%|-123450.0%
+num|th-TH|0||0
+num|th-TH|0|N|0.000
+num|th-TH|0|N0|0
+num|th-TH|0|N2|0.00
+num|th-TH|0|F|0.000
+num|th-TH|0|F2|0.00
+num|th-TH|0|F0|0
+num|th-TH|0|P|0.000%
+num|th-TH|0|P1|0.0%
+num|th-TH|0|P0|0%
+num|th-TH|0|C|฿0.00
+num|th-TH|0|C2|฿0.00
+num|th-TH|0|C0|฿0
+num|th-TH|0|E2|0.00E+000
+num|th-TH|0|#,##0.00|0.00
+num|th-TH|0|0.0%|0.0%
+num|th-TH|0.125||0.125
+num|th-TH|0.125|N|0.125
+num|th-TH|0.125|N0|0
+num|th-TH|0.125|N2|0.12
+num|th-TH|0.125|F|0.125
+num|th-TH|0.125|F2|0.12
+num|th-TH|0.125|F0|0
+num|th-TH|0.125|P|12.500%
+num|th-TH|0.125|P1|12.5%
+num|th-TH|0.125|P0|12%
+num|th-TH|0.125|C|฿0.12
+num|th-TH|0.125|C2|฿0.12
+num|th-TH|0.125|C0|฿0
+num|th-TH|0.125|E2|1.25E-001
+num|th-TH|0.125|#,##0.00|0.13
+num|th-TH|0.125|0.0%|12.5%
+num|th-TH|1000000||1000000
+num|th-TH|1000000|N|1,000,000.000
+num|th-TH|1000000|N0|1,000,000
+num|th-TH|1000000|N2|1,000,000.00
+num|th-TH|1000000|F|1000000.000
+num|th-TH|1000000|F2|1000000.00
+num|th-TH|1000000|F0|1000000
+num|th-TH|1000000|P|100,000,000.000%
+num|th-TH|1000000|P1|100,000,000.0%
+num|th-TH|1000000|P0|100,000,000%
+num|th-TH|1000000|C|฿1,000,000.00
+num|th-TH|1000000|C2|฿1,000,000.00
+num|th-TH|1000000|C0|฿1,000,000
+num|th-TH|1000000|E2|1.00E+006
+num|th-TH|1000000|#,##0.00|1,000,000.00
+num|th-TH|1000000|0.0%|100000000.0%
+num|th-TH|Infinity||∞
+num|th-TH|Infinity|N|∞
+num|th-TH|Infinity|N0|∞
+num|th-TH|Infinity|N2|∞
+num|th-TH|Infinity|F|∞
+num|th-TH|Infinity|F2|∞
+num|th-TH|Infinity|F0|∞
+num|th-TH|Infinity|P|∞
+num|th-TH|Infinity|P1|∞
+num|th-TH|Infinity|P0|∞
+num|th-TH|Infinity|C|∞
+num|th-TH|Infinity|C2|∞
+num|th-TH|Infinity|C0|∞
+num|th-TH|Infinity|E2|∞
+num|th-TH|Infinity|#,##0.00|∞
+num|th-TH|Infinity|0.0%|∞
+num|th-TH|-Infinity||-∞
+num|th-TH|-Infinity|N|-∞
+num|th-TH|-Infinity|N0|-∞
+num|th-TH|-Infinity|N2|-∞
+num|th-TH|-Infinity|F|-∞
+num|th-TH|-Infinity|F2|-∞
+num|th-TH|-Infinity|F0|-∞
+num|th-TH|-Infinity|P|-∞
+num|th-TH|-Infinity|P1|-∞
+num|th-TH|-Infinity|P0|-∞
+num|th-TH|-Infinity|C|-∞
+num|th-TH|-Infinity|C2|-∞
+num|th-TH|-Infinity|C0|-∞
+num|th-TH|-Infinity|E2|-∞
+num|th-TH|-Infinity|#,##0.00|-∞
+num|th-TH|-Infinity|0.0%|-∞
+num|th-TH|NaN||NaN
+num|th-TH|NaN|N|NaN
+num|th-TH|NaN|N0|NaN
+num|th-TH|NaN|N2|NaN
+num|th-TH|NaN|F|NaN
+num|th-TH|NaN|F2|NaN
+num|th-TH|NaN|F0|NaN
+num|th-TH|NaN|P|NaN
+num|th-TH|NaN|P1|NaN
+num|th-TH|NaN|P0|NaN
+num|th-TH|NaN|C|NaN
+num|th-TH|NaN|C2|NaN
+num|th-TH|NaN|C0|NaN
+num|th-TH|NaN|E2|NaN
+num|th-TH|NaN|#,##0.00|NaN
+num|th-TH|NaN|0.0%|NaN
+int|th-TH|42||42
+int|th-TH|42|D5|00042
+int|th-TH|42|D|42
+int|th-TH|42|N0|42
+int|th-TH|-42||-42
+int|th-TH|-42|D5|-00042
+int|th-TH|-42|D|-42
+int|th-TH|-42|N0|-42
+int|th-TH|1000000||1000000
+int|th-TH|1000000|D5|1000000
+int|th-TH|1000000|D|1000000
+int|th-TH|1000000|N0|1,000,000
+date|th-TH|2026-08-13T15:45:07|d|13/8/2569
+date|th-TH|2026-08-13T15:45:07|D|วันพฤหัสบดีที่ 13 สิงหาคม พ.ศ. 2569
+date|th-TH|2026-08-13T15:45:07|t|15:45
+date|th-TH|2026-08-13T15:45:07|T|15:45:07
+date|th-TH|2026-08-13T15:45:07|f|วันพฤหัสบดีที่ 13 สิงหาคม พ.ศ. 2569 15:45
+date|th-TH|2026-08-13T15:45:07|F|วันพฤหัสบดีที่ 13 สิงหาคม พ.ศ. 2569 15:45:07
+date|th-TH|2026-08-13T15:45:07|g|13/8/2569 15:45
+date|th-TH|2026-08-13T15:45:07|G|13/8/2569 15:45:07
+date|th-TH|2026-08-13T15:45:07|M|13 สิงหาคม
+date|th-TH|2026-08-13T15:45:07|m|13 สิงหาคม
+date|th-TH|2026-08-13T15:45:07|Y|สิงหาคม 2569
+date|th-TH|2026-08-13T15:45:07|y|สิงหาคม 2569
+date|th-TH|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
+date|th-TH|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
+date|th-TH|2026-08-13T15:45:07|s|2026-08-13T15:45:07
+date|th-TH|2026-08-13T15:45:07|yyyy-MM-dd|2569-08-13
+culture fa-IR {"numberFormat":{"numberDecimalSeparator":"\u066B","numberGroupSeparator":"\u066C","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"\u200E\u2212","positiveSign":"\u200E\u002B","currencySymbol":"\u0631\u06CC\u0627\u0644","currencyDecimalSeparator":"\u066B","currencyGroupSeparator":"\u066C","currencyGroupSizes":[3],"currencyDecimalDigits":0,"currencyPositivePattern":0,"currencyNegativePattern":1,"percentSymbol":"\u066A","percentDecimalSeparator":"\u066B","percentGroupSeparator":"\u066C","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":1,"percentNegativePattern":1,"perMilleSymbol":"\u0609","nanSymbol":"\u0646\u0627\u0639\u062F\u062F","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"\u200E\u2212\u221E"},"dateTimeFormat":{"shortDatePattern":"yyyy/M/d","longDatePattern":"yyyy MMMM d, dddd","shortTimePattern":"H:mm","longTimePattern":"H:mm:ss","monthDayPattern":"d MMMM","yearMonthPattern":"yyyy MMMM","dateSeparator":"/","timeSeparator":":","eraName":"\u0647\u200D.\u0634.","firstDayOfWeek":6,"dayNames":["\u06CC\u06A9\u0634\u0646\u0628\u0647","\u062F\u0648\u0634\u0646\u0628\u0647","\u0633\u0647\u200C\u0634\u0646\u0628\u0647","\u0686\u0647\u0627\u0631\u0634\u0646\u0628\u0647","\u067E\u0646\u062C\u0634\u0646\u0628\u0647","\u062C\u0645\u0639\u0647","\u0634\u0646\u0628\u0647"],"abbreviatedDayNames":["\u06CC\u06A9\u0634\u0646\u0628\u0647","\u062F\u0648\u0634\u0646\u0628\u0647","\u0633\u0647\u200C\u0634\u0646\u0628\u0647","\u0686\u0647\u0627\u0631\u0634\u0646\u0628\u0647","\u067E\u0646\u062C\u0634\u0646\u0628\u0647","\u062C\u0645\u0639\u0647","\u0634\u0646\u0628\u0647"],"monthNames":["\u0641\u0631\u0648\u0631\u062F\u06CC\u0646","\u0627\u0631\u062F\u06CC\u0628\u0647\u0634\u062A","\u062E\u0631\u062F\u0627\u062F","\u062A\u06CC\u0631","\u0645\u0631\u062F\u0627\u062F","\u0634\u0647\u0631\u06CC\u0648\u0631","\u0645\u0647\u0631","\u0622\u0628\u0627\u0646","\u0622\u0630\u0631","\u062F\u06CC","\u0628\u0647\u0645\u0646","\u0627\u0633\u0641\u0646\u062F"],"abbreviatedMonthNames":["\u0641\u0631\u0648\u0631\u062F\u06CC\u0646","\u0627\u0631\u062F\u06CC\u0628\u0647\u0634\u062A","\u062E\u0631\u062F\u0627\u062F","\u062A\u06CC\u0631","\u0645\u0631\u062F\u0627\u062F","\u0634\u0647\u0631\u06CC\u0648\u0631","\u0645\u0647\u0631","\u0622\u0628\u0627\u0646","\u0622\u0630\u0631","\u062F\u06CC","\u0628\u0647\u0645\u0646","\u0627\u0633\u0641\u0646\u062F"],"monthGenitiveNames":["\u0641\u0631\u0648\u0631\u062F\u06CC\u0646","\u0627\u0631\u062F\u06CC\u0628\u0647\u0634\u062A","\u062E\u0631\u062F\u0627\u062F","\u062A\u06CC\u0631","\u0645\u0631\u062F\u0627\u062F","\u0634\u0647\u0631\u06CC\u0648\u0631","\u0645\u0647\u0631","\u0622\u0628\u0627\u0646","\u0622\u0630\u0631","\u062F\u06CC","\u0628\u0647\u0645\u0646","\u0627\u0633\u0641\u0646\u062F"],"abbreviatedMonthGenitiveNames":["\u0641\u0631\u0648\u0631\u062F\u06CC\u0646","\u0627\u0631\u062F\u06CC\u0628\u0647\u0634\u062A","\u062E\u0631\u062F\u0627\u062F","\u062A\u06CC\u0631","\u0645\u0631\u062F\u0627\u062F","\u0634\u0647\u0631\u06CC\u0648\u0631","\u0645\u0647\u0631","\u0622\u0628\u0627\u0646","\u0622\u0630\u0631","\u062F\u06CC","\u0628\u0647\u0645\u0646","\u0627\u0633\u0641\u0646\u062F"],"amDesignator":"\u0642.\u0638.","pmDesignator":"\u0628.\u0638.","calendar":{"name":"System.Globalization.PersianCalendar","twoDigitYearMax":1410,"months":{"firstYear":1,"start":226895,"years":9378,"lengths":[31,31,31,31,31,31,30,30,30,30,30,29],"varying":[12],"longer":"CIiIiIRERERCIiIiIRERERCIiIiEREREQiIiIiEREREQiIiIiEREREIiIiIiEREREQiIiIhEREREIiIiIhEREREIiIiIhEREREIiIiIhEREREIiIiIRERERCIiIiIRERERCIiIiIRERERCIiIiIRERERCIiIiIRERERCIiIiIRERERCIiIiIREREQiIiIiERERERCIiIiEREREQiIiIiEREREQiIiIiEREREQiIiIiEREREQiIiIiEREREIiIiIhEREREQiIiIhEREREIiIiIhEREREIiIiIhEREREIiIiIhEREREIiIiIhEREREIiIiIhEREREIiIiIhERERCIiIiIRERERCIiIiIhERERCIiIiIRERERCIiIiIRERERCIiIiIRERERCIiIiIRERERCIiIiIRERERCIiIiIRERERCIiIiEREREQiIiIiIRERERCIiIiEREREQiIiIiERERERCIiIiEREREQiIiIiEREREQiIiIiEREREQiIiIiEREREQiIiIiEREREIiIiIiEREREQiIiIiEREREIiIiIhEREREIiIiIhEREREIiIiIhEREREIiIiIhEREREIiIiIhEREREIiIiIhERERCIiIiIRERERCIiIiIRERERCIiIiIRERERCIiIiIREREQiIiIiEREREQiIiIiEREREQiIiIiEREREQiIiIiEREREIiIiIhEREREIiIiIhEREREIiIiIhEREREIiIiIhERERCIiIiIRERERCIiIiIRERERCIiIiIRERERCIiIiEREREQiIiIiEREREQiIiIhEREREIiIiIhEREREIiIiIhEREREIiIiIhERERCIiIiIRERERCIiIiIREREQiIiIiEREREQiIiIiEREREIiIiIhEREREIiIiIhERERCIiIiIRERERCIiIiEREREQiIiIiEREREIiIiIhEREREIiIiIhERERCIiIiIRERERCIiIiEREREQiIiIiEREREIiIiIhEREREIiIiIRERERCIiIiEREREQiIiIhEREREIiIiIhERERCIiIiIRERERCIiIiEREREQiIiIiEREREIiIiIRERERCIiIiIREREQiIiIiEREREQiIiIhERERCIiIiIREREQiIiIiEREREQiIiIhEREREIiIiIREREQiIiIiEREREQiIiIhERERCIiIiIREREQiIiIiEREREIiIiIRERERCIiIiEREREQiIiIhERERCIiIiIREREQiIiIiEREREIiIiIREREQiIiIiEREREIiIiIhERERCIiIiEREREQiIiIhERERCIiIiIREREQiIiIhEREREIiIiIREREQiIiIhERERCIiIiIREREQiIiIhEREREIiIiIREREQiIiIhERERCIiIiIREREQiIiIhERERCIiIiIREREQiIiIhERERCIiIiEREREIiIiIhERERCIiIiEREREIiIiIREREQiIiIhERERCIiIiEREREQiIiIhERERCIiIiEREREIiIiIREREQiIiIhERERCIiIiEREREIiIiIREREQiIiIhERERCIiIiEREREIiIiIREREQiA"},"firstDay":226895,"lastDay":3652058,"outOfRange":"Specified time is not supported in this calendar. It should be between 0001/1/1 0:00:00 (Gregorian date) and 9378/10/13 23:59:59 (Gregorian date), inclusive.","timeOfDayInvariant":true}}}
+num|fa-IR|1234.5||1234٫5
+num|fa-IR|1234.5|N|1٬234٫500
+num|fa-IR|1234.5|N0|1٬234
+num|fa-IR|1234.5|N2|1٬234٫50
+num|fa-IR|1234.5|F|1234٫500
+num|fa-IR|1234.5|F2|1234٫50
+num|fa-IR|1234.5|F0|1234
+num|fa-IR|1234.5|P|123٬450٫000٪
+num|fa-IR|1234.5|P1|123٬450٫0٪
+num|fa-IR|1234.5|P0|123٬450٪
+num|fa-IR|1234.5|C|ریال1٬234
+num|fa-IR|1234.5|C2|ریال1٬234٫50
+num|fa-IR|1234.5|C0|ریال1٬234
+num|fa-IR|1234.5|E2|1٫23E‎+003
+num|fa-IR|1234.5|#,##0.00|1٬234٫50
+num|fa-IR|1234.5|0.0%|123450٫0٪
+num|fa-IR|-1234.5||‎−1234٫5
+num|fa-IR|-1234.5|N|‎−1٬234٫500
+num|fa-IR|-1234.5|N0|‎−1٬234
+num|fa-IR|-1234.5|N2|‎−1٬234٫50
+num|fa-IR|-1234.5|F|‎−1234٫500
+num|fa-IR|-1234.5|F2|‎−1234٫50
+num|fa-IR|-1234.5|F0|‎−1234
+num|fa-IR|-1234.5|P|‎−123٬450٫000٪
+num|fa-IR|-1234.5|P1|‎−123٬450٫0٪
+num|fa-IR|-1234.5|P0|‎−123٬450٪
+num|fa-IR|-1234.5|C|‎−ریال1٬234
+num|fa-IR|-1234.5|C2|‎−ریال1٬234٫50
+num|fa-IR|-1234.5|C0|‎−ریال1٬234
+num|fa-IR|-1234.5|E2|‎−1٫23E‎+003
+num|fa-IR|-1234.5|#,##0.00|‎−1٬234٫50
+num|fa-IR|-1234.5|0.0%|‎−123450٫0٪
+num|fa-IR|0||0
+num|fa-IR|0|N|0٫000
+num|fa-IR|0|N0|0
+num|fa-IR|0|N2|0٫00
+num|fa-IR|0|F|0٫000
+num|fa-IR|0|F2|0٫00
+num|fa-IR|0|F0|0
+num|fa-IR|0|P|0٫000٪
+num|fa-IR|0|P1|0٫0٪
+num|fa-IR|0|P0|0٪
+num|fa-IR|0|C|ریال0
+num|fa-IR|0|C2|ریال0٫00
+num|fa-IR|0|C0|ریال0
+num|fa-IR|0|E2|0٫00E‎+000
+num|fa-IR|0|#,##0.00|0٫00
+num|fa-IR|0|0.0%|0٫0٪
+num|fa-IR|0.125||0٫125
+num|fa-IR|0.125|N|0٫125
+num|fa-IR|0.125|N0|0
+num|fa-IR|0.125|N2|0٫12
+num|fa-IR|0.125|F|0٫125
+num|fa-IR|0.125|F2|0٫12
+num|fa-IR|0.125|F0|0
+num|fa-IR|0.125|P|12٫500٪
+num|fa-IR|0.125|P1|12٫5٪
+num|fa-IR|0.125|P0|12٪
+num|fa-IR|0.125|C|ریال0
+num|fa-IR|0.125|C2|ریال0٫12
+num|fa-IR|0.125|C0|ریال0
+num|fa-IR|0.125|E2|1٫25E‎−001
+num|fa-IR|0.125|#,##0.00|0٫13
+num|fa-IR|0.125|0.0%|12٫5٪
+num|fa-IR|1000000||1000000
+num|fa-IR|1000000|N|1٬000٬000٫000
+num|fa-IR|1000000|N0|1٬000٬000
+num|fa-IR|1000000|N2|1٬000٬000٫00
+num|fa-IR|1000000|F|1000000٫000
+num|fa-IR|1000000|F2|1000000٫00
+num|fa-IR|1000000|F0|1000000
+num|fa-IR|1000000|P|100٬000٬000٫000٪
+num|fa-IR|1000000|P1|100٬000٬000٫0٪
+num|fa-IR|1000000|P0|100٬000٬000٪
+num|fa-IR|1000000|C|ریال1٬000٬000
+num|fa-IR|1000000|C2|ریال1٬000٬000٫00
+num|fa-IR|1000000|C0|ریال1٬000٬000
+num|fa-IR|1000000|E2|1٫00E‎+006
+num|fa-IR|1000000|#,##0.00|1٬000٬000٫00
+num|fa-IR|1000000|0.0%|100000000٫0٪
+num|fa-IR|Infinity||∞
+num|fa-IR|Infinity|N|∞
+num|fa-IR|Infinity|N0|∞
+num|fa-IR|Infinity|N2|∞
+num|fa-IR|Infinity|F|∞
+num|fa-IR|Infinity|F2|∞
+num|fa-IR|Infinity|F0|∞
+num|fa-IR|Infinity|P|∞
+num|fa-IR|Infinity|P1|∞
+num|fa-IR|Infinity|P0|∞
+num|fa-IR|Infinity|C|∞
+num|fa-IR|Infinity|C2|∞
+num|fa-IR|Infinity|C0|∞
+num|fa-IR|Infinity|E2|∞
+num|fa-IR|Infinity|#,##0.00|∞
+num|fa-IR|Infinity|0.0%|∞
+num|fa-IR|-Infinity||‎−∞
+num|fa-IR|-Infinity|N|‎−∞
+num|fa-IR|-Infinity|N0|‎−∞
+num|fa-IR|-Infinity|N2|‎−∞
+num|fa-IR|-Infinity|F|‎−∞
+num|fa-IR|-Infinity|F2|‎−∞
+num|fa-IR|-Infinity|F0|‎−∞
+num|fa-IR|-Infinity|P|‎−∞
+num|fa-IR|-Infinity|P1|‎−∞
+num|fa-IR|-Infinity|P0|‎−∞
+num|fa-IR|-Infinity|C|‎−∞
+num|fa-IR|-Infinity|C2|‎−∞
+num|fa-IR|-Infinity|C0|‎−∞
+num|fa-IR|-Infinity|E2|‎−∞
+num|fa-IR|-Infinity|#,##0.00|‎−∞
+num|fa-IR|-Infinity|0.0%|‎−∞
+num|fa-IR|NaN||ناعدد
+num|fa-IR|NaN|N|ناعدد
+num|fa-IR|NaN|N0|ناعدد
+num|fa-IR|NaN|N2|ناعدد
+num|fa-IR|NaN|F|ناعدد
+num|fa-IR|NaN|F2|ناعدد
+num|fa-IR|NaN|F0|ناعدد
+num|fa-IR|NaN|P|ناعدد
+num|fa-IR|NaN|P1|ناعدد
+num|fa-IR|NaN|P0|ناعدد
+num|fa-IR|NaN|C|ناعدد
+num|fa-IR|NaN|C2|ناعدد
+num|fa-IR|NaN|C0|ناعدد
+num|fa-IR|NaN|E2|ناعدد
+num|fa-IR|NaN|#,##0.00|ناعدد
+num|fa-IR|NaN|0.0%|ناعدد
+int|fa-IR|42||42
+int|fa-IR|42|D5|00042
+int|fa-IR|42|D|42
+int|fa-IR|42|N0|42
+int|fa-IR|-42||‎−42
+int|fa-IR|-42|D5|‎−00042
+int|fa-IR|-42|D|‎−42
+int|fa-IR|-42|N0|‎−42
+int|fa-IR|1000000||1000000
+int|fa-IR|1000000|D5|1000000
+int|fa-IR|1000000|D|1000000
+int|fa-IR|1000000|N0|1٬000٬000
+date|fa-IR|2026-08-13T15:45:07|d|1405/5/22
+date|fa-IR|2026-08-13T15:45:07|D|1405 مرداد 22, پنجشنبه
+date|fa-IR|2026-08-13T15:45:07|t|15:45
+date|fa-IR|2026-08-13T15:45:07|T|15:45:07
+date|fa-IR|2026-08-13T15:45:07|f|1405 مرداد 22, پنجشنبه 15:45
+date|fa-IR|2026-08-13T15:45:07|F|1405 مرداد 22, پنجشنبه 15:45:07
+date|fa-IR|2026-08-13T15:45:07|g|1405/5/22 15:45
+date|fa-IR|2026-08-13T15:45:07|G|1405/5/22 15:45:07
+date|fa-IR|2026-08-13T15:45:07|M|22 مرداد
+date|fa-IR|2026-08-13T15:45:07|m|22 مرداد
+date|fa-IR|2026-08-13T15:45:07|Y|1405 مرداد
+date|fa-IR|2026-08-13T15:45:07|y|1405 مرداد
+date|fa-IR|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
+date|fa-IR|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
+date|fa-IR|2026-08-13T15:45:07|s|2026-08-13T15:45:07
+date|fa-IR|2026-08-13T15:45:07|yyyy-MM-dd|1405-05-22
+culture ar-SA {"numberFormat":{"numberDecimalSeparator":"\u066B","numberGroupSeparator":"\u066C","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"\u061C-","positiveSign":"\u061C\u002B","currencySymbol":"\u20C1","currencyDecimalSeparator":"\u066B","currencyGroupSeparator":"\u066C","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"\u066A\u061C","percentDecimalSeparator":"\u066B","percentGroupSeparator":"\u066C","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":1,"percentNegativePattern":1,"perMilleSymbol":"\u0609","nanSymbol":"\u0644\u064A\u0633\u00A0\u0631\u0642\u0645\u064B\u0627","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"\u061C-\u221E"},"dateTimeFormat":{"shortDatePattern":"d MMM\u060C yyyy g","longDatePattern":"dddd\u060C d MMMM\u060C yyyy g","shortTimePattern":"h:mm\u00A0tt","longTimePattern":"h:mm:ss\u00A0tt","monthDayPattern":"d MMMM","yearMonthPattern":"MMMM\u060C yyyy g","dateSeparator":" ","timeSeparator":":","eraName":"\u0628\u0639\u062F \u0627\u0644\u0647\u062C\u0631\u0629","firstDayOfWeek":0,"dayNames":["\u0627\u0644\u0623\u062D\u062F","\u0627\u0644\u0627\u062B\u0646\u064A\u0646","\u0627\u0644\u062B\u0644\u0627\u062B\u0627\u0621","\u0627\u0644\u0623\u0631\u0628\u0639\u0627\u0621","\u0627\u0644\u062E\u0645\u064A\u0633","\u0627\u0644\u062C\u0645\u0639\u0629","\u0627\u0644\u0633\u0628\u062A"],"abbreviatedDayNames":["\u0623\u062D\u062F","\u0627\u062B\u0646\u064A\u0646","\u062B\u0644\u0627\u062B\u0627\u0621","\u0623\u0631\u0628\u0639\u0627\u0621","\u062E\u0645\u064A\u0633","\u062C\u0645\u0639\u0629","\u0633\u0628\u062A"],"monthNames":["\u0645\u062D\u0631\u0645","\u0635\u0641\u0631","\u0631\u0628\u064A\u0639 \u0627\u0644\u0623\u0648\u0644","\u0631\u0628\u064A\u0639 \u0627\u0644\u0622\u062E\u0631","\u062C\u0645\u0627\u062F\u0649 \u0627\u0644\u0623\u0648\u0644\u0649","\u062C\u0645\u0627\u062F\u0649 \u0627\u0644\u0622\u062E\u0631\u0629","\u0631\u062C\u0628","\u0634\u0639\u0628\u0627\u0646","\u0631\u0645\u0636\u0627\u0646","\u0634\u0648\u0627\u0644","\u0630\u0648 \u0627\u0644\u0642\u0639\u062F\u0629","\u0630\u0648 \u0627\u0644\u062D\u062C\u0629"],"abbreviatedMonthNames":["\u0645\u062D\u0631\u0645","\u0635\u0641\u0631","\u0631\u0628\u064A\u0639 \u0627\u0644\u0623\u0648\u0644","\u0631\u0628\u064A\u0639 \u0627\u0644\u0622\u062E\u0631","\u062C\u0645\u0627\u062F\u0649 \u0627\u0644\u0623\u0648\u0644\u0649","\u062C\u0645\u0627\u062F\u0649 \u0627\u0644\u0622\u062E\u0631\u0629","\u0631\u062C\u0628","\u0634\u0639\u0628\u0627\u0646","\u0631\u0645\u0636\u0627\u0646","\u0634\u0648\u0627\u0644","\u0630\u0648 \u0627\u0644\u0642\u0639\u062F\u0629","\u0630\u0648 \u0627\u0644\u062D\u062C\u0629"],"monthGenitiveNames":["\u0645\u062D\u0631\u0645","\u0635\u0641\u0631","\u0631\u0628\u064A\u0639 \u0627\u0644\u0623\u0648\u0644","\u0631\u0628\u064A\u0639 \u0627\u0644\u0622\u062E\u0631","\u062C\u0645\u0627\u062F\u0649 \u0627\u0644\u0623\u0648\u0644\u0649","\u062C\u0645\u0627\u062F\u0649 \u0627\u0644\u0622\u062E\u0631\u0629","\u0631\u062C\u0628","\u0634\u0639\u0628\u0627\u0646","\u0631\u0645\u0636\u0627\u0646","\u0634\u0648\u0627\u0644","\u0630\u0648 \u0627\u0644\u0642\u0639\u062F\u0629","\u0630\u0648 \u0627\u0644\u062D\u062C\u0629"],"abbreviatedMonthGenitiveNames":["\u0645\u062D\u0631\u0645","\u0635\u0641\u0631","\u0631\u0628\u064A\u0639 \u0627\u0644\u0623\u0648\u0644","\u0631\u0628\u064A\u0639 \u0627\u0644\u0622\u062E\u0631","\u062C\u0645\u0627\u062F\u0649 \u0627\u0644\u0623\u0648\u0644\u0649","\u062C\u0645\u0627\u062F\u0649 \u0627\u0644\u0622\u062E\u0631\u0629","\u0631\u062C\u0628","\u0634\u0639\u0628\u0627\u0646","\u0631\u0645\u0636\u0627\u0646","\u0634\u0648\u0627\u0644","\u0630\u0648 \u0627\u0644\u0642\u0639\u062F\u0629","\u0630\u0648 \u0627\u0644\u062D\u062C\u0629"],"amDesignator":"\u0635","pmDesignator":"\u0645","calendar":{"name":"System.Globalization.UmAlQuraCalendar","twoDigitYearMax":1451,"months":{"firstYear":1318,"start":693714,"years":183,"lengths":[29,29,29,29,29,29,29,29,29,29,29,29],"varying":[1,2,3,4,5,6,7,8,9,10,11,12],"longer":"V0l2S3JXUraVbKrVVbJdktyV1K6lbSrVVaqrVLaldSupN0q2VWqq1S2pXUrqTdJukuqm1U2qW1K2k3SbpLsltUtqVtStpV0l6S7JbUrqVrSraVtJukuyW1K6lbSrVVaybZLsluSupW0q1VWqq1S7JbkrqVtKulWqq1VWqW1K6ldSbpNqqtVVqltSupW0m6TbJdUtqlrUrqVtS9I9kdqVtKtaVtK2k7SbZVapdUtqVsqtVVspuSupXUraVaqrWVdJdkuqW1K2pW0q6VcqdVNaldSbpN0m1TWqqtS2pXUnqVtKtVNsmuS2qWtK2lXSXZLcltStZVbStpN0m2TXKrVLaldStpVrKtlNyV1K6lbKrVVWyWA="},"firstDay":693714,"lastDay":758563,"outOfRange":"Specified time is not supported in this calendar. It should be between 04/30/1900 00:00:00 (Gregorian date) and 11/16/2077 23:59:59 (Gregorian date), inclusive.","timeOfDayInvariant":true}}}
+num|ar-SA|1234.5||1234٫5
+num|ar-SA|1234.5|N|1٬234٫500
+num|ar-SA|1234.5|N0|1٬234
+num|ar-SA|1234.5|N2|1٬234٫50
+num|ar-SA|1234.5|F|1234٫500
+num|ar-SA|1234.5|F2|1234٫50
+num|ar-SA|1234.5|F0|1234
+num|ar-SA|1234.5|P|123٬450٫000٪؜
+num|ar-SA|1234.5|P1|123٬450٫0٪؜
+num|ar-SA|1234.5|P0|123٬450٪؜
+num|ar-SA|1234.5|C|1٬234٫50 ⃁
+num|ar-SA|1234.5|C2|1٬234٫50 ⃁
+num|ar-SA|1234.5|C0|1٬234 ⃁
+num|ar-SA|1234.5|E2|1٫23E؜+003
+num|ar-SA|1234.5|#,##0.00|1٬234٫50
+num|ar-SA|1234.5|0.0%|123450٫0٪؜
+num|ar-SA|-1234.5||؜-1234٫5
+num|ar-SA|-1234.5|N|؜-1٬234٫500
+num|ar-SA|-1234.5|N0|؜-1٬234
+num|ar-SA|-1234.5|N2|؜-1٬234٫50
+num|ar-SA|-1234.5|F|؜-1234٫500
+num|ar-SA|-1234.5|F2|؜-1234٫50
+num|ar-SA|-1234.5|F0|؜-1234
+num|ar-SA|-1234.5|P|؜-123٬450٫000٪؜
+num|ar-SA|-1234.5|P1|؜-123٬450٫0٪؜
+num|ar-SA|-1234.5|P0|؜-123٬450٪؜
+num|ar-SA|-1234.5|C|؜-1٬234٫50 ⃁
+num|ar-SA|-1234.5|C2|؜-1٬234٫50 ⃁
+num|ar-SA|-1234.5|C0|؜-1٬234 ⃁
+num|ar-SA|-1234.5|E2|؜-1٫23E؜+003
+num|ar-SA|-1234.5|#,##0.00|؜-1٬234٫50
+num|ar-SA|-1234.5|0.0%|؜-123450٫0٪؜
+num|ar-SA|0||0
+num|ar-SA|0|N|0٫000
+num|ar-SA|0|N0|0
+num|ar-SA|0|N2|0٫00
+num|ar-SA|0|F|0٫000
+num|ar-SA|0|F2|0٫00
+num|ar-SA|0|F0|0
+num|ar-SA|0|P|0٫000٪؜
+num|ar-SA|0|P1|0٫0٪؜
+num|ar-SA|0|P0|0٪؜
+num|ar-SA|0|C|0٫00 ⃁
+num|ar-SA|0|C2|0٫00 ⃁
+num|ar-SA|0|C0|0 ⃁
+num|ar-SA|0|E2|0٫00E؜+000
+num|ar-SA|0|#,##0.00|0٫00
+num|ar-SA|0|0.0%|0٫0٪؜
+num|ar-SA|0.125||0٫125
+num|ar-SA|0.125|N|0٫125
+num|ar-SA|0.125|N0|0
+num|ar-SA|0.125|N2|0٫12
+num|ar-SA|0.125|F|0٫125
+num|ar-SA|0.125|F2|0٫12
+num|ar-SA|0.125|F0|0
+num|ar-SA|0.125|P|12٫500٪؜
+num|ar-SA|0.125|P1|12٫5٪؜
+num|ar-SA|0.125|P0|12٪؜
+num|ar-SA|0.125|C|0٫12 ⃁
+num|ar-SA|0.125|C2|0٫12 ⃁
+num|ar-SA|0.125|C0|0 ⃁
+num|ar-SA|0.125|E2|1٫25E؜-001
+num|ar-SA|0.125|#,##0.00|0٫13
+num|ar-SA|0.125|0.0%|12٫5٪؜
+num|ar-SA|1000000||1000000
+num|ar-SA|1000000|N|1٬000٬000٫000
+num|ar-SA|1000000|N0|1٬000٬000
+num|ar-SA|1000000|N2|1٬000٬000٫00
+num|ar-SA|1000000|F|1000000٫000
+num|ar-SA|1000000|F2|1000000٫00
+num|ar-SA|1000000|F0|1000000
+num|ar-SA|1000000|P|100٬000٬000٫000٪؜
+num|ar-SA|1000000|P1|100٬000٬000٫0٪؜
+num|ar-SA|1000000|P0|100٬000٬000٪؜
+num|ar-SA|1000000|C|1٬000٬000٫00 ⃁
+num|ar-SA|1000000|C2|1٬000٬000٫00 ⃁
+num|ar-SA|1000000|C0|1٬000٬000 ⃁
+num|ar-SA|1000000|E2|1٫00E؜+006
+num|ar-SA|1000000|#,##0.00|1٬000٬000٫00
+num|ar-SA|1000000|0.0%|100000000٫0٪؜
+num|ar-SA|Infinity||∞
+num|ar-SA|Infinity|N|∞
+num|ar-SA|Infinity|N0|∞
+num|ar-SA|Infinity|N2|∞
+num|ar-SA|Infinity|F|∞
+num|ar-SA|Infinity|F2|∞
+num|ar-SA|Infinity|F0|∞
+num|ar-SA|Infinity|P|∞
+num|ar-SA|Infinity|P1|∞
+num|ar-SA|Infinity|P0|∞
+num|ar-SA|Infinity|C|∞
+num|ar-SA|Infinity|C2|∞
+num|ar-SA|Infinity|C0|∞
+num|ar-SA|Infinity|E2|∞
+num|ar-SA|Infinity|#,##0.00|∞
+num|ar-SA|Infinity|0.0%|∞
+num|ar-SA|-Infinity||؜-∞
+num|ar-SA|-Infinity|N|؜-∞
+num|ar-SA|-Infinity|N0|؜-∞
+num|ar-SA|-Infinity|N2|؜-∞
+num|ar-SA|-Infinity|F|؜-∞
+num|ar-SA|-Infinity|F2|؜-∞
+num|ar-SA|-Infinity|F0|؜-∞
+num|ar-SA|-Infinity|P|؜-∞
+num|ar-SA|-Infinity|P1|؜-∞
+num|ar-SA|-Infinity|P0|؜-∞
+num|ar-SA|-Infinity|C|؜-∞
+num|ar-SA|-Infinity|C2|؜-∞
+num|ar-SA|-Infinity|C0|؜-∞
+num|ar-SA|-Infinity|E2|؜-∞
+num|ar-SA|-Infinity|#,##0.00|؜-∞
+num|ar-SA|-Infinity|0.0%|؜-∞
+num|ar-SA|NaN||ليس رقمًا
+num|ar-SA|NaN|N|ليس رقمًا
+num|ar-SA|NaN|N0|ليس رقمًا
+num|ar-SA|NaN|N2|ليس رقمًا
+num|ar-SA|NaN|F|ليس رقمًا
+num|ar-SA|NaN|F2|ليس رقمًا
+num|ar-SA|NaN|F0|ليس رقمًا
+num|ar-SA|NaN|P|ليس رقمًا
+num|ar-SA|NaN|P1|ليس رقمًا
+num|ar-SA|NaN|P0|ليس رقمًا
+num|ar-SA|NaN|C|ليس رقمًا
+num|ar-SA|NaN|C2|ليس رقمًا
+num|ar-SA|NaN|C0|ليس رقمًا
+num|ar-SA|NaN|E2|ليس رقمًا
+num|ar-SA|NaN|#,##0.00|ليس رقمًا
+num|ar-SA|NaN|0.0%|ليس رقمًا
+int|ar-SA|42||42
+int|ar-SA|42|D5|00042
+int|ar-SA|42|D|42
+int|ar-SA|42|N0|42
+int|ar-SA|-42||؜-42
+int|ar-SA|-42|D5|؜-00042
+int|ar-SA|-42|D|؜-42
+int|ar-SA|-42|N0|؜-42
+int|ar-SA|1000000||1000000
+int|ar-SA|1000000|D5|1000000
+int|ar-SA|1000000|D|1000000
+int|ar-SA|1000000|N0|1٬000٬000
+date|ar-SA|2026-08-13T15:45:07|d|30 صفر، 1448 بعد الهجرة
+date|ar-SA|2026-08-13T15:45:07|D|الخميس، 30 صفر، 1448 بعد الهجرة
+date|ar-SA|2026-08-13T15:45:07|t|3:45 م
+date|ar-SA|2026-08-13T15:45:07|T|3:45:07 م
+date|ar-SA|2026-08-13T15:45:07|f|الخميس، 30 صفر، 1448 بعد الهجرة 3:45 م
+date|ar-SA|2026-08-13T15:45:07|F|الخميس، 30 صفر، 1448 بعد الهجرة 3:45:07 م
+date|ar-SA|2026-08-13T15:45:07|g|30 صفر، 1448 بعد الهجرة 3:45 م
+date|ar-SA|2026-08-13T15:45:07|G|30 صفر، 1448 بعد الهجرة 3:45:07 م
+date|ar-SA|2026-08-13T15:45:07|M|30 صفر
+date|ar-SA|2026-08-13T15:45:07|m|30 صفر
+date|ar-SA|2026-08-13T15:45:07|Y|صفر، 1448 بعد الهجرة
+date|ar-SA|2026-08-13T15:45:07|y|صفر، 1448 بعد الهجرة
+date|ar-SA|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
+date|ar-SA|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
+date|ar-SA|2026-08-13T15:45:07|s|2026-08-13T15:45:07
+date|ar-SA|2026-08-13T15:45:07|yyyy-MM-dd|1448-02-30
 inv|1234.5||1234.5
 inv|1234.5|N0|1,234
 inv|1234.5|N2|1,234.50

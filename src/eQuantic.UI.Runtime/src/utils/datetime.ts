@@ -18,6 +18,7 @@
  */
 
 import { activeFormatData, INVARIANT_FORMAT, type DateTimeFormatData } from './culture';
+import { calendarOf, civilFromDays, DAYS_0001_TO_1970, daysFromCivil, daysInMonth, isLeapYear } from './calendar';
 import { readMoment, type Moment, type Refusal } from './date-reading';
 import { hash } from './hash';
 import { Decimal } from './decimal';
@@ -80,8 +81,6 @@ const MAX_DATETIME_TICKS = 3_155_378_975_999_999_999n;
 /** 9999-12-31's day number, the last day a `DateOnly` holds. */
 const MAX_DAY_NUMBER = 3_652_058;
 
-// Days from 0001-01-01 to 1970-01-01 (Hinnant's algorithm is epoch-relative to 1970).
-const DAYS_0001_TO_1970 = 719_162;
 /** The ticks of 1970-01-01, where JavaScript's `Date` counts its milliseconds from. */
 const UNIX_EPOCH_TICKS = BigInt(DAYS_0001_TO_1970) * TICKS_PER_DAY;
 
@@ -163,44 +162,6 @@ function clampedTicks(ticks: bigint): bigint {
 /** The instant now, in UTC ticks, read once for every member that needs it. */
 function utcTicksNow(): bigint {
   return UNIX_EPOCH_TICKS + BigInt(Date.now()) * TICKS_PER_MILLISECOND;
-}
-
-function idiv(a: number, b: number): number {
-  return Math.trunc(a / b);
-}
-
-/** Days since 0001-01-01 (which is day 0), proleptic Gregorian. */
-function daysFromCivil(year: number, month: number, day: number): number {
-  const y = month <= 2 ? year - 1 : year;
-  const era = idiv(y >= 0 ? y : y - 399, 400);
-  const yoe = y - era * 400;
-  const doy = idiv(153 * (month + (month > 2 ? -3 : 9)) + 2, 5) + day - 1;
-  const doe = yoe * 365 + idiv(yoe, 4) - idiv(yoe, 100) + doy;
-  return era * 146097 + doe - 719468 + DAYS_0001_TO_1970;
-}
-
-/** Inverse of {@link daysFromCivil}. */
-function civilFromDays(daysSince0001: number): { year: number; month: number; day: number } {
-  const z = daysSince0001 - DAYS_0001_TO_1970 + 719468;
-  const era = idiv(z >= 0 ? z : z - 146096, 146097);
-  const doe = z - era * 146097;
-  const yoe = idiv(doe - idiv(doe, 1460) + idiv(doe, 36524) - idiv(doe, 146096), 365);
-  const y = yoe + era * 400;
-  const doy = doe - (365 * yoe + idiv(yoe, 4) - idiv(yoe, 100));
-  const mp = idiv(5 * doy + 2, 153);
-  const day = doy - idiv(153 * mp + 2, 5) + 1;
-  const month = mp < 10 ? mp + 3 : mp - 9;
-  return { year: month <= 2 ? y + 1 : y, month, day };
-}
-
-function isLeapYear(year: number): boolean {
-  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-}
-
-const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-
-function daysInMonth(year: number, month: number): number {
-  return month === 2 && isLeapYear(year) ? 29 : DAYS_IN_MONTH[month - 1];
 }
 
 function pad(n: number, width: number): string {
@@ -685,10 +646,10 @@ export class DateTime {
     let year: number, month: number;
     if (i >= 0) {
       month = (i % 12) + 1;
-      year = c.year + idiv(i, 12);
+      year = c.year + Math.trunc(i / 12);
     } else {
       month = 12 + ((i + 1) % 12);
-      year = c.year + idiv(i - 11, 12);
+      year = c.year + Math.trunc((i - 11) / 12);
     }
     if (year < 1 || year > 9999) throw exception('System.ArgumentOutOfRangeException', unrepresentable(parameter));
     const day = Math.min(c.day, daysInMonth(year, month));
@@ -990,8 +951,9 @@ function localFrom(ticks: bigint, zone: 'utc' | bigint): DateTime {
  */
 function parseDateTime(text: string, invariant = false): DateTime {
   if (text == null) throw exception('System.ArgumentNullException', NULL_S);
-  const read = readMoment(text, readingCulture(invariant));
-  if ('refused' in read) throw refusalOf(text, read);
+  const culture = readingCulture(invariant);
+  const read = readMoment(text, culture);
+  if ('refused' in read) throw refusalOf(text, read, culture);
   const ticks = momentTicks(read);
   return read.zone === null ? new DateTime(ticks) : localFrom(ticks, read.zone);
 }
@@ -1017,7 +979,7 @@ function momentTicks({ date, clock }: Moment, zone: Moment['zone'] = null): bigi
 }
 
 /** Why a text names no DateTime, in .NET's words for each. */
-function refusalOf(text: string, refusal: Refusal): Error {
+function refusalOf(text: string, refusal: Refusal, culture: DateTimeFormatData): Error {
   switch (refusal.refused) {
     case 'word':
       return exception(
@@ -1025,7 +987,7 @@ function refusalOf(text: string, refusal: Refusal): Error {
         `The string '${text}' was not recognized as a valid DateTime. There is an unknown word starting at index '${refusal.index}'.`,
       );
     case 'clock':
-      return unsupported(text);
+      return unsupported(text, calendarOf(culture.calendar).name);
     case 'zone':
       return exception(
         'System.FormatException',
@@ -1054,11 +1016,12 @@ function unrecognized(text: string): Error {
   return exception('System.FormatException', `String '${text}' was not recognized as a valid DateTime.`);
 }
 
-/** .NET's refusal of text whose clock does not exist: an hour of 24, a minute or a second of 60. */
-function unsupported(text: string): Error {
+/** .NET's refusal of text whose clock does not exist: an hour of 24, a minute or a second of 60. It names
+ * the culture's calendar, the ISO form's refusal among them, which is read in the Gregorian one (#1191). */
+function unsupported(text: string, calendar: string): Error {
   return exception(
     'System.FormatException',
-    `The DateTime represented by the string '${text}' is not supported in calendar 'System.Globalization.GregorianCalendar'.`,
+    `The DateTime represented by the string '${text}' is not supported in calendar '${calendar}'.`,
   );
 }
 
@@ -1700,8 +1663,9 @@ export const dateTimeOffset: DateTimeOffsetFactory = {
  */
 function parseDateTimeOffset(text: string, invariant = false): DateTimeOffset {
   if (text == null) throw exception('System.ArgumentNullException', NULL_INPUT);
-  const read = readMoment(text, readingCulture(invariant));
-  if ('refused' in read) throw refusalOf(text, read);
+  const culture = readingCulture(invariant);
+  const read = readMoment(text, culture);
+  if ('refused' in read) throw refusalOf(text, read, culture);
   const local = momentTicks(read, read.zone);
   const offset = read.zone === null ? localOffsetFor(local) : read.zone === 'utc' ? 0n : read.zone;
   return new DateTimeOffset(local, offset);

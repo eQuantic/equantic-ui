@@ -19,7 +19,14 @@
  * three parts, a designator, a zone, `GMT` among them, and the ISO form, a date whose year comes first,
  * a `T` and a clock of two digits a part (#807). A name is read in the culture's language and in
  * English, in any case, as .NET reads it in every culture.
+ *
+ * The numbers of a date are counted in the culture's calendar (#1191): `15/1/2567` is the 15th of January
+ * 2024 in th-TH, whose Thai Buddhist years are 543 ahead, `1402/10/25` the same day in fa-IR and
+ * `4/7/1445` the next one in ar-SA, a date of two numbers is of this year as that calendar counts it, and
+ * a year of two digits is read against that calendar's `TwoDigitYearMax`. The ISO form, a year-first date
+ * before a `T`, is the Gregorian calendar's in every culture, as .NET's `ParseISO8601` reads it.
  */
+import { calendarOf, civilFromDays, daysFromCivil, GREGORIAN, type Calendar } from './calendar';
 import type { DateTimeFormatData } from './culture';
 import { round } from './dotnet-math';
 import { isWhiteSpace } from './white-space';
@@ -100,6 +107,8 @@ interface Shapes {
   days: { text: string; value: number }[];
   /** The words the culture's date patterns write between a date's parts, the longest first. */
   words: string[];
+  /** The calendar the culture counts a date's numbers in. */
+  calendar: Calendar;
 }
 
 /** The English names, which .NET reads in every culture, beside the culture's own. */
@@ -177,6 +186,7 @@ function shapesOf(culture: DateTimeFormatData): Shapes {
   // not: id-ID refuses `10.11.2012`, where fi-FI, which writes its date with points too, reads it.
   const point = pointIsClock && dateSeparator !== '.' ? [] : ['.'];
   return {
+    calendar: calendarOf(culture.calendar),
     dateSeparators: ['/', '-', ...point, dateSeparator].filter((s) => s.length > 0),
     timeSeparators: [':', own(culture.timeSeparator)].filter((s) => s.length > 0),
     pointIsClock,
@@ -289,6 +299,12 @@ function refused<T extends object>(read: T | Refusal): read is Refusal {
  */
 export function readMoment(text: string, culture: DateTimeFormatData): Moment | Refusal {
   const shapes = shapesOf(culture);
+  // The ISO form is read in the Gregorian calendar before the culture's is asked, as .NET reads it: a
+  // year ar-SA's calendar does not count, 2024, is no refusal before its `T`.
+  if (shapes.calendar !== GREGORIAN) {
+    const iso = readIsoFirst(text, { ...shapes, calendar: GREGORIAN });
+    if (iso !== null) return iso;
+  }
   const cursor = new Cursor(text);
   cursor.space();
 
@@ -301,6 +317,8 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
     const before = cursor.at;
     cursor.space();
     if (leading.yearFirst && (text[cursor.at] === 'T' || text[cursor.at] === 't')) {
+      // In another calendar, a date the Gregorian one does not count is no ISO date.
+      if (shapes.calendar !== GREGORIAN) return FORMAT;
       cursor.at++;
       return readIso(cursor, date);
     }
@@ -366,6 +384,19 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
   const clock = raw === null ? null : clockOf(raw);
   if (clock !== null && refused(clock)) return clock;
   return { date, clock, zone };
+}
+
+/** A text that starts with the ISO form, read in `shapes`, which count in the Gregorian calendar, or null
+ * where it does not: a year-first date, then a `T`. */
+function readIsoFirst(text: string, shapes: Shapes): Moment | Refusal | null {
+  const cursor = new Cursor(text);
+  cursor.space();
+  const leading = readDate(cursor, shapes);
+  if (typeof leading === 'string' || !leading.yearFirst) return null;
+  cursor.space();
+  if (text[cursor.at] !== 'T' && text[cursor.at] !== 't') return null;
+  cursor.at++;
+  return readIso(cursor, leading.date);
 }
 
 /**
@@ -532,14 +563,15 @@ function endOfDate(cursor: Cursor, shapes: Shapes): void {
 
 /** Which of a month's numbers is the day and which the year. */
 function namedDateOf(month: number, numbers: readonly string[], numberFirst: boolean, shapes: Shapes): ReadDate | null {
-  const valid = (date: ReadDate): ReadDate | null => (exists(date) ? date : null);
+  const valid = (date: ReadDate): ReadDate | null => gregorianOf(date, shapes);
+  const yearOf = (part: string): number => yearIn(part, shapes);
   const [one, two] = numbers;
   if (one === undefined) return null;
   if (two === undefined) {
     if (looksLikeYear(one)) return valid({ year: yearOf(one), month, day: 1 });
     // Each order has a culture that reads its number as a year: `Jan 5` is 2005 in de-DE, `5 Jan` in the invariant one.
     const isYear = numberFirst ? shapes.monthBeforeDay && !shapes.monthBeforeYear : !shapes.monthBeforeDay && shapes.monthBeforeYear;
-    return valid(isYear ? { year: yearOf(one), month, day: 1 } : { year: new Date().getFullYear(), month, day: +one });
+    return valid(isYear ? { year: yearOf(one), month, day: 1 } : { year: thisYear(shapes), month, day: +one });
   }
   if (looksLikeYear(one) || looksLikeYear(two)) {
     if (looksLikeYear(one) && looksLikeYear(two)) return null;
@@ -594,21 +626,21 @@ function readNumericDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
   // .NET reads a number of eight digits at most.
   if (parts.some((part) => part.length > 8)) return 'invalid';
   endOfDate(cursor, shapes);
-  const date = parts.length === 2 ? dateOfTwo(parts, shapes) : dateOf(parts, shapes.pattern);
+  const date = parts.length === 2 ? dateOfTwo(parts, shapes) : dateOf(parts, shapes);
   return date === null ? 'invalid' : { date, yearFirst: looksLikeYear(parts[0]) };
 }
 
 /** Two numbers, as .NET's `GetDayOfNN` and `GetDayOfYN` read them. */
 function dateOfTwo([one, two]: readonly string[], shapes: Shapes): ReadDate | null {
-  const year = new Date().getFullYear();
+  const year = thisYear(shapes);
   const date = looksLikeYear(one)
-    ? { year: yearOf(one), month: +two, day: 1 }
+    ? { year: yearIn(one, shapes), month: +two, day: 1 }
     : looksLikeYear(two)
-      ? { year: yearOf(two), month: +one, day: 1 }
+      ? { year: yearIn(two, shapes), month: +one, day: 1 }
       : shapes.monthBeforeDay
         ? { year, month: +one, day: +two }
         : { year, month: +two, day: +one };
-  return exists(date) ? date : null;
+  return gregorianOf(date, shapes);
 }
 
 /**
@@ -618,8 +650,8 @@ function dateOfTwo([one, two]: readonly string[], shapes: Shapes): ReadDate | nu
  * the day, in every culture .NET ships. Probed rather than reasoned: en-US reads `2026/7/17` in the ISO
  * order, and ja-JP reads `17/7/26` as 2017-07-26.
  */
-function dateOf(parts: readonly string[], pattern: string): ReadDate | null {
-  const lower = pattern.toLowerCase();
+function dateOf(parts: readonly string[], shapes: Shapes): ReadDate | null {
+  const lower = shapes.pattern.toLowerCase();
   const dayAt = lower.indexOf('d');
   const monthAt = lower.indexOf('m');
   const yearAt = lower.indexOf('y');
@@ -629,9 +661,9 @@ function dateOf(parts: readonly string[], pattern: string): ReadDate | null {
   const [one, two, three] = parts;
   const yearLeads = looksLikeYear(one) || (yearFirst && !looksLikeYear(three));
   const date = yearLeads
-    ? { year: yearOf(one), month: +two, day: +three }
-    : { year: yearOf(three), month: dayFirst ? +two : +one, day: dayFirst ? +one : +two };
-  return exists(date) ? date : null;
+    ? { year: yearIn(one, shapes), month: +two, day: +three }
+    : { year: yearIn(three, shapes), month: dayFirst ? +two : +one, day: dayFirst ? +one : +two };
+  return gregorianOf(date, shapes);
 }
 
 /** Three digits or more can only be a year: no month or day reaches 100. */
@@ -641,20 +673,25 @@ function looksLikeYear(part: string): boolean {
 
 /**
  * A year as .NET reads it: one or two digits are resolved against the calendar's `TwoDigitYearMax`,
- * 2049 for every culture the framework ships, so 00 to 49 land in this century and 50 to 99 in the
- * last; three digits or more are the year they write, so `1/2/003` is the year 3.
+ * 2049 in the Gregorian calendar, so 00 to 49 land in this century and 50 to 99 in the last, and 2572
+ * in th-TH's, so 67 is 2567; three digits or more are the year they write, so `1/2/003` is the year 3.
  */
-function yearOf(part: string): number {
-  const year = +part;
-  return part.length <= 2 ? (year <= 49 ? 2000 + year : 1900 + year) : year;
+function yearIn(part: string, shapes: Shapes): number {
+  return part.length <= 2 ? shapes.calendar.fourDigitYear(+part) : +part;
 }
 
-/** Whether a date exists in the Gregorian calendar: the 31st of February is read and is none. */
-function exists({ year, month, day }: ReadDate): boolean {
-  if (year < 1 || year > 9999 || month < 1 || month > 12 || day < 1) return false;
-  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-  const length = month === 2 ? (leap ? 29 : 28) : [4, 6, 9, 11].includes(month) ? 30 : 31;
-  return day <= length;
+/** This year, as the culture's calendar counts it, where a date names no year of its own: .NET reads
+ * the year of the local day. */
+function thisYear(shapes: Shapes): number {
+  const now = new Date();
+  return shapes.calendar.dateOf(daysFromCivil(now.getFullYear(), now.getMonth() + 1, now.getDate()))?.year ?? 0;
+}
+
+/** The Gregorian date a date of the culture's calendar names, or null where it names none: the 31st of
+ * February is read and is none, and so is the 30th of a Persian Esfand that is not a leap year's. */
+function gregorianOf(date: ReadDate, shapes: Shapes): ReadDate | null {
+  const day = shapes.calendar.dayOf(date);
+  return day === null ? null : civilFromDays(day);
 }
 
 /** A designator here, and whether it says PM, or null. It ends where a word would: `AMx` is none. */
