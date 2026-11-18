@@ -32,6 +32,10 @@ internal static class CalendarBridge
     /// calendar asks .NET for the equinox of nine thousand years, once a process.</summary>
     private static readonly ConcurrentDictionary<(Type Type, int Adjustment), Shape> Shapes = new();
 
+    /// <summary>What each culture says of its calendar's range, by the culture's name and the calendar's
+    /// type: the refusal is read by provoking it, which is not paid on every page.</summary>
+    private static readonly ConcurrentDictionary<(string Culture, Type Calendar), (string? OutOfRange, bool TimeOfDayInvariant)> Sayings = new();
+
     /// <summary>The calendar <paramref name="culture"/> writes its dates in, as the runtime's
     /// <c>CalendarData</c> reads it.</summary>
     public static Dictionary<string, object> Describe(CultureInfo culture)
@@ -58,13 +62,17 @@ internal static class CalendarBridge
                 ["longer"] = months.Longer,
             };
         }
-        if (shape.FirstDay != 0 || shape.LastDay != LastDayOfDateTime)
+        var bounded = shape.FirstDay != 0 || shape.LastDay != LastDayOfDateTime;
+        var (outOfRange, timeOfDayInvariant) = Sayings.GetOrAdd(
+            (culture.Name, calendar.GetType()),
+            _ => (bounded ? OutOfRange(calendar, culture, shape) : null, WritesATimeOfDayInvariant(culture)));
+        if (bounded)
         {
             described["firstDay"] = shape.FirstDay;
             described["lastDay"] = shape.LastDay;
-            described["outOfRange"] = OutOfRange(calendar, culture, shape);
+            described["outOfRange"] = outOfRange!;
         }
-        if (WritesATimeOfDayInvariant(culture)) described["timeOfDayInvariant"] = true;
+        if (timeOfDayInvariant) described["timeOfDayInvariant"] = true;
         return described;
     }
 
@@ -127,7 +135,10 @@ internal static class CalendarBridge
             if (longest > shortest[month]) varying.Add(month + 1);
         }
 
-        lengths[^1][lastMonth - 1] = calendar.GetDayOfMonth(max);
+        var lastDayOfMonth = calendar.GetDayOfMonth(max);
+        if (lastDayOfMonth > shortest[lastMonth - 1] && !varying.Contains(lastMonth))
+            throw Refused(calendar, $"writes a day of its last month {lastMonth} past that month's length in every other year");
+        lengths[^1][lastMonth - 1] = lastDayOfMonth;
         var bits = new byte[(lengths.Length * varying.Count + 7) / 8];
         var at = 0;
         foreach (var months in lengths)

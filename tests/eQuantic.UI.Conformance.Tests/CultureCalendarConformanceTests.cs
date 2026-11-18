@@ -118,4 +118,27 @@ public class CultureCalendarConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, culture: culture);
     }
+
+    /// <summary>
+    /// Every day each calendar writes, from its first to its last, one in every few: written in its
+    /// count, read back, and folded into one number, so the runtime's own arithmetic (the Persian leap
+    /// years, Um Al Qura's months, the Thai years) is held to .NET's over the whole range and not only on
+    /// the dates the rows above name. The step is prime, so the days walked fall on every day of a month.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("th-TH", "1, 1, 1", "9999, 12, 31", 97)]
+    [InlineData("fa-IR", "622, 3, 22", "9999, 12, 31", 37)]
+    [InlineData("ar-SA", "1900, 4, 30", "2077, 11, 16", 3)]
+    public void EveryDayACalendarWrites_IsWrittenAndReadAsDotNetCountsIt(string culture, string first, string last, int step)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            $"var h = 0L; var walked = 0; var lost = 0; var end = new DateTime({last}); "
+            + $"for (var d = new DateTime({first}); d <= end; d = d.AddDays({step})) {{ "
+            + "var t = d.ToString(\"yyyy/MM/dd\"); foreach (var c in t) h = (h * 31 + c) % 1000000007L; "
+            + "if (DateTime.Parse(t) != d) lost++; walked++; "
+            + $"if (end - d < TimeSpan.FromDays({step})) break; }} "
+            + "return h + \"|\" + walked + \"|\" + lost + \"|\" + end.ToString(\"yyyy/MM/dd\");",
+            culture: culture);
+    }
 }

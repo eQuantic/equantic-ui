@@ -18,7 +18,7 @@
  */
 
 import { activeFormatData, INVARIANT_FORMAT, type DateTimeFormatData } from './culture';
-import { calendarOf, civilFromDays, DAYS_0001_TO_1970, daysFromCivil, daysInMonth, isLeapYear } from './calendar';
+import { calendarOf, civilFromDays, DAYS_0001_TO_1970, daysFromCivil, daysInMonth, isLeapYear, LAST_DAY } from './calendar';
 import { readMoment, type Moment, type Refusal } from './date-reading';
 import { hash } from './hash';
 import { Decimal } from './decimal';
@@ -78,8 +78,6 @@ const TICKS_PER_DAY = 864_000_000_000n;
 
 // Ticks of 9999-12-31 23:59:59.9999999 — .NET DateTime.MaxValue.
 const MAX_DATETIME_TICKS = 3_155_378_975_999_999_999n;
-/** 9999-12-31's day number, the last day a `DateOnly` holds. */
-const MAX_DAY_NUMBER = 3_652_058;
 
 /** The ticks of 1970-01-01, where JavaScript's `Date` counts its milliseconds from. */
 const UNIX_EPOCH_TICKS = BigInt(DAYS_0001_TO_1970) * TICKS_PER_DAY;
@@ -1078,7 +1076,7 @@ export class DateOnly {
   /** `AddDays`: refused where the day leaves 0001-01-01 to 9999-12-31, as .NET refuses it. */
   addDays(value: number): DateOnly {
     const day = this.dayNumber + Math.trunc(value);
-    if (day < 0 || day > MAX_DAY_NUMBER) throw exception('System.ArgumentOutOfRangeException', ADD_OUT_OF_RANGE);
+    if (day < 0 || day > LAST_DAY) throw exception('System.ArgumentOutOfRangeException', ADD_OUT_OF_RANGE);
     return new DateOnly(day);
   }
   /** `AddMonths` and `AddYears`: the date's `DateTime` moved, so a count and a result past the

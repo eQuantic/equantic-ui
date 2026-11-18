@@ -14,7 +14,7 @@
  * A LEAF module: `datetime.ts`, `date-reading.ts` and `format.ts` read it, and it reads nothing but the
  * wire's types.
  */
-import type { CalendarData } from './culture';
+import type { CalendarData, CalendarMonths } from './culture';
 
 /** A date as a calendar counts it: its year, its month (1 to 12) and its day of the month. */
 export interface CalendarDate {
@@ -26,8 +26,8 @@ export interface CalendarDate {
 /** 0001-01-01 is day 0; 1970-01-01 is this many days after it. */
 export const DAYS_0001_TO_1970 = 719_162;
 
-/** The day `DateTime.MaxValue` falls on, 9999-12-31, as days since 0001-01-01. */
-const LAST_DAY = 3_652_058;
+/** The day `DateTime.MaxValue` falls on, 9999-12-31, as days since 0001-01-01: the last day a date holds. */
+export const LAST_DAY = 3_652_058;
 
 function idiv(a: number, b: number): number {
   return Math.trunc(a / b);
@@ -90,12 +90,12 @@ export interface Calendar {
   fourDigitYear(year: number): number;
 }
 
-/** The Gregorian months, under a count of years `offset` ahead of the Gregorian one. */
-class OffsetCalendar implements Calendar {
+/** What every calendar's description says besides its arithmetic: its name, its refusal, its range and
+ * its two-digit years. */
+abstract class DescribedCalendar implements Calendar {
   readonly name: string;
   readonly outOfRange: string | null;
   readonly timeOfDayInvariant: boolean;
-  private readonly offset: number;
   private readonly firstDay: number;
   private readonly lastDay: number;
   private readonly twoDigitYearMax: number;
@@ -104,14 +104,37 @@ class OffsetCalendar implements Calendar {
     this.name = data.name;
     this.outOfRange = data.outOfRange ?? null;
     this.timeOfDayInvariant = data.timeOfDayInvariant === true;
-    this.offset = data.yearOffset ?? 0;
     this.firstDay = data.firstDay ?? 0;
     this.lastDay = data.lastDay ?? LAST_DAY;
     this.twoDigitYearMax = data.twoDigitYearMax;
   }
 
+  /** Whether the calendar writes day `day`. */
+  protected writes(day: number): boolean {
+    return day >= this.firstDay && day <= this.lastDay;
+  }
+
+  abstract dateOf(day: number): CalendarDate | null;
+  abstract dayOf(date: CalendarDate): number | null;
+
+  fourDigitYear(year: number): number {
+    if (year >= 100) return year;
+    const max = this.twoDigitYearMax;
+    return (Math.trunc(max / 100) - (year > max % 100 ? 1 : 0)) * 100 + year;
+  }
+}
+
+/** The Gregorian months, under a count of years `offset` ahead of the Gregorian one. */
+class OffsetCalendar extends DescribedCalendar {
+  private readonly offset: number;
+
+  constructor(data: CalendarData) {
+    super(data);
+    this.offset = data.yearOffset ?? 0;
+  }
+
   dateOf(day: number): CalendarDate | null {
-    if (day < this.firstDay || day > this.lastDay) return null;
+    if (!this.writes(day)) return null;
     const date = civilFromDays(day);
     return { ...date, year: date.year + this.offset };
   }
@@ -121,46 +144,31 @@ class OffsetCalendar implements Calendar {
     if (gregorian < 1 || gregorian > 9999 || month < 1 || month > 12 || day < 1) return null;
     if (day > daysInMonth(gregorian, month)) return null;
     const at = daysFromCivil(gregorian, month, day);
-    return at < this.firstDay || at > this.lastDay ? null : at;
-  }
-
-  fourDigitYear(year: number): number {
-    return fourDigitYear(year, this.twoDigitYearMax);
+    return this.writes(at) ? at : null;
   }
 }
 
 /** A calendar of twelve months of its own, its years' starts added up the first time a date is asked. */
-class MonthsCalendar implements Calendar {
-  readonly name: string;
-  readonly outOfRange: string | null;
-  readonly timeOfDayInvariant: boolean;
+class MonthsCalendar extends DescribedCalendar {
   private readonly firstYear: number;
   private readonly years: number;
   private readonly lengths: readonly number[];
   /** For each month, 0 to 11, where its bit is among a year's, or -1 for a month of one length. */
   private readonly slot: number[];
   private readonly width: number;
-  private readonly firstDay: number;
-  private readonly lastDay: number;
-  private readonly twoDigitYearMax: number;
   private readonly encoded: string;
   private readonly start: number;
   private bits: Uint8Array | null = null;
   /** The day each year starts on, and the day after the last one ends, as days since 0001-01-01. */
   private starts: Int32Array | null = null;
 
-  constructor(data: CalendarData, months: NonNullable<CalendarData['months']>) {
-    this.name = data.name;
-    this.outOfRange = data.outOfRange ?? null;
-    this.timeOfDayInvariant = data.timeOfDayInvariant === true;
+  constructor(data: CalendarData, months: CalendarMonths) {
+    super(data);
     this.firstYear = months.firstYear;
     this.years = months.years;
     this.lengths = months.lengths;
     this.slot = this.lengths.map((_, month) => months.varying.indexOf(month + 1));
     this.width = months.varying.length;
-    this.firstDay = data.firstDay ?? 0;
-    this.lastDay = data.lastDay ?? LAST_DAY;
-    this.twoDigitYearMax = data.twoDigitYearMax;
     this.encoded = months.longer;
     this.start = months.start;
   }
@@ -187,7 +195,7 @@ class MonthsCalendar implements Calendar {
   }
 
   dateOf(day: number): CalendarDate | null {
-    if (day < this.firstDay || day > this.lastDay) return null;
+    if (!this.writes(day)) return null;
     const starts = this.yearStarts();
     // The last year that starts on or before the day.
     let low = 0;
@@ -209,18 +217,8 @@ class MonthsCalendar implements Calendar {
     if (day > this.length(index, month - 1)) return null;
     let at = this.yearStarts()[index] + day - 1;
     for (let before = 0; before < month - 1; before++) at += this.length(index, before);
-    return at < this.firstDay || at > this.lastDay ? null : at;
+    return this.writes(at) ? at : null;
   }
-
-  fourDigitYear(year: number): number {
-    return fourDigitYear(year, this.twoDigitYearMax);
-  }
-}
-
-/** .NET's `Calendar.ToFourDigitYear` for a year under 100: in the century that ends at `twoDigitYearMax`. */
-function fourDigitYear(year: number, twoDigitYearMax: number): number {
-  if (year >= 100) return year;
-  return (Math.trunc(twoDigitYearMax / 100) - (year > twoDigitYearMax % 100 ? 1 : 0)) * 100 + year;
 }
 
 /** The Gregorian calendar, which a culture whose data did not travel and the invariant one count in. */
