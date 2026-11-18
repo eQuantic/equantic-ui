@@ -1126,8 +1126,8 @@ export class SortableItem extends VisualNode {
   child: VisualChild;
   id: string;
   enabled = true;
-  /** The name the keyboard's steps say. C# twin: `SortableItem.Label`. */
-  label = '';
+  /** The name the keyboard's steps say. C# twin: `SortableItem.Name`. */
+  name = '';
 
   constructor(child: VisualChild, id: string, config?: EqConfig) {
     super();

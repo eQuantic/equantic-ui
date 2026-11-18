@@ -75,8 +75,8 @@ public sealed record TableTheme
     /// (<see cref="IAppTheme.FocusRing"/>, #1538).</summary>
     public ColorToken? ColumnDropColor { get; init; }
 
-    /// <summary>The colour of the edge a DataTable column's resize handle shows under the pointer and the
-    /// focus (<see cref="IAppTheme.FocusRing"/>, #1538).</summary>
+    /// <summary>The colour of the edge a DataTable column's resize handle shows under the pointer; under the
+    /// keyboard the focus ring says where it is (<see cref="IAppTheme.FocusRing"/>, #1538).</summary>
     public ColorToken? ResizeHandleColor { get; init; }
 
     /// <summary>

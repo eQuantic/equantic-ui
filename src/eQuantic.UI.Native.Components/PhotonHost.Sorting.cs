@@ -574,7 +574,7 @@ public sealed partial class PhotonHost
     /// what its subtree says, in reading order, as the web takes an item's accessible name or its text.</summary>
     private string NameOf(SortableItem node, LayoutNode item)
     {
-        if (node.Label.Length > 0) return node.Label;
+        if (node.Name.Length > 0) return node.Name;
         _sortNames.Clear();
         SemanticsTree.CollectChildren(item, _sortNames);
         var name = new StringBuilder();

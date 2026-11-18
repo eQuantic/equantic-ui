@@ -5873,7 +5873,7 @@ function lowerSortableItem(
   replaceAtomicDeclaration(child, 'pointer-events', 'auto');
   child.attributes['data-eq-sort-item'] = node.id;
   // The name the keyboard's steps say, when the item has one of its own (#1538; C# twin: LowerSortableItem).
-  if (node.label) child.attributes['data-eq-sort-name'] = node.label;
+  if (node.name) child.attributes['data-eq-sort-name'] = node.name;
   if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
   // The keyboard sorts an item from its focus (#1536): one that takes none of its own becomes a Tab stop
   // (the C# twin decides by the same tags).

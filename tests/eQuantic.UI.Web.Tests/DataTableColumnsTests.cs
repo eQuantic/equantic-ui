@@ -176,6 +176,10 @@ public class DataTableColumnsTests
         edge.Attributes["data-eq-drag-max"].Should().Be("1024");
         edge.Attributes["data-eq-drag-follows"].Should().Be("0", "the app's width moves the edge, not a translation");
 
+        var narrow = new DataTable([new("Size", GridTrack.Fixed(40))], []) { OnColumnResized = (_, _) => { } };
+        All(Lowered(narrow)).Single(node => node.Attributes.GetValueOrDefault("role") == "separator")
+            .Attributes["aria-valuenow"].Should().Be("64", "a width kept below the minimum is announced inside the range beside it");
+
         All(Lowered(new DataTable(NameSizeKind(), []))).Should().NotContain(
             node => node.Attributes.GetValueOrDefault("role") == "separator", "a table that keeps no widths has no handle");
     }

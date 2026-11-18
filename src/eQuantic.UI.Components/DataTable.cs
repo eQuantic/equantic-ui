@@ -227,7 +227,8 @@ public sealed class DataTable : StatefulComponent
             var index = order[i];
             var heading = Heading(theme, slot, index);
             var lineAtStart = _landing >= 0 && _landing < others.Count && others[_landing] == index;
-            var lineAtEnd = _landing >= 0 && _landing == others.Count && others[others.Count - 1] == index;
+            var lineAtEnd = _landing >= 0 && _landing == others.Count && others.Count > 0
+                && others[others.Count - 1] == index;
             var resizes = Resizes(_config.Columns[index]);
             if (!lineAtStart && !lineAtEnd && !resizes)
             {
@@ -296,7 +297,7 @@ public sealed class DataTable : StatefulComponent
             }
             : Cell(label, column.Align, slot);
         // Named by its column in the keyboard's steps, not by the press it may hold ("Sort by Amount").
-        return Reorders ? new SortableItem(heading, ColumnId(index)) { Label = column.Header } : heading;
+        return Reorders ? new SortableItem(heading, ColumnId(index)) { Name = column.Header } : heading;
     }
 
     /// <summary>Whether a column has a resize handle: the app keeps widths, and this one's is a number.</summary>
@@ -313,7 +314,9 @@ public sealed class DataTable : StatefulComponent
         var column = _config.Columns[index];
         var min = column.MinWidth;
         var max = Math.Max(min, column.MaxWidth);
-        var width = column.Track.Value;
+        // The width the handle starts from and announces, kept between the column's bounds: a width the app
+        // kept outside them would put the value a reader hears outside the range beside it.
+        var width = Math.Min(max, Math.Max(min, column.Track.Value));
         var color = slot?.ResizeHandleColor ?? theme.FocusRing;
         var resize = _config.OnColumnResized!;
 
@@ -325,8 +328,8 @@ public sealed class DataTable : StatefulComponent
             BorderSides = BorderSides.End,
             BorderWidth = 0,
             BorderColor = color,
+            // Under the pointer the edge shows; under the keyboard the focus ring says where it is.
             Hover = new StyleDiff { BorderWidth = EdgeLineWidth },
-            Focus = new StyleDiff { BorderWidth = EdgeLineWidth },
         });
 
         // The gesture's offset IS the width: it starts at the width the column has and adds the pointer's

@@ -100,7 +100,7 @@ export class DataTable extends StatefulComponent {
             let index = order[i];
             let heading = this.heading(theme, slot, index);
             let lineAtStart = this._landing >= 0 && this._landing < others.length && others[this._landing] === index;
-            let lineAtEnd = this._landing >= 0 && this._landing === others.length && others[others.length - 1] === index;
+            let lineAtEnd = this._landing >= 0 && this._landing === others.length && others.length > 0 && others[others.length - 1] === index;
             let resizes = this.resizes($eq.collections.item(this._config.columns, index));
             if (!lineAtStart && !lineAtEnd && !resizes) {
                 grid.add(heading);
@@ -128,7 +128,7 @@ export class DataTable extends StatefulComponent {
         }
         let onSort = this._config.onSort;
         let heading = column.sortable && !(onSort == null) ? new Pressable(DataTable.cell(label, column.align, slot), () => onSort(index), { label: SdkStrings.sortByColumn(column.header) }) : DataTable.cell(label, column.align, slot);
-        return this.reorders ? new SortableItem(heading, DataTable.columnId(index), { label: column.header }) : heading;
+        return this.reorders ? new SortableItem(heading, DataTable.columnId(index), { name: column.header }) : heading;
     }
 
     resizes(column: DataColumn) {
@@ -139,10 +139,10 @@ export class DataTable extends StatefulComponent {
         let column = $eq.collections.item(this._config.columns, index);
         let min = column.minWidth;
         let max = Math.max(min, column.maxWidth);
-        let width = column.track.value;
+        let width = Math.min(max, Math.max(min, column.track.value));
         let color = slot?.resizeHandleColor ?? theme.focusRing;
         let resize = this._config.onColumnResized!;
-        let edge = new Box(new BoxStyle({ width: SizeValue.fixed(DataTable.handleWidth), height: SizeValue.fill, cursor: 'colResize', borderSides: 2, borderWidth: 0, borderColor: color, hover: new StyleDiff({ borderWidth: DataTable.edgeLineWidth }), focus: new StyleDiff({ borderWidth: DataTable.edgeLineWidth }) }));
+        let edge = new Box(new BoxStyle({ width: SizeValue.fixed(DataTable.handleWidth), height: SizeValue.fill, cursor: 'colResize', borderSides: 2, borderWidth: 0, borderColor: color, hover: new StyleDiff({ borderWidth: DataTable.edgeLineWidth }) }));
         let surface = new Draggable(edge, null, { axis: 'horizontal', follows: false, restOffset: width, min: min, max: max, onMoved: (next: number) => resize(index, next) });
         return new Adjustable(surface, (direction: number) => {
             let next = Math.min(max, Math.max(min, Math.fround(width + Math.fround(Math.fround(direction) * DataTable.resizeStep))));

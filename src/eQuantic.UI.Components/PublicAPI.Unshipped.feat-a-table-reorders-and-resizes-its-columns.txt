@@ -19,4 +19,4 @@ static eQuantic.UI.Components.SdkStrings.ResizeColumn(string! column) -> string!
 static eQuantic.UI.Components.SdkStrings.TableColumns.get -> string!
 static eQuantic.UI.Components.UI.Adjustable(eQuantic.UI.Primitives.VisualNode! child, System.Action<int>! onAdjust, eQuantic.UI.Primitives.RangeValue? value = null, eQuantic.UI.Primitives.AdjustableRole role = eQuantic.UI.Primitives.AdjustableRole.Slider, string? valueText = null, eQuantic.UI.Primitives.DragAxis axis = eQuantic.UI.Primitives.DragAxis.Horizontal) -> eQuantic.UI.Primitives.Adjustable!
 override eQuantic.UI.Components.DataTable.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
-static eQuantic.UI.Components.UI.SortableItem(eQuantic.UI.Primitives.VisualNode! child, string! id, bool enabled = true, string! label = "") -> eQuantic.UI.Primitives.SortableItem!
+static eQuantic.UI.Components.UI.SortableItem(eQuantic.UI.Primitives.VisualNode! child, string! id, bool enabled = true, string! name = "") -> eQuantic.UI.Primitives.SortableItem!

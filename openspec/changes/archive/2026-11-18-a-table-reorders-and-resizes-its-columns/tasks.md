@@ -5,8 +5,8 @@
 - [x] 1.2 The C# and TS lowering announce a separator with a value as `separator` and one without as `group`, and
   write the orientation across the axis for a separator and a vertical slider; the Photon semantics walk gives a
   separator the `Splitter` role with its range, and `NativeRole` maps it for AppKit, UIKit and Android.
-- [x] 1.3 `SortableItem.Label`, written as `data-eq-sort-name` and read by the web's controller and the Photon host
-  before what the item's subtree says; `UI.SortableItem`'s `label`.
+- [x] 1.3 `SortableItem.Name`, written as `data-eq-sort-name` and read by the web's controller and the Photon host
+  before what the item's subtree says; `UI.SortableItem`'s `name`.
 - [x] 1.4 Check: realizer tests and vitest read the attributes on both sides, and the parity fixture lowers a
   separator identically; a Photon test reads the `Splitter` node and its range; a named item writes its name and is
   said by it on both targets. Each fails without its change.

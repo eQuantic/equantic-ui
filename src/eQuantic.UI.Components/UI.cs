@@ -810,9 +810,9 @@ public static class UI
         };
 
     /// <summary>One item of a <see cref="Primitives.Sortable"/>, named by its id in what the list reports, and by
-    /// <paramref name="label"/>, when given, in what the keyboard's steps say.</summary>
-    public static SortableItem SortableItem(VisualNode child, string id, bool enabled = true, string label = "") =>
-        new SortableItem(child, id) { Enabled = enabled, Label = label };
+    /// <paramref name="name"/>, when given, in what the keyboard's steps say.</summary>
+    public static SortableItem SortableItem(VisualNode child, string id, bool enabled = true, string name = "") =>
+        new SortableItem(child, id) { Enabled = enabled, Name = name };
 
     /// <summary>
     /// An area a person drops files onto: <paramref name="onDropped"/> hands over what landed, and

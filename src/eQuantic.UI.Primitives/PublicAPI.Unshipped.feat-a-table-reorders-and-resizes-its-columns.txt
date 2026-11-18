@@ -7,5 +7,5 @@ eQuantic.UI.Primitives.TableTheme.ColumnDropColor.get -> eQuantic.UI.Primitives.
 eQuantic.UI.Primitives.TableTheme.ColumnDropColor.init -> void
 eQuantic.UI.Primitives.TableTheme.ResizeHandleColor.get -> eQuantic.UI.Primitives.ColorToken?
 eQuantic.UI.Primitives.TableTheme.ResizeHandleColor.init -> void
-eQuantic.UI.Primitives.SortableItem.Label.get -> string!
-eQuantic.UI.Primitives.SortableItem.Label.init -> void
+eQuantic.UI.Primitives.SortableItem.Name.get -> string!
+eQuantic.UI.Primitives.SortableItem.Name.init -> void

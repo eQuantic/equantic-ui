@@ -69,7 +69,8 @@ The handle sits in a `Stack` with the heading cell, `Positioned` at its end edge
 `OnMoved` reports the new width live, inside an `Adjustable` (`Role = Separator`, `Value` the width and its range,
 named "Resize <heading>") whose arrows step it by 16 dp. It is beside the sortable item, not inside it, so a press on
 the handle never picks the column up and Space on it is the handle's. It shows a 2 dp line in `ResizeHandleColor`
-when hovered and when focused, and the column-resize cursor.
+under the pointer, with the column-resize cursor; under the keyboard the focus ring says where it is, since a box's
+`Focus` diff answers a press's focus and not an adjustable's.
 
 ### A separator role, and the axis it moves on
 

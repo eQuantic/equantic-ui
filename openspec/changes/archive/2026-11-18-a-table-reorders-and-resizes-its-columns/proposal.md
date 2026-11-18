@@ -25,11 +25,11 @@ and offers neither.
   and range, and Photon as a splitter (`SemanticRole.Splitter`, AppKit's `AXSplitter`, an adjustable element on iOS
   and Android). `Adjustable.Axis` says which way it moves, so the web says the separator's orientation and a slider
   that moves up and down says it is vertical.
-- **A heading is said by its column.** A `SortableItem` takes a `Label`, the name the keyboard's steps say for it
+- **A heading is said by its column.** A `SortableItem` takes a `Name`, the name the keyboard's steps say for it
   before what its subtree says, on both targets: a heading that sorts holds a press named "Sort by Amount", and a
-  reader moving it hears "Amount". `UI.SortableItem` takes `label`.
+  reader moving it hears "Amount". `UI.SortableItem` takes `name`.
 - **The theme says the look.** `TableTheme` gains `ColumnDropColor`, the line that shows where a carried column
-  lands, and `ResizeHandleColor`, the edge a handle shows under the pointer and the focus. Both default to the
+  lands, and `ResizeHandleColor`, the edge a handle shows under the pointer. Both default to the
   theme's focus ring.
 - **`DataTable` holds state.** It becomes a `StatefulComponent` to draw where a carried column lands, kept across
   its parent's builds with the fresh configuration whole; everything it drew before is drawn as it was.
@@ -47,7 +47,7 @@ new DataTable(columns, rows)
 ```
 
 Parts reached: the vocabulary (`AdjustableRole.Separator`, `Adjustable.Axis`, `SemanticRole.Splitter`,
-`SortableItem.Label`, `TableTheme`'s two colours), the components (`DataTable`, `DataColumn`, `SdkStrings`,
+`SortableItem.Name`, `TableTheme`'s two colours), the components (`DataTable`, `DataColumn`, `SdkStrings`,
 `UI.SortableItem`), the web realizer (C# and TS lowering of an adjustable and a sortable item), the runtime's
 sortable controller, the Photon host's keyboard sort, its semantics walk and its role table, the runtime's
 design-system twin, and the dashboard sample. The public surface grows; `DataTable` changes its base class, which no app sees except

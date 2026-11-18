@@ -59,7 +59,7 @@ public class SortableRealizerTests
     public void AnItemGivenAName_WritesItForTheKeyboardsSteps_AndOneWithoutWritesNone()
     {
         var column = new Column(gap: 0);
-        column.Add(new SortableItem(new Text("Sort by Amount"), "amount") { Label = "Amount" });
+        column.Add(new SortableItem(new Text("Sort by Amount"), "amount") { Name = "Amount" });
         column.Add(new SortableItem(new Text("b"), "b"));
         var list = Render(new Sortable(column, "columns", _ => { }));
 
