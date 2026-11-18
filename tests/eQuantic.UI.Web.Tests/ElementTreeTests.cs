@@ -451,6 +451,32 @@ public class ElementTreeTests
         log.Should().Equal(["mounted", "unmounted"], "a frame that drew the whole tree did not show it");
     }
 
+    /// <summary>What a realizer drew is said of one frame: a frame that never reached its end hands
+    /// nothing to the next, which drew the whole tree and takes out the layer it did not show.</summary>
+    [Fact]
+    public void WhatAFrameDrew_IsForgottenWhenTheNextFrameBegins()
+    {
+        var log = new List<string>();
+        var owner = new ComponentBoundary().Owner();
+        var counter = new Counter("a");
+        var overlay = new Overlay(new Tracked(log));
+        var column = new Column();
+        column.Add(counter);
+        column.Add(overlay);
+
+        var root = owner.Build(column, Context, 400f, rebuildAll: true);
+        ((NodeElement)root.ChildAt(1)!).ShowDeferred(overlay.Child);
+        owner.EndFrame();
+
+        owner.Build(column, Context, 400f, rebuildAll: false);
+        owner.DrewOnly([root.ChildAt(0)!]);
+
+        owner.Build(column, Context, 400f, rebuildAll: false);
+        owner.EndFrame();
+
+        log.Should().Equal("mounted", "unmounted");
+    }
+
     /// <summary>A layer inside what a frame drew is judged as a whole frame judges it: one the frame did
     /// not show has closed, and leaves (#1575).</summary>
     [Fact]

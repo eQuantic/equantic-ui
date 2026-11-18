@@ -181,6 +181,9 @@ public sealed class BuildOwner
         _context = context;
         WindowWidth = windowWidth;
         Frame++;
+        // What the realizer drew is said of the frame that ends; a frame that never reached its end
+        // hands nothing to this one.
+        _drewOnly = null;
         RebuildingAll = rebuildAll;
         EnterBuild();
         _inFrameBuild = true;
