@@ -225,4 +225,32 @@ public class LayoutBuilderTests
         var fill = Find(root, node => node is Box { Style.Height: { Kind: SizeKind.Fixed, Value: 40 } });
         fill.Bounds.Width.Should().Be(320);
     }
+
+    /// <summary>
+    /// The dashboard's /layout page, laid out on Photon at the window the e2e suite reads it in a browser
+    /// (tests/e2e/tests/layout-builder.spec.ts): the fixed cards are told the same room on both targets,
+    /// and the filling one an unbounded height. The tree is the page's own cards, written again here
+    /// because this suite does not reference the sample.
+    /// </summary>
+    [Fact]
+    public void TheLayoutPagesCards_AreToldTheRoomTheBrowserTellsThem()
+    {
+        var told = new Dictionary<string, BoxConstraints>();
+        VisualNode Card(string name, BoxStyle style) => new Box(style, new LayoutBuilder(room =>
+        {
+            told[name] = room;
+            return new Text(name, TypeRole.Label);
+        }));
+
+        var page = new Column(gap: 24);
+        page.Add(Card("fixed", new BoxStyle { Width = 600, Height = 200 }));
+        page.Add(Card("narrow", new BoxStyle { Width = 360, Height = 200 }));
+        page.Add(Card("fill", new BoxStyle { Width = SizeValue.Fill }));
+        Open(page, width: 1280, height: 900);
+
+        told["fixed"].Should().Be(new BoxConstraints(0, 600, 0, 200));
+        told["narrow"].Should().Be(new BoxConstraints(0, 360, 0, 200));
+        told["fill"].HasBoundedHeight.Should().BeFalse("the card sizes its height from what it holds");
+        told["fill"].MaxWidth.Should().Be(1280, "the card fills the window's width, which no chrome narrows here");
+    }
 }
