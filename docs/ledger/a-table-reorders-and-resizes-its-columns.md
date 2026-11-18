@@ -6,6 +6,7 @@
   whose track is a width, between its `MinWidth` and `MaxWidth`. The cells follow their column, the app keeps both,
   and `DataTable` became a `StatefulComponent` to draw the landing. The handle is a separator a reader hears: a new
   `AdjustableRole.Separator`, an `Adjustable.Axis` the web says as the orientation, and `SemanticRole.Splitter` on
-  Photon (AppKit's `AXSplitter`). The dashboard's payments table keeps its order and widths
+  Photon (AppKit's `AXSplitter`); and a `SortableItem` carries the `Name` the keyboard's steps say, so a heading is
+  said by its column rather than its press. The dashboard's payments table keeps its order and widths
   ([#1538](https://github.com/eQuantic/equantic-ui/issues/1538)). Proposed and archived through OpenSpec
   (`openspec/specs/data-table`).
