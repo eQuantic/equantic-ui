@@ -40,7 +40,7 @@ public class InputBuildersTests
     private static bool Paints(DisplayList list, int index)
     {
         var color = Swatch(index).Resolve(ThemeMode.Light, ContrastLevel.Standard);
-        return list.Commands.Any(c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == color);
+        return list.Commands.ToArray().Any(c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == color);
     }
 
     private static void Open(PhotonHost host)

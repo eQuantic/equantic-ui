@@ -34,12 +34,12 @@ public class InputsTakeTheirOwnStyleTests
     private static bool Paints(DisplayList list, ColorToken? token, float? _)
     {
         var color = token!.Value.Resolve(ThemeMode.Light, ContrastLevel.Standard);
-        return list.Commands.Any(c => (c.Kind is DrawCommandKind.FillRRect or DrawCommandKind.StrokeRRect) && c.Paint.Color == color);
+        return list.Commands.ToArray().Any(c => (c.Kind is DrawCommandKind.FillRRect or DrawCommandKind.StrokeRRect) && c.Paint.Color == color);
     }
 
     /// <summary>A round cell of the size: the day the calendar marks as chosen.</summary>
     private static bool HasCell(DisplayList list, ColorToken? _, float? size) =>
-        list.Commands.Any(c => c.Kind == DrawCommandKind.FillRRect
+        list.Commands.ToArray().Any(c => c.Kind == DrawCommandKind.FillRRect
             && MathF.Abs(c.Shape.Rect.Width - size!.Value) < 0.5f && MathF.Abs(c.Shape.Rect.Height - size.Value) < 0.5f);
 
     private static FormController Form()

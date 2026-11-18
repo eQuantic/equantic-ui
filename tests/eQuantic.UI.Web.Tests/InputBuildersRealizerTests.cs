@@ -33,7 +33,7 @@ public class InputBuildersRealizerTests
         var asked = new List<int>();
         using var tester = new ComponentTester(Theme);
         tester.Pump(Grouped(chosen, asked));
-        tester.Tap(SemanticRole.ComboBox, "Lisboa");
+        tester.Tap(SemanticRole.ComboBox, tester.Semantics.Single(stop => stop.Role == SemanticRole.ComboBox).Name);
         tester.Pump();
 
         asked.Distinct().Order().Should().Equal([0, 1, 2], "the ungrouped option is 0 and the group's are 1 and 2");
@@ -48,7 +48,7 @@ public class InputBuildersRealizerTests
         var chosen = new List<int>();
         using var tester = new ComponentTester(Theme);
         tester.Pump(Grouped(chosen));
-        tester.Tap(SemanticRole.ComboBox, "Lisboa");
+        tester.Tap(SemanticRole.ComboBox, tester.Semantics.Single(stop => stop.Role == SemanticRole.ComboBox).Name);
         tester.Pump();
 
         tester.Tap(SemanticRole.Option, "Faro");
@@ -72,7 +72,7 @@ public class InputBuildersRealizerTests
         var chosen = new List<int>();
         using var tester = new ComponentTester(Theme);
         tester.Pump(Grouped(chosen, build: false));
-        tester.Tap(SemanticRole.ComboBox, "Lisboa");
+        tester.Tap(SemanticRole.ComboBox, tester.Semantics.Single(stop => stop.Role == SemanticRole.ComboBox).Name);
         tester.Pump();
 
         tester.Html.Should().Contain("Braga").And.NotContain("drawn-");

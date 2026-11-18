@@ -1,8 +1,8 @@
 ## Context
 
 #1580 decided how every family of the catalog takes the developer's content, builders and style (its design,
-decisions 1 to 9) and left the families to slices. This one is #1548's style and builder halves; the content
-half waits for #1577, which makes a string a node and hands content the look its component resolved.
+decisions 1 to 9) and left the families to slices. This one is #1608, #1548's style and builder halves; the content
+half is #1609, which waits for #1577, which makes a string a node and hands content the look its component resolved.
 
 ## Decisions
 

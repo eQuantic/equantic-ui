@@ -57,7 +57,7 @@ public class InputStyleAdoptConfigTests
     {
         using var tester = new ComponentTester(PhotonTheme.Instance);
         tester.Pump(new Select(["Lisboa"], 0, _ => { }, optionBuilder: _ => new Text("first")));
-        tester.Tap(SemanticRole.ComboBox, "Lisboa");
+        tester.Tap(SemanticRole.ComboBox, tester.Semantics.Single(stop => stop.Role == SemanticRole.ComboBox).Name);
         tester.Pump();
         tester.Html.Should().Contain("first");
 

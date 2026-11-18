@@ -1,9 +1,9 @@
 ## Why
 
-Closes #1548, a family slice of #1545 (the catalog takes the developer's content, builders and style), whose
-design is #1580's (`openspec/changes/archive/2026-11-16-the-catalog-takes-the-developers-content-and-style`,
-decisions 5 to 9). This change carries the slice's STYLE and BUILDER halves; its content half, the label,
-helper and error as nodes, waits for #1577 and lands in a change of its own.
+Closes #1608, the style and builder half of #1548, a family slice of #1545 (the catalog takes the developer's
+content, builders and style), whose design is #1580's
+(`openspec/changes/archive/2026-11-16-the-catalog-takes-the-developers-content-and-style`, decisions 5 to 9).
+The family's content half, the label, helper and error as nodes, is #1609, which waits for #1577.
 
 A developer who wants one field drawn otherwise than the theme draws every field (a search box with the
 brand's border, a select whose options carry an icon) cannot say so today: the inputs read `theme.Input`, the
