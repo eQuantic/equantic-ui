@@ -196,6 +196,18 @@ public class ComponentParityFixtureTests
             [new DataColumn("Name", GridTrack.Flex()), new DataColumn("Size", GridTrack.Fixed(80), TextAlignment.End)],
             [new DataRow("a", [new Text("alpha", TypeRole.BodyM, Theme.TextPrimary),
                                new Text("1", TypeRole.BodyM, Theme.TextPrimary)])]), NoPresses),
+        // A table whose app keeps its columns' order and widths (#1538): the columns drawn in the app's order and
+        // the cells under them, the header a horizontal sortable of its headings in the SDK's words, and a
+        // separator around a draggable edge at the fixed column's heading, beside its item.
+        ("data-table-columns", new DataTable(
+            [new DataColumn("Name", GridTrack.Flex()), new DataColumn("Size", GridTrack.Fixed(80), TextAlignment.End)],
+            [new DataRow("a", [new Text("alpha", TypeRole.BodyM, Theme.TextPrimary),
+                               new Text("1", TypeRole.BodyM, Theme.TextPrimary)])])
+        {
+            ColumnOrder = [1, 0],
+            OnColumnsReordered = _ => { },
+            OnColumnResized = (_, _) => { },
+        }, NoPresses),
         // A TABLE VIEW at offset zero (#982): the four bands of cells, the four of marks and both
         // scrollbars, each cell placed in its band, and a mark over the corner cut into one piece per
         // band it reaches. The after-pass moves the layers by transform; what both sides write is the

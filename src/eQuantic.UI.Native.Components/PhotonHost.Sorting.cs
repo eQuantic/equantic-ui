@@ -463,7 +463,7 @@ public sealed partial class PhotonHost
             var sort = new SortGesture(at, item, regions[list].Element, sortable)
             {
                 ByKeyboard = true,
-                Name = NameOf(regions[i].Layout),
+                Name = NameOf(item, regions[i].Layout),
             };
             if (!LiftSort(sort)) return false;
             _sort = sort;
@@ -570,10 +570,11 @@ public sealed partial class PhotonHost
 
     private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
 
-    /// <summary>What a reader hears an item called: the labels of what its subtree says, in reading order, as the
-    /// web takes an item's accessible name or its text.</summary>
-    private string NameOf(LayoutNode item)
+    /// <summary>What a reader hears an item called: the name it was given for the steps (#1538), or the labels of
+    /// what its subtree says, in reading order, as the web takes an item's accessible name or its text.</summary>
+    private string NameOf(SortableItem node, LayoutNode item)
     {
+        if (node.Name.Length > 0) return node.Name;
         _sortNames.Clear();
         SemanticsTree.CollectChildren(item, _sortNames);
         var name = new StringBuilder();
@@ -596,7 +597,7 @@ public sealed partial class PhotonHost
         for (var i = 0; i < regions.Count; i++)
         {
             if (regions[i].Node is SortableItem item && item.Id == id && IsUnder(regions[i].Element, list))
-                return NameOf(regions[i].Layout);
+                return NameOf(item, regions[i].Layout);
         }
         return id;
     }

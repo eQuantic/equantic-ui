@@ -122,16 +122,21 @@ internal sealed partial class WebLoweringVisitor
         return string.Join("+", parts);
     }
     /// <summary>
-    /// The TS twin's SSR half: same markup, no handler — keydown only exists client-side, exactly
-    /// as Pressable's click does. One focusable wrapper is the control's whole Tab presence.
+    /// The TS twin's SSR half: the same markup, and the keydown DECLARED as the twin installs it (#1538),
+    /// as a navigable's is: the server never dispatches a key, so it does not run here, but the lowered
+    /// tree is what the parity net compares, and one that said "no handler" could not notice the client
+    /// losing it. One focusable wrapper is the control's whole Tab presence.
     /// </summary>
     private HtmlElement LowerAdjustable(Adjustable adjustable)
     {
         var adjustableFills = Fills(adjustable.Child);
         var adjustableCap = CapsAt(adjustable.Child);
         // ARIA pairs the role with the value, so BOTH halves are derived here rather than copied:
-        // the value is the SLIDER role's and no other's, and a slider that has none is not one.
-        var adjustableValue = adjustable.Role == AdjustableRole.Slider ? adjustable.Value : null;
+        // the value is a SLIDER's or a SEPARATOR's and no other role's, and one that has none is not
+        // either.
+        var adjustableValue = adjustable.Role is AdjustableRole.Slider or AdjustableRole.Separator
+            ? adjustable.Value
+            : null;
         var element = new RealizedElement("div")
         {
             Style = new HtmlStyle
@@ -154,6 +159,8 @@ internal sealed partial class WebLoweringVisitor
             },
         };
         if (adjustable.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
+        if (AriaOrientation(adjustable, adjustableValue) is { } orientation)
+            element.RawAttributes["aria-orientation"] = orientation;
         // The VALUE, for a role that has one (spec C7). role="slider" REQUIRES aria-valuenow, so the
         // host emitted invalid ARIA until this existed — a name and no number. The bounds go with it
         // or the number is read against ARIA's own 0-100 default, which no slider here uses.
@@ -165,12 +172,29 @@ internal sealed partial class WebLoweringVisitor
             // INSIDE the gate, unlike the Progress arm below, and the asymmetry is the point.
             // aria-valuetext REPLACES the number for a reader — on a bar that legitimately has no
             // number (indeterminate) the words are all there is, but an Adjustable with no value is
-            // a TABLIST or a RADIOGROUP, which resolves to a role that reports no range at all.
+            // a TABLIST, a RADIOGROUP, or a slider or separator announced as the group it then is,
+            // none of which reports a range at all.
             // Words there would describe a value the host never claims to have, and the native
             // visitor agrees: it announces neither unless the role is Slider.
             if (adjustable.ValueText is { Length: > 0 } spoken)
                 element.RawAttributes["aria-valuetext"] = spoken;
         }
+        // The arrows the twin answers (lowerAdjustable): a slider's or a separator's vertical axis is
+        // VALUE (up increases), a radio group's or tab list's is READING ORDER (down is next).
+        var downIsNext = adjustable.Role is not (AdjustableRole.Slider or AdjustableRole.Separator);
+        var onAdjust = adjustable.OnAdjust;
+        element.OnKeyDown = key =>
+        {
+            var direction = key.Key switch
+            {
+                "ArrowRight" => 1,
+                "ArrowLeft" => -1,
+                "ArrowUp" => downIsNext ? -1 : 1,
+                "ArrowDown" => downIsNext ? 1 : -1,
+                _ => 0,
+            };
+            if (direction != 0) onAdjust(direction);
+        };
         if (Lower(adjustable.Child, null, LoweringPath.Child) is { } child) element.Children.Add(child);
         return element;
     }
@@ -320,8 +344,23 @@ internal sealed partial class WebLoweringVisitor
     {
         AdjustableRole.Tablist => "tablist",
         AdjustableRole.Radiogroup => "radiogroup",
-        _ => value is null ? "group" : "slider",
+        _ when value is null => "group",
+        AdjustableRole.Separator => "separator",
+        _ => "slider",
     };
+
+    /// <summary>
+    /// The orientation a reader hears (#1538), for the two roles that have one and only when the host IS
+    /// that role (a value-less one is a group, which has none). A separator is the LINE between two
+    /// things, so it lies across the axis it moves on, and ARIA's default for it is horizontal: it is
+    /// always written. A slider lies along its axis and ARIA's default for it is horizontal too, so a
+    /// horizontal slider writes nothing, as every slider wrote before (TS twin: lowerAdjustable).
+    /// </summary>
+    private static string? AriaOrientation(Adjustable adjustable, RangeValue? value) =>
+        value is null ? null
+        : adjustable.Role == AdjustableRole.Separator
+            ? adjustable.Axis == DragAxis.Horizontal ? "vertical" : "horizontal"
+        : adjustable.Axis == DragAxis.Vertical ? "vertical" : null;
 
     /// <summary>
     /// The 2-D composite (TS twin: lowerNavigable). One focusable host carrying the grid role and
@@ -1119,6 +1158,9 @@ internal sealed partial class WebLoweringVisitor
         child.Style.PointerEvents = "auto";
         child.RawAttributes ??= new Dictionary<string, string>();
         child.RawAttributes["data-eq-sort-item"] = item.Id;
+        // The name the keyboard's steps say, when the item has one of its own (#1538); the controller reads it
+        // before what the item's subtree says.
+        if (item.Name is { Length: > 0 } name) child.RawAttributes["data-eq-sort-name"] = name;
         if (!item.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
         // The keyboard sorts an item from its focus (#1536): one that takes none of its own (a box, not a
         // button or a link) becomes a Tab stop. The TS twin decides by the same tags.

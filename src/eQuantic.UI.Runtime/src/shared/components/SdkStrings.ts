@@ -225,6 +225,10 @@ export class SdkStrings {
         return $eq.str('SdkResources', 'TreeItemName');
     }
 
+    static get tableColumns(): string {
+        return $eq.str('SdkResources', 'TableColumns');
+    }
+
     static get sorting(): SortAnnouncements {
         return new SortAnnouncements($eq.str('SdkResources', 'SortInstructions'), $eq.str('SdkResources', 'SortPickedUp'), $eq.str('SdkResources', 'SortMoved'), $eq.str('SdkResources', 'SortMovedInto'), $eq.str('SdkResources', 'SortRefused'), $eq.str('SdkResources', 'SortDropped'), $eq.str('SdkResources', 'SortDroppedInto'), $eq.str('SdkResources', 'SortCancelled'));
     }
@@ -393,6 +397,14 @@ export class SdkStrings {
 
     static uploadAcceptsAny(size: string) {
         return $eq.text.stringFormat($eq.str('SdkResources', 'UploadAcceptsAny'), size);
+    }
+
+    static sortByColumn(column: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'SortByColumn'), column);
+    }
+
+    static resizeColumn(column: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'ResizeColumn'), column);
     }
 
     static uploadSending(sent: string, size: string) {

@@ -41,7 +41,6 @@ static eQuantic.UI.Components.UI.Select(System.Collections.Generic.IReadOnlyList
 *REMOVED*eQuantic.UI.Components.MarkdownStyle.MarkdownStyle() -> void
 *REMOVED*const eQuantic.UI.Components.SwipeableRow.ActionWidth = 96 -> float
 eQuantic.UI.Components.Markdown.Style.get -> eQuantic.UI.Primitives.MarkdownTheme?
-static eQuantic.UI.Components.UI.SortableItem(eQuantic.UI.Primitives.VisualNode! child, string! id, bool enabled = true) -> eQuantic.UI.Primitives.SortableItem!
 static eQuantic.UI.Components.SdkStrings.TreeLoading.get -> string!
 static eQuantic.UI.Components.SdkStrings.TreeLoadFailed.get -> string!
 eQuantic.UI.Components.TreeNode

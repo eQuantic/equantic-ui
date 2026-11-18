@@ -56,6 +56,19 @@ public class SortableRealizerTests
     }
 
     [Fact]
+    public void AnItemGivenAName_WritesItForTheKeyboardsSteps_AndOneWithoutWritesNone()
+    {
+        var column = new Column(gap: 0);
+        column.Add(new SortableItem(new Text("Sort by Amount"), "amount") { Name = "Amount" });
+        column.Add(new SortableItem(new Text("b"), "b"));
+        var list = Render(new Sortable(column, "columns", _ => { }));
+
+        list.Children[0].Attributes["data-eq-sort-name"].Should().Be("Amount",
+            "the steps say the item's own name before what its subtree says");
+        list.Children[1].Attributes.Should().NotContainKey("data-eq-sort-name");
+    }
+
+    [Fact]
     public void AListThatHearsNoHoverAndAsksNoGuard_DeclaresNeither_AndADisabledOneSaysSo()
     {
         var list = Render(new Sortable(Cards("a"), "todo", _ => { }) { Axis = DragAxis.Horizontal, Enabled = false });

@@ -4901,14 +4901,21 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
   });
   const role = node.role ?? 'slider';
   // ARIA pairs the role with the value, so BOTH halves are derived here rather than copied (C# twin:
-  // WebLoweringVisitor's AriaRole). The value is the SLIDER role's and no other's, and a slider with
-  // no value is not one: role="slider" REQUIRES aria-valuenow, so it announces `group` — a focusable
+  // WebLoweringVisitor's AriaRole). The value is a SLIDER's or a SEPARATOR's and no other role's, and
+  // one with no value is neither: both REQUIRE aria-valuenow, so it announces `group` — a focusable
   // container the arrows adjust, with no position of its own. Deriving it here is what makes the
   // rule unoutrunnable, since the component library is not the only way an adjustable node is built.
-  const value = role === 'slider' ? node.value : undefined;
-  host.attributes['role'] = role === 'slider' && !value ? 'group' : role;
+  const valued = role === 'slider' || role === 'separator';
+  const value = valued ? node.value : undefined;
+  host.attributes['role'] = valued && !value ? 'group' : role;
   host.attributes['tabindex'] = '0';
   if (node.label) host.attributes['aria-label'] = node.label;
+  // The orientation a reader hears (C# twin: AriaOrientation), only on a host that IS a slider or a
+  // separator. A separator is the line between two things, across the axis it moves on, and ARIA's
+  // default for it is horizontal, so it is always written; a horizontal slider writes nothing.
+  const vertical = node.axis === 'vertical';
+  if (value && role === 'separator') host.attributes['aria-orientation'] = vertical ? 'horizontal' : 'vertical';
+  else if (value && vertical) host.attributes['aria-orientation'] = 'vertical';
   // The VALUE, for a role that has one (C# twin: LowerAdjustable). role="slider" REQUIRES
   // aria-valuenow, so the host emitted invalid ARIA until this existed — a name and no number. The
   // bounds go with it or the number is read against ARIA's own 0-100 default, which no slider here
@@ -4924,9 +4931,9 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
   }
   if (node.onAdjust) {
     const adjust = node.onAdjust;
-    // A slider's vertical axis is VALUE (up increases); a radiogroup's or tablist's is READING
-    // ORDER (down is next) — WAI-ARIA's own split, one mapping per role family.
-    const downIsNext = role !== 'slider';
+    // A slider's or a separator's vertical axis is VALUE (up increases); a radiogroup's or tablist's is
+    // READING ORDER (down is next) — WAI-ARIA's own split, one mapping per role family.
+    const downIsNext = !valued;
     host.events['keydown'] = ((event: KeyboardEvent) => {
       const direction =
         event.key === 'ArrowRight'
@@ -5865,6 +5872,8 @@ function lowerSortableItem(
   if (!child) return null;
   replaceAtomicDeclaration(child, 'pointer-events', 'auto');
   child.attributes['data-eq-sort-item'] = node.id;
+  // The name the keyboard's steps say, when the item has one of its own (#1538; C# twin: LowerSortableItem).
+  if (node.name) child.attributes['data-eq-sort-name'] = node.name;
   if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
   // The keyboard sorts an item from its focus (#1536): one that takes none of its own becomes a Tab stop
   // (the C# twin decides by the same tags).

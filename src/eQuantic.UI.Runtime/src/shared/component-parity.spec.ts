@@ -475,6 +475,21 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         ],
       ),
     ),
+    'data-table-columns': still(
+      new DataTable(
+        [
+          new DataColumn('Name', GridTrack.flex()),
+          new DataColumn('Size', GridTrack.fixed(80), 'end'),
+        ],
+        [
+          new DataRow('a', [
+            new Text('alpha', 'bodyM', photonTheme.textPrimary),
+            new Text('1', 'bodyM', photonTheme.textPrimary),
+          ]),
+        ],
+        { columnOrder: [1, 0], onColumnsReordered: () => undefined, onColumnResized: () => undefined },
+      ),
+    ),
     'table-view': still(
       new TableView(
         new UniformTableSpans(6, 28),

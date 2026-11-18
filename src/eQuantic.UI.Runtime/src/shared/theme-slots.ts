@@ -535,6 +535,8 @@ export class TableTheme {
   sortIconSize: number | null = null;
   borderWidth: number | null = null;
   borderColor: ColorToken | null = null;
+  columnDropColor: ColorToken | null = null;
+  resizeHandleColor: ColorToken | null = null;
 
   constructor(config?: Partial<TableTheme>) {
     if (config) Object.assign(this, config);

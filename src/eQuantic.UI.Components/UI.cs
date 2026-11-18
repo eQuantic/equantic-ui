@@ -377,8 +377,8 @@ public static class UI
     /// </summary>
     public static Adjustable Adjustable(VisualNode child, Action<int> onAdjust,
         RangeValue? value = null, AdjustableRole role = AdjustableRole.Slider,
-        string? valueText = null) =>
-        new Adjustable(child, onAdjust) { Value = value, Role = role, ValueText = valueText };
+        string? valueText = null, DragAxis axis = DragAxis.Horizontal) =>
+        new Adjustable(child, onAdjust) { Value = value, Role = role, ValueText = valueText, Axis = axis };
 
     /// <summary>
     /// The 2-D twin of <see cref="Adjustable"/>: one Tab stop for the whole thing, and a keyboard
@@ -809,9 +809,10 @@ public static class UI
             Enabled = enabled,
         };
 
-    /// <summary>One item of a <see cref="Primitives.Sortable"/>, named by its id.</summary>
-    public static SortableItem SortableItem(VisualNode child, string id, bool enabled = true) =>
-        new SortableItem(child, id) { Enabled = enabled };
+    /// <summary>One item of a <see cref="Primitives.Sortable"/>, named by its id in what the list reports, and by
+    /// <paramref name="name"/>, when given, in what the keyboard's steps say.</summary>
+    public static SortableItem SortableItem(VisualNode child, string id, bool enabled = true, string name = "") =>
+        new SortableItem(child, id) { Enabled = enabled, Name = name };
 
     /// <summary>
     /// An area a person drops files onto: <paramref name="onDropped"/> hands over what landed, and

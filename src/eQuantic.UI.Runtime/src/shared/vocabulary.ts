@@ -1126,6 +1126,8 @@ export class SortableItem extends VisualNode {
   child: VisualChild;
   id: string;
   enabled = true;
+  /** The name the keyboard's steps say. C# twin: `SortableItem.Name`. */
+  name = '';
 
   constructor(child: VisualChild, id: string, config?: EqConfig) {
     super();
@@ -1671,8 +1673,10 @@ export class Adjustable extends VisualNode {
   child: VisualNode;
   onAdjust: (direction: number) => void;
   label = '';
-  /** ARIA identity of the host element — 'slider' (default), 'tablist' or 'radiogroup'. */
-  role: 'slider' | 'tablist' | 'radiogroup' = 'slider';
+  /** ARIA identity of the host element — 'slider' (default), 'tablist', 'radiogroup' or 'separator'. */
+  role: 'slider' | 'tablist' | 'radiogroup' | 'separator' = 'slider';
+  /** The axis the value moves along, which a reader hears as the orientation. C# twin: `Adjustable.Axis`. */
+  axis: 'vertical' | 'horizontal' = 'horizontal';
   /** Where the value sits, for a role that has one; absent on a tablist or a radiogroup. */
   value?: RangeValue | null;
 
@@ -1690,7 +1694,8 @@ export class Adjustable extends VisualNode {
     onAdjust: (direction: number) => void,
     config?: {
       label?: string;
-      role?: 'slider' | 'tablist' | 'radiogroup';
+      role?: 'slider' | 'tablist' | 'radiogroup' | 'separator';
+      axis?: 'vertical' | 'horizontal';
       value?: RangeValue | null;
       valueText?: string | null;
     },

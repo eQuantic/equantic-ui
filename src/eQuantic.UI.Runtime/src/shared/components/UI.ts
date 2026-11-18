@@ -155,8 +155,8 @@ export class UI {
         return new Group(child, { label: label });
     }
 
-    static adjustable(child: VisualNode, onAdjust: (int: number) => void, value: RangeValue | null = null, role: AdjustableRoleValue = 'slider', valueText: string | null = null) {
-        return new Adjustable(child, onAdjust, { value: value, role: role, valueText: valueText });
+    static adjustable(child: VisualNode, onAdjust: (int: number) => void, value: RangeValue | null = null, role: AdjustableRoleValue = 'slider', valueText: string | null = null, axis: DragAxisValue = 'horizontal') {
+        return new Adjustable(child, onAdjust, { value: value, role: role, valueText: valueText, axis: axis });
     }
 
     static navigable(onMove: (navigableMove: NavigableMoveValue) => void, rows: VisualNode[], label: string = '', role: NavigableRoleValue = 'grid', hasHeaderRow: boolean = false, activeCell: [number, number] | null = null) {
@@ -359,8 +359,8 @@ export class UI {
         return new Sortable(child, id, onDropped, announcements ?? SdkStrings.sorting, { label: label, group: group, axis: axis, nests: nests, onHovered: onHovered, accepts: accepts, enabled: enabled });
     }
 
-    static sortableItem(child: VisualNode, id: string, enabled: boolean = true) {
-        return new SortableItem(child, id, { enabled: enabled });
+    static sortableItem(child: VisualNode, id: string, enabled: boolean = true, name: string = '') {
+        return new SortableItem(child, id, { enabled: enabled, name: name });
     }
 
     static dropTarget(child: VisualNode, onDropped: (value: PickedFile[]) => void, onDragOverChanged: ((bool: boolean) => void) | null = null, enabled: boolean = true) {

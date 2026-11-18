@@ -537,6 +537,8 @@ export interface SortableItemNode extends VisualNodeValue {
   child: VisualNodeValue;
   id: string;
   enabled?: boolean;
+  /** The name the keyboard's steps say (C# `SortableItem.Name`); empty, what the item's subtree says. */
+  name?: string;
 }
 
 /** Wire shape of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
@@ -889,8 +891,11 @@ export interface AdjustableNode extends VisualNodeValue {
   child: VisualNodeValue;
   onAdjust?: (direction: number) => void;
   label?: string;
-  /** ARIA identity of the host — 'slider' (default), 'tablist' or 'radiogroup'. */
-  role?: 'slider' | 'tablist' | 'radiogroup';
+  /** ARIA identity of the host — 'slider' (default), 'tablist', 'radiogroup' or 'separator'. */
+  role?: 'slider' | 'tablist' | 'radiogroup' | 'separator';
+  /** The axis the value moves along (C# `Adjustable.Axis`), 'horizontal' unless said: what a reader
+   * hears as the orientation of a slider or a separator. */
+  axis?: 'vertical' | 'horizontal';
   /** Where the value sits, for a role that has one; absent on a tablist or a radiogroup. */
   value?: RangeValueValue | null;
   /** The value IN WORDS, said INSTEAD of the number — for a role that HAS one (#243). */
