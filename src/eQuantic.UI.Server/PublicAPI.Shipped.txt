@@ -2,6 +2,7 @@
 abstract eQuantic.UI.Server.Metadata.MetaTag.Key.get -> string!
 abstract eQuantic.UI.Server.Metadata.MetaTag.Render() -> string!
 const eQuantic.UI.Server.ConsentCookie.Name = "eq-consent" -> string!
+const eQuantic.UI.Server.ConsentCookie.SecureName = "__Host-eq-consent" -> string!
 const eQuantic.UI.Server.ContentSecurityPolicyOptions.SectionName = "EQuantic:ContentSecurityPolicy" -> string!
 const eQuantic.UI.Server.CultureRouteConstraint.Name = "culture" -> string!
 const eQuantic.UI.Server.ServerActionsOptions.SectionName = "EQuantic:ServerActions" -> string!
@@ -303,11 +304,16 @@ eQuantic.UI.Server.ServerEventPublishOptions.ServerEventPublishOptions() -> void
 eQuantic.UI.Server.ServerEventsBuilder
 eQuantic.UI.Server.ServerEventsBuilder.AddHandler<THandler>() -> eQuantic.UI.Server.ServerEventsBuilder!
 eQuantic.UI.Server.ServerEventsBuilder.Configure(System.Action<eQuantic.UI.Server.ServerEventsOptions!>! configure) -> eQuantic.UI.Server.ServerEventsBuilder!
+eQuantic.UI.Server.ServerEventsBuilder.ConfigureEndpoints(System.Action<Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!>! configure) -> eQuantic.UI.Server.ServerEventsBuilder!
 eQuantic.UI.Server.ServerEventsBuilder.Topic(string! template, System.Action<eQuantic.UI.Server.ServerTopicRule!>! rule) -> eQuantic.UI.Server.ServerEventsBuilder!
 eQuantic.UI.Server.ServerEventsBuilder.UseBackplane<TBackplane>() -> eQuantic.UI.Server.ServerEventsBuilder!
 eQuantic.UI.Server.ServerEventsOptions
 eQuantic.UI.Server.ServerEventsOptions.HeartbeatInterval.get -> System.TimeSpan
 eQuantic.UI.Server.ServerEventsOptions.HeartbeatInterval.set -> void
+eQuantic.UI.Server.ServerEventsOptions.MaxConnectionLifetime.get -> System.TimeSpan
+eQuantic.UI.Server.ServerEventsOptions.MaxConnectionLifetime.set -> void
+eQuantic.UI.Server.ServerEventsOptions.MaxConnections.get -> int
+eQuantic.UI.Server.ServerEventsOptions.MaxConnections.set -> void
 eQuantic.UI.Server.ServerEventsOptions.MaxPayloadBytes.get -> int
 eQuantic.UI.Server.ServerEventsOptions.MaxPayloadBytes.set -> void
 eQuantic.UI.Server.ServerEventsOptions.MaxQueuedEventsPerConnection.get -> int
@@ -397,6 +403,7 @@ eQuantic.UI.Server.UIOptions.UseAlternateLinks(System.Func<eQuantic.UI.Server.Al
 eQuantic.UI.Server.UIOptions.UseContentSecurityPolicy(System.Action<eQuantic.UI.Server.ContentSecurityPolicyBuilder!>? configure = null) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseCultureRoutes(params string![]! cultures) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseInitialThemeMode(eQuantic.UI.Primitives.ThemeMode mode) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.UseLayout<TLayout>() -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseServerEvents(System.Action<eQuantic.UI.Server.ServerEventsBuilder!>! configure) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseTheme(eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseThemeCookie(string! name = "eq-theme", int days = 365) -> eQuantic.UI.Server.UIOptions!

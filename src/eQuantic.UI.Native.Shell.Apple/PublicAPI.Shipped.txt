@@ -41,6 +41,9 @@
 [EQX0001]eQuantic.UI.Native.Shell.Apple.AppleSecretStore.Get(string! key) -> string?
 [EQX0001]eQuantic.UI.Native.Shell.Apple.AppleSecretStore.Remove(string! key) -> void
 [EQX0001]eQuantic.UI.Native.Shell.Apple.AppleSecretStore.Set(string! key, string! value) -> void
+[EQX0001]eQuantic.UI.Native.Shell.Apple.AutoreleasePool
+[EQX0001]eQuantic.UI.Native.Shell.Apple.AutoreleasePool.AutoreleasePool() -> void
+[EQX0001]eQuantic.UI.Native.Shell.Apple.AutoreleasePool.Dispose() -> void
 [EQX0001]eQuantic.UI.Native.Shell.Apple.Bmp
 [EQX0001]eQuantic.UI.Native.Shell.Apple.CGPoint
 [EQX0001]eQuantic.UI.Native.Shell.Apple.CGPoint.CGPoint() -> void
@@ -83,11 +86,13 @@
 [EQX0001]eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass.Context<T>(nint self) -> T?
 [EQX0001]eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass.Handle.get -> nint
 [EQX0001]eQuantic.UI.Native.Shell.Apple.ObjCDelegateClass.New(System.Runtime.InteropServices.GCHandle context) -> nint
+[EQX0001]static eQuantic.UI.Native.Shell.Apple.AppleAppearance.Contrast() -> eQuantic.UI.Primitives.ContrastLevel
 [EQX0001]static eQuantic.UI.Native.Shell.Apple.AppleAppearance.Resolve() -> eQuantic.UI.Primitives.ThemeMode?
 [EQX0001]static eQuantic.UI.Native.Shell.Apple.AppleBiometry.AuthenticateAsync(string! reason, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<eQuantic.UI.Primitives.BiometricResult>!
 [EQX0001]static eQuantic.UI.Native.Shell.Apple.AppleBiometry.IsAvailable() -> bool
 [EQX0001]static eQuantic.UI.Native.Shell.Apple.AppleDeepLinks.Install() -> eQuantic.UI.Primitives.DeepLinkRelay!
 [EQX0001]static eQuantic.UI.Native.Shell.Apple.AppleLocale.Resolve() -> (System.Globalization.CultureInfo! Ui, System.Globalization.CultureInfo! Format)
+[EQX0001]static eQuantic.UI.Native.Shell.Apple.AutoreleasePool.Push() -> eQuantic.UI.Native.Shell.Apple.AutoreleasePool
 [EQX0001]static eQuantic.UI.Native.Shell.Apple.Bmp.Encode(byte[]! rgba, int width, int height) -> byte[]!
 [EQX0001]static eQuantic.UI.Native.Shell.Apple.NSRange.NotFound.get -> eQuantic.UI.Native.Shell.Apple.NSRange
 [EQX0001]static eQuantic.UI.Native.Shell.Apple.ObjC.FromNSString(nint value) -> string?
@@ -138,6 +143,8 @@
 [EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, ulong arg1) -> void
 [EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.class_getInstanceMethod(nint cls, nint name) -> nint
 [EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.method_getImplementation(nint method) -> nint
+[EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.objc_autoreleasePoolPop(nint pool) -> void
+[EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.objc_autoreleasePoolPush() -> nint
 [EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.objc_registerClassPair(nint cls) -> void
 [EQX0001]static extern eQuantic.UI.Native.Shell.Apple.ObjC.sel_getName(nint selector) -> nint
 ~[EQX0001]static eQuantic.UI.Native.Shell.Apple.ObjC.class_addMethod(nint cls, nint name, nint implementation, string types) -> bool

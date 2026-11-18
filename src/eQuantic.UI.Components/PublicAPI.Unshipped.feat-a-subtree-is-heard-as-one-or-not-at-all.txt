@@ -1,2 +1,0 @@
-static eQuantic.UI.Components.UI.MergeSemantics(eQuantic.UI.Primitives.VisualNode! child) -> eQuantic.UI.Primitives.MergeSemantics!
-static eQuantic.UI.Components.UI.ExcludeSemantics(eQuantic.UI.Primitives.VisualNode! child, bool excluding = true) -> eQuantic.UI.Primitives.ExcludeSemantics!
