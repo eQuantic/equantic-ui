@@ -84,6 +84,9 @@ public static class CultureFormatBridge
                 abbreviatedMonthGenitiveNames = Months(date.AbbreviatedMonthGenitiveNames),
                 amDesignator = date.AMDesignator,
                 pmDesignator = date.PMDesignator,
+                // The calendar the numbers of a date are counted in, which every name above belongs to:
+                // th-TH writes the Thai Buddhist year 2567 where the Gregorian one is 2024 (#1191).
+                calendar = CalendarBridge.Describe(culture),
             },
         });
     }
