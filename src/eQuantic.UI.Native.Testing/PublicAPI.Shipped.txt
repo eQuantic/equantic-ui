@@ -5,6 +5,7 @@
 [EQX0001]eQuantic.UI.Native.Testing.MeasuredNode.Node.get -> eQuantic.UI.Primitives.VisualNode!
 [EQX0001]eQuantic.UI.Native.Testing.MeasuredNode.Text.get -> eQuantic.UI.Native.Framework.TextMeasurement?
 [EQX0001]eQuantic.UI.Native.Testing.PhotonTester
+[EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Boundary.get -> eQuantic.UI.Primitives.ComponentBoundary!
 [EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Culture.get -> System.Globalization.CultureInfo!
 [EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Density.get -> eQuantic.UI.Primitives.Density
 [EQX0001]eQuantic.UI.Native.Testing.PhotonTester.Dispose() -> void
