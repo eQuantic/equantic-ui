@@ -258,6 +258,19 @@ public class ComponentParityFixtureTests
         // A grouped Select opened (#677): the listbox holds the ungrouped option, then the labelled
         // group with its heading and its options, numbered across the group on both producers.
         ("select-grouped-opens", new Select(["Lisboa"], 0, groups: [new OptionGroup("A seguir", ["Braga", "Faro"])]), [0]),
+        // A subtree heard as one stop, or passed over (#1567): the parts a merge hides and the ids its stop is
+        // named by, and the host an exclusion marks, written alike by both producers.
+        ("merge-a-checkbox-and-its-description", new MergeSemantics(Line(false,
+            new Checkbox(true, label: "Agree"), new Text("to the terms", TypeRole.BodyM, Theme.TextPrimary))), NoPresses),
+        ("merge-read-content", new MergeSemantics(Line(false,
+            new Text("Total", TypeRole.BodyM, Theme.TextPrimary),
+            new ExcludeSemantics(new Text("JD", TypeRole.BodyM, Theme.TextPrimary)),
+            new Text("42 EUR", TypeRole.BodyM, Theme.TextPrimary))), NoPresses),
+        ("exclude-a-subtree", Line(false,
+            new ExcludeSemantics(new Text("Decoration", TypeRole.BodyM, Theme.TextPrimary)),
+            new Text("Shown", TypeRole.BodyM, Theme.TextPrimary)), NoPresses),
+        ("exclude-not-excluding",
+            new ExcludeSemantics(new Text("Read", TypeRole.BodyM, Theme.TextPrimary)) { Excluding = false }, NoPresses),
         // A LIST A POINTER SORTS (#1535): no element of its own, its column marked, and the reports the
         // browser's controller dispatches declared by the server. Its words (#1564) are attributes both sides
         // write, escaped alike.

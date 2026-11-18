@@ -1667,6 +1667,37 @@ export class Group extends VisualNode {
   }
 }
 
+/**
+ * Mirror of the C# `MergeSemantics` node: a subtree a reader hears as one stop. It draws nothing and adds
+ * no geometry.
+ */
+export class MergeSemantics extends VisualNode {
+  readonly nodeKind = 'mergeSemantics';
+  child: VisualNode;
+
+  constructor(child: VisualNode, config?: EqConfig) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `ExcludeSemantics` node: a subtree a reader passes over while it excludes. It draws
+ * nothing and adds no geometry.
+ */
+export class ExcludeSemantics extends VisualNode {
+  readonly nodeKind = 'excludeSemantics';
+  child: VisualNode;
+  excluding = true;
+
+  constructor(child: VisualNode, config?: { excluding?: boolean }) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `Adjustable` node: the child answers to the arrow keys as ONE Tab stop. */
 export class Adjustable extends VisualNode {
   readonly nodeKind = 'adjustable';
