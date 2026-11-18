@@ -98,4 +98,20 @@ public static class SortPlacement
     /// <summary>Where a key moves an item in a list of <paramref name="count"/> places (the item's own
     /// included): one step, kept inside the list.</summary>
     public static int Step(int index, int step, int count) => Math.Max(0, Math.Min(index + step, count - 1));
+
+    /// <summary>
+    /// Where a key moves a carried item among the <paramref name="others"/> items of its list (the carried one left
+    /// out), from the place it holds: the index it lands at, and the item it lands inside or -1, as
+    /// <see cref="Place"/> answers a pointer. In a list that <paramref name="nests"/> the places run before the
+    /// first item, inside it, before the second, inside it, and on to after the last (2n + 1 places for n others),
+    /// and a step takes the next or the previous; in one that does not, a step moves one index, as
+    /// <see cref="Step"/> does. Kept inside the list.
+    /// </summary>
+    public static (int Index, int Into) KeyStep(int index, int into, int step, int others, bool nests)
+    {
+        if (!nests) return (Step(index, step, others + 1), -1);
+        var place = into >= 0 ? into * 2 + 1 : index * 2;
+        place = Math.Max(0, Math.Min(place + step, others * 2));
+        return place % 2 == 1 ? ((place - 1) / 2, (place - 1) / 2) : (place / 2, -1);
+    }
 }

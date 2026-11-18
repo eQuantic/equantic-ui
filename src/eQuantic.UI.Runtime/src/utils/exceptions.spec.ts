@@ -338,6 +338,7 @@ describe('every throw of the .NET twins carries its .NET type', () => {
     { file: 'assert-never.ts', words: 'Unhandled', why: 'a case the code never reaches; reaching it is a defect of the runtime' },
     { file: 'decimal.ts', words: 'Invalid decimal literal', why: 'a literal the compiler wrote, valid by construction' },
     { file: 'linq.ts', words: 'A sequence was expected', why: 'a value that crossed as a plain object where C# holds a sequence' },
+    { file: 'query.ts', words: 'A sequence was expected', why: 'the same value, met where a query walks its source' },
   ];
 
   it('throws no untyped error but the ones that say why', () => {

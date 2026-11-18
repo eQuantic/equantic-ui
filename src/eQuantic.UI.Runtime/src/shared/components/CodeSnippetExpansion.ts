@@ -58,7 +58,7 @@ export class CodeSnippetExpansion {
 
     static maxStop(parts: CodeSnippetPart[]) {
         let max = 0;
-        for (const part of parts) {
+        for (const part of $eq.collections.sequenceWalk(parts)) {
             if (part.isStop && part.index > max) max = part.index;
             let children: any; 
             if ((children = part.children) != null) {
@@ -70,7 +70,7 @@ export class CodeSnippetExpansion {
     }
 
     number(parts: CodeSnippetPart[], next: number) {
-        for (const part of parts) {
+        for (const part of $eq.collections.sequenceWalk(parts)) {
             if (part.variable && this._variable(part.text) == null && !this._unknown.has(part.text)) $eq.mapSet(this._unknown, part.text, next++);
             let children: any; 
             if ((children = part.children) != null) next = this.number(children, next);
@@ -79,7 +79,7 @@ export class CodeSnippetExpansion {
     }
 
     define(parts: CodeSnippetPart[]) {
-        for (const part of parts) {
+        for (const part of $eq.collections.sequenceWalk(parts)) {
             let index = this.indexOf(part);
             if (index >= 0 && !this._defining.has(index) && (!(part.children == null) || !(part.choices == null) || part.variable)) $eq.mapSet(this._defining, index, part);
             let children: any; 
@@ -97,7 +97,7 @@ export class CodeSnippetExpansion {
         if ((($0) => ($0.has(index) ? ((known = $0.get(index)), true) : ((known = null), false)))(this._defaults)) return known;
         let defining: any; 
         if (!(($0) => ($0.has(index) ? ((defining = $0.get(index)), true) : ((defining = null), false)))(this._defining) || this._resolving.includes(index)) return '';
-        this._resolving.push(index);
+        $eq.collections.listAdd(this._resolving, index);
         let choices: any; let children: any; 
         let text = (($0) => (($0 != null && $eq.collections.count($0) > 0) && (choices = $0, true)))(defining.choices) ? $eq.collections.item(choices, 0) : (children = defining.children) != null ? this.plain(children) : defining.text;
         $eq.collections.remove(this._resolving, index);
@@ -107,7 +107,7 @@ export class CodeSnippetExpansion {
 
     plain(parts: CodeSnippetPart[]) {
         let text = $eq.text.stringBuilder();
-        for (const part of parts) {
+        for (const part of $eq.collections.sequenceWalk(parts)) {
             if (!part.isStop && !part.variable) {
                 text.append(part.text);
                 continue;
@@ -131,7 +131,7 @@ export class CodeSnippetExpansion {
     }
 
     write(parts: CodeSnippetPart[]) {
-        for (const part of parts) {
+        for (const part of $eq.collections.sequenceWalk(parts)) {
             if (!part.isStop && !part.variable) {
                 this.append(part.text);
                 continue;
@@ -145,13 +145,13 @@ export class CodeSnippetExpansion {
             let start = this.end;
             let defining: any; let children: any; 
             if ((($0) => ($0.has(index) ? ((defining = $0.get(index)), true) : ((defining = null), false)))(this._defining) && defining.choices == null && (children = defining.children) != null && !this._writing.includes(index)) {
-                this._writing.push(index);
-                this._enclosing.push(index);
+                $eq.collections.listAdd(this._writing, index);
+                $eq.collections.listAdd(this._enclosing, index);
                 this.write(children);
                 $eq.collections.listRemoveAt(this._enclosing, this._enclosing.length - 1);
                 $eq.collections.remove(this._writing, index);
             } else this.append(this.defaultOf(index));
-            this._places.push(new CodeSnippetPlace(index, start, this.end, $eq.collections.listCopy(this._enclosing), part.choices));
+            $eq.collections.listAdd(this._places, new CodeSnippetPlace(index, start, this.end, $eq.collections.listCopy(this._enclosing), part.choices));
         }
     }
 

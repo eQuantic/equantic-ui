@@ -40,7 +40,7 @@ export class CodeWordCompletionProvider {
             if (i === end && end < text.length && CodeDocument.isWordChar(text[end])) continue;
             if ((/^\p{Nd}$/u.test(text[start]))) continue;
             let word = $eq.text.substring(text, start, i - start);
-            if ($eq.collections.setAdd(seen, word)) items.push(new CodeCompletionItem(word));
+            if ($eq.collections.setAdd(seen, word)) $eq.collections.listAdd(items, new CodeCompletionItem(word));
         }
         return left - (end - first) - 1;
     }

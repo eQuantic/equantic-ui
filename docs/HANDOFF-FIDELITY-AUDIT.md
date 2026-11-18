@@ -723,9 +723,9 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
-  WebLoweringVisitor.Interaction.cs  var adjustableValue = adjustable.Role == AdjustableRole.Slider ? adjustable.Value : null;
-  WebLoweringVisitor.Interaction.cs  AdjustableRole.Tablist => "tablist", AdjustableRole.Radiogroup => "radiogroup", _ => value is null ? "group" : "slider",
+  lowering.ts  const valued = role === 'slider' || role === 'separator'; const value = valued ? node.value : undefined; host.attributes['role'] = valued && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
+  WebLoweringVisitor.Interaction.cs  var adjustableValue = adjustable.Role is AdjustableRole.Slider or AdjustableRole.Separator ? adjustable.Value : null;
+  WebLoweringVisitor.Interaction.cs  AdjustableRole.Tablist => "tablist", AdjustableRole.Radiogroup => "radiogroup", _ when value is null => "group",
   Slider.cs              : new Adjustable(box, direction =>
   ```
 

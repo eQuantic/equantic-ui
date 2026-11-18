@@ -10,7 +10,7 @@
  * One table follows the unions: each FontWeight's number, which the runtime asks for by name.
  */
 
-export type AdjustableRoleValue = 'slider' | 'tablist' | 'radiogroup';
+export type AdjustableRoleValue = 'slider' | 'tablist' | 'radiogroup' | 'separator';
 
 export type AlignmentValue =
   'topStart' | 'topCenter' | 'topEnd' | 'centerStart' | 'center' | 'centerEnd' | 'bottomStart'
@@ -112,6 +112,8 @@ export type FontWeightValue =
 
 export type GradientDirectionValue = 'toRight' | 'toBottom' | 'toBottomRight' | 'toBottomLeft';
 
+export type HitTestBehaviorValue = 'deferToChild' | 'opaque' | 'translucent';
+
 export type HydratedMemberKindValue = 'field' | 'property' | 'capturedParameter' | 'backingField';
 
 export type IconGlyphStyleValue = 'fill' | 'stroke';
@@ -151,7 +153,7 @@ export type PointerCursorValue =
 
 export type PointerKindValue = 'mouse' | 'touch' | 'stylus';
 
-export type PointerPhaseValue = 'down' | 'move' | 'up' | 'hover' | 'exit' | 'cancel';
+export type PointerPhaseValue = 'down' | 'move' | 'up' | 'hover' | 'exit' | 'cancel' | 'scroll';
 
 export type PresenceMotionValue = 'fade' | 'slideUp';
 
@@ -167,7 +169,7 @@ export type SemanticRoleValue =
   'staticText' | 'button' | 'link' | 'textField' | 'codeField' | 'slider' | 'image' | 'checkbox'
   | 'switch' | 'gridCell' | 'progressIndicator' | 'group' | 'radio' | 'tab' | 'menuItem' | 'option'
   | 'destination' | 'tabBar' | 'radioGroup' | 'comboBox' | 'dialog' | 'alertDialog' | 'table'
-  | 'grid' | 'cell' | 'columnHeader' | 'rowHeader' | 'tree' | 'treeItem';
+  | 'grid' | 'cell' | 'columnHeader' | 'rowHeader' | 'tree' | 'treeItem' | 'splitter';
 
 export type ServerConnectionStateValue =
   'disconnected' | 'connecting' | 'connected' | 'reconnecting';

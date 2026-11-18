@@ -19,13 +19,30 @@ public sealed partial class PhotonHost
     /// A shell's secondary click at (<paramref name="x"/>, <paramref name="y"/>): the right button, a Control-click on
     /// a Mac, a pointer's secondary click on a tablet. The innermost <see cref="ContextTarget"/> under the point hears
     /// the request, at the point in its own box. Answers whether one did, so a shell that answers nothing can let
-    /// the platform's own menu open.
+    /// the platform's own menu open. <paramref name="buttons"/> and <paramref name="modifiers"/> are what the shell
+    /// saw, which the listeners under the point hear (#1562): a Control-click is the primary button with Control held.
     /// </summary>
-    public bool ContextRequest(float x, float y, PointerKind kind = PointerKind.Mouse)
+    public bool ContextRequest(float x, float y, PointerKind kind = PointerKind.Mouse,
+        PointerButtons buttons = PointerButtons.Secondary, KeyModifiers modifiers = KeyModifiers.None)
     {
         y += _lift;
         _contextHold = null;
-        return RequestAt(new Point(x, y));
+        var point = new Point(x, y);
+        var answered = RequestAt(point);
+        // The listeners under the click hear it as the button the shell saw, its down and its up at once (#1562). A
+        // Control-click nothing answered presses as it always did, and the listeners hear that press instead. A click
+        // while a press is followed is a second button on the same pointer, which a browser reports as no new down:
+        // the press stays followed.
+        if (kind != PointerKind.Touch && _listening is null && (buttons != PointerButtons.Primary || answered))
+        {
+            HearDown(point, kind, buttons, modifiers);
+            // One click: the up holds the keys its down held.
+            HearUp(point, modifiers);
+        }
+        // An answered Control-click keeps its button down for the menu, and the shell ends it with PointerCancel rather
+        // than a press's up: until then the pointer is held, and its moves hover nothing.
+        if (answered && buttons == PointerButtons.Primary) _held = true;
+        return answered;
     }
 
     /// <summary>The request of the innermost enabled target under <paramref name="point"/>, at the point in its box.
@@ -57,9 +74,12 @@ public sealed partial class PhotonHost
         if (!(key == "ContextMenu" && modifiers == KeyModifiers.None) && !(key == "F10" && modifiers == KeyModifiers.Shift))
             return false;
         // A field being edited keeps its own menu, as it keeps the pointer's.
-        if (_textAt is not null || _focusedAt is not { } focused
+        if (_textAt is not null || _focusedAt is not { } stop
             || _lastFrame is not { ContextRegions: { Count: > 0 } regions })
             return false;
+        // A composite keeps the focus on its one stop and names where the keyboard is by its active cell: the
+        // target around THAT item answers (#1532), as the web's follows aria-activedescendant.
+        var focused = ActiveItemOf(stop) ?? stop;
         for (var i = regions.Count - 1; i >= 0; i--)
         {
             var at = regions[i].Element;
@@ -70,6 +90,33 @@ public sealed partial class PhotonHost
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// The position of the item a focused composite names as active (<see cref="Navigable.ActiveCell"/>): its
+    /// row's, then the row's cell of that index among the composite's kind of item (a tree's items, a grid's
+    /// cells), counted in tree order as the web numbers them. Null when the focus is not on a composite, or it
+    /// names no cell, or the cell is not there.
+    /// </summary>
+    private Element? ActiveItemOf(Element focused)
+    {
+        if (focused.Configuration is not Navigable { ActiveCell: { } cell } grid) return null;
+        if (focused.ChildAt(cell.Row) is not { } row) return null;
+        var role = grid.Role == NavigableRole.Tree ? PressableRole.TreeItem : PressableRole.GridCell;
+        var seen = 0;
+        Element? found = null;
+        void Walk(Element at)
+        {
+            if (found is not null) return;
+            if (at.Configuration is Pressable pressable && pressable.Role == role && seen++ == cell.Item)
+            {
+                found = at;
+                return;
+            }
+            at.VisitChildren(Walk);
+        }
+        Walk(row);
+        return found ?? row;
     }
 
     /// <summary>Whether a point lands on a text field, whose own menu a request there leaves alone.</summary>

@@ -87,14 +87,14 @@ export class SheetDocument {
             let cell = CellRef.fromKey(key);
             if (cell.row < atRow) continue;
             if (delta < 0 && cell.row < atRow - delta) {
-                removed.push(new SheetCellSnapshot(cell, value));
+                $eq.collections.listAdd(removed, new SheetCellSnapshot(cell, value));
                 continue;
             }
-            moved.push(new SheetCellSnapshot(cell, value));
+            $eq.collections.listAdd(moved, new SheetCellSnapshot(cell, value));
         }
-        for (const snapshot of removed) this._cells.delete(snapshot.cell.key);
-        for (const snapshot of moved) this._cells.delete(snapshot.cell.key);
-        for (const snapshot of moved) $eq.mapSet(this._cells, new CellRef(snapshot.cell.row + delta, snapshot.cell.col).key, snapshot.value);
+        for (const snapshot of $eq.collections.listWalk(removed)) this._cells.delete(snapshot.cell.key);
+        for (const snapshot of $eq.collections.listWalk(moved)) this._cells.delete(snapshot.cell.key);
+        for (const snapshot of $eq.collections.listWalk(moved)) $eq.mapSet(this._cells, new CellRef(snapshot.cell.row + delta, snapshot.cell.col).key, snapshot.value);
         SheetDocument.shiftSizes(this._rowHeights, atRow, delta);
         this.rows = Math.max(1, this.rows + delta);
         this.sizeVersion++;
@@ -109,14 +109,14 @@ export class SheetDocument {
             let cell = CellRef.fromKey(key);
             if (cell.col < atCol) continue;
             if (delta < 0 && cell.col < atCol - delta) {
-                removed.push(new SheetCellSnapshot(cell, value));
+                $eq.collections.listAdd(removed, new SheetCellSnapshot(cell, value));
                 continue;
             }
-            moved.push(new SheetCellSnapshot(cell, value));
+            $eq.collections.listAdd(moved, new SheetCellSnapshot(cell, value));
         }
-        for (const snapshot of removed) this._cells.delete(snapshot.cell.key);
-        for (const snapshot of moved) this._cells.delete(snapshot.cell.key);
-        for (const snapshot of moved) $eq.mapSet(this._cells, new CellRef(snapshot.cell.row, snapshot.cell.col + delta).key, snapshot.value);
+        for (const snapshot of $eq.collections.listWalk(removed)) this._cells.delete(snapshot.cell.key);
+        for (const snapshot of $eq.collections.listWalk(moved)) this._cells.delete(snapshot.cell.key);
+        for (const snapshot of $eq.collections.listWalk(moved)) $eq.mapSet(this._cells, new CellRef(snapshot.cell.row, snapshot.cell.col + delta).key, snapshot.value);
         SheetDocument.shiftSizes(this._colWidths, atCol, delta);
         this.cols = Math.max(1, Math.min(this.cols + delta, 16384));
         this.sizeVersion++;
@@ -126,12 +126,12 @@ export class SheetDocument {
 
     static shiftSizes(sizes: any, at: number, delta: number) {
         if (sizes.size === 0) return;
-        let entries = $eq.collections.listCopy(sizes);
-        for (const entry of entries) {
+        let entries: any[] = $eq.collections.listCopy(sizes);
+        for (const entry of $eq.collections.listWalk(entries)) {
             if (entry.key < at) continue;
             sizes.delete(entry.key);
         }
-        for (const entry of entries) {
+        for (const entry of $eq.collections.listWalk(entries)) {
             if (entry.key < at) continue;
             if (delta < 0 && entry.key < at - delta) continue;
             $eq.mapSet(sizes, entry.key + delta, entry.value);

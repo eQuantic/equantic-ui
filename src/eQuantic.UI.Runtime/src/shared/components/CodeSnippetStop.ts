@@ -28,8 +28,8 @@ export class CodeSnippetStop {
             this.hasPrimary = true;
             return;
         }
-        this.ranges.push(range);
-        this.enclosing.push(enclosing);
+        $eq.collections.listAdd(this.ranges, range);
+        $eq.collections.listAdd(this.enclosing, enclosing);
     }
 
     removeAt(index: number) {
@@ -38,7 +38,7 @@ export class CodeSnippetStop {
     }
 
     nestedIn(index: number) {
-        for (const enclosing of this.enclosing) if (enclosing.includes(index)) return true;
+        for (const enclosing of $eq.collections.listWalk(this.enclosing)) if (enclosing.includes(index)) return true;
         return false;
     }
 

@@ -55,7 +55,7 @@ export class Calendar extends StatefulComponent {
         for (let week = 0; week < 6; week++) {
             let weekRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill });
             for (let column = 0; column < 7; column++) weekRow.add(this.cell(start.addDays(week * 7 + column), context));
-            rows.push(weekRow);
+            $eq.collections.listAdd(rows, weekRow);
         }
         let month = new Column(slot?.gap ?? 8);
         month.add(header);

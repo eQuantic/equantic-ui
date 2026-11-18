@@ -67,7 +67,9 @@ public class MethodGroupTests
         var (js, diagnostics) = Convert("public class Sample { public object Run() { var list = new System.Collections.Generic.List<int>(); "
             + "Func<bool> any = list.Any; return any(); } }");
         diagnostics.Should().BeEmpty();
-        js.Should().NotContain(".any").And.Contain("list");
+        // The group is the call the strategy translates (#685), never the receiver's own .any read off it.
+        js.Should().NotContain("list.any").And.NotContain("__target.any")
+            .And.Contain("$eq.query.any(__target)").And.Contain("list");
     }
 
     /// <summary>A delegate built from another is .NET's new delegate over its Invoke: a new function, its

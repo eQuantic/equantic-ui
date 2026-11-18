@@ -53,7 +53,7 @@ export class CodeCompletion {
     }
 
     get isLoading(): boolean {
-        return this._active && this._requests.some((request) => !request.answered);
+        return this._active && $eq.query.any(this._requests, (request) => !request.answered);
     }
 
     get items(): CodeCompletionMatch[] {
@@ -84,8 +84,8 @@ export class CodeCompletion {
     typed(typed: string) {
         if (this._editor.readOnly || this._active || $eq.collections.count(this.providers) === 0 || !this._editor.selection.isEmpty) return;
         let triggered: any[] = [];
-        for (const provider of this.providers) {
-            if (provider.triggerCharacters.includes(typed)) triggered.push(provider);
+        for (const provider of $eq.collections.sequenceWalk(this.providers)) {
+            if (provider.triggerCharacters.includes(typed)) $eq.collections.listAdd(triggered, provider);
         }
         if (triggered.length > 0) {
             this.open(this._editor.caret, 'character', typed, triggered);
@@ -104,7 +104,7 @@ export class CodeCompletion {
         this.close(false);
         this._active = true;
         this._choosing = choosing;
-        this._edits.splice(0);
+        $eq.collections.listClear(this._edits);
         this._openedBy = trigger;
         this._start = start;
         this._openedEmpty = choosing || $eq.equals(start, this._editor.caret);
@@ -129,7 +129,7 @@ export class CodeCompletion {
         let asked = this._edits.length;
         let word = this.word();
         let requests: CodeCompletionRequest[] = [];
-        for (const provider of providers) {
+        for (const provider of $eq.collections.listWalk(providers)) {
             for (let i = this._requests.length - 1; i >= 0; i--) {
                 if (!(this._requests[i].provider === provider)) continue;
                 let stale = this._requests[i];
@@ -137,11 +137,11 @@ export class CodeCompletion {
                 this.cancel(stale.cancellation);
             }
             let request = new CodeCompletionRequest(provider, word);
-            this._requests.push(request);
-            requests.push(request);
+            $eq.collections.listAdd(this._requests, request);
+            $eq.collections.listAdd(requests, request);
         }
         if (announce) this.changed?.();
-        for (const request of requests) this.askOne(request, document, position, context, asked);
+        for (const request of $eq.collections.listWalk(requests)) this.askOne(request, document, position, context, asked);
     }
 
     async askOne(request: CodeCompletionRequest, document: CodeDocument, position: CodePosition, context: CodeCompletionContext, asked: number) {
@@ -170,7 +170,7 @@ export class CodeCompletion {
         let at = 0;
         while (at < this._answers.length && this.rankOf(this._answers[at].provider) <= rank) at++;
         $eq.collections.listInsert(this._answers, at, answer);
-        if (this._answers.every((held) => held.offers.length === 0 && !held.isIncomplete) && !this.isLoading) {
+        if ($eq.query.all(this._answers, (held) => held.offers.length === 0 && !held.isIncomplete) && !this.isLoading) {
             this.close(true);
             return;
         }
@@ -218,16 +218,16 @@ export class CodeCompletion {
         let word = this.word();
         let incomplete: any[] = [];
         let left: any[] = [];
-        for (const answer of this._answers) {
+        for (const answer of $eq.collections.listWalk(this._answers)) {
             if (this.lastAskedWord(answer.provider) === word) continue;
-            if (answer.isIncomplete) incomplete.push(answer.provider); else if (!$eq.text.startsWith(word, answer.askedWord, 'ordinal')) left.push(answer.provider);
+            if (answer.isIncomplete) $eq.collections.listAdd(incomplete, answer.provider); else if (!$eq.text.startsWith(word, answer.askedWord, 'ordinal')) $eq.collections.listAdd(left, answer.provider);
         }
         if (incomplete.length > 0) this.ask('incomplete', null, incomplete, false);
         if (left.length > 0) this.ask(this._openedBy === 'character' ? 'invoked' : this._openedBy, null, left, false);
     }
 
     lastAskedWord(provider: any) {
-        for (const request of this._requests) {
+        for (const request of $eq.collections.listWalk(this._requests)) {
             if ((request.provider === provider)) return request.word;
         }
         return null;
@@ -236,8 +236,8 @@ export class CodeCompletion {
     gather() {
         this._candidates = [];
         let groups: any = $eq.collections.dictionary();
-        for (const answer of this._answers) {
-            for (const offer of answer.offers) {
+        for (const answer of $eq.collections.listWalk(this._answers)) {
+            for (const offer of $eq.collections.listWalk(answer.offers)) {
                 let item = offer.item;
                 let key = CodeCompletion.entryOf(item);
                 let group: any; 
@@ -247,7 +247,7 @@ export class CodeCompletion {
                 }
                 offer.group = group;
                 offer.sortKey = $eq.text.toLower((item.sortText ?? item.label), true);
-                this._candidates.push(offer);
+                $eq.collections.listAdd(this._candidates, offer);
             }
         }
         this._groups = groups.size;
@@ -260,7 +260,7 @@ export class CodeCompletion {
         let matches: CodeCompletionMatch[] = [];
         let offers: CodeCompletionOffer[] = [];
         let listed = new Array(this._groups).fill(false);
-        for (const offer of this._candidates) {
+        for (const offer of $eq.collections.listWalk(this._candidates)) {
             if (listed[offer.group]) continue;
             let item = offer.item;
             let typed = word;
@@ -274,11 +274,11 @@ export class CodeCompletion {
             if (!((match = CodeFuzzyMatch.of(typed, filter)) != null)) continue;
             listed[offer.group] = true;
             let highlights = item.filterText == null || item.filterText === item.label ? match.positions : CodeFuzzyMatch.of(typed, item.label, true)?.positions ?? [];
-            matches.push(new CodeCompletionMatch(item, match.score, highlights));
-            offers.push(offer);
+            $eq.collections.listAdd(matches, new CodeCompletionMatch(item, match.score, highlights));
+            $eq.collections.listAdd(offers, offer);
         }
         let order: number[] = [];
-        for (let i = 0; i < matches.length; i++) order.push(i);
+        for (let i = 0; i < matches.length; i++) $eq.collections.listAdd(order, i);
         $eq.collections.listSortBy(order, (a: number, b: number) => {
             if (matches[a].score !== matches[b].score) return matches[b].score - matches[a].score;
             let byKey = $eq.text.compare(offers[a].sortKey, offers[b].sortKey, 'ordinal');
@@ -288,9 +288,9 @@ export class CodeCompletion {
         }, 'System.Comparison`1[System.Int32]');
         this._items = [];
         this._shown = [];
-        for (const i of order) {
-            this._items.push(matches[i]);
-            this._shown.push(offers[i]);
+        for (const i of $eq.collections.listWalk(order)) {
+            $eq.collections.listAdd(this._items, matches[i]);
+            $eq.collections.listAdd(this._shown, offers[i]);
         }
         this._selected = this._items.length > 0 ? 0 : -1;
         for (let i = 0; i < this._items.length && this._items[i].score === this._items[0].score; i++) {
@@ -366,20 +366,20 @@ export class CodeCompletion {
 
     close(raise: boolean) {
         let requests = this._requests.slice();
-        this._requests.splice(0);
+        $eq.collections.listClear(this._requests);
         let list = this._list;
         this._list = null;
         let was = this._active;
         this._active = false;
         this._choosing = false;
-        this._edits.splice(0);
-        this._answers.splice(0);
+        $eq.collections.listClear(this._edits);
+        $eq.collections.listClear(this._answers);
         this._candidates = [];
         this._groups = 0;
         this._items = [];
         this._shown = [];
         this._selected = -1;
-        for (const request of requests) this.cancel(request.cancellation);
+        for (const request of $eq.collections.listWalk(requests)) this.cancel(request.cancellation);
         this.cancel(list);
         if (raise && was) this.changed?.();
     }
@@ -414,7 +414,7 @@ export class CodeCompletion {
             offer.item = resolved;
             let at = $eq.collections.indexOf(this._shown, offer, 'item');
             if (at < 0) return;
-            this._items[at] = $eq.withPatch(this._items[at], { item: resolved });
+            $eq.collections.listSet(this._items, at, $eq.withPatch(this._items[at], { item: resolved }));
             this.changed?.();
         });
     }
@@ -445,15 +445,15 @@ export class CodeCompletion {
 
     carry(change: CodeChange) {
         if (!this._active) return;
-        for (const edit of change.edits) {
+        for (const edit of $eq.collections.sequenceWalk(change.edits)) {
             this._start = edit.carryAnchor(this._start);
-            this._edits.push(edit);
+            $eq.collections.listAdd(this._edits, edit);
         }
     }
 
     inCommentOrString(caret: CodePosition) {
         if (caret.column === 0) return false;
-        for (const token of this._editor.highlighter.tokensFor(this._editor.document, caret.line)) {
+        for (const token of $eq.collections.sequenceWalk(this._editor.highlighter.tokensFor(this._editor.document, caret.line))) {
             if (token.start <= caret.column - 1 && caret.column - 1 < token.end) return (($0) => ($0 === 'comment' || $0 === 'string'))(token.kind);
         }
         return false;

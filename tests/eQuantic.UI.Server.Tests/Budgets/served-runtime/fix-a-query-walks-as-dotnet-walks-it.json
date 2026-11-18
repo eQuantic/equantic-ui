@@ -1,0 +1,4 @@
+{
+  "deltaBytes": 3996,
+  "bought": "LINQ\u0027s lazy query walker (utils/query.ts) and List\u003CT\u003E\u0027s version (utils/list-version.ts), which the shared components\u0027 lists now add, clear and walk through (#685, #863)"
+}
