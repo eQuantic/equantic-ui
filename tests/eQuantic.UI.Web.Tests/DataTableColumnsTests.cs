@@ -213,6 +213,33 @@ public class DataTableColumnsTests
     }
 
     [Fact]
+    public void AReorderedTableReportsAResizeAndASort_ByTheColumnsDeclaredPosition()
+    {
+        var resized = new List<(int Column, float Width)>();
+        var sorted = new List<int>();
+        DataColumn[] columns =
+        [
+            new("Name", GridTrack.Flex(), Sortable: true),
+            new("Size", GridTrack.Fixed(120), Sortable: true),
+            new("Kind", GridTrack.Fixed(100), Sortable: true),
+        ];
+        var built = Built(new DataTable(columns, [])
+        {
+            ColumnOrder = [2, 0, 1],
+            OnSort = sorted.Add,
+            OnColumnsReordered = _ => { },
+            OnColumnResized = (column, width) => resized.Add((column, width)),
+        });
+
+        // Drawn Kind, Name, Size: the first handle is Kind's and the last press Size's.
+        Walk(built).OfType<Adjustable>().First(node => node.Role == AdjustableRole.Separator).OnAdjust(1);
+        Walk(built).OfType<Pressable>().Last().OnPressed!();
+
+        resized.Should().Equal([(2, 116f)], "Kind is declared third, whatever place it is drawn in");
+        sorted.Should().Equal([1], "Size is declared second");
+    }
+
+    [Fact]
     public void ASeparatorIsAnnouncedWithItsValueAndOrientation_AndAnAdjustableSaysItsAxis()
     {
         HtmlNode Host(Adjustable node) => WebRealizer.Lower(node, Theme).Render();
