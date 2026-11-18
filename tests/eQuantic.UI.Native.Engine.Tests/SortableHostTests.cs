@@ -33,6 +33,7 @@ public class SortableHostTests
         public SortAnnouncements? Words { get; set; }
         public SortAnnouncements? DoingWords { get; set; }
         public string[] Labels { get; set; } = ["", ""];
+        public SortableTheme? Style { get; set; }
 
         public override VisualNode Build(ComponentContext context)
         {
@@ -57,7 +58,8 @@ public class SortableHostTests
                 // A column that scrolls is a list whose child is the scroll view, the element the web marks.
                 if (ColumnHeight is not null) body = new ScrollView(body);
                 var guard = Guard;
-                VisualNode list = new Sortable(body, id, Drop, c == 1 && DoingWords is not null ? DoingWords : Words)
+                VisualNode list = new Sortable(body, id, Drop, c == 1 && DoingWords is not null ? DoingWords : Words,
+                    c == 0 ? Style : null)
                 {
                     Group = Group,
                     Nests = Nests,
@@ -89,10 +91,10 @@ public class SortableHostTests
         }
     }
 
-    private static (PhotonHost Host, Board Board) Open(Board? board = null)
+    private static (PhotonHost Host, Board Board) Open(Board? board = null, IAppTheme? theme = null)
     {
         board ??= new Board();
-        var host = new PhotonHost(board, PhotonTheme.Instance, ThemeMode.Light, 400, 600);
+        var host = new PhotonHost(board, theme ?? PhotonTheme.Instance, ThemeMode.Light, 400, 600);
         host.RenderFrame(new DisplayListBuilder(), 0);
         host.RenderFrame(new DisplayListBuilder(), 16);
         return (host, board);
@@ -288,6 +290,81 @@ public class SortableHostTests
         drawn[0].Transform.M12.Should().BeLessThan(0, "moving right leans the copy back, counter-clockwise");
         drawn[0].Transform.M31.Should().BeGreaterThan(0);
         drawn.Should().Contain(c => c.Shape.Rect.Width > 0);
+    }
+
+    /// <summary>Carries a1 fast to the right and draws the next frame: what it draws, from the dimmed card to the
+    /// copy's commands.</summary>
+    private static DrawCommand[] CarryFast(PhotonHost host)
+    {
+        var a1 = CardAt(host, "a1");
+        host.PressDown(a1.X, a1.Y);
+        host.PointerMove(a1.X + 10, a1.Y);
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        host.PointerMove(a1.X + 70, a1.Y);
+        host.RenderFrame(new DisplayListBuilder(), 48);
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, 64);
+        return builder.Build().Commands.ToArray();
+    }
+
+    /// <summary>The layer a carry opened at <paramref name="opacity"/>, last first: the copy's is drawn over the frame.</summary>
+    private static int LayerAt(DrawCommand[] commands, float opacity) =>
+        Array.FindLastIndex(commands, c => c.Kind == DrawCommandKind.BeginLayer && Math.Abs(c.StrokeWidth - opacity) < 0.001f);
+
+    [Fact]
+    public void TheLookOfACarriedCard_IsTheThemes_WithTheListsOwnLaidOverIt()
+    {
+        var theme = PhotonTheme.Instance.With(sortable: new SortableTheme
+        {
+            LiftedOpacity = 0.25f,
+            CopyOpacity = 0.7f,
+            CopyElevation = 5,
+            MaxLean = 6,
+        });
+        var (host, _) = Open(new Board { Style = new SortableTheme { CopyOpacity = 0.5f } }, theme);
+
+        var commands = CarryFast(host);
+
+        LayerAt(commands, 0.25f).Should().BeGreaterThan(-1, "the card is dimmed as the theme says");
+        LayerAt(commands, 0.7f).Should().Be(-1, "the list's own copy opacity comes first");
+        var copy = LayerAt(commands, 0.5f);
+        copy.Should().BeGreaterThan(0, "the copy is drawn at the list's own opacity");
+        var shadow = commands[(copy + 1)..].First(c => c.Kind == DrawCommandKind.ShadowRRect);
+        var level = theme.Elevation(5);
+        shadow.StrokeWidth.Should().Be(level.Blur, "the copy's shadow is the theme's for level 5");
+        var lean = commands[(copy + 1)..].First(c => c.Kind == DrawCommandKind.FillRRect).Transform.M12;
+        lean.Should().BeLessThan(0, "moving right still leans the copy back");
+        Math.Abs(lean).Should().BeLessThanOrEqualTo(MathF.Sin(6 * MathF.PI / 180) + 0.001f, "no further than the theme's most");
+    }
+
+    [Fact]
+    public void ACarriedCard_TakesTheDefaults_WhereNeitherSaysAndTheThemesLevelFourShadow()
+    {
+        var (host, _) = Open();
+
+        var commands = CarryFast(host);
+
+        LayerAt(commands, (float)SortPlacement.LiftedOpacity).Should().BeGreaterThan(-1);
+        var copy = LayerAt(commands, (float)SortPlacement.CopyOpacity);
+        copy.Should().BeGreaterThan(0);
+        var shadow = commands[(copy + 1)..].First(c => c.Kind == DrawCommandKind.ShadowRRect);
+        var level = PhotonTheme.Instance.Elevation(SortPlacement.CopyElevation);
+        shadow.StrokeWidth.Should().Be(level.Blur);
+        var card = commands[(copy + 1)..].First(c => c.Kind == DrawCommandKind.FillRRect).Shape.Rect;
+        shadow.Shape.Rect.Width.Should().BeApproximately(card.Width + 2 * level.Spread, 0.01f,
+            "the level's spread draws in, as the theme's shadow does");
+    }
+
+    [Fact]
+    public void AListWhoseLookLeansNoFurther_KeepsItsCopyUpright()
+    {
+        var (host, _) = Open(new Board { Style = new SortableTheme { MaxLean = 0 } });
+
+        var commands = CarryFast(host);
+
+        var copy = LayerAt(commands, (float)SortPlacement.CopyOpacity);
+        commands[(copy + 1)..].Where(c => c.Kind == DrawCommandKind.FillRRect)
+            .Should().OnlyContain(c => c.Transform.M12 == 0, "the list's most is 0");
     }
 
     [Fact]

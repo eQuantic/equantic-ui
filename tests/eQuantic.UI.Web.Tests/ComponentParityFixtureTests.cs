@@ -269,6 +269,10 @@ public class ComponentParityFixtureTests
             Group = "board",
             OnHovered = _ => { },
         }, NoPresses),
+        // A list with a look of its own (#1602): each member it sets on its element, for the controller to lay over
+        // the browser's theme.
+        ("sortable-styled", new Sortable(Stack(0, new SortableItem(new Text("a", TypeRole.BodyM, Theme.TextPrimary), "a")),
+            "todo", _ => { }, style: new SortableTheme { LiftedOpacity = 0.25f, CopyElevation = 5, MaxLean = 0 }), NoPresses),
         ("accordion-switches", new Accordion([
             new AccordionItem("One") { Content = new Text("body one", TypeRole.BodyM, Theme.TextPrimary) },
             new AccordionItem("Two") { Content = new Text("body two", TypeRole.BodyM, Theme.TextPrimary) },

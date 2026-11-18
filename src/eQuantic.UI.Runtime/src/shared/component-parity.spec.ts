@@ -117,6 +117,7 @@ import { dateOnly } from '../utils/datetime';
 import { installCulture } from '../utils/culture';
 import { calendarFormat } from './__fixtures__/calendar-format';
 import calendarNames from './calendar-names.fixture.json';
+import { SortableTheme } from './theme-slots';
 
 setPhotonTheme(photonTheme);
 
@@ -569,7 +570,18 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
           'Left {0} in {1}.',
           'Back <{0}>.',
         ),
+        null,
         { group: 'board', onHovered: () => undefined },
+      ),
+    ),
+    // A list with a look of its own (#1602): each member it sets on its element, for the controller.
+    'sortable-styled': still(
+      new Sortable(
+        column(0, new SortableItem(new Text('a', 'bodyM', photonTheme.textPrimary), 'a')),
+        'todo',
+        () => undefined,
+        null,
+        new SortableTheme({ liftedOpacity: 0.25, copyElevation: 5, maxLean: 0 }),
       ),
     ),
     'tree-opens': {

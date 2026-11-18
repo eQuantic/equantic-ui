@@ -113,7 +113,7 @@ export class DataTable extends StatefulComponent {
             if (resizes) cell.add(new Positioned(this.resizeHandle(theme, slot, index), 0, 0, 0));
             grid.add(cell);
         }
-        let row = !this.reorders ? grid : new Sortable(grid, DataTable.headerListId, $eq.delegates.bound(this, this.dropped), SdkStrings.sorting, { axis: 'horizontal', label: SdkStrings.tableColumns, onHovered: $eq.delegates.bound(this, this.hovered).bind(this) });
+        let row = !this.reorders ? grid : new Sortable(grid, DataTable.headerListId, $eq.delegates.bound(this, this.dropped), SdkStrings.sorting, null, { axis: 'horizontal', label: SdkStrings.tableColumns, onHovered: $eq.delegates.bound(this, this.hovered).bind(this) });
         return new Box(new BoxStyle({ width: SizeValue.fill, background: slot?.headerFill ?? theme.surfaceSubtle, borderWidth: slot?.borderWidth ?? 1, borderColor: slot?.borderColor ?? theme.border }), row);
     }
 

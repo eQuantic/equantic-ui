@@ -50,6 +50,7 @@ import {
 import { Curve, Motion } from './design-system.generated';
 import type { MotionSpec } from './primitive-values';
 import { hashesByValue } from '../utils/hash';
+import type { SortableTheme } from './theme-slots';
 
 export { StyleChannels } from './value-types';
 
@@ -1096,6 +1097,8 @@ export class Sortable extends VisualNode {
   id: string;
   onDropped: (drop: SortDrop) => void;
   announcements: SortAnnouncementsValue | null;
+  /** The look of an item carried from this list, over the theme's (C# `Sortable.Style`, #1602). */
+  style: SortableTheme | null;
   group = '';
   axis = 'vertical';
   nests = false;
@@ -1109,6 +1112,7 @@ export class Sortable extends VisualNode {
     id: string,
     onDropped: (drop: SortDrop) => void,
     announcements: SortAnnouncementsValue | null = null,
+    style: SortableTheme | null = null,
     config?: EqConfig,
   ) {
     super();
@@ -1116,6 +1120,7 @@ export class Sortable extends VisualNode {
     this.id = id;
     this.onDropped = onDropped;
     this.announcements = announcements;
+    this.style = style;
     if (config) Object.assign(this, config);
   }
 }

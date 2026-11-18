@@ -5836,6 +5836,15 @@ function lowerSortable(
     child.attributes['data-eq-sort-say-dropped-into'] = words.droppedInto;
     child.attributes['data-eq-sort-say-put-back'] = words.putBack;
   }
+  // The list's own look of a carried item (#1602), each member it sets, which the controller lays over the browser's
+  // theme when it lifts an item from this list. A list with no style of its own writes none. C# twin: LowerSortable.
+  const own = node.style;
+  if (own) {
+    if (own.liftedOpacity != null) child.attributes['data-eq-sort-look-lifted'] = num(own.liftedOpacity);
+    if (own.copyOpacity != null) child.attributes['data-eq-sort-look-copy-opacity'] = num(own.copyOpacity);
+    if (own.copyElevation != null) child.attributes['data-eq-sort-look-copy-elevation'] = String(own.copyElevation);
+    if (own.maxLean != null) child.attributes['data-eq-sort-look-lean'] = num(own.maxLean);
+  }
   const dropped = node.onDropped;
   child.events['eq-sort-dropped'] = ((ev: Event) =>
     dropped((ev as CustomEvent<SortDropValue>).detail)) as unknown as EventHandler;

@@ -58,6 +58,7 @@ import type {
   VectorPaintKindValue,
 } from './enums.generated';
 import type { NodeKind } from './node-kinds.generated';
+import type { SortableTheme } from './theme-slots';
 
 export type { NodeKind } from './node-kinds.generated';
 
@@ -522,6 +523,8 @@ export interface SortableNode extends VisualNodeValue {
   id: string;
   onDropped: (drop: SortDropValue) => void;
   announcements?: SortAnnouncementsValue | null;
+  /** The list's own look of a carried item (C# `Sortable.Style`, #1602). */
+  style?: SortableTheme | null;
   group?: string;
   axis?: string;
   nests?: boolean;

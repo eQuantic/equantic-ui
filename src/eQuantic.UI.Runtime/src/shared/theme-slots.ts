@@ -668,6 +668,24 @@ export class MarkdownTheme {
   }
 }
 
+/** The look of an item carried in a sortable list (#1602), which a list's own `style` comes ahead of: the
+ * defaults where neither sets a member are `SortPlacement`'s (`SortPlacement.look`). */
+export class SortableTheme {
+  liftedOpacity: number | null = null;
+  copyOpacity: number | null = null;
+  copyElevation: number | null = null;
+  maxLean: number | null = null;
+
+  constructor(config?: Partial<SortableTheme>) {
+    if (config) Object.assign(this, config);
+  }
+
+  /** C# `SortableTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
+  static merge(under: SortableTheme | null | undefined, over: SortableTheme | null | undefined): SortableTheme | null {
+    return mergeSlot(under, over);
+  }
+}
+
 // Records: each hashes by its members, as `equals` compares it (`ValueTwinHashTests` holds this to the C#).
 hashesByValue(SizeLadder);
 hashesByValue(DensityLadder);
@@ -690,6 +708,7 @@ hashesByValue(TableTheme);
 hashesByValue(BadgeTheme);
 hashesByValue(CalendarTheme);
 hashesByValue(MarkdownTheme);
+hashesByValue(SortableTheme);
 
 // ---- from the bridge's JSON (C# `ThemeBridge.SlotJson`) ------------------------------------------
 // The bridge writes every slot by one rule: a member under its camel-cased name, a number as itself, an
@@ -1008,6 +1027,8 @@ export const badgeTheme = (data: SlotData): BadgeTheme => familySlot(new BadgeTh
 export const calendarTheme = (data: SlotData): CalendarTheme => familySlot(new CalendarTheme(), data);
 /** The rendered document's slot the bridge wrote. */
 export const markdownTheme = (data: SlotData): MarkdownTheme => familySlot(new MarkdownTheme(), data);
+/** The look of a carried item the bridge wrote. */
+export const sortableTheme = (data: SlotData): SortableTheme => familySlot(new SortableTheme(), data);
 
 /**
  * Every slot the browser's theme carries, by the name the bridge writes it under and the builder that
@@ -1033,6 +1054,7 @@ export const slotBuilders: Record<string, (data: SlotData) => unknown> = {
   badge: badgeTheme,
   calendar: calendarTheme,
   markdown: markdownTheme,
+  sortable: sortableTheme,
 };
 
 /**
@@ -1062,6 +1084,7 @@ export class AppThemeExtensions {
     badge: BadgeTheme | null = null,
     calendar: CalendarTheme | null = null,
     markdown: MarkdownTheme | null = null,
+    sortable: SortableTheme | null = null,
   ): AppTheme {
     // A map, so a slot's name is never confused with a member every object inherits; each merge once.
     const given = new Map<PropertyKey, object | null>([
@@ -1083,6 +1106,7 @@ export class AppThemeExtensions {
       ['badge', badge],
       ['calendar', calendar],
       ['markdown', markdown],
+      ['sortable', sortable],
     ]);
     const merged = new Map<PropertyKey, unknown>();
     return new Proxy(theme, {

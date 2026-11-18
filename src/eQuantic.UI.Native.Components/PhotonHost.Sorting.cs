@@ -130,6 +130,13 @@ public sealed partial class PhotonHost
         lift.Lifted = true;
         lift.Follows = !sort.ByKeyboard;
         lift.Copy = null;
+        // The look of the list the item was picked up from (#1602), kept for every list of the group it is carried
+        // over: the theme's with the list's own laid over it, and the defaults where neither says.
+        var look = SortPlacement.Look(_theme.Sortable, sort.SourceNode.Style);
+        lift.LiftedOpacity = look.LiftedOpacity!.Value;
+        lift.CopyOpacity = look.CopyOpacity!.Value;
+        lift.CopyShadow = _theme.Elevation(look.CopyElevation!.Value);
+        lift.MaxLean = look.MaxLean!.Value;
         sort.Lift = lift;
         sort.Active = true;
         sort.MovedAtMs = sort.TiltFromMs = _lastTimeMs;
@@ -165,7 +172,8 @@ public sealed partial class PhotonHost
     {
         sort.MovedAtMs = _lastTimeMs;
         if (ReducedMotion || _lastTimeMs <= sort.TiltFromMs) return;
-        if (SortPlacement.Tilt(sort.Pointer.X - sort.TiltFromX, _lastTimeMs - sort.TiltFromMs) is { } angle)
+        if (SortPlacement.Tilt(sort.Pointer.X - sort.TiltFromX, _lastTimeMs - sort.TiltFromMs,
+                sort.Lift?.MaxLean ?? SortPlacement.TiltMax) is { } angle)
             sort.Lean = angle;
         sort.TiltFromX = sort.Pointer.X;
         sort.TiltFromMs = _lastTimeMs;
@@ -390,7 +398,7 @@ public sealed partial class PhotonHost
             ? Matrix2D.Translation(dx, dy)
             : Matrix2D.Translation(-center.X, -center.Y) * Matrix2D.Rotation(sort.Angle * MathF.PI / 180f)
                 * Matrix2D.Translation(center.X + dx, center.Y + dy);
-        builder.PushLayer((float)SortPlacement.CopyOpacity);
+        builder.PushLayer(lift.CopyOpacity);
         builder.DrawPicture(copy, offset);
         builder.PopLayer();
     }

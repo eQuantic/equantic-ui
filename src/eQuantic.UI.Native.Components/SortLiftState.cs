@@ -22,4 +22,17 @@ internal sealed class SortLiftState
 
     /// <summary>The copy's centre in device space, which it leans about.</summary>
     public Point Center { get; set; }
+
+    /// <summary>The opacity the item is drawn at in its place while it is carried: its source list's look (#1602),
+    /// resolved when the host lifts it.</summary>
+    public float LiftedOpacity { get; set; } = (float)SortPlacement.LiftedOpacity;
+
+    /// <summary>The opacity the copy is drawn at.</summary>
+    public float CopyOpacity { get; set; } = (float)SortPlacement.CopyOpacity;
+
+    /// <summary>The copy's shadow, the theme's for the look's elevation level.</summary>
+    public ShadowSpec CopyShadow { get; set; }
+
+    /// <summary>The most the copy leans either way, in degrees; 0 keeps it upright.</summary>
+    public float MaxLean { get; set; } = SortPlacement.TiltMax;
 }

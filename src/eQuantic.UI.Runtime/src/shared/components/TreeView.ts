@@ -286,7 +286,7 @@ export class TreeView extends StatefulComponent {
         let tree: VisualNode = new Navigable($eq.delegates.bound(this, this.move), items, { role: 'tree', label: this.label, activeCell: active >= 0 ? [active, 0] : null, onTextSearch: $eq.delegates.bound(this, this.search).bind(this), focusVersion: this._focusVersion });
         let editing = !(this._editKey == null);
         if (!(this.onMoved == null)) {
-            tree = new Sortable(tree, 'tree', $eq.delegates.bound(this, this.dropped), SdkStrings.sorting, { axis: 'vertical', nests: true, label: this.label, accepts: $eq.delegates.bound(this, this.accepts).bind(this), onHovered: $eq.delegates.bound(this, this.hovered).bind(this), enabled: !editing });
+            tree = new Sortable(tree, 'tree', $eq.delegates.bound(this, this.dropped), SdkStrings.sorting, null, { axis: 'vertical', nests: true, label: this.label, accepts: $eq.delegates.bound(this, this.accepts).bind(this), onHovered: $eq.delegates.bound(this, this.hovered).bind(this), enabled: !editing });
         }
         let menuOpen = !(this._menuKey == null);
         let activeNode = active >= 0 ? this._rows[active].node : null;

@@ -129,6 +129,7 @@ export {
   BadgeTheme,
   CalendarTheme,
   MarkdownTheme,
+  SortableTheme,
 } from './theme-slots';
 // Primitives types route to @equantic/runtime implicitly, so a page reading its route needs this
 // name to resolve here or it dies at hydration on an unresolvable import.

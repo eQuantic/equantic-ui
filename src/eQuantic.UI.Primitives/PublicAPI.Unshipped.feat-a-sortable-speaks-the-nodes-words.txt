@@ -1,5 +1,4 @@
 #nullable enable
-eQuantic.UI.Primitives.Sortable.Sortable(eQuantic.UI.Primitives.VisualNode! child, string! id, System.Action<eQuantic.UI.Primitives.SortDrop!>! onDropped, eQuantic.UI.Primitives.SortAnnouncements? announcements = null) -> void
 eQuantic.UI.Primitives.Sortable.Announcements.get -> eQuantic.UI.Primitives.SortAnnouncements?
 eQuantic.UI.Primitives.Sortable.Announcements.init -> void
 eQuantic.UI.Primitives.SortAnnouncements

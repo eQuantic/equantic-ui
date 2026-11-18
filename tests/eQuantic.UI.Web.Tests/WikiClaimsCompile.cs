@@ -397,6 +397,25 @@ public class WikiClaimsCompile
             };
     }
 
+    /// <summary>Components, "Sortable", the look is the theme's (#1602): a theme's look of a carried card, and a
+    /// column's own laid over it.</summary>
+    private sealed class StyledColumnPage : Primitives.StatefulComponent
+    {
+        private readonly List<(string Id, string Title)> _cards = [("c1", "Draw the tree")];
+
+        private void Move(string item, string to, int index) { }
+
+        internal static eQuantic.UI.Server.UIOptions Configure(eQuantic.UI.Server.UIOptions ui) =>
+            ui.UseTheme(PhotonTheme.Instance.With(sortable: new SortableTheme { CopyElevation = 5, MaxLean = 6 }));
+
+        public override VisualNode Build(ComponentContext context) =>
+            Sortable(
+                Column(gap: Space.S2, children: [.. _cards.Select(card => SortableItem(Text(card.Title, TypeRole.BodyM), card.Id))]),
+                id: "done",
+                onDropped: drop => SetState(() => Move(drop.Item, drop.To, drop.Index)),
+                style: new SortableTheme { LiftedOpacity = 0.25f, MaxLean = 0 });
+    }
+
     /// <summary>Components, "TreeView: a tree the keyboard walks" (preview.69, #1530): a repository's
     /// files, the top folder from the server and every folder below it loaded as it opens.</summary>
     private sealed class FilesPage : Primitives.StatefulComponent

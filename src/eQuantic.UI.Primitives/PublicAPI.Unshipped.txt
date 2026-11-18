@@ -478,7 +478,6 @@ override eQuantic.UI.Primitives.SegmentedTheme.ToString() -> string!
 override eQuantic.UI.Primitives.SelectionControlsTheme.Equals(object? obj) -> bool
 override eQuantic.UI.Primitives.SelectionControlsTheme.GetHashCode() -> int
 override eQuantic.UI.Primitives.SelectionControlsTheme.ToString() -> string!
-static eQuantic.UI.Primitives.AppThemeExtensions.With(this eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ControlsTheme? controls = null, eQuantic.UI.Primitives.ButtonTheme? button = null, eQuantic.UI.Primitives.IconButtonTheme? iconButton = null, eQuantic.UI.Primitives.InputTheme? input = null, eQuantic.UI.Primitives.SelectionControlsTheme? selectionControls = null, eQuantic.UI.Primitives.SegmentedTheme? segmented = null, eQuantic.UI.Primitives.ChipTheme? chip = null, eQuantic.UI.Primitives.ModalTheme? modal = null, eQuantic.UI.Primitives.MenuTheme? menu = null, eQuantic.UI.Primitives.NoticeTheme? notice = null, eQuantic.UI.Primitives.ProgressTheme? progress = null, eQuantic.UI.Primitives.CardTheme? card = null, eQuantic.UI.Primitives.NavigationTheme? navigation = null, eQuantic.UI.Primitives.ListTheme? list = null, eQuantic.UI.Primitives.TableTheme? table = null, eQuantic.UI.Primitives.BadgeTheme? badge = null, eQuantic.UI.Primitives.CalendarTheme? calendar = null, eQuantic.UI.Primitives.MarkdownTheme? markdown = null) -> eQuantic.UI.Primitives.IAppTheme!
 static eQuantic.UI.Primitives.ChipTheme.operator !=(eQuantic.UI.Primitives.ChipTheme? left, eQuantic.UI.Primitives.ChipTheme? right) -> bool
 static eQuantic.UI.Primitives.ChipTheme.operator ==(eQuantic.UI.Primitives.ChipTheme? left, eQuantic.UI.Primitives.ChipTheme? right) -> bool
 static eQuantic.UI.Primitives.DensityPair.operator !=(eQuantic.UI.Primitives.DensityPair? left, eQuantic.UI.Primitives.DensityPair? right) -> bool
@@ -1116,7 +1115,6 @@ const eQuantic.UI.Primitives.SortPlacement.TiltPerSpeed = 8 -> float
 const eQuantic.UI.Primitives.SortPlacement.TiltMax = 12 -> float
 const eQuantic.UI.Primitives.SortPlacement.TiltRestMs = 80 -> float
 static eQuantic.UI.Primitives.SortPlacement.Place(System.Collections.Generic.IReadOnlyList<float>! starts, System.Collections.Generic.IReadOnlyList<float>! extents, float at, bool nests) -> (int Index, int Into)
-static eQuantic.UI.Primitives.SortPlacement.Tilt(float across, float milliseconds) -> float?
 static eQuantic.UI.Primitives.SortPlacement.Step(int index, int step, int count) -> int
 const eQuantic.UI.Primitives.SortPlacement.PickUpTravel = 5 -> float
 const eQuantic.UI.Primitives.SortPlacement.HoldMs = 250 -> float
@@ -1124,9 +1122,6 @@ const eQuantic.UI.Primitives.SortPlacement.EdgeZone = 32 -> float
 const eQuantic.UI.Primitives.SortPlacement.EdgeStep = 14 -> float
 const eQuantic.UI.Primitives.SortPlacement.LiftedOpacity = 0.4 -> double
 const eQuantic.UI.Primitives.SortPlacement.CopyOpacity = 0.92 -> double
-const eQuantic.UI.Primitives.SortPlacement.CopyShadowOffsetY = 12 -> float
-const eQuantic.UI.Primitives.SortPlacement.CopyShadowBlur = 28 -> float
-const eQuantic.UI.Primitives.SortPlacement.CopyShadowAlpha = 0.28 -> double
 static eQuantic.UI.Primitives.SortPlacement.EdgeScroll(float at, float start, float end) -> float
 *REMOVED*eQuantic.UI.Primitives.SemanticNode.Deconstruct(out eQuantic.UI.Primitives.SemanticRole Role, out int Id, out eQuantic.UI.Primitives.Rect Bounds, out string! Label, out string? Value, out bool Disabled, out eQuantic.UI.Primitives.SemanticCheck? Checked, out bool? Expanded, out bool Current, out bool? Selected, out int HeadingLevel, out eQuantic.UI.Primitives.LiveRegionUrgency? Live, out eQuantic.UI.Primitives.RangeValue? Range, out eQuantic.UI.Primitives.TableRange? Place, out eQuantic.UI.Primitives.TableRange? Extent) -> void
 *REMOVED*eQuantic.UI.Primitives.SemanticNode.SemanticNode(eQuantic.UI.Primitives.SemanticRole Role, int Id, eQuantic.UI.Primitives.Rect Bounds, string! Label, string? Value, bool Disabled, eQuantic.UI.Primitives.SemanticCheck? Checked = null, bool? Expanded = null, bool Current = false, bool? Selected = null, int HeadingLevel = 0, eQuantic.UI.Primitives.LiveRegionUrgency? Live = null, eQuantic.UI.Primitives.RangeValue? Range = null, eQuantic.UI.Primitives.TableRange? Place = null, eQuantic.UI.Primitives.TableRange? Extent = null) -> void
