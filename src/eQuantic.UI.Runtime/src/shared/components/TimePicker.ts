@@ -98,7 +98,7 @@ export class TimePicker extends StatefulComponent {
         let first = this.min ?? $eq.time.timeOnly(0, 0);
         let last = this.max ?? $eq.time.timeOnly(23, 59);
         for (let at = first; (at.compareTo(last) <= 0); at = at.addMinutes(this.stepMinutes)) {
-            slots.push(at);
+            $eq.collections.listAdd(slots, at);
             if ((at.addMinutes(this.stepMinutes).compareTo(at) <= 0)) break;
         }
         return slots;

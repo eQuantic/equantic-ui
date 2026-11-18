@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CodeBlock, Column, CornerRadii, Divider, EdgeInsets, Grid, GridTrack, MarkdownBlock, MarkdownParser, MarkdownRun, MarkdownTheme, Mermaid, Row, SizeValue, StatelessComponent, Text, TextRun, TypeRoleValue, TypeStyle } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, Column, CornerRadii, Divider, EdgeInsets, Grid, GridTrack, MarkdownBlock, MarkdownParser, MarkdownRun, MarkdownTheme, Mermaid, Row, SizeValue, StatelessComponent, Text, TextRun, TypeRoleValue, TypeStyle } from "../runtime-exports";
 
 export class Markdown extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Markdown';
@@ -17,7 +17,7 @@ export class Markdown extends StatelessComponent {
         let style = MarkdownTheme.merge(theme.markdown, this.style) ?? new MarkdownTheme();
         let blocks = MarkdownParser.parse(this.source);
         let column = new Column(style.blockGap ?? 14, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        for (const block of blocks) column.add(Markdown.blockView(block, theme, style, context));
+        for (const block of $eq.collections.listWalk(blocks)) column.add(Markdown.blockView(block, theme, style, context));
         return column;
     }
 
@@ -56,8 +56,8 @@ export class Markdown extends StatelessComponent {
         let codeSize = prose.size < codeMax ? prose.size : codeMax;
         let code = new TypeStyle(codeSize, prose.lineHeight, prose.weight, 0, prose.maxScale, true);
         let spans: TextRun[] = [];
-        for (const run of runs) {
-            spans.push(new TextRun(run.text, null, false, { mono: run.code, styleOverride: run.code ? code : null, color: run.code ? style.inlineCodeColor ?? theme.textPrimary : null, weight: run.bold ? 'bold' : null, italic: run.italic, destination: run.isLink ? run.href : null }));
+        for (const run of $eq.collections.listWalk(runs)) {
+            $eq.collections.listAdd(spans, new TextRun(run.text, null, false, { mono: run.code, styleOverride: run.code ? code : null, color: run.code ? style.inlineCodeColor ?? theme.textPrimary : null, weight: run.bold ? 'bold' : null, italic: run.italic, destination: run.isLink ? run.href : null }));
         }
         return new Text('', body, style.bodyColor ?? theme.textSecondary, 0, 'start', false, false, null, 0, { spans: spans });
     }
@@ -65,7 +65,7 @@ export class Markdown extends StatelessComponent {
     static listView(block: MarkdownBlock, theme: any, style: MarkdownTheme) {
         let indent = style.listIndent ?? 20;
         let list = new Column(style.listGap ?? 8, 'start', 'stretch', false, null, null, { width: SizeValue.fill, cross: 'start' });
-        for (const item of block.items) {
+        for (const item of $eq.collections.listWalk(block.items)) {
             let row = new Row(style.markerGap ?? 10, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'start' });
             row.add(new Box(new BoxStyle({ padding: new EdgeInsets(Math.fround(Math.fround(item.depth) * indent), 0, 0, 0) }), new Text(item.marker, Markdown.bodyRole(style), style.markerColor ?? theme.textMuted, 1)));
             row.add(new Box(new BoxStyle({ width: SizeValue.fill }), Markdown.paragraph(item.runs, theme, style)));
@@ -79,15 +79,15 @@ export class Markdown extends StatelessComponent {
         let headerY = style.tableHeaderPaddingY ?? 10;
         let cellY = style.tableCellPaddingY ?? 11;
         let tracks: GridTrack[] = [];
-        for (let i = 0; i < block.head.length; i++) tracks.push(GridTrack.flex(1));
+        for (let i = 0; i < block.head.length; i++) $eq.collections.listAdd(tracks, GridTrack.flex(1));
         let rows = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         let head = new Grid(tracks, 0, null, { width: SizeValue.fill });
-        for (const cell of block.head) head.add(new Box(new BoxStyle({ padding: new EdgeInsets(paddingX, headerY, paddingX, headerY) }), Markdown.paragraph(cell.runs, theme, style)));
+        for (const cell of $eq.collections.listWalk(block.head)) head.add(new Box(new BoxStyle({ padding: new EdgeInsets(paddingX, headerY, paddingX, headerY) }), Markdown.paragraph(cell.runs, theme, style)));
         rows.add(new Box(new BoxStyle({ width: SizeValue.fill, background: style.tableHeaderFill ?? theme.surfaceSubtle }), head));
-        for (const row of block.rows) {
+        for (const row of $eq.collections.listWalk(block.rows)) {
             rows.add(new Divider());
             let grid = new Grid(tracks, 0, null, { width: SizeValue.fill });
-            for (const cell of row.cells) grid.add(new Box(new BoxStyle({ padding: new EdgeInsets(paddingX, cellY, paddingX, cellY) }), Markdown.paragraph(cell.runs, theme, style)));
+            for (const cell of $eq.collections.listWalk(row.cells)) grid.add(new Box(new BoxStyle({ padding: new EdgeInsets(paddingX, cellY, paddingX, cellY) }), Markdown.paragraph(cell.runs, theme, style)));
             rows.add(grid);
         }
         return new Box(new BoxStyle({ width: SizeValue.fill, cornerRadius: new CornerRadii(style.tableRadius ?? 12), borderColor: style.tableBorderColor ?? theme.border, borderWidth: style.tableBorderWidth ?? 1, clip: true }), rows);

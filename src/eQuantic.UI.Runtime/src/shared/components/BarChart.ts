@@ -66,29 +66,29 @@ export class BarChart extends StatefulComponent {
 
     static table(series: ChartSeries[], categories: CategoryAxis, values: ValueAxis, theme: any) {
         let columns: DataColumn[] = [];
-        columns.push(new DataColumn(categories.title ?? '', GridTrack.flex(2)));
-        for (const s of series) columns.push(new DataColumn(s.name, GridTrack.flex(1), 'end'));
+        $eq.collections.listAdd(columns, new DataColumn(categories.title ?? '', GridTrack.flex(2)));
+        for (const s of $eq.collections.sequenceWalk(series)) $eq.collections.listAdd(columns, new DataColumn(s.name, GridTrack.flex(1), 'end'));
         let rows: DataRow[] = [];
         for (let c = 0; c < $eq.collections.count(categories.categories); c++) {
             let cells: VisualNode[] = [];
-            cells.push(new Text($eq.collections.item(categories.categories, c), 'bodyM', theme.textPrimary, 1));
-            for (const s of series) {
-                cells.push(new Text(values.label(s.at(c)), 'bodyM', theme.textPrimary, 1, 'end', false, true));
+            $eq.collections.listAdd(cells, new Text($eq.collections.item(categories.categories, c), 'bodyM', theme.textPrimary, 1));
+            for (const s of $eq.collections.sequenceWalk(series)) {
+                $eq.collections.listAdd(cells, new Text(values.label(s.at(c)), 'bodyM', theme.textPrimary, 1, 'end', false, true));
             }
-            rows.push(new DataRow($eq.collections.item(categories.categories, c), cells));
+            $eq.collections.listAdd(rows, new DataRow($eq.collections.item(categories.categories, c), cells));
         }
         return new DataTable(columns, rows);
     }
 
     static hidden(count: number) {
         let hidden: boolean[] = [];
-        for (let i = 0; i < count; i++) hidden.push(false);
+        for (let i = 0; i < count; i++) $eq.collections.listAdd(hidden, false);
         return hidden;
     }
 
     visible() {
         let visible: boolean[] = [];
-        for (let i = 0; i < this._hidden.length; i++) visible.push(!this._hidden[i]);
+        for (let i = 0; i < this._hidden.length; i++) $eq.collections.listAdd(visible, !this._hidden[i]);
         return visible;
     }
 
@@ -115,7 +115,7 @@ export class BarChart extends StatefulComponent {
         for (let i = 0; i < this._hidden.length; i++) {
             if (i !== index && !this._hidden[i]) isolated = false;
         }
-        for (let i = 0; i < this._hidden.length; i++) this._hidden[i] = !isolated && i !== index;
+        for (let i = 0; i < this._hidden.length; i++) $eq.collections.listSet(this._hidden, i, !isolated && i !== index);
         this._hover = -1;
     }
 
@@ -174,7 +174,7 @@ export class BarChart extends StatefulComponent {
 
     categoryLabelsBelow(theme: any) {
         let row = new Row();
-        for (const name of this._categories.categories) {
+        for (const name of $eq.collections.sequenceWalk(this._categories.categories)) {
             row.add(new Flexible(new Text(name, 'caption', theme.textMuted, 1, 'center')));
         }
         return row;

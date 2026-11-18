@@ -84,8 +84,10 @@ public class ComplexScenarioTests
 
         // 6. Lambdas & List
         Assert.Contains("let values = [1, 2, 3];", js);
-        // Select -> map, ToList -> removed/passthrough
-        Assert.Contains("let doubled = values.map((x) => x * 2);", js);
+        // Select is a lazy query (#685), and ToList reads it into the array `doubled.Count` reads the length of,
+        // even with no model to say so: it handed the query back, whose length was undefined.
+        Assert.Contains("let doubled = $eq.linq.toArray($eq.query.select(values, (x) => x * 2));", js);
+        Assert.Contains("let count = doubled.length;", js);
 
         // 7. Await
         // Task.Delay might not be fully transpiled if no specific strategy, but 'await' keyword must exist

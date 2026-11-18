@@ -1,13 +1,13 @@
-import { CancellationToken, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeDocument, CodePosition, CodeSnippet, CodeSnippetDefinition } from "../runtime-exports";
+import { $eq, CancellationToken, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeDocument, CodePosition, CodeSnippet, CodeSnippetDefinition } from "../runtime-exports";
 
 export class CodeSnippetCompletionProvider {
     static $interfaces = ['eQuantic.UI.Code.ICodeCompletionProvider'];
 
     constructor(snippets: CodeSnippetDefinition[]) {
         this._items = [];
-        for (const snippet of snippets) {
+        for (const snippet of $eq.collections.sequenceWalk(snippets)) {
             let $n0: CodeCompletionItem; 
-            this._items.push(($n0 = new CodeCompletionItem(snippet.prefix, 'snippet'), $n0.detail = snippet.description, $n0.snippet = CodeSnippet.parse(snippet.body), $n0));
+            $eq.collections.listAdd(this._items, ($n0 = new CodeCompletionItem(snippet.prefix, 'snippet'), $n0.detail = snippet.description, $n0.snippet = CodeSnippet.parse(snippet.body), $n0));
         }
     }
 

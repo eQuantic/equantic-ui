@@ -78,7 +78,7 @@ export class CodeHoverSession {
         this._problems = problems;
         let document = this._editor.document;
         let range = this.explained(position, !this._byKeyboard) ?? new CodeRange(position);
-        for (const answer of this._shown) range = CodeHoverSession.union(range, new CodeRange(document.clamp(answer.range.start), document.clamp(answer.range.end)));
+        for (const answer of $eq.collections.listWalk(this._shown)) range = CodeHoverSession.union(range, new CodeRange(document.clamp(answer.range.start), document.clamp(answer.range.end)));
         this._range = range;
         this._open = true;
         this.changed?.();
@@ -186,7 +186,7 @@ export class CodeHoverSession {
         this._problems = keyboard ? this._editor.diagnostics.at(position).slice() : this.problemsUnder(position);
         this._answers = [];
         this._shown = [];
-        for (const _ of providers) this._answers.push(null);
+        for (const _ of $eq.collections.listWalk(providers)) $eq.collections.listAdd(this._answers, null);
         this._byKeyboard = keyboard;
         let showed = this._open;
         this._open = this._problems.length > 0;
@@ -209,9 +209,9 @@ export class CodeHoverSession {
         }
         UiThread.run(() => {
             if (generation !== this._generation || answer == null) return;
-            this._answers[slot] = answer;
+            $eq.collections.listSet(this._answers, slot, answer);
             let shown: CodeHover[] = [];
-            for (const held of this._answers) if (!(held == null)) shown.push(held);
+            for (const held of $eq.collections.listWalk(this._answers)) if (!(held == null)) $eq.collections.listAdd(shown, held);
             this._shown = shown;
             let range = new CodeRange(document.clamp(answer.range.start), document.clamp(answer.range.end));
             this._range = CodeHoverSession.union(this._range, range);
@@ -224,7 +224,7 @@ export class CodeHoverSession {
         let document = this._editor.document;
         let line = document.line(position.line);
         let explained = position.column < line.length && !$eq.text.isWhiteSpace(line[position.column]) ? document.wordAt(position) : null;
-        for (const problem of character ? this.problemsUnder(position) : this._editor.diagnostics.at(position)) {
+        for (const problem of $eq.collections.sequenceWalk(character ? this.problemsUnder(position) : this._editor.diagnostics.at(position))) {
             let before: any; 
             explained = (before = explained) != null ? CodeHoverSession.union(before, problem.range) : problem.range;
         }
@@ -233,7 +233,7 @@ export class CodeHoverSession {
 
     problemsUnder(position: CodePosition) {
         let under: CodeDiagnostic[] = [];
-        for (const problem of this._editor.diagnostics.at(position)) if (CodeHoverSession.covers(problem.range, position)) under.push(problem);
+        for (const problem of $eq.collections.sequenceWalk(this._editor.diagnostics.at(position))) if (CodeHoverSession.covers(problem.range, position)) $eq.collections.listAdd(under, problem);
         return under;
     }
 

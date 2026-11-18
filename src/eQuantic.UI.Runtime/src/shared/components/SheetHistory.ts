@@ -18,15 +18,15 @@ export class SheetHistory {
     }
 
     push(edit: SheetEdit) {
-        this._undo.push(edit);
-        this._redo.splice(0);
+        $eq.collections.listAdd(this._undo, edit);
+        $eq.collections.listClear(this._redo);
     }
 
     popUndo() {
         if (this._undo.length === 0) return null;
         let edit = (($0) => $0[$0.length - 1])(this._undo);
         $eq.collections.listRemoveAt(this._undo, this._undo.length - 1);
-        this._redo.push(edit);
+        $eq.collections.listAdd(this._redo, edit);
         return edit;
     }
 
@@ -34,13 +34,13 @@ export class SheetHistory {
         if (this._redo.length === 0) return null;
         let edit = (($0) => $0[$0.length - 1])(this._redo);
         $eq.collections.listRemoveAt(this._redo, this._redo.length - 1);
-        this._undo.push(edit);
+        $eq.collections.listAdd(this._undo, edit);
         return edit;
     }
 
     clear() {
-        this._undo.splice(0);
-        this._redo.splice(0);
+        $eq.collections.listClear(this._undo);
+        $eq.collections.listClear(this._redo);
     }
 
     toString(): string {
