@@ -12,6 +12,9 @@ import type { HtmlNode } from '../core/types';
 import { Button } from './components/Button';
 import { Card } from './components/Card';
 import { Column, Text } from './vocabulary';
+import { photonTheme } from './design-system.generated';
+import { setPhotonTheme } from './photon-context';
+import { AppThemeExtensions, ButtonTheme } from './theme-slots';
 
 describe('transpiled shared Button (real eqc output)', () => {
   it('renders the same composition the C# WebRealizer pins (button > box > row > label)', () => {
@@ -36,6 +39,22 @@ describe('transpiled shared Button (real eqc output)', () => {
     expect(label.children[0].textContent).toBe('Continuar');
   });
 
+  // The instance's own style is the first step of the slot order (#1606), as in the C# Merge the twin
+  // was transpiled from: what it names wins over the theme's Button slot, what it leaves null is the slot's.
+  it("lays its own style over the theme's Button slot, member by member", () => {
+    setPhotonTheme(AppThemeExtensions.with(photonTheme, null, new ButtonTheme({ minWidth: 173, outlineWidth: 3 })));
+    try {
+      const own = new Button('Editar', 'outline', 'medium', null, new ButtonTheme({ minWidth: 191 })).render();
+      expect(effectiveStyle(own.children[0])).toContain('min-width: 191px');
+      expect(effectiveStyle(own.children[0])).toContain('border: 3px solid');
+
+      const plain = new Button('Editar', 'outline').render();
+      expect(effectiveStyle(plain.children[0])).toContain('min-width: 173px');
+    } finally {
+      setPhotonTheme(photonTheme);
+    }
+  });
+
   it('honors the C# parameter defaults (primary/medium) and explicit variants', () => {
     const outline = new Button('Editar', 'outline');
     const node = outline.render();
@@ -54,6 +73,7 @@ describe('transpiled shared Button (real eqc output)', () => {
       () => {
         fired = true;
       },
+      null,
       { disabled: true },
     );
     const node = disabled.render();

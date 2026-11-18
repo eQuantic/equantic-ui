@@ -89,4 +89,36 @@ public class RadioGroupRealizerTests
         All(node, n => n.Attributes.GetValueOrDefault("tabindex") == "0").Should().HaveCount(1,
             "the control's own doc promises ONE Tab stop — now the web keeps the promise");
     }
+
+    /// <summary>
+    /// An option builder draws what an option shows, and the group keeps its chrome (#1606, the design's
+    /// decision 5): each row is still a radio named by the option's name, which the builder's content does
+    /// not replace, and the content takes the option's colour from the box around it. Photon's half is
+    /// <c>RadioGroupOptionBuilderTests</c>.
+    /// </summary>
+    [Fact]
+    public void AnOptionBuilder_DrawsTheContent_AndTheRadiosKeepTheirNames()
+    {
+        string[] shown = ["Standard, in five days", "Express, tomorrow"];
+        foreach (var (disabled, colour) in new[] { (false, Theme.TextPrimary), (true, Theme.TextMuted) })
+        {
+            var sink = new StyleSink();
+            var node = WebRealizer.Lower(new RadioGroup(["Standard", "Express"], selected: 1, onChanged: _ => { },
+                optionBuilder: index => new Text(shown[index]))
+            {
+                Disabled = disabled,
+            }, Theme, 1f, sink).Render();
+
+            var radios = All(node, n => n.Attributes.GetValueOrDefault("role") == "radio");
+            radios.Select(r => r.Attributes["aria-label"]).Should().Equal(["Standard", "Express"],
+                "an option's name is its accessible name, whatever the builder draws");
+
+            var texts = All(node, n => n.TextContent is not null).Select(n => n.TextContent).ToList();
+            texts.Should().Contain(shown, "the builder draws what each option shows");
+            texts.Should().NotContain(["Standard", "Express"], "the names are not drawn beside the builder's content");
+
+            sink.Css.Should().Contain($"color:{TokenCss.Value(colour)}",
+                $"the builder's text takes the option's {(disabled ? "muted" : "primary")} colour from the box around it");
+        }
+    }
 }

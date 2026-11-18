@@ -206,6 +206,20 @@ public class ProgressSemanticsTests
             "prominence is configuration too — the bar that adopted a new name adopted its height with it");
     }
 
+    /// <summary>The bar's own style is configuration too (#1606): a parent that hands the retained bar a
+    /// new style sees it drawn, or the first build's style would stay forever.</summary>
+    [Fact]
+    public void ARetainedBarAdoptsItsStyle()
+    {
+        var bar = new ProgressBar(0.4f, style: new ProgressTheme { BarHeight = 7 });
+        Host(bar).Children[0].Attributes["style"].Should().Contain("height: 7px");
+
+        bar.AdoptConfig(new ProgressBar(0.4f, style: new ProgressTheme { BarHeight = 11 }));
+
+        Host(bar).Children[0].Attributes["style"].Should().Contain("height: 11px",
+            "the style the parent handed the retained bar is the one it draws");
+    }
+
     /// <summary>
     /// The wrapper keeps the child's layout CONTRACT on the way through: a Progress under a
     /// Pressable must not lose the fill or the cap, or SSR and the hydrated runtime disagree about
