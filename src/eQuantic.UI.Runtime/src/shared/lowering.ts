@@ -370,6 +370,14 @@ export function relowerBuilt(node: VisualNodeValue, context: LoweringContext): R
   const pass = getActivePass();
   if (!pass) return null;
   const root = pass.roots.nextRoot(liveOwner);
+  // The frame this render ends draws only the components lowered again, and the owner judges only the
+  // layers among them (`DrewOnly`): an open overlay elsewhere on the page stays as the page shows it.
+  // A render that falls back drew nothing here, and the whole render that follows draws the rest
+  // (#1575).
+  const drewNothing = (): null => {
+    root.owner.drewOnly([]);
+    return null;
+  };
   return runLoweringWalk(() => {
     const tree = nextTree();
     treeOfOwner.set(root.owner, tree);
@@ -377,7 +385,7 @@ export function relowerBuilt(node: VisualNodeValue, context: LoweringContext): R
     const records: LoweredRecord[] = [];
     for (const position of positions) {
       const record = patchableAt(position);
-      if (!record) return null;
+      if (!record) return drewNothing();
       if (!records.includes(record)) records.push(record);
     }
     const topmost = records.filter((record) => !records.some((other) => other !== record && isBelow(record, other)));
@@ -386,9 +394,13 @@ export function relowerBuilt(node: VisualNodeValue, context: LoweringContext): R
     for (const record of topmost) {
       const drawn = record.root!;
       const next = relowerRecord(record, frame);
-      if (next === undefined) return null;
+      if (next === undefined) return drewNothing();
       patches.push({ drawn, next });
     }
+    // A position marked inside a layer this render did not draw builds only when its layer is shown,
+    // which a whole render does.
+    if (root.owner.waitsForALayer) return drewNothing();
+    root.owner.drewOnly(topmost.map((record) => record.position));
     return { patches, declaredBy: (binding) => declarerAmong(topmost, binding.within) };
   });
 }
