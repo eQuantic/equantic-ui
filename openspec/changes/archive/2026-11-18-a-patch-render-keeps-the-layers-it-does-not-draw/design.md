@@ -2,8 +2,8 @@
 
 ## How Flutter solves it
 
-Flutter has no layer that leaves because a frame did not paint it: an overlay is an entry in the
-`Overlay` widget's list, and it leaves when the list stops holding it. Our layers are built lazily, when
+Flutter has no layer that leaves because a frame did not paint it: an overlay is an entry in the list
+Flutter's `Overlay` holds, and it leaves when the list stops holding it. Our layers are built lazily, when
 the realizer shows them, so they leave when a frame does not show them. That is right only for a frame
 that could have shown them, and a patch render draws only parts of the page.
 
