@@ -41,6 +41,80 @@ internal static class LinqSource
             : JsExpr.Call(JsExpr.Identifier(Eq.LinqSeq), converted, JsExpr.Literal(JsStringLiteral.Quote(parameter)));
     }
 
+    /// <summary>
+    /// The source of an operator the runtime walks itself (<c>utils/query.ts</c>, #685), handed over as it
+    /// is: the runtime reads it one element at a time, a list through its version, a string by its chars.
+    /// What the walk cannot enumerate is refused here, as it is where the source is read.
+    /// </summary>
+    internal static JsExpr Lazy(ExpressionSyntax source, ConversionContext context)
+    {
+        var before = context.Diagnostics.Count;
+        var converted = context.Converter.ConvertIr(source);
+        if (!IsArray(source, context) && context.Diagnostics.Count == before)
+            IterableTwin.FenceEnumeration(context.SemanticHelper.GetType(source), source, context);
+        return converted;
+    }
+
+    /// <summary>An argument of an operator the runtime walks: a sequence as it is (<see cref="Lazy"/>), and
+    /// any other argument as <see cref="Argument"/> converts it.</summary>
+    internal static JsExpr LazyArgument(ArgumentSyntax argument, InvocationExpressionSyntax invocation, ConversionContext context) =>
+        context.SemanticHelper.GetOperation(invocation) is Microsoft.CodeAnalysis.Operations.IInvocationOperation call
+        && LinqArguments.Written(argument, invocation, context) is var written
+        && call.Arguments.FirstOrDefault(bound => bound.Syntax == written)?.Parameter is { } bound
+        && bound.OriginalDefinition.Type is INamedTypeSymbol parameter
+        && IsSequence(parameter)
+            ? Lazy(argument.Expression, context)
+            : context.Converter.ConvertIr(argument.Expression);
+
+    /// <summary>Whether <paramref name="source"/> is a query the runtime walks lazily: the result of an operator
+    /// <see cref="LinqTableStrategy"/> hands to <c>$eq.query</c> (#685). An operator that answers from it walks
+    /// it too, and stops where .NET's stops, where reading it as an array ran every callback upstream first.</summary>
+    internal static bool IsQuery(ExpressionSyntax source, ConversionContext context) =>
+        source is InvocationExpressionSyntax
+        && context.SemanticHelper.GetSymbol(source) is IMethodSymbol method
+        && context.SemanticHelper.IsLinqExtension(method.ContainingType)
+        && (LinqTableStrategy.Lazy(method.Name, method.ReducedFrom is not null ? method.Parameters.Length : method.Parameters.Length - 1) is not null
+            || Deferred(method.Name))
+        || HoldsASequence(source, context);
+
+    /// <summary>
+    /// Whether <paramref name="source"/> is held as a bare sequence (<c>IEnumerable&lt;T&gt;</c> or
+    /// <c>IOrderedEnumerable&lt;T&gt;</c>), which a query may be: a local, a field or a method's answer that holds
+    /// one stops where .NET's stops, as the query written in place does, and anything else held so (a list, a
+    /// set) is walked as it is.
+    /// </summary>
+    private static bool HoldsASequence(ExpressionSyntax source, ConversionContext context) =>
+        context.SemanticHelper.GetType(source) is INamedTypeSymbol { OriginalDefinition: var definition }
+        && (definition.ToDisplayString() is "System.Collections.Generic.IEnumerable<T>" or "System.Linq.IOrderedEnumerable<TElement>");
+
+    /// <summary>
+    /// The deferred operators the runtime has no walk of its own for: run when their query is walked
+    /// (<see cref="Defer"/>), the source read then, as .NET runs them, rather than when they are called
+    /// (#685). Their other arguments are evaluated when they are called, as C# evaluates them.
+    /// </summary>
+    internal static bool Deferred(string name) => name is "Union" or "Intersect" or "Except" or "DistinctBy" or "Chunk"
+        or "Join" or "GroupJoin" or "SkipLast" or "TakeLast" or "ExceptBy" or "IntersectBy" or "UnionBy"
+        or "Order" or "OrderDescending" or "OrderBy" or "OrderByDescending" or "ThenBy" or "ThenByDescending"
+        or "Distinct" or "GroupBy" or "Reverse" or "OfType" or "DefaultIfEmpty" or "Zip";
+
+    /// <summary>
+    /// <paramref name="template"/>, whose <c>{0}</c> is the source, run when its query is walked: wrapped in
+    /// <c>$eq.query.defer</c>, which refuses a null source when the operator is called, by the name its
+    /// receiver binds to, and reads it into a new array each time the query is walked, for the template to
+    /// answer from (#685). The source goes in as <see cref="Lazy"/> reads it, and every other part is
+    /// evaluated when the operator is called, as C# evaluates an argument: the writer binds a part a
+    /// function of the template reads.
+    /// </summary>
+    internal static string Defer(string template, ExpressionSyntax source, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        // `$src` carries no annotation: the runtime's `defer` types it as an array of the source's elements,
+        // which TypeScript reads from the source, so the template answers that element type, where an `any`
+        // lost it at every operator after it.
+        var name = ReceiverParameter(source, context) is { } bound and not "source" ? $", {JsStringLiteral.Quote(bound)}" : "";
+        return $"{Eq.Query}.defer(($src) => {template.Replace("{0}", "$src")}, {{0}}{name})";
+    }
+
     /// <summary>The name of the parameter a receiver binds to: the extension's own first parameter.</summary>
     private static string? ReceiverParameter(ExpressionSyntax source, ConversionContext context) =>
         source.Parent is MemberAccessExpressionSyntax access && access.Expression == source
@@ -69,6 +143,16 @@ internal static class LinqSource
             if (IsArray(source, context)) return JsExpr.Call(JsExpr.Member(converted, "slice"));
             if (context.Diagnostics.Count == before)
                 IterableTwin.FenceEnumeration(sequenceType, source, context);
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(Eq.LinqToArray), converted);
+        }
+        // Still with no model, a source an operator answers by name is a query the runtime walks (#685), which
+        // holds no element until it is read: read into the array a ToList or a ToArray answers, which a
+        // `.Count` after it reads as its length.
+        if (source is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax access } call
+            && (LinqTableStrategy.Lazy(access.Name.Identifier.ValueText, call.ArgumentList.Arguments.Count) is not null
+                || Deferred(access.Name.Identifier.ValueText)))
+        {
             context.UsedHelpers.Add(Eq.Import);
             return JsExpr.Call(JsExpr.Identifier(Eq.LinqToArray), converted);
         }
@@ -115,16 +199,20 @@ internal static class LinqSource
             && (definition.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic"
                 && definition.Name is "List" or "IList" or "IReadOnlyList"
                 || definition.ContainingNamespace?.ToDisplayString() == "System.Linq"
-                && definition.Name is "IOrderedEnumerable" or "IGrouping"))
+                && definition.Name is "IGrouping"))
             return true;
         return IsOperatorResult(source, context);
     }
 
     /// <summary>A LINQ operator's own result, an array here, since every operator reads its source
-    /// through <see cref="Ir"/>: every operator but AsEnumerable, which hands its source back.</summary>
+    /// through <see cref="Ir"/>: every operator but AsEnumerable, which hands its source back, and the ones
+    /// the runtime walks itself (<see cref="LinqTableStrategy.Lazy"/>) or runs when walked
+    /// (<see cref="Deferred"/>), which answer a query.</summary>
     private static bool IsOperatorResult(ExpressionSyntax source, ConversionContext context) =>
-        source is InvocationExpressionSyntax
+        source is InvocationExpressionSyntax invocation
         && context.SemanticHelper.GetSymbol(source) is IMethodSymbol { Name: not "AsEnumerable" } method
         && context.SemanticHelper.IsLinqExtension(method.ContainingType)
-        && method.ReturnType is INamedTypeSymbol { Name: "IEnumerable" or "IOrderedEnumerable" };
+        && method.ReturnType is INamedTypeSymbol { Name: "IEnumerable" or "IOrderedEnumerable" }
+        && LinqTableStrategy.Lazy(method.Name, method.ReducedFrom is not null ? method.Parameters.Length : method.Parameters.Length - 1) is null
+        && !Deferred(method.Name);
 }

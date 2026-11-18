@@ -29,6 +29,10 @@ public class SortableHostTests
         public Func<SortDrop, bool>? Guard { get; set; }
         public int Asked { get; set; }
         public float? ColumnHeight { get; set; }
+        public bool Nests { get; set; }
+        public SortAnnouncements? Words { get; set; }
+        public SortAnnouncements? DoingWords { get; set; }
+        public string[] Labels { get; set; } = ["", ""];
 
         public override VisualNode Build(ComponentContext context)
         {
@@ -46,16 +50,18 @@ public class SortableHostTests
                             Width = SizeValue.Fill,
                             Height = CardHeight,
                             Background = context.Theme.Surface,
-                        }), () => Pressed.Add(name)),
+                        }), () => Pressed.Add(name)) { Label = name },
                         card));
                 }
                 VisualNode body = new Box(new BoxStyle { Width = ColumnWidth, MinHeight = 200 }, column);
                 // A column that scrolls is a list whose child is the scroll view, the element the web marks.
                 if (ColumnHeight is not null) body = new ScrollView(body);
                 var guard = Guard;
-                VisualNode list = new Sortable(body, id, Drop)
+                VisualNode list = new Sortable(body, id, Drop, c == 1 && DoingWords is not null ? DoingWords : Words)
                 {
                     Group = Group,
+                    Nests = Nests,
+                    Label = Labels[c],
                     OnHovered = drop => Hovered.Add((id, drop)),
                     Accepts = guard is null ? null : drop =>
                     {
@@ -368,5 +374,119 @@ public class SortableHostTests
         host.KeyDown("Tab").Should().BeTrue("Tab puts the card back and moves the focus on");
         board.Hovered[^1].Drop.Should().BeNull();
         board.Dropped.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void TheKeyboard_StepsThroughThePlacesInsideCards_InAListThatNests()
+    {
+        var (host, board) = Open(new Board { Nests = true });
+        host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder(), 32);
+
+        host.KeyDown(" ").Should().BeTrue();
+        // Below a1's own place comes the place inside a2, then the one after it (#1533).
+        host.KeyDown("ArrowDown").Should().BeTrue();
+        board.Hovered[^1].Should().Be(("todo", new SortDrop("a1", "todo", "todo", 0) { Into = "a2" }));
+        host.KeyDown("ArrowDown").Should().BeTrue();
+        board.Hovered[^1].Should().Be(("todo", new SortDrop("a1", "todo", "todo", 1)));
+        host.KeyDown("ArrowUp").Should().BeTrue();
+        host.KeyDown("Enter").Should().BeTrue();
+
+        board.Dropped.Should().ContainSingle().Which.Should().Be(new SortDrop("a1", "todo", "todo", 0) { Into = "a2" });
+    }
+
+    [Fact]
+    public void TheKeyboard_PassesOverAPlaceTheListRefuses_AsAPointerDoes()
+    {
+        var (host, board) = Open(new Board { Guard = drop => drop.Index != 1 });
+        host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder(), 32);
+
+        host.KeyDown(" ");
+        host.KeyDown("ArrowDown").Should().BeTrue();
+        board.Hovered[^1].Should().Be(("todo", new SortDrop("a1", "todo", "todo", 2)),
+            "the refused position 2 is passed over (#1533)");
+        // At the end, the card keeps the place it holds.
+        host.KeyDown("ArrowDown").Should().BeTrue();
+        board.Hovered[^1].Should().Be(("todo", new SortDrop("a1", "todo", "todo", 2)));
+    }
+
+    // ---- what a reader hears (#1564) --------------------------------------------------------------------------
+
+    /// <summary>An app's own words, with every hole a step has, so a test reads each step from them.</summary>
+    private static readonly SortAnnouncements OwnWords = new("Use Space.", "Took {0} ({1}/{2}, {3}).",
+        "{0} now {1}/{2} in {3}.", "{0} in {1}.", "{0}: not there.", "Left {0} at {1}/{2} in {3}.", "Left {0} in {1}.",
+        "{0} back.");
+
+    /// <summary>A key, then a frame a second and a little after the last, past the live region's quiet window, and
+    /// what the host has to say since.</summary>
+    private static IReadOnlyList<LiveAnnouncement> Step(PhotonHost host, string key, ref float time)
+    {
+        host.KeyDown(key).Should().BeTrue();
+        time += 1100;
+        host.RenderFrame(new DisplayListBuilder(), time);
+        return host.TakeAnnouncements();
+    }
+
+    private static int ListId(PhotonHost host, string id) =>
+        Walk(host.LastFrame!.Root).First(n => n.Source is Sortable { } s && s.Id == id).Element!.Id;
+
+    [Fact]
+    public void AKeyboardsCarry_SaysEachStep_InTheListsWords_ThroughItsLiveRegion()
+    {
+        var other = new SortAnnouncements("Other.", "Other.", "Other.", "Other.", "Other.", "Other.", "Other.", "Other.");
+        var (host, _) = Open(new Board { Words = OwnWords, DoingWords = other, Labels = ["To do", "Doing"] });
+        host.KeyDown("Tab");
+        var time = 32f;
+        host.RenderFrame(new DisplayListBuilder(), time);
+        host.TakeAnnouncements();
+
+        Step(host, " ", ref time).Select(said => said.Text).Should().Equal("Took a1 (1/3, To do).");
+        Step(host, "ArrowDown", ref time).Select(said => said.Text).Should().Equal("a1 now 2/3 in To do.");
+        // The next list of the group: the carry still speaks through the list it started from, in its words.
+        var across = Step(host, "ArrowRight", ref time);
+        across.Select(said => said.Text).Should().Equal("a1 now 2/3 in Doing.");
+        across[0].Id.Should().Be(ListId(host, "todo"));
+        across[0].Urgency.Should().Be(LiveRegionUrgency.Polite);
+        Step(host, "Enter", ref time).Select(said => said.Text).Should().Equal("Left a1 at 2/3 in Doing.");
+
+        // Android reads the step from the list's node, a polite live region holding the words.
+        var todo = host.Semantics().Single(node => node.Id == ListId(host, "todo"));
+        todo.Should().Match<SemanticNode>(node => node.Label == "To do" && node.Live == LiveRegionUrgency.Polite);
+        host.LiveRegionText(todo.Id).Should().Be("Left a1 at 2/3 in Doing.");
+    }
+
+    [Fact]
+    public void AKeyboardsCarry_SaysARefusalThePlacesInsideAndThePutBack()
+    {
+        var (host, _) = Open(new Board { Words = OwnWords, Nests = true, Guard = drop => drop.To != "doing" });
+        host.KeyDown("Tab");
+        var time = 32f;
+        host.RenderFrame(new DisplayListBuilder(), time);
+
+        Step(host, " ", ref time).Select(said => said.Text).Should().Equal(["Took a1 (1/3, todo)."],
+            "a list with no label is named by its id, as on the web");
+        Step(host, "ArrowRight", ref time).Select(said => said.Text).Should().Equal("a1: not there.");
+        Step(host, "ArrowDown", ref time).Select(said => said.Text).Should().Equal("a1 in a2.");
+        Step(host, "Escape", ref time).Select(said => said.Text).Should().Equal("a1 back.");
+
+        host.KeyDown(" ");
+        host.KeyDown("ArrowDown");
+        Step(host, "Enter", ref time).Select(said => said.Text).Should().Equal("Left a1 in a2.");
+    }
+
+    [Fact]
+    public void AListGivenNoWords_SaysNothing_AndItsSemanticsAreUnchanged()
+    {
+        var (host, board) = Open();
+        host.KeyDown("Tab");
+        var time = 32f;
+        host.RenderFrame(new DisplayListBuilder(), time);
+
+        Step(host, " ", ref time).Should().BeEmpty();
+        Step(host, "ArrowDown", ref time).Should().BeEmpty();
+        Step(host, "Enter", ref time).Should().BeEmpty();
+        board.Dropped.Should().ContainSingle();
+        host.Semantics().Should().NotContain(node => node.Live != null);
     }
 }

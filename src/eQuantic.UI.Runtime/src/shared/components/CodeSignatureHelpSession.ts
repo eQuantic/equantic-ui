@@ -89,7 +89,7 @@ export class CodeSignatureHelpSession {
         if ($eq.collections.count(this.providers) === 0) return;
         let triggered = false;
         let retriggered = false;
-        for (const provider of this.providers) {
+        for (const provider of $eq.collections.sequenceWalk(this.providers)) {
             triggered = $eq.logic.or(triggered, provider.triggerCharacters.includes(typed));
             retriggered = $eq.logic.or(retriggered, provider.retriggerCharacters.includes(typed));
         }
@@ -148,7 +148,7 @@ export class CodeSignatureHelpSession {
             return;
         }
         this._answers = [];
-        for (const _ of providers) this._answers.push(null);
+        for (const _ of $eq.collections.listWalk(providers)) $eq.collections.listAdd(this._answers, null);
         this._owed = providers.length;
         for (let slot = 0; slot < providers.length; slot++) this.askOne(slot, providers[slot], document, position, context, generation, cancellation);
     }
@@ -167,7 +167,7 @@ export class CodeSignatureHelpSession {
         UiThread.run(() => {
             if (!(failure == null)) this.failed?.(failure);
             if (generation !== this._generation) return;
-            this._answers[slot] = (answer != null && answer.signatures != null && $eq.collections.count(answer.signatures) > 0) ? answer : null;
+            $eq.collections.listSet(this._answers, slot, (answer != null && answer.signatures != null && $eq.collections.count(answer.signatures) > 0) ? answer : null);
             this._owed--;
             this.apply();
         });
@@ -175,7 +175,7 @@ export class CodeSignatureHelpSession {
 
     apply() {
         let first: CodeSignatureHelp | null = null;
-        for (const answer of this._answers) {
+        for (const answer of $eq.collections.listWalk(this._answers)) {
             if (answer == null) continue;
             first = answer;
             break;

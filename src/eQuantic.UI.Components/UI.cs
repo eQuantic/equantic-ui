@@ -377,8 +377,8 @@ public static class UI
     /// </summary>
     public static Adjustable Adjustable(VisualNode child, Action<int> onAdjust,
         RangeValue? value = null, AdjustableRole role = AdjustableRole.Slider,
-        string? valueText = null) =>
-        new Adjustable(child, onAdjust) { Value = value, Role = role, ValueText = valueText };
+        string? valueText = null, DragAxis axis = DragAxis.Horizontal) =>
+        new Adjustable(child, onAdjust) { Value = value, Role = role, ValueText = valueText, Axis = axis };
 
     /// <summary>
     /// The 2-D twin of <see cref="Adjustable"/>: one Tab stop for the whole thing, and a keyboard
@@ -697,12 +697,21 @@ public static class UI
         new ListView(count, itemExtent, itemBuilder) { Width = width, Height = height };
 
     /// <summary>A tree of nodes, loaded as they open, walked by the keyboard as the WAI-ARIA tree pattern;
-    /// given a height, it scrolls and keeps the keyboard's item in view (#1530).</summary>
+    /// given a height, it scrolls and keeps the keyboard's item in view (#1530). Its nodes are renamed and
+    /// created in place, open a menu each, and its rows are built by the app when it gives a builder (#1532).
+    /// Given <paramref name="onMoved"/>, its nodes move by drag and by keyboard, before, after or inside another
+    /// (#1533).</summary>
     public static TreeView TreeView(IReadOnlyList<TreeNode> roots, string? selectedKey = null,
-        Action<TreeNode>? onPressed = null, Func<TreeNode, Task<IReadOnlyList<TreeNode>>>? loadChildren = null,
+        Action<TreeNode>? onPressed = null, ListTheme? style = null,
+        Func<TreeNode, Task<IReadOnlyList<TreeNode>>>? loadChildren = null,
         Action<TreeNode, bool>? onToggled = null, IReadOnlyList<string>? expandedKeys = null,
-        IReadOnlyList<string>? revealPath = null, string label = "", SizeValue? height = null) =>
-        new TreeView(roots, selectedKey, onPressed)
+        IReadOnlyList<string>? revealPath = null, string label = "", SizeValue? height = null,
+        Func<TreeRowState, VisualNode>? rowBuilder = null,
+        Func<TreeNode, string, Task>? onRenamed = null, Func<TreeNode, string, Task>? onCreated = null,
+        TreeEditRequest? edit = null, TreeReloadRequest? reload = null, IReadOnlyList<string>? busyKeys = null,
+        Func<TreeNode, IReadOnlyList<MenuItem>>? menuBuilder = null, Action<TreeNode, int>? onMenuSelect = null,
+        Func<TreeMove, Task>? onMoved = null, Func<TreeMove, bool>? canMove = null) =>
+        new TreeView(roots, selectedKey, onPressed, style)
         {
             LoadChildren = loadChildren,
             OnToggled = onToggled,
@@ -710,6 +719,16 @@ public static class UI
             RevealPath = revealPath,
             Label = label,
             Height = height,
+            RowBuilder = rowBuilder,
+            OnRenamed = onRenamed,
+            OnCreated = onCreated,
+            Edit = edit,
+            Reload = reload,
+            BusyKeys = busyKeys,
+            MenuBuilder = menuBuilder,
+            OnMenuSelect = onMenuSelect,
+            OnMoved = onMoved,
+            CanMove = canMove,
         };
 
     /// <summary>A list beside a detail on a wide window, one pane at a time on a phone (spec B4).
@@ -772,12 +791,14 @@ public static class UI
             Current = current,
         };
 
-    /// <summary>A list whose items a pointer puts in order, and which takes the items of the lists of its
-    /// group; the drop is the app's to apply (#1535).</summary>
-    public static Sortable Sortable(VisualNode child, string id, Action<SortDrop> onDropped, string group = "",
-        DragAxis axis = DragAxis.Vertical, bool nests = false, Action<SortDrop?>? onHovered = null,
-        Func<SortDrop, bool>? accepts = null, bool enabled = true, string label = "") =>
-        new Sortable(child, id, onDropped)
+    /// <summary>A list whose items a pointer and the keyboard put in order, and which takes the items of the lists
+    /// of its group; the drop is the app's to apply (#1535). Each step of the keyboard's is said in
+    /// <paramref name="announcements"/>, the SDK's words in the reader's culture when the app gives none (#1564).</summary>
+    public static Sortable Sortable(VisualNode child, string id, Action<SortDrop> onDropped,
+        SortAnnouncements? announcements = null, string group = "", DragAxis axis = DragAxis.Vertical,
+        bool nests = false, Action<SortDrop?>? onHovered = null, Func<SortDrop, bool>? accepts = null,
+        bool enabled = true, string label = "") =>
+        new Sortable(child, id, onDropped, announcements ?? SdkStrings.Sorting)
         {
             Label = label,
             Group = group,
@@ -788,9 +809,10 @@ public static class UI
             Enabled = enabled,
         };
 
-    /// <summary>One item of a <see cref="Primitives.Sortable"/>, named by its id.</summary>
-    public static SortableItem SortableItem(VisualNode child, string id, bool enabled = true) =>
-        new SortableItem(child, id) { Enabled = enabled };
+    /// <summary>One item of a <see cref="Primitives.Sortable"/>, named by its id in what the list reports, and by
+    /// <paramref name="name"/>, when given, in what the keyboard's steps say.</summary>
+    public static SortableItem SortableItem(VisualNode child, string id, bool enabled = true, string name = "") =>
+        new SortableItem(child, id) { Enabled = enabled, Name = name };
 
     /// <summary>
     /// An area a person drops files onto: <paramref name="onDropped"/> hands over what landed, and
@@ -810,6 +832,32 @@ public static class UI
     /// </summary>
     public static ContextTarget ContextTarget(VisualNode child, Action<ContextRequest> onRequested, bool enabled = true) =>
         new ContextTarget(child, onRequested) { Enabled = enabled };
+
+    /// <summary>
+    /// <paramref name="child"/>, hearing the raw pointer over it in its own coordinates: a press, its moves and its
+    /// end (followed wherever it goes), its cancel, a mouse or a pen passing over, and a wheel or a trackpad.
+    /// <paramref name="behavior"/> says where it hears: only where the child is hit (the default), anywhere in its
+    /// box hiding the listeners behind it, or anywhere in its box letting them hear too. It only listens: what is
+    /// inside still presses and scrolls.
+    /// </summary>
+    public static Listener Listener(VisualNode child,
+        Action<PointerEvent>? onPointerDown = null,
+        Action<PointerEvent>? onPointerMove = null,
+        Action<PointerEvent>? onPointerUp = null,
+        Action<PointerEvent>? onPointerCancel = null,
+        Action<PointerEvent>? onPointerHover = null,
+        Action<PointerEvent>? onPointerScroll = null,
+        HitTestBehavior behavior = HitTestBehavior.DeferToChild) =>
+        new Listener(child)
+        {
+            OnPointerDown = onPointerDown,
+            OnPointerMove = onPointerMove,
+            OnPointerUp = onPointerUp,
+            OnPointerCancel = onPointerCancel,
+            OnPointerHover = onPointerHover,
+            OnPointerScroll = onPointerScroll,
+            Behavior = behavior,
+        };
 
     /// <summary>
     /// A menu of <paramref name="items"/> for what <paramref name="child"/> is, opened where a person asks for it

@@ -28,6 +28,7 @@ import { installDraggableController } from '../dom/draggable';
 import { installSortableController } from '../dom/sortable';
 import { dropHandlers, installDropGuard } from '../dom/file-drop';
 import { installContextController } from '../dom/context-request';
+import { installPointerListener } from '../dom/pointer-listener';
 import { MOUNTED_HOOK, clickWithEvent } from '../dom/reconciler';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import {
@@ -110,6 +111,7 @@ import type {
   HoverableNode,
   DropTargetNode,
   ContextTargetNode,
+  ListenerNode,
   SortableItemNode,
   SortDropValue,
   SortableNode,
@@ -148,7 +150,7 @@ import { declareScrollViewport } from './scroll-viewports';
 import { declareTableViewport, tableCellPlace } from './table-viewports';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
-import type { ContextRequest } from './value-types';
+import type { ContextRequest, PointerEvent as HeardPointer } from './value-types';
 import { writtenDestination } from '../utils/link-scheme';
 import { declareFamily } from './face-declarations';
 import { DISPOSABLE, nodeStateFor, positionOf, type NodeState } from './node-states';
@@ -800,6 +802,8 @@ function lowerNodeKind(
       return lowerDropTarget(node as unknown as DropTargetNode, context, path);
     case 'contextTarget':
       return lowerContextTarget(node as unknown as ContextTargetNode, context, path);
+    case 'listener':
+      return lowerListener(node as unknown as ListenerNode, context, path);
     case 'sortable':
       return lowerSortable(node as unknown as SortableNode, context, horizontalAxis, path);
     case 'sortableItem':
@@ -1844,13 +1848,16 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
   if (node.label) input.attributes['aria-label'] = node.label;
   // C# twin: the attribute marks intent; the client also FOCUSES on mount — a dialog opened later
   // never gets the browser's parse-time autofocus.
+  const selectOnFocus = node.selectOnFocus === true;
   if (node.autofocus === true) {
     input.attributes['autofocus'] = '';
     // …with the caret at the end of what it holds, where Flutter's autofocused TextField and Photon's put
-    // it: the code editor's go-to field opens holding ":" and what is typed goes after it (#1083).
+    // it: the code editor's go-to field opens holding ":" and what is typed goes after it (#1083). An entry
+    // that selects on focus selects it all instead: a rename field opens with the name ready to replace.
     input.events['eq:mounted'] = ((element: HTMLInputElement) => {
       element.focus();
-      caretAtEnd(element);
+      if (selectOnFocus) selectAll(element);
+      else caretAtEnd(element);
     }) as unknown as EventHandler;
   }
   if (node.disabled === true) {
@@ -1869,9 +1876,17 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
       }) as unknown as EventHandler;
     }
     const onFocusChanged = node.onFocusChanged;
-    if (onFocusChanged) {
-      input.events['focus'] = (() => onFocusChanged(true)) as EventHandler;
-      input.events['blur'] = (() => onFocusChanged(false)) as EventHandler;
+    if (onFocusChanged || selectOnFocus) {
+      // A press inside the entry puts the caret where it pressed, as every platform's field does: only the
+      // keyboard arriving (Tab, a script's focus) selects it all.
+      let pressed = false;
+      if (selectOnFocus) input.events['pointerdown'] = (() => (pressed = true)) as EventHandler;
+      input.events['focus'] = ((event: FocusEvent) => {
+        if (selectOnFocus && !pressed) selectAll(event.target as HTMLInputElement);
+        pressed = false;
+        onFocusChanged?.(true);
+      }) as unknown as EventHandler;
+      if (onFocusChanged) input.events['blur'] = (() => onFocusChanged(false)) as EventHandler;
     }
   }
   if (node.invalid === true) input.attributes['aria-invalid'] = 'true';
@@ -4190,6 +4205,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'hoverable':
     case 'dropTarget':
     case 'contextTarget':
+    case 'listener':
     case 'sortable':
     case 'sortableItem':
     case 'adjustable':
@@ -4261,6 +4277,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as DropTargetNode).child);
     case 'contextTarget':
       return fills((node as ContextTargetNode).child);
+    case 'listener':
+      return fills((node as unknown as ListenerNode).child);
     case 'sortable':
       return fills((node as unknown as SortableNode).child);
     case 'sortableItem':
@@ -4429,6 +4447,9 @@ function lowerPressable(
     // A press keeps the keyboard on the TREE: the host is the one stop and the element
     // aria-activedescendant is read from, so the item's own focus is cancelled and the tree takes it.
     node.events['mousedown'] = ((event: MouseEvent) => {
+      // A press inside a field the item holds (its rename field) is the field's: the caret goes where it
+      // pressed, and the field keeps the keyboard.
+      if (typedIntoAField(event)) return;
       event.preventDefault();
       const host = (event.currentTarget as HTMLElement | null)?.closest('[role="tree"]');
       // Without scrolling: the host is the whole tree, whose top may be far above the row pressed.
@@ -4892,14 +4913,21 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
   });
   const role = node.role ?? 'slider';
   // ARIA pairs the role with the value, so BOTH halves are derived here rather than copied (C# twin:
-  // WebLoweringVisitor's AriaRole). The value is the SLIDER role's and no other's, and a slider with
-  // no value is not one: role="slider" REQUIRES aria-valuenow, so it announces `group` — a focusable
+  // WebLoweringVisitor's AriaRole). The value is a SLIDER's or a SEPARATOR's and no other role's, and
+  // one with no value is neither: both REQUIRE aria-valuenow, so it announces `group` — a focusable
   // container the arrows adjust, with no position of its own. Deriving it here is what makes the
   // rule unoutrunnable, since the component library is not the only way an adjustable node is built.
-  const value = role === 'slider' ? node.value : undefined;
-  host.attributes['role'] = role === 'slider' && !value ? 'group' : role;
+  const valued = role === 'slider' || role === 'separator';
+  const value = valued ? node.value : undefined;
+  host.attributes['role'] = valued && !value ? 'group' : role;
   host.attributes['tabindex'] = '0';
   if (node.label) host.attributes['aria-label'] = node.label;
+  // The orientation a reader hears (C# twin: AriaOrientation), only on a host that IS a slider or a
+  // separator. A separator is the line between two things, across the axis it moves on, and ARIA's
+  // default for it is horizontal, so it is always written; a horizontal slider writes nothing.
+  const vertical = node.axis === 'vertical';
+  if (value && role === 'separator') host.attributes['aria-orientation'] = vertical ? 'horizontal' : 'vertical';
+  else if (value && vertical) host.attributes['aria-orientation'] = 'vertical';
   // The VALUE, for a role that has one (C# twin: LowerAdjustable). role="slider" REQUIRES
   // aria-valuenow, so the host emitted invalid ARIA until this existed — a name and no number. The
   // bounds go with it or the number is read against ARIA's own 0-100 default, which no slider here
@@ -4915,9 +4943,9 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
   }
   if (node.onAdjust) {
     const adjust = node.onAdjust;
-    // A slider's vertical axis is VALUE (up increases); a radiogroup's or tablist's is READING
-    // ORDER (down is next) — WAI-ARIA's own split, one mapping per role family.
-    const downIsNext = role !== 'slider';
+    // A slider's or a separator's vertical axis is VALUE (up increases); a radiogroup's or tablist's is
+    // READING ORDER (down is next) — WAI-ARIA's own split, one mapping per role family.
+    const downIsNext = !valued;
     host.events['keydown'] = ((event: KeyboardEvent) => {
       const direction =
         event.key === 'ArrowRight'
@@ -4941,6 +4969,30 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;
+}
+
+/** What a composite keeps between renders: the focus version it was last built with, and its host. */
+class CompositeFocusState implements NodeState {
+  /** Disposed when its position leaves the tree (`node-states.ts`). */
+  static readonly $interfaces = DISPOSABLE;
+
+  built: number | null = null;
+  host: HTMLElement | null = null;
+
+  dispose(): void {
+    this.host = null;
+  }
+}
+
+/** Gives a composite's host the keyboard once the render that asked for it is in the page: the field it
+ * replaces must be gone first, or its blur would answer after the focus moved. */
+function focusCompositeAfterRender(state: CompositeFocusState): void {
+  const focus = () => {
+    const host = state.host;
+    if (host?.isConnected && document.activeElement !== host) host.focus({ preventScroll: true });
+  };
+  if (typeof queueMicrotask === 'function') queueMicrotask(focus);
+  else setTimeout(focus, 0);
 }
 
 /** The id a cell answers to for aria-activedescendant — the C# twin builds the same string. */
@@ -5002,10 +5054,28 @@ function lowerNavigable(node: NavigableNode, context: LoweringContext, path: str
       node.activeCell[1],
     );
 
+  // The keyboard back to the composite's stop when a version higher than the one it was last built with
+  // arrives: a field inside it closed (C# twin: PhotonHost's focus versions). The first build only records
+  // the version, so a composite mounted with any version takes nothing.
+  if (typeof document !== 'undefined') {
+    const state = nodeStateFor(positionOf(context.frame, node), CompositeFocusState);
+    const version = node.focusVersion ?? 0;
+    const built = state.built;
+    state.built = version;
+    host.events['eq:mounted'] = ((element: HTMLElement) => {
+      state.host = element;
+    }) as unknown as EventHandler;
+    if (built !== null && version > built) focusCompositeAfterRender(state);
+  }
+
   if (node.onMove) {
     const move = node.onMove;
     const search = node.onTextSearch ?? null;
     host.events['keydown'] = ((event: KeyboardEvent) => {
+      // A key typed into a field inside the composite (a tree's rename field) is the field's: an arrow
+      // moves its caret and a letter is typed, and neither moves the composite. Only a FIELD: a grid's
+      // cell a press focused still sends its keys up to the composite, as it always did.
+      if (typedIntoAField(event)) return;
       const which = navigableMove(event);
       if (which !== null) {
         // An arrow that also scrolls the page is two answers to one key.
@@ -5061,6 +5131,15 @@ function numberCells(
     counter.next++;
   }
   for (const child of node.children ?? []) numberCells(child as HtmlNode, role, scope, row, counter);
+}
+
+/** Whether an event's target is a text field (or inside one): what it receives is the field's, never the
+ * composite's or the item's around it. */
+function typedIntoAField(event: Event): boolean {
+  const target = event.target as Element | null;
+  return (
+    target?.closest?.('input, textarea, select, [contenteditable="true"], [contenteditable=""]') != null
+  );
 }
 
 /** Whether a key press is a character a composite searches with (C# twin: `IsTextSearch`): one
@@ -5554,6 +5633,15 @@ function textControlOf(node: HtmlNode): HtmlNode | null {
 }
 
 /** Puts the caret of a text control at the end of its text; a control with no selection keeps none. */
+/** Selects all of an entry's text, the caret at its end (`TextEntry.SelectOnFocus`). */
+function selectAll(element: HTMLInputElement | HTMLTextAreaElement): void {
+  try {
+    element.setSelectionRange(0, element.value.length);
+  } catch {
+    // An input whose type has no selection (a number, an email) throws, and has nothing to select.
+  }
+}
+
 function caretAtEnd(element: HTMLInputElement | HTMLTextAreaElement): void {
   const end = element.value.length;
   try {
@@ -5641,6 +5729,40 @@ function showCursorAfterRender(rest: CodeRest): void {
 }
 
 /**
+ * What hears the raw pointer over a subtree (#1562, the C# LowerListener twin): the same layout-transparent div as a
+ * context target, marked `data-eq-listener` with its behaviour, which the pointer controller (dom/pointer-listener.ts)
+ * hit-tests and tells as `eq-pointer`, turned here into the C# callback of the event's phase.
+ */
+function lowerListener(node: ListenerNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const cap = capsAt(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : undefined,
+    'max-width': sizeValue(cap),
+    'pointer-events': 'auto',
+    height: fill.height ? '100%' : undefined,
+  });
+  host.attributes['data-eq-listener'] =
+    node.behavior === 'opaque' ? 'opaque' : node.behavior === 'translucent' ? 'translucent' : 'defer';
+  const callbacks: Partial<Record<string, ((event: HeardPointer) => void) | null | undefined>> = {
+    down: node.onPointerDown,
+    move: node.onPointerMove,
+    up: node.onPointerUp,
+    cancel: node.onPointerCancel,
+    hover: node.onPointerHover,
+    scroll: node.onPointerScroll,
+  };
+  host.events['eq-pointer'] = ((ev: Event) => {
+    const heard = (ev as CustomEvent<HeardPointer>).detail;
+    callbacks[heard.phase]?.(heard);
+  }) as unknown as EventHandler;
+  installPointerListener();
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
+/**
  * What a person can ask the menu of (#1531, the C# LowerContextTarget twin): the same layout-transparent div as a
  * drop area, marked `data-eq-context`, whose request the context controller (dom/context-request.ts) dispatches as
  * `eq-context-requested`, turned here into the C# callback.
@@ -5713,6 +5835,19 @@ function lowerSortable(
   }
   if (node.nests) child.attributes['data-eq-sort-nests'] = '1';
   if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
+  // The words a reader hears while the keyboard sorts (#1564), which the controller reads from the list the item
+  // was picked up from. A list with none says nothing. C# twin: LowerSortable.
+  const words = node.announcements;
+  if (words) {
+    child.attributes['data-eq-sort-say-instructions'] = words.instructions;
+    child.attributes['data-eq-sort-say-picked-up'] = words.pickedUp;
+    child.attributes['data-eq-sort-say-moved'] = words.moved;
+    child.attributes['data-eq-sort-say-moved-into'] = words.movedInto;
+    child.attributes['data-eq-sort-say-refused'] = words.refused;
+    child.attributes['data-eq-sort-say-dropped'] = words.dropped;
+    child.attributes['data-eq-sort-say-dropped-into'] = words.droppedInto;
+    child.attributes['data-eq-sort-say-put-back'] = words.putBack;
+  }
   const dropped = node.onDropped;
   child.events['eq-sort-dropped'] = ((ev: Event) =>
     dropped((ev as CustomEvent<SortDropValue>).detail)) as unknown as EventHandler;
@@ -5749,6 +5884,8 @@ function lowerSortableItem(
   if (!child) return null;
   replaceAtomicDeclaration(child, 'pointer-events', 'auto');
   child.attributes['data-eq-sort-item'] = node.id;
+  // The name the keyboard's steps say, when the item has one of its own (#1538; C# twin: LowerSortableItem).
+  if (node.name) child.attributes['data-eq-sort-name'] = node.name;
   if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
   // The keyboard sorts an item from its focus (#1536): one that takes none of its own becomes a Tab stop
   // (the C# twin decides by the same tags).

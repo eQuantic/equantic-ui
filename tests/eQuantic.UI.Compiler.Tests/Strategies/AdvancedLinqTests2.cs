@@ -4,28 +4,24 @@ namespace eQuantic.UI.Compiler.Tests.Strategies;
 
 public class AdvancedLinqTests2 : StrategyTestBase
 {
+    /// <summary>TakeWhile is the runtime's lazy query, whose walk stops at the first element that fails (#685).</summary>
     [Fact]
-    public void TakeWhile_ConvertsToLoop()
+    public void TakeWhile_IsALazyQuery()
     {
         var code = "list.TakeWhile(x => x < 5)";
         var js = Convert(code);
-        
-        Assert.Contains("function($arr)", js);
-        Assert.Contains("return $res", js);
-        // We verify logic structure roughly
-        Assert.Contains("else break", js);
-        Assert.Contains("x < 5", js);
+
+        Assert.Contains("$eq.query.takeWhile(list, (x) => x < 5)", js);
     }
 
+    /// <summary>SkipWhile is the runtime's lazy query, which skips while the predicate holds when walked (#685).</summary>
     [Fact]
-    public void SkipWhile_ConvertsToLoop()
+    public void SkipWhile_IsALazyQuery()
     {
         var code = "list.SkipWhile(x => x < 5)";
         var js = Convert(code);
-        
-        Assert.Contains("let $skipping = true", js);
-        Assert.Contains("continue", js);
-        Assert.Contains("x < 5", js);
+
+        Assert.Contains("$eq.query.skipWhile(list, (x) => x < 5)", js);
     }
 
     [Fact]

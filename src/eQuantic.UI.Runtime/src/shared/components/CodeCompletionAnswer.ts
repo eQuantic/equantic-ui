@@ -14,7 +14,7 @@ export class CodeCompletionAnswer {
         this.askedWord = askedWord;
         this.asked = asked;
         this.isIncomplete = list.isIncomplete;
-        for (const item of list.items) this.offers.push(new CodeCompletionOffer(this, item));
+        for (const item of $eq.collections.sequenceWalk(list.items)) $eq.collections.listAdd(this.offers, new CodeCompletionOffer(this, item));
     }
 
     _from!: CodeRange;

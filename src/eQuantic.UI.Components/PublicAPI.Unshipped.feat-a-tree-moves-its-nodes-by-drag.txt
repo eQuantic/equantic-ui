@@ -1,0 +1,22 @@
+#nullable enable
+eQuantic.UI.Components.TreeMove
+eQuantic.UI.Components.TreeMove.<Clone>$() -> eQuantic.UI.Components.TreeMove!
+eQuantic.UI.Components.TreeMove.After.get -> eQuantic.UI.Components.TreeNode?
+eQuantic.UI.Components.TreeMove.After.init -> void
+eQuantic.UI.Components.TreeMove.Deconstruct(out eQuantic.UI.Components.TreeNode! Node, out eQuantic.UI.Components.TreeNode? Parent, out eQuantic.UI.Components.TreeNode? After) -> void
+eQuantic.UI.Components.TreeMove.Equals(eQuantic.UI.Components.TreeMove? other) -> bool
+eQuantic.UI.Components.TreeMove.Node.get -> eQuantic.UI.Components.TreeNode!
+eQuantic.UI.Components.TreeMove.Node.init -> void
+eQuantic.UI.Components.TreeMove.Parent.get -> eQuantic.UI.Components.TreeNode?
+eQuantic.UI.Components.TreeMove.Parent.init -> void
+eQuantic.UI.Components.TreeMove.TreeMove(eQuantic.UI.Components.TreeNode! Node, eQuantic.UI.Components.TreeNode? Parent, eQuantic.UI.Components.TreeNode? After) -> void
+eQuantic.UI.Components.TreeView.CanMove.get -> System.Func<eQuantic.UI.Components.TreeMove!, bool>?
+eQuantic.UI.Components.TreeView.CanMove.init -> void
+eQuantic.UI.Components.TreeView.OnMoved.get -> System.Func<eQuantic.UI.Components.TreeMove!, System.Threading.Tasks.Task!>?
+eQuantic.UI.Components.TreeView.OnMoved.init -> void
+override eQuantic.UI.Components.TreeMove.Equals(object? obj) -> bool
+override eQuantic.UI.Components.TreeMove.GetHashCode() -> int
+override eQuantic.UI.Components.TreeMove.ToString() -> string!
+static eQuantic.UI.Components.TreeMove.operator !=(eQuantic.UI.Components.TreeMove? left, eQuantic.UI.Components.TreeMove? right) -> bool
+static eQuantic.UI.Components.TreeMove.operator ==(eQuantic.UI.Components.TreeMove? left, eQuantic.UI.Components.TreeMove? right) -> bool
+static eQuantic.UI.Components.UI.TreeView(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.TreeNode!>! roots, string? selectedKey = null, System.Action<eQuantic.UI.Components.TreeNode!>? onPressed = null, eQuantic.UI.Primitives.ListTheme? style = null, System.Func<eQuantic.UI.Components.TreeNode!, System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.TreeNode!>!>!>? loadChildren = null, System.Action<eQuantic.UI.Components.TreeNode!, bool>? onToggled = null, System.Collections.Generic.IReadOnlyList<string!>? expandedKeys = null, System.Collections.Generic.IReadOnlyList<string!>? revealPath = null, string! label = "", eQuantic.UI.Primitives.SizeValue? height = null, System.Func<eQuantic.UI.Components.TreeRowState!, eQuantic.UI.Primitives.VisualNode!>? rowBuilder = null, System.Func<eQuantic.UI.Components.TreeNode!, string!, System.Threading.Tasks.Task!>? onRenamed = null, System.Func<eQuantic.UI.Components.TreeNode!, string!, System.Threading.Tasks.Task!>? onCreated = null, eQuantic.UI.Components.TreeEditRequest? edit = null, eQuantic.UI.Components.TreeReloadRequest? reload = null, System.Collections.Generic.IReadOnlyList<string!>? busyKeys = null, System.Func<eQuantic.UI.Components.TreeNode!, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.MenuItem!>!>? menuBuilder = null, System.Action<eQuantic.UI.Components.TreeNode!, int>? onMenuSelect = null, System.Func<eQuantic.UI.Components.TreeMove!, System.Threading.Tasks.Task!>? onMoved = null, System.Func<eQuantic.UI.Components.TreeMove!, bool>? canMove = null) -> eQuantic.UI.Components.TreeView!

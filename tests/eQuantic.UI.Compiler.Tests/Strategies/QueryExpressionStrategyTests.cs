@@ -16,8 +16,8 @@ public class QueryExpressionStrategyTests : StrategyTestBase
     {
         var js = Convert("from n in numbers where n > 1 select n * 2");
 
-        js.Should().Contain(".filter(");
-        js.Should().Contain(".map(");
+        js.Should().Contain("$eq.query.where(");
+        js.Should().Contain("$eq.query.select(");
         js.Should().NotContainAny(new[] { "Where", "Select" });
     }
 
@@ -26,14 +26,14 @@ public class QueryExpressionStrategyTests : StrategyTestBase
     {
         var js = Convert("from n in numbers where n > 1 select n");
 
-        js.Should().Contain(".filter(");
-        js.Should().NotContain(".map(");
+        js.Should().Contain("$eq.query.where(");
+        js.Should().NotContain("$eq.query.select(");
     }
 
     [Fact]
     public void DegenerateQuery_StillProjectsAFreshSequence()
     {
-        Convert("from n in numbers select n").Should().Contain(".map(");
+        Convert("from n in numbers select n").Should().Contain("$eq.query.select(numbers, (n) => n)");
     }
 
     [Fact]
