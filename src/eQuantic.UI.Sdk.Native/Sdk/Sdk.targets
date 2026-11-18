@@ -1,13 +1,4 @@
-<!--
-    InitialTargets, because ANDROID validates that every declared resource EXISTS before any
-    ordinary target runs — earlier than BeforeBuild, earlier than anything BeforeTargets can reach.
-    An imported project contributes its InitialTargets to the one importing it, and they run before
-    the build's first target. That is the only hook early enough, and it removes the two workarounds
-    this cost before it was found: files committed to the repository, and generation at restore.
-    Android only: Apple's packaging takes the catalog from an item an ordinary target hands it, and
-    running that target this early is exactly what stops the item from ever arriving.
--->
-<Project InitialTargets="EQuanticAndroidIcon">
+<Project>
     <!--
         WHOSE SOURCE, AND ON WHICH BRANCH. Dev mode swaps the packages for the tree beside the SDK,
         which for a repository OUTSIDE that tree means "whatever branch that repo happens to have
@@ -275,8 +266,8 @@
         Apple reads the icon's LOCATION from the app manifest rather than from a build property, so
         the tool that writes the catalog writes that too.
         Both platforms collect their assets in a nested build whose evaluation precedes every target
-        of ours, so both are named at evaluation by LITERAL path and written by the InitialTarget
-        before anything reads them. One rule, two platforms, and nothing committed to a repository.
+        of ours, so both are named at evaluation by LITERAL path and written before anything reads
+        them. One rule, two platforms, and nothing committed to a repository.
     -->
     <ItemGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(EQuanticAppIconSource)' != ''">
         <PartialAppManifest Include="$(_EqIconDir)/AppIcon.plist" />
@@ -288,20 +279,7 @@
         runs is empty on every clean build — and actool then compiles nothing while reporting
         success. eqicon skips its own work when the icon has not changed, so this stays cheap.
     -->
-    <!--
-        Also at RESTORE, which is the only pass early enough for Android. Android collects its
-        resources during the build's EVALUATION, before any target of ours has run — so a file
-        written by a build target is invisible to it however early we hook. Restore is a separate
-        invocation that finishes first, and what it leaves on disk the build simply finds.
-    -->
 
-    <!--
-        An InitialTarget runs in EVERY invocation of the project — restore, design-time, each nested
-        build — and before any ordinary target, ResolveProjectReferences included. The old
-        `Exists(eqicon.dll)` on its Condition therefore answered "no" on a cold source tree (the edge
-        had not been walked yet), skipped in silence, and the build that followed failed with five
-        XA2001s about PNG files — an error about resources, for a cause about a tool.
-    -->
     <!--
         What an icon written in C# compiles with besides its own file (#1240): the app's `Using` items,
         so the icon is written like any file of the app, `Box(...)` being the factory there as it is
@@ -323,28 +301,47 @@
         </ItemGroup>
     </Target>
 
-    <Target Name="EQuanticAndroidIcon" DependsOnTargets="_EQuanticAppIconInputs"
-            Condition="'$(_EqPlatform)' == 'android' AND '$(EQuanticAppIconSource)' != '' AND '$(ExcludeRestorePackageImports)' != 'true' AND '$(DesignTimeBuild)' != 'true'">
-        <!--
-            An InitialTarget runs before ResolveProjectReferences, so the edge Sdk.props declares has
-            not been walked when this needs the tool. Pull that ONE edge now, with the properties
-            ResolveProjectReferences would use: the same project instance the solution builds, so
-            MSBuild serializes the two requests instead of racing them into one bin/ — which is what
-            an inline build under its own properties did. Not during restore (NuGet's own marker; a
-            restore builds nothing) and not in a design-time build.
-        -->
-        <MSBuild Condition="'$(_EqSourceTree)' == 'true' AND '%(ProjectReference.EqBuildTool)' == 'true'"
-                 Projects="@(ProjectReference)" Targets="Build"
-                 RemoveProperties="%(ProjectReference.GlobalPropertiesToRemove)" />
-        <Error Condition="!Exists('$(_EqIconToolDir)eqicon.dll')" Code="EQ4001"
-               Text="This app declares an icon ($(EQuanticAppIconSource)) but the eQuantic icon tool is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build); from a package the SDK package is broken. Neither is fixed by building twice." />
+    <!--
+        THE ANDROID ICON, written just before Android collects its resources. Android names the five
+        mipmaps at evaluation by literal path (Sdk.props), and the first thing that needs them to EXIST
+        is AndroidComputeResPaths, in _ComputeAndroidResourcePaths, which raises XA2001 for a declared
+        resource that is not there. Every path that reaches it, a build and a deploy alike, walks
+        ResolveReferences first, so the eqicon and task edges Sdk.props declares are built by then.
+
+        It was an InitialTarget, which runs in EVERY invocation of the project, the workload's device
+        listing and its deploy included: listing a device built the eqicon edge and started eqicon, and
+        on a source tree, where `dotnet run` starts those invocations with no DOTNET_HOST_PATH, the task
+        host could not start and the listing failed (#1135). Here a listing never reaches it, and a
+        deploy after a build finds the icon in date and skips it: the stamp holds what eqicon is asked,
+        and the outputs are touched after a run, since eqicon leaves a PNG it would write unchanged.
+    -->
+    <Target Name="_EQuanticAndroidIconArguments" DependsOnTargets="_EQuanticAppIconInputs"
+            Condition="'$(_EqPlatform)' == 'android' AND '$(EQuanticAppIconSource)' != '' AND '$(DesignTimeBuild)' != 'true'">
         <ItemGroup>
             <_EqAndroidIconArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
             <_EqAndroidIconArgument Include="source" Option="--source" Value="$(EQuanticAppIconSource)" />
             <_EqAndroidIconArgument Include="resources" Option="--android" Value="$(_EqAssetsGenerated)/android/res" />
             <_EqAndroidIconArgument Include="@(_EqAppIconInput)" />
         </ItemGroup>
+        <PropertyGroup>
+            <_EqAndroidIconStamp>$(IntermediateOutputPath)eqicon.android.txt</_EqAndroidIconStamp>
+        </PropertyGroup>
+        <WriteLinesToFile File="$(_EqAndroidIconStamp)" Overwrite="true" WriteOnlyWhenDifferent="true"
+                          Lines="@(_EqAndroidIconArgument->'%(Option) %(Value)')" />
+        <ItemGroup>
+            <FileWrites Include="$(_EqAndroidIconStamp)" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="EQuanticAndroidIcon" BeforeTargets="_ComputeAndroidResourcePaths"
+            DependsOnTargets="_EQuanticAndroidIconArguments"
+            Condition="'$(_EqPlatform)' == 'android' AND '$(EQuanticAppIconSource)' != '' AND '$(DesignTimeBuild)' != 'true'"
+            Inputs="$(EQuanticAppIconSource);$(_EqIconToolDir)eqicon.dll;$(_EqAndroidIconStamp)"
+            Outputs="@(AndroidResource->WithMetadataValue('EqAppIcon', 'true'))">
+        <Error Condition="!Exists('$(_EqIconToolDir)eqicon.dll')" Code="EQ4001"
+               Text="This app declares an icon ($(EQuanticAppIconSource)) but the eQuantic icon tool is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build); from a package the SDK package is broken. Neither is fixed by building twice." />
         <RunProgram Program="dotnet" Arguments="@(_EqAndroidIconArgument)" StandardOutputImportance="normal" />
+        <Touch Files="@(AndroidResource->WithMetadataValue('EqAppIcon', 'true'))" />
     </Target>
 
     <!--
@@ -957,11 +954,19 @@
     -->
     <PropertyGroup Condition="'$(_EqPlatform)' == 'android'">
         <_EqAndroidQueries>$(_EqIconDir)/Queries.xml</_EqAndroidQueries>
+        <_EqAndroidQueriesStamp>$(IntermediateOutputPath)eqicon.queries.stamp</_EqAndroidQueriesStamp>
         <_EqAndroidMergedManifest>$(IntermediateOutputPath)android/AndroidManifest.xml</_EqAndroidMergedManifest>
     </PropertyGroup>
 
+    <!--
+        Only when the assembly or eqicon changed since the last run, read off a stamp of its own: the
+        fragment keeps the time of its last CHANGE, which is what the merge below compares. The
+        workload's deploy reaches the merge too, and started eqicon on every deploy, which on a source
+        tree `dotnet run` could not do for want of DOTNET_HOST_PATH (#1135).
+    -->
     <Target Name="EQuanticAndroidQueries" BeforeTargets="_ManifestMerger"
-            Condition="'$(_EqPlatform)' == 'android'">
+            Condition="'$(_EqPlatform)' == 'android'"
+            Inputs="@(IntermediateAssembly);$(_EqIconToolDir)eqicon.dll" Outputs="$(_EqAndroidQueriesStamp)">
         <ItemGroup>
             <_EqQueriesArgument Include="tool" Value="$(_EqIconToolDir)eqicon.dll" />
             <_EqQueriesArgument Include="command" Value="queries" />
@@ -969,6 +974,15 @@
             <_EqQueriesArgument Include="manifest" Option="--manifest" Value="$(_EqAndroidQueries)" />
         </ItemGroup>
         <RunProgram Program="dotnet" Arguments="@(_EqQueriesArgument)" StandardOutputImportance="normal" />
+        <Touch Files="$(_EqAndroidQueriesStamp)" AlwaysCreate="true" />
+        <ItemGroup>
+            <FileWrites Include="$(_EqAndroidQueriesStamp)" />
+        </ItemGroup>
+    </Target>
+
+    <!-- The fragment handed to the merge whether or not eqicon ran this time. -->
+    <Target Name="_EQuanticAndroidQueriesOverlay" BeforeTargets="_ManifestMerger" AfterTargets="EQuanticAndroidQueries"
+            Condition="'$(_EqPlatform)' == 'android'">
         <ItemGroup Condition="Exists('$(_EqAndroidQueries)')">
             <AndroidManifestOverlay Include="$(_EqAndroidQueries)" />
         </ItemGroup>

@@ -35,9 +35,10 @@ src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/TupleEquality.cs  1  arg
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/AverageStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/GroupByStrategy.cs  3  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/LinqSource.cs  1  arguments only: the arrow $eq.query.defer takes holds no C#, only $src and the template's parts, which the writer binds outside it (a lambda written in place stays, and runs nothing until called), so a lowering's await and per-element evaluation stay where C# put them (#685)
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/LinqTableStrategy.cs  21  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/LookupStrategy.cs  1  arguments only: the search reads its group, and the key is a template part the writer binds outside it
-src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/OfTypeStrategy.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/OfTypeStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/OrderByStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/SumStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/NullableLift.cs  2  not looked at yet

@@ -17,7 +17,7 @@ export class CodeCompletionView {
 
     static columnsOf(items: CodeCompletionMatch[]) {
         let widest = CodeCompletionView.minColumns;
-        for (const match of items) {
+        for (const match of $eq.collections.sequenceWalk(items)) {
             let columns = CodeCompletionView.entryColumns(match.item);
             if (columns > widest) widest = columns;
         }
@@ -160,14 +160,14 @@ export class CodeCompletionView {
 
     static marked(label: string, marks: number[], ink: ColorToken, accent: ColorToken) {
         let marked = new Array(label.length).fill(false);
-        for (const at of marks) {
+        for (const at of $eq.collections.sequenceWalk(marks)) {
             if (at >= 0 && at < label.length) marked[at] = true;
         }
         let runs: TextRun[] = [];
         let from = 0;
         for (let i = 1; i <= label.length; i++) {
             if (i < label.length && marked[i] === marked[from]) continue;
-            runs.push(new TextRun($eq.text.substring(label, from, i - from), marked[from] ? accent : ink, true));
+            $eq.collections.listAdd(runs, new TextRun($eq.text.substring(label, from, i - from), marked[from] ? accent : ink, true));
             from = i;
         }
         return runs;

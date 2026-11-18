@@ -65,9 +65,11 @@ What is not there yet, each with its issue:
   server's slices are open), and per-component theme slots (#938: a Theme applying to its subtree,
   #1387, is open); the design is [docs/ELEMENT-TREE-PLAN.md](docs/ELEMENT-TREE-PLAN.md);
 - under #306 only #1259 is open, the VS Code extension's tooling advisories;
-- edit-to-view under a second on the web: the desktop meets it and the web does not. CI measures
-  both in the merge queue's run, before a pull request reaches main (`scripts/measure-edit-to-view.cs`, held to
-  `scripts/edit-to-view.budget.json`), and #900 is bringing the web down;
+- edit-to-view under a second (#900): the desktop holds the bar (a warm median near 200ms). The web's
+  warm median ran 479 to 1053ms over six of main's runs, so it meets the bar on most runs and not on
+  all. CI measures both in the merge queue's run, before a pull request reaches main
+  (`scripts/measure-edit-to-view.cs`, held to `scripts/edit-to-view.budget.json`), the web under a
+  ceiling of 1.5s that holds the runner's spread, and each run says whether the web met the bar;
 - the transpiler's fidelity bugs, under #164, #565, #845, #849 and #1174 (new ones go under #1174): 1.0 reads them as an
   exit criterion: no bug stays open where code compiles and answers differently, and the new bugs a
   week fall two weeks in a row;
@@ -110,8 +112,9 @@ once. Still missing: hydration-time benchmarks and tree-shaking verification.
 ### 3. Flutter-like DX
 The `Build(context)` model is genuinely Flutter-like, and hot reload keeps state on the web and on
 the desktop (Phase 3; the simulators and emulators are W7's). Missing the rest of the productivity
-multipliers: edit-to-view under a second on the web (#900, measured by
-`scripts/measure-edit-to-view.cs`), module hot-swap without a page reload on the web, richer/more predictable layout components, and layout/diagnostic tooling.
+multipliers: module hot-swap without a page reload on the web, richer/more predictable layout
+components, and layout/diagnostic tooling. Edit-to-view is under a second on the desktop, and on the
+web on most runs but not all (#900, measured by `scripts/measure-edit-to-view.cs`).
 
 ### 4. shadcn-like components
 The catalog (the wiki's Components page is its index) is a respectable start, but shadcn's value is **polish + accessibility + variants**.
@@ -490,7 +493,8 @@ The bar 1.0 holds the web track to (#898, criterion 3); each line says whether i
 - **Flutter DX**: hot reload preserves state; <1s edit-to-view. The state is kept on the web and on
   the desktop (Phase 3), and on a simulator or an emulator hot reload waits for W7. The second is
   measured in the merge queue's run, before a pull request reaches main:
-  the desktop meets it and the web does not yet (#900, `scripts/measure-edit-to-view.cs`).
+  the desktop holds it, and the web's warm median ran 479 to 1053ms over six of main's runs, under
+  the bar on five of them (#900, `scripts/measure-edit-to-view.cs`).
 - **Components**: every shipped component passes an a11y checklist + variant matrix tests. Met for
   the matrix (#1247) and for what a screen reader hears, alike on every target (#339).
 - **CSS**: at least one first-party engine ships. Met by Phase 6; a provider contract was the

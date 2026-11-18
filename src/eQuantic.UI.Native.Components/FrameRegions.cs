@@ -81,6 +81,19 @@ internal sealed class FrameRegions
     private List<ContextRegion>? _contexts;
 
     /// <summary>
+    /// The nodes the listeners' hit test reads (#1562), from the first listener the walk meets. LAZY like the
+    /// context regions, and more: a frame with no listener never starts it.
+    /// </summary>
+    public PointerTargets? Pointer { get; private set; }
+
+    /// <summary>Starts collecting the frame's pointer targets, at its first listener.</summary>
+    public PointerTargets StartPointer() => Pointer ??= new PointerTargets();
+
+    /// <summary>What the frame reads back, without creating the collector to find out it is empty.</summary>
+    public IReadOnlyList<PointerTarget> PointerOrEmpty =>
+        Pointer?.Entries ?? Array.Empty<PointerTarget>();
+
+    /// <summary>
     /// The sortable lists and their items (#1537), in tree order, a list before what it holds. LAZY like
     /// the live regions, and for the same ceiling: a frame with nothing to sort allocates nothing for it.
     /// </summary>

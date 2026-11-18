@@ -43,6 +43,14 @@ public sealed class Adjustable : SingleChildNode
     public AdjustableRole Role { get; init; } = AdjustableRole.Slider;
 
     /// <summary>
+    /// The axis the value moves along, which a reader hears as the control's orientation (#1538): a slider
+    /// moved up and down is vertical, and a <see cref="AdjustableRole.Separator"/> is the LINE between two
+    /// things, across the axis it moves on, so a column's edge moved sideways is a vertical separator. The
+    /// arrows are the same either way. Horizontal by default, which a horizontal slider never says.
+    /// </summary>
+    public DragAxis Axis { get; init; } = DragAxis.Horizontal;
+
+    /// <summary>
     /// WHERE the value sits, for a role that has one (spec C7). Without it a slider is announced by
     /// NAME and nothing else: <c>role="slider"</c> requires <c>aria-valuenow</c>, so a host that
     /// emits the role and no value is invalid ARIA, and a screen-reader user hears what the control

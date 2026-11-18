@@ -63,6 +63,9 @@ internal sealed class AnnouncedTree
         ["rowheader"] = SemanticRole.RowHeader,
         ["tree"] = SemanticRole.Tree,
         ["treeitem"] = SemanticRole.TreeItem,
+        // A FOCUSABLE separator, the one a reader moves (#1538): one that takes no focus is structure, a
+        // line between two things, and no stop (RoleOf passes it over).
+        ["separator"] = SemanticRole.Splitter,
     };
 
     private static readonly Regex Whitespace = new(@"\s+", RegexOptions.Compiled);
@@ -235,6 +238,7 @@ internal sealed class AnnouncedTree
         if (Attribute(node, "role") is { } written)
         {
             var role = written.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            if (role == "separator" && Attribute(node, "tabindex") is null) return null;
             if (role != "heading") return role is not null && AriaRoles.TryGetValue(role, out var known) ? known : null;
             headingLevel = int.TryParse(Attribute(node, "aria-level"), out var level) ? level : 2;
             return SemanticRole.StaticText;
@@ -282,14 +286,17 @@ internal sealed class AnnouncedTree
         or SemanticRole.MenuItem or SemanticRole.Option or SemanticRole.GridCell or SemanticRole.TreeItem or SemanticRole.Cell
         or SemanticRole.ColumnHeader or SemanticRole.RowHeader or SemanticRole.StaticText;
 
-    private string NameOf(HtmlNode node, SemanticRole role)
+    private string NameOf(HtmlNode node, SemanticRole role, bool byReference = false)
     {
         // A label an element names by id is read even when it is hidden: the accessible-name rule
         // reads what a reference points at, which is how a page names a dialog by a title it does not
-        // show.
-        if (Attribute(node, "aria-labelledby") is { } ids)
+        // show, and a merged row names its control by the parts it hides. An element naming ITSELF
+        // among them is named as it would be with no reference at all (accname's step 2B, once).
+        if (!byReference && Attribute(node, "aria-labelledby") is { } ids)
             return Collapse(string.Join(" ", ids.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                .Select(id => _byId.TryGetValue(id, out var label) ? TextOf(label, includeHidden: true) : "")));
+                .Select(id => !_byId.TryGetValue(id, out var label) ? ""
+                    : ReferenceEquals(label, node) ? NameOf(node, role, byReference: true)
+                    : AlternativeOf(label))));
         if (Attribute(node, "aria-label") is { } label && Collapse(label) is { Length: > 0 } named) return named;
         if (node.Tag == "img" && Attribute(node, "alt") is { } alt) return Collapse(alt);
         if (NamedFromContent(role) && Collapse(TextOf(node)) is { Length: > 0 } content) return content;
@@ -305,7 +312,7 @@ internal sealed class AnnouncedTree
     {
         SemanticRole.TextField or SemanticRole.CodeField =>
             node.Tag == "textarea" ? TextOf(node) : Attribute(node, "value") ?? "",
-        SemanticRole.Slider or SemanticRole.ProgressIndicator =>
+        SemanticRole.Slider or SemanticRole.ProgressIndicator or SemanticRole.Splitter =>
             Attribute(node, "aria-valuetext") ?? Attribute(node, "aria-valuenow") ?? Attribute(node, "value"),
         SemanticRole.ComboBox => Collapse(TextOf(node)),
         _ => null,
@@ -326,17 +333,32 @@ internal sealed class AnnouncedTree
     }
 
     /// <summary>
-    /// The text a subtree reads as, hidden parts left out unless <paramref name="includeHidden"/>.
+    /// What a node an <c>aria-labelledby</c> points at contributes to a name: its own label or
+    /// <c>alt</c> when it has one, and otherwise what its children contribute, hidden ones included,
+    /// as the accessible-name rule reads a node that is referenced directly.
+    /// </summary>
+    private string AlternativeOf(HtmlNode node)
+    {
+        if (node.Tag == "#text") return node.TextContent ?? "";
+        if (Attribute(node, "aria-label") is { } label && Collapse(label) is { Length: > 0 } named) return $" {named} ";
+        if (node.Tag == "img" && Attribute(node, "alt") is { } alt && Collapse(alt) is { Length: > 0 } described)
+            return $" {described} ";
+        var text = string.Concat(ReadingChildren(node).Select(AlternativeOf));
+        return node.Tag is "div" or "p" or "li" or "section" or "article" ? $" {text} " : text;
+    }
+
+    /// <summary>
+    /// The text a subtree reads as, hidden parts left out.
     /// Inline elements run together, as they do on the page; a block one stands apart, so two
     /// paragraphs do not read as one word.
     /// </summary>
-    private string TextOf(HtmlNode node, bool includeHidden = false)
+    private string TextOf(HtmlNode node)
     {
         if (node.Tag == "#text") return node.TextContent ?? "";
-        if (!includeHidden && Hidden(node)) return "";
+        if (Hidden(node)) return "";
         // The accessibility tree's children, so a name read from content takes what the element owns
         // and leaves what another element moved away.
-        var text = string.Concat(ReadingChildren(node).Select(child => TextOf(child, includeHidden)));
+        var text = string.Concat(ReadingChildren(node).Select(TextOf));
         return node.Tag is "div" or "p" or "li" or "section" or "article" ? $" {text} " : text;
     }
 

@@ -18,8 +18,8 @@ export class CodeHighlighter {
     }
 
     invalidate() {
-        this._tokens.splice(0);
-        this._endStates.splice(0);
+        $eq.collections.listClear(this._tokens);
+        $eq.collections.listClear(this._endStates);
     }
 
     tokensFor(document: CodeDocument, line: number) {
@@ -52,16 +52,16 @@ export class CodeHighlighter {
             let state = index === 0 ? 0 : this._endStates[index - 1];
             let tokens: CodeToken[] = [];
             let endState = this.language.tokenize(document.line(index), state, tokens);
-            this._tokens.push(tokens);
-            this._endStates.push(endState);
+            $eq.collections.listAdd(this._tokens, tokens);
+            $eq.collections.listAdd(this._endStates, endState);
         }
     }
 
     retokenize(document: CodeDocument, line: number) {
         let state = line === 0 ? 0 : this._endStates[line - 1];
         let tokens = this._tokens[line];
-        tokens.splice(0);
-        this._endStates[line] = this.language.tokenize(document.line(line), state, tokens);
+        $eq.collections.listClear(tokens);
+        $eq.collections.listSet(this._endStates, line, this.language.tokenize(document.line(line), state, tokens));
     }
 
     trimTo(line: number) {

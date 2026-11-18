@@ -177,6 +177,14 @@ public enum SemanticRole : byte
     /// infer either. Appended (#1529), by the rule above.
     /// </summary>
     TreeItem,
+
+    /// <summary>
+    /// The boundary between two things, which a reader moves as a slider: a table's column edge, a split
+    /// view's divider. Its value and range ride <see cref="SemanticNode.Range"/> as a slider's do. AppKit
+    /// has a role for it (<c>AXSplitter</c>); iOS and Android have none, and offer it as an adjustable
+    /// element. Appended (#1538), by the rule above.
+    /// </summary>
+    Splitter,
 }
 
 /// <summary>A check's state, in ARIA's own three words. Mixed exists for checkboxes and nothing

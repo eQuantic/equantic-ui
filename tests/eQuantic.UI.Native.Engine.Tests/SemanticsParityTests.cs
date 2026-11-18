@@ -146,6 +146,38 @@ public class SemanticsParityTests(ITestOutputHelper output)
         foreach (var role in Enum.GetValues<TableRole>())
             yield return new($"case table-view {role}", () => Table(role));
         yield return new("case table-viewport composed column by column", Viewport);
+
+        // A subtree heard as one stop, or passed over (#1567): the stop a merge becomes and what it is named,
+        // and what an exclusion leaves out, read alike on both targets.
+        yield return new("case merge a switch and its label",
+            () => new MergeSemantics(Line(new Text("Wi-Fi", TypeRole.BodyM), new Switch(true))));
+        yield return new("case merge a checkbox and its description", () => new MergeSemantics(Line(
+            new Checkbox(true, label: "Agree"), new Text("to the terms", TypeRole.BodyM))));
+        yield return new("case merge read content", () => new MergeSemantics(Line(
+            new Icon(Icons.Check, IconSize.Sm, label: "Paid"), new Text("Total", TypeRole.BodyM),
+            new Text("42 EUR", TypeRole.BodyM))));
+        yield return new("case merge two controls", () => new MergeSemantics(Line(
+            new Text("Volume", TypeRole.BodyM), new Slider(0.5f, _ => { }), new Button("Mute"))));
+        yield return new("case merge around an exclusion", () => new MergeSemantics(Line(
+            new ExcludeSemantics(new Text("JD", TypeRole.BodyM)), new Text("Jane Doe", TypeRole.BodyM))));
+        yield return new("case merge inside a merge", () => new MergeSemantics(Line(
+            new MergeSemantics(Line(new Text("Wi-Fi", TypeRole.BodyM), new Text("On", TypeRole.BodyM))),
+            new Text("Home", TypeRole.BodyM))));
+        yield return new("case merge around a merged control", () => new MergeSemantics(Line(
+            new Text("Home", TypeRole.BodyM),
+            new MergeSemantics(Line(new Text("Wi-Fi", TypeRole.BodyM), new Switch(true))))));
+        yield return new("case exclude", () => Line(
+            new ExcludeSemantics(new Text("Decoration", TypeRole.BodyM)), new Text("Shown", TypeRole.BodyM)));
+        yield return new("case exclude, not excluding",
+            () => new ExcludeSemantics(new Text("Read", TypeRole.BodyM)) { Excluding = false });
+    }
+
+    /// <summary>A row of what a case reads, in order.</summary>
+    private static Row Line(params VisualNode[] children)
+    {
+        var row = new Row(gap: 8);
+        foreach (var child in children) row.Add(child);
+        return row;
     }
 
     private static VisualNode Table(TableRole role) =>

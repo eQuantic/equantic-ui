@@ -1,0 +1,1 @@
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ContextRequest(float x, float y, eQuantic.UI.Primitives.PointerKind kind = eQuantic.UI.Primitives.PointerKind.Mouse, eQuantic.UI.Primitives.PointerButtons buttons = eQuantic.UI.Primitives.PointerButtons.Secondary, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None) -> bool

@@ -1,0 +1,12 @@
+eQuantic.UI.Primitives.MergeSemantics
+override eQuantic.UI.Primitives.MergeSemantics.NodeKind.get -> string!
+eQuantic.UI.Primitives.MergeSemantics.MergeSemantics(eQuantic.UI.Primitives.VisualNode! child) -> void
+override sealed eQuantic.UI.Primitives.MergeSemantics.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.MergeSemantics! node, TState state) -> TResult
+eQuantic.UI.Primitives.ExcludeSemantics
+override eQuantic.UI.Primitives.ExcludeSemantics.NodeKind.get -> string!
+eQuantic.UI.Primitives.ExcludeSemantics.ExcludeSemantics(eQuantic.UI.Primitives.VisualNode! child) -> void
+eQuantic.UI.Primitives.ExcludeSemantics.Excluding.get -> bool
+eQuantic.UI.Primitives.ExcludeSemantics.Excluding.init -> void
+override sealed eQuantic.UI.Primitives.ExcludeSemantics.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.ExcludeSemantics! node, TState state) -> TResult

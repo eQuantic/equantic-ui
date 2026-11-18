@@ -76,11 +76,12 @@ internal static class LinqArguments
     /// literals the compiler settled from the bound overload (how the values add, the equality they
     /// compare by). An argument for <paramref name="dropped"/> is not written: a comparer the fence let
     /// through asks for what the twin already does, and reading one has no effect to keep. Null where an
-    /// argument binds to no slot, or the tree binds nothing.
+    /// argument binds to no slot, or the tree binds nothing. A <paramref name="deferred"/> source makes the
+    /// call run when its query is walked (<see cref="LinqSource.Defer"/>).
     /// </summary>
     internal static JsExpr? Call(string helper, JsExpr source, IReadOnlyList<string> slots,
         InvocationExpressionSyntax invocation, Func<ArgumentSyntax, JsExpr> convert, ConversionContext context,
-        IReadOnlyList<string>? settled = null, string? dropped = null)
+        IReadOnlyList<string>? settled = null, string? dropped = null, ExpressionSyntax? deferred = null)
     {
         if (Parameters(invocation, context) is not { } names
             || names.Any(name => name != dropped && !slots.Contains(name))) return null;
@@ -97,6 +98,7 @@ internal static class LinqArguments
         context.UsedHelpers.Add(Eq.Import);
         var filled = slots.Select(slot => holes.TryGetValue(slot, out var hole) ? $"{{{hole}}}" : "undefined")
             .Concat(settled ?? []);
-        return JsExpr.Template($"{helper}({{0}}, {string.Join(", ", filled)})", parts);
+        var call = $"{helper}({{0}}, {string.Join(", ", filled)})";
+        return JsExpr.Template(deferred is null ? call : LinqSource.Defer(call, deferred, context), parts);
     }
 }

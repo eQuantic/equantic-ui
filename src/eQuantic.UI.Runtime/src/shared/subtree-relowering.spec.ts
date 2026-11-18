@@ -11,7 +11,7 @@ import { activeShortcuts } from '../dom/shortcuts';
 import { componentLowerings } from './lowered-records';
 import { RenderManager } from '../dom/renderer';
 import type { HtmlNode } from '../core/types';
-import { Column, Flexible, Presence, Pressable, Row, Shortcut, Text } from './vocabulary';
+import { Anchored, Column, Flexible, Overlay, Presence, Pressable, Row, Shortcut, Text } from './vocabulary';
 import type { VisualNodeValue } from './nodes';
 
 const nextFrame = () =>
@@ -19,6 +19,9 @@ const nextFrame = () =>
 
 /** The instance each label's position keeps: the first made, which the engine keeps. */
 const kept: Record<string, Counter> = {};
+
+/** The labels of the counters whose `onUnmount` ran, in order. */
+const unmounted: string[] = [];
 
 /** A counter with a press: the smallest thing whose state shows. */
 class Counter extends StatefulComponent {
@@ -37,6 +40,10 @@ class Counter extends StatefulComponent {
 
   adoptConfig(next: Counter): void {
     this.label = next.label;
+  }
+
+  onUnmount(): void {
+    unmounted.push(this.label);
   }
 
   build(): VisualNodeValue {
@@ -105,6 +112,7 @@ async function pressAndCompare(page: Page, container: HTMLElement, label: string
 
 beforeEach(() => {
   document.body.innerHTML = '';
+  unmounted.length = 0;
   for (const label of Object.keys(kept)) delete kept[label];
   for (const label of Object.keys(bound)) delete bound[label];
 });
@@ -328,6 +336,77 @@ describe('a dirty element lowers its own subtree', () => {
     await nextFrame();
     expect(listed).toEqual(activeShortcuts().map((binding) => binding.chord));
     expect(container.textContent).toContain('armed');
+  });
+});
+
+/** Presses the button `label` names wherever it is drawn: a layer is drawn outside the page's box. */
+async function pressAnywhere(label: string): Promise<void> {
+  const trigger = Array.from(document.querySelectorAll('button')).find(
+    (button) => button.getAttribute('aria-label') === label,
+  ) as HTMLElement;
+  trigger.click();
+  await nextFrame();
+}
+
+/** A component that holds an anchored panel and closes it when it is pressed. */
+class Closer extends StatefulComponent {
+  open = true;
+
+  build(): VisualNodeValue {
+    const anchor = new Pressable(new Text('closer', 'label'), () => this.setState(() => (this.open = false)), {
+      label: 'close',
+    });
+    return new Anchored(anchor, new Counter('panel'), { open: this.open }) as unknown as VisualNodeValue;
+  }
+}
+
+/**
+ * A patch draws only the components lowered again, and the owner's frame judges the layers among them
+ * and no other (#1575). A patch used to end a frame that showed none of the page's open layers, so an
+ * overlay or an anchored panel elsewhere on the page had its components unmounted while its DOM stayed,
+ * dead: a press inside it changed nothing.
+ */
+describe('a patch leaves the layers it did not draw', () => {
+  it('keeps an open overlay outside the component it lowered mounted, and live', async () => {
+    const page = new Page(() => column(new Counter('a'), new Overlay(new Counter('b'), { modal: false })));
+    mount(page);
+    await nextFrame();
+
+    await pressAnywhere('bump a');
+    await pressAnywhere('bump a');
+    expect(unmounted, 'the overlay outside the patched counter keeps its counter').toEqual([]);
+
+    await pressAnywhere('bump b');
+    expect(document.body.textContent).toContain('a: 2');
+    expect(document.body.textContent).toContain('b: 1');
+    expect(unmounted).toEqual([]);
+  });
+
+  it('keeps an open anchored panel outside the component it lowered mounted, and live', async () => {
+    const anchored = () => new Anchored(new Text('anchor', 'label'), new Counter('c'), { open: true });
+    const page = new Page(() => column(new Counter('a'), anchored()));
+    mount(page);
+    await nextFrame();
+
+    await pressAnywhere('bump a');
+    expect(unmounted, 'the panel outside the patched counter keeps its counter').toEqual([]);
+
+    await pressAnywhere('bump c');
+    expect(document.body.textContent).toContain('c: 1');
+    expect(unmounted).toEqual([]);
+  });
+
+  it('still takes out a panel that closed in the component it lowered', async () => {
+    const page = new Page(() => column(new Counter('a'), new Closer()));
+    mount(page);
+    await nextFrame();
+    expect(document.body.textContent).toContain('panel: 0');
+
+    const before = componentLowerings();
+    await pressAnywhere('close');
+
+    expect(componentLowerings() - before, 'the closer alone lowered again: a patch').toBe(1);
+    expect(unmounted, 'the closed panel left with its counter').toEqual(['panel']);
   });
 });
 

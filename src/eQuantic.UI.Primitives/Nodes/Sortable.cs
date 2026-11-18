@@ -13,20 +13,28 @@ namespace eQuantic.UI.Primitives;
 /// <see cref="Accepts"/> is asked before a place is offered.
 /// </para>
 /// <para>
-/// Realized on the web, where a mouse picks an item up past a few pixels and a finger after holding it
-/// still; on Photon the items are drawn and take no drag yet (#1537). The keyboard's way to sort is #1536.
+/// A mouse picks an item up past a few pixels and a finger after holding it still, on the web and on Photon
+/// (#1537), and the keyboard sorts it too (#1536), each step said to a reader in the list's
+/// <see cref="Announcements"/> (#1564).
 /// </para>
 /// </summary>
 public sealed class Sortable : SingleChildNode
 {
     public override string NodeKind => "sortable";
 
-    public Sortable(VisualNode child, string id, Action<SortDrop> onDropped)
+    public Sortable(VisualNode child, string id, Action<SortDrop> onDropped, SortAnnouncements? announcements = null)
         : base(child)
     {
         Id = id;
         OnDropped = onDropped;
+        Announcements = announcements;
     }
+
+    /// <summary>What a reader hears while an item of this list is sorted by the keyboard: how to, and each step,
+    /// on every target, in the words of the list the item was picked up from. <c>UI.Sortable</c> gives the SDK's
+    /// in the reader's culture unless the app gives its own; null says nothing, since no realizer has words of
+    /// its own to fall back on.</summary>
+    public SortAnnouncements? Announcements { get; init; }
 
     /// <summary>The list's name in what it reports, <see cref="SortDrop.From"/> and <see cref="SortDrop.To"/>:
     /// a board's column id, say. Unique among the sortables of its group.</summary>

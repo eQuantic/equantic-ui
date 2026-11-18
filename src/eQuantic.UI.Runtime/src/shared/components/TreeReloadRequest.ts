@@ -1,0 +1,3 @@
+import { $eq } from "../runtime-exports";
+
+export class TreeReloadRequest { declare version: number; declare keys: string[]; constructor(version: any = 0, keys: any = null) {this.version = version;this.keys = keys;} equals(o: unknown) { return o instanceof TreeReloadRequest && o.constructor === this.constructor && $eq.equals(this.version, o.version) && $eq.collections.sameItem(this.keys, o.keys); } with(patch: any): TreeReloadRequest { return $eq.withPatch(this, patch); } static $record = true; getHashCode(): number { return $eq.hash.combine(this.version, this.keys); } toString() { return $eq.text.record(this, 'TreeReloadRequest', [['Version', 'int32'], 'Keys']); } }

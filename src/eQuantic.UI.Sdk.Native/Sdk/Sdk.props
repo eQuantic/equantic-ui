@@ -102,16 +102,14 @@
              Private=false: its apphost and json do not ride into the app — or, on iOS, into the
              bundle. The Skip/Remove pair is what a multi-TFM head (net10.0;net10.0-ios;net10.0-android)
              needs to reference a plain net10.0 tool without negotiating a framework with it.
-             EqBuildTool names the edge for the Android InitialTarget, which runs before
-             ResolveProjectReferences would walk it — see Sdk.targets. -->
+             ResolveProjectReferences builds it before any target of ours starts it. -->
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj"
                           ReferenceOutputAssembly="false" Private="false" SkipGetTargetFrameworkProperties="true"
-                          GlobalPropertiesToRemove="$(_EqToolGlobalsToRemove)" EqBuildTool="true" />
-        <!-- The tasks Sdk.targets starts every program with: an edge of the same kind, named for the
-             same InitialTarget, which starts eqicon with one of them. -->
+                          GlobalPropertiesToRemove="$(_EqToolGlobalsToRemove)" />
+        <!-- The tasks Sdk.targets starts every program with: an edge of the same kind. -->
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Sdk.Tasks\eQuantic.UI.Sdk.Tasks.csproj"
                           ReferenceOutputAssembly="false" Private="false" SkipGetTargetFrameworkProperties="true"
-                          GlobalPropertiesToRemove="$(_EqToolGlobalsToRemove)" EqBuildTool="true" />
+                          GlobalPropertiesToRemove="$(_EqToolGlobalsToRemove)" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Code\eQuantic.UI.Code.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Sheet\eQuantic.UI.Sheet.csproj" />
@@ -200,15 +198,15 @@
          missing AppIcon. -->
     <ItemGroup Condition="'$(_EqPlatform)' == 'android' AND '$(EQuanticAppIconSource)' != ''">
         <AndroidResource Include="$(EQuanticGeneratedAssetsDir)/android/res/mipmap-mdpi/ic_launcher.png"
-                         Link="Resources/mipmap-mdpi/ic_launcher.png" />
+                         Link="Resources/mipmap-mdpi/ic_launcher.png" EqAppIcon="true" />
         <AndroidResource Include="$(EQuanticGeneratedAssetsDir)/android/res/mipmap-hdpi/ic_launcher.png"
-                         Link="Resources/mipmap-hdpi/ic_launcher.png" />
+                         Link="Resources/mipmap-hdpi/ic_launcher.png" EqAppIcon="true" />
         <AndroidResource Include="$(EQuanticGeneratedAssetsDir)/android/res/mipmap-xhdpi/ic_launcher.png"
-                         Link="Resources/mipmap-xhdpi/ic_launcher.png" />
+                         Link="Resources/mipmap-xhdpi/ic_launcher.png" EqAppIcon="true" />
         <AndroidResource Include="$(EQuanticGeneratedAssetsDir)/android/res/mipmap-xxhdpi/ic_launcher.png"
-                         Link="Resources/mipmap-xxhdpi/ic_launcher.png" />
+                         Link="Resources/mipmap-xxhdpi/ic_launcher.png" EqAppIcon="true" />
         <AndroidResource Include="$(EQuanticGeneratedAssetsDir)/android/res/mipmap-xxxhdpi/ic_launcher.png"
-                         Link="Resources/mipmap-xxxhdpi/ic_launcher.png" />
+                         Link="Resources/mipmap-xxxhdpi/ic_launcher.png" EqAppIcon="true" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(_EqPlatform)' == 'android' AND '$(IsEQuanticDevMode)' == 'true'">

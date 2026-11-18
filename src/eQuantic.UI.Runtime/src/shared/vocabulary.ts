@@ -10,9 +10,9 @@
 
 import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { NodeKind } from './node-kinds.generated';
-import type { TableCellRoleValue, TableRoleValue } from './enums.generated';
+import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
-import type { AppTheme, BoxConstraints, ContextRequest } from './value-types';
+import type { AppTheme, BoxConstraints, ContextRequest, PointerEvent } from './value-types';
 import { iconPaths } from './icons.generated';
 import type {
   BoxStyleValue,
@@ -23,6 +23,7 @@ import type {
   EdgeInsetsValue,
   LiveRegionUrgencyValue,
   MainAlignValue,
+  SortAnnouncementsValue,
   TypeStyleValue,
 } from './nodes';
 import { CanvasPointer } from './canvas-pointer';
@@ -1081,6 +1082,28 @@ export class ContextTarget extends VisualNode {
   }
 }
 
+/**
+ * Mirror of the C# `Listener` (#1562): any subtree hears the raw pointer, in its own coordinates, where its
+ * `behavior` says it is hit.
+ */
+export class Listener extends VisualNode {
+  readonly nodeKind = 'listener';
+  child: VisualChild;
+  onPointerDown: ((event: PointerEvent) => void) | null = null;
+  onPointerMove: ((event: PointerEvent) => void) | null = null;
+  onPointerUp: ((event: PointerEvent) => void) | null = null;
+  onPointerCancel: ((event: PointerEvent) => void) | null = null;
+  onPointerHover: ((event: PointerEvent) => void) | null = null;
+  onPointerScroll: ((event: PointerEvent) => void) | null = null;
+  behavior: HitTestBehaviorValue = 'deferToChild';
+
+  constructor(child: VisualChild, config?: EqConfig) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `Sortable` (#1535): a list whose items a pointer puts in order, taking the items of
  * the lists of its group. */
 export class Sortable extends VisualNode {
@@ -1088,6 +1111,7 @@ export class Sortable extends VisualNode {
   child: VisualChild;
   id: string;
   onDropped: (drop: SortDrop) => void;
+  announcements: SortAnnouncementsValue | null;
   group = '';
   axis = 'vertical';
   nests = false;
@@ -1096,11 +1120,18 @@ export class Sortable extends VisualNode {
   accepts: ((drop: SortDrop) => boolean) | null = null;
   enabled = true;
 
-  constructor(child: VisualChild, id: string, onDropped: (drop: SortDrop) => void, config?: EqConfig) {
+  constructor(
+    child: VisualChild,
+    id: string,
+    onDropped: (drop: SortDrop) => void,
+    announcements: SortAnnouncementsValue | null = null,
+    config?: EqConfig,
+  ) {
     super();
     this.child = child;
     this.id = id;
     this.onDropped = onDropped;
+    this.announcements = announcements;
     if (config) Object.assign(this, config);
   }
 }
@@ -1111,6 +1142,8 @@ export class SortableItem extends VisualNode {
   child: VisualChild;
   id: string;
   enabled = true;
+  /** The name the keyboard's steps say. C# twin: `SortableItem.Name`. */
+  name = '';
 
   constructor(child: VisualChild, id: string, config?: EqConfig) {
     super();
@@ -1221,6 +1254,8 @@ interface TextEntryConfig {
   role?: string;
   /** Takes focus on mount (the command-palette contract). */
   autofocus?: boolean;
+  /** Selects all of the text whenever the entry takes the keyboard (C# `SelectOnFocus`). */
+  selectOnFocus?: boolean;
   /** Line count: 1 (default) is single-line; more makes it a textarea that tall. */
   lines?: number;
 }
@@ -1243,6 +1278,7 @@ export class TextEntry extends VisualNode {
   obscure = false;
   role = 'bodyL';
   autofocus = false;
+  selectOnFocus = false;
   lines = 1;
 
   constructor(
@@ -1292,6 +1328,16 @@ export const KeyModifiers = {
   /** ⌘ on Apple, Ctrl elsewhere — the platform command key. */
   command: 4,
   control: 8,
+} as const;
+
+/** Mirror of the C# `[Flags] PointerButtons` (#1562): Flutter's constants, which are also the DOM's `buttons`. */
+export const PointerButtons = {
+  none: 0,
+  primary: 1,
+  secondary: 2,
+  middle: 4,
+  back: 8,
+  forward: 16,
 } as const;
 
 /** Mirror of the C# `Shortcut` (spec S8): a chord that is live while this subtree is mounted. */
@@ -1637,14 +1683,47 @@ export class Group extends VisualNode {
   }
 }
 
+/**
+ * Mirror of the C# `MergeSemantics` node: a subtree a reader hears as one stop. It draws nothing and adds
+ * no geometry.
+ */
+export class MergeSemantics extends VisualNode {
+  readonly nodeKind = 'mergeSemantics';
+  child: VisualNode;
+
+  constructor(child: VisualNode, config?: EqConfig) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `ExcludeSemantics` node: a subtree a reader passes over while it excludes. It draws
+ * nothing and adds no geometry.
+ */
+export class ExcludeSemantics extends VisualNode {
+  readonly nodeKind = 'excludeSemantics';
+  child: VisualNode;
+  excluding = true;
+
+  constructor(child: VisualNode, config?: { excluding?: boolean }) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `Adjustable` node: the child answers to the arrow keys as ONE Tab stop. */
 export class Adjustable extends VisualNode {
   readonly nodeKind = 'adjustable';
   child: VisualNode;
   onAdjust: (direction: number) => void;
   label = '';
-  /** ARIA identity of the host element — 'slider' (default), 'tablist' or 'radiogroup'. */
-  role: 'slider' | 'tablist' | 'radiogroup' = 'slider';
+  /** ARIA identity of the host element — 'slider' (default), 'tablist', 'radiogroup' or 'separator'. */
+  role: 'slider' | 'tablist' | 'radiogroup' | 'separator' = 'slider';
+  /** The axis the value moves along, which a reader hears as the orientation. C# twin: `Adjustable.Axis`. */
+  axis: 'vertical' | 'horizontal' = 'horizontal';
   /** Where the value sits, for a role that has one; absent on a tablist or a radiogroup. */
   value?: RangeValue | null;
 
@@ -1662,7 +1741,8 @@ export class Adjustable extends VisualNode {
     onAdjust: (direction: number) => void,
     config?: {
       label?: string;
-      role?: 'slider' | 'tablist' | 'radiogroup';
+      role?: 'slider' | 'tablist' | 'radiogroup' | 'separator';
+      axis?: 'vertical' | 'horizontal';
       value?: RangeValue | null;
       valueText?: string | null;
     },
@@ -1693,6 +1773,8 @@ export class Navigable extends VisualNode {
   /** The focused cell as [row, item] — announced through aria-activedescendant. A C# tuple
    * crosses as a plain array, so that is the type; the realizer reads exactly two entries. */
   activeCell: readonly number[] | null = null;
+  /** A version higher than the last one built takes the keyboard to the composite's stop (C# `FocusVersion`). */
+  focusVersion = 0;
 
   constructor(
     onMove: (move: NavigableMoveValue) => void,
@@ -1703,6 +1785,7 @@ export class Navigable extends VisualNode {
       role?: 'grid' | 'tree';
       hasHeaderRow?: boolean;
       activeCell?: readonly number[] | null;
+      focusVersion?: number;
     },
   ) {
     super();

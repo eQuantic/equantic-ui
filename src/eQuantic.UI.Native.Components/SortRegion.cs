@@ -17,4 +17,7 @@ namespace eQuantic.UI.Native.Components;
 /// <param name="Visible">The part of it on screen.</param>
 /// <param name="Element">Its position, which an item's lift is kept on.</param>
 /// <param name="Node">The <see cref="Sortable"/> or the <see cref="SortableItem"/>.</param>
-internal readonly record struct SortRegion(Rect Bounds, Rect Visible, Element Element, VisualNode Node);
+/// <param name="Layout">Its laid-out box in this frame, which an item is named by to a reader (#1564): read
+/// while its frame is the host's last, as a live region's mark reads its own.</param>
+internal readonly record struct SortRegion(Rect Bounds, Rect Visible, Element Element, VisualNode Node,
+    LayoutNode Layout);

@@ -27,6 +27,7 @@ import {
   BoxStyle,
   Column,
   ContextTarget,
+  Listener,
   Sortable,
   SortableItem,
   Draggable,
@@ -41,6 +42,8 @@ import {
   InView,
   LinearGradient,
   Link,
+  MergeSemantics,
+  ExcludeSemantics,
   Pinned,
   Positioned,
   Pressable,
@@ -59,7 +62,7 @@ import {
   VectorPaint,
   VectorShape,
 } from './vocabulary';
-import { Point, SizeValue, StyleChannels, TableRange, Transform2D } from './value-types';
+import { Point, SizeValue, SortAnnouncements, StyleChannels, TableRange, Transform2D } from './value-types';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
 import { ContextMenu } from './components/ContextMenu';
@@ -356,6 +359,9 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'context-target-disabled': still(
       new ContextTarget(new Box(new BoxStyle({ height: 40 })), () => {}, { enabled: false }),
     ),
+    listener: still(new Listener(new Box(new BoxStyle({ width: SizeValue.fill, height: 40 })))),
+    'listener-opaque': still(new Listener(new Box(new BoxStyle({ height: 40 })), { behavior: 'opaque' })),
+    'listener-translucent': still(new Listener(new Box(new BoxStyle({ height: 40 })), { behavior: 'translucent' })),
     'anchored-at': still(
       new Anchored(new Box(new BoxStyle({ width: 200, height: 40 })), new Box(new BoxStyle({ width: 120, height: 80 })), {
         at: new Point(120, 30),
@@ -471,6 +477,21 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         ],
       ),
     ),
+    'data-table-columns': still(
+      new DataTable(
+        [
+          new DataColumn('Name', GridTrack.flex()),
+          new DataColumn('Size', GridTrack.fixed(80), 'end'),
+        ],
+        [
+          new DataRow('a', [
+            new Text('alpha', 'bodyM', photonTheme.textPrimary),
+            new Text('1', 'bodyM', photonTheme.textPrimary),
+          ]),
+        ],
+        { columnOrder: [1, 0], onColumnsReordered: () => undefined, onColumnResized: () => undefined },
+      ),
+    ),
     'table-view': still(
       new TableView(
         new UniformTableSpans(6, 28),
@@ -531,6 +552,31 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
       node: new Select(['Lisboa'], 0, null, null, [new OptionGroup('A seguir', ['Braga', 'Faro'])]),
       presses: [0],
     },
+    'merge-a-checkbox-and-its-description': still(
+      new MergeSemantics(
+        line(false, new Checkbox(true, null, 'Agree'), new Text('to the terms', 'bodyM', photonTheme.textPrimary)),
+      ),
+    ),
+    'merge-read-content': still(
+      new MergeSemantics(
+        line(
+          false,
+          new Text('Total', 'bodyM', photonTheme.textPrimary),
+          new ExcludeSemantics(new Text('JD', 'bodyM', photonTheme.textPrimary)),
+          new Text('42 EUR', 'bodyM', photonTheme.textPrimary),
+        ),
+      ),
+    ),
+    'exclude-a-subtree': still(
+      line(
+        false,
+        new ExcludeSemantics(new Text('Decoration', 'bodyM', photonTheme.textPrimary)),
+        new Text('Shown', 'bodyM', photonTheme.textPrimary),
+      ),
+    ),
+    'exclude-not-excluding': still(
+      new ExcludeSemantics(new Text('Read', 'bodyM', photonTheme.textPrimary), { excluding: false }),
+    ),
     'sortable-column': still(
       new Sortable(
         column(
@@ -540,6 +586,16 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         ),
         'todo',
         () => undefined,
+        new SortAnnouncements(
+          'Pressione Espaço & solte "já".',
+          'Took {0}.',
+          '{0} now {1}/{2} in {3}.',
+          '{0} in {1}.',
+          'Not there.',
+          'Left {0} at {1}.',
+          'Left {0} in {1}.',
+          'Back <{0}>.',
+        ),
         { group: 'board', onHovered: () => undefined },
       ),
     ),
@@ -560,6 +616,18 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         { label: 'Files' },
       ),
       presses: [0, 1],
+    },
+    'tree-moves': {
+      node: Object.assign(
+        new TreeView([
+          Object.assign(new TreeNode('src', 'src'), {
+            children: [Object.assign(new TreeNode('src/App.cs', 'App.cs'), { isLeaf: true })],
+          }),
+          Object.assign(new TreeNode('README.md', 'README.md'), { isLeaf: true }),
+        ]),
+        { label: 'Files', expandedKeys: ['src'], onMoved: async () => undefined },
+      ),
+      presses: [],
     },
     'accordion-switches': {
       node: new Accordion(
@@ -847,9 +915,16 @@ function canonical(node: HtmlNode): unknown {
   // it emits neither the channel key nor the listener that reports back through it. Recognised by
   // the key itself rather than by tag, and only there — a scroll handler anywhere else still counts.
   const scrollView = 'data-eq-scroll' in (node.attributes ?? {});
+  // A COMPOSITE's mount hook is the client's alone: it keeps the host it gives the keyboard back to
+  // (Navigable.FocusVersion, #1532), and the server has no keyboard to give. Recognised by the composite's
+  // own role, and only there: a mount hook anywhere else still counts.
+  const composite = node.attributes?.role === 'tree' || node.attributes?.role === 'grid';
   result.events = Object.keys(node.events ?? {})
     .filter(
-      (name) => !(entry && CLIENT_ONLY_EVENTS.has(name)) && !(scrollView && name === 'scroll'),
+      (name) =>
+        !(entry && CLIENT_ONLY_EVENTS.has(name)) &&
+        !(scrollView && name === 'scroll') &&
+        !(composite && name === 'eq:mounted'),
     )
     .sort();
   result.children = (node.children ?? []).map(canonical);
