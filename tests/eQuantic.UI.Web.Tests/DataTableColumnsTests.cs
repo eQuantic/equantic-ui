@@ -91,6 +91,9 @@ public class DataTableColumnsTests
         All(list).Where(node => node.Attributes.ContainsKey("data-eq-sort-item"))
             .Select(node => node.Attributes["data-eq-sort-item"])
             .Should().Equal(["0", "1", "2"], "each heading is an item named by its declared position, and the checkbox is none");
+        All(list).Where(node => node.Attributes.ContainsKey("data-eq-sort-item"))
+            .Select(node => node.Attributes["data-eq-sort-name"])
+            .Should().Equal(["Name", "Size", "Kind"], "the keyboard's steps say a heading by its column");
 
         var fixedOrder = new DataTable(NameSizeKind(), [Row("a", "alpha", "1", "doc")]);
         All(Lowered(fixedOrder)).Should().NotContain(node => node.Attributes.ContainsKey("data-eq-sort-id"),

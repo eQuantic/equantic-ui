@@ -1157,6 +1157,9 @@ internal sealed partial class WebLoweringVisitor
         child.Style.PointerEvents = "auto";
         child.RawAttributes ??= new Dictionary<string, string>();
         child.RawAttributes["data-eq-sort-item"] = item.Id;
+        // The name the keyboard's steps say, when the item has one of its own (#1538); the controller reads it
+        // before what the item's subtree says.
+        if (item.Label is { Length: > 0 } name) child.RawAttributes["data-eq-sort-name"] = name;
         if (!item.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
         // The keyboard sorts an item from its focus (#1536): one that takes none of its own (a box, not a
         // button or a link) becomes a Tab stop. The TS twin decides by the same tags.

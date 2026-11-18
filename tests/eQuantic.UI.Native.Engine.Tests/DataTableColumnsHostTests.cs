@@ -118,7 +118,8 @@ public class DataTableColumnsHostTests
         page.Reordered.Should().ContainSingle().Which.Should().Equal([0, 2, 1]);
         page.Sorted.Should().BeEmpty("Space is the carry's, not the heading's press");
         host.TakeAnnouncements().Select(said => said.Text).Should().Contain(
-            said => said.Contains(SdkStrings.TableColumns), "the header row is named by the SDK's word for columns");
+            $"Dropped Kind at position 2 of 3 in {SdkStrings.TableColumns}.",
+            "the heading is named by its column, not its press, and the header row by the SDK's word for columns");
     }
 
     [Fact]

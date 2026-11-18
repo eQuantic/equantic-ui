@@ -359,8 +359,8 @@ export class UI {
         return new Sortable(child, id, onDropped, announcements ?? SdkStrings.sorting, { label: label, group: group, axis: axis, nests: nests, onHovered: onHovered, accepts: accepts, enabled: enabled });
     }
 
-    static sortableItem(child: VisualNode, id: string, enabled: boolean = true) {
-        return new SortableItem(child, id, { enabled: enabled });
+    static sortableItem(child: VisualNode, id: string, enabled: boolean = true, label: string = '') {
+        return new SortableItem(child, id, { enabled: enabled, label: label });
     }
 
     static dropTarget(child: VisualNode, onDropped: (value: PickedFile[]) => void, onDragOverChanged: ((bool: boolean) => void) | null = null, enabled: boolean = true) {

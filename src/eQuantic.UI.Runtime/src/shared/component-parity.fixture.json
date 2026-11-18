@@ -4068,6 +4068,7 @@
                           "attrs": {
                             "class": "eq-1eb13m5 eq-5ew4ww eq-7njlci eq-akjizx eq-g7fowl",
                             "data-eq-sort-item": "1",
+                            "data-eq-sort-name": "Size",
                             "tabindex": "0"
                           },
                           "events": [],
@@ -4160,6 +4161,7 @@
                   "attrs": {
                     "class": "eq-1eb13m5 eq-5ew4ww eq-7njlci eq-akjizx eq-g7fowl",
                     "data-eq-sort-item": "0",
+                    "data-eq-sort-name": "Name",
                     "tabindex": "0"
                   },
                   "events": [],

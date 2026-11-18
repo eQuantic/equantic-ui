@@ -128,7 +128,7 @@ export class DataTable extends StatefulComponent {
         }
         let onSort = this._config.onSort;
         let heading = column.sortable && !(onSort == null) ? new Pressable(DataTable.cell(label, column.align, slot), () => onSort(index), { label: SdkStrings.sortByColumn(column.header) }) : DataTable.cell(label, column.align, slot);
-        return this.reorders ? new SortableItem(heading, DataTable.columnId(index)) : heading;
+        return this.reorders ? new SortableItem(heading, DataTable.columnId(index), { label: column.header }) : heading;
     }
 
     resizes(column: DataColumn) {

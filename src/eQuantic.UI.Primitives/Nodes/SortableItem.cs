@@ -29,6 +29,11 @@ public sealed class SortableItem : SingleChildNode
     /// <summary>Whether a pointer may pick the item up. A disabled one stays where it is.</summary>
     public bool Enabled { get; init; } = true;
 
+    /// <summary>The item's name in what is said while the keyboard sorts it ("Picked up Amount, position 5 of 5
+    /// in Columns"), on every target (#1538): a table's heading is named by its column, not by the press it
+    /// holds ("Sort by Amount"). Empty, the default, names the item by what its subtree says.</summary>
+    public string Label { get; init; } = "";
+
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

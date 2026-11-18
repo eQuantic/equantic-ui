@@ -144,7 +144,10 @@ describe('a table whose columns a person reorders and resizes', () => {
     press(' ');
 
     expect(reordered).toEqual([[0, 2, 1]]);
-    expect(document.querySelector('[data-eq-sort-announcer]')?.textContent).toContain(SdkStrings.tableColumns);
+    // Named by its column, in the SDK's words, the header row by the SDK's word for columns.
+    expect(document.querySelector('[data-eq-sort-announcer]')?.textContent).toBe(
+      `Dropped Kind at position 2 of 3 in ${SdkStrings.tableColumns}.`,
+    );
   });
 
   it('reports the width a handle is dragged to, live, and never picks the column up', async () => {

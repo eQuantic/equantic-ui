@@ -295,7 +295,8 @@ public sealed class DataTable : StatefulComponent
                 Label = SdkStrings.SortByColumn(column.Header),
             }
             : Cell(label, column.Align, slot);
-        return Reorders ? new SortableItem(heading, ColumnId(index)) : heading;
+        // Named by its column in the keyboard's steps, not by the press it may hold ("Sort by Amount").
+        return Reorders ? new SortableItem(heading, ColumnId(index)) { Label = column.Header } : heading;
     }
 
     /// <summary>Whether a column has a resize handle: the app keeps widths, and this one's is a number.</summary>

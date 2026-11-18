@@ -537,6 +537,8 @@ export interface SortableItemNode extends VisualNodeValue {
   child: VisualNodeValue;
   id: string;
   enabled?: boolean;
+  /** The name the keyboard's steps say (C# `SortableItem.Label`); empty, what the item's subtree says. */
+  label?: string;
 }
 
 /** Wire shape of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */

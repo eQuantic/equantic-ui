@@ -347,9 +347,13 @@ function describe(ev: FocusEvent): void {
     focused.setAttribute('aria-describedby', [...described, instructions.id].join(' '));
 }
 
-/** What a reader hears an item called: its own accessible name, or its words. */
+/** What a reader hears an item called: the name it was given for the steps (#1538), its own accessible name,
+ * or its words. */
 function nameOf(item: HTMLElement): string {
-  const named = item.getAttribute('aria-label') ?? item.querySelector('[aria-label]')?.getAttribute('aria-label');
+  const named =
+    item.getAttribute('data-eq-sort-name') ??
+    item.getAttribute('aria-label') ??
+    item.querySelector('[aria-label]')?.getAttribute('aria-label');
   return (named ?? item.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
