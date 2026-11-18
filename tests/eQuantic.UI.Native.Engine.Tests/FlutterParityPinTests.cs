@@ -259,7 +259,7 @@ public class FlutterParityPinTests
         // Box's is optional). WrapperNode and ProxyNode stay in the negative set they were in while this row
         // was a GAP — a SECOND wrapper base would change the shape surface just as much as a first.
         ["SingleChildRenderObjectWidget"] = () => EveryOneChildNodeIsA("SingleChildNode")
-            && Descendants("SingleChildNode") == 29 && Has("FlexNode")
+            && Descendants("SingleChildNode") == 31 && Has("FlexNode")
             && Nothing("MultiChildNode", "LeafNode", "WrapperNode", "ProxyNode"),
 
         // 2 — layout
@@ -384,7 +384,8 @@ public class FlutterParityPinTests
             && HasMember("SheetSurface", "Announcement")
             && IosShellCode.Value.Contains("SpeechAttributeQueueAnnouncement", StringComparison.Ordinal)
             && AndroidShellCode.Value.Contains("LiveRegion", StringComparison.Ordinal),
-        ["MergeSemantics"] = () => Nothing("MergeSemantics", "ExcludeSemantics"),
+        ["MergeSemantics"] = () => Has("MergeSemantics") && Has("ExcludeSemantics")
+            && WebRealizerCode().Contains("\"aria-labelledby\"", StringComparison.Ordinal),
         ["Localizations"] = () => Has("ICultureController") && Nothing("LocalizationsDelegate"),
         ["TextDirection.ltr/rtl"] = () => Nothing("TextDirection"),
         ["ThemeData"] = () => Has("IAppTheme") && Has("Density") && Nothing("CupertinoThemeData"),

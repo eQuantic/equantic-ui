@@ -1119,11 +1119,12 @@ Assets/
 Nothing is committed and no build is ever missing an icon. Two facts about MSBuild made that
 harder than it sounds, and both are now answered rather than worked around:
 
-- **Android validates that every declared resource EXISTS before any ordinary target runs** —
-  earlier than `BeforeBuild`, earlier than anything `BeforeTargets` can reach. The answer is
-  `InitialTargets`, which an imported project contributes to the one importing it and which runs
-  before the build's first target. Android only: running the shared icon target that early is
-  exactly what stops Apple's packaging from ever receiving its items.
+- **Android needs every declared resource to EXIST when it collects them**, and the first task
+  that asks is `AndroidComputeResPaths`, in `_ComputeAndroidResourcePaths`, which raises XA2001
+  for a missing one. The icon target runs just before it (`BeforeTargets`), and only when the icon
+  is out of date. It was an `InitialTargets` until #1135, read then as the only hook early enough,
+  and an InitialTarget runs in every invocation of the project: the workload's device listing and
+  deploy started eqicon, and on a source tree `dotnet run` could not list or deploy at all.
 - **A wildcard is empty on a clean build.** Declaring the mipmaps by LITERAL path fixes that on its
   own: an item with a literal path exists whether or not the file does, and the file only has to be
   there when aapt reads it. The set is fixed — five density buckets, one name — so naming them costs
