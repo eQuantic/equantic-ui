@@ -1,0 +1,9 @@
+#nullable enable
+eQuantic.UI.Primitives.SemanticRole.Splitter = 29 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.Adjustable.Axis.get -> eQuantic.UI.Primitives.DragAxis
+eQuantic.UI.Primitives.Adjustable.Axis.init -> void
+eQuantic.UI.Primitives.AdjustableRole.Separator = 3 -> eQuantic.UI.Primitives.AdjustableRole
+eQuantic.UI.Primitives.TableTheme.ColumnDropColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.TableTheme.ColumnDropColor.init -> void
+eQuantic.UI.Primitives.TableTheme.ResizeHandleColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.TableTheme.ResizeHandleColor.init -> void

@@ -164,6 +164,10 @@ internal sealed partial class SemanticsVisitor
             laidOut.Bounds, node.Label, null, false)),
         AdjustableRole.Radiogroup => AnnounceGroup(new(SemanticRole.RadioGroup, IdOf(laidOut),
             laidOut.Bounds, node.Label, null, false)),
+        // A separator a reader moves is a splitter, one stop whose value and range ride beside its
+        // words as a slider's do (#1538).
+        AdjustableRole.Separator => Announce(new(SemanticRole.Splitter, IdOf(laidOut), laidOut.Bounds,
+            node.Label, node.Spoken, false, Range: node.Value)),
     };
 #pragma warning restore CS8524
 
