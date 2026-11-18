@@ -164,6 +164,10 @@ internal sealed partial class SemanticsVisitor
             laidOut.Bounds, node.Label, null, false)),
         AdjustableRole.Radiogroup => AnnounceGroup(new(SemanticRole.RadioGroup, IdOf(laidOut),
             laidOut.Bounds, node.Label, null, false)),
+        // A separator a reader moves is a splitter, one stop whose value and range ride beside its
+        // words as a slider's do (#1538).
+        AdjustableRole.Separator => Announce(new(SemanticRole.Splitter, IdOf(laidOut), laidOut.Bounds,
+            node.Label, node.Spoken, false, Range: node.Value)),
     };
 #pragma warning restore CS8524
 
@@ -297,12 +301,22 @@ internal sealed partial class SemanticsVisitor
     public bool Visit(ContextTarget node, LayoutNode laidOut) => Wraps;
 
     /// <inheritdoc cref="Wraps"/>
+    public bool Visit(Listener node, LayoutNode laidOut) => Wraps;
+
+    /// <inheritdoc cref="Wraps"/>
     public bool Visit(DropTarget node, LayoutNode laidOut) => Wraps;
     /// <summary>A named list is a labelled GROUP, read and then walked into, as the web's role=group says it
-    /// (#1536); an unnamed one wraps its child and says nothing of its own.</summary>
-    public bool Visit(Sortable node, LayoutNode laidOut) => node.Label.Length == 0
-        ? Wraps
-        : AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
+    /// (#1536); an unnamed one wraps its child and says nothing of its own. Once the keyboard's carry has
+    /// spoken in it (#1564), the list is the polite live region a shell marks, a group with no name when it has
+    /// none, so Android has the node TalkBack reads the step from.</summary>
+    public bool Visit(Sortable node, LayoutNode laidOut)
+    {
+        var speaks = NodeStates.Find<LiveRegionState>(laidOut.Element) is { Words: not null };
+        return node.Label.Length == 0 && !speaks
+            ? Wraps
+            : AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false,
+                Live: speaks ? LiveRegionUrgency.Polite : null));
+    }
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(SortableItem node, LayoutNode laidOut) => Wraps;
 

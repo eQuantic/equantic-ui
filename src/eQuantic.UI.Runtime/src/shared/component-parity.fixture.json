@@ -851,6 +851,72 @@
       ]
     }
   ],
+  "listener": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-akjizx eq-g7fowl",
+        "data-eq-listener": "defer"
+      },
+      "events": [
+        "eq-pointer"
+      ],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-cl6mtg eq-kngwsg"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "listener-opaque": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-g7fowl",
+        "data-eq-listener": "opaque"
+      },
+      "events": [
+        "eq-pointer"
+      ],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-bo3n4y eq-cl6mtg eq-kngwsg"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "listener-translucent": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-g7fowl",
+        "data-eq-listener": "translucent"
+      },
+      "events": [
+        "eq-pointer"
+      ],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-bo3n4y eq-cl6mtg eq-kngwsg"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
   "anchored-at": [
     {
       "tag": "div",
@@ -3927,6 +3993,292 @@
                             {
                               "tag": "#text",
                               "text": "1",
+                              "attrs": {},
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "data-table-columns": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-12ve49g eq-1aoicmy eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "aria-label": "Columns",
+                "class": "eq-1avhl7d eq-1eb13m5 eq-akjizx eq-rec1t1",
+                "data-eq-sort": "",
+                "data-eq-sort-axis": "x",
+                "data-eq-sort-id": "columns",
+                "data-eq-sort-label": "Columns",
+                "data-eq-sort-say-dropped": "Dropped {0} at position {1} of {2} in {3}.",
+                "data-eq-sort-say-dropped-into": "Dropped {0} inside {1}.",
+                "data-eq-sort-say-instructions": "Press Space to pick it up, the arrow keys to move it, and Space again to drop it.",
+                "data-eq-sort-say-moved": "{0} is at position {1} of {2} in {3}.",
+                "data-eq-sort-say-moved-into": "{0} is inside {1}.",
+                "data-eq-sort-say-picked-up": "Picked up {0}, position {1} of {2} in {3}.",
+                "data-eq-sort-say-put-back": "Put {0} back where it was.",
+                "data-eq-sort-say-refused": "{0} cannot go there.",
+                "role": "group"
+              },
+              "events": [
+                "eq-sort-dropped",
+                "eq-sort-hovered"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1avhl7d eq-1eviv88 eq-1jjc6f6 eq-akjizx"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-19zfii6 eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-5ew4ww eq-7njlci eq-akjizx eq-g7fowl",
+                            "data-eq-sort-item": "1",
+                            "data-eq-sort-name": "Size",
+                            "tabindex": "0"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "div",
+                              "attrs": {
+                                "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m92pvu"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "div",
+                                  "attrs": {
+                                    "class": "eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu"
+                                  },
+                                  "events": [],
+                                  "children": [
+                                    {
+                                      "tag": "span",
+                                      "attrs": {
+                                        "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-caption"
+                                      },
+                                      "events": [],
+                                      "children": [
+                                        {
+                                          "tag": "#text",
+                                          "text": "SIZE",
+                                          "attrs": {},
+                                          "events": [],
+                                          "children": []
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1p2uoqo eq-1xlbso6 eq-4xxlvk eq-mfc69x eq-z6eb5z"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "aria-label": "Resize Size",
+                            "aria-orientation": "vertical",
+                            "aria-valuemax": "1024",
+                            "aria-valuemin": "64",
+                            "aria-valuenow": "80",
+                            "class": "eq-1jixn86 eq-1jjc6f6 eq-g7fowl",
+                            "role": "separator",
+                            "tabindex": "0"
+                          },
+                          "events": [
+                            "keydown"
+                          ],
+                          "children": [
+                            {
+                              "tag": "div",
+                              "attrs": {
+                                "class": "eq-1eb13m5 eq-1fsdgqa eq-1gudvpj eq-1j8jaid eq-1jjc6f6 eq-1v2ewo5 eq-bo3n4y eq-g7fowl eq-mtu8q4 eq-vvwcoo",
+                                "data-eq-drag": "x",
+                                "data-eq-drag-follows": "0",
+                                "data-eq-drag-max": "1024",
+                                "data-eq-drag-min": "64",
+                                "data-eq-drag-moves": "1",
+                                "data-eq-drag-rest": "80"
+                              },
+                              "events": [
+                                "eq-drag-moved"
+                              ],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-5ew4ww eq-7njlci eq-akjizx eq-g7fowl",
+                    "data-eq-sort-item": "0",
+                    "data-eq-sort-name": "Name",
+                    "tabindex": "0"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "span",
+                              "attrs": {
+                                "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-caption"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "#text",
+                                  "text": "NAME",
+                                  "attrs": {},
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "key": "a",
+          "attrs": {
+            "class": "eq-189q21e eq-1aoicmy eq-1eb13m5 eq-1x18l2e eq-5ew4ww eq-akjizx eq-g7fowl eq-hj6cvq"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1avhl7d eq-1eb13m5 eq-akjizx eq-rec1t1"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-5ew4ww eq-7njlci eq-akjizx eq-g7fowl"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m92pvu"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "span",
+                          "attrs": {
+                            "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "#text",
+                              "text": "1",
+                              "attrs": {},
+                              "events": [],
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-5ew4ww eq-7njlci eq-akjizx eq-g7fowl"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "span",
+                          "attrs": {
+                            "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "#text",
+                              "text": "alpha",
                               "attrs": {},
                               "events": [],
                               "children": []
@@ -46942,7 +47294,15 @@
         "class": "eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp",
         "data-eq-sort": "board",
         "data-eq-sort-axis": "y",
-        "data-eq-sort-id": "todo"
+        "data-eq-sort-id": "todo",
+        "data-eq-sort-say-dropped": "Left {0} at {1}.",
+        "data-eq-sort-say-dropped-into": "Left {0} in {1}.",
+        "data-eq-sort-say-instructions": "Pressione Espa\u00E7o \u0026 solte \u0022j\u00E1\u0022.",
+        "data-eq-sort-say-moved": "{0} now {1}/{2} in {3}.",
+        "data-eq-sort-say-moved-into": "{0} in {1}.",
+        "data-eq-sort-say-picked-up": "Took {0}.",
+        "data-eq-sort-say-put-back": "Back \u003C{0}\u003E.",
+        "data-eq-sort-say-refused": "Not there."
       },
       "events": [
         "eq-sort-dropped",
@@ -47431,6 +47791,7 @@
           "children": [
             {
               "tag": "div",
+              "key": "src",
               "attrs": {
                 "aria-expanded": "false",
                 "aria-label": "src",
@@ -47439,7 +47800,7 @@
                 "aria-selected": "false",
                 "aria-setsize": "2",
                 "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
-                "id": "eq-cell-r7b7st-0-0",
+                "id": "eq-cell-1ea4rf1-0-0",
                 "role": "treeitem",
                 "tabindex": "-1"
               },
@@ -47524,6 +47885,7 @@
             },
             {
               "tag": "div",
+              "key": "README.md",
               "attrs": {
                 "aria-label": "README.md",
                 "aria-level": "1",
@@ -47531,7 +47893,7 @@
                 "aria-selected": "false",
                 "aria-setsize": "2",
                 "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
-                "id": "eq-cell-r7b7st-1-0",
+                "id": "eq-cell-1ea4rf1-1-0",
                 "role": "treeitem",
                 "tabindex": "-1"
               },
@@ -47607,7 +47969,7 @@
         {
           "tag": "div",
           "attrs": {
-            "aria-activedescendant": "eq-cell-r7b7st-0-0",
+            "aria-activedescendant": "eq-cell-1ea4rf1-0-0",
             "aria-label": "Files",
             "data-eq-shortcut": "enter",
             "role": "tree",
@@ -47619,6 +47981,7 @@
           "children": [
             {
               "tag": "div",
+              "key": "src",
               "attrs": {
                 "aria-expanded": "true",
                 "aria-label": "src",
@@ -47627,7 +47990,7 @@
                 "aria-selected": "false",
                 "aria-setsize": "2",
                 "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
-                "id": "eq-cell-r7b7st-0-0",
+                "id": "eq-cell-1ea4rf1-0-0",
                 "role": "treeitem",
                 "tabindex": "-1"
               },
@@ -47712,6 +48075,7 @@
             },
             {
               "tag": "div",
+              "key": "src/App.cs",
               "attrs": {
                 "aria-label": "App.cs",
                 "aria-level": "2",
@@ -47719,7 +48083,7 @@
                 "aria-selected": "false",
                 "aria-setsize": "2",
                 "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
-                "id": "eq-cell-r7b7st-1-0",
+                "id": "eq-cell-1ea4rf1-1-0",
                 "role": "treeitem",
                 "tabindex": "-1"
               },
@@ -47783,6 +48147,7 @@
             },
             {
               "tag": "div",
+              "key": "src/Ui.cs",
               "attrs": {
                 "aria-label": "Ui.cs",
                 "aria-level": "2",
@@ -47790,7 +48155,7 @@
                 "aria-selected": "true",
                 "aria-setsize": "2",
                 "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
-                "id": "eq-cell-r7b7st-2-0",
+                "id": "eq-cell-1ea4rf1-2-0",
                 "role": "treeitem",
                 "tabindex": "-1"
               },
@@ -47854,6 +48219,7 @@
             },
             {
               "tag": "div",
+              "key": "README.md",
               "attrs": {
                 "aria-label": "README.md",
                 "aria-level": "1",
@@ -47861,7 +48227,7 @@
                 "aria-selected": "false",
                 "aria-setsize": "2",
                 "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
-                "id": "eq-cell-r7b7st-3-0",
+                "id": "eq-cell-1ea4rf1-3-0",
                 "role": "treeitem",
                 "tabindex": "-1"
               },
@@ -47937,7 +48303,7 @@
         {
           "tag": "div",
           "attrs": {
-            "aria-activedescendant": "eq-cell-r7b7st-1-0",
+            "aria-activedescendant": "eq-cell-1ea4rf1-1-0",
             "aria-label": "Files",
             "data-eq-shortcut": "enter",
             "role": "tree",
@@ -47949,6 +48315,7 @@
           "children": [
             {
               "tag": "div",
+              "key": "src",
               "attrs": {
                 "aria-expanded": "true",
                 "aria-label": "src",
@@ -47957,7 +48324,7 @@
                 "aria-selected": "false",
                 "aria-setsize": "2",
                 "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
-                "id": "eq-cell-r7b7st-0-0",
+                "id": "eq-cell-1ea4rf1-0-0",
                 "role": "treeitem",
                 "tabindex": "-1"
               },
@@ -48042,6 +48409,7 @@
             },
             {
               "tag": "div",
+              "key": "src/App.cs",
               "attrs": {
                 "aria-label": "App.cs",
                 "aria-level": "2",
@@ -48049,7 +48417,7 @@
                 "aria-selected": "false",
                 "aria-setsize": "2",
                 "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
-                "id": "eq-cell-r7b7st-1-0",
+                "id": "eq-cell-1ea4rf1-1-0",
                 "role": "treeitem",
                 "tabindex": "-1"
               },
@@ -48113,6 +48481,7 @@
             },
             {
               "tag": "div",
+              "key": "src/Ui.cs",
               "attrs": {
                 "aria-label": "Ui.cs",
                 "aria-level": "2",
@@ -48120,7 +48489,7 @@
                 "aria-selected": "true",
                 "aria-setsize": "2",
                 "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
-                "id": "eq-cell-r7b7st-2-0",
+                "id": "eq-cell-1ea4rf1-2-0",
                 "role": "treeitem",
                 "tabindex": "-1"
               },
@@ -48184,6 +48553,7 @@
             },
             {
               "tag": "div",
+              "key": "README.md",
               "attrs": {
                 "aria-label": "README.md",
                 "aria-level": "1",
@@ -48191,7 +48561,288 @@
                 "aria-selected": "false",
                 "aria-setsize": "2",
                 "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
-                "id": "eq-cell-r7b7st-3-0",
+                "id": "eq-cell-1ea4rf1-3-0",
+                "role": "treeitem",
+                "tabindex": "-1"
+              },
+              "events": [
+                "click",
+                "mousedown"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-18tlusk eq-1eb13m5 eq-1su9m49 eq-1yf2q3w eq-5ew4ww eq-a51p1u eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-teoc5m"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-96qelu eq-bo3n4y eq-i95eb9 eq-kngwsg"
+                          },
+                          "events": [],
+                          "children": []
+                        },
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-168ghzj eq-5ew4ww"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "span",
+                              "attrs": {
+                                "class": "eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-type-bodym"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "#text",
+                                  "text": "README.md",
+                                  "attrs": {},
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "tree-moves": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "aria-label": "Files",
+            "data-eq-sort": "",
+            "data-eq-sort-axis": "y",
+            "data-eq-sort-id": "tree",
+            "data-eq-sort-label": "Files",
+            "data-eq-sort-nests": "1",
+            "data-eq-sort-say-dropped": "Dropped {0} at position {1} of {2} in {3}.",
+            "data-eq-sort-say-dropped-into": "Dropped {0} inside {1}.",
+            "data-eq-sort-say-instructions": "Press Space to pick it up, the arrow keys to move it, and Space again to drop it.",
+            "data-eq-sort-say-moved": "{0} is at position {1} of {2} in {3}.",
+            "data-eq-sort-say-moved-into": "{0} is inside {1}.",
+            "data-eq-sort-say-picked-up": "Picked up {0}, position {1} of {2} in {3}.",
+            "data-eq-sort-say-put-back": "Put {0} back where it was.",
+            "data-eq-sort-say-refused": "{0} cannot go there.",
+            "role": "tree",
+            "tabindex": "0"
+          },
+          "events": [
+            "eq-sort-accepts",
+            "eq-sort-dropped",
+            "eq-sort-hovered",
+            "keydown"
+          ],
+          "children": [
+            {
+              "tag": "div",
+              "key": "src",
+              "attrs": {
+                "aria-expanded": "true",
+                "aria-label": "src",
+                "aria-level": "1",
+                "aria-posinset": "1",
+                "aria-selected": "false",
+                "aria-setsize": "2",
+                "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
+                "data-eq-sort-item": "src",
+                "id": "eq-cell-2auxxe-0-0",
+                "role": "treeitem",
+                "tabindex": "-1"
+              },
+              "events": [
+                "click",
+                "mousedown"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-18tlusk eq-1eb13m5 eq-1su9m49 eq-1yf2q3w eq-5ew4ww eq-a51p1u eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-teoc5m"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-96qelu eq-bo3n4y eq-g7fowl eq-i95eb9"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "svg",
+                              "attrs": {
+                                "aria-hidden": "true",
+                                "class": "eq-115fhry eq-16x7aca eq-96qelu eq-i95eb9",
+                                "fill": "currentColor",
+                                "viewBox": "0 0 24 24"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "path",
+                                  "attrs": {
+                                    "d": "m16.59 8.59-4.59 4.58-4.59-4.58L6 10l6 6 6-6z"
+                                  },
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-168ghzj eq-5ew4ww"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "span",
+                              "attrs": {
+                                "class": "eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-type-bodym"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "#text",
+                                  "text": "src",
+                                  "attrs": {},
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "key": "src/App.cs",
+              "attrs": {
+                "aria-label": "App.cs",
+                "aria-level": "2",
+                "aria-posinset": "1",
+                "aria-selected": "false",
+                "aria-setsize": "1",
+                "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
+                "data-eq-sort-item": "src/App.cs",
+                "id": "eq-cell-2auxxe-1-0",
+                "role": "treeitem",
+                "tabindex": "-1"
+              },
+              "events": [
+                "click",
+                "mousedown"
+              ],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-18tlusk eq-1eb13m5 eq-1su9m49 eq-5ew4ww eq-a51p1u eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-n7cy6y eq-teoc5m"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-96qelu eq-bo3n4y eq-i95eb9 eq-kngwsg"
+                          },
+                          "events": [],
+                          "children": []
+                        },
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-168ghzj eq-5ew4ww"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "span",
+                              "attrs": {
+                                "class": "eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-type-bodym"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "#text",
+                                  "text": "App.cs",
+                                  "attrs": {},
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "key": "README.md",
+              "attrs": {
+                "aria-label": "README.md",
+                "aria-level": "1",
+                "aria-posinset": "2",
+                "aria-selected": "false",
+                "aria-setsize": "2",
+                "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
+                "data-eq-sort-item": "README.md",
+                "id": "eq-cell-2auxxe-2-0",
                 "role": "treeitem",
                 "tabindex": "-1"
               },

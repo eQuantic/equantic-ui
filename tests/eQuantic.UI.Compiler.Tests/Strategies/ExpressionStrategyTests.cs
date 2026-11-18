@@ -12,11 +12,12 @@ public class ExpressionStrategyTests
         result.Should().Be("console.log('Hello')");
     }
 
+    /// <summary>A list's Add goes through the runtime, which moves the list's version (#863).</summary>
     [Fact]
-    public void ListAdd_MapsTo_Push()
+    public void ListAdd_MovesTheListsVersion()
     {
         var result = TestHelper.ConvertExpression("list.Add(item)");
-        result.Should().Be("this.list.push(this.item)");
+        result.Should().Be("$eq.collections.listAdd(this.list, this.item)");
     }
 
     [Fact]
@@ -132,12 +133,13 @@ public class ExpressionStrategyTests
         var result = TestHelper.ConvertExpression("val switch { 0 => \"A\" }");
         result.Should().Be("(() => { const $s = val; if ($s === 0) return 'A'; return null; })()");
     }
+    /// <summary>Any with no arguments is the runtime's walk, which stops at the first element (#685).</summary>
     [Fact]
-    public void Any_NoArgs_MapsToLengthGreaterThanZeroWithParens()
+    public void Any_NoArgs_StopsAtTheFirstElement()
     {
         var result = TestHelper.ConvertExpression("list.Any()");
         // list is a property in TestHelper
-        result.Should().Be("(this.list.length > 0)");
+        result.Should().Be("$eq.query.any(this.list)");
     }
 
     [Fact]

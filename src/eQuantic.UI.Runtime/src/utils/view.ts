@@ -101,6 +101,11 @@ export function fixedSize<T>(array: T): T {
   return array;
 }
 
+/** Whether `value` stands for a `T[]` behind a face ({@link fixedSize}), which keeps no list version. */
+export function isFixedSize(value: object): boolean {
+  return fixedSizes.has(value);
+}
+
 /**
  * Throws what .NET's array answers a call that would change its size with, when `value` went behind a face that
  * could ask it to: a list and an array are one JavaScript array here (#711).

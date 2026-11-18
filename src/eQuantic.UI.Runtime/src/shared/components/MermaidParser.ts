@@ -102,14 +102,14 @@ export class MermaidParser {
             if (to == null) break;
             MermaidParser.declare(graph, to);
             let $n3: MermaidEdge; 
-            graph.edges.push(($n3 = new MermaidEdge(), $n3.from = current, $n3.to = to.id, $n3.label = edge.label, $n3.arrow = edge.arrow, $n3));
+            $eq.collections.listAdd(graph.edges, ($n3 = new MermaidEdge(), $n3.from = current, $n3.to = to.id, $n3.label = edge.label, $n3.arrow = edge.arrow, $n3));
             current = to.id;
             pos = to.end;
         }
     }
 
     static declare(graph: MermaidGraph, nodeRef: MermaidNodeRef) {
-        for (const known of graph.nodes) {
+        for (const known of $eq.collections.listWalk(graph.nodes)) {
             if (known.id !== nodeRef.id) continue;
             if (nodeRef.shaped) {
                 known.label = nodeRef.label;
@@ -118,7 +118,7 @@ export class MermaidParser {
             return;
         }
         let $n4: MermaidNode; 
-        graph.nodes.push(($n4 = new MermaidNode(), $n4.id = nodeRef.id, $n4.label = nodeRef.label.length === 0 ? nodeRef.id : nodeRef.label, $n4.shape = nodeRef.shape, $n4));
+        $eq.collections.listAdd(graph.nodes, ($n4 = new MermaidNode(), $n4.id = nodeRef.id, $n4.label = nodeRef.label.length === 0 ? nodeRef.id : nodeRef.label, $n4.shape = nodeRef.shape, $n4));
     }
 
     static skipSpaces(text: string, pos: number) {
@@ -209,15 +209,15 @@ export class MermaidParser {
             MermaidParser.declareParticipant(graph, from, from);
             MermaidParser.declareParticipant(graph, to, to);
             let $n7: MermaidMessage; 
-            graph.messages.push(($n7 = new MermaidMessage(), $n7.from = from, $n7.to = to, $n7.label = label, $n7.dashed = $eq.text.startsWith(arrow, '--', 'ordinal'), $n7));
+            $eq.collections.listAdd(graph.messages, ($n7 = new MermaidMessage(), $n7.from = from, $n7.to = to, $n7.label = label, $n7.dashed = $eq.text.startsWith(arrow, '--', 'ordinal'), $n7));
             return;
         }
     }
 
     static declareParticipant(graph: MermaidGraph, id: string, display: string) {
-        for (const known of graph.nodes) if (known.id === id) return;
+        for (const known of $eq.collections.listWalk(graph.nodes)) if (known.id === id) return;
         let $n8: MermaidNode; 
-        graph.nodes.push(($n8 = new MermaidNode(), $n8.id = id, $n8.label = display, $n8.shape = 'rect', $n8));
+        $eq.collections.listAdd(graph.nodes, ($n8 = new MermaidNode(), $n8.id = id, $n8.label = display, $n8.shape = 'rect', $n8));
     }
 }
 

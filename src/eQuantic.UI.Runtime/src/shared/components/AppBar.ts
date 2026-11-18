@@ -37,7 +37,7 @@ export class AppBar extends StatelessComponent {
         row.add(new Flexible(titlePad));
         let actions: any; 
         if ((actions = this.actions) != null) {
-            for (const action of actions) row.add(action);
+            for (const action of $eq.collections.sequenceWalk(actions)) row.add(action);
         }
         return new Box(new BoxStyle({ width: SizeValue.fill, height: slot?.appBarHeight ?? 56, padding: EdgeInsets.symmetric(slot?.appBarPaddingX ?? 4, 0), background: this.scrolled ? slot?.background ?? theme.surface : null, elevation: this.scrolled ? slot?.scrolledElevation ?? 2 : 0 }), row);
     }

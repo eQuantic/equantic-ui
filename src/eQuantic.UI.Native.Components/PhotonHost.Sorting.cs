@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
@@ -21,7 +23,9 @@ namespace eQuantic.UI.Native.Components;
 /// <para>
 /// With the focus in an item, Space picks it up: the arrows along its list's axis move it a place, the cross
 /// arrows to the neighbouring list of its group, Space or Enter drops it, and Escape, Tab or a press puts it
-/// back. The host never applies a drop: the lists are the app's, and the next build shows where the item went.
+/// back. Each step is said through the live region of the list the item was picked up from, in that list's
+/// <see cref="Sortable.Announcements"/> (#1564). The host never applies a drop: the lists are the app's, and the
+/// next build shows where the item went.
 /// </para>
 /// </summary>
 public sealed partial class PhotonHost
@@ -37,6 +41,7 @@ public sealed partial class PhotonHost
     private readonly List<float> _sortExtents = [];
     private readonly List<string> _sortIds = [];
     private readonly List<Element> _sortNested = [];
+    private readonly List<SemanticNode> _sortNames = [];
 
     // ---- the pointer ------------------------------------------------------------------------------------------
 
@@ -420,8 +425,8 @@ public sealed partial class PhotonHost
         }
         if (sort.KeyList is not { } at) return false;
         var vertical = at.Node.Axis != DragAxis.Horizontal;
-        if (key == (vertical ? "ArrowDown" : "ArrowRight")) MoveKeyed(sort, at.List, at.Node, sort.KeyIndex + 1);
-        else if (key == (vertical ? "ArrowUp" : "ArrowLeft")) MoveKeyed(sort, at.List, at.Node, sort.KeyIndex - 1);
+        if (key == (vertical ? "ArrowDown" : "ArrowRight")) StepKeyed(sort, at.List, at.Node, 1);
+        else if (key == (vertical ? "ArrowUp" : "ArrowLeft")) StepKeyed(sort, at.List, at.Node, -1);
         else if (key == (vertical ? "ArrowRight" : "ArrowDown") || key == (vertical ? "ArrowLeft" : "ArrowUp"))
         {
             var step = key == (vertical ? "ArrowRight" : "ArrowDown") ? 1 : -1;
@@ -440,12 +445,14 @@ public sealed partial class PhotonHost
         return true;
     }
 
-    /// <summary>Space on the focused item, or inside it, picks it up for the keyboard, when its list takes
-    /// sorting. Answers whether it did.</summary>
+    /// <summary>Space on the focused item, or inside it, or on a composite whose active item it is (a tree's
+    /// stop, #1533), picks it up for the keyboard, when its list takes sorting. Answers whether it did.</summary>
     private bool CarryByKeyboard()
     {
-        if (_sort is not null || _focusedAt is not { } focused || _textAt is not null
+        if (_sort is not null || _focusedAt is not { } stop || _textAt is not null
             || _lastFrame is not { SortRegions: { Count: > 0 } regions }) return false;
+        // A composite keeps the focus on its one stop and names its active item: the item is that one.
+        var focused = ActiveItemOf(stop) ?? stop;
         for (var i = regions.Count - 1; i >= 0; i--)
         {
             if (regions[i].Node is not SortableItem item) continue;
@@ -453,33 +460,74 @@ public sealed partial class PhotonHost
             if (!ReferenceEquals(at, focused) && !IsUnder(focused, at)) continue;
             var list = ListOf(regions, i);
             if (!item.Enabled || list < 0 || regions[list].Node is not Sortable { Enabled: true } sortable) return false;
-            var sort = new SortGesture(at, item, regions[list].Element, sortable) { ByKeyboard = true };
+            var sort = new SortGesture(at, item, regions[list].Element, sortable)
+            {
+                ByKeyboard = true,
+                Name = NameOf(item, regions[i].Layout),
+            };
             if (!LiftSort(sort)) return false;
             _sort = sort;
             sort.KeyList = (regions[list].Element, sortable);
             sort.KeyIndex = IndexIn(regions, list, at);
-            Report(sort, (regions[list].Element, sortable, new SortDrop(item.Id, sortable.Id, sortable.Id, sort.KeyIndex)));
+            var picked = new SortDrop(item.Id, sortable.Id, sortable.Id, sort.KeyIndex);
+            Report(sort, (regions[list].Element, sortable, picked));
+            SayPlace(sort, regions[list].Element, sortable, picked, words => words.PickedUp, words => words.PickedUp);
             return true;
         }
         return false;
     }
 
+    /// <summary>One place along the list, through the places inside the items when the list nests, by the
+    /// arithmetic the web runs too (<see cref="SortPlacement.KeyStep"/>), passing over the places the list
+    /// refuses, as a pointer passes over them. At the end the item keeps the place it holds.</summary>
+    private void StepKeyed(SortGesture sort, Element list, Sortable node, int step)
+    {
+        var others = CountIn(list, sort.Item);
+        var index = sort.KeyIndex;
+        var into = sort.KeyInto;
+        while (true)
+        {
+            var (nextIndex, nextInto) = SortPlacement.KeyStep(index, into, step, others, node.Nests);
+            if (nextIndex == index && nextInto == into) break;
+            index = nextIndex;
+            into = nextInto;
+            if (node.Accepts?.Invoke(KeyedDrop(sort, node, index, into)) != false) break;
+        }
+        MoveKeyed(sort, list, node, index, into);
+    }
+
+    /// <summary>The drop a keyboard's place means, its item inside named from the ids <see cref="CountIn"/> left
+    /// in order.</summary>
+    private SortDrop KeyedDrop(SortGesture sort, Sortable node, int index, int into)
+    {
+        var inside = into >= 0 && into < _sortIds.Count ? _sortIds[into] : null;
+        return new SortDrop(sort.ItemNode.Id, sort.SourceNode.Id, node.Id, index) { Into = inside };
+    }
+
     /// <summary>The place a key asks for, kept inside the list and offered to its guard; a place it refuses
     /// leaves the item where it is.</summary>
-    private void MoveKeyed(SortGesture sort, Element list, Sortable node, int index)
+    private void MoveKeyed(SortGesture sort, Element list, Sortable node, int index, int into = -1)
     {
         var count = CountIn(list, sort.Item) + 1;
         var place = SortPlacement.Step(index, 0, count);
-        var drop = new SortDrop(sort.ItemNode.Id, sort.SourceNode.Id, node.Id, place);
-        if (node.Accepts?.Invoke(drop) == false) return;
+        var drop = KeyedDrop(sort, node, place, into);
+        var inside = drop.Into;
+        if (node.Accepts?.Invoke(drop) == false)
+        {
+            if (sort.SourceNode.Announcements is { } words) Say(sort, SortWords.Fill(words.Refused, sort.Name));
+            return;
+        }
         sort.KeyList = (list, node);
         sort.KeyIndex = place;
+        sort.KeyInto = inside is null ? -1 : into;
         Report(sort, (list, node, drop));
+        SayPlace(sort, list, node, drop, words => words.Moved, words => words.MovedInto);
     }
 
     private void DropKeyed(SortGesture sort)
     {
         var landed = sort.Landing;
+        if (landed is { } place) SayPlace(sort, place.List, place.Node, place.Drop, words => words.Dropped, words => words.DroppedInto);
         _sort = null;
         EndLift(sort);
         if (landed is not { } at) return;
@@ -491,6 +539,67 @@ public sealed partial class PhotonHost
     {
         _sort = null;
         EndLift(sort);
+        if (sort.ByKeyboard && sort.SourceNode.Announcements is { } words)
+            Say(sort, SortWords.Fill(words.PutBack, sort.Name));
+    }
+
+    // ---- what a reader hears (#1564) --------------------------------------------------------------------------
+
+    /// <summary>What a reader hears for a place of the keyboard's carry, in the words of the list it was picked up
+    /// from: <paramref name="at"/>'s text with the item's name, its position from one, the count and the list's
+    /// name, or <paramref name="inside"/>'s with the item it lands inside. A list given no words says nothing.</summary>
+    private void SayPlace(SortGesture sort, Element list, Sortable node, SortDrop drop,
+        Func<SortAnnouncements, string> at, Func<SortAnnouncements, string> inside)
+    {
+        if (sort.SourceNode.Announcements is not { } words) return;
+        Say(sort, drop.Into is { } holder
+            ? SortWords.Fill(inside(words), sort.Name, ItemName(list, holder))
+            : SortWords.Fill(at(words), sort.Name, Number(drop.Index + 1), Number(CountIn(list, sort.Item) + 1),
+                node.Label.Length > 0 ? node.Label : node.Id));
+    }
+
+    /// <summary>Has the list the carry started in say <paramref name="text"/>: its position keeps the words, and the
+    /// next frame records it as a polite live region whose text they are (<c>EmitSortable</c>). One carry, one
+    /// voice, as the web's one region, whichever list of the group the item is in; the words stay after the drop,
+    /// so a step said inside the region's quiet window is still owed, and Android reads them from the node after
+    /// the event.</summary>
+    private static void Say(SortGesture sort, string text)
+    {
+        if (NodeStates.For<LiveRegionState>(sort.Source) is { } region) region.Words = text;
+    }
+
+    private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>What a reader hears an item called: the name it was given for the steps (#1538), or the labels of
+    /// what its subtree says, in reading order, as the web takes an item's accessible name or its text.</summary>
+    private string NameOf(SortableItem node, LayoutNode item)
+    {
+        if (node.Name.Length > 0) return node.Name;
+        _sortNames.Clear();
+        SemanticsTree.CollectChildren(item, _sortNames);
+        var name = new StringBuilder();
+        foreach (var said in _sortNames)
+        {
+            var label = said.Label.Trim();
+            if (label.Length == 0) continue;
+            if (name.Length > 0) name.Append(' ');
+            name.Append(label);
+        }
+        return name.ToString();
+    }
+
+    /// <summary>The name of the item of <paramref name="list"/> whose id is <paramref name="id"/>: the one a place
+    /// lands inside.</summary>
+    private string ItemName(Element list, string id)
+    {
+        if (_lastFrame is not { } frame) return id;
+        var regions = frame.SortRegions;
+        for (var i = 0; i < regions.Count; i++)
+        {
+            if (regions[i].Node is SortableItem item && item.Id == id && IsUnder(regions[i].Element, list))
+                return NameOf(item, regions[i].Layout);
+        }
+        return id;
     }
 
     /// <summary>The list before or after <paramref name="list"/> among those the item may be carried to: its

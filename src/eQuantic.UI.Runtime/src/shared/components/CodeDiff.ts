@@ -253,7 +253,7 @@ export class CodeDiff extends StatefulComponent {
     toolbar(theme: any, source: CodeDiffSource, inline: boolean) {
         let addedLines = 0;
         let removedLines = 0;
-        for (const change of source.changes) {
+        for (const change of $eq.collections.sequenceWalk(source.changes)) {
             addedLines += change.modifiedCount;
             removedLines += change.originalCount;
         }
@@ -281,7 +281,7 @@ export class CodeDiff extends StatefulComponent {
         let caret = modified.caret.line;
         let target = forward ? $eq.collections.item(source.changes, 0) : $eq.collections.item(source.changes, $eq.collections.count(source.changes) - 1);
         if (forward) {
-            for (const change of source.changes) {
+            for (const change of $eq.collections.sequenceWalk(source.changes)) {
                 if (lineOf(change) <= caret) continue;
                 target = change;
                 break;
@@ -311,20 +311,20 @@ export class CodeDiff extends StatefulComponent {
     static marksOf(source: CodeDiffSource, modifiedSide: boolean, first: number, last: number, line: ColorToken, word: ColorToken, composition: any) {
         let marks: CodeDecoration[] = [];
         let document = modifiedSide ? source.modified : source.original;
-        for (const change of source.changes) {
+        for (const change of $eq.collections.sequenceWalk(source.changes)) {
             let start = modifiedSide ? change.modifiedStart : change.originalStart;
             let count = modifiedSide ? change.modifiedCount : change.originalCount;
             if (count === 0 || start + count - 1 < first || start > last) continue;
             let end = Math.min(start + count - 1, document.lineCount - 1);
             let $n5: CodeDecoration; 
-            marks.push(($n5 = new CodeDecoration(new CodeRange(new CodePosition(start, 0), new CodePosition(end, document.line(end).length)), 'line'), $n5.color = line, $n5));
-            for (const inner of change.inner) {
+            $eq.collections.listAdd(marks, ($n5 = new CodeDecoration(new CodeRange(new CodePosition(start, 0), new CodePosition(end, document.line(end).length)), 'line'), $n5.color = line, $n5));
+            for (const inner of $eq.collections.sequenceWalk(change.inner)) {
                 let $n6: CodeDecoration; 
-                marks.push(($n6 = new CodeDecoration(modifiedSide ? inner.modified : inner.original), $n6.color = word, $n6));
+                $eq.collections.listAdd(marks, ($n6 = new CodeDecoration(modifiedSide ? inner.modified : inner.original), $n6.color = word, $n6));
             }
         }
         let composing: any; 
-        if ((composing = composition) != null) marks.push(new CodeDecoration(composing, 'underline'));
+        if ((composing = composition) != null) $eq.collections.listAdd(marks, new CodeDecoration(composing, 'underline'));
         return marks;
     }
 

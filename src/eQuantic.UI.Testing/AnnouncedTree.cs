@@ -63,6 +63,9 @@ internal sealed class AnnouncedTree
         ["rowheader"] = SemanticRole.RowHeader,
         ["tree"] = SemanticRole.Tree,
         ["treeitem"] = SemanticRole.TreeItem,
+        // A FOCUSABLE separator, the one a reader moves (#1538): one that takes no focus is structure, a
+        // line between two things, and no stop (RoleOf passes it over).
+        ["separator"] = SemanticRole.Splitter,
     };
 
     private static readonly Regex Whitespace = new(@"\s+", RegexOptions.Compiled);
@@ -235,6 +238,7 @@ internal sealed class AnnouncedTree
         if (Attribute(node, "role") is { } written)
         {
             var role = written.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            if (role == "separator" && Attribute(node, "tabindex") is null) return null;
             if (role != "heading") return role is not null && AriaRoles.TryGetValue(role, out var known) ? known : null;
             headingLevel = int.TryParse(Attribute(node, "aria-level"), out var level) ? level : 2;
             return SemanticRole.StaticText;
@@ -305,7 +309,7 @@ internal sealed class AnnouncedTree
     {
         SemanticRole.TextField or SemanticRole.CodeField =>
             node.Tag == "textarea" ? TextOf(node) : Attribute(node, "value") ?? "",
-        SemanticRole.Slider or SemanticRole.ProgressIndicator =>
+        SemanticRole.Slider or SemanticRole.ProgressIndicator or SemanticRole.Splitter =>
             Attribute(node, "aria-valuetext") ?? Attribute(node, "aria-valuenow") ?? Attribute(node, "value"),
         SemanticRole.ComboBox => Collapse(TextOf(node)),
         _ => null,

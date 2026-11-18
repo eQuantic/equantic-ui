@@ -38,9 +38,9 @@ export class CodeSignatureCard {
         if (start < 0) return [new TextRun(signature.label, theme.textPrimary)];
         let end = start + $eq.collections.item(signature.parameters, active).label.length;
         let runs: TextRun[] = [];
-        if (start > 0) runs.push(new TextRun($eq.text.substring(signature.label, 0, start), theme.textPrimary));
-        runs.push(new TextRun($eq.text.substring(signature.label, start, end - start), theme.colors('primary').base));
-        if (end < signature.label.length) runs.push(new TextRun($eq.text.substring(signature.label, end), theme.textPrimary));
+        if (start > 0) $eq.collections.listAdd(runs, new TextRun($eq.text.substring(signature.label, 0, start), theme.textPrimary));
+        $eq.collections.listAdd(runs, new TextRun($eq.text.substring(signature.label, start, end - start), theme.colors('primary').base));
+        if (end < signature.label.length) $eq.collections.listAdd(runs, new TextRun($eq.text.substring(signature.label, end), theme.textPrimary));
         return runs;
     }
 
@@ -52,7 +52,7 @@ export class CodeSignatureCard {
     static described(theme: any, parameter: CodeSignatureParameter) {
         let runs = [new TextRun(parameter.label, theme.textPrimary)];
         let documentation: any; 
-        if ((($0) => (($0 != null && $0.length > 0) && (documentation = $0, true)))(parameter.documentation)) runs.push(new TextRun(`: ${documentation}`, theme.textSecondary));
+        if ((($0) => (($0 != null && $0.length > 0) && (documentation = $0, true)))(parameter.documentation)) $eq.collections.listAdd(runs, new TextRun(`: ${documentation}`, theme.textSecondary));
         return runs;
     }
 }

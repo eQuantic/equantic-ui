@@ -57,6 +57,10 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     internal void Emit(in EmitState s)
     {
         var node = s.Node;
+        // The listeners' hit test reads the frame's nodes in paint order from its first listener on (#1562): what
+        // was drawn before it can be neither its child nor above it. A frame with no listener records nothing.
+        if (node.Source is Listener && s.Input.Targets is null) s.Input.StartTargets();
+        var targets = s.Input.Targets;
         // Spec S1 — group opacity + static transform wrap the WHOLE box (chrome and children):
         // opacity is one PushLayer composite (overlaps never double-blend); the transform is the
         // center-anchored Matrix2D twin of the CSS list, paint-only (layout already ran).
@@ -103,14 +107,31 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
                 drawn = s with { Input = s.Input.Under(matrix) };
             }
 
+            // Neither the layer nor the transform is paint of the node around this one: settled past both, whatever
+            // each writes (today the layer writes a command and the transform none).
+            targets?.Settle(s.Builder.CommandCount);
+            EnterTarget(targets, drawn);
             Dispatch(drawn);
+            targets?.Leave(s.Builder.CommandCount);
 
             if (transformed) s.Builder.Pop();
             if (opacity is not null) s.Builder.PopLayer();
+            targets?.Settle(s.Builder.CommandCount);
             return;
         }
 
+        EnterTarget(targets, s);
         Dispatch(s);
+        targets?.Leave(s.Builder.CommandCount);
+    }
+
+    /// <summary>The node is one of the frame's pointer targets (#1562), where it is drawn: through the transform
+    /// that draws it, as its input regions are.</summary>
+    private static void EnterTarget(PointerTargets? targets, in EmitState s)
+    {
+        if (targets is null) return;
+        var (bounds, visible) = s.Input.Locate(s.Node.Bounds);
+        targets.Enter(bounds, visible, s.Node.Source as Listener, s.Node.Element, s.Builder.CommandCount);
     }
 
     /// <summary>
@@ -277,6 +298,9 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     public Nothing Visit(DropTarget node, EmitState s) { Descend(s); return Nothing.Value; }
     // Registers where it was drawn, for the host to answer a request for its menu by (#1531).
     public Nothing Visit(ContextTarget node, EmitState s) { EmitContextTarget(node, s); return Nothing.Value; }
+
+    // A listener draws nothing and registers nothing of its own: the walk records it as a pointer target (#1562).
+    public Nothing Visit(Listener node, EmitState s) { Descend(s); return Nothing.Value; }
 
     // Each registers where it was drawn for the host to carry an item by, and a carried item is dimmed in
     // its place under the copy that follows the pointer (#1537).

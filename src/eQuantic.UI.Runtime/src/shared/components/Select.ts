@@ -55,8 +55,8 @@ export class Select extends StatefulComponent {
         let field = new Box(new BoxStyle({ height: height, width: SizeValue.fill, padding: EdgeInsets.symmetric(paddingX, 0), background: slot?.fill ?? theme.surface, cornerRadius: new CornerRadii(radius), borderWidth: borderWidth, borderColor: slot?.borderColor ?? theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : null, hover: this.disabled ? null : new StyleDiff({ borderColor: theme.colors('primary').base }) }), fieldRow);
         let list = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         let index = 0;
-        for (const option of this.options) list.add(this.optionRow(theme, option, index++, gap, paddingX, rowHeight));
-        for (const group of this.groups) {
+        for (const option of $eq.collections.sequenceWalk(this.options)) list.add(this.optionRow(theme, option, index++, gap, paddingX, rowHeight));
+        for (const group of $eq.collections.sequenceWalk(this.groups)) {
             let rows = list;
             if ($eq.collections.count(group.options) === 0) continue;
             if (!(!$eq.text.hasNonWhiteSpace(group.label))) {
@@ -64,7 +64,7 @@ export class Select extends StatefulComponent {
                 rows.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(paddingX, 4), width: SizeValue.fill }), new Text(group.label, 'caption', theme.textMuted, 1, null, false, false, null, 0, { excludeFromSemantics: true })));
                 list.add(new Group(rows, { label: group.label }));
             }
-            for (const option of group.options) rows.add(this.optionRow(theme, option, index++, gap, paddingX, rowHeight));
+            for (const option of $eq.collections.sequenceWalk(group.options)) rows.add(this.optionRow(theme, option, index++, gap, paddingX, rowHeight));
         }
         let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(radius), borderWidth: borderWidth, borderColor: slot?.panelBorderColor ?? theme.border, elevation: slot?.panelElevation ?? 2, padding: EdgeInsets.symmetric(0, 4), clip: true }), list);
         let trigger = new Pressable(field, this.disabled ? null : $eq.delegates.bound(this, this.toggle), { disabled: this.disabled, expanded: this._open && !this.disabled });
@@ -90,7 +90,7 @@ export class Select extends StatefulComponent {
     }
 
     static flatten(options: string[], groups: OptionGroup[]) {
-        return [...options, ...groups.flatMap((group) => group.options)];
+        return [...options, ...$eq.query.selectMany(groups, (group) => group.options)];
     }
 
     optionRow(theme: any, option: string, index: number, gap: number, paddingX: number, rowHeight: number) {

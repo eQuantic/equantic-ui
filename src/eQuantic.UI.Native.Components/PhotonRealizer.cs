@@ -200,6 +200,9 @@ public sealed class RealizeResult
     /// <summary>What a person may ask the menu of, in tree order, an outer target before what it holds (#1531).
     /// Empty in a frame with no target.</summary>
     internal IReadOnlyList<ContextRegion> ContextRegions { get; init; } = Array.Empty<ContextRegion>();
+    /// <summary>The nodes the listeners' hit test reads, in paint order from the frame's first listener (#1562).
+    /// Empty in a frame with no listener.</summary>
+    internal IReadOnlyList<PointerTarget> PointerTargets { get; init; } = Array.Empty<PointerTarget>();
     /// <summary>The sortable lists and their items, in tree order, a list before what it holds (#1537). Empty
     /// in a frame with nothing to sort.</summary>
     internal IReadOnlyList<SortRegion> SortRegions { get; init; } = Array.Empty<SortRegion>();
@@ -480,6 +483,7 @@ public static class PhotonRealizer
             TransformedRegions = regions.TransformedOrEmpty,
             NoteLayers = regions.NotesOrEmpty,
             ContextRegions = regions.ContextsOrEmpty,
+            PointerTargets = regions.PointerOrEmpty,
             SortRegions = regions.SortsOrEmpty,
             OverlayLooks = layerLooks,
         };

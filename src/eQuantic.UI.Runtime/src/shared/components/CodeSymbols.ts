@@ -14,10 +14,10 @@ export class CodeSymbols {
 
     async requestAsync(cancellation: CancellationToken) {
         let document = this._editor.document;
-        let asked = [];
-        for (const provider of this.providers) asked.push(this.askOne(provider, document, cancellation));
+        let asked: any[] = [];
+        for (const provider of $eq.collections.sequenceWalk(this.providers)) $eq.collections.listAdd(asked, this.askOne(provider, document, cancellation));
         let answer: CodeSymbol[] = [];
-        for (const one of asked) $eq.collections.addRange(answer, await one);
+        for (const one of $eq.collections.listWalk(asked)) $eq.collections.addRange(answer, await one);
         cancellation.throwIfCancellationRequested();
         return answer;
     }

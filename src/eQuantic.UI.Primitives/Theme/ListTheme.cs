@@ -1,8 +1,8 @@
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// The list family's slot (<c>docs/ELEMENT-TREE-PLAN.md</c> §3.10): ListItem, List, Divider, Accordion and
-/// SwipeableRow, every member OPTIONAL. A member left null is the component's own default. The fill a
+/// The list family's slot (<c>docs/ELEMENT-TREE-PLAN.md</c> §3.10): ListItem, List, Divider, Accordion,
+/// SwipeableRow and TreeView, every member OPTIONAL. A member left null is the component's own default. The fill a
 /// selected row takes from <see cref="IAppTheme.Colors"/> stays there, and so does a swipe action's.
 /// <para>
 /// A list's divider starts where the row above starts its text: the row's padding, its leading slot and
@@ -105,6 +105,33 @@ public sealed record ListTheme
     /// <summary>The surface of the row that slides over the action (<see cref="IAppTheme.Surface"/>).</summary>
     public ColorToken? SwipeSurface { get; init; }
 
+    // ---- TreeView ---------------------------------------------------------------------------------
+    // A tree reads the family's quiet fill, its chevron's colour, and its title's colour for a node's
+    // label; these are its own measures.
+
+    /// <summary>A tree row's height (a small control's height).</summary>
+    public float? TreeRowHeight { get; init; }
+
+    /// <summary>How much further in each level of a tree starts than the one above it (16).</summary>
+    public float? TreeIndent { get; init; }
+
+    /// <summary>A tree row's horizontal padding, where a root's chevron starts (8).</summary>
+    public float? TreePaddingX { get; init; }
+
+    /// <summary>The gap between a tree row's chevron, its icon and its label (4).</summary>
+    public float? TreeGap { get; init; }
+
+    /// <summary>The shape of a tree row's corners, which its selection fill and focus ring take
+    /// (<see cref="ShapeScale.Small"/>).</summary>
+    public ShapeScale? TreeRowShape { get; init; }
+
+    /// <summary>A tree node's icon colour (<see cref="IAppTheme.TextSecondary"/>).</summary>
+    public ColorToken? TreeIconColor { get; init; }
+
+    /// <summary>The colour of the line and the ring that say where a carried tree node lands
+    /// (<see cref="IAppTheme.FocusRing"/>).</summary>
+    public ColorToken? TreeDropColor { get; init; }
+
     /// <summary>
     /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
     /// names wins, what it leaves null is <paramref name="under"/>'s. Null when
@@ -139,5 +166,12 @@ public sealed record ListTheme
             SwipeActionGap = over.SwipeActionGap ?? under.SwipeActionGap,
             SwipeIconSize = over.SwipeIconSize ?? under.SwipeIconSize,
             SwipeSurface = over.SwipeSurface ?? under.SwipeSurface,
+            TreeRowHeight = over.TreeRowHeight ?? under.TreeRowHeight,
+            TreeIndent = over.TreeIndent ?? under.TreeIndent,
+            TreePaddingX = over.TreePaddingX ?? under.TreePaddingX,
+            TreeGap = over.TreeGap ?? under.TreeGap,
+            TreeRowShape = over.TreeRowShape ?? under.TreeRowShape,
+            TreeIconColor = over.TreeIconColor ?? under.TreeIconColor,
+            TreeDropColor = over.TreeDropColor ?? under.TreeDropColor,
         };
 }

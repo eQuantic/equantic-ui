@@ -107,6 +107,11 @@ public class ComponentParityFixtureTests
         // declared by the server and attached by the client; and a panel opened at a point of its anchor.
         ("context-target", new ContextTarget(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), _ => { }), NoPresses),
         ("context-target-disabled", new ContextTarget(new Box(new BoxStyle { Height = 40 }), _ => { }) { Enabled = false }, NoPresses),
+        // What hears the raw pointer (#1562): the same transparent div, marked with its behaviour, with the pointer's
+        // event declared by the server and attached by the client.
+        ("listener", new Listener(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 })), NoPresses),
+        ("listener-opaque", new Listener(new Box(new BoxStyle { Height = 40 })) { Behavior = HitTestBehavior.Opaque }, NoPresses),
+        ("listener-translucent", new Listener(new Box(new BoxStyle { Height = 40 })) { Behavior = HitTestBehavior.Translucent }, NoPresses),
         ("anchored-at", new Anchored(new Box(new BoxStyle { Width = 200, Height = 40 }), new Box(new BoxStyle { Width = 120, Height = 80 }))
         {
             At = new Point(120, 30),
@@ -191,6 +196,18 @@ public class ComponentParityFixtureTests
             [new DataColumn("Name", GridTrack.Flex()), new DataColumn("Size", GridTrack.Fixed(80), TextAlignment.End)],
             [new DataRow("a", [new Text("alpha", TypeRole.BodyM, Theme.TextPrimary),
                                new Text("1", TypeRole.BodyM, Theme.TextPrimary)])]), NoPresses),
+        // A table whose app keeps its columns' order and widths (#1538): the columns drawn in the app's order and
+        // the cells under them, the header a horizontal sortable of its headings in the SDK's words, and a
+        // separator around a draggable edge at the fixed column's heading, beside its item.
+        ("data-table-columns", new DataTable(
+            [new DataColumn("Name", GridTrack.Flex()), new DataColumn("Size", GridTrack.Fixed(80), TextAlignment.End)],
+            [new DataRow("a", [new Text("alpha", TypeRole.BodyM, Theme.TextPrimary),
+                               new Text("1", TypeRole.BodyM, Theme.TextPrimary)])])
+        {
+            ColumnOrder = [1, 0],
+            OnColumnsReordered = _ => { },
+            OnColumnResized = (_, _) => { },
+        }, NoPresses),
         // A TABLE VIEW at offset zero (#982): the four bands of cells, the four of marks and both
         // scrollbars, each cell placed in its band, and a mark over the corner cut into one piece per
         // band it reaches. The after-pass moves the layers by transform; what both sides write is the
@@ -242,9 +259,12 @@ public class ComponentParityFixtureTests
         // group with its heading and its options, numbered across the group on both producers.
         ("select-grouped-opens", new Select(["Lisboa"], 0, groups: [new OptionGroup("A seguir", ["Braga", "Faro"])]), [0]),
         // A LIST A POINTER SORTS (#1535): no element of its own, its column marked, and the reports the
-        // browser's controller dispatches declared by the server.
+        // browser's controller dispatches declared by the server. Its words (#1564) are attributes both sides
+        // write, escaped alike.
         ("sortable-column", new Sortable(Stack(0, new SortableItem(new Text("a", TypeRole.BodyM, Theme.TextPrimary), "a"),
-            new SortableItem(new Text("b", TypeRole.BodyM, Theme.TextPrimary), "b")), "todo", _ => { })
+            new SortableItem(new Text("b", TypeRole.BodyM, Theme.TextPrimary), "b")), "todo", _ => { },
+            new SortAnnouncements("Pressione Espaço & solte \"já\".", "Took {0}.", "{0} now {1}/{2} in {3}.", "{0} in {1}.",
+                "Not there.", "Left {0} at {1}.", "Left {0} in {1}.", "Back <{0}>."))
         {
             Group = "board",
             OnHovered = _ => { },
@@ -263,6 +283,15 @@ public class ComponentParityFixtureTests
             },
             new TreeNode("README.md", "README.md") { IsLeaf = true },
         ], "src/Ui.cs") { Label = "Files" }, [0, 1]),
+        // A tree that moves its nodes (#1533): a nesting sortable around the composite, and each node row an item,
+        // marked the same on both sides (the list's id, axis and nesting, each row's id), and keyed by its node.
+        ("tree-moves", new TreeView([
+            new TreeNode("src", "src")
+            {
+                Children = [new TreeNode("src/App.cs", "App.cs") { IsLeaf = true }],
+            },
+            new TreeNode("README.md", "README.md") { IsLeaf = true },
+        ]) { Label = "Files", ExpandedKeys = ["src"], OnMoved = _ => Task.CompletedTask }, NoPresses),
 
         // A COMPOSITE, and the first case here whose tree is a grid: 31 cells, seven column
         // headers, a roving tab order, and a selection stated as an attribute. Pinned under a
