@@ -12,4 +12,4 @@
 ## 3. Proof, docs
 
 - [ ] 3.1 Tests on every producer: a box's role, lines, alignment and icon size taken; a text's own role kept whole; nested merge; nothing stated draws as before; a string as a node; a component lowered again alone. The conformance suite executed on both sides; the transpiled pins and the served runtime's budget recorded again
-- [ ] 3.2 The wiki's page for the vocabulary in every language, a ledger entry; validate and archive
+- [x] 3.2 The wiki's page for the vocabulary in every language, a ledger entry; validate and archive
