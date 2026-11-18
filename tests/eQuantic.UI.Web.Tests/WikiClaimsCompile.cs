@@ -307,6 +307,21 @@ public class WikiClaimsCompile
         public override VisualNode Build(ComponentContext context) => Text("queue", TypeRole.BodyM);
     }
 
+    /// <summary>Components, "A subtree is heard as one, or not at all" (preview.69, #1567): a switch heard as
+    /// its row, and the initials an avatar draws, which a reader passes over.</summary>
+    private sealed class SubtreeReadingPage : Primitives.StatefulComponent
+    {
+        private bool _on;
+
+        private void Toggle() => SetState(() => _on = !_on);
+
+        public override VisualNode Build(ComponentContext context) => Column(children:
+        [
+            MergeSemantics(Row(children: [Text("Wi-Fi"), Switch(_on, Toggle)])),
+            Row(children: [ExcludeSemantics(Avatar("JD")), Text("Jane Doe")]),
+        ]);
+    }
+
     /// <summary>Components, "ContextTarget and ContextMenu: a menu asked for anywhere" (preview.69, #1531): a
     /// file's card with its menu, and the blocks it is made of for a panel of another look.</summary>
     private sealed class FileMenuPage : Primitives.StatefulComponent

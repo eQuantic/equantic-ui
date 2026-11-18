@@ -944,6 +944,20 @@ export interface GroupNode extends VisualNodeValue {
   label?: string;
 }
 
+/** A subtree a reader hears as one stop (C# twin: MergeSemantics). */
+export interface MergeSemanticsNode extends VisualNodeValue {
+  nodeKind: 'mergeSemantics';
+  child: VisualNodeValue;
+}
+
+/** A subtree a reader passes over (C# twin: ExcludeSemantics). */
+export interface ExcludeSemanticsNode extends VisualNodeValue {
+  nodeKind: 'excludeSemantics';
+  child: VisualNodeValue;
+  /** Whether it is passed over now; absent reads as true, the C# default. */
+  excluding?: boolean;
+}
+
 /**
  * Wire shape of the C# `RangeValue`: the trio ARIA calls now/min/max. One object rather than three
  * fields because `role="slider"` REQUIRES a now, and a now without its bounds is read against ARIA's

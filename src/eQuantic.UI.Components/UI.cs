@@ -367,6 +367,23 @@ public static class UI
         new Group(child) { Label = label };
 
     /// <summary>
+    /// A subtree a reader hears as ONE stop, what its stops say joined in reading order. When a control is
+    /// among them the stop is that control, named by the whole of <paramref name="child"/>: a row that draws
+    /// a switch beside its label is heard as the switch. With none, it is a group named by what it says.
+    /// It draws nothing and adds no geometry.
+    /// </summary>
+    public static MergeSemantics MergeSemantics(VisualNode child) => new MergeSemantics(child);
+
+    /// <summary>
+    /// A subtree a reader passes over, on every target: drawn for the eye and heard by no one, for what
+    /// another stop already says. Wrap no control in it. <paramref name="excluding"/> false keeps the node and
+    /// reads what it holds, so a subtree heard in one state and not in another keeps its shape. It draws
+    /// nothing and adds no geometry.
+    /// </summary>
+    public static ExcludeSemantics ExcludeSemantics(VisualNode child, bool excluding = true) =>
+        new ExcludeSemantics(child) { Excluding = excluding };
+
+    /// <summary>
     /// Arrow-key adjustment semantics: one Tab stop, arrows call back with ±1.
     /// <para>
     /// <paramref name="value"/> is what the control HOLDS, and a slider needs it —

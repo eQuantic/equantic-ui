@@ -20,7 +20,8 @@ namespace eQuantic.UI.Primitives;
 /// <para>
 /// A frame is <see cref="Build"/>, then the realizer's layout and paint (which may show deferred
 /// slots, <see cref="NodeElement.ShowDeferred"/>), then <see cref="EndFrame"/>, where what leaves
-/// unmounts before what arrives mounts.
+/// unmounts before what arrives mounts. A realizer that draws only parts of the tree in a frame says
+/// which ones (<see cref="DrewOnly"/>), so the frame judges the layers it drew and no other.
 /// </para>
 /// </summary>
 public sealed class BuildOwner
@@ -45,6 +46,8 @@ public sealed class BuildOwner
     // The layer the realizer is showing, and which of its marked positions BuildDeferred is building.
     private NodeElement? _showing;
     private int _deferredCursor = -1;
+    // The parts of the tree this frame's realizer drew, when it drew only parts of it (DrewOnly).
+    private IReadOnlyList<Element>? _drewOnly;
     private int _stamp;
     private readonly ElementIds _ids;
     private readonly Func<UiComponent, ComponentContext, int, VisualNode> _buildComponent;
@@ -178,6 +181,9 @@ public sealed class BuildOwner
         _context = context;
         WindowWidth = windowWidth;
         Frame++;
+        // What the realizer drew is said of the frame that ends; a frame that never reached its end
+        // hands nothing to this one.
+        _drewOnly = null;
         RebuildingAll = rebuildAll;
         EnterBuild();
         _inFrameBuild = true;
@@ -268,12 +274,45 @@ public sealed class BuildOwner
     }
 
     /// <summary>
-    /// Ends the frame: takes out the deferred slots it did not show, then runs every
-    /// <c>OnUnmount</c> before any <c>OnMount</c>, the order that lets two components hand one
-    /// exclusive resource across a swap. A <c>SetState</c> from a hook asks for the next frame.
+    /// Says this frame's realizer drew only <paramref name="parts"/> of the tree, and none of it when the
+    /// list is empty: the web's patch render, which lowers again only the components that built and
+    /// leaves the rest of the page as it drew it (#1455). At <see cref="EndFrame"/>, a deferred slot
+    /// outside those parts keeps its layer, which the page still shows; one inside them that the frame
+    /// did not show is taken out, as in a frame that drew the whole tree. A frame whose realizer says
+    /// nothing drew the whole tree, which is every frame Photon and the server draw (#1575).
+    /// </summary>
+    /// <param name="parts">The positions at the top of each part the realizer drew again.</param>
+    public void DrewOnly(IReadOnlyList<Element> parts) => _drewOnly = parts;
+
+    /// <summary>
+    /// Whether a marked position is waiting for its layer to be shown, which builds it
+    /// (<see cref="NodeElement.ShowDeferred"/>). What a realizer that draws only parts of the tree
+    /// (<see cref="DrewOnly"/>) asks before the frame ends: a layer it does not draw is not shown, so what
+    /// waits in it would wait for ever, and a frame that draws the whole tree is what builds it.
+    /// </summary>
+    public bool WaitsForALayer
+    {
+        get
+        {
+            foreach (var element in _dirtyDeferred)
+            {
+                if (element.IsActive && element.Dirty) return true;
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Ends the frame: takes out the deferred slots it did not show, among the parts of the tree it drew
+    /// (<see cref="DrewOnly"/>), then runs every <c>OnUnmount</c> before any <c>OnMount</c>, the order
+    /// that lets two components hand one exclusive resource across a swap. A <c>SetState</c> from a hook
+    /// asks for the next frame.
     /// </summary>
     public void EndFrame()
     {
+        var parts = _drewOnly;
+        _drewOnly = null;
         for (var i = _deferred.Count - 1; i >= 0; i--)
         {
             var holder = _deferred[i];
@@ -283,6 +322,8 @@ public sealed class BuildOwner
                 continue;
             }
 
+            // A slot the frame did not draw is not one it chose not to show: its layer stays.
+            if (parts is not null && !StandsIn(holder, parts)) continue;
             holder.SweepDeferred(Frame);
         }
 
@@ -306,10 +347,25 @@ public sealed class BuildOwner
         BuildRequested?.Invoke();
     }
 
+    /// <summary>Whether <paramref name="element"/> stands at or below one of <paramref name="parts"/>.</summary>
+    private static bool StandsIn(Element element, IReadOnlyList<Element> parts)
+    {
+        for (Element? at = element; at is not null; at = at.Parent)
+        {
+            foreach (var part in parts)
+            {
+                if (ReferenceEquals(at, part)) return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>Takes the whole tree down: every component still in it is told it left, once. What a
     /// host calls when the surface it drew for is gone for good.</summary>
     public void UnmountAll()
     {
+        _drewOnly = null;
         if (Root is { } root)
         {
             Deactivate(root);

@@ -42,6 +42,8 @@ import {
   InView,
   LinearGradient,
   Link,
+  MergeSemantics,
+  ExcludeSemantics,
   Pinned,
   Positioned,
   Pressable,
@@ -551,6 +553,31 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
       node: new Select(['Lisboa'], 0, null, null, [new OptionGroup('A seguir', ['Braga', 'Faro'])]),
       presses: [0],
     },
+    'merge-a-checkbox-and-its-description': still(
+      new MergeSemantics(
+        line(false, new Checkbox(true, null, 'Agree'), new Text('to the terms', 'bodyM', photonTheme.textPrimary)),
+      ),
+    ),
+    'merge-read-content': still(
+      new MergeSemantics(
+        line(
+          false,
+          new Text('Total', 'bodyM', photonTheme.textPrimary),
+          new ExcludeSemantics(new Text('JD', 'bodyM', photonTheme.textPrimary)),
+          new Text('42 EUR', 'bodyM', photonTheme.textPrimary),
+        ),
+      ),
+    ),
+    'exclude-a-subtree': still(
+      line(
+        false,
+        new ExcludeSemantics(new Text('Decoration', 'bodyM', photonTheme.textPrimary)),
+        new Text('Shown', 'bodyM', photonTheme.textPrimary),
+      ),
+    ),
+    'exclude-not-excluding': still(
+      new ExcludeSemantics(new Text('Read', 'bodyM', photonTheme.textPrimary), { excluding: false }),
+    ),
     'sortable-column': still(
       new Sortable(
         column(
