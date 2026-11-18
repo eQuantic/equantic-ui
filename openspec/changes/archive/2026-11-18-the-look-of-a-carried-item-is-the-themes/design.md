@@ -51,15 +51,21 @@ as its words are (#1564): a card carried into another column keeps the look it w
 
 ### Each target resolves it once
 
-The web lowering resolves `SortableTheme.Merge(theme.Sortable, list.Style)` with the defaults and writes the four
-values on the list's element (`data-eq-sort-lifted`, `data-eq-sort-copy-opacity`, `data-eq-sort-copy-shadow`, the
-shadow in `TokenCss.Shadow`'s spelling, and `data-eq-sort-lean`); the controller reads them from the source list when it
-lifts the item. Photon resolves the same record when the host lifts the item and keeps it on the item's
-`SortLiftState`, which the emit walk reads to dim the item and record the copy's shadow, and the host to draw the copy
-and lean it.
+`SortPlacement.Look(theme, own)` lays the list's record over the theme's and fills the defaults, written once in the
+transpiled class both targets run. On the web the lowering writes only the list's own members on its element
+(`data-eq-sort-look-lifted`, `data-eq-sort-look-copy-opacity`, `data-eq-sort-look-copy-elevation`,
+`data-eq-sort-look-lean`), so a list
+with no style writes nothing more than before; the controller, which already runs `SortPlacement`, calls `Look` with
+the browser's theme (the one the server bridged) when it lifts an item, and draws the copy's shadow from the theme's
+elevation in the box shadow's own spelling. The lowering cannot call `Look` itself: a lowering that imported a
+transpiled class would load the component barrel while the vocabulary it extends is still loading, the failure
+`element-engine.ts` describes. Photon calls `Look` with its theme when the host lifts the item and keeps the answer on
+the item's `SortLiftState`, which the emit walk reads to dim the item and record the copy's shadow, and the host to
+draw the copy and lean it.
 
 ## Risks / Trade-offs
 
 - The default copy's shadow changes colour: the theme's level 4 instead of a black at 0.28, lighter in a light theme
   and darker in a dark one. Its offset and blur stay.
-- Every sortable list's element carries four attributes more; the parity fixture and the served runtime grow by them.
+- A list's own style crosses as up to four attributes on its element; the theme's look crosses in the theme's JSON
+  the browser already reads.

@@ -18,10 +18,9 @@ theme, with a list's own laid over it.
   `UI.Sortable(…, style:)`. A list that gives none looks as its theme says.
 - **The defaults.** What neither says is 0.4, 0.92, the theme's elevation level 4 and 12°. The shadow is the
   theme's level 4 rather than a black one: the same offset and blur, the theme's own colour in light and in dark.
-- **The web.** The lowering resolves the look of each list and writes it on the list's element (the dimmed opacity,
-  the copy's opacity and shadow, the most it leans); the controller reads the look of the list the item was picked up
-  from. **Photon** resolves the same look when it lifts the item and draws the dimmed item, the copy and its lean from
-  it.
+- **The web.** The lowering writes a list's own look on its element, and the controller lays it over the browser's
+  theme when it lifts an item from that list. **Photon** resolves the same look when it lifts the item and draws the
+  dimmed item, the copy and its lean from it.
 
 In C#:
 
