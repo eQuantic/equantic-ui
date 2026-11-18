@@ -1,6 +1,7 @@
 AdjustableRole.Slider = 0
 AdjustableRole.Tablist = 1
 AdjustableRole.Radiogroup = 2
+AdjustableRole.Separator = 3
 Alignment.TopStart = 0
 Alignment.TopCenter = 1
 Alignment.TopEnd = 2
@@ -438,6 +439,7 @@ SemanticRole.ColumnHeader = 25
 SemanticRole.RowHeader = 26
 SemanticRole.Tree = 27
 SemanticRole.TreeItem = 28
+SemanticRole.Splitter = 29
 ServerConnectionState.Disconnected = 0
 ServerConnectionState.Connecting = 1
 ServerConnectionState.Connected = 2

@@ -1084,7 +1084,6 @@ eQuantic.UI.Primitives.SortDrop.Into.get -> string?
 eQuantic.UI.Primitives.SortDrop.Into.init -> void
 eQuantic.UI.Primitives.Sortable
 override eQuantic.UI.Primitives.Sortable.NodeKind.get -> string!
-eQuantic.UI.Primitives.Sortable.Sortable(eQuantic.UI.Primitives.VisualNode! child, string! id, System.Action<eQuantic.UI.Primitives.SortDrop!>! onDropped) -> void
 eQuantic.UI.Primitives.Sortable.Id.get -> string!
 eQuantic.UI.Primitives.Sortable.Id.init -> void
 eQuantic.UI.Primitives.Sortable.OnDropped.get -> System.Action<eQuantic.UI.Primitives.SortDrop!>!

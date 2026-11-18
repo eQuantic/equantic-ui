@@ -34,10 +34,10 @@ export class CodeDefinitions {
 
     async requestAsync(position: CodePosition, kind: CodeDefinitionKindValue, cancellation: CancellationToken) {
         let document = this._editor.document;
-        let asked = [];
-        for (const provider of this.providers) asked.push(this.askOne(provider, document, position, kind, cancellation));
-        let answers = [];
-        for (const one of asked) answers.push(await one);
+        let asked: any[] = [];
+        for (const provider of $eq.collections.sequenceWalk(this.providers)) $eq.collections.listAdd(asked, this.askOne(provider, document, position, kind, cancellation));
+        let answers: any[] = [];
+        for (const one of $eq.collections.listWalk(asked)) $eq.collections.listAdd(answers, await one);
         cancellation.throwIfCancellationRequested();
         return CodeLocation.joined(answers);
     }

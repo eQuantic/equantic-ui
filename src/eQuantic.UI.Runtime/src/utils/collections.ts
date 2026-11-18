@@ -21,6 +21,7 @@ import { HashSet } from './hash-set';
 import { sameBy, sameItem, type KeyEquality } from './key-equality';
 import { collectionCount } from './slots';
 import { SortedMap } from './sorted';
+import { changed } from './list-version';
 import { refuseAChangeOf, refuseAResize } from './view';
 
 export { pairComparer, sameItem } from './key-equality';
@@ -729,6 +730,7 @@ export function remove<T>(
   for (let index = 0; index < list.length; index++) {
     if (same(list[index], value)) {
       list.splice(index, 1);
+      changed(list);
       return true;
     }
   }
@@ -754,7 +756,10 @@ function nullReference(): Error {
 export function add<T>(collection: unknown, item: T): void {
   if (collection == null) throw nullReference();
   refuseAResize(collection);
-  if (Array.isArray(collection)) collection.push(item);
+  if (Array.isArray(collection)) {
+    collection.push(item);
+    changed(collection);
+  }
   else if (collection instanceof LinkedList) collection.addLast(item);
   else if (collection instanceof RuntimeDictionary || collection instanceof SortedMap) {
     const { key, value } = item as { key: unknown; value: unknown };
@@ -771,7 +776,10 @@ export function add<T>(collection: unknown, item: T): void {
 export function clear(collection: unknown): void {
   if (collection == null) throw nullReference();
   refuseAResize(collection, 'Collection is read-only.');
-  if (Array.isArray(collection)) collection.length = 0;
+  if (Array.isArray(collection)) {
+    collection.length = 0;
+    changed(collection);
+  }
   else (collection as { clear(): void }).clear();
 }
 
@@ -809,7 +817,10 @@ export function setItem<T = any>(list: WritablyIndexed<T>, index: number, value:
   if (list == null) throw nullReference();
   const target = list as { [index: number]: T } & { setItem?: (index: number, value: T) => unknown };
   if (!Array.isArray(list) && typeof target.setItem === 'function') target.setItem(index, value);
-  else target[index] = value;
+  else {
+    target[index] = value;
+    if (Array.isArray(list)) changed(list);
+  }
   return value;
 }
 

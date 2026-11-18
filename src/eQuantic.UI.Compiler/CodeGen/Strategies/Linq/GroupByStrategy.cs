@@ -39,10 +39,11 @@ public class GroupByStrategy : IExpressionIrStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var source = LinqSource.Ir(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
 
-        if (args.Count == 0) return source;
+        if (args.Count == 0) return LinqSource.Ir(memberAccess.Expression, context);
+        // The groups are made when the query is walked, from the source as it is then (#685).
+        var source = LinqSource.Lazy(memberAccess.Expression, context);
 
         // {0} is the source and the selectors follow it, in the order C# evaluates them: the order they
         // are written, whatever part each plays.
@@ -100,7 +101,8 @@ public class GroupByStrategy : IExpressionIrStrategy
 
         // A selector that is a lambda is written where it is called; the writer binds any other.
         return JsExpr.Template(
-            resultSelector is { } result ? $"{grouped}.map(($g) => ({{{result}}})($g.key, $g))" : grouped,
+            LinqSource.Defer(resultSelector is { } result ? $"{grouped}.map(($g) => ({{{result}}})($g.key, $g))" : grouped,
+                memberAccess.Expression, context),
             parts);
     }
 

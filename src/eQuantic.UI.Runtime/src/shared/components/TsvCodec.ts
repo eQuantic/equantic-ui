@@ -5,8 +5,8 @@ export class TsvCodec {
         let rows: string[] = [];
         for (let row = range.topRow; row <= range.bottomRow; row++) {
             let cells: string[] = [];
-            for (let col = range.leftCol; col <= range.rightCol; col++) cells.push(TsvCodec.escape(document.getCell(new CellRef(row, col))));
-            rows.push($eq.text.join('\t', cells));
+            for (let col = range.leftCol; col <= range.rightCol; col++) $eq.collections.listAdd(cells, TsvCodec.escape(document.getCell(new CellRef(row, col))));
+            $eq.collections.listAdd(rows, $eq.text.join('\t', cells));
         }
         return $eq.text.join('\n', rows);
     }
@@ -45,7 +45,7 @@ export class TsvCodec {
                 continue;
             }
             if (ch === '\t') {
-                row.push(cell);
+                $eq.collections.listAdd(row, cell);
                 cell = '';
                 i++;
                 continue;
@@ -55,8 +55,8 @@ export class TsvCodec {
                 continue;
             }
             if (ch === '\n') {
-                row.push(cell);
-                rows.push(row);
+                $eq.collections.listAdd(row, cell);
+                $eq.collections.listAdd(rows, row);
                 row = [];
                 cell = '';
                 i++;
@@ -66,8 +66,8 @@ export class TsvCodec {
             i++;
         }
         if (cell.length > 0 || row.length > 0) {
-            row.push(cell);
-            rows.push(row);
+            $eq.collections.listAdd(row, cell);
+            $eq.collections.listAdd(rows, row);
         }
         return rows;
     }

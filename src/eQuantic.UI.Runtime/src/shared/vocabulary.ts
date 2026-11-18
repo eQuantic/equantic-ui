@@ -24,6 +24,7 @@ import type {
   EdgeInsetsValue,
   LiveRegionUrgencyValue,
   MainAlignValue,
+  SortAnnouncementsValue,
   TypeStyleValue,
 } from './nodes';
 import { CanvasPointer } from './canvas-pointer';
@@ -1095,6 +1096,7 @@ export class Sortable extends VisualNode {
   child: VisualChild;
   id: string;
   onDropped: (drop: SortDrop) => void;
+  announcements: SortAnnouncementsValue | null;
   group = '';
   axis = 'vertical';
   nests = false;
@@ -1103,11 +1105,18 @@ export class Sortable extends VisualNode {
   accepts: ((drop: SortDrop) => boolean) | null = null;
   enabled = true;
 
-  constructor(child: VisualChild, id: string, onDropped: (drop: SortDrop) => void, config?: EqConfig) {
+  constructor(
+    child: VisualChild,
+    id: string,
+    onDropped: (drop: SortDrop) => void,
+    announcements: SortAnnouncementsValue | null = null,
+    config?: EqConfig,
+  ) {
     super();
     this.child = child;
     this.id = id;
     this.onDropped = onDropped;
+    this.announcements = announcements;
     if (config) Object.assign(this, config);
   }
 }
@@ -1118,6 +1127,8 @@ export class SortableItem extends VisualNode {
   child: VisualChild;
   id: string;
   enabled = true;
+  /** The name the keyboard's steps say. C# twin: `SortableItem.Name`. */
+  name = '';
 
   constructor(child: VisualChild, id: string, config?: EqConfig) {
     super();
@@ -1228,6 +1239,8 @@ interface TextEntryConfig {
   role?: string;
   /** Takes focus on mount (the command-palette contract). */
   autofocus?: boolean;
+  /** Selects all of the text whenever the entry takes the keyboard (C# `SelectOnFocus`). */
+  selectOnFocus?: boolean;
   /** Line count: 1 (default) is single-line; more makes it a textarea that tall. */
   lines?: number;
 }
@@ -1250,6 +1263,7 @@ export class TextEntry extends VisualNode {
   obscure = false;
   role = 'bodyL';
   autofocus = false;
+  selectOnFocus = false;
   lines = 1;
 
   constructor(
@@ -1678,8 +1692,10 @@ export class Adjustable extends VisualNode {
   child: VisualNode;
   onAdjust: (direction: number) => void;
   label = '';
-  /** ARIA identity of the host element — 'slider' (default), 'tablist' or 'radiogroup'. */
-  role: 'slider' | 'tablist' | 'radiogroup' = 'slider';
+  /** ARIA identity of the host element — 'slider' (default), 'tablist', 'radiogroup' or 'separator'. */
+  role: 'slider' | 'tablist' | 'radiogroup' | 'separator' = 'slider';
+  /** The axis the value moves along, which a reader hears as the orientation. C# twin: `Adjustable.Axis`. */
+  axis: 'vertical' | 'horizontal' = 'horizontal';
   /** Where the value sits, for a role that has one; absent on a tablist or a radiogroup. */
   value?: RangeValue | null;
 
@@ -1697,7 +1713,8 @@ export class Adjustable extends VisualNode {
     onAdjust: (direction: number) => void,
     config?: {
       label?: string;
-      role?: 'slider' | 'tablist' | 'radiogroup';
+      role?: 'slider' | 'tablist' | 'radiogroup' | 'separator';
+      axis?: 'vertical' | 'horizontal';
       value?: RangeValue | null;
       valueText?: string | null;
     },
@@ -1728,6 +1745,8 @@ export class Navigable extends VisualNode {
   /** The focused cell as [row, item] — announced through aria-activedescendant. A C# tuple
    * crosses as a plain array, so that is the type; the realizer reads exactly two entries. */
   activeCell: readonly number[] | null = null;
+  /** A version higher than the last one built takes the keyboard to the composite's stop (C# `FocusVersion`). */
+  focusVersion = 0;
 
   constructor(
     onMove: (move: NavigableMoveValue) => void,
@@ -1738,6 +1757,7 @@ export class Navigable extends VisualNode {
       role?: 'grid' | 'tree';
       hasHeaderRow?: boolean;
       activeCell?: readonly number[] | null;
+      focusVersion?: number;
     },
   ) {
     super();

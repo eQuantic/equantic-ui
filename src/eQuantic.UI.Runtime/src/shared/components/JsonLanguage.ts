@@ -37,25 +37,25 @@ export class JsonLanguage {
                     end++;
                 }
                 let isKey = JsonLanguage.nextNonSpace(line, end) === ':';
-                into.push(new CodeToken(i, Math.min(end, line.length) - i, isKey ? 'property' : 'string'));
+                $eq.collections.listAdd(into, new CodeToken(i, Math.min(end, line.length) - i, isKey ? 'property' : 'string'));
                 i = Math.min(end, line.length);
                 continue;
             }
             if ((/^\p{Nd}$/u.test(c)) || c === '-' && i + 1 < line.length && (/^\p{Nd}$/u.test(line[i + 1]))) {
                 let end = i + 1;
                 while (end < line.length && ((/^\p{Nd}$/u.test(line[end])) || line[end] === '.' || line[end] === 'e' || line[end] === 'E' || line[end] === '+' || line[end] === '-')) end++;
-                into.push(new CodeToken(i, end - i, 'number'));
+                $eq.collections.listAdd(into, new CodeToken(i, end - i, 'number'));
                 i = end;
                 continue;
             }
             if ((/^\p{L}$/u.test(c))) {
                 let end = i;
                 while (end < line.length && (/^\p{L}$/u.test(line[end]))) end++;
-                into.push(new CodeToken(i, end - i, 'constant'));
+                $eq.collections.listAdd(into, new CodeToken(i, end - i, 'constant'));
                 i = end;
                 continue;
             }
-            into.push(new CodeToken(i, 1, 'punctuation'));
+            $eq.collections.listAdd(into, new CodeToken(i, 1, 'punctuation'));
             i++;
         }
         return 0;

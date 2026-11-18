@@ -1,4 +1,4 @@
-import { FieldError, FieldRule, FormField } from "../runtime-exports";
+import { $eq, FieldError, FieldRule, FormField } from "../runtime-exports";
 
 export class FormController {
     constructor() {
@@ -18,23 +18,23 @@ export class FormController {
     }
 
     get valid(): boolean {
-        for (const entry of this._fields) if (entry.relevant && !(entry.error == null)) return false;
+        for (const entry of $eq.collections.listWalk(this._fields)) if (entry.relevant && !(entry.error == null)) return false;
         return true;
     }
 
     get dirty(): boolean {
-        for (const entry of this._fields) if (entry.dirty) return true;
+        for (const entry of $eq.collections.listWalk(this._fields)) if (entry.dirty) return true;
         return false;
     }
 
     add(name: string, initial: string = '', rules: FieldRule[] | null = null, relevantWhen: (() => boolean) | null = null) {
         let field = new FormField(name, initial, rules, relevantWhen);
-        this._fields.push(field);
+        $eq.collections.listAdd(this._fields, field);
         return field;
     }
 
     field(name: string) {
-        for (const field of this._fields) if (field.name === name) return field;
+        for (const field of $eq.collections.listWalk(this._fields)) if (field.name === name) return field;
         return null;
     }
 
@@ -42,12 +42,12 @@ export class FormController {
         let target = this.field(name);
         if (target == null) return;
         target.set(value);
-        for (const entry of this._fields) if (!(entry === target)) entry.revalidateNow();
+        for (const entry of $eq.collections.listWalk(this._fields)) if (!(entry === target)) entry.revalidateNow();
         this.changed?.();
     }
 
     revalidate() {
-        for (const field of this._fields) field.revalidateNow();
+        for (const field of $eq.collections.listWalk(this._fields)) field.revalidateNow();
         this.changed?.();
     }
 
@@ -57,19 +57,19 @@ export class FormController {
     }
 
     validate() {
-        for (const field of this._fields) field.reveal();
+        for (const field of $eq.collections.listWalk(this._fields)) field.reveal();
         this.changed?.();
         return this.valid;
     }
 
     reset() {
-        for (const field of this._fields) field.reset();
+        for (const field of $eq.collections.listWalk(this._fields)) field.reset();
         this.submitError = null;
         this.changed?.();
     }
 
     accept() {
-        for (const field of this._fields) field.accept();
+        for (const field of $eq.collections.listWalk(this._fields)) field.accept();
         this.submitError = null;
         this.changed?.();
     }
@@ -93,7 +93,7 @@ export class FormController {
     }
 
     applyServerErrors(errors: FieldError[], formError: string | null = null) {
-        for (const error of errors) this.field(error.field)?.fail(error.message);
+        for (const error of $eq.collections.sequenceWalk(errors)) this.field(error.field)?.fail(error.message);
         this.submitError = formError;
         this.changed?.();
     }
