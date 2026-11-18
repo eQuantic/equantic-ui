@@ -1,0 +1,63 @@
+#nullable enable
+*REMOVED*eQuantic.UI.Components.Skeleton.Skeleton(eQuantic.UI.Components.SkeletonShape shape, float width, float height = 0) -> void
+*REMOVED*eQuantic.UI.Components.Slider.Slider(float value, System.Action<float>? onChanged = null) -> void
+*REMOVED*eQuantic.UI.Components.Switch.Switch(bool on, System.Action? onChanged = null) -> void
+*REMOVED*eQuantic.UI.Components.Checkbox.Checkbox(bool checked, System.Action? onChanged = null, string? label = null) -> void
+*REMOVED*static eQuantic.UI.Components.UI.Button(string! label, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, System.Action? onPressed = null) -> eQuantic.UI.Components.Button!
+*REMOVED*static eQuantic.UI.Components.UI.Checkbox(bool checked, System.Action? onChanged = null, string? label = null, bool disabled = false) -> eQuantic.UI.Components.Checkbox!
+*REMOVED*static eQuantic.UI.Components.UI.Chip(string! label, eQuantic.UI.Components.ChipKind kind = eQuantic.UI.Components.ChipKind.Filter, bool selected = false, System.Action? onPressed = null, System.Action? onRemove = null) -> eQuantic.UI.Components.Chip!
+*REMOVED*static eQuantic.UI.Components.UI.IconButton(eQuantic.UI.Primitives.Icon! glyph, string! label, eQuantic.UI.Components.IconButtonKind kind = eQuantic.UI.Components.IconButtonKind.Standard, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, System.Action? onPressed = null) -> eQuantic.UI.Components.IconButton!
+*REMOVED*static eQuantic.UI.Components.UI.ProgressBar(float? value = null, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary, string! label = "", string? valueText = null, bool prominent = false) -> eQuantic.UI.Components.ProgressBar!
+*REMOVED*static eQuantic.UI.Components.UI.Skeleton(eQuantic.UI.Components.SkeletonShape shape, float width, float height = 0) -> eQuantic.UI.Components.Skeleton!
+*REMOVED*static eQuantic.UI.Components.UI.Slider(float value, System.Action<float>? onChanged = null, float min = 0, float max = 1, float step = 0, string! label = "", string? valueText = null, bool disabled = false, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary) -> eQuantic.UI.Components.Slider!
+*REMOVED*static eQuantic.UI.Components.UI.Switch(bool on, System.Action? onChanged = null, string? label = null, bool disabled = false) -> eQuantic.UI.Components.Switch!
+*REMOVED*eQuantic.UI.Components.Chip.Chip(string! label, eQuantic.UI.Components.ChipKind kind = eQuantic.UI.Components.ChipKind.Filter, bool selected = false, System.Action? onPressed = null, System.Action? onRemove = null) -> void
+*REMOVED*eQuantic.UI.Components.FormSubmit.FormSubmit(eQuantic.UI.Primitives.FormController! form, string! label, System.Func<System.Threading.Tasks.Task!>! onSubmit, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium) -> void
+*REMOVED*eQuantic.UI.Components.IconButton.IconButton(eQuantic.UI.Primitives.Icon! glyph, string! label, eQuantic.UI.Components.IconButtonKind kind = eQuantic.UI.Components.IconButtonKind.Standard, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, System.Action? onPressed = null) -> void
+*REMOVED*eQuantic.UI.Components.ProgressBar.ProgressBar(float? value = null, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary) -> void
+*REMOVED*eQuantic.UI.Components.PullToRefresh.PullToRefresh(eQuantic.UI.Primitives.VisualNode! child, System.Action? onRefresh = null) -> void
+*REMOVED*eQuantic.UI.Components.Button.Button(string! label, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, System.Action? onPressed = null) -> void
+*REMOVED*eQuantic.UI.Components.RadioGroup.RadioGroup(System.Collections.Generic.IReadOnlyList<string!>! options, int selected, System.Action<int>? onChanged = null, string? label = null) -> void
+eQuantic.UI.Components.Button.Button(string! label, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, System.Action? onPressed = null, eQuantic.UI.Primitives.ButtonTheme? style = null) -> void
+eQuantic.UI.Components.Button.Style.get -> eQuantic.UI.Primitives.ButtonTheme?
+eQuantic.UI.Components.Button.Style.init -> void
+eQuantic.UI.Components.Checkbox.Checkbox(bool checked, System.Action? onChanged = null, string? label = null, eQuantic.UI.Primitives.SelectionControlsTheme? style = null) -> void
+eQuantic.UI.Components.Checkbox.Style.get -> eQuantic.UI.Primitives.SelectionControlsTheme?
+eQuantic.UI.Components.Checkbox.Style.init -> void
+eQuantic.UI.Components.Chip.Chip(string! label, eQuantic.UI.Components.ChipKind kind = eQuantic.UI.Components.ChipKind.Filter, bool selected = false, System.Action? onPressed = null, System.Action? onRemove = null, eQuantic.UI.Primitives.ChipTheme? style = null) -> void
+eQuantic.UI.Components.Chip.Style.get -> eQuantic.UI.Primitives.ChipTheme?
+eQuantic.UI.Components.Chip.Style.init -> void
+eQuantic.UI.Components.Skeleton.Skeleton(eQuantic.UI.Components.SkeletonShape shape, float width, float height = 0, eQuantic.UI.Primitives.ProgressTheme? style = null) -> void
+eQuantic.UI.Components.Skeleton.Style.get -> eQuantic.UI.Primitives.ProgressTheme?
+eQuantic.UI.Components.Skeleton.Style.init -> void
+eQuantic.UI.Components.FormSubmit.Style.get -> eQuantic.UI.Primitives.ButtonTheme?
+eQuantic.UI.Components.FormSubmit.Style.init -> void
+eQuantic.UI.Components.FormSubmit.FormSubmit(eQuantic.UI.Primitives.FormController! form, string! label, System.Func<System.Threading.Tasks.Task!>! onSubmit, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, eQuantic.UI.Primitives.ButtonTheme? style = null) -> void
+eQuantic.UI.Components.IconButton.IconButton(eQuantic.UI.Primitives.Icon! glyph, string! label, eQuantic.UI.Components.IconButtonKind kind = eQuantic.UI.Components.IconButtonKind.Standard, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, System.Action? onPressed = null, eQuantic.UI.Primitives.IconButtonTheme? style = null) -> void
+eQuantic.UI.Components.IconButton.Style.get -> eQuantic.UI.Primitives.IconButtonTheme?
+eQuantic.UI.Components.IconButton.Style.init -> void
+eQuantic.UI.Components.ProgressBar.ProgressBar(float? value = null, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary, eQuantic.UI.Primitives.ProgressTheme? style = null) -> void
+eQuantic.UI.Components.ProgressBar.Style.get -> eQuantic.UI.Primitives.ProgressTheme?
+eQuantic.UI.Components.PullToRefresh.PullToRefresh(eQuantic.UI.Primitives.VisualNode! child, System.Action? onRefresh = null, eQuantic.UI.Primitives.ProgressTheme? style = null) -> void
+eQuantic.UI.Components.PullToRefresh.Style.get -> eQuantic.UI.Primitives.ProgressTheme?
+eQuantic.UI.Components.PullToRefresh.Style.init -> void
+eQuantic.UI.Components.RadioGroup.RadioGroup(System.Collections.Generic.IReadOnlyList<string!>! options, int selected, System.Action<int>? onChanged = null, string? label = null, System.Func<int, eQuantic.UI.Primitives.VisualNode!>? optionBuilder = null, eQuantic.UI.Primitives.SelectionControlsTheme? style = null) -> void
+eQuantic.UI.Components.RadioGroup.OptionBuilder.get -> System.Func<int, eQuantic.UI.Primitives.VisualNode!>?
+eQuantic.UI.Components.RadioGroup.OptionBuilder.init -> void
+eQuantic.UI.Components.RadioGroup.Style.get -> eQuantic.UI.Primitives.SelectionControlsTheme?
+eQuantic.UI.Components.RadioGroup.Style.init -> void
+eQuantic.UI.Components.Slider.Slider(float value, System.Action<float>? onChanged = null, eQuantic.UI.Primitives.SelectionControlsTheme? style = null) -> void
+eQuantic.UI.Components.Slider.Style.get -> eQuantic.UI.Primitives.SelectionControlsTheme?
+eQuantic.UI.Components.Slider.Style.init -> void
+eQuantic.UI.Components.Switch.Switch(bool on, System.Action? onChanged = null, eQuantic.UI.Primitives.SelectionControlsTheme? style = null) -> void
+eQuantic.UI.Components.Switch.Style.get -> eQuantic.UI.Primitives.SelectionControlsTheme?
+eQuantic.UI.Components.Switch.Style.init -> void
+static eQuantic.UI.Components.UI.Button(string! label, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, System.Action? onPressed = null, eQuantic.UI.Primitives.ButtonTheme? style = null) -> eQuantic.UI.Components.Button!
+static eQuantic.UI.Components.UI.Chip(string! label, eQuantic.UI.Components.ChipKind kind = eQuantic.UI.Components.ChipKind.Filter, bool selected = false, System.Action? onPressed = null, System.Action? onRemove = null, eQuantic.UI.Primitives.ChipTheme? style = null) -> eQuantic.UI.Components.Chip!
+static eQuantic.UI.Components.UI.Checkbox(bool checked, System.Action? onChanged = null, string? label = null, eQuantic.UI.Primitives.SelectionControlsTheme? style = null, bool disabled = false) -> eQuantic.UI.Components.Checkbox!
+static eQuantic.UI.Components.UI.RadioGroup(System.Collections.Generic.IReadOnlyList<string!>! options, int selected, System.Action<int>? onChanged = null, string? label = null, System.Func<int, eQuantic.UI.Primitives.VisualNode!>? optionBuilder = null, eQuantic.UI.Primitives.SelectionControlsTheme? style = null, bool disabled = false) -> eQuantic.UI.Components.RadioGroup!
+static eQuantic.UI.Components.UI.Switch(bool on, System.Action? onChanged = null, eQuantic.UI.Primitives.SelectionControlsTheme? style = null, string? label = null, bool disabled = false) -> eQuantic.UI.Components.Switch!
+static eQuantic.UI.Components.UI.Slider(float value, System.Action<float>? onChanged = null, eQuantic.UI.Primitives.SelectionControlsTheme? style = null, float min = 0, float max = 1, float step = 0, string! label = "", string? valueText = null, bool disabled = false, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary) -> eQuantic.UI.Components.Slider!
+static eQuantic.UI.Components.UI.ProgressBar(float? value = null, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary, eQuantic.UI.Primitives.ProgressTheme? style = null, string! label = "", string? valueText = null, bool prominent = false) -> eQuantic.UI.Components.ProgressBar!
+static eQuantic.UI.Components.UI.IconButton(eQuantic.UI.Primitives.Icon! glyph, string! label, eQuantic.UI.Components.IconButtonKind kind = eQuantic.UI.Components.IconButtonKind.Standard, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, System.Action? onPressed = null, eQuantic.UI.Primitives.IconButtonTheme? style = null) -> eQuantic.UI.Components.IconButton!
+static eQuantic.UI.Components.UI.Skeleton(eQuantic.UI.Components.SkeletonShape shape, float width, float height = 0, eQuantic.UI.Primitives.ProgressTheme? style = null) -> eQuantic.UI.Components.Skeleton!

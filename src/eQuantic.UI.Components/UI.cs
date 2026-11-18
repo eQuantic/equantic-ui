@@ -542,6 +542,14 @@ public static class UI
         SelectionControlsTheme? style = null, bool disabled = false) =>
         new Checkbox(@checked, onChanged, label, style) { Disabled = disabled };
 
+    /// <summary>One choice of several, every option a radio named by its entry in
+    /// <paramref name="options"/>; <paramref name="optionBuilder"/> draws what an option shows, by its
+    /// index, beside the ring the group keeps.</summary>
+    public static RadioGroup RadioGroup(IReadOnlyList<string> options, int selected, Action<int>? onChanged = null,
+        string? label = null, Func<int, VisualNode>? optionBuilder = null, SelectionControlsTheme? style = null,
+        bool disabled = false) =>
+        new RadioGroup(options, selected, onChanged, label, optionBuilder, style) { Disabled = disabled };
+
     /// <summary>Binary toggle. <paramref name="label"/> is what assistive tech announces — a list of
     /// switches with no names is a list of identical controls — and <paramref name="disabled"/> is
     /// what makes them inert while a batch applies.</summary>

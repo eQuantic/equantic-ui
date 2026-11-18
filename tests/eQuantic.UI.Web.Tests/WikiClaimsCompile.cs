@@ -728,4 +728,20 @@ public class WikiClaimsCompile
 
     /// <summary>The declaration ServerIntegration shows, which refuses a layout that cannot take the page.</summary>
     private static void DeclaresTheLayout(eQuantic.UI.Server.UIOptions options) => options.UseLayout<ConsoleLayout>();
+
+    /// <summary>DesignSystem's "A component's own style", Components' "A radio group's options take a
+    /// builder", and Upgrading's calls that name what moved (#1606).</summary>
+    private static VisualNode OwnStylesAndOptionBuilder(bool accepted, Action onChanged, IReadOnlyList<string> plans,
+        IReadOnlyList<string> prices, int selected, Action<int> onPicked, bool on, float value, Action<float> onSlid) =>
+        Column(children: [
+            Button("Delete", Variant.Outline, style: new ButtonTheme { OutlineWidth = 2, MinWidth = 120 }),
+            Checkbox(accepted, onChanged, "I agree",
+                style: new SelectionControlsTheme { Box = new DensityPair { Comfortable = 24 } }),
+            RadioGroup(plans, selected, onPicked,
+                optionBuilder: i => Row(gap: Space.S2, children: [Text(plans[i]), Text(prices[i], TypeRole.Caption)])),
+            Switch(on, onChanged, label: "Dark mode"),
+            Slider(value, onSlid, min: 0, max: 10),
+            ProgressBar(value, Variant.Primary, label: "Uploading"),
+            Checkbox(on, onChanged, "Remember me", disabled: true),
+        ]);
 }

@@ -1,7 +1,7 @@
 ## 1. A style of their own
 
 - [x] 1.1 `style:` and `Style` on the eleven components, each resolving its family's `Merge` of the theme's slot under its own style; `FormSubmit` hands it to its `Button`, and `ProgressBar` adopts it in `AdoptConfig`
-- [x] 1.2 The eight factories that mirror these constructors take `style` in the constructor's place
+- [x] 1.2 The eight factories that mirror these constructors take `style` in the constructor's place, and `UI.RadioGroup` is added, mirroring its constructor; the wiki's snippets compile in `WikiClaimsCompile`
 - [x] 1.3 The eleven `style` entries leave `buttons-selection-and-progress.baseline.txt`, and the content entries cite #1607
 - [x] 1.4 Prove it on the real targets: the web's lowering and Photon's layout each read the instance's value and not the slot's for all eleven, a member left null is the slot's, the browser's twin lays a button's style over the slot, and a retained bar adopts a new style; each test fails with the merge reversed and with the instance's style ignored
 

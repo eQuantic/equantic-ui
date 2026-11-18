@@ -28,7 +28,8 @@ component or to change the theme for the whole subtree.
   `BoxStyle.Foreground`. Null draws the name, as today.
 - **The factories mirror it.** `UI.Button`, `UI.Chip`, `UI.Checkbox`, `UI.Switch`, `UI.Slider`,
   `UI.ProgressBar`, `UI.IconButton` and `UI.Skeleton` take `style` in the constructor's place, ahead of the
-  initializer tail they already had.
+  initializer tail they already had. `RadioGroup` had no factory, so its builder could only be written with
+  `new`: `UI.RadioGroup` mirrors its constructor, with `disabled` as its tail, as `UI.Checkbox` has.
 - **The guard shrinks.** The eleven `style` entries leave the family's file, and the options entry says the
   builder draws what an option shows. The five content entries now cite #1607.
 
