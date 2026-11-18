@@ -44,7 +44,13 @@ class Page extends StatefulComponent {
         },
         onColumnResized: (column: number, width: number) => {
           resized.push([column, width]);
-          this.setState(() => (this.columns[column] = this.columns[column].with({ track: GridTrack.fixed(width) })));
+          // A new list, as an app keeps state: the table sees the width only through the configuration it adopts.
+          this.setState(
+            () =>
+              (this.columns = this.columns.map((kept, at) =>
+                at === column ? kept.with({ track: GridTrack.fixed(width) }) : kept,
+              )),
+          );
         },
       },
     );
@@ -57,7 +63,14 @@ const boxes = new Map<Element, Box>();
 function give(element: Element, box: Box): void {
   boxes.set(element, box);
   (element as HTMLElement).getBoundingClientRect = () =>
-    ({ ...box, right: box.left + box.width, bottom: box.top + box.height, x: box.left, y: box.top, toJSON: () => box }) as DOMRect;
+    ({
+      ...box,
+      right: box.left + box.width,
+      bottom: box.top + box.height,
+      x: box.left,
+      y: box.top,
+      toJSON: () => box,
+    }) as DOMRect;
 }
 
 /** The headings laid out from x 0, Name 200 wide and the others their widths, 40 tall. */
@@ -73,7 +86,9 @@ function mount(): HTMLElement {
     give(item, { left, top: 0, width: widths[at], height: 40 });
     left += widths[at];
   });
-  (document as unknown as { elementsFromPoint: (x: number, y: number) => Element[] }).elementsFromPoint = (x, y) =>
+  (
+    document as unknown as { elementsFromPoint: (x: number, y: number) => Element[] }
+  ).elementsFromPoint = (x, y) =>
     Array.from(boxes.entries())
       .filter(([, b]) => x >= b.left && x < b.left + b.width && y >= b.top && y < b.top + b.height)
       .map(([element]) => element)
@@ -85,11 +100,20 @@ const heading = (container: HTMLElement, index: number) =>
   container.querySelector(`[data-eq-sort-item="${index}"]`) as HTMLElement;
 
 const handle = (container: HTMLElement, header: string) =>
-  container.querySelector(`[role="separator"][aria-label="${SdkStrings.resizeColumn(header)}"]`) as HTMLElement;
+  container.querySelector(
+    `[role="separator"][aria-label="${SdkStrings.resizeColumn(header)}"]`,
+  ) as HTMLElement;
 
 function pointer(target: EventTarget, type: string, x: number, y: number): void {
   target.dispatchEvent(
-    new PointerEvent(type, { clientX: x, clientY: y, bubbles: true, cancelable: true, pointerType: 'mouse', button: 0 }),
+    new PointerEvent(type, {
+      clientX: x,
+      clientY: y,
+      bubbles: true,
+      cancelable: true,
+      pointerType: 'mouse',
+      button: 0,
+    }),
   );
 }
 
@@ -156,6 +180,9 @@ describe('a table whose columns a person reorders and resizes', () => {
     pointer(edge, 'pointerdown', 316, 20);
     pointer(document, 'pointermove', 336, 20);
     pointer(document, 'pointermove', 356, 20);
+    // The heading is not carried with it: the handle is beside its item, not in it.
+    expect(heading(container, 1).style.opacity).toBe('');
+    expect(document.querySelectorAll('[aria-hidden="true"][style*="fixed"]')).toHaveLength(0);
     pointer(document, 'pointerup', 356, 20);
 
     expect(resized.length).toBeGreaterThan(0);
@@ -176,7 +203,11 @@ describe('a table whose columns a person reorders and resizes', () => {
     await settle();
     handle(container, 'Size').focus();
     press('ArrowLeft');
-    expect(resized).toEqual([[1, 136], [1, 120], [1, 104]]);
+    expect(resized).toEqual([
+      [1, 136],
+      [1, 120],
+      [1, 104],
+    ]);
     expect(reordered).toEqual([]);
   });
 });

@@ -164,7 +164,10 @@ public class DataTableColumnsTests
         size.Attributes["aria-valuemax"].Should().Be("1024");
         size.Attributes["aria-orientation"].Should().Be("vertical", "a column's edge moves sideways and is a vertical line");
         size.Attributes["tabindex"].Should().Be("0");
-        size.Attributes.Should().NotContainKey("data-eq-sort-item", "the handle is beside the heading's item, not in it");
+        var reordering = new DataTable(NameSizeKind(), []) { OnColumnResized = (_, _) => { }, OnColumnsReordered = _ => { } };
+        All(Lowered(reordering)).Where(node => node.Attributes.ContainsKey("data-eq-sort-item"))
+            .Should().NotContain(item => All(item).Any(node => node.Attributes.GetValueOrDefault("role") == "separator"),
+                "the handle is beside the heading's item, not in it, so a press on it picks no column up");
 
         var edge = All(size).Single(node => node.Attributes.ContainsKey("data-eq-drag"));
         edge.Attributes["data-eq-drag"].Should().Be("x");
