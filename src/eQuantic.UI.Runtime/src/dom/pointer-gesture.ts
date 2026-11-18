@@ -69,44 +69,20 @@ export function followPointer(down: PointerEvent, gesture: PointerGesture): Foll
   // fire: a torn-down test environment removed the global while a cleanup was pending, and the callback
   // threw `document is not defined` where nothing could catch it.
   const host = document;
-  const root = host.documentElement;
   const startX = down.clientX;
   const startY = down.clientY;
   let armed = false;
   let over = false;
   let hold: ReturnType<typeof setTimeout> | null = null;
-  // The page's own user-select, given back when the gesture ends; null while the gesture holds none.
-  let pageSelect: { standard: string; webkit: string } | null = null;
-
-  // A mouse press on text starts the browser's selection, and the browser extends it on its own mouse
-  // moves, which a pointermove's preventDefault does not stop: a sortable item made of text was left
-  // selected from the press to where it was dropped (#1598). So an armed gesture clears the selection its
-  // press started, and none starts or grows until it ends: every gesture on this core, not one of them.
-  const holdSelection = (): void => {
-    host.getSelection()?.removeAllRanges();
-    pageSelect = {
-      standard: root.style.userSelect,
-      webkit: root.style.getPropertyValue('-webkit-user-select'),
-    };
-    root.style.userSelect = 'none';
-    root.style.setProperty('-webkit-user-select', 'none');
-    host.addEventListener('selectstart', noSelection, true);
-  };
-
-  const releaseSelection = (): void => {
-    if (pageSelect === null) return;
-    root.style.userSelect = pageSelect.standard;
-    if (pageSelect.webkit) root.style.setProperty('-webkit-user-select', pageSelect.webkit);
-    else root.style.removeProperty('-webkit-user-select');
-    pageSelect = null;
-    host.removeEventListener('selectstart', noSelection, true);
-  };
+  // Whether this gesture holds the page's selection, which it gives back once when it ends.
+  let holding = false;
 
   const arm = (ev: PointerEvent | null): void => {
     armed = true;
     if (hold !== null) clearTimeout(hold);
     hold = null;
-    holdSelection();
+    holding = true;
+    holdSelection(host);
     gesture.armed?.(ev);
   };
 
@@ -114,7 +90,8 @@ export function followPointer(down: PointerEvent, gesture: PointerGesture): Foll
     over = true;
     if (hold !== null) clearTimeout(hold);
     hold = null;
-    releaseSelection();
+    if (holding) releaseSelection(host);
+    holding = false;
     host.removeEventListener('pointermove', move);
     host.removeEventListener('pointerup', up);
     host.removeEventListener('pointercancel', cancelled);
@@ -179,6 +156,37 @@ export function followPointer(down: PointerEvent, gesture: PointerGesture): Foll
       cancelled();
     },
   };
+}
+
+// A mouse press on text starts the browser's selection, and the browser extends it on its own mouse moves,
+// which a pointermove's preventDefault does not stop: a sortable item made of text was left selected from
+// the press to where it was dropped (#1598). So an armed gesture clears the selection its press started,
+// and none starts or grows until it ends: every gesture on this core, not one of them. Held by COUNT, since
+// two gestures can be armed at once (two fingers, a draggable inside a sortable item): the first takes the
+// page's own user-select and the last gives it back, where each one alone saved the other's `none`.
+let selectionHolds = 0;
+let pageSelect: { standard: string; webkit: string } = { standard: '', webkit: '' };
+
+function holdSelection(host: Document): void {
+  host.getSelection()?.removeAllRanges();
+  if (selectionHolds++ > 0) return;
+  const root = host.documentElement;
+  pageSelect = {
+    standard: root.style.userSelect,
+    webkit: root.style.getPropertyValue('-webkit-user-select'),
+  };
+  root.style.userSelect = 'none';
+  root.style.setProperty('-webkit-user-select', 'none');
+  host.addEventListener('selectstart', noSelection, true);
+}
+
+function releaseSelection(host: Document): void {
+  if (selectionHolds === 0 || --selectionHolds > 0) return;
+  const root = host.documentElement;
+  root.style.userSelect = pageSelect.standard;
+  if (pageSelect.webkit) root.style.setProperty('-webkit-user-select', pageSelect.webkit);
+  else root.style.removeProperty('-webkit-user-select');
+  host.removeEventListener('selectstart', noSelection, true);
 }
 
 function noSelection(e: Event): void {

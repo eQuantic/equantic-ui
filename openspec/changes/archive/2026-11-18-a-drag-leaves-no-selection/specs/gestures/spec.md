@@ -21,3 +21,9 @@ press that never becomes a gesture SHALL leave the selection to the browser.
 
 - **WHEN** a mouse drags across ordinary text after a gesture has ended
 - **THEN** the text is selected as the browser selects it
+
+#### Scenario: Two gestures at once
+
+- **WHEN** two gestures are armed together, two fingers each carrying an item, and the first ends
+- **THEN** no selection starts while the second is armed, and the page has its own `user-select` back
+  once the second ends

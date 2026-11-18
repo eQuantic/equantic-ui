@@ -77,6 +77,23 @@ describe('a pointer gesture and the text selection', () => {
     expect(document.documentElement.style.userSelect).toBe('');
   });
 
+  it('holds the selection while any of two gestures is armed, and gives the page its own back after the last', () => {
+    document.documentElement.style.userSelect = 'text';
+    const { text, down } = pressOnText();
+    const first = followPointer(down, travelling());
+    const second = followPointer(down, travelling());
+    pointer(document, 'pointermove', 40, 10);
+
+    first.cancel();
+    expect(document.documentElement.style.userSelect).toBe('none');
+    const started = new Event('selectstart', { bubbles: true, cancelable: true });
+    text.dispatchEvent(started);
+    expect(started.defaultPrevented).toBe(true);
+
+    second.cancel();
+    expect(document.documentElement.style.userSelect).toBe('text');
+  });
+
   it('gives the page back its own user-select when the gesture is cancelled', () => {
     document.documentElement.style.userSelect = 'text';
     const { down } = pressOnText();
