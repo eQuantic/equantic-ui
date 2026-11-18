@@ -293,6 +293,24 @@ public class ComponentBoundaryTests
     [InlineData(Door.Hostless)]
     [InlineData(Door.StructuralHost)]
     [InlineData(Door.PageHost)]
+    public void A_cyclic_component_inside_a_layer_is_contained_too(Door door)
+    {
+        // A layer is built when the lowering shows it, and its positions join the frame then, under the
+        // component position that holds the layer's holder: the same chain, reached another way.
+        var column = new Column(gap: 8);
+        column.Add(new Text("page", TypeRole.BodyM));
+        column.Add(new Overlay(new OuroborosCard()) { Modal = false });
+        column.Add(new Overlay(new MirrorCard()) { Modal = false });
+
+        var rendered = Rendered(door, column);
+
+        rendered.Should().Contain("page").And.Contain("could not be displayed");
+    }
+
+    [Theory]
+    [InlineData(Door.Hostless)]
+    [InlineData(Door.StructuralHost)]
+    [InlineData(Door.PageHost)]
     public void An_ordinary_chain_of_components_is_not_a_cycle(Door door)
     {
         // The bound exists for what never terminates; a component building a component is ordinary
