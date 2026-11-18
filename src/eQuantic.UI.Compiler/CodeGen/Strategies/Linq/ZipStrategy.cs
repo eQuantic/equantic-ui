@@ -26,9 +26,10 @@ public class ZipStrategy : IConversionStrategy
         if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method)
         {
             var selects = method.Parameters.Any(parameter => parameter.Name == "resultSelector");
-            var zipped = LinqArguments.Call(selects ? Eq.Zip : Eq.LinqZipTuples, LinqSource.Ir(memberAccess.Expression, context),
+            // The pairs are made when the query is walked, from the first sequence as it is then (#685).
+            var zipped = LinqArguments.Call(selects ? Eq.Zip : Eq.LinqZipTuples, LinqSource.Lazy(memberAccess.Expression, context),
                 selects ? ["second", "resultSelector"] : ["second", "third"], invocation,
-                argument => LinqSource.Argument(argument, invocation, context), context);
+                argument => LinqSource.Argument(argument, invocation, context), context, deferred: memberAccess.Expression);
             return zipped is null ? context.Unhandled(invocation, "Zip") : Ir.JsExprWriter.Write(zipped);
         }
 

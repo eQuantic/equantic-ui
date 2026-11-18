@@ -101,7 +101,7 @@ export class CodeFolding {
     toggle(line: number) {
         let at = this.innermost(line, null);
         if (at < 0) return false;
-        this._folded[at] = !this._folded[at];
+        $eq.collections.listSet(this._folded, at, !this._folded[at]);
         this.folded();
         return true;
     }
@@ -127,14 +127,14 @@ export class CodeFolding {
     }
 
     any(folded: boolean) {
-        for (const state of this._folded) if (state === folded) return true;
+        for (const state of $eq.collections.listWalk(this._folded)) if (state === folded) return true;
         return false;
     }
 
     setInnermost(line: number, folded: boolean) {
         let at = this.innermost(line, !folded);
         if (at < 0) return false;
-        this._folded[at] = folded;
+        $eq.collections.listSet(this._folded, at, folded);
         this.folded();
         return true;
     }
@@ -146,7 +146,7 @@ export class CodeFolding {
         let changed = false;
         for (let i = at; i < this._regions.length && this._regions[i].startLine <= outer.endLine; i++) {
             if (this._regions[i].endLine > outer.endLine || this._folded[i] === folded) continue;
-            this._folded[i] = folded;
+            $eq.collections.listSet(this._folded, i, folded);
             changed = true;
         }
         if (changed) this.folded();
@@ -157,7 +157,7 @@ export class CodeFolding {
         let changed = false;
         for (let i = 0; i < this._folded.length; i++) {
             if (this._folded[i] === folded) continue;
-            this._folded[i] = folded;
+            $eq.collections.listSet(this._folded, i, folded);
             changed = true;
         }
         if (changed) this.folded();
@@ -176,7 +176,7 @@ export class CodeFolding {
     }
 
     static hides(region: CodeFold, lines: number[]) {
-        for (const line of lines) if (region.startLine < line && line <= region.endLine) return true;
+        for (const line of $eq.collections.listWalk(lines)) if (region.startLine < line && line <= region.endLine) return true;
         return false;
     }
 
@@ -200,7 +200,7 @@ export class CodeFolding {
             let anchor = this.outOfFolds(selections[i].anchor);
             let focus = this.outOfFolds(selections[i].focus);
             if ($eq.equals(anchor, selections[i].anchor) && $eq.equals(focus, selections[i].focus)) continue;
-            selections[i] = new CodeRange(anchor, focus);
+            $eq.collections.listSet(selections, i, new CodeRange(anchor, focus));
             moved = true;
         }
         if (moved) this._editor.selections = selections;
@@ -228,7 +228,7 @@ export class CodeFolding {
         for (let i = 0; i < this._regions.length; i++) {
             let region = this._regions[i];
             if (!this._folded[i] || region.startLine < hiddenTo) continue;
-            collapses.push(new CodeCollapse(region.startLine + 1, region.endLine, false));
+            $eq.collections.listAdd(collapses, new CodeCollapse(region.startLine + 1, region.endLine, false));
             hiddenTo = region.endLine + 1;
         }
         this._collapses = collapses;
@@ -249,7 +249,7 @@ export class CodeFolding {
             let region = this._regions[i];
             let isFolded = this._folded[i];
             let kept = true;
-            for (const edit of change.edits) {
+            for (const edit of $eq.collections.sequenceWalk(change.edits)) {
                 let from = edit.range.start.line;
                 let to = edit.range.end.line;
                 if (isFolded && from <= region.endLine && to > region.startLine) isFolded = false;
@@ -262,8 +262,8 @@ export class CodeFolding {
                 region = $eq.withPatch(region, { startLine: carried.start.line, endLine: carried.end.line });
             }
             if (!kept || region.endLine <= region.startLine) continue;
-            regions.push(region);
-            folded.push(isFolded);
+            $eq.collections.listAdd(regions, region);
+            $eq.collections.listAdd(folded, isFolded);
         }
         this._regions = regions;
         this._folded = folded;
@@ -277,7 +277,7 @@ export class CodeFolding {
 
     selected(__: CodeRange) {
         let changed = false;
-        for (const selection of this._editor.selections) {
+        for (const selection of $eq.collections.sequenceWalk(this._editor.selections)) {
             if (this.reveal(selection.anchor.line)) changed = true;
             if (this.reveal(selection.focus.line)) changed = true;
         }
@@ -288,7 +288,7 @@ export class CodeFolding {
         let changed = false;
         for (let i = 0; i < this._regions.length; i++) {
             if (!this._folded[i] || line <= this._regions[i].startLine || line > this._regions[i].endLine) continue;
-            this._folded[i] = false;
+            $eq.collections.listSet(this._folded, i, false);
             changed = true;
         }
         return changed;
@@ -323,14 +323,14 @@ export class CodeFolding {
     async askEvery(generation: number, cancellation: CancellationToken) {
         let document = this._editor.document;
         let providers: any[] = $eq.collections.listCopy(this.providers);
-        if (providers.length === 0) providers.push(new IndentationFoldProvider(this._editor.rules.indentWidth));
-        let asked = [];
-        for (const provider of providers) asked.push(this.askOne(provider, document, cancellation));
-        let answers = [];
-        for (const one of asked) {
+        if (providers.length === 0) $eq.collections.listAdd(providers, new IndentationFoldProvider(this._editor.rules.indentWidth));
+        let asked: any[] = [];
+        for (const provider of $eq.collections.listWalk(providers)) $eq.collections.listAdd(asked, this.askOne(provider, document, cancellation));
+        let answers: any[] = [];
+        for (const one of $eq.collections.listWalk(asked)) {
             let answer: any; 
             if (!((answer = (await one)) != null)) return;
-            answers.push(answer);
+            $eq.collections.listAdd(answers, answer);
         }
         UiThread.run(() => {
             if (generation !== this._generation) return;
@@ -354,25 +354,25 @@ export class CodeFolding {
 
     answered(answers: CodeFold[][], document: CodeDocument) {
         let blocked: number[] = [];
-        for (const selection of this._editor.selections) {
-            blocked.push(selection.anchor.line);
-            blocked.push(selection.focus.line);
+        for (const selection of $eq.collections.sequenceWalk(this._editor.selections)) {
+            $eq.collections.listAdd(blocked, selection.anchor.line);
+            $eq.collections.listAdd(blocked, selection.focus.line);
         }
         let all: CodeFold[] = [];
-        for (const answer of answers) for (const region of answer) if (region.startLine >= 0 && region.endLine < document.lineCount && region.endLine > region.startLine) all.push(region);
+        for (const answer of $eq.collections.listWalk(answers)) for (const region of $eq.collections.sequenceWalk(answer)) if (region.startLine >= 0 && region.endLine < document.lineCount && region.endLine > region.startLine) $eq.collections.listAdd(all, region);
         $eq.collections.listSortBy(all, (a, b) => a.startLine !== b.startLine ? Math.sign(a.startLine - b.startLine) : Math.sign(b.endLine - a.endLine), 'System.Comparison`1[eQuantic.UI.Code.CodeFold]');
         let regions: CodeFold[] = [];
         let folded: boolean[] = [];
         let open: CodeFold[] = [];
-        for (const region of all) {
+        for (const region of $eq.collections.listWalk(all)) {
             while (open.length > 0 && open[open.length - 1].endLine < region.startLine) $eq.collections.listRemoveAt(open, open.length - 1);
             if (open.length > 0) {
                 let holding = open[open.length - 1];
                 if (region.startLine === holding.startLine || region.endLine > holding.endLine) continue;
             }
-            open.push(region);
-            regions.push(region);
-            folded.push(this.isFolded(region.startLine) && !CodeFolding.hides(region, blocked));
+            $eq.collections.listAdd(open, region);
+            $eq.collections.listAdd(regions, region);
+            $eq.collections.listAdd(folded, this.isFolded(region.startLine) && !CodeFolding.hides(region, blocked));
         }
         this._regions = regions;
         this._folded = folded;

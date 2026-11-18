@@ -31,13 +31,13 @@ export class CultureSwitcher extends StatelessComponent {
         }
         if (this.shape !== 'menu' && (this.shape === 'segments' || $eq.collections.count(this.options) <= 3)) {
             let labels: string[] = [];
-            for (const option of this.options) labels.push(option.label);
+            for (const option of $eq.collections.sequenceWalk(this.options)) $eq.collections.listAdd(labels, option.label);
             return new SegmentedControl(labels, selected, (index: number) => this.switch(controller, index), { size: this.size, stretch: false });
         }
         let items: MenuItem[] = [];
-        for (const option of this.options) {
+        for (const option of $eq.collections.sequenceWalk(this.options)) {
             let flag: any; 
-            items.push(new MenuItem((($0) => (($0 != null && $0.length > 0) && (flag = $0, true)))(option.flag) ? `${flag}  ${option.label}` : option.label));
+            $eq.collections.listAdd(items, new MenuItem((($0) => (($0 != null && $0.length > 0) && (flag = $0, true)))(option.flag) ? `${flag}  ${option.label}` : option.label));
         }
         let chosen = $eq.collections.item(this.options, selected);
         let code: any; 

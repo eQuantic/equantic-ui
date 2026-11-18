@@ -201,8 +201,9 @@ public class BugHuntFixesTests
     public void OrderBy_IsStable_AndCopiesSource()
     {
         var result = TestHelper.ConvertExpression("list.OrderBy(x => x.Id)");
-        result.Should().StartWith("[...this.list].sort("); // copies, does not mutate source
-        result.Should().Contain("return 0;");               // returns 0 on equal keys (stable)
+        result.Should().StartWith("$eq.query.defer(($src) => [...$src].sort("); // copies, does not mutate source
+        result.Should().EndWith(", this.list)");                                 // read when its query is walked (#685)
+        result.Should().Contain("return 0;");                                    // returns 0 on equal keys (stable)
     }
 
     [Fact]
@@ -210,7 +211,7 @@ public class BugHuntFixesTests
     {
         // string elements -> Set is correct and matches C# value equality.
         var result = TestHelper.ConvertExpression("items.Distinct()");
-        result.Should().Be("[...new Set(this.items)]");
+        result.Should().Be("$eq.query.defer(($src) => [...new Set($src)], this.items)");
     }
 
     [Fact]
@@ -219,7 +220,7 @@ public class BugHuntFixesTests
         // A plain class is found by reference, or by the Equals a subclass overrides, which .NET's
         // default comparer asks and a JS Set never did (ElementEquality's 'item', #922).
         var result = TestHelper.ConvertExpression("list.Distinct()");
-        result.Should().Be("[...$eq.collections.hashSet('item', this.list)]");
+        result.Should().Be("$eq.query.defer(($src) => [...$eq.collections.hashSet('item', $src)], this.list)");
     }
 
     [Fact]
@@ -228,7 +229,7 @@ public class BugHuntFixesTests
         // A record is found by value, its members each by their own type's comparer: JSON.stringify found
         // two records holding different arrays of the same items equal (#922).
         var result = TestHelper.ConvertExpression("points.Distinct()");
-        result.Should().Be("[...$eq.collections.hashSet(true, this.points)]");
+        result.Should().Be("$eq.query.defer(($src) => [...$eq.collections.hashSet(true, $src)], this.points)");
         result.Should().NotContain("JSON.stringify");
     }
 

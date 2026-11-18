@@ -1,4 +1,4 @@
-import { FieldRule } from "../runtime-exports";
+import { $eq, FieldRule } from "../runtime-exports";
 
 export class FormField {
     constructor(name: string, initial: string = '', rules: FieldRule[] | null = null, relevantWhen: (() => boolean) | null = null) {
@@ -42,7 +42,7 @@ export class FormField {
     }
 
     addRule(rule: FieldRule) {
-        this._rules.push(rule);
+        $eq.collections.listAdd(this._rules, rule);
         this.revalidate();
     }
 
@@ -84,7 +84,7 @@ export class FormField {
     revalidate() {
         this.error = null;
         if (!this.relevant) return;
-        for (const rule of this._rules) {
+        for (const rule of $eq.collections.listWalk(this._rules)) {
             if (rule.holds(this.value)) continue;
             this.error = rule.message;
             return;

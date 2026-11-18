@@ -385,6 +385,13 @@ its limit SHALL kill it, and the next save SHALL start it again, never waiting o
 - **WHEN** the running eqc exits, and its exit is raised as the next save finds it gone
 - **THEN** the save starts eqc again and compiles, where the save and the exit each waited for the other and the hot reload hung for good
 
+#### Scenario: A save is the first to see eqc dead
+
+- **WHEN** the running eqc exits, nothing has seen its exit yet, and the next save asks whether it is
+  still running as the process's exit event is raised
+- **THEN** the save starts eqc again and compiles, where it asked the process under the compiler's gate
+  and each waited for the other
+
 #### Scenario: A compile past its limit, or a stop
 
 - **WHEN** a compile takes longer than its limit, or the app stops while one runs

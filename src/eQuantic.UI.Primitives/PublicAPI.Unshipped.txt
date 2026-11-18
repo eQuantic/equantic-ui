@@ -1084,7 +1084,6 @@ eQuantic.UI.Primitives.SortDrop.Into.get -> string?
 eQuantic.UI.Primitives.SortDrop.Into.init -> void
 eQuantic.UI.Primitives.Sortable
 override eQuantic.UI.Primitives.Sortable.NodeKind.get -> string!
-eQuantic.UI.Primitives.Sortable.Sortable(eQuantic.UI.Primitives.VisualNode! child, string! id, System.Action<eQuantic.UI.Primitives.SortDrop!>! onDropped) -> void
 eQuantic.UI.Primitives.Sortable.Id.get -> string!
 eQuantic.UI.Primitives.Sortable.Id.init -> void
 eQuantic.UI.Primitives.Sortable.OnDropped.get -> System.Action<eQuantic.UI.Primitives.SortDrop!>!
@@ -1183,15 +1182,3 @@ override sealed eQuantic.UI.Primitives.ContextTarget.Accept<TState, TResult>(eQu
 static eQuantic.UI.Primitives.ContextRequest.operator !=(eQuantic.UI.Primitives.ContextRequest? left, eQuantic.UI.Primitives.ContextRequest? right) -> bool
 static eQuantic.UI.Primitives.ContextRequest.operator ==(eQuantic.UI.Primitives.ContextRequest? left, eQuantic.UI.Primitives.ContextRequest? right) -> bool
 const eQuantic.UI.Primitives.ContextTarget.HoldMs = 500 -> float
-eQuantic.UI.Primitives.MergeSemantics
-override eQuantic.UI.Primitives.MergeSemantics.NodeKind.get -> string!
-eQuantic.UI.Primitives.MergeSemantics.MergeSemantics(eQuantic.UI.Primitives.VisualNode! child) -> void
-override sealed eQuantic.UI.Primitives.MergeSemantics.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
-eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.MergeSemantics! node, TState state) -> TResult
-eQuantic.UI.Primitives.ExcludeSemantics
-override eQuantic.UI.Primitives.ExcludeSemantics.NodeKind.get -> string!
-eQuantic.UI.Primitives.ExcludeSemantics.ExcludeSemantics(eQuantic.UI.Primitives.VisualNode! child) -> void
-eQuantic.UI.Primitives.ExcludeSemantics.Excluding.get -> bool
-eQuantic.UI.Primitives.ExcludeSemantics.Excluding.init -> void
-override sealed eQuantic.UI.Primitives.ExcludeSemantics.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
-eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.ExcludeSemantics! node, TState state) -> TResult

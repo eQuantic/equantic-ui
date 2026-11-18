@@ -1,0 +1,11 @@
+# The tree. Its row builder and its style came with #1532 (#1545). The format is README.md's.
+# owns: TreeView TreeNode TreeEditRequest TreeReloadRequest
+TreeEditRequest.Key  text  kept: the key of the node to rename or to create a child under, never drawn
+TreeNode.Key  text  kept: the node's identity, never drawn
+TreeNode.Label  text  kept: a node's name, its accessible name and typeahead key; the row builder draws it (#1532)
+TreeReloadRequest.Keys  text  kept: the keys of the nodes whose children are read again, never drawn
+TreeView(selectedKey)  text  kept: the selected node's key, never drawn
+TreeView.BusyKeys  text  kept: the keys of the nodes at work, never drawn
+TreeView.ExpandedKeys  text  kept: the open nodes' keys, never drawn
+TreeView.Label  text  kept: the tree's accessible name
+TreeView.RevealPath  text  kept: the keys down to a node to reveal, never drawn

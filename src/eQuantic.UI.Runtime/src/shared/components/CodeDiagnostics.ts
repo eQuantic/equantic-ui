@@ -49,7 +49,7 @@ export class CodeDiagnostics {
     }
 
     at(position: CodePosition) {
-        return [...this._items.filter((problem) => CodePosition.opLessOrEqual(problem.range.start, position) && CodePosition.opLessOrEqual(position, problem.range.end))].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = ((problem) => (($0) => (({ 'hint': 0, 'information': 1, 'warning': 2, 'error': 3 })[$0] ?? $0))(problem.severity)); const $x = $k($a), $y = $k($b); if ($x < $y) return 1; if ($x > $y) return -1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.start.line); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.start.column); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }).slice();
+        return $eq.linq.toArray($eq.query.defer(($src) => [...$src].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = ((problem) => (($0) => (({ 'hint': 0, 'information': 1, 'warning': 2, 'error': 3 })[$0] ?? $0))(problem.severity)); const $x = $k($a), $y = $k($b); if ($x < $y) return 1; if ($x > $y) return -1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.start.line); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.start.column); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }), $eq.query.where(this._items, (problem) => CodePosition.opLessOrEqual(problem.range.start, position) && CodePosition.opLessOrEqual(position, problem.range.end))));
     }
 
     next(backward: boolean = false) {
@@ -65,7 +65,7 @@ export class CodeDiagnostics {
         this._reported = CodeDiagnostics.carried(this._reported, edit);
         for (let i = 0; i < this._answered.length; i++) {
             let [provider, problems] = this._answered[i];
-            this._answered[i] = [provider, CodeDiagnostics.carried(problems, edit)];
+            $eq.collections.listSet(this._answered, i, [provider, CodeDiagnostics.carried(problems, edit)]);
         }
         let items = CodeDiagnostics.carried(this._items, edit);
         if (CodeDiagnostics.same(items, this._items)) return;
@@ -75,7 +75,7 @@ export class CodeDiagnostics {
 
     reset() {
         this._reported = [];
-        this._answered.splice(0);
+        $eq.collections.listClear(this._answered);
         if (this._items.length === 0) return;
         this._items = [];
         this._moved = true;
@@ -87,7 +87,7 @@ export class CodeDiagnostics {
     }
 
     static carried(problems: CodeDiagnostic[], edit: CodeEdit) {
-        return problems.map((problem) => $eq.withPatch(problem, { range: edit.carryProblem(problem.range) })).slice();
+        return $eq.linq.toArray($eq.query.select(problems, (problem) => $eq.withPatch(problem, { range: edit.carryProblem(problem.range) })));
     }
 
     async ask(wait: boolean) {
@@ -123,7 +123,7 @@ export class CodeDiagnostics {
 
     askEvery(generation: number, cancellation: CancellationToken) {
         let document = this._editor.document;
-        for (const provider of this.providers.slice()) this.askOne(provider, document, generation, cancellation);
+        for (const provider of $eq.collections.listWalk(this.providers.slice())) this.askOne(provider, document, generation, cancellation);
     }
 
     async askOne(provider: any, document: CodeDocument, generation: number, cancellation: CancellationToken) {
@@ -148,22 +148,22 @@ export class CodeDiagnostics {
             let problems = this.placed(answer);
             let at = -1;
             for (let i = 0; i < this._answered.length; i++) if ((this._answered[i][0] === provider)) at = i;
-            if (at >= 0) this._answered[at] = [provider, problems]; else this._answered.push([provider, problems]);
+            if (at >= 0) $eq.collections.listSet(this._answered, at, [provider, problems]); else $eq.collections.listAdd(this._answered, [provider, problems]);
             this.gather();
         });
     }
 
     placed(problems: CodeDiagnostic[]) {
         let document = this._editor.document;
-        return $eq.linq.seq(problems).map((problem) => $eq.withPatch(problem, { range: new CodeRange(document.clamp(problem.range.start), document.clamp(problem.range.end)) })).slice();
+        return $eq.linq.toArray($eq.query.select(problems, (problem) => $eq.withPatch(problem, { range: new CodeRange(document.clamp(problem.range.start), document.clamp(problem.range.end)) })));
     }
 
     gather() {
         for (let i = this._answered.length - 1; i >= 0; i--) {
             let provider = this._answered[i][0];
-            if (!this.providers.some((held) => (held === provider))) $eq.collections.listRemoveAt(this._answered, i);
+            if (!$eq.query.any(this.providers, (held) => (held === provider))) $eq.collections.listRemoveAt(this._answered, i);
         }
-        let items = [...[...this._reported, ...this._answered.flatMap((entry) => entry[1])]].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = ((problem) => problem.range.start.line); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.start.column); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => (($0) => (({ 'hint': 0, 'information': 1, 'warning': 2, 'error': 3 })[$0] ?? $0))(problem.severity)); const $x = $k($a), $y = $k($b); if ($x < $y) return 1; if ($x > $y) return -1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.end.line); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.end.column); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }).slice();
+        let items = $eq.linq.toArray($eq.query.defer(($src) => [...$src].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = ((problem) => problem.range.start.line); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.start.column); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => (($0) => (({ 'hint': 0, 'information': 1, 'warning': 2, 'error': 3 })[$0] ?? $0))(problem.severity)); const $x = $k($a), $y = $k($b); if ($x < $y) return 1; if ($x > $y) return -1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.end.line); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } { const $k: ($element: typeof $a) => any = ((problem) => problem.range.end.column); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }), $eq.query.concat(this._reported, $eq.query.selectMany(this._answered, (entry) => entry[1]))));
         if (CodeDiagnostics.same(items, this._items) && !this._moved) return;
         this._items = items;
         this._moved = false;
