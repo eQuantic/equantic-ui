@@ -184,9 +184,11 @@ function onPointerDown(down: PointerEvent): void {
 
 /** The list's own look of a carried item (#1602), each member its lowering wrote; null for a list with none. */
 function ownLookOf(list: HTMLElement): SortableTheme | null {
+  // A member it does not say, or says as no number, is the theme's.
   const read = (name: string): number | null => {
-    const value = list.getAttribute(name);
-    return value === null ? null : Number(value);
+    const value = list.getAttribute(name)?.trim();
+    const number = value ? Number(value) : Number.NaN;
+    return Number.isFinite(number) ? number : null;
   };
   const liftedOpacity = read('data-eq-sort-look-lifted');
   const copyOpacity = read('data-eq-sort-look-copy-opacity');

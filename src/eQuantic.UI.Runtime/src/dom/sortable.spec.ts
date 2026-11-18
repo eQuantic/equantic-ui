@@ -234,6 +234,15 @@ describe('lists a pointer sorts', () => {
       pointer(document, 'pointerup', 120, 20);
     });
 
+    it("takes the theme's member where a list's element says no number", () => {
+      const container = mount(new Board(false, null, 'board', [], null, SdkStrings.sorting, undefined,
+        new SortableTheme({ liftedOpacity: 0.25 })));
+      container.querySelector('[data-eq-sort-id="todo"]')!.setAttribute('data-eq-sort-look-lifted', ' ');
+      carryFast(container);
+      expect(item(container, 'a').style.opacity).toBe('0.4');
+      pointer(document, 'pointerup', 120, 20);
+    });
+
     it("keeps the copy upright where the list's look leans no further", () => {
       const container = mount(new Board(false, null, 'board', [], null, SdkStrings.sorting, undefined,
         new SortableTheme({ maxLean: 0 })));

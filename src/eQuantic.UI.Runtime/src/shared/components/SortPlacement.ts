@@ -14,7 +14,11 @@ export class SortPlacement {
 
     static look(theme: SortableTheme | null, own: SortableTheme | null) {
         let look = SortableTheme.merge(theme, own);
-        return new SortableTheme({ liftedOpacity: look?.liftedOpacity ?? Math.fround(SortPlacement.liftedOpacity), copyOpacity: look?.copyOpacity ?? Math.fround(SortPlacement.copyOpacity), copyElevation: look?.copyElevation ?? SortPlacement.copyElevation, maxLean: look?.maxLean ?? SortPlacement.tiltMax });
+        return new SortableTheme({ liftedOpacity: SortPlacement.opacity(look?.liftedOpacity ?? Math.fround(SortPlacement.liftedOpacity)), copyOpacity: SortPlacement.opacity(look?.copyOpacity ?? Math.fround(SortPlacement.copyOpacity)), copyElevation: look?.copyElevation ?? SortPlacement.copyElevation, maxLean: look?.maxLean ?? SortPlacement.tiltMax });
+    }
+
+    static opacity(value: number) {
+        return Math.min(1, Math.max(0, value));
     }
 
     static place(starts: number[], extents: number[], at: number, nests: boolean): [number, number] {

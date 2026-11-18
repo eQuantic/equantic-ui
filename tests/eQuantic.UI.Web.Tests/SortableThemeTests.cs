@@ -49,6 +49,15 @@ public class SortableThemeTests
     }
 
     [Fact]
+    public void TheLook_KeepsEachOpacityBetweenNoneAndAll()
+    {
+        var look = SortPlacement.Look(new SortableTheme { LiftedOpacity = -0.2f }, new SortableTheme { CopyOpacity = 1.5f });
+
+        look.LiftedOpacity.Should().Be(0, "the browser clamps an opacity by itself, and Photon's layer would not");
+        look.CopyOpacity.Should().Be(1);
+    }
+
+    [Fact]
     public void TheCopy_LeansNoFurtherThanItsMost_AndStaysUprightAtZero()
     {
         SortPlacement.Tilt(-40, 10, SortPlacement.TiltMax).Should().Be(12);

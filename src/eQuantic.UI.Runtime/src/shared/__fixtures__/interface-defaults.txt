@@ -24,6 +24,7 @@ IAppTheme.segmented
 IAppTheme.selection
 IAppTheme.selectionControls
 IAppTheme.sheet
+IAppTheme.sortable
 IAppTheme.table
 IAppTheme.textFamily
 ICodeCompletionProvider.resolveAsync

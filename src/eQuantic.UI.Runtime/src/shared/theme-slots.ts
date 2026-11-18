@@ -668,6 +668,9 @@ export class MarkdownTheme {
   }
 }
 
+/** A float member as the C# record holds it: a single, or null. */
+const single = (value: number | null | undefined): number | null => (value == null ? null : Math.fround(value));
+
 /** The look of an item carried in a sortable list (#1602), which a list's own `style` comes ahead of: the
  * defaults where neither sets a member are `SortPlacement`'s (`SortPlacement.look`). */
 export class SortableTheme {
@@ -678,6 +681,11 @@ export class SortableTheme {
 
   constructor(config?: Partial<SortableTheme>) {
     if (config) Object.assign(this, config);
+    // The C# record holds singles, and the controller builds one from what a list's element says
+    // (FloatSeamsTests): each float member is one here too.
+    this.liftedOpacity = single(this.liftedOpacity);
+    this.copyOpacity = single(this.copyOpacity);
+    this.maxLean = single(this.maxLean);
   }
 
   /** C# `SortableTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */

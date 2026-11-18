@@ -49,19 +49,23 @@ public static class SortPlacement
     /// <summary>
     /// The look of an item carried from a list (#1602): the <paramref name="theme"/>'s record with the list's
     /// <paramref name="own"/> laid over it, member by member, and the defaults above where neither sets one. Every
-    /// member of the answer is set, so a realizer reads it as it is.
+    /// member of the answer is set, so a realizer reads it as it is, and each opacity is kept between 0 and 1, which
+    /// the browser does by itself and Photon's layers do not.
     /// </summary>
     public static SortableTheme Look(SortableTheme? theme, SortableTheme? own)
     {
         var look = SortableTheme.Merge(theme, own);
         return new SortableTheme
         {
-            LiftedOpacity = look?.LiftedOpacity ?? (float)LiftedOpacity,
-            CopyOpacity = look?.CopyOpacity ?? (float)CopyOpacity,
+            LiftedOpacity = Opacity(look?.LiftedOpacity ?? (float)LiftedOpacity),
+            CopyOpacity = Opacity(look?.CopyOpacity ?? (float)CopyOpacity),
             CopyElevation = look?.CopyElevation ?? CopyElevation,
             MaxLean = look?.MaxLean ?? TiltMax,
         };
     }
+
+    /// <summary>An opacity kept between none and all.</summary>
+    private static float Opacity(float value) => Math.Min(1f, Math.Max(0f, value));
 
     /// <summary>
     /// Where a carried item lands among the OTHER items of a list: before the first whose middle the pointer
