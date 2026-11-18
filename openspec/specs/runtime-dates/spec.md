@@ -695,6 +695,13 @@ the Gregorian calendar's in every culture.
 - **THEN** the year is 2567 in the Thai Buddhist count, in the century its `TwoDigitYearMax` (2572)
   ends, and the year of `15/1` is this year in the Um Al Qura count, as .NET reads them
 
+#### Scenario: The era beside a date
+
+- **WHEN** `1/15/2024 AD` is read in en-US, `1402/10/25 ه‍.ش.` in fa-IR and a date with its era written
+  after it in ar-SA, as Windows' data writes ar-SA's short date
+- **THEN** each is read as .NET reads it, the era's name or its abbreviation before or after the date,
+  and a date with ar-SA's Arabic comma, which .NET refuses, is refused
+
 #### Scenario: The ISO form is Gregorian in every culture
 
 - **WHEN** `2024-01-15T10:30:00` and `2024-01-15` are read in ar-SA

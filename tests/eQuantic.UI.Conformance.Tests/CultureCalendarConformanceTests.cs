@@ -51,16 +51,22 @@ public class CultureCalendarConformanceTests
         // last day each calendar writes.
         "var s = \"\"; foreach (var day in new[] { new DateTime(2024, 3, 19), new DateTime(2024, 3, 20), new DateTime(2024, 3, 21), new DateTime(2025, 3, 20), new DateTime(2025, 3, 21), new DateTime(2023, 9, 15), new DateTime(2023, 9, 16), new DateTime(2024, 2, 29), new DateTime(1900, 4, 29), new DateTime(1900, 4, 30), new DateTime(2077, 11, 16), new DateTime(2077, 11, 17), new DateTime(622, 3, 21), new DateTime(622, 3, 22), new DateTime(1, 1, 1), new DateTime(9999, 12, 31) }) "
             + "{ try { s += day.ToString(\"yyyy/MM/dd\") + \"|\"; } catch (ArgumentOutOfRangeException) { s += \"out|\"; } } return s;",
-        // A day the calendar does not write is refused in the calendar's own words, where it has one.
+        // A time of day held in a DateTime of the first day: its text with no format is the invariant
+        // sortable form where the calendar cannot write the year 1, and a part that names no date is
+        // written in every calendar.
+        "var t = new DateTime(1, 1, 1, 10, 30, 0); return t.ToString() + \"|\" + default(DateTime) + \"|\" + new DateTimeOffset(t, TimeSpan.FromHours(-3)) + \"|\" + t.ToString(\"t\") + \"|\" + DateTime.MinValue.ToString(\"dddd HH:mm\") + \"|\" + new TimeOnly(10, 30);",
+    ];
+
+    /// <summary>A day the calendar does not write, refused in the calendar's own words where it has a range:
+    /// an <c>ArgumentOutOfRangeException</c> writes its actual value after the host's newline, which is
+    /// <c>\r\n</c> on Windows and <c>\n</c> in the browser.</summary>
+    private static readonly string[] Refusals =
+    [
         "try { return DateTime.MinValue.ToString(\"d\"); } catch (ArgumentOutOfRangeException e) { return e.Message; }",
         "try { return new DateTime(2100, 1, 1).ToString(\"D\"); } catch (ArgumentOutOfRangeException e) { return e.Message; }",
         "try { return DateOnly.MinValue.ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }",
         "try { return DateTime.MinValue.ToString(\"MMMM\"); } catch (ArgumentOutOfRangeException e) { return e.Message; }",
         "try { return DateTime.MinValue.ToString(\"gg\"); } catch (ArgumentOutOfRangeException e) { return e.Message; }",
-        // A time of day held in a DateTime of the first day: its text with no format is the invariant
-        // sortable form where the calendar cannot write the year 1, and a part that names no date is
-        // written in every calendar.
-        "var t = new DateTime(1, 1, 1, 10, 30, 0); return t.ToString() + \"|\" + default(DateTime) + \"|\" + new DateTimeOffset(t, TimeSpan.FromHours(-3)) + \"|\" + t.ToString(\"t\") + \"|\" + DateTime.MinValue.ToString(\"dddd HH:mm\") + \"|\" + new TimeOnly(10, 30);",
         "try { return new DateTime(1, 1, 1, 10, 30, 0).ToString(\"G\"); } catch (ArgumentOutOfRangeException e) { return e.Message; }",
     ];
 
@@ -77,6 +83,9 @@ public class CultureCalendarConformanceTests
         Each("DateTime.TryParse(t, out var v)",
             "2024-01-15", "2024/01/15", "2024-01-15 10:30:05", "2024-01-15T10:30:00", "2024-01-15T10:30:05Z",
             "2567-01-15T10:30:00", "1445-02-30T10:00", "Monday 2024-01-15T10:00", "15 January 2567", "January 2567"),
+        // The era's name and its abbreviation, before the date, after it and beside it, as .NET reads them in
+        // every culture, and another calendar's era refused.
+        Moment + "var g = d.ToString(\"gg\"); var s = \"\"; foreach (var t in new[] { d.ToString(\"d\") + \" \" + g, g + \" \" + d.ToString(\"d\"), d.ToString(\"d\") + g, d.ToString(\"d\") + \" AD\", d.ToString(\"d\") + \" A\", d.ToString(\"d\") + \" A.D.\" }) s += (DateTime.TryParse(t, out var v) ? v.ToString(\"o\") : \"no\") + \"|\"; return s;",
         // A date of two numbers is of this year as the culture's calendar counts it.
         Each("DateTime.TryParse(t, out var v)", "15/1", "1/5", "1/15", "12/30"),
         // What the culture writes reads back, its long forms where .NET reads them.
@@ -94,6 +103,8 @@ public class CultureCalendarConformanceTests
 
     public static TheoryData<string, string> ReadCases() => Each(Reads);
 
+    public static TheoryData<string, string> RefusalCases() => Each(Refusals);
+
     private static TheoryData<string, string> Each(string[] statements)
     {
         var data = new TheoryData<string, string>();
@@ -109,6 +120,15 @@ public class CultureCalendarConformanceTests
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, culture: culture);
+    }
+
+    [SkippableTheory]
+    [MemberData(nameof(RefusalCases))]
+    public void ADayTheCalendarDoesNotWrite_IsRefusedInItsWords(string statements, string culture)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNetExceptTheHostsNewline(statements,
+            "ArgumentOutOfRangeException writes its actual value after Environment.NewLine", culture: culture);
     }
 
     [SkippableTheory]

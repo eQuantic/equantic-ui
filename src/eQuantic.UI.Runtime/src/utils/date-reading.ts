@@ -109,6 +109,8 @@ interface Shapes {
   words: string[];
   /** The calendar the culture counts a date's numbers in. */
   calendar: Calendar;
+  /** The calendar's era, its name and its abbreviation, in lower case, the longest first. */
+  eras: string[];
 }
 
 /** The English names, which .NET reads in every culture, beside the culture's own. */
@@ -151,7 +153,13 @@ function dateWordsOf(culture: DateTimeFormatData): string[] {
       return ' ';
     });
   const datePatterns = [culture.longDatePattern, culture.shortDatePattern, culture.monthDayPattern, culture.yearMonthPattern];
-  for (const pattern of datePatterns) quotedOf(pattern).split(/[dMyg\s,./-]+/).forEach(add);
+  // What is left unquoted is a word where it starts with a letter, as .NET's scanner takes one: ar-SA's
+  // Arabic comma, `d MMM، yyyy`, is none, and .NET refuses a date written with it (#1191).
+  for (const pattern of datePatterns)
+    quotedOf(pattern)
+      .split(/[dMyg\s,./-]+/)
+      .filter((word) => isLetter(word[0]))
+      .forEach(add);
   // A time pattern's own letters are its parts (`H:mm:ss`), never a word: only what it quotes is one.
   for (const pattern of [culture.longTimePattern, culture.shortTimePattern]) quotedOf(pattern);
   return [...words].sort((a, b) => b.length - a.length);
@@ -187,6 +195,9 @@ function shapesOf(culture: DateTimeFormatData): Shapes {
   const point = pointIsClock && dateSeparator !== '.' ? [] : ['.'];
   return {
     calendar: calendarOf(culture.calendar),
+    eras: [...new Set([culture.eraName, culture.abbreviatedEraName].map((era) => era.trim().toLowerCase()))]
+      .filter((era) => era.length > 0)
+      .sort((a, b) => b.length - a.length),
     dateSeparators: ['/', '-', ...point, dateSeparator].filter((s) => s.length > 0),
     timeSeparators: [':', own(culture.timeSeparator)].filter((s) => s.length > 0),
     pointIsClock,
@@ -460,6 +471,8 @@ function readDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
     cursor.take([',']);
     cursor.space();
   }
+  // The era before the date, as .NET reads it there: `พ.ศ. 15/1/2567` (#1191).
+  if (cursor.word(shapes.eras)) cursor.space();
   const named = readNamedDate(cursor, shapes);
   const read = named === 'none' ? readNumericDate(cursor, shapes) : named;
   if (read === 'none') {
@@ -548,13 +561,18 @@ function readNamedDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
 
 /**
  * What a date may end with: a word, ru-RU's `г.` and ja-JP's `日`, beside its last part or after white space,
- * then the literal the culture's date ends with, which it writes after the day (ko-KR's `2024. 1. 15.`),
+ * then the calendar's era, then the literal the culture's date ends with, which it writes after the day (ko-KR's `2024. 1. 15.`),
  * or the point any date may end with, but where a point is what separates the culture's date.
  */
 function endOfDate(cursor: Cursor, shapes: Shapes): void {
   const before = cursor.at;
   cursor.space();
   if (!cursor.word(shapes.words)) cursor.at = before;
+  // The era after the date, which a culture's short date writes where its calendar is not the Gregorian
+  // one (ar-SA's on Windows, `3/7/1445 هـ`), and which .NET reads after any date (#1191).
+  const beforeEra = cursor.at;
+  cursor.space();
+  if (!cursor.word(shapes.eras)) cursor.at = beforeEra;
   const end = shapes.dateEnd.length > 0 ? shapes.dateEnd : shapes.dateSeparator === '.' ? null : '.';
   const last = cursor.at;
   cursor.space();

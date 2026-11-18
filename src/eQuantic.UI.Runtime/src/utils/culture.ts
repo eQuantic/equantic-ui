@@ -64,6 +64,8 @@ export interface DateTimeFormatData {
   dateSeparator: string;
   timeSeparator: string;
   eraName: string;
+  /** The era's abbreviation, which .NET reads beside a date as it reads its name (ar-SA's `هـ`). */
+  abbreviatedEraName: string;
   /** The day a week starts on, as `System.DayOfWeek` counts: 0 is Sunday. */
   firstDayOfWeek: number;
   /** Sunday first, as `System.DayOfWeek` counts. */
@@ -194,6 +196,7 @@ export const INVARIANT_FORMAT: CultureFormat = Object.freeze({
     dateSeparator: '/',
     timeSeparator: ':',
     eraName: 'A.D.',
+    abbreviatedEraName: 'AD',
     firstDayOfWeek: 0,
     dayNames: INVARIANT_DAYS,
     abbreviatedDayNames: INVARIANT_DAYS.map((day) => day.slice(0, 3)),

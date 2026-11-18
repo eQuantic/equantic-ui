@@ -40,5 +40,6 @@ and read in the browser in the Gregorian numbers, in a culture whose calendar is
   date format data, every page's and every culture switch's.
 - `src/eQuantic.UI.Runtime/src/utils/calendar.ts` (new), which also takes the Gregorian arithmetic from
   `datetime.ts`; `date-reading.ts`, `format.ts`, `culture.ts`.
-- The served runtime grows 1,444 bytes gzipped, measured against `main`; a Persian or an Um Al Qura
-  culture's data, which every page in it carries, grows by its months, about 400 bytes gzipped.
+- The served runtime grows 1,557 bytes gzipped, measured against `main`; a Persian or an Um Al Qura
+  culture's data, which every page in it carries, grows by its months: 385 bytes gzipped of fa-IR's and
+  516 of ar-SA's.

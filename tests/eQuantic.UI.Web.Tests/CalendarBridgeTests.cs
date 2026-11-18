@@ -28,6 +28,15 @@ public class CalendarBridgeTests
         return culture;
     }
 
+    /// <summary>A culture that may count in <paramref name="calendar"/>, counting in it: whichever culture
+    /// its host's data offers that calendar to.</summary>
+    private static CultureInfo In(Calendar calendar)
+    {
+        var name = CultureInfo.GetCultures(CultureTypes.SpecificCultures)
+            .First(culture => culture.OptionalCalendars.Any(optional => optional.GetType() == calendar.GetType())).Name;
+        return In(name, calendar);
+    }
+
     public static TheoryData<string> DefaultCultures() => new() { "th-TH", "fa-IR", "ar-SA", "en-US", "" };
 
     [Theory]
@@ -50,11 +59,13 @@ public class CalendarBridgeTests
         CalendarOf(CultureInfo.InvariantCulture).GetRawText().Should().Be(
             "{\"name\":\"System.Globalization.GregorianCalendar\",\"twoDigitYearMax\":2049,\"yearOffset\":0}",
             "the runtime's INVARIANT_FORMAT carries this calendar, and the Gregorian one is recognised by it");
-        var persian = CalendarOf(CultureInfo.GetCultureInfo("fa-IR"));
+        // Which calendar a culture defaults to is its host's ICU's to say: Linux's gives ar-SA the Gregorian
+        // one, macOS's Um Al Qura. So each calendar is asked of a culture that may count in it.
+        var persian = CalendarOf(In(new PersianCalendar()));
         persian.GetProperty("months").GetProperty("varying").EnumerateArray().Select(m => m.GetInt32())
             .Should().Equal([12], "only Esfand's length varies, one bit a year");
         persian.GetProperty("timeOfDayInvariant").GetBoolean().Should().BeTrue();
-        CalendarOf(CultureInfo.GetCultureInfo("ar-SA")).GetProperty("outOfRange").GetString().Should().Be(
+        CalendarOf(In(new UmAlQuraCalendar())).GetProperty("outOfRange").GetString().Should().Be(
             "Specified time is not supported in this calendar. It should be between 04/30/1900 00:00:00 (Gregorian date) and 11/16/2077 23:59:59 (Gregorian date), inclusive.");
     }
 
