@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeFold, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, CodeTokenKindValue, ColorToken, Column, ControlMetrics, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
+import { $CodeDecorationKindValue, $CodeGutterKindValue, $CodeTokenKindValue, $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDocument, CodeFold, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, ColorToken, Column, ControlMetrics, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
@@ -24,7 +24,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     declare standalone: boolean;
-    declare size: SizeVariantValue;
+    declare size: $SizeVariantValue;
     declare inverse: boolean;
     declare gutterMarkers: CodeGutterMarker[];
     declare decorations: CodeDecoration[];
@@ -234,7 +234,7 @@ export class CodeBlock extends StatelessComponent {
         return this.showLineNumbers && ($eq.collections.count(this.folds) > 0 || !(this.onFoldPressed == null)) ? own.with({ gutterWidth: Math.fround(own.gutterWidth + CodeBlock.foldSlot) }) : own;
     }
 
-    static metricsFor(context: BuildContext, size: SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
+    static metricsFor(context: BuildContext, size: $SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
         let style = $eq.withPatch(TypeStyle.ofSize(ControlMetrics.labelSize(context, size), 'regular'), { mono: true });
         let gutter = showLineNumbers ? Math.fround(Math.ceil(context.measureText($eq.text.format(lastLineNumber, null, undefined, undefined, 'int32') + '0', style)) + 12) : 0;
         return new CodeBlock$CodeMetrics(style, $eq.math.roundSingle(Math.fround(style.lineHeight * Math.fround(1.15))), context.monoAdvance(style), gutter);
@@ -433,7 +433,7 @@ export class CodeBlock extends StatelessComponent {
         return [first, Math.min(lineCount - 1, first + visible)];
     }
 
-    static passOf(kind: CodeDecorationKindValue) {
+    static passOf(kind: $CodeDecorationKindValue) {
         return (() => { const $s = kind; if ($s === 'line') return CodeBlock.linePass; if ($s === 'highlight') return CodeBlock.highlightPass; return CodeBlock.outlinePass; })();
     }
 
@@ -497,7 +497,7 @@ export class CodeBlock extends StatelessComponent {
         return _seq;
     }
 
-    defaultColor(kind: CodeDecorationKindValue, theme: any) {
+    defaultColor(kind: $CodeDecorationKindValue, theme: any) {
         return (() => { const $s = kind; if ($s === 'squiggle') return theme.colors('destructive').base; if ($s === 'outline') return theme.borderStrong; if ($s === 'strike') return theme.textMuted; if ($s === 'underline') return CodeBlock.inkFor(this.inverse, theme); if ($s === 'line') return theme.colors('primary').subtle; if ($s === 'dots') return theme.textMuted; return theme.colors('warning').subtle; })();
     }
 
@@ -563,12 +563,12 @@ export class CodeBlock extends StatelessComponent {
         return null;
     }
 
-    gutterColor(kind: CodeGutterKindValue, theme: any) {
+    gutterColor(kind: $CodeGutterKindValue, theme: any) {
         let token = CodeBlock.gutterToken(kind, theme);
         return this.inverse ? new ColorToken(token.dark, token.dark) : token;
     }
 
-    static gutterToken(kind: CodeGutterKindValue, theme: any) {
+    static gutterToken(kind: $CodeGutterKindValue, theme: any) {
         return (() => { const $s = kind; if ($s === 'breakpoint') return theme.colors('destructive').base; if ($s === 'breakpointDisabled') return theme.borderStrong; if ($s === 'error') return theme.colors('destructive').base; if ($s === 'warning') return theme.colors('warning').base; if ($s === 'added') return theme.colors('success').base; if ($s === 'modified') return theme.colors('info').base; if ($s === 'removed') return theme.colors('destructive').subtle; return theme.colors('primary').base; })();
     }
 
@@ -584,7 +584,7 @@ export class CodeBlock extends StatelessComponent {
         return inverse ? CodeBlock.codeSlab : theme.surfaceSubtle;
     }
 
-    static inverseCode(kind: CodeTokenKindValue, theme: any) {
+    static inverseCode(kind: $CodeTokenKindValue, theme: any) {
         let token = theme.code(kind);
         return new ColorToken(token.dark, token.dark);
     }

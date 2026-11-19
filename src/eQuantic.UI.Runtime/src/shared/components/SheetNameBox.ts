@@ -1,4 +1,4 @@
-import { CodeDocument, CodeEditorController, CodeGrid, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect, SheetController, SheetEntryLanguage, TextReading } from "../runtime-exports";
+import { $KeyboardConventionValue, $PointerPhaseValue, CodeDocument, CodeEditorController, CodeGrid, CodePosition, CodeRange, Point, Rect, SheetController, SheetEntryLanguage, TextReading } from "../runtime-exports";
 
 export class SheetNameBox {
     constructor(sheet: SheetController) {
@@ -66,7 +66,7 @@ export class SheetNameBox {
         return this._focusVersion++;
     }
 
-    handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any) {
+    handleKey(key: string, modifiers: number, convention: $KeyboardConventionValue, clipboard: any) {
         if (!this.typing) return false;
         this._justFocused = false;
         switch (key) {
@@ -112,7 +112,7 @@ export class SheetNameBox {
         return this.typing && this._box.paste(text);
     }
 
-    handlePointer(phase: PointerPhaseValue, position: Point, modifiers: number, clicks: number) {
+    handlePointer(phase: $PointerPhaseValue, position: Point, modifiers: number, clicks: number) {
         if (!this.typing) return false;
         if (phase === 'down' && this._justFocused) {
             this._justFocused = false;

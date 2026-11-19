@@ -98,7 +98,7 @@ public class QualifiedTypeNameTests
             """);
 
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
-        Assert.Contains("role: TypeRoleValue", result.TypeScript);
+        Assert.Contains("role: $TypeRoleValue", result.TypeScript);
         Assert.DoesNotContain("role: TypeRole,", result.TypeScript);
         Assert.DoesNotContain("role: TypeRole)", result.TypeScript);
     }

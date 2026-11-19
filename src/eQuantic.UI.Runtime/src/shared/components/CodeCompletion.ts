@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeChoiceProvider, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionRequest, CodeCompletionTriggerValue, CodeDocument, CodeEdit, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, ProviderRequest, UiThread } from "../runtime-exports";
+import { $CodeCompletionTriggerValue, $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeChoiceProvider, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionRequest, CodeDocument, CodeEdit, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, ProviderRequest, UiThread } from "../runtime-exports";
 
 export class CodeCompletion {
     constructor(editor: CodeEditorController) {
@@ -35,7 +35,7 @@ export class CodeCompletion {
     _shown!: CodeCompletionOffer[];
     _selected!: number;
     _active!: boolean;
-    _openedBy!: CodeCompletionTriggerValue;
+    _openedBy!: $CodeCompletionTriggerValue;
     _start!: CodePosition;
     _openedEmpty!: boolean;
     _choosing!: boolean;
@@ -100,7 +100,7 @@ export class CodeCompletion {
         this.open(start, 'typing', typed, this.providers.slice());
     }
 
-    open(start: CodePosition, trigger: CodeCompletionTriggerValue, character: string | null, providers: any[], choosing: boolean = false) {
+    open(start: CodePosition, trigger: $CodeCompletionTriggerValue, character: string | null, providers: any[], choosing: boolean = false) {
         this.close(false);
         this._active = true;
         this._choosing = choosing;
@@ -121,7 +121,7 @@ export class CodeCompletion {
         if (this._choosing) this.close(true);
     }
 
-    ask(trigger: CodeCompletionTriggerValue, character: string | null, providers: any[], announce: boolean) {
+    ask(trigger: $CodeCompletionTriggerValue, character: string | null, providers: any[], announce: boolean) {
         let document = this._editor.document;
         let position = this._editor.caret;
         let $n0: CodeCompletionContext; 

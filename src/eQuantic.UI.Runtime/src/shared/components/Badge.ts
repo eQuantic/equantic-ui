@@ -1,10 +1,10 @@
-import { $eq, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Positioned, Stack, StatelessComponent, Text, TypeStyle, VariantValue, VisualNode, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, $VariantValue, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Positioned, Stack, StatelessComponent, Text, TypeStyle, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Badge extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Badge';
     declare count: number;
     declare max: number;
-    declare variant: VariantValue;
+    declare variant: $VariantValue;
     declare neutral: boolean;
     declare dot: boolean;
     declare ring: boolean;
@@ -44,7 +44,7 @@ export class Badge extends StatelessComponent {
         return new Box(new BoxStyle({ height: height, minWidth: height, padding: EdgeInsets.symmetric(slot?.countPaddingX ?? 4, 0), background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: ring, borderColor: ringColor }), content);
     }
 
-    static asDot(variant: VariantValue = 'destructive') {
+    static asDot(variant: $VariantValue = 'destructive') {
         return new Badge(0, 99, variant, { dot: true });
     }
 

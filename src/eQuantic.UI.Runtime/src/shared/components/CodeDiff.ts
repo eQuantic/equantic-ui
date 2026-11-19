@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Button, CodeBlock, CodeDecoration, CodeDiffLayout, CodeDiffSource, CodeEditorController, CodeGrid, CodeLanguages, CodeLineChange, CodePatchFile, CodePosition, CodeRange, CodeRow, CodeSurface, ColorToken, Column, CornerRadii, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, StatefulComponent, Text, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, Button, CodeBlock, CodeDecoration, CodeDiffLayout, CodeDiffSource, CodeEditorController, CodeGrid, CodeLanguages, CodeLineChange, CodePatchFile, CodePosition, CodeRange, CodeRow, CodeSurface, ColorToken, Column, CornerRadii, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, StatefulComponent, Text, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeDiff extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeDiff';
@@ -30,7 +30,7 @@ export class CodeDiff extends StatefulComponent {
     declare onChanged: ((string: string) => void) | null;
     declare height: SizeValue;
     declare maxHeight: number;
-    declare size: SizeVariantValue;
+    declare size: $SizeVariantValue;
     declare inverse: boolean;
     declare originalCaption: any;
     declare modifiedCaption: any;

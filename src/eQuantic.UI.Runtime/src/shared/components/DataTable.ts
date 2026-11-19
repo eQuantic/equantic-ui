@@ -1,4 +1,4 @@
-import { $eq, Adjustable, Box, BoxStyle, BuildContext, Checkbox, Column, DataColumn, DataRow, Draggable, EdgeInsets, Grid, GridTrack, Icon, IconGlyph, Motion, Positioned, Pressable, RangeValue, Row, SdkStrings, SizeValue, Skeleton, Sortable, SortableItem, SortDrop, Stack, StatefulComponent, StyleDiff, Text, TextAlignmentValue, TransitionSpec, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, $TextAlignmentValue, Adjustable, Box, BoxStyle, BuildContext, Checkbox, Column, DataColumn, DataRow, Draggable, EdgeInsets, Grid, GridTrack, Icon, IconGlyph, Motion, Positioned, Pressable, RangeValue, Row, SdkStrings, SizeValue, Skeleton, Sortable, SortableItem, SortDrop, Stack, StatefulComponent, StyleDiff, Text, TransitionSpec, UiComponent, VisualNode } from "../runtime-exports";
 
 export class DataTable extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.DataTable';
@@ -236,7 +236,7 @@ export class DataTable extends StatefulComponent {
         return new Box(new BoxStyle({ width: SizeValue.fill, minHeight: slot?.dataRowHeight ?? 52, borderWidth: slot?.borderWidth ?? 1, borderColor: slot?.borderColor ?? theme.border }), grid, { key: `pending-${$eq.text.format(index, null, undefined, undefined, 'int32')}` });
     }
 
-    static cell(child: VisualNode, align: TextAlignmentValue, slot: any) {
+    static cell(child: VisualNode, align: $TextAlignmentValue, slot: any) {
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center', main: (() => { const $s = align; if ($s === 'center') return 'center'; if ($s === 'end') return 'end'; return 'start'; })() });
         row.add(child);
         return new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(slot?.cellPaddingX ?? 12, slot?.cellPaddingY ?? 8) }), row);

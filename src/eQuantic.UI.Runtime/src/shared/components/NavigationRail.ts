@@ -1,4 +1,4 @@
-import { $eq, Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconGlyph, IconsValue, MainAlignValue, NavItem, Pressable, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, $IconsValue, $MainAlignValue, Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconGlyph, NavItem, Pressable, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
 
 export class NavigationRail extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.NavigationRail';
@@ -15,7 +15,7 @@ export class NavigationRail extends StatelessComponent {
     declare selected: number;
     declare onSelect: ((int: number) => void) | null;
     declare leading: any;
-    declare alignment: MainAlignValue;
+    declare alignment: $MainAlignValue;
 
     constructor(items?: any, selected?: any, onSelect: any = null, props?: any) {
         super();
@@ -42,7 +42,7 @@ export class NavigationRail extends StatelessComponent {
             let isActive = i === this.selected;
             let index = i;
             let filled: any; 
-            let glyph: IconsValue = isActive && (filled = item.selectedIcon) != null ? filled : item.icon;
+            let glyph: $IconsValue = isActive && (filled = item.selectedIcon) != null ? filled : item.icon;
             let tint = isActive ? primary.onSubtle : slot?.inactiveColor ?? theme.textMuted;
             let icon = new Icon(IconGlyph.fromIcons(glyph), slot?.railIconSize ?? 20, tint);
             let iconNode = item.badgeCount > 0 ? Badge.over(icon, item.badgeCount) : icon;

@@ -1,8 +1,8 @@
-import { $eq, Box, BoxStyle, BuildContext, Decimal, EdgeInsets, Row, SdkStrings, SheetController, SheetPalette, SizeValue, Spacer, StatefulComponent, Text, TypeRoleValue, UiComponent } from "../runtime-exports";
+import { $eq, $TypeRoleValue, Box, BoxStyle, BuildContext, Decimal, EdgeInsets, Row, SdkStrings, SheetController, SheetPalette, SizeValue, Spacer, StatefulComponent, Text, UiComponent } from "../runtime-exports";
 
 export class StatusBar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.StatusBar';
-    static barType: TypeRoleValue = 'caption';
+    static barType: $TypeRoleValue = 'caption';
     _config: StatusBar;
     _rebuild: () => void;
     _listening: any = null;
