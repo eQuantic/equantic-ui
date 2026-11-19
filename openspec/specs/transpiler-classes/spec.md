@@ -657,9 +657,10 @@ accessor, as C# compiles them: a field-like event's composes its invocation list
 and `remove` accessors, an explicit interface's included, SHALL run its own, whether the subscription binds the
 event through its type or through an interface. An event declared with accessors in a class, a static class, a
 record, a struct or a component, a primitive and an abstract base among the components, SHALL run its own, an
-explicit interface's and a static one included. An accessor marked `[ServerOnly]`, or `[ServerAction]` on a
-component's, SHALL stay on the server, written into no twin, and a subscription from client code that calls it
-SHALL be refused with EQ2010. `+=` and `-=` on a delegate, a field,
+explicit interface's and a static one included. An accessor marked `[ServerOnly]` SHALL stay on the server,
+written into no twin, and a subscription from client code that calls it SHALL be refused with EQ2010; a
+`[ServerAction]` on an accessor is refused where it is declared (EQ2016), in every type, and makes no action.
+`+=` and `-=` on a delegate, a field,
 a local or a property of one, SHALL compose its invocation list as on an event.
 
 #### Scenario: A handler subscribed through an interface's explicit event
@@ -711,13 +712,13 @@ a local or a property of one, SHALL compose its invocation list as on an event.
 #### Scenario: An event's accessor that stays on the server
 
 - **WHEN** a class, a record, a struct and a component each declare an event whose `remove` is `[ServerOnly]` and
-  reads the file system (the component another whose `remove` is `[ServerAction]`), and client code subscribes with `+=`
+  reads the file system, and client code subscribes with `+=`
 - **THEN** the build accepts every module, no twin holds the server-only body, and the handlers run as in .NET
 
 #### Scenario: A subscription that calls an accessor kept on the server
 
-- **WHEN** client code writes `s.Fired -= a` where `Fired`'s `remove` is `[ServerOnly]`, or `m.Moved += a` where a
-  component's `add` is `[ServerAction]`
+- **WHEN** client code writes `s.Fired -= a` where `Fired`'s `remove` is `[ServerOnly]`, on a class, a record, a
+  struct or a component
 - **THEN** the build refuses it with EQ2010
 
 #### Scenario: A null-conditional subscription to an event with accessors
@@ -766,3 +767,43 @@ A type test against an interface (`is`, `as`, a type pattern, a switch arm) SHAL
 
 - **WHEN** a program tests `o is IComparable`, `o is IEnumerable`, `o is IEnumerable<int>` or `o is IBox<int>`
 - **THEN** the build refuses it with EQ2015
+
+### Requirement: Every member a component's twin holds is written on every component path
+
+A component's twin SHALL hold the indexers, the statics that initialize in order, and the properties with
+a body and the static auto-properties its type declares, whichever kind of component it is: a concrete
+component, an abstract base however few members it declares, and a primitive one (deriving from
+`HtmlElement`). An indexer SHALL be its twin's `item` and `setItem`, and a static that initializes in order
+SHALL start as .NET starts it. A concrete component's twin SHALL keep the members it writes today, in the
+same order.
+
+#### Scenario: An abstract component base's indexer
+
+- **WHEN** `abstract class Grid : StatelessComponent` declares only `protected int[] _c = new int[3];` and
+  `public int this[int i] { get => _c[i]; set => _c[i] = value * 2; }`, `class Cells : Grid` declares `Build`,
+  and the code runs `var c = new Cells(); c[1] = 4; var y = (c[2] = 5); return c[1] * 100 + c[2] + y;`
+- **THEN** it answers `815`, as in .NET, where the browser threw "item is not a function"
+
+#### Scenario: A primitive component's indexer
+
+- **WHEN** `class Strip : HtmlElement` declares `public int this[int i] { get => i * 10; set => Last = value + i; }`
+  and `public int Last { get; set; }`, and the code runs `var s = new Strip(); s[3] = 4; return s[2] + s.Last;`
+- **THEN** it answers `27`, as in .NET, where the browser threw
+
+#### Scenario: An abstract component base's statics that initialize in order
+
+- **WHEN** `abstract class Board : StatelessComponent` declares only
+  `protected static readonly int[] Seed = new[] { 1, 2, 3 };`, `class Tiles : Board` declares
+  `public int At(int i) => Seed[i];`, and the code runs `return new Tiles().At(1);`
+- **THEN** it answers `2`, as in .NET, where the base's twin held no `seed` and the browser threw
+
+#### Scenario: A primitive component's bodied and static properties
+
+- **WHEN** `Strip` also declares `public int Twice => Last * 2;` and `public static int Count { get; set; } = 7;`,
+  and the code runs `var s = new Strip { Last = 3 }; return s.Twice + Strip.Count;`
+- **THEN** it answers `13`, as in .NET, where the browser answered `NaN`
+
+#### Scenario: A concrete component's twin is unchanged
+
+- **WHEN** the shared components, charts and spreadsheets are transpiled
+- **THEN** every pinned module is byte for byte what it was
