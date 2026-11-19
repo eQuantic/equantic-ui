@@ -11,7 +11,9 @@ for an epic, its priority; for every other issue, a parent that is open and unde
 one of 1, 2, 3, 5, 8 or 13 (bigger is a feature or a story created with `--split`, which carries
 no points of its own, and its slices, created next with it as their parent). It creates the
 issue with its type, parent, milestone, assignee and priority in one request, puts it on Project 11 with
-its points and status, then reads it back and fails naming whatever did not land.
+its points and status, then reads it back and fails naming whatever did not land. The board's own
+workflow adds every new issue too, and when GitHub refuses the script's add because both ran at the
+same moment, the add is made again a few seconds later and answers the item the workflow made.
 
 The body is read from a file, or from standard input with `-`, and every value reaches GitHub as a
 GraphQL variable, never through a shell. The issue is assigned to the account that runs this, unless
@@ -194,15 +196,18 @@ def on_the_board(project: dict, created: dict) -> str:
     adds every new issue too, and when the two adds run at the same moment GitHub refuses one of them
     with ALREADY_ON_THE_BOARD (#1752): the add is then made again a few seconds later, and answers the
     item the workflow made. Any other refusal, or this one every time, ends the script as before."""
-    for attempt in range(ADD_TRIES):
-        if attempt:
-            time.sleep(3)
+    def add() -> str:
+        return board.gql("""mutation($p: ID!, $c: ID!) { addProjectV2ItemById(input: { projectId: $p, contentId: $c }) {
+            item { id } } }""", p=project["id"], c=created["id"])["addProjectV2ItemById"]["item"]["id"]
+
+    for _ in range(ADD_TRIES - 1):
         try:
-            return board.gql("""mutation($p: ID!, $c: ID!) { addProjectV2ItemById(input: { projectId: $p, contentId: $c }) {
-                item { id } } }""", p=project["id"], c=created["id"])["addProjectV2ItemById"]["item"]["id"]
+            return add()
         except SystemExit as refused:
-            if ALREADY_ON_THE_BOARD not in str(refused.code) or attempt == ADD_TRIES - 1:
+            if ALREADY_ON_THE_BOARD not in str(refused.code):
                 raise
+        time.sleep(3)
+    return add()
 
 
 def whole(landed: dict, args, login: str) -> list:
