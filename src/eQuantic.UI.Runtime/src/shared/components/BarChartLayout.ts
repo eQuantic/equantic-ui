@@ -46,7 +46,7 @@ export class BarChartLayout {
         let baseline = BarChartLayout.offset(ticks, baseValue, across);
         let shown: number[] = [];
         for (let s = 0; s < $eq.collections.count(series); s++) {
-            if ($eq.collections.item(visible, s)) shown.push(s);
+            if ($eq.collections.item(visible, s)) $eq.collections.listAdd(shown, s);
         }
         let slot = categoryCount === 0 ? along : Math.fround(along / Math.fround(categoryCount));
         let bars: BarRect[] = [];
@@ -64,7 +64,7 @@ export class BarChartLayout {
                     let v = $eq.collections.item(series, s).at(c);
                     let from = BarChartLayout.offset(ticks, baseValue, across);
                     let to = BarChartLayout.offset(ticks, v, across);
-                    bars.push(BarChartLayout.rect(vertical, across, c, s, Math.fround(start + Math.fround(Math.fround(k) * Math.fround(thickness + BarChartLayout.gap))), thickness, Math.min(from, to), Math.max(from, to), v < baseValue, true));
+                    $eq.collections.listAdd(bars, BarChartLayout.rect(vertical, across, c, s, Math.fround(start + Math.fround(Math.fround(k) * Math.fround(thickness + BarChartLayout.gap))), thickness, Math.min(from, to), Math.max(from, to), v < baseValue, true));
                 }
             } else {
                 let thickness = Math.min(BarChartLayout.maxThickness, Math.fround(slot - Math.fround(2 * BarChartLayout.gap)));
@@ -72,12 +72,12 @@ export class BarChartLayout {
                 let position = Math.fround(categoryStart + Math.fround(Math.fround(slot - thickness) / 2));
                 let lastPositive = -1;
                 let lastNegative = -1;
-                for (const s of shown) {
+                for (const s of $eq.collections.listWalk(shown)) {
                     if ($eq.collections.item(series, s).at(c) >= 0) lastPositive = s; else lastNegative = s;
                 }
                 let positiveTop = baseValue;
                 let negativeBottom = baseValue;
-                for (const s of shown) {
+                for (const s of $eq.collections.listWalk(shown)) {
                     let v = $eq.collections.item(series, s).at(c);
                     let from = null;
                     let to = null;
@@ -99,7 +99,7 @@ export class BarChartLayout {
                         if (v >= 0) high = Math.fround(high - BarChartLayout.gap); else low = Math.fround(low + BarChartLayout.gap);
                         if (high < low) high = low;
                     }
-                    bars.push(BarChartLayout.rect(vertical, across, c, s, position, thickness, low, high, v < 0, dataEnd));
+                    $eq.collections.listAdd(bars, BarChartLayout.rect(vertical, across, c, s, position, thickness, low, high, v < 0, dataEnd));
                 }
             }
         }

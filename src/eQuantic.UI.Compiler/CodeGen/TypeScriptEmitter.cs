@@ -653,9 +653,12 @@ public class TypeScriptEmitter
                         // Camel-cased here and read as written there, `string Label` was
                         // `constructor(label…)` beside a body reading `Label` (a ReferenceError at `new`),
                         // and `@default` bound `default`, a module that did not parse.
+                        // Through the signature writers, which leave the annotation out in plain JavaScript:
+                        // spelled here by hand, `tag?: any` and `size: any = 2` reached the `.js` and bun
+                        // refused the module (#1574).
                         var paramList = string.Join(", ", passed.Select(p => p.DefaultValueNode != null
-                            ? $"{p.Name.ToJsIdentifier()}: any = {_converter.ConvertExpression(p.DefaultValueNode, p.Type)}"
-                            : $"{p.Name.ToJsIdentifier()}?: any"));
+                            ? Lowering.ParamWithDefault(p.Name.ToJsIdentifier(), "any", _converter.ConvertExpression(p.DefaultValueNode, p.Type))
+                            : OptionalParam(p.Name.ToJsIdentifier(), "any")));
                         // The trailing config object is `props`, unless the C# constructor already binds
                         // that name: then `constructor(props, props)`, or a body's `let props` beside the
                         // parameter, did not parse. A `$` in front is a name no C# binding and no renamed
@@ -2606,8 +2609,17 @@ public class TypeScriptEmitter
     /// </summary>
     internal static string? VocabularyUnionFor(ITypeSymbol type) =>
         RuntimeProvidedTypeScanner.IsVocabularyNamespace(type.ContainingNamespace?.ToDisplayString() ?? "")
-            ? $"{type.Name}Value"
+            ? UnionName(type.Name)
             : null;
+
+    /// <summary>
+    /// The name a module imports a vocabulary enum's union by: <c>$DensityValue</c> for <c>Density</c>.
+    /// The <c>$</c> is a character C# cannot spell, so no type an app or the vocabulary declares ever
+    /// meets it. Named <c>DensityValue</c>, an app's own <c>record DensityValue</c> was taken for the union
+    /// and imported from the runtime, which has no such value, and the page did not load (#1427). The
+    /// runtime's own code keeps the plain name; <c>enums.generated.ts</c> exports each union under both.
+    /// </summary>
+    internal static string UnionName(string enumName) => $"${enumName}Value";
 
     /// <summary>
     /// The union names the emitted TEXT mentions, verified against the vocabulary. They exist only
@@ -2617,12 +2629,13 @@ public class TypeScriptEmitter
     internal static void SeedEnumUnions(string emitted, Compilation? compilation, HashSet<string> runtimeProvided)
     {
         if (compilation is null) return;
+        // Only the `$` name: a name C# can spell is a type of the app's or the vocabulary's own (#1427).
         foreach (System.Text.RegularExpressions.Match match in
-                 System.Text.RegularExpressions.Regex.Matches(emitted, @"(?<![\w$])([A-Z][A-Za-z0-9]*)Value(?![\w$])"))
+                 System.Text.RegularExpressions.Regex.Matches(emitted, @"(?<![\w$])\$([A-Z][A-Za-z0-9]*)Value(?![\w$])"))
         {
             var name = match.Groups[1].Value;
             if (VocabularyEnum(compilation, name) is not null)
-                runtimeProvided.Add($"{name}Value");
+                runtimeProvided.Add(UnionName(name));
         }
     }
 
@@ -2643,8 +2656,8 @@ public class TypeScriptEmitter
     /// something the file never imported is a broken type, not a missing one.</summary>
     private string Union(string enumName)
     {
-        _converter.UsedRuntimeTypes.Add($"{enumName}Value");
-        return $"{enumName}Value";
+        _converter.UsedRuntimeTypes.Add(UnionName(enumName));
+        return UnionName(enumName);
     }
 
     /// <summary>The vocabulary enum called <paramref name="name"/>, looked for in every namespace whose
@@ -3272,21 +3285,36 @@ public class TypeScriptEmitter
         }
         else if (tsType.StartsWith("Action<") && tsType.EndsWith(">"))
         {
-            var itemType = tsType.Substring(7, tsType.Length - 8);
-            // The NAME comes from the type only while the type IS a name. `Action<IReadOnlyList<T>>`
-            // otherwise produced `iReadOnlyList<T>` in the parameter position — not an identifier at
-            // all, so the emitted module did not parse. `Func<…>` below has always answered `value`
-            // rather than deriving anything, which is the same answer asked of the same problem.
-            //
-            // A trailing `?` is not what makes a type composite: `Action<CodeEdit?>` has always
-            // named its parameter `codeEdit` and still should, so nullability comes off before the
-            // question is asked. Testing the raw string instead cost that name for nothing.
-            var named = itemType.TrimEnd('?');
-            var parameter = named.Length > 0
-                && named.All(character => char.IsLetterOrDigit(character) || character == '_')
-                ? named.ToCamelCase()
-                : "value";
-            tsType = $"({parameter}: {CSharpTypeToTypeScript(itemType)}) => void";
+            // TWO OR MORE type arguments are parameters each, as `Func<…>`'s below are: this branch read
+            // `Action<TreeNode, bool>` as ONE type named `TreeNode, bool` and emitted
+            // `(value: TreeNode, bool) => void`, a parameter `bool` of no type that the runtime's own
+            // build refuses (#1530).
+            var actionArguments = SplitTopLevel(tsType[7..^1]);
+            string parameters;
+            if (actionArguments.Count > 1)
+            {
+                parameters = string.Join(", ", actionArguments.Select((argument, index) =>
+                    $"arg{index + 1}: {CSharpTypeToTypeScript(argument.Trim())}"));
+            }
+            else
+            {
+                var itemType = tsType.Substring(7, tsType.Length - 8);
+                // The NAME comes from the type only while the type IS a name. `Action<IReadOnlyList<T>>`
+                // otherwise produced `iReadOnlyList<T>` in the parameter position — not an identifier at
+                // all, so the emitted module did not parse. `Func<…>` below has always answered `value`
+                // rather than deriving anything, which is the same answer asked of the same problem.
+                //
+                // A trailing `?` is not what makes a type composite: `Action<CodeEdit?>` has always
+                // named its parameter `codeEdit` and still should, so nullability comes off before the
+                // question is asked. Testing the raw string instead cost that name for nothing.
+                var named = itemType.TrimEnd('?');
+                var parameter = named.Length > 0
+                    && named.All(character => char.IsLetterOrDigit(character) || character == '_')
+                    ? named.ToCamelCase()
+                    : "value";
+                parameters = $"{parameter}: {CSharpTypeToTypeScript(itemType)}";
+            }
+            tsType = $"({parameters}) => void";
         }
         else if (tsType == "Action")
         {

@@ -7,7 +7,7 @@ export class SharedCounter extends StatefulComponent {
     build(_context: BuildContext) {
         let column = new Column(12);
         column.add(new Text(`Count: ${$eq.text.format(this._count, null, undefined, undefined, 'int32')}`, 'title'));
-        for (const cell of this.cells()) column.add(cell);
+        for (const cell of $eq.collections.sequenceWalk(this.cells())) column.add(cell);
         column.add(new Button('Increment', 'primary', 'medium', () => this.setState(() => this._count++)));
         column.add(new Button('Later', 'primary', 'medium', $eq.delegates.bound(this, this.bumpSoon)));
         return column;

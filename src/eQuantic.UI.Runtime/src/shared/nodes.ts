@@ -1,4 +1,4 @@
-import type { FontFamily, Point, Rect, Size } from './value-types';
+import type { ContextRequest, FontFamily, Point, PointerEvent, Rect, Size } from './value-types';
 import type { PickedFile } from './picked-file';
 /**
  * The SHARED abstract vocabulary on the client (docs/SHARED-COMPONENTS-PLAN.md) — the JS shapes of
@@ -51,6 +51,7 @@ import type {
   MainAlignValue,
   NavigableMoveValue,
   PointerPhaseValue,
+  HitTestBehaviorValue,
   SizeKindValue,
   TableCellRoleValue,
   TableRoleValue,
@@ -168,6 +169,8 @@ export interface AnchoredNode extends VisualNodeValue {
   anchor: VisualNodeValue;
   panel: VisualNodeValue;
   placement?: AnchorPlacementValue;
+  /** A point of the anchor's box where the panel's corner stands instead of an edge (#1531). */
+  at?: Point | null;
   gap?: number;
   open?: boolean;
   onDismiss?: (() => void) | null;
@@ -468,6 +471,76 @@ export interface DropTargetNode extends VisualNodeValue {
   enabled?: boolean;
 }
 
+/** Wire shape of the C# `ContextTarget` (#1531): what a person can ask the menu of. */
+export interface ContextTargetNode extends VisualNodeValue {
+  nodeKind: 'contextTarget';
+  child: VisualNodeValue;
+  /** Where in the target's box the menu was asked for; `at` is null when the keyboard asked. */
+  onRequested: (request: ContextRequest) => void;
+  enabled?: boolean;
+}
+
+/** Wire shape of the C# `Listener` (#1562): what hears the raw pointer over its child. */
+export interface ListenerNode extends VisualNodeValue {
+  nodeKind: 'listener';
+  child: VisualNodeValue;
+  onPointerDown?: ((event: PointerEvent) => void) | null;
+  onPointerMove?: ((event: PointerEvent) => void) | null;
+  onPointerUp?: ((event: PointerEvent) => void) | null;
+  onPointerCancel?: ((event: PointerEvent) => void) | null;
+  onPointerHover?: ((event: PointerEvent) => void) | null;
+  onPointerScroll?: ((event: PointerEvent) => void) | null;
+  behavior?: HitTestBehaviorValue;
+}
+
+/** The value a C# `SortDrop` crosses as (value-types.ts `SortDrop`). */
+export interface SortDropValue {
+  readonly item: string;
+  readonly from: string;
+  readonly to: string;
+  readonly index: number;
+  readonly into: string | null;
+}
+
+/** The value a C# `SortAnnouncements` crosses as (#1564): the words a reader hears while the keyboard sorts,
+ * the record's transpiled twin (`components/SortAnnouncements`). */
+export interface SortAnnouncementsValue {
+  readonly instructions: string;
+  readonly pickedUp: string;
+  readonly moved: string;
+  readonly movedInto: string;
+  readonly refused: string;
+  readonly dropped: string;
+  readonly droppedInto: string;
+  readonly putBack: string;
+}
+
+/** Wire shape of the C# `Sortable` (#1535) — a list whose items a pointer puts in order. */
+export interface SortableNode extends VisualNodeValue {
+  nodeKind: 'sortable';
+  child: VisualNodeValue;
+  id: string;
+  onDropped: (drop: SortDropValue) => void;
+  announcements?: SortAnnouncementsValue | null;
+  group?: string;
+  axis?: string;
+  nests?: boolean;
+  label?: string;
+  onHovered?: ((drop: SortDropValue | null) => void) | null;
+  accepts?: ((drop: SortDropValue) => boolean) | null;
+  enabled?: boolean;
+}
+
+/** Wire shape of the C# `SortableItem` (#1535) — one item a pointer picks up. */
+export interface SortableItemNode extends VisualNodeValue {
+  nodeKind: 'sortableItem';
+  child: VisualNodeValue;
+  id: string;
+  enabled?: boolean;
+  /** The name the keyboard's steps say (C# `SortableItem.Name`); empty, what the item's subtree says. */
+  name?: string;
+}
+
 /** Wire shape of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
 export interface HoverableNode extends VisualNodeValue {
   nodeKind: 'hoverable';
@@ -532,6 +605,16 @@ export interface PressableNode extends VisualNodeValue {
    * stop); menuItem/option leave the tab order too (the keyboard lives on the trigger, the
    * highlight rides aria-activedescendant); checkbox/switch keep their own stop. */
   role?: string;
+  /** Where a tree item stands (C# `Pressable.TreePlace`): level, position in its set and the set's
+   * size, all from one. */
+  treePlace?: TreePlaceValue | null;
+}
+
+/** The value a C# `TreePlace` crosses as (value-types.ts `TreePlace`). */
+export interface TreePlaceValue {
+  readonly level: number;
+  readonly positionInSet: number;
+  readonly sizeOfSet: number;
 }
 
 export interface FlexibleNode extends VisualNodeValue {
@@ -650,6 +733,9 @@ export interface TextEntryNode extends VisualNodeValue {
   /** Takes focus on MOUNT (the command-palette contract) — the attribute alone only fires on the
    * initial document parse, so the client lowering focuses it too. */
   autofocus?: boolean;
+  /** Selects all of the text whenever the entry takes the keyboard, by autofocus or Tab; a press
+   * inside it still puts the caret where it pressed. */
+  selectOnFocus?: boolean;
   /** Line count: 1 (default) is the single-line input, more makes it a textarea that tall. */
   lines?: number;
 }
@@ -805,8 +891,11 @@ export interface AdjustableNode extends VisualNodeValue {
   child: VisualNodeValue;
   onAdjust?: (direction: number) => void;
   label?: string;
-  /** ARIA identity of the host — 'slider' (default), 'tablist' or 'radiogroup'. */
-  role?: 'slider' | 'tablist' | 'radiogroup';
+  /** ARIA identity of the host — 'slider' (default), 'tablist', 'radiogroup' or 'separator'. */
+  role?: 'slider' | 'tablist' | 'radiogroup' | 'separator';
+  /** The axis the value moves along (C# `Adjustable.Axis`), 'horizontal' unless said: what a reader
+   * hears as the orientation of a slider or a separator. */
+  axis?: 'vertical' | 'horizontal';
   /** Where the value sits, for a role that has one; absent on a tablist or a radiogroup. */
   value?: RangeValueValue | null;
   /** The value IN WORDS, said INSTEAD of the number — for a role that HAS one (#243). */
@@ -852,6 +941,20 @@ export interface GroupNode extends VisualNodeValue {
   label?: string;
 }
 
+/** A subtree a reader hears as one stop (C# twin: MergeSemantics). */
+export interface MergeSemanticsNode extends VisualNodeValue {
+  nodeKind: 'mergeSemantics';
+  child: VisualNodeValue;
+}
+
+/** A subtree a reader passes over (C# twin: ExcludeSemantics). */
+export interface ExcludeSemanticsNode extends VisualNodeValue {
+  nodeKind: 'excludeSemantics';
+  child: VisualNodeValue;
+  /** Whether it is passed over now; absent reads as true, the C# default. */
+  excluding?: boolean;
+}
+
 /**
  * Wire shape of the C# `RangeValue`: the trio ARIA calls now/min/max. One object rather than three
  * fields because `role="slider"` REQUIRES a now, and a now without its bounds is read against ARIA's
@@ -876,14 +979,19 @@ export interface NavigableNode extends VisualNodeValue {
   nodeKind: 'navigable';
   rows: VisualNodeValue[];
   onMove?: (move: NavigableMoveValue) => void;
+  /** A printable character typed while the composite holds the focus (C# `OnTextSearch`). */
+  onTextSearch?: ((text: string) => void) | null;
   label?: string;
-  role?: 'grid';
+  role?: 'grid' | 'tree';
   /** Whether rows[0] holds the column headers (a calendar's day-name row). */
   hasHeaderRow?: boolean;
   /** The focused cell as [row, item] — announced through aria-activedescendant. A C# tuple
    * crosses as a plain array and the transpiler cannot promise its arity, so the type is what a
    * tuple actually becomes; the realizer reads exactly two entries. */
   activeCell?: readonly number[] | null;
+  /** A version higher than the last one built takes the keyboard to the composite's stop (C#
+   * `FocusVersion`); the first build only records it. */
+  focusVersion?: number;
 }
 
 /**

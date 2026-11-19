@@ -197,6 +197,16 @@ public sealed class RealizeResult
     /// Empty in a frame that draws none.</summary>
     internal IReadOnlyList<CodeNoteLayer> NoteLayers { get; init; } = Array.Empty<CodeNoteLayer>();
 
+    /// <summary>What a person may ask the menu of, in tree order, an outer target before what it holds (#1531).
+    /// Empty in a frame with no target.</summary>
+    internal IReadOnlyList<ContextRegion> ContextRegions { get; init; } = Array.Empty<ContextRegion>();
+    /// <summary>The nodes the listeners' hit test reads, in paint order from the frame's first listener (#1562).
+    /// Empty in a frame with no listener.</summary>
+    internal IReadOnlyList<PointerTarget> PointerTargets { get; init; } = Array.Empty<PointerTarget>();
+    /// <summary>The sortable lists and their items, in tree order, a list before what it holds (#1537). Empty
+    /// in a frame with nothing to sort.</summary>
+    internal IReadOnlyList<SortRegion> SortRegions { get; init; } = Array.Empty<SortRegion>();
+
     /// <summary>Editable code surfaces, in paint order (topmost last).</summary>
     public IReadOnlyList<CodeRegion> CodeRegions { get; }
 
@@ -359,7 +369,7 @@ public static class PhotonRealizer
         // dropdown panel hug its options while the page behind it still fills the viewport.
         //
         // The tree BUILDS first, and the layout measures what it built (docs/ELEMENT-TREE-PLAN.md, 3.2).
-        var builds = owner ?? ComponentBoundary.StructuralOwner();
+        var builds = owner ?? new ComponentBoundary().StructuralOwner();
         var rootElement = builds.Build(root, context.Components, viewportWidth, rebuildAll);
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context,
             rootStretch: StretchKind.Block, rootElement: rootElement);
@@ -464,6 +474,9 @@ public static class PhotonRealizer
             LiveRegions = regions.LivesOrEmpty,
             TransformedRegions = regions.TransformedOrEmpty,
             NoteLayers = regions.NotesOrEmpty,
+            ContextRegions = regions.ContextsOrEmpty,
+            PointerTargets = regions.PointerOrEmpty,
+            SortRegions = regions.SortsOrEmpty,
         };
     }
 

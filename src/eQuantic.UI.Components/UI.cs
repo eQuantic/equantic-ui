@@ -367,6 +367,23 @@ public static class UI
         new Group(child) { Label = label };
 
     /// <summary>
+    /// A subtree a reader hears as ONE stop, what its stops say joined in reading order. When a control is
+    /// among them the stop is that control, named by the whole of <paramref name="child"/>: a row that draws
+    /// a switch beside its label is heard as the switch. With none, it is a group named by what it says.
+    /// It draws nothing and adds no geometry.
+    /// </summary>
+    public static MergeSemantics MergeSemantics(VisualNode child) => new MergeSemantics(child);
+
+    /// <summary>
+    /// A subtree a reader passes over, on every target: drawn for the eye and heard by no one, for what
+    /// another stop already says. Wrap no control in it. <paramref name="excluding"/> false keeps the node and
+    /// reads what it holds, so a subtree heard in one state and not in another keeps its shape. It draws
+    /// nothing and adds no geometry.
+    /// </summary>
+    public static ExcludeSemantics ExcludeSemantics(VisualNode child, bool excluding = true) =>
+        new ExcludeSemantics(child) { Excluding = excluding };
+
+    /// <summary>
     /// Arrow-key adjustment semantics: one Tab stop, arrows call back with ±1.
     /// <para>
     /// <paramref name="value"/> is what the control HOLDS, and a slider needs it —
@@ -377,8 +394,8 @@ public static class UI
     /// </summary>
     public static Adjustable Adjustable(VisualNode child, Action<int> onAdjust,
         RangeValue? value = null, AdjustableRole role = AdjustableRole.Slider,
-        string? valueText = null) =>
-        new Adjustable(child, onAdjust) { Value = value, Role = role, ValueText = valueText };
+        string? valueText = null, DragAxis axis = DragAxis.Horizontal) =>
+        new Adjustable(child, onAdjust) { Value = value, Role = role, ValueText = valueText, Axis = axis };
 
     /// <summary>
     /// The 2-D twin of <see cref="Adjustable"/>: one Tab stop for the whole thing, and a keyboard
@@ -696,6 +713,41 @@ public static class UI
         SizeValue width = default, SizeValue height = default) =>
         new ListView(count, itemExtent, itemBuilder) { Width = width, Height = height };
 
+    /// <summary>A tree of nodes, loaded as they open, walked by the keyboard as the WAI-ARIA tree pattern;
+    /// given a height, it scrolls and keeps the keyboard's item in view (#1530). Its nodes are renamed and
+    /// created in place, open a menu each, and its rows are built by the app when it gives a builder (#1532).
+    /// Given <paramref name="onMoved"/>, its nodes move by drag and by keyboard, before, after or inside another
+    /// (#1533).</summary>
+    public static TreeView TreeView(IReadOnlyList<TreeNode> roots, string? selectedKey = null,
+        Action<TreeNode>? onPressed = null, ListTheme? style = null,
+        Func<TreeNode, Task<IReadOnlyList<TreeNode>>>? loadChildren = null,
+        Action<TreeNode, bool>? onToggled = null, IReadOnlyList<string>? expandedKeys = null,
+        IReadOnlyList<string>? revealPath = null, string label = "", SizeValue? height = null,
+        Func<TreeRowState, VisualNode>? rowBuilder = null,
+        Func<TreeNode, string, Task>? onRenamed = null, Func<TreeNode, string, Task>? onCreated = null,
+        TreeEditRequest? edit = null, TreeReloadRequest? reload = null, IReadOnlyList<string>? busyKeys = null,
+        Func<TreeNode, IReadOnlyList<MenuItem>>? menuBuilder = null, Action<TreeNode, int>? onMenuSelect = null,
+        Func<TreeMove, Task>? onMoved = null, Func<TreeMove, bool>? canMove = null) =>
+        new TreeView(roots, selectedKey, onPressed, style)
+        {
+            LoadChildren = loadChildren,
+            OnToggled = onToggled,
+            ExpandedKeys = expandedKeys,
+            RevealPath = revealPath,
+            Label = label,
+            Height = height,
+            RowBuilder = rowBuilder,
+            OnRenamed = onRenamed,
+            OnCreated = onCreated,
+            Edit = edit,
+            Reload = reload,
+            BusyKeys = busyKeys,
+            MenuBuilder = menuBuilder,
+            OnMenuSelect = onMenuSelect,
+            OnMoved = onMoved,
+            CanMove = canMove,
+        };
+
     /// <summary>A list beside a detail on a wide window, one pane at a time on a phone (spec B4).
     /// The panes arrive as BUILDERS, one call per shape that shows them; the titles, the wide
     /// placeholder and the threshold are init slots.</summary>
@@ -756,6 +808,29 @@ public static class UI
             Current = current,
         };
 
+    /// <summary>A list whose items a pointer and the keyboard put in order, and which takes the items of the lists
+    /// of its group; the drop is the app's to apply (#1535). Each step of the keyboard's is said in
+    /// <paramref name="announcements"/>, the SDK's words in the reader's culture when the app gives none (#1564).</summary>
+    public static Sortable Sortable(VisualNode child, string id, Action<SortDrop> onDropped,
+        SortAnnouncements? announcements = null, string group = "", DragAxis axis = DragAxis.Vertical,
+        bool nests = false, Action<SortDrop?>? onHovered = null, Func<SortDrop, bool>? accepts = null,
+        bool enabled = true, string label = "") =>
+        new Sortable(child, id, onDropped, announcements ?? SdkStrings.Sorting)
+        {
+            Label = label,
+            Group = group,
+            Axis = axis,
+            Nests = nests,
+            OnHovered = onHovered,
+            Accepts = accepts,
+            Enabled = enabled,
+        };
+
+    /// <summary>One item of a <see cref="Primitives.Sortable"/>, named by its id in what the list reports, and by
+    /// <paramref name="name"/>, when given, in what the keyboard's steps say.</summary>
+    public static SortableItem SortableItem(VisualNode child, string id, bool enabled = true, string name = "") =>
+        new SortableItem(child, id) { Enabled = enabled, Name = name };
+
     /// <summary>
     /// An area a person drops files onto: <paramref name="onDropped"/> hands over what landed, and
     /// <paramref name="onDragOverChanged"/> says when files are carried over it, so the caller can
@@ -765,6 +840,49 @@ public static class UI
     public static DropTarget DropTarget(VisualNode child, Action<IReadOnlyList<PickedFile>> onDropped,
         Action<bool>? onDragOverChanged = null, bool enabled = true) =>
         new DropTarget(child, onDropped) { OnDragOverChanged = onDragOverChanged, Enabled = enabled };
+
+    /// <summary>
+    /// What a person can ask the menu of: <paramref name="onRequested"/> hears a secondary click, a finger held
+    /// still, or the menu key or Shift+F10 with the focus inside, with where in the child's box the pointer asked
+    /// (none for the keyboard). Open a menu there with an <c>Anchored</c> placed <c>At</c> that point, or use
+    /// <c>ContextMenu</c>, which does it.
+    /// </summary>
+    public static ContextTarget ContextTarget(VisualNode child, Action<ContextRequest> onRequested, bool enabled = true) =>
+        new ContextTarget(child, onRequested) { Enabled = enabled };
+
+    /// <summary>
+    /// <paramref name="child"/>, hearing the raw pointer over it in its own coordinates: a press, its moves and its
+    /// end (followed wherever it goes), its cancel, a mouse or a pen passing over, and a wheel or a trackpad.
+    /// <paramref name="behavior"/> says where it hears: only where the child is hit (the default), anywhere in its
+    /// box hiding the listeners behind it, or anywhere in its box letting them hear too. It only listens: what is
+    /// inside still presses and scrolls.
+    /// </summary>
+    public static Listener Listener(VisualNode child,
+        Action<PointerEvent>? onPointerDown = null,
+        Action<PointerEvent>? onPointerMove = null,
+        Action<PointerEvent>? onPointerUp = null,
+        Action<PointerEvent>? onPointerCancel = null,
+        Action<PointerEvent>? onPointerHover = null,
+        Action<PointerEvent>? onPointerScroll = null,
+        HitTestBehavior behavior = HitTestBehavior.DeferToChild) =>
+        new Listener(child)
+        {
+            OnPointerDown = onPointerDown,
+            OnPointerMove = onPointerMove,
+            OnPointerUp = onPointerUp,
+            OnPointerCancel = onPointerCancel,
+            OnPointerHover = onPointerHover,
+            OnPointerScroll = onPointerScroll,
+            Behavior = behavior,
+        };
+
+    /// <summary>
+    /// A menu of <paramref name="items"/> for what <paramref name="child"/> is, opened where a person asks for it
+    /// (a secondary click, a long press, the menu key or Shift+F10), its choice handed to <paramref name="onSelect"/>.
+    /// </summary>
+    public static ContextMenu ContextMenu(VisualNode child, IReadOnlyList<MenuItem> items, Action<int>? onSelect = null,
+        bool enabled = true) =>
+        new ContextMenu(child, items, onSelect) { Enabled = enabled };
 
     /// <summary>
     /// A whole file upload: an area files are dropped on, a button that asks for them, and a row for each

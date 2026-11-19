@@ -22,9 +22,14 @@ import { measurePhotonText, setPhotonTheme } from './photon-context';
 import type { HtmlNode } from '../core/types';
 import {
   AdaptiveNode,
+  Anchored,
   Box,
   BoxStyle,
   Column,
+  ContextTarget,
+  Listener,
+  Sortable,
+  SortableItem,
   Draggable,
   Drawing,
   DropTarget,
@@ -37,6 +42,8 @@ import {
   InView,
   LinearGradient,
   Link,
+  MergeSemantics,
+  ExcludeSemantics,
   Pinned,
   Positioned,
   Pressable,
@@ -55,9 +62,12 @@ import {
   VectorPaint,
   VectorShape,
 } from './vocabulary';
-import { SizeValue, StyleChannels, TableRange, Transform2D } from './value-types';
+import { Point, SizeValue, SortAnnouncements, StyleChannels, TableRange, Transform2D } from './value-types';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
+import { ContextMenu } from './components/ContextMenu';
+import { TreeNode } from './components/TreeNode';
+import { TreeView } from './components/TreeView';
 import { Badge } from './components/Badge';
 import { Card } from './components/Card';
 import { Checkbox } from './components/Checkbox';
@@ -345,6 +355,19 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'drop-target-disabled': still(
       new DropTarget(new Box(new BoxStyle({ height: 40 })), () => {}, { enabled: false }),
     ),
+    'context-target': still(new ContextTarget(new Box(new BoxStyle({ width: SizeValue.fill, height: 40 })), () => {})),
+    'context-target-disabled': still(
+      new ContextTarget(new Box(new BoxStyle({ height: 40 })), () => {}, { enabled: false }),
+    ),
+    listener: still(new Listener(new Box(new BoxStyle({ width: SizeValue.fill, height: 40 })))),
+    'listener-opaque': still(new Listener(new Box(new BoxStyle({ height: 40 })), { behavior: 'opaque' })),
+    'listener-translucent': still(new Listener(new Box(new BoxStyle({ height: 40 })), { behavior: 'translucent' })),
+    'anchored-at': still(
+      new Anchored(new Box(new BoxStyle({ width: 200, height: 40 })), new Box(new BoxStyle({ width: 120, height: 80 })), {
+        at: new Point(120, 30),
+        open: true,
+      }),
+    ),
     'pinned-scrolled': still(
       new Pinned(new Box(new BoxStyle({ height: 40 })), 0, {
         scrolledStyle: new StyleDiff({
@@ -411,6 +434,12 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'radio-group': still(new RadioGroup(['a', 'b'], 0)),
     'empty-state': still(new EmptyState(new Icon(IconGlyph.fromIcons('search')), 'Nothing here', 'Try another term')),
     'menu-closed': still(new Menu(new Button('Open'), [new MenuItem('One'), new MenuItem('Two')])),
+    'context-menu-closed': still(
+      new ContextMenu(new Text('row', 'bodyM', photonTheme.textPrimary), [
+        new MenuItem('Rename'),
+        Object.assign(new MenuItem('Delete'), { destructive: true }),
+      ]),
+    ),
     dialog: still(
       new Dialog('Delete this?', 'It cannot be undone.', [
         new DialogAction('Cancel', null, 'ghost'),
@@ -446,6 +475,21 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
             new Text('1', 'bodyM', photonTheme.textPrimary),
           ]),
         ],
+      ),
+    ),
+    'data-table-columns': still(
+      new DataTable(
+        [
+          new DataColumn('Name', GridTrack.flex()),
+          new DataColumn('Size', GridTrack.fixed(80), 'end'),
+        ],
+        [
+          new DataRow('a', [
+            new Text('alpha', 'bodyM', photonTheme.textPrimary),
+            new Text('1', 'bodyM', photonTheme.textPrimary),
+          ]),
+        ],
+        { columnOrder: [1, 0], onColumnsReordered: () => undefined, onColumnResized: () => undefined },
       ),
     ),
     'table-view': still(
@@ -507,6 +551,83 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'select-grouped-opens': {
       node: new Select(['Lisboa'], 0, null, null, [new OptionGroup('A seguir', ['Braga', 'Faro'])]),
       presses: [0],
+    },
+    'merge-a-checkbox-and-its-description': still(
+      new MergeSemantics(
+        line(false, new Checkbox(true, null, 'Agree'), new Text('to the terms', 'bodyM', photonTheme.textPrimary)),
+      ),
+    ),
+    'merge-read-content': still(
+      new MergeSemantics(
+        line(
+          false,
+          new Text('Total', 'bodyM', photonTheme.textPrimary),
+          new ExcludeSemantics(new Text('JD', 'bodyM', photonTheme.textPrimary)),
+          new Text('42 EUR', 'bodyM', photonTheme.textPrimary),
+        ),
+      ),
+    ),
+    'exclude-a-subtree': still(
+      line(
+        false,
+        new ExcludeSemantics(new Text('Decoration', 'bodyM', photonTheme.textPrimary)),
+        new Text('Shown', 'bodyM', photonTheme.textPrimary),
+      ),
+    ),
+    'exclude-not-excluding': still(
+      new ExcludeSemantics(new Text('Read', 'bodyM', photonTheme.textPrimary), { excluding: false }),
+    ),
+    'sortable-column': still(
+      new Sortable(
+        column(
+          0,
+          new SortableItem(new Text('a', 'bodyM', photonTheme.textPrimary), 'a'),
+          new SortableItem(new Text('b', 'bodyM', photonTheme.textPrimary), 'b'),
+        ),
+        'todo',
+        () => undefined,
+        new SortAnnouncements(
+          'Pressione Espaço & solte "já".',
+          'Took {0}.',
+          '{0} now {1}/{2} in {3}.',
+          '{0} in {1}.',
+          'Not there.',
+          'Left {0} at {1}.',
+          'Left {0} in {1}.',
+          'Back <{0}>.',
+        ),
+        { group: 'board', onHovered: () => undefined },
+      ),
+    ),
+    'tree-opens': {
+      node: Object.assign(
+        new TreeView(
+          [
+            Object.assign(new TreeNode('src', 'src'), {
+              children: [
+                Object.assign(new TreeNode('src/App.cs', 'App.cs'), { isLeaf: true }),
+                Object.assign(new TreeNode('src/Ui.cs', 'Ui.cs'), { isLeaf: true }),
+              ],
+            }),
+            Object.assign(new TreeNode('README.md', 'README.md'), { isLeaf: true }),
+          ],
+          'src/Ui.cs',
+        ),
+        { label: 'Files' },
+      ),
+      presses: [0, 1],
+    },
+    'tree-moves': {
+      node: Object.assign(
+        new TreeView([
+          Object.assign(new TreeNode('src', 'src'), {
+            children: [Object.assign(new TreeNode('src/App.cs', 'App.cs'), { isLeaf: true })],
+          }),
+          Object.assign(new TreeNode('README.md', 'README.md'), { isLeaf: true }),
+        ]),
+        { label: 'Files', expandedKeys: ['src'], onMoved: async () => undefined },
+      ),
+      presses: [],
     },
     'accordion-switches': {
       node: new Accordion(
@@ -769,9 +890,12 @@ function canonical(node: HtmlNode): unknown {
     // its cells by theirs to walk the Tab order row by row.
     // A sheet's and a code surface's are a fourth and a fifth: a focus request and a reveal find the surface
     // by it after the render. A gliding mark's is a sixth: the table's after-pass finds the mark it glides
-    // by it, and the server's first pass has nothing to glide from.
+    // by it, and the server's first pass has nothing to glide from. A focus-scoped shortcut's scope is
+    // a seventh (#1530, the first case here with one): its value is the shortcut's position id in the
+    // client's frame, which lowerShortcut stamps for the same reason ("only the client stamps it").
     if (key === 'data-eq-scroll' || key === 'data-eq-inview' || key === 'data-eq-table' || key === 'data-eq-cell'
-      || key === 'data-eq-sheet' || key === 'data-eq-code' || key === 'data-eq-glide')
+      || key === 'data-eq-sheet' || key === 'data-eq-code' || key === 'data-eq-glide'
+      || key === 'data-eq-focus-scope')
       continue;
     const value = node.attributes[key];
     if (value !== undefined && value !== null) attrs[key] = normalize(key, value);
@@ -791,9 +915,16 @@ function canonical(node: HtmlNode): unknown {
   // it emits neither the channel key nor the listener that reports back through it. Recognised by
   // the key itself rather than by tag, and only there — a scroll handler anywhere else still counts.
   const scrollView = 'data-eq-scroll' in (node.attributes ?? {});
+  // A COMPOSITE's mount hook is the client's alone: it keeps the host it gives the keyboard back to
+  // (Navigable.FocusVersion, #1532), and the server has no keyboard to give. Recognised by the composite's
+  // own role, and only there: a mount hook anywhere else still counts.
+  const composite = node.attributes?.role === 'tree' || node.attributes?.role === 'grid';
   result.events = Object.keys(node.events ?? {})
     .filter(
-      (name) => !(entry && CLIENT_ONLY_EVENTS.has(name)) && !(scrollView && name === 'scroll'),
+      (name) =>
+        !(entry && CLIENT_ONLY_EVENTS.has(name)) &&
+        !(scrollView && name === 'scroll') &&
+        !(composite && name === 'eq:mounted'),
     )
     .sort();
   result.children = (node.children ?? []).map(canonical);

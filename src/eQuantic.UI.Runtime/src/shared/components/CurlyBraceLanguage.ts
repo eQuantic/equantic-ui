@@ -1,4 +1,4 @@
-import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
+import { $CodeTokenKindValue, $eq, CodeDocument, CodeLanguageRules, CodeToken } from "../runtime-exports";
 
 export abstract class CurlyBraceLanguage {
     static $interfaces = ['eQuantic.UI.Code.ICodeLanguage'];
@@ -29,7 +29,7 @@ export abstract class CurlyBraceLanguage {
     abstract constantWords: Set<string>;
 
     get keywords(): string[] {
-        return this._keywords ?? (this._keywords = [...new Set([...[...$eq.linq.seq(this.reservedWords, 'first'), ...$eq.linq.seq(this.typeWords, 'second')], ...$eq.linq.seq(this.constantWords, 'second')])].slice());
+        return this._keywords ?? (this._keywords = $eq.linq.toArray($eq.query.defer(($src) => [...new Set($src)], $eq.query.concat($eq.query.concat(this.reservedWords, this.typeWords), this.constantWords))));
     }
 
     get hasVerbatimStrings(): boolean {
@@ -245,13 +245,13 @@ export abstract class CurlyBraceLanguage {
         return i < line.length && line[i] === '"' ? [i, verbatim] : null;
     }
 
-    static add(into: CodeToken[], start: number, length: number, kind: CodeTokenKindValue) {
+    static add(into: CodeToken[], start: number, length: number, kind: $CodeTokenKindValue) {
         if (length <= 0) return;
         if (into.length > 0 && into[into.length - 1].kind === kind && into[into.length - 1].end === start) {
-            (into[into.length - 1] = $eq.withPatch(into[into.length - 1], { length: into[into.length - 1].length + length }));
+            $eq.collections.listSet(into, into.length - 1, $eq.withPatch(into[into.length - 1], { length: into[into.length - 1].length + length }));
             return;
         }
-        into.push(new CodeToken(start, length, kind));
+        $eq.collections.listAdd(into, new CodeToken(start, length, kind));
     }
 
     static scanQuoted(line: string, from: number, quote: string) {

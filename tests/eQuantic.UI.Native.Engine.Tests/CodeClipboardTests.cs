@@ -52,7 +52,7 @@ public class CodeClipboardTests
     private sealed class RefusingClipboard : eQuantic.UI.Primitives.ITextClipboard
     {
         public void Write(string text) => throw new IOException("the clipboard is held by another program");
-        public string? Read() => null;
+        public Task<string?> ReadAsync() => Task.FromResult<string?>(null);
     }
 
     [Fact]
@@ -65,6 +65,54 @@ public class CodeClipboardTests
             .Should().Throw<IOException>();
 
         editor.Document.Text.Should().Be("one\ntwo", "the copy reaches the clipboard before anything is deleted");
+    }
+
+    /// <summary>A clipboard that answers when it is told to, as the web's does after the key that asked.</summary>
+    private sealed class LateClipboard : eQuantic.UI.Primitives.ITextClipboard
+    {
+        private readonly TaskCompletionSource<string?> _answer = new();
+        public void Write(string text) { }
+        public Task<string?> ReadAsync() => _answer.Task;
+        public void Answer(string? text) => _answer.SetResult(text);
+    }
+
+    /// <summary>
+    /// A paste lands when the clipboard answers, after the key that asked, and only then tells the views (#1028):
+    /// the web's clipboard is read in a later paste event or through the Clipboard API.
+    /// </summary>
+    [Fact]
+    public void APasteWhoseClipboardAnswersLater_LandsWhenItAnswers_AndSaysSo()
+    {
+        var editor = At("one", 0, 1);
+        var clipboard = new LateClipboard();
+        var told = 0;
+        editor.Pasted += () => told++;
+
+        editor.Execute(CodeCommand.Paste, clipboard).Should().BeTrue("the key is the paste's, whatever it finds");
+        editor.Document.Text.Should().Be("one", "nothing has arrived yet");
+        told.Should().Be(0);
+
+        clipboard.Answer("x");
+
+        editor.Document.Text.Should().Be("oxne");
+        told.Should().Be(1, "the views draw the paste, and the app hears it");
+    }
+
+    /// <summary>A clipboard that answers with nothing (refused, or holding no text) pastes nothing and says
+    /// nothing.</summary>
+    [Fact]
+    public void APasteWhoseClipboardAnswersNothing_LeavesTheDocument()
+    {
+        var editor = At("one", 0, 1);
+        var clipboard = new LateClipboard();
+        var told = 0;
+        editor.Pasted += () => told++;
+
+        editor.Execute(CodeCommand.Paste, clipboard);
+        clipboard.Answer(null);
+
+        editor.Document.Text.Should().Be("one");
+        told.Should().Be(0);
     }
 
     [Fact]

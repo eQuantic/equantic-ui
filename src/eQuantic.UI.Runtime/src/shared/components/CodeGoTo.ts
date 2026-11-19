@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeDefinitionKindValue, CodeDocument, CodeEditorController, CodeFuzzyMatch, CodeGoToEntry, CodeGoToLine, CodeGoToModeValue, CodeGoToNotFound, CodeLocation, CodePosition, CodeRange, CodeSymbol, ProviderRequest, Rect, UiThread } from "../runtime-exports";
+import { $CodeDefinitionKindValue, $CodeGoToModeValue, $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeDocument, CodeEditorController, CodeFuzzyMatch, CodeGoToEntry, CodeGoToLine, CodeGoToNotFound, CodeLocation, CodePosition, CodeRange, CodeSymbol, ProviderRequest, Rect, UiThread } from "../runtime-exports";
 
 export class CodeGoTo {
     constructor(editor: CodeEditorController) {
@@ -38,7 +38,7 @@ export class CodeGoTo {
     _editor!: CodeEditorController;
     _open!: boolean;
     _query!: string;
-    _mode!: CodeGoToModeValue;
+    _mode!: $CodeGoToModeValue;
     _line!: CodeGoToLine | null;
     _lineTarget!: CodePosition | null;
     _entries!: CodeGoToEntry[];
@@ -57,7 +57,7 @@ export class CodeGoTo {
     _nearest!: number;
     _entryPlaces!: number[];
     _keepPlace!: number;
-    _kind!: CodeDefinitionKindValue;
+    _kind!: $CodeDefinitionKindValue;
     _notFound!: CodeGoToNotFound | null;
     _placesGeneration!: number;
     _placesRequest!: CancellationTokenSource | null;
@@ -77,7 +77,7 @@ export class CodeGoTo {
         this.read(value, false);
     }
 
-    get mode(): CodeGoToModeValue {
+    get mode(): $CodeGoToModeValue {
         return this._mode;
     }
 
@@ -89,7 +89,7 @@ export class CodeGoTo {
         return this._entries;
     }
 
-    get definitionKind(): CodeDefinitionKindValue {
+    get definitionKind(): $CodeDefinitionKindValue {
         return this._kind;
     }
 
@@ -117,7 +117,7 @@ export class CodeGoTo {
         return this._preview;
     }
 
-    open(mode: CodeGoToModeValue) {
+    open(mode: $CodeGoToModeValue) {
         this.begin();
         if (CodeGoTo.lists(this._mode)) this._mode = 'none';
         this.read((() => { const $s = mode; if ($s === 'line') return ':'; if ($s === 'symbol') return '@'; return ''; })(), true);
@@ -134,7 +134,7 @@ export class CodeGoTo {
         if (!(this._editor.composition == null)) this._editor.setComposition('');
     }
 
-    static lists(mode: CodeGoToModeValue) {
+    static lists(mode: $CodeGoToModeValue) {
         return mode === 'definitions' || mode === 'references';
     }
 
@@ -242,7 +242,7 @@ export class CodeGoTo {
     }
 
     reset() {
-        this._places.splice(0);
+        $eq.collections.listClear(this._places);
         this._placeAt = -1;
         this.stopAsking();
         let said = !(this._notFound == null);
@@ -263,7 +263,7 @@ export class CodeGoTo {
         this._line = null;
         this._lineTarget = null;
         this._entries = [];
-        this._entryPlaces.splice(0);
+        $eq.collections.listClear(this._entryPlaces);
         this._nearest = -1;
         this._selected = -1;
         this._preview = null;
@@ -275,8 +275,8 @@ export class CodeGoTo {
         ProviderRequest.cancel(this._request, null);
         this._request = null;
         this._asking = false;
-        this._symbols.splice(0);
-        this._containers.splice(0);
+        $eq.collections.listClear(this._symbols);
+        $eq.collections.listClear(this._containers);
     }
 
     read(query: string, opening: boolean) {
@@ -286,7 +286,7 @@ export class CodeGoTo {
             this.refresh();
             return;
         }
-        let was: CodeGoToModeValue = this._mode;
+        let was: $CodeGoToModeValue = this._mode;
         this._query = query;
         this._mode = query.startsWith(':') ? 'line' : query.startsWith('@') ? 'symbol' : 'none';
         if (this._mode === 'symbol' && (opening || was !== 'symbol')) {
@@ -303,7 +303,7 @@ export class CodeGoTo {
         this._line = null;
         this._lineTarget = null;
         this._entries = [];
-        this._entryPlaces.splice(0);
+        $eq.collections.listClear(this._entryPlaces);
         this._selected = -1;
         if (this._mode === 'line') this.readLine(); else if (this._mode === 'symbol') this.filter(); else if (CodeGoTo.lists(this._mode)) this.filterPlaces();
         this.previewed();
@@ -316,10 +316,10 @@ export class CodeGoTo {
         let start = 0;
         for (let i = 0; i < text.length; i++) {
             if (text[i] !== ',' && text[i] !== ':' && text[i] !== '#') continue;
-            parts.push($eq.text.substring(text, start, i - start));
+            $eq.collections.listAdd(parts, $eq.text.substring(text, start, i - start));
             start = i + 1;
         }
-        parts.push($eq.text.substring(text, start));
+        $eq.collections.listAdd(parts, $eq.text.substring(text, start));
         let typed: any; 
         if (!((typed = CodeGoTo.parseInt($eq.text.trim(parts[0]))) != null)) return;
         let count = this._editor.document.lineCount;
@@ -357,8 +357,8 @@ export class CodeGoTo {
     ask() {
         let generation = ++this._generation;
         ProviderRequest.cancel(this._request, null);
-        this._symbols.splice(0);
-        this._containers.splice(0);
+        $eq.collections.listClear(this._symbols);
+        $eq.collections.listClear(this._containers);
         let request = $eq.cancellation.source();
         this._request = request;
         this._asking = true;
@@ -389,25 +389,25 @@ export class CodeGoTo {
         let containers: (string | null)[] = [];
         CodeGoTo.walk(answer, null, symbols, containers);
         let order: number[] = [];
-        for (let i = 0; i < symbols.length; i++) order.push(i);
+        for (let i = 0; i < symbols.length; i++) $eq.collections.listAdd(order, i);
         $eq.collections.listSortBy(order, (a: number, b: number) => {
             let start = symbols[a].range.start.compareTo(symbols[b].range.start);
             if (start !== 0) return start;
             let end = symbols[b].range.end.compareTo(symbols[a].range.end);
             return end !== 0 ? end : Math.sign(a - b);
         }, 'System.Comparison`1[System.Int32]');
-        this._symbols.splice(0);
-        this._containers.splice(0);
-        for (const i of order) {
-            this._symbols.push(symbols[i]);
-            this._containers.push(containers[i]);
+        $eq.collections.listClear(this._symbols);
+        $eq.collections.listClear(this._containers);
+        for (const i of $eq.collections.listWalk(order)) {
+            $eq.collections.listAdd(this._symbols, symbols[i]);
+            $eq.collections.listAdd(this._containers, containers[i]);
         }
     }
 
     static walk(level: CodeSymbol[], container: string | null, symbols: CodeSymbol[], containers: (string | null)[]) {
-        for (const symbol of level) {
-            symbols.push(symbol);
-            containers.push(container);
+        for (const symbol of $eq.collections.sequenceWalk(level)) {
+            $eq.collections.listAdd(symbols, symbol);
+            $eq.collections.listAdd(containers, container);
             CodeGoTo.walk(symbol.children, symbol.name, symbols, containers);
         }
     }
@@ -416,7 +416,7 @@ export class CodeGoTo {
         let query = $eq.text.trim($eq.text.substring(this._query, 1));
         if (query.startsWith(':')) query = $eq.text.trim($eq.text.substring(query, 1));
         let words: string[] = [];
-        for (const word of $eq.text.split(query, ' ')) if (word.length > 0) words.push(word);
+        for (const word of $eq.text.split(query, ' ')) if (word.length > 0) $eq.collections.listAdd(words, word);
         let found: CodeGoToEntry[] = [];
         let scores: number[] = [];
         for (let index = 0; index < this._symbols.length; index++) {
@@ -444,7 +444,7 @@ export class CodeGoTo {
                             let part: any; 
                             if ((part = CodeFuzzyMatch.of(words[w], container, true)) != null) {
                                 score += part.score;
-                                for (const at of part.positions) if (!held.includes(at)) held.push(at);
+                                for (const at of $eq.collections.sequenceWalk(part.positions)) if (!held.includes(at)) $eq.collections.listAdd(held, at);
                             } else all = false;
                         }
                         if (!all) continue;
@@ -454,13 +454,13 @@ export class CodeGoTo {
                 }
             }
             let $n8: CodeGoToEntry; 
-            found.push(($n8 = new CodeGoToEntry(name, symbol.kind, symbol.range, symbol.selectionRange.start), $n8.container = container, $n8.deprecated = symbol.deprecated, $n8.matches = matches, $n8.containerMatches = containerMatches, $n8));
-            scores.push(score);
+            $eq.collections.listAdd(found, ($n8 = new CodeGoToEntry(name, symbol.kind, symbol.range, symbol.selectionRange.start), $n8.container = container, $n8.deprecated = symbol.deprecated, $n8.matches = matches, $n8.containerMatches = containerMatches, $n8));
+            $eq.collections.listAdd(scores, score);
         }
         let order: number[] = [];
-        for (let i = 0; i < found.length; i++) order.push(i);
+        for (let i = 0; i < found.length; i++) $eq.collections.listAdd(order, i);
         if (words.length > 0) $eq.collections.listSortBy(order, (a: number, b: number) => scores[a] !== scores[b] ? Math.sign(scores[b] - scores[a]) : Math.sign(a - b), 'System.Comparison`1[System.Int32]');
-        for (const i of order) this._entries.push(found[i]);
+        for (const i of $eq.collections.listWalk(order)) $eq.collections.listAdd(this._entries, found[i]);
         if (this._entries.length === 0) return;
         this._selected = 0;
         if (!this._enclose || words.length > 0) return;
@@ -490,7 +490,7 @@ export class CodeGoTo {
         this._editor.revealInCenter(shown);
     }
 
-    definition(kind: CodeDefinitionKindValue) {
+    definition(kind: $CodeDefinitionKindValue) {
         return $eq.collections.count(this._editor.definitions.providers) > 0 && this.requestPlaces('definitions', kind, false);
     }
 
@@ -523,7 +523,7 @@ export class CodeGoTo {
         return true;
     }
 
-    requestPlaces(mode: CodeGoToModeValue, kind: CodeDefinitionKindValue, muted: boolean) {
+    requestPlaces(mode: $CodeGoToModeValue, kind: $CodeDefinitionKindValue, muted: boolean) {
         this.unsay();
         this.stopAsking();
         let generation = this._placesGeneration;
@@ -534,7 +534,7 @@ export class CodeGoTo {
         return true;
     }
 
-    async askPlaces(mode: CodeGoToModeValue, kind: CodeDefinitionKindValue, at: CodePosition, muted: boolean, generation: number, cancellation: CancellationToken) {
+    async askPlaces(mode: $CodeGoToModeValue, kind: $CodeDefinitionKindValue, at: CodePosition, muted: boolean, generation: number, cancellation: CancellationToken) {
         let places = null;
         try {
             places = mode === 'references' ? await this._editor.references.requestAsync(at, cancellation) : await this._editor.definitions.requestAsync(at, kind, cancellation);
@@ -552,7 +552,7 @@ export class CodeGoTo {
         });
     }
 
-    answered(mode: CodeGoToModeValue, kind: CodeDefinitionKindValue, at: CodePosition, muted: boolean, places: CodeLocation[]) {
+    answered(mode: $CodeGoToModeValue, kind: $CodeDefinitionKindValue, at: CodePosition, muted: boolean, places: CodeLocation[]) {
         if ($eq.collections.count(places) === 0) {
             if (muted) return;
             let word = this._editor.definitions.wordUnder(at) ?? (at.column > 0 ? this._editor.definitions.wordUnder($eq.withPatch(at, { column: at.column - 1 })) : null);
@@ -575,7 +575,7 @@ export class CodeGoTo {
         this.openPlaces(mode, kind, places, at);
     }
 
-    openPlaces(mode: CodeGoToModeValue, kind: CodeDefinitionKindValue, places: CodeLocation[], at: CodePosition) {
+    openPlaces(mode: $CodeGoToModeValue, kind: $CodeDefinitionKindValue, places: CodeLocation[], at: CodePosition) {
         this.begin();
         this.stopSymbols();
         this._mode = mode;
@@ -583,7 +583,7 @@ export class CodeGoTo {
         this._query = '';
         this._enclose = false;
         this._revealed = null;
-        this._places.splice(0);
+        $eq.collections.listClear(this._places);
         $eq.collections.addRange(this._places, places);
         this._nearest = this.nearest(at);
         this._placeAt = this._nearest;
@@ -614,8 +614,8 @@ export class CodeGoTo {
                 if (!((match = CodeFuzzyMatch.of(query, entry.name, true)) != null)) continue;
                 entry = $eq.withPatch(entry, { matches: match.positions });
             }
-            this._entries.push(entry);
-            this._entryPlaces.push(i);
+            $eq.collections.listAdd(this._entries, entry);
+            $eq.collections.listAdd(this._entryPlaces, i);
         }
         if (this._entries.length === 0) return;
         this._selected = 0;
@@ -645,7 +645,7 @@ export class CodeGoTo {
         let end = place.range.end;
         let to = (end.line === at.line ? end.column : text.length) - lead;
         let marked: number[] = [];
-        for (let column = Math.max(at.column, lead) - lead; column < to && column < name.length; column++) marked.push(column);
+        for (let column = Math.max(at.column, lead) - lead; column < to && column < name.length; column++) $eq.collections.listAdd(marked, column);
         let $n13: CodeGoToEntry; 
         return ($n13 = new CodeGoToEntry(name, null, place.range, start), $n13.container = where, $n13.matches = marked, $n13);
     }
@@ -672,7 +672,7 @@ export class CodeGoTo {
         this.stopAsking();
         this.unsay();
         if (this._places.length === 0) return;
-        for (const edit of change.edits) for (let i = 0; i < this._places.length; i++) if (this._places[i].document == null) this._places[i] = $eq.withPatch(this._places[i], { range: edit.carry(this._places[i].range) });
+        for (const edit of $eq.collections.sequenceWalk(change.edits)) for (let i = 0; i < this._places.length; i++) if (this._places[i].document == null) $eq.collections.listSet(this._places, i, $eq.withPatch(this._places[i], { range: edit.carry(this._places[i].range) }));
         if (!this._open || !CodeGoTo.lists(this._mode)) return;
         this._keepPlace = this._selected >= 0 ? this._entryPlaces[this._selected] : -1;
         this.refresh();

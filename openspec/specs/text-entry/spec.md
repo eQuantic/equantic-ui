@@ -15,6 +15,28 @@ text it holds, on the web as on Photon, as Flutter's autofocused `TextField` doe
 - **WHEN** an autofocused entry holding `:` is mounted and `12` typed
 - **THEN** it holds `:12`
 
+### Requirement: A field with a page behind it shows what the page holds
+
+On the web, after a render, a `TextEntry` with an `onChanged` SHALL show the value the page holds,
+whatever the person typed and whether or not the value the page holds changed since the last render, on
+a single-line field and on a multiline one. A `TextEntry` with no `onChanged` SHALL keep what the person
+typed.
+
+#### Scenario: A reset in the same render as the typing
+
+- **WHEN** a field's text is typed and the page resets its value to `""` before the next frame
+- **THEN** the field shows nothing after the render
+
+#### Scenario: A multiline reset
+
+- **WHEN** a field of three lines is typed in, a frame passes, and the page resets its value to `""`
+- **THEN** the field shows nothing after the render
+
+#### Scenario: A field with no page behind it
+
+- **WHEN** a field with no `onChanged` is typed in and its page renders again
+- **THEN** the field keeps what was typed
+
 ### Requirement: A Photon field keeps what was typed until the page builds it
 
 On Photon, a `TextEntry` SHALL show what was typed into it until the page builds it again, and then
@@ -66,3 +88,13 @@ place SHALL start from its own value.
 
 - **WHEN** a field holding typed text leaves the tree and another field is drawn at its place
 - **THEN** the new field shows its own value
+
+### Requirement: An entry may select its text as it takes the keyboard
+
+A `TextEntry` with `SelectOnFocus` SHALL select all of its text whenever it takes the keyboard, autofocused or
+not, on the web as on Photon, so that what is typed first replaces it.
+
+#### Scenario: A rename field
+
+- **WHEN** an autofocused entry with `SelectOnFocus` holding `App.cs` is mounted and `Main.cs` typed
+- **THEN** it holds `Main.cs`

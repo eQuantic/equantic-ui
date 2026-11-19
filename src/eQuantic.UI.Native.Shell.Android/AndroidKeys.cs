@@ -37,6 +37,8 @@ internal static class AndroidKeys
         Keycode.PageDown => "PageDown",
         Keycode.Insert => "Insert",
         >= Keycode.F1 and <= Keycode.F12 => "F" + (e.KeyCode - Keycode.F1 + 1),
+        // The menu key, the keyboard's own way to ask for a menu (#1531): the DOM's name for it.
+        Keycode.Menu => "ContextMenu",
         _ => Character(e.GetUnicodeChar(MetaKeyStates.None)).ToLowerInvariant(),
     };
 

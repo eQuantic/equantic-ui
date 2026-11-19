@@ -106,6 +106,63 @@ public class ElementHostTests
         log.Should().Equal("panel mounted", "panel unmounted");
     }
 
+    /// <summary>A component inside a layer that counts its builds, and can be marked.</summary>
+    private sealed class Tally(List<string> log) : StatefulComponent
+    {
+        public int Builds { get; private set; }
+
+        public void Touch() => SetState(() => { });
+
+        protected override void OnUnmount() => log.Add("tally unmounted");
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            Builds++;
+            return new Text($"tally {Builds}", TypeRole.Caption);
+        }
+    }
+
+    private sealed class Layered(Root root, Tally tally, List<string> log) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: 0);
+            column.Add(root);
+            column.Add(new Overlay(tally) { Modal = false });
+            column.Add(new Anchored(new Text("anchor", TypeRole.BodyM), new Leaf("panel", log)) { Open = true });
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// Photon draws every frame whole and shows every open layer in it, so a <c>SetState</c> outside an
+    /// open overlay and an open anchored panel leaves their components mounted, and one inside the
+    /// overlay builds in the next frame. The web's patch render, which draws only the components that
+    /// built, swept both until it said which parts it drew (#1575); this pins that Photon never had the
+    /// defect, and that its frames say nothing of the kind.
+    /// </summary>
+    [Fact]
+    public void ASetStateOutsideOpenLayers_LeavesThemMounted_AndOneInsideBuilds()
+    {
+        var log = new List<string>();
+        var root = new Root(log);
+        var tally = new Tally(log);
+        var host = Open(new Layered(root, tally, log));
+        log.Should().Contain("panel mounted");
+
+        root.Bump();
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        root.Bump();
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        log.Should().NotContain(entry => entry.EndsWith(" unmounted"), "both layers are still open");
+
+        var builds = tally.Builds;
+        tally.Touch();
+        host.RenderFrame(new DisplayListBuilder(), 48);
+        tally.Builds.Should().Be(builds + 1, "a press inside the open overlay builds it in the next frame");
+        log.Should().NotContain(entry => entry.EndsWith(" unmounted"));
+    }
+
     private sealed class Dialog(List<string> log) : StatefulComponent
     {
         private bool _open = true;

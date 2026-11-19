@@ -1,7 +1,7 @@
-import { $eq, SheetAxisValue, SheetDocument, TableSpans } from "../runtime-exports";
+import { $eq, $SheetAxisValue, SheetDocument, TableSpans } from "../runtime-exports";
 
 export class SheetSpans extends TableSpans {
-    constructor(document: SheetDocument, axis: SheetAxisValue) {
+    constructor(document: SheetDocument, axis: $SheetAxisValue) {
         super();
         this._document = null!;
         this._axis = 'rows';
@@ -16,7 +16,7 @@ export class SheetSpans extends TableSpans {
     }
 
     _document!: SheetDocument;
-    _axis!: SheetAxisValue;
+    _axis!: $SheetAxisValue;
     _readAt!: number;
     _indices!: number[];
     _added!: number[];

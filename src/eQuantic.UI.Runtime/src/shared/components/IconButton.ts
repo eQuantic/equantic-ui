@@ -1,11 +1,11 @@
-import { Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, Pressable, SizeVariantValue, StatelessComponent, StyleDiff, VisualNodeExtensions } from "../runtime-exports";
+import { $SizeVariantValue, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, Pressable, StatelessComponent, StyleDiff, VisualNodeExtensions } from "../runtime-exports";
 
 export class IconButton extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.IconButton';
     declare glyph: Icon;
     declare label: string;
     declare kind: string;
-    declare size: SizeVariantValue;
+    declare size: $SizeVariantValue;
     declare onPressed: (() => void) | null;
     declare disabled: boolean;
     declare selected: boolean;

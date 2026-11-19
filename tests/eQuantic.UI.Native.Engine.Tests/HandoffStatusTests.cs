@@ -174,10 +174,15 @@ public class HandoffStatusTests
     private static IEnumerable<string> ApiLines(JsonElement probe)
     {
         var assembly = probe.GetProperty("in").GetString()!;
-        var files = new[] { "PublicAPI.Shipped.txt", "PublicAPI.Unshipped.txt" }
-            .Select(f => Path.Combine(Root, "src", assembly, f))
-            .Where(File.Exists)
-            .ToArray();
+        var directory = Path.Combine(Root, "src", assembly);
+        // Shipped, the project's own Unshipped and each change's (#1489): what the analyzer reads.
+        var files = Directory.Exists(directory)
+            ? Directory.GetFiles(directory, "PublicAPI.*.txt")
+                .Where(f => Path.GetFileName(f) == "PublicAPI.Shipped.txt"
+                    || Path.GetFileName(f).StartsWith("PublicAPI.Unshipped", StringComparison.Ordinal))
+                .OrderBy(f => f, StringComparer.Ordinal)
+                .ToArray()
+            : [];
         if (files.Length == 0)
             throw new InvalidOperationException($"status.json names {assembly}, which has no PublicAPI file under src/");
         return files.SelectMany(f => File.ReadLines(f));

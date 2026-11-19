@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CalendarNames, Column, CornerRadii, DateOnly, Flexible, Icon, IconButton, IconGlyph, Navigable, NavigableMoveValue, Pressable, Row, SdkStrings, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, $NavigableMoveValue, Box, BoxStyle, BuildContext, CalendarNames, Column, CornerRadii, DateOnly, Flexible, Icon, IconButton, IconGlyph, Navigable, Pressable, Row, SdkStrings, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNodeExtensions } from "../runtime-exports";
 
 export class Calendar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Calendar';
@@ -55,7 +55,7 @@ export class Calendar extends StatefulComponent {
         for (let week = 0; week < 6; week++) {
             let weekRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill });
             for (let column = 0; column < 7; column++) weekRow.add(this.cell(start.addDays(week * 7 + column), context));
-            rows.push(weekRow);
+            $eq.collections.listAdd(rows, weekRow);
         }
         let month = new Column(slot?.gap ?? 8);
         month.add(header);
@@ -122,7 +122,7 @@ export class Calendar extends StatefulComponent {
         return [row + 1, item];
     }
 
-    move(move: NavigableMoveValue) {
+    move(move: $NavigableMoveValue) {
         let from = this._cursor ?? (this.selected ?? this.clampToRange(Calendar.today()));
         let to = (() => { const $s = move; if ($s === 'previousItem') return from.addDays(-1); if ($s === 'nextItem') return from.addDays(1); if ($s === 'previousRow') return from.addDays(-7); if ($s === 'nextRow') return from.addDays(7); if ($s === 'previousPage') return from.addMonths(-1); if ($s === 'nextPage') return from.addMonths(1); if ($s === 'previousSection') return from.addYears(-1); if ($s === 'nextSection') return from.addYears(1); if ($s === 'rowStart') return from.addDays(-Calendar.dayInWeek(from)); if ($s === 'rowEnd') return from.addDays(6 - Calendar.dayInWeek(from)); return from; })();
         this.setState(() => {

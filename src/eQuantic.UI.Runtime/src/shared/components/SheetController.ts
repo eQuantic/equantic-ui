@@ -1,4 +1,4 @@
-import { $eq, CellRef, CodeCommandValue, CodeDocument, CodeEditorController, CodeGrid, CodeKeymap, CodeRange, DateTime, KeyboardConventionValue, Point, PointerKindValue, PointerPhaseValue, Rect, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetEditModeValue, SheetEntryLanguage, SheetEntryViewValue, SheetFormulaBar, SheetGrid, SheetHistory, SheetKeymap, SheetMotionValue, SheetMoveValue, SheetNameBox, SheetRange, SheetReference, SheetSelection, SheetSummary, Size, TsvCodec } from "../runtime-exports";
+import { $CodeCommandValue, $eq, $KeyboardConventionValue, $PointerKindValue, $PointerPhaseValue, $SheetAxisValue, $SheetEditModeValue, $SheetEntryViewValue, $SheetMotionValue, $SheetMoveValue, CellRef, CodeDocument, CodeEditorController, CodeGrid, CodeKeymap, CodeRange, DateTime, Point, Rect, SheetCellSnapshot, SheetDocument, SheetEdit, SheetEntryLanguage, SheetFormulaBar, SheetGrid, SheetHistory, SheetKeymap, SheetNameBox, SheetRange, SheetReference, SheetSelection, SheetSummary, Size, TsvCodec } from "../runtime-exports";
 
 export class SheetController {
     constructor(rows: number = 1000, cols: number = 26) {
@@ -63,7 +63,7 @@ export class SheetController {
     history!: SheetHistory;
     changed!: ((sheetEdit: SheetEdit) => void) | null;
     refreshed!: (() => void) | null;
-    moved!: SheetMoveValue;
+    moved!: $SheetMoveValue;
     _refreshedActive!: CellRef;
     _refreshedSelection!: SheetRange;
     addingRanges!: boolean;
@@ -78,16 +78,16 @@ export class SheetController {
     _lastInUse!: CellRef;
     editing!: boolean;
     entry!: CodeEditorController;
-    editMode!: SheetEditModeValue;
-    entryView!: SheetEntryViewValue;
+    editMode!: $SheetEditModeValue;
+    entryView!: $SheetEntryViewValue;
     now!: () => DateTime;
     fillSource!: SheetRange | null;
     fillTarget!: SheetRange | null;
     grid!: SheetGrid;
     _selecting!: boolean;
     _tapped!: CellRef | null;
-    _tappedHeader!: [SheetAxisValue | null, number, boolean] | null;
-    _headerDrag!: SheetAxisValue | null;
+    _tappedHeader!: [$SheetAxisValue | null, number, boolean] | null;
+    _headerDrag!: $SheetAxisValue | null;
     _entryPressed!: boolean;
     _slide!: number;
     _rise!: number;
@@ -98,7 +98,7 @@ export class SheetController {
     _focusVersion!: number;
     hasKeyboard!: boolean;
     tabReleased!: boolean;
-    _entryKeysFor!: KeyboardConventionValue | null;
+    _entryKeysFor!: $KeyboardConventionValue | null;
     static fillHandleGrab: number = 8;
 
     get selection(): SheetRange {
@@ -113,7 +113,7 @@ export class SheetController {
     get ranges(): SheetRange[] {
         let ranges: SheetRange[] = ($eq.collections.listCapacity(this._others.length + 1), []);
         $eq.collections.addRange(ranges, this._others);
-        ranges.push(this._selection);
+        $eq.collections.listAdd(ranges, this._selection);
         return ranges;
     }
 
@@ -138,7 +138,7 @@ export class SheetController {
         let sum = $eq.num.dec("0");
         let fits = true;
         let area = 0;
-        for (const range of ranges) area += range.rowCount * range.colCount;
+        for (const range of $eq.collections.sequenceWalk(ranges)) area += range.rowCount * range.colCount;
         if (area <= this.document.cells.size) {
             for (let i = 0; i < $eq.collections.count(ranges); i++) {
                 let range = $eq.collections.item(ranges, i);
@@ -160,7 +160,7 @@ export class SheetController {
         this._summary = new SheetSummary(count, numbers, total, fits && numbers > 0 ? sum.div($eq.num.dec(numbers)) : null);
         this._summaryAt = this.document.version;
         this._summaryCulture = culture;
-        this._summaryRanges.splice(0);
+        $eq.collections.listClear(this._summaryRanges);
         $eq.collections.addRange(this._summaryRanges, ranges);
         return this._summary;
     }
@@ -234,9 +234,9 @@ export class SheetController {
         this.cellEditorGrid;
         let shown = this.editorBounds.intersect(this.body());
         let carets: Rect[] = [];
-        for (const caret of this.entry.carets) {
+        for (const caret of $eq.collections.sequenceWalk(this.entry.carets)) {
             let clipped = caret.intersect(shown);
-            if (clipped.width > 0 && clipped.height > 0) carets.push(clipped);
+            if (clipped.width > 0 && clipped.height > 0) $eq.collections.listAdd(carets, clipped);
         }
         return carets;
     }
@@ -262,15 +262,15 @@ export class SheetController {
     }
 
     restore(selection: SheetSelection) {
-        this._others.splice(0);
+        $eq.collections.listClear(this._others);
         this._tabRun = null;
-        for (let i = 0; i < $eq.collections.count(selection.ranges) - 1; i++) this._others.push($eq.collections.item(selection.ranges, i));
+        for (let i = 0; i < $eq.collections.count(selection.ranges) - 1; i++) $eq.collections.listAdd(this._others, $eq.collections.item(selection.ranges, i));
         this._selection = selection.range;
         this._active = selection.active;
     }
 
     select(range: SheetRange) {
-        this._others.splice(0);
+        $eq.collections.listClear(this._others);
         this._tabRun = null;
         this.setActiveRange(range);
     }
@@ -285,11 +285,11 @@ export class SheetController {
     }
 
     addRange(range: SheetRange) {
-        this._others.push(this._selection);
+        $eq.collections.listAdd(this._others, this._selection);
         this.setActiveRange(range);
     }
 
-    move(dRow: number, dCol: number, motion: SheetMotionValue = 'cell', extend: boolean = false) {
+    move(dRow: number, dCol: number, motion: $SheetMotionValue = 'cell', extend: boolean = false) {
         let from = extend ? this._selection.focus : this.activeCell;
         let landed = (() => { const $s = motion; if ($s === 'dataEdge') return this.dataEdge(from, dRow, dCol); if ($s === 'rowBoundary') return new CellRef(from.row, dCol < 0 ? 0 : this.document.cols - 1); if ($s === 'sheetBoundary') return dRow < 0 || dCol < 0 ? new CellRef(0, 0) : this.lastCellInUse(); return new CellRef(from.row + dRow, from.col + dCol); })();
         landed = this.document.clamp(landed);
@@ -300,7 +300,7 @@ export class SheetController {
 
     land(landed: CellRef, extend: boolean) {
         if (!extend) {
-            this._others.splice(0);
+            $eq.collections.listClear(this._others);
             this._selection = new SheetRange(landed);
             this._active = landed;
             return;
@@ -328,7 +328,7 @@ export class SheetController {
 
     moveTo(cell: CellRef) {
         let landed = this.document.clamp(cell);
-        this._others.splice(0);
+        $eq.collections.listClear(this._others);
         this._selection = new SheetRange(landed);
         this._active = landed;
         this._tabRun = null;
@@ -442,7 +442,7 @@ export class SheetController {
         if (this._lastInUseAt === this.document.version) return this._lastInUse;
         let row = 0;
         let col = 0;
-        for (const key of this.document.cells.keys()) {
+        for (const key of $eq.collections.sequenceWalk(this.document.cells.keys())) {
             let cell = CellRef.fromKey(key);
             row = Math.max(row, cell.row);
             col = Math.max(col, cell.col);
@@ -548,7 +548,7 @@ export class SheetController {
     }
 
     selectAll() {
-        this._others.splice(0);
+        $eq.collections.listClear(this._others);
         this._selection = new SheetRange(new CellRef(0, 0), new CellRef(this.document.rows - 1, this.document.cols - 1));
         this._active = this.document.clamp(this._active);
     }
@@ -561,7 +561,7 @@ export class SheetController {
         return this.addingRanges || (modifiers & 4) !== 0;
     }
 
-    beginEdit(seed: string, mode: SheetEditModeValue) {
+    beginEdit(seed: string, mode: $SheetEditModeValue) {
         this.editing = true;
         this.editMode = mode;
         this.entryView = 'cell';
@@ -575,7 +575,7 @@ export class SheetController {
         if (this.editing) this.editMode = 'edit';
     }
 
-    holdEntryIn(view: SheetEntryViewValue) {
+    holdEntryIn(view: $SheetEntryViewValue) {
         this.entryView = view;
         this.useView();
     }
@@ -588,7 +588,7 @@ export class SheetController {
         let range: any; 
         if (!($o => (range = $o.range, $o.$))(SheetReference.tryParse(reference, this.document.rows, this.document.cols))) return false;
         if (this.editing) this.commitEdit();
-        this._others.splice(0);
+        $eq.collections.listClear(this._others);
         this._selection = range;
         this._active = range.topLeft;
         this.reveal();
@@ -657,14 +657,14 @@ export class SheetController {
         let selected = this.selected();
         let $n2: SheetEdit; 
         let edit = ($n2 = new SheetEdit(), $n2.kind = 'setCells', $n2.selectionBefore = selected, $n2.selectionAfter = selected, $n2);
-        for (const range of this.ranges) {
+        for (const range of $eq.collections.sequenceWalk(this.ranges)) {
             for (let row = range.topRow; row <= range.bottomRow; row++) {
                 for (let col = range.leftCol; col <= range.rightCol; col++) {
                     let cell = new CellRef(row, col);
                     let old = this.document.getCell(cell);
                     if (old === value) continue;
-                    edit.before.push(new SheetCellSnapshot(cell, old));
-                    edit.after.push(new SheetCellSnapshot(cell, value));
+                    $eq.collections.listAdd(edit.before, new SheetCellSnapshot(cell, old));
+                    $eq.collections.listAdd(edit.after, new SheetCellSnapshot(cell, value));
                     this.document.setCell(cell, value);
                 }
             }
@@ -674,7 +674,7 @@ export class SheetController {
         return true;
     }
 
-    insert(axis: SheetAxisValue, at: number, count: number = 1) {
+    insert(axis: $SheetAxisValue, at: number, count: number = 1) {
         if (count < 1) return;
         let selectionBefore = this.selected();
         if (axis === 'rows') this.document.shiftRows(at, count); else this.document.shiftCols(at, count);
@@ -682,17 +682,17 @@ export class SheetController {
         this.commit(($n3 = new SheetEdit(), $n3.kind = axis === 'rows' ? 'insertRows' : 'insertCols', $n3.at = at, $n3.count = count, $n3.selectionBefore = selectionBefore, $n3.selectionAfter = this.selected(), $n3));
     }
 
-    delete(axis: SheetAxisValue, at: number, count: number = 1) {
+    delete(axis: $SheetAxisValue, at: number, count: number = 1) {
         if (count < 1) return;
         let selectionBefore = this.selected();
         let removed = axis === 'rows' ? this.document.shiftRows(at, -count) : this.document.shiftCols(at, -count);
-        for (let i = 0; i < this._others.length; i++) this._others[i] = new SheetRange(this.document.clamp(this._others[i].anchor), this.document.clamp(this._others[i].focus));
+        for (let i = 0; i < this._others.length; i++) $eq.collections.listSet(this._others, i, new SheetRange(this.document.clamp(this._others[i].anchor), this.document.clamp(this._others[i].focus)));
         this.setActiveRange(this._selection);
         let $n4: SheetEdit; 
         this.commit(($n4 = new SheetEdit(), $n4.kind = axis === 'rows' ? 'deleteRows' : 'deleteCols', $n4.at = at, $n4.count = count, $n4.removed = removed, $n4.selectionBefore = selectionBefore, $n4.selectionAfter = this.selected(), $n4));
     }
 
-    resize(axis: SheetAxisValue, index: number, size: number) {
+    resize(axis: $SheetAxisValue, index: number, size: number) {
         let old = axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index);
         if (Math.abs(Math.fround(old - size)) < Math.fround(0.01)) return;
         if (axis === 'rows') this.document.setRowHeight(index, size); else this.document.setColWidth(index, size);
@@ -712,13 +712,20 @@ export class SheetController {
         return text;
     }
 
+    async pasteFromAsync(clipboard: any) {
+        let pasted: any; 
+        if ((($0) => !((($0 != null && $0.length > 0) && (pasted = $0, true))))(await clipboard.readAsync())) return;
+        this.paste(pasted);
+        this.refresh();
+    }
+
     paste(text: string) {
         if (this.editing) return this.entry.paste(text);
         let grid = TsvCodec.parse(text);
         if (grid.length === 0) return false;
         let origin = this._selection.topLeft;
         let maxCols = 0;
-        for (const line of grid) maxCols = Math.max(maxCols, line.length);
+        for (const line of $eq.collections.listWalk(grid)) maxCols = Math.max(maxCols, line.length);
         if (origin.row + grid.length > this.document.rows) this.document.rows = origin.row + grid.length;
         if (origin.col + maxCols > this.document.cols) this.document.cols = Math.min(origin.col + maxCols, 16384);
         let $n6: SheetEdit; 
@@ -730,12 +737,12 @@ export class SheetController {
                 if (!this.inBounds(cell)) continue;
                 let old = this.document.getCell(cell);
                 if (old === line[c]) continue;
-                edit.before.push(new SheetCellSnapshot(cell, old));
-                edit.after.push(new SheetCellSnapshot(cell, line[c]));
+                $eq.collections.listAdd(edit.before, new SheetCellSnapshot(cell, old));
+                $eq.collections.listAdd(edit.after, new SheetCellSnapshot(cell, line[c]));
                 this.document.setCell(cell, line[c]);
             }
         }
-        this._others.splice(0);
+        $eq.collections.listClear(this._others);
         this._selection = new SheetRange(origin, this.document.clamp(new CellRef(origin.row + grid.length - 1, origin.col + maxCols - 1)));
         this._active = origin;
         this.reveal();
@@ -770,7 +777,7 @@ export class SheetController {
         this.fillTarget = null;
         if (source == null || target == null) return false;
         let selectionBefore = this.selected();
-        this._others.splice(0);
+        $eq.collections.listClear(this._others);
         this._selection = new SheetRange(new CellRef(Math.min($eq.nullable.value(source).topRow, $eq.nullable.value(target).topRow), Math.min($eq.nullable.value(source).leftCol, $eq.nullable.value(target).leftCol)), new CellRef(Math.max($eq.nullable.value(source).bottomRow, $eq.nullable.value(target).bottomRow), Math.max($eq.nullable.value(source).rightCol, $eq.nullable.value(target).rightCol)));
         this._active = $eq.nullable.value(source).topLeft;
         return this.fill($eq.nullable.value(source), $eq.nullable.value(target), selectionBefore);
@@ -794,8 +801,8 @@ export class SheetController {
                 let value = this.document.getCell(from);
                 let old = this.document.getCell(cell);
                 if (old === value) continue;
-                edit.before.push(new SheetCellSnapshot(cell, old));
-                edit.after.push(new SheetCellSnapshot(cell, value));
+                $eq.collections.listAdd(edit.before, new SheetCellSnapshot(cell, old));
+                $eq.collections.listAdd(edit.after, new SheetCellSnapshot(cell, value));
                 this.document.setCell(cell, value);
             }
         }
@@ -901,7 +908,7 @@ export class SheetController {
         return this.inEditor(position) ? 'text' : this.onFillHandle(position) ? 'crosshair' : 'default';
     }
 
-    handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any) {
+    handleKey(key: string, modifiers: number, convention: $KeyboardConventionValue, clipboard: any) {
         return SheetKeymap.handle(this, key, modifiers, convention, clipboard);
     }
 
@@ -937,14 +944,14 @@ export class SheetController {
         if (focused) this.tabReleased = false; else if (this.editing && this.entryView === 'cell') this.entry.focusChanged(false);
     }
 
-    static notACellsCommand(command: CodeCommandValue) {
+    static notACellsCommand(command: $CodeCommandValue) {
         return (((((((((((((((command === 'indent' || command === 'outdent') || command === 'toggleLineComment') || command === 'moveLinesUp') || command === 'moveLinesDown') || command === 'copyLinesUp') || command === 'copyLinesDown') || command === 'deleteLines') || command === 'joinLines') || command === 'insertLineAbove') || command === 'insertLineBelow') || command === 'completionShow') || command === 'signatureHelpShow') || command === 'hoverShow') || command === 'problemNext') || command === 'problemPrevious');
     }
 
-    entryKey(key: string, modifiers: number, convention: KeyboardConventionValue) {
+    entryKey(key: string, modifiers: number, convention: $KeyboardConventionValue) {
         if (this._entryKeysFor !== convention) {
             $eq.collections.clear(this.entry.keyBindings);
-            for (const binding of CodeKeymap.defaults(convention)) {
+            for (const binding of $eq.collections.sequenceWalk(CodeKeymap.defaults(convention))) {
                 if (SheetController.notACellsCommand(binding.command)) $eq.collections.add(this.entry.keyBindings, $eq.withPatch(binding, { command: 'none' }));
             }
             this._entryKeysFor = convention;
@@ -953,7 +960,7 @@ export class SheetController {
         return this.entry.handleKey(key, modifiers, convention, null);
     }
 
-    handlePointer(phase: PointerPhaseValue, position: Point, modifiers: number, clicks: number, kind: PointerKindValue) {
+    handlePointer(phase: $PointerPhaseValue, position: Point, modifiers: number, clicks: number, kind: $PointerKindValue) {
         switch (phase) {
             case 'down':
                 {
@@ -1096,7 +1103,7 @@ export class SheetController {
         return true;
     }
 
-    headerAt(point: Point): [SheetAxisValue | null, number, boolean, boolean] {
+    headerAt(point: Point): [$SheetAxisValue | null, number, boolean, boolean] {
         let overColumns = point.y >= 0 && point.y < this.grid.headerHeight;
         let overRows = point.x >= 0 && point.x < this.grid.headerWidth;
         if (!overColumns && !overRows) return [null, 0, false, false];
@@ -1114,7 +1121,7 @@ export class SheetController {
         return ['rows', row, false, this.grid.resizeGrip > 0 && point.y >= bottom - this.grid.resizeGrip];
     }
 
-    pressHeader(axis: SheetAxisValue | null, index: number, corner: boolean, modifiers: number) {
+    pressHeader(axis: $SheetAxisValue | null, index: number, corner: boolean, modifiers: number) {
         let along: any; 
         if (corner || !((along = axis) != null)) {
             this.selectAll();
@@ -1176,7 +1183,7 @@ export class SheetController {
         switch (edit.kind) {
             case 'setCells':
                 let cells = forward ? edit.after : edit.before;
-                for (const snapshot of cells) this.document.setCell(snapshot.cell, snapshot.value);
+                for (const snapshot of $eq.collections.listWalk(cells)) this.document.setCell(snapshot.cell, snapshot.value);
                 break;
             case 'insertRows':
                 if (forward) this.document.shiftRows(edit.at, edit.count); else this.document.shiftRows(edit.at, -edit.count);
@@ -1184,7 +1191,7 @@ export class SheetController {
             case 'deleteRows':
                 if (forward) this.document.shiftRows(edit.at, -edit.count); else {
                     this.document.shiftRows(edit.at, edit.count);
-                    for (const snapshot of edit.removed) this.document.setCell(snapshot.cell, snapshot.value);
+                    for (const snapshot of $eq.collections.listWalk(edit.removed)) this.document.setCell(snapshot.cell, snapshot.value);
                 }
                 break;
             case 'insertCols':
@@ -1193,7 +1200,7 @@ export class SheetController {
             case 'deleteCols':
                 if (forward) this.document.shiftCols(edit.at, -edit.count); else {
                     this.document.shiftCols(edit.at, edit.count);
-                    for (const snapshot of edit.removed) this.document.setCell(snapshot.cell, snapshot.value);
+                    for (const snapshot of $eq.collections.listWalk(edit.removed)) this.document.setCell(snapshot.cell, snapshot.value);
                 }
                 break;
             case 'resizeRow':

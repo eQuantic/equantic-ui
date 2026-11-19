@@ -462,6 +462,61 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("UploadAcceptsAny", Culture)!; }
         }
 
+        internal static string SortInstructions
+        {
+            get { return ResourceManager.GetString("SortInstructions", Culture)!; }
+        }
+
+        internal static string SortPickedUp
+        {
+            get { return ResourceManager.GetString("SortPickedUp", Culture)!; }
+        }
+
+        internal static string SortMoved
+        {
+            get { return ResourceManager.GetString("SortMoved", Culture)!; }
+        }
+
+        internal static string SortRefused
+        {
+            get { return ResourceManager.GetString("SortRefused", Culture)!; }
+        }
+
+        internal static string SortDropped
+        {
+            get { return ResourceManager.GetString("SortDropped", Culture)!; }
+        }
+
+        internal static string SortMovedInto
+        {
+            get { return ResourceManager.GetString("SortMovedInto", Culture)!; }
+        }
+
+        internal static string SortDroppedInto
+        {
+            get { return ResourceManager.GetString("SortDroppedInto", Culture)!; }
+        }
+
+        internal static string SortCancelled
+        {
+            get { return ResourceManager.GetString("SortCancelled", Culture)!; }
+        }
+
+        internal static string TreeLoading
+        {
+            get { return ResourceManager.GetString("TreeLoading", Culture)!; }
+        }
+
+        internal static string TreeLoadFailed
+        {
+            get { return ResourceManager.GetString("TreeLoadFailed", Culture)!; }
+        }
+
+        internal static string TreeItemName
+        {
+            get { return ResourceManager.GetString("TreeItemName", Culture)!; }
+        }
+
         internal static string UploadWaiting
         {
             get { return ResourceManager.GetString("UploadWaiting", Culture)!; }
@@ -515,6 +570,21 @@ namespace eQuantic.UI.Components
         internal static string UploadAnnounceFailed
         {
             get { return ResourceManager.GetString("UploadAnnounceFailed", Culture)!; }
+        }
+
+        internal static string SortByColumn
+        {
+            get { return ResourceManager.GetString("SortByColumn", Culture)!; }
+        }
+
+        internal static string ResizeColumn
+        {
+            get { return ResourceManager.GetString("ResizeColumn", Culture)!; }
+        }
+
+        internal static string TableColumns
+        {
+            get { return ResourceManager.GetString("TableColumns", Culture)!; }
         }
 }
 }

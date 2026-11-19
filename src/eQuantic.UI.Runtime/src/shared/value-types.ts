@@ -31,7 +31,12 @@ import type {
   TableTheme,
 } from './theme-slots';
 import { hashesByValue } from '../utils/hash';
-import { FontWeightNumbers, type FontWeightValue } from './enums.generated';
+import {
+  FontWeightNumbers,
+  type FontWeightValue,
+  type PointerKindValue,
+  type PointerPhaseValue,
+} from './enums.generated';
 
 /**
  * Companion of the C# `Color` struct — the statics transpiled code references. The surface must
@@ -236,6 +241,52 @@ export class Point {
   }
   length(): number {
     return f(Math.sqrt(f(f(this.x * this.x) + f(this.y * this.y))));
+  }
+}
+
+/**
+ * Mirror of the C# `ContextRequest` (#1531): a person asked for the menu of a `ContextTarget`, at a point of its
+ * box, or with none when the keyboard asked.
+ */
+export class ContextRequest {
+  readonly at: Point | null;
+
+  constructor(at: Point | null = null) {
+    this.at = at;
+  }
+}
+
+/**
+ * Mirror of the C# `PointerEvent` record (#1562): what a `Listener` hears of a pointer, in its own coordinates. The
+ * DOM's own `PointerEvent` is a different thing, and this one shadows it only where it is imported.
+ */
+export class PointerEvent {
+  readonly phase: PointerPhaseValue;
+  readonly position: Point;
+  readonly kind: PointerKindValue;
+  /** The C# `[Flags] PointerButtons`, numeric: Flutter's constants, which are also the DOM's `buttons` bits. */
+  readonly buttons: number;
+  /** The C# `[Flags] KeyModifiers`, numeric. */
+  readonly modifiers: number;
+  readonly pointer: number;
+  readonly scrollDelta: Point;
+
+  constructor(
+    phase: PointerPhaseValue,
+    position: Point,
+    kind: PointerKindValue,
+    buttons: number,
+    modifiers: number,
+    pointer: number,
+    scrollDelta: Point,
+  ) {
+    this.phase = phase;
+    this.position = position;
+    this.kind = kind;
+    this.buttons = buttons;
+    this.modifiers = modifiers;
+    this.pointer = pointer;
+    this.scrollDelta = scrollDelta;
   }
 }
 
@@ -805,6 +856,73 @@ export class TableRange {
   }
 }
 
+/** Mirror of the C# `SortDrop` (#1535): where a carried item lands, the item's id, the list it left and the
+ * one it lands in, and its position there counted without it; `into` names the item it lands inside, in a
+ * list that nests. */
+export class SortDrop {
+  readonly item: string;
+  readonly from: string;
+  readonly to: string;
+  readonly index: number;
+  readonly into: string | null = null;
+
+  constructor(item = '', from = '', to = '', index = 0, config?: { into?: string | null }) {
+    this.item = item;
+    this.from = from;
+    this.to = to;
+    this.index = index;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `SortAnnouncements` (#1564): what a reader hears while a sortable list's item is sorted by the
+ * keyboard, the instructions and each step's words with their numbered holes (`SortWords.fill` fills them). */
+export class SortAnnouncements {
+  readonly instructions: string;
+  readonly pickedUp: string;
+  readonly moved: string;
+  readonly movedInto: string;
+  readonly refused: string;
+  readonly dropped: string;
+  readonly droppedInto: string;
+  readonly putBack: string;
+
+  constructor(
+    instructions = '',
+    pickedUp = '',
+    moved = '',
+    movedInto = '',
+    refused = '',
+    dropped = '',
+    droppedInto = '',
+    putBack = '',
+  ) {
+    this.instructions = instructions;
+    this.pickedUp = pickedUp;
+    this.moved = moved;
+    this.movedInto = movedInto;
+    this.refused = refused;
+    this.dropped = dropped;
+    this.droppedInto = droppedInto;
+    this.putBack = putBack;
+  }
+}
+
+/** Mirror of the C# `TreePlace`: where one item of a tree stands, its level and its position among its
+ * siblings of how many, all from one. Built bare it is the struct's default, three zeros
+ * (`[ZeroConstructs]`). */
+export class TreePlace {
+  readonly level: number;
+  readonly positionInSet: number;
+  readonly sizeOfSet: number;
+
+  constructor(level = 0, positionInSet = 0, sizeOfSet = 0) {
+    this.level = level;
+    this.positionInSet = positionInSet;
+    this.sizeOfSet = sizeOfSet;
+  }
+}
+
 /** Mirror of the C# `TableScrollRequest`: an offset to go to or a range to reveal, honoured once per
  * version. */
 export class TableScrollRequest {
@@ -848,10 +966,15 @@ export class ScrollRequest {
  * compares it (`ValueTwinHashTests` holds this list to the C#). */
 hashesByValue(
   ColorToken,
+  ContextRequest,
+  PointerEvent,
+  SortAnnouncements,
+  SortDrop,
   TableOffset,
   TableRange,
   TableScrollRequest,
   TextReading,
+  TreePlace,
   ScrollRequest,
   SizeValue,
   WebContent,

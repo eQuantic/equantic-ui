@@ -27,6 +27,8 @@ Components.Chip: no SizeVariant  a chip is always as tall as a small control (sp
 Components.CodeBlock: no Variant  code is coloured by the theme's code palette (IAppTheme.Code), not by a variant
 Components.CodeDiff: no Variant  code is coloured by the theme's code palette (IAppTheme.Code), not by a variant
 Components.CodeEditor: no Variant  code is coloured by the theme's code palette (IAppTheme.Code), not by a variant
+Components.ContextMenu: no SizeVariant  its items are the Menu's own rows, not the control ladder, and what it wraps is the app's
+Components.ContextMenu: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours
 Components.CookieConsent: no SizeVariant  it fills the width it is given and grows with what it holds, so the control ladder has no rung for it
 Components.CookieConsent: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours; its two actions are buttons of their own
 Components.CultureSwitcher: no Variant  a menu of cultures, drawn in the theme's roles: there is no variant to choose
@@ -99,6 +101,8 @@ Components.TimePicker: no Variant  a field: its colours follow its state (primar
 Components.Toast: no SizeVariant  a notice spans what holds it: it has no control size
 Components.Tooltip: no SizeVariant  a label that hugs its text
 Components.Tooltip: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours
+Components.TreeView: no SizeVariant  its rows stand at the control ladder's small rung, the one height of a tree's row
+Components.TreeView: no Variant  a surface of rows: the selected one takes the primary's subtle fill, and no variant chooses its colours
 Spreadsheets.FormulaBar: no SizeVariant  the grid's rows and columns are the document's, and its chrome the Sheet slot's
 Spreadsheets.FormulaBar: no Variant  the spreadsheet's chrome is coloured by its Sheet slot, not by a variant
 Spreadsheets.NameBox: no SizeVariant  the grid's rows and columns are the document's, and its chrome the Sheet slot's

@@ -12,3 +12,4 @@
 # parameter no settable property carries.
 eQuantic.UI.Components.Accordion(openIndex)  the section open when the accordion first appears: which sections are open is the reader's from then on, and v1 has no controlled mode
 eQuantic.UI.Components.CodeEditor.InitialCode  the text the editor OPENS with: the document is the editor's own from the first keystroke, and adopting it would overwrite what someone is typing on every parent build
+eQuantic.UI.Components.TreeView.ExpandedKeys  the keys open when the tree first builds: which nodes are open is the tree's from then on (a press, the keyboard, a reveal), and adopting the list on every parent build would close what the person opened

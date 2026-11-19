@@ -10,7 +10,7 @@
  * One table follows the unions: each FontWeight's number, which the runtime asks for by name.
  */
 
-export type AdjustableRoleValue = 'slider' | 'tablist' | 'radiogroup';
+export type AdjustableRoleValue = 'slider' | 'tablist' | 'radiogroup' | 'separator';
 
 export type AlignmentValue =
   'topStart' | 'topCenter' | 'topEnd' | 'centerStart' | 'center' | 'centerEnd' | 'bottomStart'
@@ -112,6 +112,8 @@ export type FontWeightValue =
 
 export type GradientDirectionValue = 'toRight' | 'toBottom' | 'toBottomRight' | 'toBottomLeft';
 
+export type HitTestBehaviorValue = 'deferToChild' | 'opaque' | 'translucent';
+
 export type HydratedMemberKindValue = 'field' | 'property' | 'capturedParameter' | 'backingField';
 
 export type IconGlyphStyleValue = 'fill' | 'stroke';
@@ -136,7 +138,7 @@ export type NavigableMoveValue =
   'previousItem' | 'nextItem' | 'previousRow' | 'nextRow' | 'previousPage' | 'nextPage'
   | 'previousSection' | 'nextSection' | 'rowStart' | 'rowEnd';
 
-export type NavigableRoleValue = 'grid';
+export type NavigableRoleValue = 'grid' | 'tree';
 
 export type NetworkKindValue = 'none' | 'wifi' | 'cellular' | 'wired' | 'other';
 
@@ -151,13 +153,13 @@ export type PointerCursorValue =
 
 export type PointerKindValue = 'mouse' | 'touch' | 'stylus';
 
-export type PointerPhaseValue = 'down' | 'move' | 'up' | 'hover' | 'exit' | 'cancel';
+export type PointerPhaseValue = 'down' | 'move' | 'up' | 'hover' | 'exit' | 'cancel' | 'scroll';
 
 export type PresenceMotionValue = 'fade' | 'slideUp';
 
 export type PressableRoleValue =
   'button' | 'radio' | 'checkbox' | 'switch' | 'tab' | 'menuItem' | 'option' | 'destination'
-  | 'gridCell';
+  | 'gridCell' | 'treeItem';
 
 export type ScrollAxisValue = 'vertical' | 'horizontal' | 'both';
 
@@ -167,7 +169,7 @@ export type SemanticRoleValue =
   'staticText' | 'button' | 'link' | 'textField' | 'codeField' | 'slider' | 'image' | 'checkbox'
   | 'switch' | 'gridCell' | 'progressIndicator' | 'group' | 'radio' | 'tab' | 'menuItem' | 'option'
   | 'destination' | 'tabBar' | 'radioGroup' | 'comboBox' | 'dialog' | 'alertDialog' | 'table'
-  | 'grid' | 'cell' | 'columnHeader' | 'rowHeader';
+  | 'grid' | 'cell' | 'columnHeader' | 'rowHeader' | 'tree' | 'treeItem' | 'splitter';
 
 export type ServerConnectionStateValue =
   'disconnected' | 'connecting' | 'connected' | 'reconnecting';
@@ -221,6 +223,84 @@ export type VectorVerbValue = 'move' | 'line' | 'cubic' | 'close';
 export type WindowChromeValue = 'standard' | 'unified';
 
 export type WindowSizeClassValue = 'compact' | 'medium' | 'expanded';
+
+/** Each union under the name a module eqc writes imports it by: a `$` no C# type can carry. */
+export type {
+    AdjustableRoleValue as $AdjustableRoleValue,
+    AlignmentValue as $AlignmentValue,
+    AnchorPanelRoleValue as $AnchorPanelRoleValue,
+    AnchorPlacementValue as $AnchorPlacementValue,
+    AppIconUseValue as $AppIconUseValue,
+    BiometricResultValue as $BiometricResultValue,
+    CodeCommandValue as $CodeCommandValue,
+    CodeCompletionKindValue as $CodeCompletionKindValue,
+    CodeCompletionTriggerValue as $CodeCompletionTriggerValue,
+    CodeDecorationKindValue as $CodeDecorationKindValue,
+    CodeDefinitionKindValue as $CodeDefinitionKindValue,
+    CodeDiagnosticSeverityValue as $CodeDiagnosticSeverityValue,
+    CodeDirectionValue as $CodeDirectionValue,
+    CodeGoToModeValue as $CodeGoToModeValue,
+    CodeGutterKindValue as $CodeGutterKindValue,
+    CodeMotionValue as $CodeMotionValue,
+    CodePatchLineKindValue as $CodePatchLineKindValue,
+    CodeRowKindValue as $CodeRowKindValue,
+    CodeSignatureTriggerValue as $CodeSignatureTriggerValue,
+    CodeSymbolKindValue as $CodeSymbolKindValue,
+    CodeTokenKindValue as $CodeTokenKindValue,
+    ConsentStateValue as $ConsentStateValue,
+    ContrastLevelValue as $ContrastLevelValue,
+    CrossAlignValue as $CrossAlignValue,
+    DensityValue as $DensityValue,
+    DeviceCapabilityValue as $DeviceCapabilityValue,
+    DragAxisValue as $DragAxisValue,
+    FileSaveOutcomeValue as $FileSaveOutcomeValue,
+    FontWeightValue as $FontWeightValue,
+    GradientDirectionValue as $GradientDirectionValue,
+    HitTestBehaviorValue as $HitTestBehaviorValue,
+    HydratedMemberKindValue as $HydratedMemberKindValue,
+    IconGlyphStyleValue as $IconGlyphStyleValue,
+    IconsValue as $IconsValue,
+    ImageFitValue as $ImageFitValue,
+    KeyboardConventionValue as $KeyboardConventionValue,
+    LiveRegionUrgencyValue as $LiveRegionUrgencyValue,
+    LoopEffectValue as $LoopEffectValue,
+    MainAlignValue as $MainAlignValue,
+    NavigableMoveValue as $NavigableMoveValue,
+    NavigableRoleValue as $NavigableRoleValue,
+    NetworkKindValue as $NetworkKindValue,
+    PasskeyOutcomeValue as $PasskeyOutcomeValue,
+    PermissionStateValue as $PermissionStateValue,
+    PointerCursorValue as $PointerCursorValue,
+    PointerKindValue as $PointerKindValue,
+    PointerPhaseValue as $PointerPhaseValue,
+    PresenceMotionValue as $PresenceMotionValue,
+    PressableRoleValue as $PressableRoleValue,
+    ScrollAxisValue as $ScrollAxisValue,
+    SemanticCheckValue as $SemanticCheckValue,
+    SemanticRoleValue as $SemanticRoleValue,
+    ServerConnectionStateValue as $ServerConnectionStateValue,
+    ServerTopicRefusalReasonValue as $ServerTopicRefusalReasonValue,
+    ShapeScaleValue as $ShapeScaleValue,
+    SheetAxisValue as $SheetAxisValue,
+    SheetEditKindValue as $SheetEditKindValue,
+    SheetEditModeValue as $SheetEditModeValue,
+    SheetEntryViewValue as $SheetEntryViewValue,
+    SheetMotionValue as $SheetMotionValue,
+    SheetMoveValue as $SheetMoveValue,
+    SizeKindValue as $SizeKindValue,
+    SizeVariantValue as $SizeVariantValue,
+    TableCellRoleValue as $TableCellRoleValue,
+    TableRoleValue as $TableRoleValue,
+    TextAlignmentValue as $TextAlignmentValue,
+    ThemeModeValue as $ThemeModeValue,
+    TypeRoleValue as $TypeRoleValue,
+    UploadStateValue as $UploadStateValue,
+    VariantValue as $VariantValue,
+    VectorPaintKindValue as $VectorPaintKindValue,
+    VectorVerbValue as $VectorVerbValue,
+    WindowChromeValue as $WindowChromeValue,
+    WindowSizeClassValue as $WindowSizeClassValue,
+};
 
 /** Each weight's number, its OpenType weight class, keyed by the name the transpiler emits. */
 export const FontWeightNumbers: Readonly<Record<FontWeightValue, number>> = {

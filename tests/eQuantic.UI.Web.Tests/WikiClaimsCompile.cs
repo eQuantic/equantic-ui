@@ -1,3 +1,4 @@
+using eQuantic.UI.Components;
 using eQuantic.UI.Web;
 using eQuantic.UI.Primitives;
 using Microsoft.Extensions.DependencyInjection;
@@ -304,6 +305,157 @@ public class WikiClaimsCompile
         public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public override VisualNode Build(ComponentContext context) => Text("queue", TypeRole.BodyM);
+    }
+
+    /// <summary>Components, "A subtree is heard as one, or not at all" (preview.69, #1567): a switch heard as
+    /// its row, and the initials an avatar draws, which a reader passes over.</summary>
+    private sealed class SubtreeReadingPage : Primitives.StatefulComponent
+    {
+        private bool _on;
+
+        private void Toggle() => SetState(() => _on = !_on);
+
+        public override VisualNode Build(ComponentContext context) => Column(children:
+        [
+            MergeSemantics(Row(children: [Text("Wi-Fi"), Switch(_on, Toggle)])),
+            Row(children: [ExcludeSemantics(Avatar("JD")), Text("Jane Doe")]),
+        ]);
+    }
+
+    /// <summary>Components, "ContextTarget and ContextMenu: a menu asked for anywhere" (preview.69, #1531): a
+    /// file's card with its menu, and the blocks it is made of for a panel of another look.</summary>
+    private sealed class FileMenuPage : Primitives.StatefulComponent
+    {
+        private sealed record File(string Name);
+
+        private readonly File file = new("README.md");
+        private Point? _at;
+        private bool _open;
+
+        private static VisualNode FileCard(File file) => Text(file.Name, TypeRole.BodyM);
+
+        private static void Run(File file, int index) { }
+
+        public override VisualNode Build(ComponentContext context) =>
+            ContextMenu(
+                FileCard(file),
+                [new MenuItem("Rename"), new MenuItem("Delete") { Destructive = true }],
+                index => Run(file, index));
+
+        /// <summary>The blocks under it: a target under an anchored panel opened at the request's point.</summary>
+        public VisualNode OwnPanel(VisualNode panel) =>
+            new Anchored(ContextTarget(FileCard(file), request => SetState(() => (_at, _open) = (request.At, true))), panel)
+            {
+                At = _at,
+                Open = _open,
+                OnDismiss = () => SetState(() => _open = false),
+            };
+    }
+
+    /// <summary>Components, "Sortable: lists a pointer puts in order" (preview.69, #1535): a board's column.</summary>
+    private sealed class BoardColumnPage : Primitives.StatefulComponent
+    {
+        private readonly List<(string Id, string Title)> _cards = [("c1", "Draw the tree")];
+        private SortDrop? _landing;
+
+        private void Move(string item, string to, int index) { }
+
+        public override VisualNode Build(ComponentContext context) =>
+            Sortable(
+                Column(gap: Space.S2, children: [.. _cards.Select(card => SortableItem(Text(card.Title, TypeRole.BodyM), card.Id))]),
+                id: "todo",
+                onDropped: drop => SetState(() => Move(drop.Item, drop.To, drop.Index)),
+                group: "board",
+                onHovered: drop => SetState(() => _landing = drop),
+                accepts: drop => !drop.Item.StartsWith("locked", StringComparison.Ordinal));
+    }
+
+    /// <summary>Components, "Sortable", the words are the list's (#1564): a column that says the keyboard's steps
+    /// in the app's own words.</summary>
+    private sealed class OwnWordsColumnPage : Primitives.StatefulComponent
+    {
+        private readonly List<(string Id, string Title)> _cards = [("c1", "Draw the tree")];
+
+        private void Move(string item, string to, int index) { }
+
+        public override VisualNode Build(ComponentContext context) =>
+            Sortable(
+                Column(gap: Space.S2, children: [.. _cards.Select(card => SortableItem(Text(card.Title, TypeRole.BodyM), card.Id))]),
+                id: "todo",
+                onDropped: drop => SetState(() => Move(drop.Item, drop.To, drop.Index)),
+                label: "To do",
+                announcements: new SortAnnouncements(
+                    Instructions: "Space picks the card up, the arrows move it, Space drops it.",
+                    PickedUp: "{0} lifted from {3}.",
+                    Moved: "{0}: slot {1} of {2}.",
+                    MovedInto: "{0} on top of {1}.",
+                    Refused: "{0} cannot go there.",
+                    Dropped: "{0} placed in {3}, slot {1}.",
+                    DroppedInto: "{0} placed on {1}.",
+                    PutBack: "{0} is back where it was."));
+    }
+
+    /// <summary>Components, "DataTable: columns a person orders and sizes" (#1538): a table whose page keeps the
+    /// order a person leaves its columns in and the widths they give them.</summary>
+    private sealed class OrderedColumnsPage : Primitives.StatefulComponent
+    {
+        private readonly DataColumn[] _columns = [new("Name", GridTrack.Flex()), new("Size", GridTrack.Fixed(120))];
+        private IReadOnlyList<int>? _order;
+
+        public override VisualNode Build(ComponentContext context) =>
+            new DataTable(_columns, [])
+            {
+                ColumnOrder = _order,
+                OnColumnsReordered = order => SetState(() => _order = order),
+                OnColumnResized = (column, width) => SetState(() =>
+                    _columns[column] = _columns[column] with { Track = GridTrack.Fixed(width) }),
+            };
+    }
+
+    /// <summary>Components, "TreeView: a tree the keyboard walks" (preview.69, #1530): a repository's
+    /// files, the top folder from the server and every folder below it loaded as it opens.</summary>
+    private sealed class FilesPage : Primitives.StatefulComponent
+    {
+        private sealed record Entry(string Path, string Name, bool IsDirectory);
+
+        private readonly List<Entry> Top = [];
+        private string? _open;
+
+        private Task<List<Entry>> ListFolder(string path) => Task.FromResult(new List<Entry>());
+
+        private TreeNode Node(Entry entry) => new(entry.Path, entry.Name)
+        {
+            Icon = entry.IsDirectory ? Icons.Menu : Icons.Copy,
+            IsLeaf = !entry.IsDirectory,
+        };
+
+        public override VisualNode Build(ComponentContext context) =>
+            TreeView(
+                roots: Top.Select(entry => new TreeNode(entry.Path, entry.Name)
+                {
+                    Icon = entry.IsDirectory ? Icons.Menu : Icons.Copy,
+                    IsLeaf = !entry.IsDirectory,
+                }).ToList(),
+                selectedKey: _open,
+                onPressed: node => SetState(() => _open = node.Key),
+                loadChildren: async folder => (await ListFolder(folder.Key)).Select(Node).ToList(),
+                label: "Repository",
+                height: SizeValue.Fill);
+
+        /// <summary>The vocabulary under it, for a composite of an app's own.</summary>
+        public static VisualNode OwnComposite() =>
+            new Navigable(_ => { }, [
+                new Pressable(Text("src", TypeRole.BodyM), () => { })
+                {
+                    Role = PressableRole.TreeItem,
+                    Expanded = false,
+                    TreePlace = new TreePlace(Level: 1, PositionInSet: 1, SizeOfSet: 1),
+                },
+            ])
+            {
+                Role = NavigableRole.Tree,
+                OnTextSearch = _ => { },
+            };
     }
 
     /// <summary>

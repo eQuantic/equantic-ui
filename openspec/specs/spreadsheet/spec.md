@@ -154,6 +154,12 @@ clipboard.
   clipboard's text `x\ty` is pasted
 - **THEN** the entry is `ax\tyb`, no other cell changed, and one undo while editing gives back `ab`
 
+#### Scenario: A clipboard that answers later
+
+- **WHEN** ⌘V is pressed over B2 with a clipboard whose read has not answered yet, and it then answers `x\ty`
+- **THEN** the key is claimed, B2 is empty until the clipboard answers, B2 and C2 hold `x` and `y` after, and
+  the sheet's views are told to build again once, after the paste
+
 ### Requirement: The spreadsheet's engine is an assembly the SDK adds
 
 An app built with either SDK SHALL reach the spreadsheet's engine through the `eQuantic.UI.Sheet`
@@ -941,3 +947,14 @@ column, and of a row's header SHALL select the row, as a press there does, on ev
 
 - **WHEN** a reader activates the header of column C
 - **THEN** the selection is column C, as a press on that header makes it
+
+### Requirement: A resize keeps the keyboard on the sheet
+
+A press on a resize grip drawn inside a spreadsheet's surface SHALL leave the keyboard on the sheet, on the web
+as on Photon, so the keys that follow, ⌘Z among them, reach the sheet.
+
+#### Scenario: A grip pressed on the web
+
+- **WHEN** a sheet with B2 selected has a resize grip inside its surface pressed with a mouse
+- **THEN** the sheet's text control holds the focus, the `mousedown` is prevented, and B2 is still the
+  selection

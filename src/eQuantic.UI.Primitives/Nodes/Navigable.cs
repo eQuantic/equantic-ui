@@ -47,6 +47,15 @@ public sealed class Navigable : VisualNode
     /// <see cref="Adjustable.OnAdjust"/> leaves the step's worth to its control.</summary>
     public Action<NavigableMove> OnMove { get; init; }
 
+    /// <summary>
+    /// A printable character typed while the composite holds the focus, with no modifier but Shift:
+    /// how a tree, a list or a menu jumps to an item by the first letters of its name (WAI-ARIA's
+    /// type-ahead, WPF's <c>TextSearch</c>). The COMPOSITE owns what the characters mean, how long a
+    /// search lasts and which item it lands on, as it owns what a move means. Space never arrives
+    /// here: it is a key of its own. Null, the default, leaves every character to the page.
+    /// </summary>
+    public Action<string>? OnTextSearch { get; init; }
+
     /// <summary>Announced by assistive tech as the composite's name ("July 2026").</summary>
     public string Label { get; init; } = "";
 
@@ -61,6 +70,15 @@ public sealed class Navigable : VisualNode
     /// <c>aria-activedescendant</c> at it, so a screen reader announces the cell the arrows moved
     /// to WITHOUT the focus ever leaving the composite's one stop.</summary>
     public (int Row, int Item)? ActiveCell { get; init; }
+
+    /// <summary>
+    /// Takes the keyboard to the composite's one stop when it is higher than the version the composite was
+    /// last built with, on every target: how a component gives the keyboard back to its composite after a
+    /// field inside it closed (Flutter's <c>FocusNode.requestFocus</c>). A tree is built again and again, so
+    /// the version is what makes data an event, as a <see cref="ScrollRequest"/>'s is. The first build only
+    /// records it, so a composite mounted with any version takes nothing.
+    /// </summary>
+    public int FocusVersion { get; init; }
 
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);

@@ -1,4 +1,4 @@
-import { $eq, CodeCollapse, CodeFiller, CodeRow, CodeRowKindValue } from "../runtime-exports";
+import { $CodeRowKindValue, $eq, CodeCollapse, CodeFiller, CodeRow } from "../runtime-exports";
 
 export class CodeRows {
     constructor(lineCount: number, fillers: CodeFiller[], collapses: CodeCollapse[]) {
@@ -12,8 +12,8 @@ export class CodeRows {
         this.lineCount = 0;
         this.rowCount = 0;
         this.lineCount = Math.max(0, lineCount);
-        let sortedFillers = [...fillers.filter((filler) => filler.rows > 0)].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = ((filler) => filler.beforeLine); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }).slice();
-        let sortedCollapses = [...collapses.filter((collapse) => collapse.lastLine >= collapse.firstLine)].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = ((collapse) => collapse.firstLine); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }).slice();
+        let sortedFillers = $eq.linq.toArray($eq.query.defer(($src) => [...$src].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = ((filler) => filler.beforeLine); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }), $eq.query.where(fillers, (filler) => filler.rows > 0)));
+        let sortedCollapses = $eq.linq.toArray($eq.query.defer(($src) => [...$src].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = ((collapse) => collapse.firstLine); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }), $eq.query.where(collapses, (collapse) => collapse.lastLine >= collapse.firstLine)));
         let line = 0;
         let row = 0;
         let f = 0;
@@ -47,7 +47,7 @@ export class CodeRows {
         this.rowCount = row;
     }
 
-    _kinds!: CodeRowKindValue[];
+    _kinds!: $CodeRowKindValue[];
     _lines!: number[];
     _lineCounts!: number[];
     _rows!: number[];
@@ -57,14 +57,14 @@ export class CodeRows {
     lineCount!: number;
     rowCount!: number;
 
-    add(kind: CodeRowKindValue, line: number, lineCount: number, row: number, rowCount: number, source: number, label: string | null) {
-        this._kinds.push(kind);
-        this._lines.push(line);
-        this._lineCounts.push(lineCount);
-        this._rows.push(row);
-        this._rowCounts.push(rowCount);
-        this._sources.push(source);
-        this._labels.push(label);
+    add(kind: $CodeRowKindValue, line: number, lineCount: number, row: number, rowCount: number, source: number, label: string | null) {
+        $eq.collections.listAdd(this._kinds, kind);
+        $eq.collections.listAdd(this._lines, line);
+        $eq.collections.listAdd(this._lineCounts, lineCount);
+        $eq.collections.listAdd(this._rows, row);
+        $eq.collections.listAdd(this._rowCounts, rowCount);
+        $eq.collections.listAdd(this._sources, source);
+        $eq.collections.listAdd(this._labels, label);
     }
 
     rowOf(line: number) {

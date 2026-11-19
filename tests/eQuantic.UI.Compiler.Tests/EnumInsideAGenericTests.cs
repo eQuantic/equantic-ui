@@ -42,7 +42,7 @@ public class EnumInsideAGenericTests
     {
         var js = Emit("Action<eQuantic.UI.Primitives.NavigableMove> onMove");
 
-        js.Should().Contain("(navigableMove: NavigableMoveValue) => void",
+        js.Should().Contain("(navigableMove: $NavigableMoveValue) => void",
             "the runtime exports the union, and no type called NavigableMove");
         js.Should().NotContain(": NavigableMove)",
             "the C# spelling names nothing on the other side");
@@ -54,7 +54,7 @@ public class EnumInsideAGenericTests
         // An annotation naming something the module never imported is a BROKEN type, not a missing
         // one — so the rewrite has to register the name, not just spell it.
         Emit("Action<eQuantic.UI.Primitives.NavigableMove> onMove")
-            .Should().Contain("import { NavigableMoveValue } from \"@equantic/runtime\";");
+            .Should().Contain("import { $NavigableMoveValue } from \"@equantic/runtime\";");
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class EnumInsideAGenericTests
     public void ABareVocabularyEnum_WasAlwaysRight()
     {
         Emit("eQuantic.UI.Primitives.NavigableMove move")
-            .Should().Contain("_move: NavigableMoveValue");
+            .Should().Contain("_move: $NavigableMoveValue");
     }
 
     /// <summary>
@@ -98,9 +98,9 @@ public class EnumInsideAGenericTests
     {
         var js = Emit("Action<IReadOnlyList<eQuantic.UI.Primitives.NavigableMove>> onMoves");
 
-        js.Should().Contain("NavigableMoveValue[]");
+        js.Should().Contain("$NavigableMoveValue[]");
         js.Should().NotContain("NavigableMove[]", "the C# spelling names nothing on the other side");
-        js.Should().Contain("import { NavigableMoveValue } from \"@equantic/runtime\";");
+        js.Should().Contain("import { $NavigableMoveValue } from \"@equantic/runtime\";");
     }
 
     /// <summary>
@@ -126,7 +126,7 @@ public class EnumInsideAGenericTests
     {
         var js = Emit("Action<IReadOnlyList<eQuantic.UI.Primitives.NavigableMove>> onMoves");
 
-        js.Should().Contain("(value: NavigableMoveValue[]) => void");
+        js.Should().Contain("(value: $NavigableMoveValue[]) => void");
         js.Should().NotContain("iReadOnlyList<", "that is a type, and it was landing in the name slot");
     }
 
@@ -136,6 +136,6 @@ public class EnumInsideAGenericTests
     public void ASimpleTypeArgument_StillNamesTheParameter()
     {
         Emit("Action<eQuantic.UI.Primitives.NavigableMove> onMove")
-            .Should().Contain("(navigableMove: NavigableMoveValue) => void");
+            .Should().Contain("(navigableMove: $NavigableMoveValue) => void");
     }
 }

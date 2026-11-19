@@ -58,63 +58,7 @@ public sealed class Menu : StatefulComponent
 
     public override VisualNode Build(ComponentContext context)
     {
-        var theme = context.Theme;
-        // The menus' slot (docs/ELEMENT-TREE-PLAN.md §3.10): each value the theme names, or today's.
-        var slot = theme.Menu;
-
-        var list = new Column(gap: 0) { Width = SizeValue.Fill };
-        for (var i = 0; i < Items.Count; i++)
-        {
-            var item = Items[i];
-            var index = i;
-
-            var row = new Row(gap: slot?.ItemGap ?? Space.S2)
-            {
-                Cross = CrossAlign.Center,
-                Width = SizeValue.Fill,
-                Height = SizeValue.Fill,
-            };
-            if (item.Icon is { } glyph)
-                row.Add(new Icon(glyph, IconSize.Dense,
-                    item.Destructive ? theme.Colors(Variant.Destructive).Base : theme.TextSecondary));
-            // ONE line: a menu item is a single line on every platform that has menus, and a label
-            // that does not fit ellipsizes rather than growing the row it lives in — a wrapped
-            // label overflowed a fixed-height row and read as broken text.
-            row.Add(new Text(item.Label, TypeRole.BodyM,
-                item.Destructive ? theme.Colors(Variant.Destructive).Base : theme.TextPrimary,
-                maxLines: 1));
-
-            var surface = new Box(new BoxStyle
-            {
-                Height = ControlMetrics.Height(context, SizeVariant.Medium),
-                Padding = slot?.ItemPadding ?? EdgeInsets.Symmetric(Space.S3, 0),
-                Width = SizeValue.Fill,
-                Opacity = item.Disabled ? theme.DisabledOpacity : null,
-                Background = _open && index == _highlight && !item.Disabled ? theme.SurfaceSubtle : null,
-                Hover = item.Disabled ? null : new StyleDiff { Background = theme.SurfaceSubtle },
-            }, row);
-
-            // A disabled item is still a MENU ITEM — perceivable and announced dimmed, exactly
-            // like every disabled row in a native menu. A bare Box would make it invisible to
-            // assistive tech, which reads as the menu having fewer commands than the screen shows.
-            list.Add(new Pressable(surface, item.Disabled ? null : () => Choose(index))
-            {
-                Disabled = item.Disabled,
-                Role = PressableRole.MenuItem,
-            });
-        }
-
-        var panel = new Box(new BoxStyle
-        {
-            MinWidth = slot?.MenuMinWidth ?? 180,
-            Background = theme.Surface,
-            CornerRadius = new CornerRadii(theme.Shape(slot?.PanelShape ?? ShapeScale.Medium)),
-            BorderWidth = slot?.PanelBorderWidth ?? 1,
-            BorderColor = theme.Border,
-            Elevation = slot?.PanelElevation ?? 2,
-            Padding = slot?.MenuPadding ?? EdgeInsets.Symmetric(0, Space.S1),
-            Clip = true,
-        }, list);
+        var panel = MenuPanel.Build(context, Items, _open, _highlight, Choose);
 
         VisualNode menu = new Anchored(new Pressable(Trigger, Toggle) { Expanded = _open }, panel)
         {
@@ -128,19 +72,16 @@ public sealed class Menu : StatefulComponent
             ActiveIndex = _open ? _highlight : -1,
         };
 
-        // The keyboard answers while the panel is up, and its chords stay around the tree whether it
-        // is or not, so opening moves nothing in it and the focus stays on the trigger (#567).
-        var live = _open && Items.Count > 0;
-        menu = new Shortcut(menu, KeyChord.ArrowDown, () => SetState(() => _highlight = Step(+1))) { Enabled = live };
-        menu = new Shortcut(menu, KeyChord.ArrowUp, () => SetState(() => _highlight = Step(-1))) { Enabled = live };
-        menu = new Shortcut(menu, KeyChord.Enter, () => Choose(_highlight)) { Enabled = live };
-        return menu;
+        return MenuPanel.WithKeys(menu, _open && Items.Count > 0,
+            () => SetState(() => _highlight = MenuPanel.Step(Items, _highlight, +1)),
+            () => SetState(() => _highlight = MenuPanel.Step(Items, _highlight, -1)),
+            () => Choose(_highlight));
     }
 
     private void Toggle() => SetState(() =>
     {
         _open = !_open;
-        if (_open) _highlight = FirstEnabled();
+        if (_open) _highlight = MenuPanel.FirstEnabled(Items);
     });
 
     private void Choose(int index)
@@ -148,21 +89,5 @@ public sealed class Menu : StatefulComponent
         if (index < 0 || index >= Items.Count || Items[index].Disabled) return;
         OnSelect?.Invoke(index);
         SetState(() => _open = false);
-    }
-
-    private int FirstEnabled()
-    {
-        for (var i = 0; i < Items.Count; i++)
-            if (!Items[i].Disabled) return i;
-        return 0;
-    }
-
-    /// <summary>The next enabled item in <paramref name="direction"/>, stopping at the edge — a
-    /// menu that wraps turns a held arrow key into a roulette.</summary>
-    private int Step(int direction)
-    {
-        for (var i = _highlight + direction; i >= 0 && i < Items.Count; i += direction)
-            if (!Items[i].Disabled) return i;
-        return _highlight;
     }
 }

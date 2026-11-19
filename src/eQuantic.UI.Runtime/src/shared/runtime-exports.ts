@@ -34,6 +34,10 @@ export {
   TableSpans,
   Hoverable,
   DropTarget,
+  ContextTarget,
+  Listener,
+  Sortable,
+  SortableItem,
   Flexible,
   Spacer,
   Stack,
@@ -44,6 +48,8 @@ export {
   Progress,
   LiveRegion,
   Group,
+  MergeSemantics,
+  ExcludeSemantics,
   RangeValue,
   Navigable,
   CameraPreview,
@@ -69,6 +75,7 @@ export {
   Shortcut,
   KeyChord,
   KeyModifiers,
+  PointerButtons,
   CuratedIcons,
   Draggable,
   SafeArea,
@@ -131,16 +138,21 @@ export { RouteValues } from './route-values';
 // Same promise, same failure shape: a page writing BoxStyle.Transform / .Pattern / .Glow names
 // these, and eqc routes every Primitives name here.
 export {
+  ContextRequest,
+  PointerEvent,
   FaceName,
   Point,
   Rect,
   ScrollRequest,
   Size,
+  SortAnnouncements,
+  SortDrop,
   TableOffset,
   TableRange,
   TableScrollRequest,
   TextReading,
   Transform2D,
+  TreePlace,
 } from './value-types';
 // A page placing a WebFrame names this to say WHICH form its content is; same implicit promise.
 export { WebContent } from './value-types';

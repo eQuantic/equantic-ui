@@ -42,8 +42,12 @@ public sealed class PhotonWindow
     /// two 8pt gaps, the 12pt margin before and a matching one after — the corner a title-bar
     /// toolbar keeps clear of, reported through <see cref="PhotonHost.WindowControlsInsets"/>.</summary>
     private const float TrafficLightsWidth = 74;
+
+    /// <summary>A Control-click asked for a menu and was answered: its release is the menu's, and presses nothing.</summary>
+    private bool _contextClickHeld;
     private const ulong EventTypeLeftMouseDown = 1;
     private const ulong EventTypeLeftMouseUp = 2;
+    private const ulong EventTypeRightMouseDown = 3;
     private const ulong EventTypeMouseMoved = 5;
     private const ulong EventTypeLeftMouseDragged = 6;
     private const ulong EventTypeMouseExited = 9;
@@ -98,7 +102,8 @@ public sealed class PhotonWindow
     /// </summary>
     public void Run(VisualNode root, IAppTheme theme, ThemeMode mode = ThemeMode.Light, int maxFrames = 0,
         eQuantic.UI.Native.Hosting.PhotonThemeController? themeController = null,
-        eQuantic.UI.Native.Hosting.PhotonCultureController? cultureController = null)
+        eQuantic.UI.Native.Hosting.PhotonCultureController? cultureController = null,
+        ComponentBoundary? boundary = null)
     {
         LoadFrameworks();
         using var backend = new MetalBackend();
@@ -174,7 +179,7 @@ public sealed class PhotonWindow
         // ONE builder for the loop's lifetime: Reset keeps every buffer's capacity, so a steady
         // 120 Hz stops growing fresh lists per frame.
         var frameBuilder = new DisplayListBuilder();
-        var host = new PhotonHost(root, theme, mode, _width, _height, textService)
+        var host = new PhotonHost(root, theme, mode, _width, _height, textService, boundary: boundary)
         {
             // Increase Contrast, read from the system like the mode (#340): every token resolves
             // with it, so the palette steps up where the theme says it does.
@@ -458,6 +463,7 @@ public sealed class PhotonWindow
         {
             case EventTypeLeftMouseDown:
             case EventTypeLeftMouseUp:
+            case EventTypeRightMouseDown:
             case EventTypeMouseMoved:
             case EventTypeLeftMouseDragged:
             case EventTypeMouseExited:
@@ -485,13 +491,33 @@ public sealed class PhotonWindow
 
         switch (type)
         {
+            case EventTypeRightMouseDown:
+                // A secondary click asks for the menu of what it lands on (#1531); where nothing answers, AppKit's
+                // own handling of the event goes on as before.
+                host.ContextRequest(x, y);
+                break;
             case EventTypeLeftMouseDown:
+                var modifiers = MacKeys.ModifiersOf(SendULong(e, Sel("modifierFlags")));
+                // A Control-click is a Mac's secondary click (#1531). Answered, the release that follows it is the
+                // menu's, not a press's; answered by nothing, it presses as it always did.
+                if (modifiers == KeyModifiers.Control
+                    && host.ContextRequest(x, y, buttons: PointerButtons.Primary, modifiers: KeyModifiers.Control))
+                {
+                    _contextClickHeld = true;
+                    break;
+                }
                 // Shift+click extends a sheet/text selection, ⌥ and a press adds a caret, ⌘ and a press follows a
                 // link: the same bits OnKeyDown reads, all four of them.
-                host.PressDown(x, y, (int)SendULong(e, Sel("clickCount")),
-                    MacKeys.ModifiersOf(SendULong(e, Sel("modifierFlags"))));
+                host.PressDown(x, y, (int)SendULong(e, Sel("clickCount")), modifiers);
                 break;
             case EventTypeLeftMouseUp:
+                if (_contextClickHeld)
+                {
+                    // The release is the menu's, not a press's: the host hears the button let go, and nothing pressed.
+                    _contextClickHeld = false;
+                    host.PointerCancel();
+                    break;
+                }
                 host.PressUp(x, y);
                 break;
             case EventTypeMouseMoved:

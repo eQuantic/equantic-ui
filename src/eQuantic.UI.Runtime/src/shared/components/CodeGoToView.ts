@@ -1,4 +1,4 @@
-import { $eq, Anchored, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeCompletionView, CodeEditorController, CodeGoTo, CodeGoToEntry, CodeGoToModeValue, CodeGoToNotFound, CodeLineCells, CodeSymbolKindValue, Column, CornerRadii, EdgeInsets, LiveRegion, Pressable, Row, SdkStrings, SizeValue, StyleDiff, Text, TextEntry, VisualNode } from "../runtime-exports";
+import { $CodeGoToModeValue, $CodeSymbolKindValue, $eq, Anchored, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeCompletionView, CodeEditorController, CodeGoTo, CodeGoToEntry, CodeGoToNotFound, CodeLineCells, Column, CornerRadii, EdgeInsets, LiveRegion, Pressable, Row, SdkStrings, SizeValue, StyleDiff, Text, TextEntry, VisualNode } from "../runtime-exports";
 
 export class CodeGoToView {
     static maxWidth: number = 560;
@@ -35,7 +35,7 @@ export class CodeGoToView {
         return SdkStrings.goToStart;
     }
 
-    static lists(mode: CodeGoToModeValue) {
+    static lists(mode: $CodeGoToModeValue) {
         return mode === 'definitions' || mode === 'references';
     }
 
@@ -89,7 +89,7 @@ export class CodeGoToView {
         return new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: metrics.lineHeight, padding: EdgeInsets.symmetric(8, 0), background: selected ? theme.colors('primary').subtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), pressed, { role: 'option', selected: selected, canRequestFocus: false, label: (($0) => (($0 != null && $0.length > 0) && (container2 = $0, true)))(entry.container) ? entry.name + ', ' + container2 : entry.name });
     }
 
-    static kindOf(kind: CodeSymbolKindValue) {
+    static kindOf(kind: $CodeSymbolKindValue) {
         return (() => { const $s = kind; if ($s === 'file') return 'file'; if ((($s === 'module' || $s === 'namespace') || $s === 'package')) return 'module'; if ($s === 'class') return 'class'; if ($s === 'method') return 'method'; if ($s === 'property') return 'property'; if ($s === 'field') return 'field'; if ($s === 'constructor') return 'constructor'; if ($s === 'enum') return 'enum'; if ($s === 'interface') return 'interface'; if ($s === 'function') return 'function'; if ($s === 'variable') return 'variable'; if ($s === 'constant') return 'constant'; if ($s === 'enumMember') return 'enumMember'; if ($s === 'struct') return 'struct'; if ($s === 'event') return 'event'; if ($s === 'operator') return 'operator'; if ($s === 'typeParameter') return 'typeParameter'; return 'value'; })();
     }
 }

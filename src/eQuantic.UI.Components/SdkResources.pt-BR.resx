@@ -296,4 +296,46 @@
   <data name="UploadAnnounceFailed" xml:space="preserve">
     <value>{0} não foi enviado: {1}</value>
   </data>
+  <data name="SortInstructions" xml:space="preserve">
+    <value>Pressione Espaço para pegá-lo, as setas para movê-lo e Espaço de novo para soltá-lo.</value>
+  </data>
+  <data name="SortPickedUp" xml:space="preserve">
+    <value>{0} pego, posição {1} de {2} em {3}.</value>
+  </data>
+  <data name="SortMoved" xml:space="preserve">
+    <value>{0} está na posição {1} de {2} em {3}.</value>
+  </data>
+  <data name="SortRefused" xml:space="preserve">
+    <value>{0} não pode ir para lá.</value>
+  </data>
+  <data name="SortDropped" xml:space="preserve">
+    <value>{0} solto na posição {1} de {2} em {3}.</value>
+  </data>
+  <data name="SortMovedInto" xml:space="preserve">
+    <value>{0} está dentro de {1}.</value>
+  </data>
+  <data name="SortDroppedInto" xml:space="preserve">
+    <value>{0} solto dentro de {1}.</value>
+  </data>
+  <data name="SortCancelled" xml:space="preserve">
+    <value>{0} voltou para onde estava.</value>
+  </data>
+  <data name="TreeLoading" xml:space="preserve">
+    <value>Carregando…</value>
+  </data>
+  <data name="TreeLoadFailed" xml:space="preserve">
+    <value>Não foi possível carregar. Tentar de novo</value>
+  </data>
+  <data name="TreeItemName" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="SortByColumn" xml:space="preserve">
+    <value>Ordenar por {0}</value>
+  </data>
+  <data name="ResizeColumn" xml:space="preserve">
+    <value>Redimensionar {0}</value>
+  </data>
+  <data name="TableColumns" xml:space="preserve">
+    <value>Colunas</value>
+  </data>
 </root>

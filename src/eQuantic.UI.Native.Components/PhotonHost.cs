@@ -13,7 +13,7 @@ namespace eQuantic.UI.Native.Components;
 /// shells wrap it with vsync pacing and real input. A stateful component's state lives on the
 /// instance its position retains (see <see cref="StatefulComponent"/>).
 /// </summary>
-public sealed class PhotonHost
+public sealed partial class PhotonHost
 {
     private readonly VisualNode _root;
     private readonly IAppTheme _theme;
@@ -23,8 +23,9 @@ public sealed class PhotonHost
     private readonly LiveRegionAnnouncer _announcer = new();
 
     public PhotonHost(VisualNode root, IAppTheme theme, ThemeMode mode, float width, float height,
-        ITextMeasurer? measurer = null, float typeScale = 1f)
+        ITextMeasurer? measurer = null, float typeScale = 1f, ComponentBoundary? boundary = null)
     {
+        Boundary = boundary ?? new ComponentBoundary();
         _root = root;
         _theme = theme;
         Mode = mode;
@@ -32,6 +33,7 @@ public sealed class PhotonHost
         Height = height;
         _measurer = measurer;
         _typeScale = typeScale;
+        _owner = Boundary.Owner();
 
         // ONCE, for the whole tree: a SetState marks its position in the owner, and the owner asks
         // for the frame. Nothing subscribes per instance, so nothing can subscribe twice (#935: the
@@ -358,6 +360,11 @@ public sealed class PhotonHost
         if (RenderScale != 1f) builder.PushTransform(Matrix2D.Scale(RenderScale, RenderScale));
         if (_lift != 0) builder.PushTransform(Matrix2D.Translation(0, -_lift));
         _lastTimeMs = timeMs;
+        // A carried item's hold, lean and the scroll under it advance before the frame shows them (#1537).
+        var sortScrolled = TickSort(timeMs);
+        // A finger's hold over what a person may ask the menu of becomes a long press here (#1531), after the
+        // sort's: a hold that lifted a sortable item is the lift's.
+        TickContext(timeMs);
         // The tree lays out above what the system covers, and a SafeArea at the bottom pads only
         // what the keyboard leaves of the home indicator: the keyboard is already in its way.
         var height = MathF.Max(0, Height - _viewInsets.Bottom);
@@ -386,6 +393,8 @@ public sealed class PhotonHost
             hoveredAt: _hoverAt, hoveredPart: _hoveredPart,
             nodePool: RecycleFrames ? _nodePool : null,
             windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame, rebuildAll: rebuildAll, log: Log);
+        // The carried item's copy goes over everything the frame drew, as the web's lies over the page.
+        PaintSort(builder, sortScrolled);
         if (_lift != 0) builder.Pop();
         if (RenderScale != 1f) builder.Pop();
         // The frame shows what the app made of the keyboard's edit. A composition in a text the app
@@ -415,6 +424,7 @@ public sealed class PhotonHost
         _announcer.Observe(_lastFrame, timeMs);
         AdoptAutofocus();
         AdoptFocusRequests();
+        AdoptCompositeFocus();
         // A subscribed frame ticker IS motion: frames keep flowing while anyone wants them, and the
         // loop goes idle the moment the last subscription is disposed. Motion builds nothing, as no
         // request does unless something marked a position. A position still waiting to build keeps
@@ -422,7 +432,7 @@ public sealed class PhotonHost
         // from a build is waiting in the owner, and a write of `false` here would leave it there
         // until something else asked for a frame.
         NeedsRender = _lastFrame.HasActiveMotion || gliding || PhotonFrameTicker.Shared.HasSubscribers
-            || _owner.HasDirty;
+            || _owner.HasDirty || SortWantsFrames(sortScrolled);
 
         // A code surface whose caret was MOVED since the last frame is brought into view — by a key,
         // a command, a find stepping to a match. After the frame, because that is when the caret's
@@ -452,6 +462,12 @@ public sealed class PhotonHost
         _nextFrameDueMs = caretDue is { } caret && announcementDue is { } owed
             ? MathF.Min(caret, owed)
             : caretDue ?? announcementDue;
+        // A finger holding a sortable item is due a frame when its hold is long enough (#1537).
+        if (SortDueMs() is { } holdDue)
+            _nextFrameDueMs = _nextFrameDueMs is { } due ? MathF.Min(due, holdDue) : holdDue;
+        // A finger holding a target is due a frame when its hold is long enough (#1531).
+        if (ContextDueMs() is { } contextDue)
+            _nextFrameDueMs = _nextFrameDueMs is { } soonest ? MathF.Min(soonest, contextDue) : contextDue;
         // Said once per edit, on the frame that draws it, as the web's server says each rebuild: the
         // person sees how long an edit took to reach the window, and the edit-to-view measurement
         // (#900) reads the same line. The shell presents this frame next, within a vsync.
@@ -461,8 +477,18 @@ public sealed class PhotonHost
     }
 
     /// <summary>The tree this host keeps across frames: every position, the instances it retains, and
-    /// the order its components mount and unmount in, the root's included (see BuildOwner).</summary>
-    private readonly BuildOwner _owner = ComponentBoundary.Owner();
+    /// the order its components mount and unmount in, the root's included (see BuildOwner). Made from
+    /// <see cref="Boundary"/>, so its components build through the window's boundary.</summary>
+    private readonly BuildOwner _owner;
+
+    /// <summary>
+    /// The window's error boundary (#1452): every component of this host's tree builds through it, so a
+    /// component that throws is reported to its <see cref="ComponentBoundary.Report"/>, described as its
+    /// <see cref="ComponentBoundary.Diagnostics"/> say, and named in its
+    /// <see cref="ComponentBoundary.Contained"/>, and in no other window's. A shell arms the report and
+    /// reads the tally beside its frame summary.
+    /// </summary>
+    public ComponentBoundary Boundary { get; }
 
 
     private Pressable? _pressed;
@@ -1353,6 +1379,43 @@ public sealed class PhotonHost
     private readonly System.Runtime.CompilerServices.ConditionalWeakTable<ICodeSurfaceModel,
         System.Runtime.CompilerServices.StrongBox<int>> _focusRequests = new();
 
+    /// <summary>The focus version each composite's position was last built with (<see cref="Navigable.FocusVersion"/>).</summary>
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<Element,
+        System.Runtime.CompilerServices.StrongBox<int>> _compositeFocus = new();
+
+    /// <summary>
+    /// Gives a composite's one stop the keyboard when its <see cref="Navigable.FocusVersion"/> is higher than the
+    /// one its position was last built with: a field inside it closed, and the keyboard goes back where it came
+    /// from, as the web's host takes it. The first frame of a position only records the version. Nothing is
+    /// scrolled: the composite is where the person was.
+    /// </summary>
+    private void AdoptCompositeFocus()
+    {
+        if (_lastFrame is null) return;
+        var stops = _lastFrame.FocusStops;
+        for (var i = 0; i < stops.Count; i++)
+        {
+            var stop = stops[i];
+            if (stop.Grid is not { } grid) continue;
+            if (!_compositeFocus.TryGetValue(stop.Element, out var built))
+            {
+                _compositeFocus.Add(stop.Element, new System.Runtime.CompilerServices.StrongBox<int>(grid.FocusVersion));
+                continue;
+            }
+            if (grid.FocusVersion <= built.Value)
+            {
+                built.Value = grid.FocusVersion;
+                continue;
+            }
+            built.Value = grid.FocusVersion;
+            EndEditing();
+            _focused = null;
+            FocusOn(stop);
+            _focusVisible = true;
+            NeedsRender = true;
+        }
+    }
+
     private readonly System.Runtime.CompilerServices.ConditionalWeakTable<ISheetSurfaceModel,
         System.Runtime.CompilerServices.StrongBox<int>> _sheetFocusRequests = new();
 
@@ -1369,9 +1432,10 @@ public sealed class PhotonHost
         // a form where four boxes all look like the active one.
         if (changed) EndEditing();
         _textAt = field.Element;
-        // Where the pointer fell, or the end of the text when it arrived by Tab.
+        // Where the pointer fell, or the end of the text when it arrived by Tab — all of it selected when the
+        // field asks to be (TextEntry.SelectOnFocus), so what is typed first replaces it.
         Caret = caret ?? FieldText.Of(at, entry).Length;
-        _anchor = caret is null ? null : _caret;
+        _anchor = caret is null ? (entry.SelectOnFocus && _caret > 0 ? 0 : null) : _caret;
         _focused = null;
         ForgetFocus();
         if (changed) field.Entry.OnFocusChanged?.Invoke(true);
@@ -1412,6 +1476,10 @@ public sealed class PhotonHost
     /// of a dead key or an input method. It arrives as a STRING for that reason: what a keystroke
     /// produces is the platform's business, and "á" may be one key or three.
     /// </summary>
+    /// <summary>The modifiers of the last key the shell handed over, which the text it hands over next
+    /// came from.</summary>
+    private KeyModifiers _keyModifiers;
+
     public bool TextInput(string text)
     {
         if (string.IsNullOrEmpty(text)) return false;
@@ -1432,6 +1500,24 @@ public sealed class PhotonHost
             RestartBlink();
             SurfaceChanged(surface.OnChanged);
             return true;
+        }
+        // A COMPOSITE under focus with no field being edited searches with what was typed (#1529): a
+        // tree jumps to the item whose label starts with it. It arrives here and not in KeyDown
+        // because the shells hand over a key's TEXT only once no key claimed it, the same point the
+        // web's keydown reads a one-character key at. Space is a key of its own, and never searches.
+        // A chord's text is not a search, as the web's keydown reads only a key with no modifier but Shift:
+        // the shells hand over the text of a key KeyDown did not claim, ⌘D's "d" included.
+        if (TextTarget is null && text != " " && _focusedId != 0
+            && (_keyModifiers & (KeyModifiers.Command | KeyModifiers.Control | KeyModifiers.Alt)) == 0
+            && _lastFrame?.FocusStops is { } searchStops)
+        {
+            for (var i = 0; i < searchStops.Count; i++)
+            {
+                if (searchStops[i].Id != _focusedId || searchStops[i].Grid is not { OnTextSearch: { } search }) continue;
+                search(text);
+                NeedsRender = true;
+                return true;
+            }
         }
         if (TextTarget is not { } entry || entry.Disabled) return false;
         // Typing over a selection REPLACES it — the one behaviour that makes selecting worth doing.
@@ -1660,6 +1746,17 @@ public sealed class PhotonHost
         return null;
     }
 
+    /// <summary>
+    /// Types what <paramref name="clipboard"/> holds into the focused field once it hands it over, which Photon's
+    /// shells do at once (#1028). A pasted newline would end the line rather than extend it: this is a
+    /// single-line field, and the paste is flattened to match what it can show.
+    /// </summary>
+    private async Task PasteFromAsync(ITextClipboard clipboard)
+    {
+        if (await clipboard.ReadAsync() is not { Length: > 0 } pasted) return;
+        TextInput(pasted.ReplaceLineEndings(" "));
+    }
+
     /// <summary>The editing keys — what Backspace and the arrows mean inside a field. Returns false
     /// for anything it does not claim, so Tab and Escape go on meaning what they mean everywhere.</summary>
     private bool EditKey(TextEntry entry, string key, KeyModifiers modifiers)
@@ -1702,10 +1799,7 @@ public sealed class PhotonHost
                     return true;
 
                 case 'v':
-                    if (Clipboard?.Read() is not { Length: > 0 } pasted) return true;
-                    // A pasted newline would end the line rather than extend it: this is a
-                    // single-line field, and the paste is flattened to match what it can show.
-                    TextInput(pasted.ReplaceLineEndings(" "));
+                    if (Clipboard is { } clipboard) _ = PasteFromAsync(clipboard);
                     return true;
             }
         }
@@ -2037,6 +2131,9 @@ public sealed class PhotonHost
     public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse, KeyModifiers modifiers = KeyModifiers.None)
     {
         y += _lift;
+        // The listeners hear it beside everything below, which they change nothing of (#1562).
+        HearMove(new Point(x, y), kind, modifiers);
+        MoveContext(new Point(x, y));
         // What the pointer holds is what a code surface hears with its hover (#1084): ⌘ over a name links it. Where it
         // is is kept through a drag, which hovers nothing, so a modifier changed after the release is heard there.
         _pointerModifiers = modifiers;
@@ -2135,6 +2232,9 @@ public sealed class PhotonHost
             }
             return;
         }
+
+        // An item a pointer carries between sortable lists, or picks up when it travels far enough (#1537).
+        if (MoveSort(new Point(x, y))) return;
 
         // Gestures v2: a pressed pointer travelling inside a drag surface becomes a DRAG once it
         // passes the slop — the pressable press cancels (spec §08's cancel rule) and the subtree
@@ -2293,6 +2393,8 @@ public sealed class PhotonHost
         y += _lift;
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
+        // The listeners under it hear the scroll, and the scroll views still take it (#1562).
+        HearScroll(point, across, down, modifiers);
         var leftAcross = across;
         var leftDown = down;
         var moved = false;
@@ -2562,6 +2664,10 @@ public sealed class PhotonHost
         _held = true;
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
+        // The listeners under the press hear it and follow it, beside the press itself (#1562).
+        HearDown(point, kind, PointerButtons.Primary, modifiers);
+        // A press puts back an item the keyboard carries, wherever it lands (#1537).
+        if (_sort is { ByKeyboard: true } carried) CancelSort(carried);
 
         // W3: a canvas owns the pointer inside its box. It is asked FIRST because it draws its own
         // content and therefore knows its own hit-testing — the engine has no idea what is under
@@ -2622,6 +2728,13 @@ public sealed class PhotonHost
             _tablePress = null;
             underDrag.Viewport.Scroll.Pointer(PointerPhase.Cancel, Point.Zero, kind, _lastTimeMs);
         }
+        // A press over a sortable item is a candidate to carry it (#1537), which a drag surface under the
+        // point outranks as it outranks a scroll.
+        _sort = null;
+        if (_drag is null) PressSort(point, kind);
+
+        // A finger pressing what a person may ask the menu of is a candidate long press (#1531).
+        PressContext(point, kind);
 
         // …and the topmost SCROLLABLE surface, the same way. A drag surface is the more specific
         // gesture and keeps priority; where there is none, a finger scrolls. Under a finger's candidate
@@ -2816,6 +2929,7 @@ public sealed class PhotonHost
     /// </summary>
     public void PointerCancel(PointerKind kind = PointerKind.Mouse)
     {
+        HearCancel();
         // The press is over, released or not: the pointer moving next rests on the code again.
         _held = false;
         // The input sequence died with the finger still down — the finger is gone, so nothing
@@ -2824,6 +2938,8 @@ public sealed class PhotonHost
 
         _pan = null;
         _panBeside = null;
+        _contextHold = null;
+        CancelPointerSort();
         if (_tablePress is { } table)
         {
             _tablePress = null;
@@ -2904,7 +3020,9 @@ public sealed class PhotonHost
     public bool PressUp(float x, float y, PointerKind kind = PointerKind.Mouse)
     {
         y += _lift;
+        HearUp(new Point(x, y), _pointerModifiers);
         _held = false;
+        _contextHold = null;
         // Where a drag ended is where the pointer is (#1084): ⌘ pressed next, with no move, is heard there.
         if (kind == PointerKind.Mouse) _pointerAt = new Point(x, y);
         // The canvas that took the press gets the release, wherever it happens — a drag that ends
@@ -2921,6 +3039,9 @@ public sealed class PhotonHost
         // during the sequence, and a pen that lifts is the same. A mouse stays where it is, so its
         // hover survives the click (clearing it would flicker on every press).
         if (kind != PointerKind.Mouse) PointerLeave();
+
+        // A carried item lands where it was offered; a candidate never picked up leaves the press to press.
+        if (ReleaseSort()) return true;
 
         // A table's press ends: one the table took lands there (a finger still moving flings); a
         // candidate that never left the slop was a tap, which goes on to the cell it began on.
@@ -3468,6 +3589,14 @@ public sealed class PhotonHost
     /// </summary>
     public bool KeyDown(string key, KeyModifiers modifiers = KeyModifiers.None)
     {
+        _keyModifiers = modifiers;
+        // A carried item's keys are the carry's alone, before an app's chord (#1537).
+        if (SortKey(key))
+        {
+            NeedsRender = true;
+            return true;
+        }
+
         // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it.
         if (BindingFor(key, modifiers) is { } binding)
         {
@@ -3475,6 +3604,9 @@ public sealed class PhotonHost
             NeedsRender = true;
             return true;
         }
+
+        // The menu key or Shift+F10 asks the target around the focus for its menu (#1531).
+        if (RequestByKeyboard(key, modifiers)) return true;
 
         // A SPREADSHEET under the selection speaks Excel: arrows move (⌘ jumps to the data edge,
         // ⇧ extends), Tab/Enter walk, Delete clears, ⌘C/⌘V are TSV through the platform clipboard.
@@ -3555,6 +3687,13 @@ public sealed class PhotonHost
                 NeedsRender = true;
                 return true;
             }
+        }
+
+        // Space on a sortable item, or inside one, picks it up for the keyboard (#1537), rather than pressing it.
+        if (key is " " or "Space" && modifiers == KeyModifiers.None && CarryByKeyboard())
+        {
+            NeedsRender = true;
+            return true;
         }
 
         switch (key)

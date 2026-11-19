@@ -311,6 +311,32 @@ public readonly record struct NativeRole(
         SemanticRole.RowHeader =>
             new("AXCell", "android.view.View", UIKitTrait.Header,
                 Activatable: true, Adjustable: false),
+
+        // A TREE and its items (#1529), in Core-AAM's words for the ARIA roles the web half writes:
+        // AXOutline for the tree, and for an item AXRow with the AXOutlineRow subrole, NSOutlineView's
+        // own pair, whose level the bridge sets as AXDisclosureLevel from SemanticNode.TreePlace and
+        // whose state rides AXExpanded. Android has no tree class, and Chrome gives none either: the
+        // tree is the plain ViewGroup a reader walks into, and an item the plain View Core-AAM gives,
+        // ACTIVATABLE because a press opens or chooses it, with its open state riding the expanded
+        // actions the bridge already sets. UIKit has no word for a tree (a container, which a flat
+        // bridge does not build), and Apple's own outlines report a row as a button whose pick is the
+        // Selected trait.
+        SemanticRole.Tree =>
+            new("AXOutline", "android.view.ViewGroup", UIKitTrait.None,
+                Activatable: false, Adjustable: false),
+
+        SemanticRole.TreeItem =>
+            new("AXRow", "android.view.View", UIKitTrait.Button,
+                Activatable: true, Adjustable: false, AppKitSubrole: "AXOutlineRow"),
+
+        // A SPLITTER (#1538), the focusable separator the web half writes: Core-AAM gives ARIA's
+        // separator AXSplitter on AppKit, which VoiceOver moves with its adjust keys as it moves a
+        // slider, and the value rides AXValue with AXMinValue and AXMaxValue as a slider's does. UIKit
+        // and Android have no splitter, so it is what each offers for a value a reader moves: the
+        // adjustable trait, and the SeekBar class whose RangeInfo carries the range.
+        SemanticRole.Splitter =>
+            new("AXSplitter", "android.widget.SeekBar", UIKitTrait.Adjustable,
+                Activatable: false, Adjustable: true),
     };
 #pragma warning restore CS8524
 }

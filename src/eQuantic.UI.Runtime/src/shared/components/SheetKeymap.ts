@@ -1,14 +1,14 @@
-import { $eq, KeyboardConventionValue, SheetController, SheetMotionValue } from "../runtime-exports";
+import { $eq, $KeyboardConventionValue, $SheetMotionValue, SheetController } from "../runtime-exports";
 
 export class SheetKeymap {
-    static handle(sheet: SheetController, key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any = null) {
+    static handle(sheet: SheetController, key: string, modifiers: number, convention: $KeyboardConventionValue, clipboard: any = null) {
         if (SheetKeymap.isModifierKey(key)) return false;
         if (key !== 'Tab' && key !== 'Escape') sheet.tabReleased = false;
         let command = (modifiers & 4) !== 0;
         let shift = (modifiers & 1) !== 0;
         if (command && !(clipboard == null) && key.length === 1 && (modifiers & 2) === 0) {
             {
-                let copied: any; let cut: any; let pasted: any;
+                let copied: any; let cut: any;
                 switch ($eq.text.toLower(key[0], true)) {
                     case 'c':
                         if ((($0) => (($0 != null && $0.length > 0) && (copied = $0, true)))(sheet.copyText())) clipboard.write(copied);
@@ -19,7 +19,7 @@ export class SheetKeymap {
                         sheet.cut();
                         return true;
                     case 'v':
-                        if ((($0) => (($0 != null && $0.length > 0) && (pasted = $0, true)))(clipboard.read())) sheet.paste(pasted);
+                        sheet.pasteFromAsync(clipboard);
                         return true;
                 }
             }
@@ -32,7 +32,7 @@ export class SheetKeymap {
         return sheet.editing ? SheetKeymap.handleEntry(sheet, key, modifiers, convention) : SheetKeymap.handleAtRest(sheet, key, modifiers, convention, command, shift);
     }
 
-    static handleEntry(sheet: SheetController, key: string, modifiers: number, convention: KeyboardConventionValue) {
+    static handleEntry(sheet: SheetController, key: string, modifiers: number, convention: $KeyboardConventionValue) {
         let shift = (modifiers & 1) !== 0;
         let plain = (modifiers & (~1 & 0xFF)) === 0;
         {
@@ -69,7 +69,7 @@ export class SheetKeymap {
         return claimed || SheetKeymap.isUndoChord(key, modifiers);
     }
 
-    static handleAtRest(sheet: SheetController, key: string, modifiers: number, convention: KeyboardConventionValue, command: boolean, shift: boolean) {
+    static handleAtRest(sheet: SheetController, key: string, modifiers: number, convention: $KeyboardConventionValue, command: boolean, shift: boolean) {
         if (SheetKeymap.isGoTo(key, modifiers, convention)) {
             if (!sheet.nameBox.isPlaced) return false;
             sheet.nameBox.requestFocus();
@@ -91,7 +91,7 @@ export class SheetKeymap {
                 }
             }
         }
-        let motion: SheetMotionValue = command ? 'dataEdge' : 'cell';
+        let motion: $SheetMotionValue = command ? 'dataEdge' : 'cell';
         {
             const $s = key;
             if ((($s === ' ' || $s === 'Space') && (modifiers === 1))) {
@@ -178,7 +178,7 @@ export class SheetKeymap {
         return false;
     }
 
-    static isDateOrTime(key: string, modifiers: number, convention: KeyboardConventionValue) {
+    static isDateOrTime(key: string, modifiers: number, convention: $KeyboardConventionValue) {
         let time: any;
         const $r = (() => {
             time = false;
@@ -195,7 +195,7 @@ export class SheetKeymap {
         return { $: $r, time };
     }
 
-    static isGoTo(key: string, modifiers: number, convention: KeyboardConventionValue) {
+    static isGoTo(key: string, modifiers: number, convention: $KeyboardConventionValue) {
         return key === 'F5' && modifiers === 0 || (key === 'g' || key === 'G') && modifiers === (convention === 'apple' ? 8 : 4);
     }
 

@@ -1,4 +1,4 @@
-import { $eq, Box, BuildContext, Size, SizeValue, StatefulComponent, TableOffset, TableRoleValue, TableScroll, TableSpans, TableViewCell, TableViewport, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, $TableRoleValue, Box, BuildContext, Size, SizeValue, StatefulComponent, TableOffset, TableScroll, TableSpans, TableViewCell, TableViewport, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TableView extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TableView';
@@ -24,7 +24,7 @@ export class TableView extends StatefulComponent {
     declare label: any;
     declare scroll: any;
     declare canRequestFocus: boolean;
-    declare role: TableRoleValue;
+    declare role: $TableRoleValue;
     declare cellRole: any;
     declare selected: ((arg1: number, arg2: number) => boolean) | null;
     declare current: any;
@@ -115,8 +115,8 @@ export class TableView extends StatefulComponent {
         let lastRow = mark.row + Math.max(1, mark.rows);
         let lastColumn = mark.column + Math.max(1, mark.columns);
         let piece = 0;
-        for (const [rowFrom, rowTo] of TableView.cut(mark.row, lastRow, pinnedRows)) {
-            for (const [columnFrom, columnTo] of TableView.cut(mark.column, lastColumn, pinnedColumns)) {
+        for (const [rowFrom, rowTo] of $eq.collections.listWalk(TableView.cut(mark.row, lastRow, pinnedRows))) {
+            for (const [columnFrom, columnTo] of $eq.collections.listWalk(TableView.cut(mark.column, lastColumn, pinnedColumns))) {
                 let key: any; 
                 viewport.add(new TableViewCell(rowFrom, columnFrom, mark.child, true, { rows: rowTo - rowFrom, columns: columnTo - columnFrom, key: (key = mark.key) != null ? key + '/' + (rowFrom < pinnedRows ? 'p' : 'b') + (columnFrom < pinnedColumns ? 'p' : 'b') : 'mark:' + $eq.text.format(index, null, undefined, undefined, 'int32') + '/' + $eq.text.format(piece, null, undefined, undefined, 'int32'), glide: mark.glide }));
                 piece++;
@@ -126,8 +126,8 @@ export class TableView extends StatefulComponent {
 
     static cut(from: number, to: number, pinned: number) {
         let pieces: [number, number][] = [];
-        if (from < pinned) pieces.push([from, Math.min(to, pinned)]);
-        if (to > pinned) pieces.push([Math.max(from, pinned), to]);
+        if (from < pinned) $eq.collections.listAdd(pieces, [from, Math.min(to, pinned)]);
+        if (to > pinned) $eq.collections.listAdd(pieces, [Math.max(from, pinned), to]);
         return pieces;
     }
 

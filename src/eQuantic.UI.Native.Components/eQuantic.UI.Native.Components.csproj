@@ -16,4 +16,11 @@
     <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The listeners' hit rule is internal (#1562): a host hears through PhotonHost's pointer, never by calling
+         the rule. But the rule is written twice, here and in the web's runtime, and both run the same cases from
+         one fixture, which the suite reaches only through the rule itself. -->
+    <InternalsVisibleTo Include="eQuantic.UI.Native.Engine.Tests" />
+  </ItemGroup>
+
 </Project>

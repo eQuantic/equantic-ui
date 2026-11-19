@@ -153,7 +153,7 @@ public class ClosedHierarchyTests
     {
         EveryNodeType().Count(t => !t.IsAbstract && t.Assembly == typeof(VisualNode).Assembly
                 && !typeof(InheritedComponent).IsAssignableFrom(t))
-            .Should().Be(45, "the vocabulary is 45 concrete nodes, and IVisualNodeVisitor has a "
+            .Should().Be(51, "the vocabulary is 51 concrete nodes, and IVisualNodeVisitor has a "
                 + "method for each — if this number moved, the interface moved with it or the "
                 + "compiler would have said so. A Theme is not one of them: the visitor answers it "
                 + "once, as its family, InheritedComponent");

@@ -35,7 +35,7 @@ export class CodeSnippetParser {
             let part: any; 
             if (c === '$' && (part = this.construct()) != null) {
                 CodeSnippetParser.flush(text, parts);
-                parts.push(part);
+                $eq.collections.listAdd(parts, part);
                 continue;
             }
             text.append(c);
@@ -51,7 +51,7 @@ export class CodeSnippetParser {
 
     static flush(text: StringBuilder, parts: CodeSnippetPart[]) {
         if (text.length === 0) return;
-        parts.push(new CodeSnippetPart(text.toString(), -1, false, null, null));
+        $eq.collections.listAdd(parts, new CodeSnippetPart(text.toString(), -1, false, null, null));
         text.clear();
     }
 
@@ -120,7 +120,7 @@ export class CodeSnippetParser {
             }
             this._at++;
             if (c === ',' || c === '|') {
-                options.push(option.toString());
+                $eq.collections.listAdd(options, option.toString());
                 option.clear();
                 if (c === '|') return options;
                 continue;

@@ -103,6 +103,20 @@ public class ComponentParityFixtureTests
         // fill passed through, and the four drag events declared by the server and attached by the client.
         ("drop-target", new DropTarget(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), _ => { }), NoPresses),
         ("drop-target-disabled", new DropTarget(new Box(new BoxStyle { Height = 40 }), _ => { }) { Enabled = false }, NoPresses),
+        // What a person can ask the menu of (#1531): the same transparent div, marked, with the request's event
+        // declared by the server and attached by the client; and a panel opened at a point of its anchor.
+        ("context-target", new ContextTarget(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), _ => { }), NoPresses),
+        ("context-target-disabled", new ContextTarget(new Box(new BoxStyle { Height = 40 }), _ => { }) { Enabled = false }, NoPresses),
+        // What hears the raw pointer (#1562): the same transparent div, marked with its behaviour, with the pointer's
+        // event declared by the server and attached by the client.
+        ("listener", new Listener(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 })), NoPresses),
+        ("listener-opaque", new Listener(new Box(new BoxStyle { Height = 40 })) { Behavior = HitTestBehavior.Opaque }, NoPresses),
+        ("listener-translucent", new Listener(new Box(new BoxStyle { Height = 40 })) { Behavior = HitTestBehavior.Translucent }, NoPresses),
+        ("anchored-at", new Anchored(new Box(new BoxStyle { Width = 200, Height = 40 }), new Box(new BoxStyle { Width = 120, Height = 80 }))
+        {
+            At = new Point(120, 30),
+            Open = true,
+        }, NoPresses),
         // A pinned header's scrolled diff with every member (#506), through the builder a box's
         // states use, over the header's base, whose border is its bottom edge.
         ("pinned-scrolled", new Pinned(new Box(new BoxStyle { Height = 40 }))
@@ -170,6 +184,8 @@ public class ComponentParityFixtureTests
         // structure, so the most surface on which two lowerings can quietly disagree — and every
         // one of them takes an ITEM type whose twin has to line up as well.
         ("menu-closed", new Menu(new Button("Open"), [new MenuItem("One"), new MenuItem("Two")]), NoPresses),
+        ("context-menu-closed", new ContextMenu(new Text("row", TypeRole.BodyM, Theme.TextPrimary),
+            [new MenuItem("Rename"), new MenuItem("Delete") { Destructive = true }]), NoPresses),
         ("dialog", new Dialog("Delete this?", "It cannot be undone.",
             [new DialogAction("Cancel", null, Variant.Ghost), new DialogAction("Delete")]), NoPresses),
         ("list-item", new ListItem("Title", "and a subtitle"), NoPresses),
@@ -180,6 +196,18 @@ public class ComponentParityFixtureTests
             [new DataColumn("Name", GridTrack.Flex()), new DataColumn("Size", GridTrack.Fixed(80), TextAlignment.End)],
             [new DataRow("a", [new Text("alpha", TypeRole.BodyM, Theme.TextPrimary),
                                new Text("1", TypeRole.BodyM, Theme.TextPrimary)])]), NoPresses),
+        // A table whose app keeps its columns' order and widths (#1538): the columns drawn in the app's order and
+        // the cells under them, the header a horizontal sortable of its headings in the SDK's words, and a
+        // separator around a draggable edge at the fixed column's heading, beside its item.
+        ("data-table-columns", new DataTable(
+            [new DataColumn("Name", GridTrack.Flex()), new DataColumn("Size", GridTrack.Fixed(80), TextAlignment.End)],
+            [new DataRow("a", [new Text("alpha", TypeRole.BodyM, Theme.TextPrimary),
+                               new Text("1", TypeRole.BodyM, Theme.TextPrimary)])])
+        {
+            ColumnOrder = [1, 0],
+            OnColumnsReordered = _ => { },
+            OnColumnResized = (_, _) => { },
+        }, NoPresses),
         // A TABLE VIEW at offset zero (#982): the four bands of cells, the four of marks and both
         // scrollbars, each cell placed in its band, and a mark over the corner cut into one piece per
         // band it reaches. The after-pass moves the layers by transform; what both sides write is the
@@ -230,10 +258,53 @@ public class ComponentParityFixtureTests
         // A grouped Select opened (#677): the listbox holds the ungrouped option, then the labelled
         // group with its heading and its options, numbered across the group on both producers.
         ("select-grouped-opens", new Select(["Lisboa"], 0, groups: [new OptionGroup("A seguir", ["Braga", "Faro"])]), [0]),
+        // A subtree heard as one stop, or passed over (#1567): the parts a merge hides and the ids its stop is
+        // named by, and the host an exclusion marks, written alike by both producers.
+        ("merge-a-checkbox-and-its-description", new MergeSemantics(Line(false,
+            new Checkbox(true, label: "Agree"), new Text("to the terms", TypeRole.BodyM, Theme.TextPrimary))), NoPresses),
+        ("merge-read-content", new MergeSemantics(Line(false,
+            new Text("Total", TypeRole.BodyM, Theme.TextPrimary),
+            new ExcludeSemantics(new Text("JD", TypeRole.BodyM, Theme.TextPrimary)),
+            new Text("42 EUR", TypeRole.BodyM, Theme.TextPrimary))), NoPresses),
+        ("exclude-a-subtree", Line(false,
+            new ExcludeSemantics(new Text("Decoration", TypeRole.BodyM, Theme.TextPrimary)),
+            new Text("Shown", TypeRole.BodyM, Theme.TextPrimary)), NoPresses),
+        ("exclude-not-excluding",
+            new ExcludeSemantics(new Text("Read", TypeRole.BodyM, Theme.TextPrimary)) { Excluding = false }, NoPresses),
+        // A LIST A POINTER SORTS (#1535): no element of its own, its column marked, and the reports the
+        // browser's controller dispatches declared by the server. Its words (#1564) are attributes both sides
+        // write, escaped alike.
+        ("sortable-column", new Sortable(Stack(0, new SortableItem(new Text("a", TypeRole.BodyM, Theme.TextPrimary), "a"),
+            new SortableItem(new Text("b", TypeRole.BodyM, Theme.TextPrimary), "b")), "todo", _ => { },
+            new SortAnnouncements("Pressione Espaço & solte \"já\".", "Took {0}.", "{0} now {1}/{2} in {3}.", "{0} in {1}.",
+                "Not there.", "Left {0} at {1}.", "Left {0} in {1}.", "Back <{0}>."))
+        {
+            Group = "board",
+            OnHovered = _ => { },
+        }, NoPresses),
         ("accordion-switches", new Accordion([
             new AccordionItem("One") { Content = new Text("body one", TypeRole.BodyM, Theme.TextPrimary) },
             new AccordionItem("Two") { Content = new Text("body two", TypeRole.BodyM, Theme.TextPrimary) },
         ], 0), [1]),
+        // A TREE (#1529, #1530): a role="tree" host whose items are div treeitems with their level and
+        // place, not wrapped in rows. The first press opens the folder and the second presses the item
+        // it showed, so the frames pin the open state and the keyboard's item moving with a press.
+        ("tree-opens", new TreeView([
+            new TreeNode("src", "src")
+            {
+                Children = [new TreeNode("src/App.cs", "App.cs") { IsLeaf = true }, new TreeNode("src/Ui.cs", "Ui.cs") { IsLeaf = true }],
+            },
+            new TreeNode("README.md", "README.md") { IsLeaf = true },
+        ], "src/Ui.cs") { Label = "Files" }, [0, 1]),
+        // A tree that moves its nodes (#1533): a nesting sortable around the composite, and each node row an item,
+        // marked the same on both sides (the list's id, axis and nesting, each row's id), and keyed by its node.
+        ("tree-moves", new TreeView([
+            new TreeNode("src", "src")
+            {
+                Children = [new TreeNode("src/App.cs", "App.cs") { IsLeaf = true }],
+            },
+            new TreeNode("README.md", "README.md") { IsLeaf = true },
+        ]) { Label = "Files", ExpandedKeys = ["src"], OnMoved = _ => Task.CompletedTask }, NoPresses),
 
         // A COMPOSITE, and the first case here whose tree is a grid: 31 cells, seven column
         // headers, a roving tab order, and a selection stated as an attribute. Pinned under a
@@ -567,7 +638,7 @@ public class ComponentParityFixtureTests
     /// A FRAME OF A LIVE TREE lowers the tree the server draws. <see cref="MarkupHost"/> lowers each
     /// component from what its position built rather than building it again, which is what a host that
     /// draws more than once needs: a component test, and the server's owner of a request, whose prefetch
-    /// rounds are frames. Its first frame must be the markup <see cref="WebRealizer.Lower(VisualNode, IAppTheme, float, StyleSink?, Density)"/> writes,
+    /// rounds are frames. Its first frame must be the markup <see cref="WebRealizer.Lower(VisualNode, IAppTheme, float, StyleSink?, Density, ComponentBoundary?)"/> writes,
     /// byte for byte, at every size class: an arm the element does not hold lowers as it always did.
     /// The markup is compared whole, not canonically, so attribute order counts.
     /// <para>

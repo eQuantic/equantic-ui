@@ -28,7 +28,7 @@ namespace eQuantic.UI.Web;
 /// </summary>
 public sealed class MarkupHost
 {
-    private readonly FontlessMeasurer _measurer = new();
+    private readonly FontlessMeasurer _measurer;
     private readonly ComponentContext _context;
 
     /// <summary>A live host: its owner calls the lifecycle hooks, and a <c>SetState</c> marks a
@@ -37,15 +37,21 @@ public sealed class MarkupHost
     /// <param name="typeScale">The text scale the tree builds and lowers at.</param>
     /// <param name="density">The density the tree builds and lowers at.</param>
     /// <param name="route">The route the tree is drawn for, which its components read from their context.</param>
-    public MarkupHost(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable, RouteValues? route = null)
-        : this(theme, typeScale, density, route, live: true)
+    /// <param name="boundary">The tree's error boundary, which a host arms with its report; a silent one
+    /// when null.</param>
+    public MarkupHost(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable, RouteValues? route = null,
+        ComponentBoundary? boundary = null)
+        : this(theme, typeScale, density, route, boundary, live: true)
     {
     }
 
-    private MarkupHost(IAppTheme theme, float typeScale, Density density, RouteValues? route, bool live)
+    private MarkupHost(IAppTheme theme, float typeScale, Density density, RouteValues? route, ComponentBoundary? boundary,
+        bool live)
     {
         ArgumentNullException.ThrowIfNull(theme);
         Theme = theme;
+        Boundary = boundary ?? new ComponentBoundary();
+        _measurer = new FontlessMeasurer(Boundary);
         _context = new ComponentContext(theme, typeScale, density, _measurer.Measure, route);
         // The web draws every arm of an adaptive node behind its own media rule, so each is a position.
         Owner = live
@@ -59,8 +65,15 @@ public sealed class MarkupHost
     /// <param name="typeScale">The text scale the tree builds and lowers at.</param>
     /// <param name="density">The density the tree builds and lowers at.</param>
     /// <param name="route">The route the tree is drawn for.</param>
-    public static MarkupHost Structural(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable, RouteValues? route = null) =>
-        new(theme, typeScale, density, route, live: false);
+    /// <param name="boundary">The tree's error boundary, which a host arms with its report; a silent one
+    /// when null.</param>
+    public static MarkupHost Structural(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable,
+        RouteValues? route = null, ComponentBoundary? boundary = null) =>
+        new(theme, typeScale, density, route, boundary, live: false);
+
+    /// <summary>The tree's error boundary (#1452): what its components build through, and where a failure
+    /// of one is reported, described and counted.</summary>
+    public ComponentBoundary Boundary { get; }
 
     /// <summary>
     /// The host of a write-once PAGE drawn for a request: structural, with the page component at its
@@ -71,19 +84,21 @@ public sealed class MarkupHost
     /// <param name="typeScale">The text scale the tree builds and lowers at.</param>
     /// <param name="density">The density the tree builds and lowers at.</param>
     /// <param name="route">The route the page is drawn for: the request's.</param>
-    public static MarkupHost ForPage(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable, RouteValues? route = null) =>
-        new(theme, typeScale, density, route, live: false) { KeyDepth = 1 };
+    /// <param name="boundary">The request's error boundary, which the server arms with its report.</param>
+    public static MarkupHost ForPage(IAppTheme theme, float typeScale = 1f, Density density = Density.Comfortable,
+        RouteValues? route = null, ComponentBoundary? boundary = null) =>
+        new(theme, typeScale, density, route, boundary, live: false) { KeyDepth = 1 };
 
     /// <summary>
     /// A tree drawn ONCE inside a render (#1404): an escape-hatch page's bridge, through a structural
     /// host of its own, so its components have positions and each is named by where it stands, as the
     /// browser names it (#1477), and what an earlier round loaded is put back on the fresh instance at
-    /// that position before it builds. Its atomic rules, density, route, expansion scope, gradients, faces
-    /// and link policy are the render's: an escape-hatch page's bridge reads its page's route (#1395).
+    /// that position before it builds. Its atomic rules, density, route, expansion scope, gradients, faces,
+    /// link policy and error boundary are the render's: an escape-hatch page's bridge reads its page's route (#1395).
     /// </summary>
     internal static HtmlElement DrawOnce(VisualNode node, IAppTheme theme, float typeScale, RenderChannels channels)
     {
-        var host = new MarkupHost(theme, typeScale, channels.Density, channels.Route, live: false)
+        var host = new MarkupHost(theme, typeScale, channels.Density, channels.Route, channels.Boundary, live: false)
         {
             Tree = channels.NextTree(),
             PutBackFrom = channels.Expansion,
@@ -135,7 +150,7 @@ public sealed class MarkupHost
 
     /// <summary>
     /// Lowers the frame <see cref="Build"/> just built. With a render's <paramref name="channels"/>, every
-    /// element's style becomes atomic classes collected into its style sink, as <see cref="WebRealizer.Lower(VisualNode, IAppTheme, float, StyleSink?, Density)"/>
+    /// element's style becomes atomic classes collected into its style sink, as <see cref="WebRealizer.Lower(VisualNode, IAppTheme, float, StyleSink?, Density, ComponentBoundary?)"/>
     /// does, and the expansion scope, the gradients, the faces and the link policy are the render's (#1404).
     /// </summary>
     /// <exception cref="InvalidOperationException">Nothing was built yet.</exception>

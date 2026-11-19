@@ -294,6 +294,40 @@ public static class SdkStrings
     public static string UploadAcceptsAny(string size) =>
         string.Format(CultureInfo.CurrentCulture, SdkResources.UploadAcceptsAny, size);
 
+    // TreeView — the item that stands under a node while its children load, and the one that stands
+    // there when the load failed, whose press tries again (#1530).
+    public static string TreeLoading => SdkResources.TreeLoading;
+    public static string TreeLoadFailed => SdkResources.TreeLoadFailed;
+
+    /// <summary>The name a tree's rename or new-item field is read by.</summary>
+    public static string TreeItemName => SdkResources.TreeItemName;
+
+    // DataTable — the name a heading that sorts is read by, the name of a column's resize handle, and
+    // the name of the header row a person reorders the columns in (#1538).
+
+    /// <summary>A heading that sorts: "Sort by Amount".</summary>
+    public static string SortByColumn(string column) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.SortByColumn, column);
+
+    /// <summary>A column's resize handle: "Resize Amount".</summary>
+    public static string ResizeColumn(string column) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ResizeColumn, column);
+
+    /// <summary>The header row whose columns a person reorders, as the keyboard's steps name it.</summary>
+    public static string TableColumns => SdkResources.TableColumns;
+
+    /// <summary>What a reader hears while a sortable list's item is sorted by the keyboard, in the reader's
+    /// culture: the words <c>UI.Sortable</c> gives a list when the app gives none (#1564).</summary>
+    public static SortAnnouncements Sorting => new(
+        SdkResources.SortInstructions,
+        SdkResources.SortPickedUp,
+        SdkResources.SortMoved,
+        SdkResources.SortMovedInto,
+        SdkResources.SortRefused,
+        SdkResources.SortDropped,
+        SdkResources.SortDroppedInto,
+        SdkResources.SortCancelled);
+
     public static string UploadWaiting => SdkResources.UploadWaiting;
 
     /// <summary>How far a file got: "3.2 MB of 12 MB".</summary>

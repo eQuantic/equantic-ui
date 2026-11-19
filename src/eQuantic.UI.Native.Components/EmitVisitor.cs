@@ -57,6 +57,10 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     internal void Emit(in EmitState s)
     {
         var node = s.Node;
+        // The listeners' hit test reads the frame's nodes in paint order from its first listener on (#1562): what
+        // was drawn before it can be neither its child nor above it. A frame with no listener records nothing.
+        if (node.Source is Listener && s.Input.Targets is null) s.Input.StartTargets();
+        var targets = s.Input.Targets;
         // Spec S1 — group opacity + static transform wrap the WHOLE box (chrome and children):
         // opacity is one PushLayer composite (overlaps never double-blend); the transform is the
         // center-anchored Matrix2D twin of the CSS list, paint-only (layout already ran).
@@ -103,14 +107,31 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
                 drawn = s with { Input = s.Input.Under(matrix) };
             }
 
+            // Neither the layer nor the transform is paint of the node around this one: settled past both, whatever
+            // each writes (today the layer writes a command and the transform none).
+            targets?.Settle(s.Builder.CommandCount);
+            EnterTarget(targets, drawn);
             Dispatch(drawn);
+            targets?.Leave(s.Builder.CommandCount);
 
             if (transformed) s.Builder.Pop();
             if (opacity is not null) s.Builder.PopLayer();
+            targets?.Settle(s.Builder.CommandCount);
             return;
         }
 
+        EnterTarget(targets, s);
         Dispatch(s);
+        targets?.Leave(s.Builder.CommandCount);
+    }
+
+    /// <summary>The node is one of the frame's pointer targets (#1562), where it is drawn: through the transform
+    /// that draws it, as its input regions are.</summary>
+    private static void EnterTarget(PointerTargets? targets, in EmitState s)
+    {
+        if (targets is null) return;
+        var (bounds, visible) = s.Input.Locate(s.Node.Bounds);
+        targets.Enter(bounds, visible, s.Node.Source as Listener, s.Node.Element, s.Builder.CommandCount);
     }
 
     /// <summary>
@@ -272,6 +293,16 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     // (NSDraggingDestination, IDropTarget), which no shell answers yet, so the area is its child and
     // takes nothing. #1216 closes it; the browser realizes the node already (#1213).
     public Nothing Visit(DropTarget node, EmitState s) { Descend(s); return Nothing.Value; }
+    // Registers where it was drawn, for the host to answer a request for its menu by (#1531).
+    public Nothing Visit(ContextTarget node, EmitState s) { EmitContextTarget(node, s); return Nothing.Value; }
+
+    // A listener draws nothing and registers nothing of its own: the walk records it as a pointer target (#1562).
+    public Nothing Visit(Listener node, EmitState s) { Descend(s); return Nothing.Value; }
+
+    // Each registers where it was drawn for the host to carry an item by, and a carried item is dimmed in
+    // its place under the copy that follows the pointer (#1537).
+    public Nothing Visit(Sortable node, EmitState s) { EmitSortable(node, s); return Nothing.Value; }
+    public Nothing Visit(SortableItem node, EmitState s) { EmitSortableItem(node, s); return Nothing.Value; }
     public Nothing Visit(Shortcut node, EmitState s) { EmitShortcut(node, s); Descend(s); return Nothing.Value; }
 
     // ---- nodes that descend themselves, because HOW they descend is the point -----------------
@@ -297,6 +328,10 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     // A Group paints nothing and takes no focus: it is a name the semantics walk reads, and the paint
     // walk carries on through it.
     public Nothing Visit(Group node, EmitState s) { Descend(s); return Nothing.Value; }
+    // The semantics wrappers paint nothing and take no focus either: what they change is what the
+    // semantics walk says, and a control inside keeps its press and its Tab stop.
+    public Nothing Visit(MergeSemantics node, EmitState s) { Descend(s); return Nothing.Value; }
+    public Nothing Visit(ExcludeSemantics node, EmitState s) { Descend(s); return Nothing.Value; }
     public Nothing Visit(ScrollView node, EmitState s) { EmitScrollView(node, s); return Nothing.Value; }
     public Nothing Visit(SheetSurface node, EmitState s) { EmitSheet(node, s); return Nothing.Value; }
     public Nothing Visit(Overlay node, EmitState s) { EmitOverlay(node, s); return Nothing.Value; }

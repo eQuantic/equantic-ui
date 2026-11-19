@@ -1,11 +1,11 @@
-import { $eq, Adjustable, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Motion, Pressable, Row, SizeValue, SizeVariantValue, StatelessComponent, Text, TransitionSpec } from "../runtime-exports";
+import { $eq, $SizeVariantValue, Adjustable, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Motion, Pressable, Row, SizeValue, StatelessComponent, Text, TransitionSpec } from "../runtime-exports";
 
 export class SegmentedControl extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.SegmentedControl';
     declare segments: string[];
     declare selectedIndex: number;
     declare onChanged: ((int: number) => void) | null;
-    declare size: SizeVariantValue;
+    declare size: $SizeVariantValue;
     declare disabled: boolean;
     declare stretch: boolean;
 

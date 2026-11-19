@@ -44,7 +44,7 @@ ends its `<script>`. Text is HTML-encoded and attribute values attribute-encoded
 quotes. Metadata values are attribute-encoded as well.
 
 ```text
-src/eQuantic.UI.Web/Dom/HtmlRenderer.cs:244  sb.Append(HttpUtility.HtmlAttributeEncode(value));
+src/eQuantic.UI.Web/Dom/HtmlRenderer.cs  sb.Append(HttpUtility.HtmlAttributeEncode(value));
 ```
 
 **#1319, high, fixed in 0.2.0-preview.68.** A defect in how the shell writes its template:
@@ -57,7 +57,7 @@ destination was rewritten only when it was a rooted path, so a `javascript:` lin
 destination whose scheme an href never carries is written with no href at all.
 
 ```text
-src/eQuantic.UI.Web/RenderChannels.cs:91  !LinkScheme.Allows(destination) ? null
+src/eQuantic.UI.Web/RenderChannels.cs  !LinkScheme.Allows(destination) ? null
 ```
 
 **#1288, medium, fixed in 0.2.0-preview.68 (#1321).** The shell carries the visitor's theme, density,
@@ -65,7 +65,7 @@ culture and page state, and was written with no `Cache-Control`, while the JSON 
 was sent `no-store`. Now both answers of a page's route are sent `no-store`, from one place.
 
 ```text
-src/eQuantic.UI.Server/UIExtensions.cs:918  context.Response.Headers.CacheControl = "no-store";
+src/eQuantic.UI.Server/UIExtensions.cs  context.Response.Headers.CacheControl = "no-store";
 ```
 
 **#1295, low, fixed in 0.2.0-preview.68 (#1338).** The atomic sheet wrote a style value as it came
@@ -73,7 +73,7 @@ inside its `<style>` element, which a string of the `HtmlStyle` escape hatch cou
 sheet holds can never end the element.
 
 ```text
-src/eQuantic.UI.Server/Assets/IAsset.cs:80  return $"<style{idAttr}{ShellNonce.Attribute(nonce)}>{StyleElementText.Of(Content)}</style>";
+src/eQuantic.UI.Server/Assets/IAsset.cs  return $"<style{idAttr}{ShellNonce.Attribute(nonce)}>{StyleElementText.Of(Content)}</style>";
 ```
 
 ## Server Actions
@@ -87,10 +87,10 @@ the server's body-size feature for a chunked body. A request whose `Origin` is n
 component is built and before its arguments are read.
 
 ```text
-src/eQuantic.UI.Server/ServerActionRegistry.cs:55  var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
-src/eQuantic.UI.Server/ServerActionsMiddleware.cs:450  return _allowedAssemblies.Contains(type.Assembly);
-src/eQuantic.UI.Server/ServerActionsOptions.cs:24  public long MaxRequestBodySize { get; set; } = 1_048_576;
-src/eQuantic.UI.Server/ServerActionOrigins.cs:35  return request.Headers["Sec-Fetch-Site"].ToString() is not ("cross-site" or "same-site");
+src/eQuantic.UI.Server/ServerActionRegistry.cs  var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+src/eQuantic.UI.Server/ServerActionsMiddleware.cs  return _allowedAssemblies.Contains(type.Assembly);
+src/eQuantic.UI.Server/ServerActionsOptions.cs  public long MaxRequestBodySize { get; set; } = 1_048_576;
+src/eQuantic.UI.Server/ServerActionOrigins.cs  return request.Headers["Sec-Fetch-Site"].ToString() is not ("cross-site" or "same-site");
 ```
 
 **#1320, high, fixed in 0.2.0-preview.68.** A defect in how Server Actions are authorized:
@@ -102,8 +102,8 @@ and the registry kept the last one registered under it. Now the id is the compon
 two methods under one id stop the app at start, naming both.
 
 ```text
-src/eQuantic.UI.Server/ServerActionRegistry.cs:64  var actionId = $"{ComponentIdentity.Of(type)}/{attr.Name ?? method.Name}";
-src/eQuantic.UI.Server/ServerActionRegistry.cs:24  if (_actions.TryGetValue(actionId, out var held) && held.Method != descriptor.Method)
+src/eQuantic.UI.Server/ServerActionRegistry.cs  var actionId = $"{ComponentIdentity.Of(type)}/{attr.Name ?? method.Name}";
+src/eQuantic.UI.Server/ServerActionRegistry.cs  if (_actions.TryGetValue(actionId, out var held) && held.Method != descriptor.Method)
 ```
 
 **#1291, low, fixed in 0.2.0-preview.68 (#1316).** The smaller gaps: a 403 body that names the roles required, an action id logged with
@@ -122,8 +122,8 @@ counted, so nothing bounded what an anonymous client could store. Now finished u
 owner and across the server, in uploads and in bytes.
 
 ```text
-src/eQuantic.UI.Server/Uploads/UploadOwner.cs:48  var made = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(16));
-src/eQuantic.UI.Server/Uploads/UploadStore.cs:125  if (_total.Uploads + _total.ReservedUploads >= _options.MaxTotalUploads)
+src/eQuantic.UI.Server/Uploads/UploadOwner.cs  var made = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(16));
+src/eQuantic.UI.Server/Uploads/UploadStore.cs  if (_total.Uploads + _total.ReservedUploads >= _options.MaxTotalUploads)
 ```
 
 **#1293, low, fixed in 0.2.0-preview.68 (#1326).** The type was the client's, the name kept `..`, a
@@ -132,7 +132,7 @@ reached the app over HTTPS. Now it is `Secure` everywhere but plain HTTP to this
 Development.
 
 ```text
-src/eQuantic.UI.Server/Uploads/UploadOwner.cs:81  Secure = context.Request.IsHttps || !(IsLoopback(context.Request.Host.Host) || IsDevelopment(context)),
+src/eQuantic.UI.Server/Uploads/UploadOwner.cs  Secure = context.Request.IsHttps || !(IsLoopback(context.Request.Host.Host) || IsDevelopment(context)),
 ```
 
 ## Server events
@@ -142,7 +142,7 @@ as resource, connection ids are 128 random bits, and bodies, topic lengths, topi
 the queue are bounded.
 
 ```text
-src/eQuantic.UI.Server/ServerEvents/ServerTopicAuthorizer.cs:40  if (ruling.Count == 0) return ServerTopicAuthorization.Refused(ServerTopicRefusalReason.Unknown);
+src/eQuantic.UI.Server/ServerEvents/ServerTopicAuthorizer.cs  if (ruling.Count == 0) return ServerTopicAuthorization.Refused(ServerTopicRefusalReason.Unknown);
 ```
 
 **#1292, low.** A subscription skips the origin check the other endpoints make, authorization runs
@@ -158,8 +158,8 @@ receives a keep-alive and `reload`, and rebuilds start from the file watcher, ne
 unbounded channel. Since #1361, Production streams no rebuilds unless the app asks for them:
 
 ```text
-src/eQuantic.UI.Server/UIOptions.cs:90  HotReload ?? (environment.IsDevelopment() || (dotnetWatch == "1" && !environment.IsProduction()));
-src/eQuantic.UI.Server/HotReload/HotReloadService.cs:290  var channel = Channel.CreateUnbounded<string>();
+src/eQuantic.UI.Server/UIOptions.cs  HotReload ?? (environment.IsDevelopment() || (dotnetWatch == "1" && !environment.IsProduction()));
+src/eQuantic.UI.Server/HotReload/HotReloadService.cs  var channel = Channel.CreateUnbounded<string>();
 ```
 
 ## File-serving routes
@@ -169,7 +169,7 @@ checks the resolved path against its directory. Fonts are looked up in a set bui
 culture's name only among the predefined cultures, so nothing is loaded by a request's name.
 
 ```text
-src/eQuantic.UI.Server/AssetPaths.cs:21  return file.StartsWith(root, StringComparison.Ordinal) ? file : null;
+src/eQuantic.UI.Server/AssetPaths.cs  return file.StartsWith(root, StringComparison.Ordinal) ? file : null;
 ```
 
 **#1296, low.** The component fallback sets 404 and then serves the file it found, its production 404
@@ -188,7 +188,7 @@ where only the page's host can write it, the plain `UseGtm(...)` waits for conse
 is encoded as JSON:
 
 ```text
-src/eQuantic.UI.Gtm/GtmExtensions.cs:159  private static string Js(string value) => $"\"{JsonEncodedText.Encode(value)}\"";
+src/eQuantic.UI.Gtm/GtmExtensions.cs  private static string Js(string value) => $"\"{JsonEncodedText.Encode(value)}\"";
 ```
 
 ## The image optimizer
@@ -197,7 +197,7 @@ src/eQuantic.UI.Gtm/GtmExtensions.cs:159  private static string Js(string value)
 checked before decoding, ten optimizations at once, and `Vary: Accept`.
 
 ```text
-src/eQuantic.UI.Images/ImageOptimizationMiddleware.cs:92  if (!resolvedPath.StartsWith(webRootFull, StringComparison.OrdinalIgnoreCase))
+src/eQuantic.UI.Images/ImageOptimizationMiddleware.cs  if (!resolvedPath.StartsWith(webRootFull, StringComparison.OrdinalIgnoreCase))
 ```
 
 **#1289, medium, fixed in 0.2.0-preview.68 (#1336).** The cache was keyed on the url as the request
@@ -206,8 +206,8 @@ copy per spelling. Now the key is the file itself, as found under the web root, 
 settled to the ones the options allow.
 
 ```text
-src/eQuantic.UI.Images/ImageOptimizationMiddleware.cs:127  var source = $"{relative}|{fileInfo.Length}|{fileInfo.LastWriteTimeUtc.Ticks}";
-src/eQuantic.UI.Images/ImageOptimizationMiddleware.cs:82  quality = options.QualityFor(quality);
+src/eQuantic.UI.Images/ImageOptimizationMiddleware.cs  var source = $"{relative}|{fileInfo.Length}|{fileInfo.LastWriteTimeUtc.Ticks}";
+src/eQuantic.UI.Images/ImageOptimizationMiddleware.cs  quality = options.QualityFor(quality);
 ```
 
 ## Response headers

@@ -1,4 +1,4 @@
-import { $eq, CalendarNames } from "../runtime-exports";
+import { $eq, CalendarNames, SortAnnouncements } from "../runtime-exports";
 
 export class SdkStrings {
     static get dismiss(): string {
@@ -213,6 +213,26 @@ export class SdkStrings {
         return $eq.str('SdkResources', 'UploadChooseFile');
     }
 
+    static get treeLoading(): string {
+        return $eq.str('SdkResources', 'TreeLoading');
+    }
+
+    static get treeLoadFailed(): string {
+        return $eq.str('SdkResources', 'TreeLoadFailed');
+    }
+
+    static get treeItemName(): string {
+        return $eq.str('SdkResources', 'TreeItemName');
+    }
+
+    static get tableColumns(): string {
+        return $eq.str('SdkResources', 'TableColumns');
+    }
+
+    static get sorting(): SortAnnouncements {
+        return new SortAnnouncements($eq.str('SdkResources', 'SortInstructions'), $eq.str('SdkResources', 'SortPickedUp'), $eq.str('SdkResources', 'SortMoved'), $eq.str('SdkResources', 'SortMovedInto'), $eq.str('SdkResources', 'SortRefused'), $eq.str('SdkResources', 'SortDropped'), $eq.str('SdkResources', 'SortDroppedInto'), $eq.str('SdkResources', 'SortCancelled'));
+    }
+
     static get uploadWaiting(): string {
         return $eq.str('SdkResources', 'UploadWaiting');
     }
@@ -377,6 +397,14 @@ export class SdkStrings {
 
     static uploadAcceptsAny(size: string) {
         return $eq.text.stringFormat($eq.str('SdkResources', 'UploadAcceptsAny'), size);
+    }
+
+    static sortByColumn(column: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'SortByColumn'), column);
+    }
+
+    static resizeColumn(column: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'ResizeColumn'), column);
     }
 
     static uploadSending(sent: string, size: string) {

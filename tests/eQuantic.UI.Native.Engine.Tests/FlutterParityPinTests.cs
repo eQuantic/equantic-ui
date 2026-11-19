@@ -234,6 +234,16 @@ public class FlutterParityPinTests
         ["RenderSliver"] = () => Has("ListView") && Nothing("Sliver", "SliverList"),
         // Two axes, one viewport: the pinned bands are its own, and the scroll it carries is written
         // once for both targets.
+        ["ReorderableListView"] = () => HasMember("Sortable", "OnDropped") && HasMember("Sortable", "Accepts")
+            && HasMember("Sortable", "OnHovered") && HasMember("Sortable", "Group") && Has("SortableItem")
+            && HasMember("SortDrop", "Into"),
+        // The table composes the vocabulary's nodes to move and size its columns, which Flutter's leaves to the app.
+        ["DataTable"] = () => HasMember("DataTable", "ColumnOrder") && HasMember("DataTable", "OnColumnsReordered")
+            && HasMember("DataTable", "OnColumnResized") && HasMember("DataColumn", "MinWidth")
+            && HasMember("DataColumn", "MaxWidth") && HasMember("SortableItem", "Name"),
+        ["TreeSliver"] = () => HasMember("TreeView", "LoadChildren") && HasMember("TreeView", "OnToggled")
+            && HasMember("TreeNode", "Children") && HasMember("Pressable", "TreePlace")
+            && HasMember("Navigable", "OnTextSearch"),
         ["TableViewport"] = () => HasMember("TableViewport", "PinnedRows") && HasMember("TableViewport", "PinnedColumns")
             && Has("ITableScrollModel") && Has("TableScroll") && Nothing("Sliver", "TwoDimensionalScrollView"),
         // The shapes, ONE of three named: SingleChildNode holds the twenty-two wrappers whose child
@@ -249,7 +259,7 @@ public class FlutterParityPinTests
         // Box's is optional). WrapperNode and ProxyNode stay in the negative set they were in while this row
         // was a GAP — a SECOND wrapper base would change the shape surface just as much as a first.
         ["SingleChildRenderObjectWidget"] = () => EveryOneChildNodeIsA("SingleChildNode")
-            && Descendants("SingleChildNode") == 25 && Has("FlexNode")
+            && Descendants("SingleChildNode") == 31 && Has("FlexNode")
             && Nothing("MultiChildNode", "LeafNode", "WrapperNode", "ProxyNode"),
 
         // 2 — layout
@@ -302,12 +312,16 @@ public class FlutterParityPinTests
         ["SpringSimulation"] = () => Has("SpringSpec") && Nothing("FrictionSimulation"),
 
         // 5 — gestures and focus
-        ["Listener"] = () => HasMember("Canvas", "OnPointerDown"),
-        ["HitTestBehavior"] = () => Nothing("HitTestBehavior"),
+        // A wrapper over any node, with Flutter's six callbacks and the behaviour that says where it hears (#1562).
+        ["Listener"] = () => HasMember("Listener", "OnPointerDown") && HasMember("Listener", "OnPointerScroll")
+            && Has("PointerEvent"),
+        ["HitTestBehavior"] = () => Has("HitTestBehavior") && HasMember("Listener", "Behavior"),
         ["GestureArena"] = () => Nothing("GestureArena", "GestureRecognizer"),
         ["GestureDetector"] = () => Has("Pressable") && Has("Draggable") && Has("Hoverable")
             && Has("Adjustable") && Has("Navigable"),
         ["RawGestureDetector"] = () => Nothing("RawGestureDetector"),
+        ["MenuAnchor"] = () => HasMember("ContextTarget", "OnRequested") && HasMember("ContextRequest", "At")
+            && HasMember("Anchored", "At") && Has("ContextMenu"),
         ["FocusNode"] = () => HasMember("Pressable", "InitialFocus") && Nothing("FocusNode", "FocusScope"),
         // The vocabulary's own word, and a realizer that honours it.
         ["InkWell.canRequestFocus"] = () => HasMember("Pressable", "CanRequestFocus")
@@ -370,7 +384,8 @@ public class FlutterParityPinTests
             && HasMember("SheetSurface", "Announcement")
             && IosShellCode.Value.Contains("SpeechAttributeQueueAnnouncement", StringComparison.Ordinal)
             && AndroidShellCode.Value.Contains("LiveRegion", StringComparison.Ordinal),
-        ["MergeSemantics"] = () => Nothing("MergeSemantics", "ExcludeSemantics"),
+        ["MergeSemantics"] = () => Has("MergeSemantics") && Has("ExcludeSemantics")
+            && WebRealizerCode().Contains("\"aria-labelledby\"", StringComparison.Ordinal),
         ["Localizations"] = () => Has("ICultureController") && Nothing("LocalizationsDelegate"),
         ["TextDirection.ltr/rtl"] = () => Nothing("TextDirection"),
         ["ThemeData"] = () => Has("IAppTheme") && Has("Density") && Nothing("CupertinoThemeData"),

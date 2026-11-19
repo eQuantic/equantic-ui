@@ -113,7 +113,7 @@ public class ListDetailTests
             ListTitle = "Inbox",
             OnBack = () => { },
             Placeholder = new Text("Pick a message"),
-        }.BuildContained(Context());
+        }.BuildContainedAlone(Context());
 
         NodePlacements.Shared(built).Should().BeEmpty("a node belongs to ONE tree, so each shape builds its own");
     }
@@ -175,7 +175,7 @@ public class ListDetailTests
             Title = "Message detail",
             ListTitle = "Inbox",
             OnBack = () => { },
-        }.BuildContained(Context())).Compact;
+        }.BuildContainedAlone(Context())).Compact;
 
         var texts = TextsIn(Render(compact));
         texts.Should().Contain("Inbox");
@@ -192,7 +192,7 @@ public class ListDetailTests
             Title = "Message detail",
             ListTitle = "Inbox",
             OnBack = () => { },
-        }.BuildContained(Context())).Compact;
+        }.BuildContainedAlone(Context())).Compact;
 
         var texts = TextsIn(Render(compact));
         texts.Should().Contain("The message body");
@@ -209,7 +209,7 @@ public class ListDetailTests
         var shape = (AdaptiveNode)new ListDetail(Inbox, () => new Text("Body"), onBack: () => { })
         {
             Title = "Message detail",
-        }.BuildContained(Context());
+        }.BuildContainedAlone(Context());
 
         static int BackButtons(HtmlNode html) =>
             Walk(html).Count(node => node.Attributes.GetValueOrDefault("aria-label", "") == SdkStrings.Back);
@@ -233,11 +233,11 @@ public class ListDetailTests
         var chosen = (AdaptiveNode)new ListDetail(Inbox, () => new Text("Body"), onBack: () => { })
         {
             Title = "Message detail",
-        }.BuildContained(Context());
+        }.BuildContainedAlone(Context());
         var nothingChosen = (AdaptiveNode)new ListDetail(Inbox, onBack: () => { })
-            .BuildContained(Context());
+            .BuildContainedAlone(Context());
         var noWayBack = (AdaptiveNode)new ListDetail(Inbox, () => new Text("Body"))
-            .BuildContained(Context());
+            .BuildContainedAlone(Context());
 
         EscapeBindings(Render(chosen.Compact)).Should().Be(1);
         EscapeBindings(Render(chosen.Expanded!)).Should().Be(0, "both panes are on screen");
@@ -254,8 +254,8 @@ public class ListDetailTests
         var own = (AdaptiveNode)new ListDetail(Inbox)
         {
             Placeholder = new Text("Pick a message"),
-        }.BuildContained(Context());
-        var none = (AdaptiveNode)new ListDetail(Inbox).BuildContained(Context());
+        }.BuildContainedAlone(Context());
+        var none = (AdaptiveNode)new ListDetail(Inbox).BuildContainedAlone(Context());
 
         TextsIn(Render(own.Expanded!)).Should().Contain("Pick a message");
         TextsIn(Render(none.Expanded!)).Should().Contain(SdkStrings.NothingSelected,
@@ -268,7 +268,7 @@ public class ListDetailTests
     public void TheThresholdIsTheAppsToMove()
     {
         var shape = (AdaptiveNode)new ListDetail(Inbox) { TwoPaneFrom = 1024 }
-            .BuildContained(Context());
+            .BuildContainedAlone(Context());
 
         shape.ExpandedFrom.Should().Be(1024);
         shape.ResolveWidth(900).Should().BeSameAs(shape.Compact);

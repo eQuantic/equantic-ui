@@ -159,7 +159,7 @@ public class FormControlSlotsRealizerTests
         float?[] RowHeights(IAppTheme theme)
         {
             var select = new Select(["Card", "Cash", "Transfer"], 0, _ => { });
-            return Walk(select.BuildContained(new ComponentContext(theme)), theme)
+            return Walk(select.BuildContainedAlone(new ComponentContext(theme)), theme)
                 .OfType<Pressable>()
                 .Where(p => p.Role == PressableRole.Option)
                 .Select(p => p.Child is Box { Style.Height: { Kind: SizeKind.Fixed } height } ? height.Value : (float?)null)
@@ -182,7 +182,7 @@ public class FormControlSlotsRealizerTests
             Flexible flexible => new[] { flexible.Child },
             Anchored anchored => new[] { anchored.Anchor, anchored.Panel },
             Shortcut shortcut => new[] { shortcut.Child },
-            UiComponent component => new[] { component.BuildContained(new ComponentContext(theme)) },
+            UiComponent component => new[] { component.BuildContainedAlone(new ComponentContext(theme)) },
             _ => Array.Empty<VisualNode>(),
         };
         foreach (var child in children)

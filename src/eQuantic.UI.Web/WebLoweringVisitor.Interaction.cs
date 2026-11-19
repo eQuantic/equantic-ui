@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Linq;
 
 using eQuantic.UI.Primitives;
@@ -121,16 +122,21 @@ internal sealed partial class WebLoweringVisitor
         return string.Join("+", parts);
     }
     /// <summary>
-    /// The TS twin's SSR half: same markup, no handler — keydown only exists client-side, exactly
-    /// as Pressable's click does. One focusable wrapper is the control's whole Tab presence.
+    /// The TS twin's SSR half: the same markup, and the keydown DECLARED as the twin installs it (#1538),
+    /// as a navigable's is: the server never dispatches a key, so it does not run here, but the lowered
+    /// tree is what the parity net compares, and one that said "no handler" could not notice the client
+    /// losing it. One focusable wrapper is the control's whole Tab presence.
     /// </summary>
     private HtmlElement LowerAdjustable(Adjustable adjustable)
     {
         var adjustableFills = Fills(adjustable.Child);
         var adjustableCap = CapsAt(adjustable.Child);
         // ARIA pairs the role with the value, so BOTH halves are derived here rather than copied:
-        // the value is the SLIDER role's and no other's, and a slider that has none is not one.
-        var adjustableValue = adjustable.Role == AdjustableRole.Slider ? adjustable.Value : null;
+        // the value is a SLIDER's or a SEPARATOR's and no other role's, and one that has none is not
+        // either.
+        var adjustableValue = adjustable.Role is AdjustableRole.Slider or AdjustableRole.Separator
+            ? adjustable.Value
+            : null;
         var element = new RealizedElement("div")
         {
             Style = new HtmlStyle
@@ -153,6 +159,8 @@ internal sealed partial class WebLoweringVisitor
             },
         };
         if (adjustable.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
+        if (AriaOrientation(adjustable, adjustableValue) is { } orientation)
+            element.RawAttributes["aria-orientation"] = orientation;
         // The VALUE, for a role that has one (spec C7). role="slider" REQUIRES aria-valuenow, so the
         // host emitted invalid ARIA until this existed — a name and no number. The bounds go with it
         // or the number is read against ARIA's own 0-100 default, which no slider here uses.
@@ -164,12 +172,29 @@ internal sealed partial class WebLoweringVisitor
             // INSIDE the gate, unlike the Progress arm below, and the asymmetry is the point.
             // aria-valuetext REPLACES the number for a reader — on a bar that legitimately has no
             // number (indeterminate) the words are all there is, but an Adjustable with no value is
-            // a TABLIST or a RADIOGROUP, which resolves to a role that reports no range at all.
+            // a TABLIST, a RADIOGROUP, or a slider or separator announced as the group it then is,
+            // none of which reports a range at all.
             // Words there would describe a value the host never claims to have, and the native
             // visitor agrees: it announces neither unless the role is Slider.
             if (adjustable.ValueText is { Length: > 0 } spoken)
                 element.RawAttributes["aria-valuetext"] = spoken;
         }
+        // The arrows the twin answers (lowerAdjustable): a slider's or a separator's vertical axis is
+        // VALUE (up increases), a radio group's or tab list's is READING ORDER (down is next).
+        var downIsNext = adjustable.Role is not (AdjustableRole.Slider or AdjustableRole.Separator);
+        var onAdjust = adjustable.OnAdjust;
+        element.OnKeyDown = key =>
+        {
+            var direction = key.Key switch
+            {
+                "ArrowRight" => 1,
+                "ArrowLeft" => -1,
+                "ArrowUp" => downIsNext ? -1 : 1,
+                "ArrowDown" => downIsNext ? 1 : -1,
+                _ => 0,
+            };
+            if (direction != 0) onAdjust(direction);
+        };
         if (Lower(adjustable.Child, null, LoweringPath.Child) is { } child) element.Children.Add(child);
         return element;
     }
@@ -319,8 +344,23 @@ internal sealed partial class WebLoweringVisitor
     {
         AdjustableRole.Tablist => "tablist",
         AdjustableRole.Radiogroup => "radiogroup",
-        _ => value is null ? "group" : "slider",
+        _ when value is null => "group",
+        AdjustableRole.Separator => "separator",
+        _ => "slider",
     };
+
+    /// <summary>
+    /// The orientation a reader hears (#1538), for the two roles that have one and only when the host IS
+    /// that role (a value-less one is a group, which has none). A separator is the LINE between two
+    /// things, so it lies across the axis it moves on, and ARIA's default for it is horizontal: it is
+    /// always written. A slider lies along its axis and ARIA's default for it is horizontal too, so a
+    /// horizontal slider writes nothing, as every slider wrote before (TS twin: lowerAdjustable).
+    /// </summary>
+    private static string? AriaOrientation(Adjustable adjustable, RangeValue? value) =>
+        value is null ? null
+        : adjustable.Role == AdjustableRole.Separator
+            ? adjustable.Axis == DragAxis.Horizontal ? "vertical" : "horizontal"
+        : adjustable.Axis == DragAxis.Vertical ? "vertical" : null;
 
     /// <summary>
     /// The 2-D composite (TS twin: lowerNavigable). One focusable host carrying the grid role and
@@ -333,11 +373,14 @@ internal sealed partial class WebLoweringVisitor
     /// </summary>
     private HtmlElement LowerNavigable(Navigable navigable)
     {
+        // A TREE's rows are its visible items, and a tree must not hold rows (#1529): the items are
+        // lowered as they are and numbered by the same walk, under the same id scheme.
+        var tree = navigable.Role == NavigableRole.Tree;
         var element = new RealizedElement("div")
         {
             RawAttributes = new Dictionary<string, string>
             {
-                ["role"] = navigable.Role switch { _ => "grid" },
+                ["role"] = tree ? "tree" : "grid",
                 ["tabindex"] = "0",
             },
         };
@@ -346,10 +389,14 @@ internal sealed partial class WebLoweringVisitor
         // dispatches a key, so this delegate does not run — but the lowered tree is what the
         // parity net compares, and a fixture that says "no handler" cannot notice the client
         // losing one. NavigableKeys is the same table the TS half reads, cross-pinned.
+        // Text search rides the same handler: a printable character with no modifier but Shift, never
+        // Space (the TS twin reads the same rule, and Photon's TextInput the characters themselves).
+        var onTextSearch = navigable.OnTextSearch;
         if (navigable.OnMove is { } onMove)
             element.OnKeyDown = key =>
             {
                 if (NavigableKeys.Move(key.Key, key.ShiftKey) is { } move) onMove(move);
+                else if (onTextSearch is not null && IsTextSearch(key)) onTextSearch(key.Key);
             };
         // Ids are scoped to THIS grid: two calendars on one page would otherwise both call their
         // cells eq-cell-1-1, which is a duplicate id and an activedescendant that may resolve into
@@ -361,6 +408,14 @@ internal sealed partial class WebLoweringVisitor
 
         for (var index = 0; index < navigable.Rows.Count; index++)
         {
+            if (tree)
+            {
+                if (Lower(navigable.Rows[index], null, LoweringPath.Item(index)) is not { } itemRow) continue;
+                var position = 0;
+                NumberCells(itemRow, "treeitem", scope, index, ref position);
+                element.Children.Add(itemRow);
+                continue;
+            }
             var row = new RealizedElement("div")
             {
                 // Transparent to layout: the row is an accessibility fact, not a box.
@@ -375,25 +430,32 @@ internal sealed partial class WebLoweringVisitor
             // The cells are IDENTIFIED — an aria-activedescendant pointing at an id nothing
             // carries is a dangling reference, which reads to assistive tech as no focus at all.
             var item = 0;
-            if (!(navigable.HasHeaderRow && index == 0)) NumberGridCells(row, scope, index, ref item);
+            if (!(navigable.HasHeaderRow && index == 0)) NumberCells(row, "gridcell", scope, index, ref item);
             element.Children.Add(row);
         }
         return element;
     }
 
-    /// <summary>Walks one lowered row and ids every gridcell in tree order — the id the host's
-    /// aria-activedescendant points at, built the same way by the TS twin.</summary>
-    private void NumberGridCells(HtmlElement element, string scope, int row, ref int item)
+    /// <summary>Walks one lowered row and ids every cell of the composite's kind (a grid's gridcells, a
+    /// tree's treeitems) in tree order — the id the host's aria-activedescendant points at, built the
+    /// same way by the TS twin.</summary>
+    private void NumberCells(HtmlElement element, string role, string scope, int row, ref int item)
     {
-        if (element.Role == "gridcell")
+        if (element.Role == role)
         {
             element.Id = NavigableCellId(scope, row, item);
             item++;
         }
         foreach (var child in element.Children)
             if (child is HtmlElement childElement)
-                NumberGridCells(childElement, scope, row, ref item);
+                NumberCells(childElement, role, scope, row, ref item);
     }
+
+    /// <summary>Whether a key press is a character a composite searches with (TS twin:
+    /// <c>isTextSearch</c>): one printable character, no modifier but Shift, and never Space, which is a
+    /// key of its own.</summary>
+    private static bool IsTextSearch(KeyboardEventArgs key) =>
+        key.Key.Length == 1 && key.Key != " " && !key.CtrlKey && !key.MetaKey && !key.AltKey;
 
     /// <summary>The header row's cells NAME their columns (design system C15: the day names).
     /// They are the row content's DIRECT children — whatever the caller laid out, one element per
@@ -453,10 +515,16 @@ internal sealed partial class WebLoweringVisitor
         Pressable pressable => CapsAt(pressable.Child),
         Hoverable hoverable => CapsAt(hoverable.Child),
         DropTarget target => CapsAt(target.Child),
+        ContextTarget target => CapsAt(target.Child),
+        Listener listener => CapsAt(listener.Child),
+        Sortable sortable => CapsAt(sortable.Child),
+        SortableItem item => CapsAt(item.Child),
         Adjustable adjustable => CapsAt(adjustable.Child),
         Progress progress => CapsAt(progress.Child),
         LiveRegion live => CapsAt(live.Child),
         Group group => CapsAt(group.Child),
+        MergeSemantics merge => CapsAt(merge.Child),
+        ExcludeSemantics exclude => CapsAt(exclude.Child),
         Flexible flexible => CapsAt(flexible.Child),
         LoopMotion motion => CapsAt(motion.Child),
         Link link => CapsAt(link.Child),
@@ -532,7 +600,10 @@ internal sealed partial class WebLoweringVisitor
         // composition, and the trigger is usually a Button. The OUTER one yields: it keeps the
         // press, the child keeps being the real control, and the markup stays legal.
         var wrapping = child is not null && WrapsAnInteractive(child);
-        var element = new RealizedElement(wrapping ? "span" : "button")
+        // A tree item is a div (#1529): ARIA in HTML refuses role="treeitem" on a button, and its
+        // keyboard is the tree's, so nothing a button would add is missed.
+        var treeItem = pressable.Role == PressableRole.TreeItem;
+        var element = new RealizedElement(treeItem ? "div" : wrapping ? "span" : "button")
         {
             // Neutralize UA button chrome — the child carries ALL visuals (same as native).
             Style = new HtmlStyle
@@ -554,7 +625,7 @@ internal sealed partial class WebLoweringVisitor
                 PointerEvents = "auto",
                 Height = fills.Height ? "100%" : null,
             },
-            Disabled = pressable.Disabled && !wrapping ? true : null,
+            Disabled = pressable.Disabled && !wrapping && !treeItem ? true : null,
             AriaLabel = pressable.Label,
             // Selection stated, not merely painted — a fill colour says nothing to a screen reader.
             AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
@@ -639,6 +710,31 @@ internal sealed partial class WebLoweringVisitor
             element.AriaSelected = pressable.Selected == true;
             element.AriaPressed = null;
             element.TabIndex = -1;
+        }
+
+        // One item of a tree (#1529): picked like a cell when it says so, out of the Tab order because
+        // the tree is the one stop, and PLACED, because the tree's rows are a flat list of its visible
+        // items and a reader cannot infer from it how deep this one stands. A div cannot be disabled,
+        // so it says so instead.
+        if (treeItem)
+        {
+            element.Role = "treeitem";
+            element.AriaSelected = pressable.Selected;
+            element.AriaPressed = null;
+            element.TabIndex = -1;
+            if (pressable.Disabled) element.AriaDisabled = true;
+            // A press keeps the keyboard on the TREE (#1530): the host is the one stop, and the element
+            // aria-activedescendant has to be read from, so a press must not move the focus to the item.
+            // The runtime cancels the item's own focus and focuses the tree; the server never dispatches
+            // a mousedown and declares it all the same, so the parity net notices the client losing it.
+            element.OnMouseDown = static _ => { };
+            if (pressable.TreePlace is { } place)
+            {
+                element.RawAttributes ??= new Dictionary<string, string>();
+                element.RawAttributes["aria-level"] = place.Level.ToString(CultureInfo.InvariantCulture);
+                element.RawAttributes["aria-posinset"] = place.PositionInSet.ToString(CultureInfo.InvariantCulture);
+                element.RawAttributes["aria-setsize"] = place.SizeOfSet.ToString(CultureInfo.InvariantCulture);
+            }
         }
 
         // A navigation destination keeps its Tab stop (a nav is a list of links, not a composite)
@@ -934,5 +1030,144 @@ internal sealed partial class WebLoweringVisitor
         if (Lower(target.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
             element.Children.Add(child);
         return element;
+    }
+
+    /// <summary>
+    /// What a person asks the menu of (<see cref="ContextTarget"/>, #1531): the same layout-transparent div as a
+    /// drop area, marked for the runtime's context controller (<c>dom/context-request.ts</c>), which answers the
+    /// browser's <c>contextmenu</c> and a finger's hold over it and dispatches the request. The server declares
+    /// the event and runs none; the client twin (<c>lowerContextTarget</c>) turns it into the C# callback.
+    /// </summary>
+    private HtmlElement LowerContextTarget(ContextTarget target)
+    {
+        var fills = Fills(target.Child);
+        var cap = CapsAt(target.Child);
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = fills.Width ? "100%" : null,
+                MaxWidth = Size(cap),
+                // A target, saying so because `none` inherits from any transparent row above it.
+                PointerEvents = "auto",
+                Height = fills.Height ? "100%" : null,
+            },
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["data-eq-context"] = target.Enabled ? "on" : "off",
+            },
+        };
+        element.CustomEvents["eq-context-requested"] = ClientDispatches;
+        if (Lower(target.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
+            element.Children.Add(child);
+        return element;
+    }
+
+    /// <summary>
+    /// What hears the raw pointer over a subtree (<see cref="Listener"/>, #1562): the same layout-transparent div
+    /// as a context target, marked with its behaviour for the runtime's pointer controller
+    /// (<c>dom/pointer-listener.ts</c>), which hit-tests the listeners under every pointer event and dispatches
+    /// what each one hears. The server declares the event and runs none; the client twin (<c>lowerListener</c>)
+    /// turns it into the C# callbacks.
+    /// </summary>
+    private HtmlElement LowerListener(Listener listener)
+    {
+        var fills = Fills(listener.Child);
+        var cap = CapsAt(listener.Child);
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = fills.Width ? "100%" : null,
+                MaxWidth = Size(cap),
+                // In the browser's hit test, saying so because `none` inherits from any transparent row above it.
+                PointerEvents = "auto",
+                Height = fills.Height ? "100%" : null,
+            },
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["data-eq-listener"] = ListenerMark(listener.Behavior),
+            },
+        };
+        element.CustomEvents["eq-pointer"] = ClientDispatches;
+        if (Lower(listener.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
+            element.Children.Add(child);
+        return element;
+    }
+
+    /// <summary>The behaviour as the runtime's controller reads it from the mark (the client twin writes the same).</summary>
+    private static string ListenerMark(HitTestBehavior behavior) => behavior switch
+    {
+        HitTestBehavior.Opaque => "opaque",
+        HitTestBehavior.Translucent => "translucent",
+        _ => "defer",
+    };
+
+    /// <summary>
+    /// A list a pointer sorts (#1535, TS twin: <c>lowerSortable</c>): no element of its own, its CHILD marked as
+    /// the container the runtime's sortable controller finds by <c>data-eq-sort</c> (the group), with its id,
+    /// its axis and whether it nests. The controller's reports are custom events the client dispatches; the
+    /// server declares them and runs none, so the parity net notices the client losing one.
+    /// </summary>
+    private HtmlElement? LowerSortable(Sortable sortable, bool? horizontalAxis)
+    {
+        if (Lower(sortable.Child, horizontalAxis, LoweringPath.Child) is not RealizedElement child) return null;
+        child.RawAttributes ??= new Dictionary<string, string>();
+        child.RawAttributes["data-eq-sort"] = sortable.Group;
+        child.RawAttributes["data-eq-sort-id"] = sortable.Id;
+        child.RawAttributes["data-eq-sort-axis"] = sortable.Axis == DragAxis.Horizontal ? "x" : "y";
+        if (sortable.Label.Length > 0)
+        {
+            child.RawAttributes["data-eq-sort-label"] = sortable.Label;
+            // A named list is a labelled group to a reader, unless what it marks already says what it is
+            // (a tree's host). TS twin: lowerSortable.
+            if (child.Role is null && !child.RawAttributes.ContainsKey("role"))
+            {
+                child.Role = "group";
+                child.AriaLabel ??= sortable.Label;
+            }
+        }
+        if (sortable.Nests) child.RawAttributes["data-eq-sort-nests"] = "1";
+        if (!sortable.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
+        // The words a reader hears while the keyboard sorts (#1564), which the controller reads from the list the
+        // item was picked up from. A list with none says nothing.
+        if (sortable.Announcements is { } words)
+        {
+            child.RawAttributes["data-eq-sort-say-instructions"] = words.Instructions;
+            child.RawAttributes["data-eq-sort-say-picked-up"] = words.PickedUp;
+            child.RawAttributes["data-eq-sort-say-moved"] = words.Moved;
+            child.RawAttributes["data-eq-sort-say-moved-into"] = words.MovedInto;
+            child.RawAttributes["data-eq-sort-say-refused"] = words.Refused;
+            child.RawAttributes["data-eq-sort-say-dropped"] = words.Dropped;
+            child.RawAttributes["data-eq-sort-say-dropped-into"] = words.DroppedInto;
+            child.RawAttributes["data-eq-sort-say-put-back"] = words.PutBack;
+        }
+        child.CustomEvents["eq-sort-dropped"] = ClientDispatches;
+        if (sortable.OnHovered is not null) child.CustomEvents["eq-sort-hovered"] = ClientDispatches;
+        if (sortable.Accepts is not null) child.CustomEvents["eq-sort-accepts"] = ClientDispatches;
+        return child;
+    }
+
+    /// <summary>
+    /// One item a pointer picks up (#1535, TS twin: <c>lowerSortableItem</c>): its child marked with the
+    /// item's key, and a target for the pointer, which a transparent row above it would otherwise take away
+    /// (`none` inherits), as a drag surface declares itself.
+    /// </summary>
+    private HtmlElement? LowerSortableItem(SortableItem item, bool? horizontalAxis)
+    {
+        if (Lower(item.Child, horizontalAxis, LoweringPath.Child) is not RealizedElement child) return null;
+        child.Style ??= new HtmlStyle();
+        child.Style.PointerEvents = "auto";
+        child.RawAttributes ??= new Dictionary<string, string>();
+        child.RawAttributes["data-eq-sort-item"] = item.Id;
+        // The name the keyboard's steps say, when the item has one of its own (#1538); the controller reads it
+        // before what the item's subtree says.
+        if (item.Name is { Length: > 0 } name) child.RawAttributes["data-eq-sort-name"] = name;
+        if (!item.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
+        // The keyboard sorts an item from its focus (#1536): one that takes none of its own (a box, not a
+        // button or a link) becomes a Tab stop. The TS twin decides by the same tags.
+        else if (child.TabIndex is null && child.Tag is not ("button" or "a" or "input" or "select" or "textarea"))
+            child.TabIndex = 0;
+        return child;
     }
 }

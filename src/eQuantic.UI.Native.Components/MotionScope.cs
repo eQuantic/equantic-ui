@@ -46,4 +46,23 @@ internal sealed class MotionScope
     /// <summary>Spec S6 at PAINT time: the same clock layout uses for flex weights, so a box's
     /// colours, opacity, transform and shadow glide under its own <c>Transition</c>.</summary>
     public TransitionClock? Transitions { get; init; }
+
+    /// <summary>
+    /// This clock without the clocks that REMEMBER (presences and transitions), for a subtree drawn a second
+    /// time as a picture: a sortable item's copy (#1537). Its paint would otherwise become the subtree's
+    /// exit snapshot, and its resting colours a transition the subtree glides toward and back every frame.
+    /// </summary>
+    public MotionScope Still() => new(TimeMs, Reduced)
+    {
+        ViewportW = ViewportW,
+        ViewportH = ViewportH,
+        TextRasterizer = TextRasterizer,
+        TextCache = TextCache,
+        ImageLoader = ImageLoader,
+        ImageCache = ImageCache,
+        IconRasterizer = IconRasterizer,
+        IconCache = IconCache,
+        RenderScale = RenderScale,
+        TypeScale = TypeScale,
+    };
 }

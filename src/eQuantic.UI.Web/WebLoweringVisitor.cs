@@ -234,6 +234,13 @@ internal sealed partial class WebLoweringVisitor(
     public HtmlElement? Visit(Hoverable hoverable, bool? horizontalAxis) => LowerHoverable(hoverable);
 
     public HtmlElement? Visit(DropTarget target, bool? horizontalAxis) => LowerDropTarget(target);
+    public HtmlElement? Visit(ContextTarget target, bool? horizontalAxis) => LowerContextTarget(target);
+
+    public HtmlElement? Visit(Listener listener, bool? horizontalAxis) => LowerListener(listener);
+
+    public HtmlElement? Visit(Sortable sortable, bool? horizontalAxis) => LowerSortable(sortable, horizontalAxis);
+
+    public HtmlElement? Visit(SortableItem item, bool? horizontalAxis) => LowerSortableItem(item, horizontalAxis);
 
     public HtmlElement? Visit(Adjustable adjustable, bool? horizontalAxis) => LowerAdjustable(adjustable);
 
@@ -242,6 +249,10 @@ internal sealed partial class WebLoweringVisitor(
     public HtmlElement? Visit(LiveRegion live, bool? horizontalAxis) => LowerLiveRegion(live);
 
     public HtmlElement? Visit(Group group, bool? horizontalAxis) => LowerGroup(group);
+
+    public HtmlElement? Visit(MergeSemantics merge, bool? horizontalAxis) => LowerMergeSemantics(merge);
+
+    public HtmlElement? Visit(ExcludeSemantics exclude, bool? horizontalAxis) => LowerExcludeSemantics(exclude);
 
     public HtmlElement? Visit(Navigable navigable, bool? horizontalAxis) => LowerNavigable(navigable);
 
@@ -298,7 +309,7 @@ internal sealed partial class WebLoweringVisitor(
         // NAMED ONLY IN A FRAME: a tree the server draws for the browser is built through a host
         // (MarkupHost), so its components have positions and are named by them above. A lowering
         // with no frame is the email realizer's or the design host's, and neither has server data.
-        return component.ExpandContained(_context, (Visitor: this, Axis: horizontalAxis, Asked: _measurer.Asks),
+        return _measurer.Boundary.ExpandContained(component, _context, (Visitor: this, Axis: horizontalAxis, Asked: _measurer.Asks),
             static (built, state) =>
             {
                 // Counted BEFORE the built tree lowers: the components inside it build during that

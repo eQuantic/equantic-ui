@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeCompletion, CodeCompletionItem, CodeCompletionKindValue, CodeCompletionMatch, CodeLineCells, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Rect, Row, SizeValue, Spacer, StyleDiff, Text, TextRun } from "../runtime-exports";
+import { $CodeCompletionKindValue, $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeCompletion, CodeCompletionItem, CodeCompletionMatch, CodeLineCells, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Rect, Row, SizeValue, Spacer, StyleDiff, Text, TextRun } from "../runtime-exports";
 
 export class CodeCompletionView {
     static pageRows: number = 12;
@@ -17,7 +17,7 @@ export class CodeCompletionView {
 
     static columnsOf(items: CodeCompletionMatch[]) {
         let widest = CodeCompletionView.minColumns;
-        for (const match of items) {
+        for (const match of $eq.collections.sequenceWalk(items)) {
             let columns = CodeCompletionView.entryColumns(match.item);
             if (columns > widest) widest = columns;
         }
@@ -144,30 +144,30 @@ export class CodeCompletionView {
         return $eq.text.substring(text, 0, end) + '…';
     }
 
-    static glyph(theme: any, metrics: CodeBlock$CodeMetrics, kind: CodeCompletionKindValue) {
+    static glyph(theme: any, metrics: CodeBlock$CodeMetrics, kind: $CodeCompletionKindValue) {
         let cell = new Row(0, 'center', 'center', false, null, null, { width: SizeValue.fixed(metrics.lineHeight), height: SizeValue.fixed(metrics.lineHeight) });
         cell.add(new Text(CodeCompletionView.glyphOf(kind), 'labelSmall', theme.code(CodeCompletionView.inkOf(kind)), 1, 'start', false, false, null, 0, { mono: true, styleOverride: $eq.withPatch(metrics.style, { weight: 'bold' }) }));
         return cell;
     }
 
-    static glyphOf(kind: CodeCompletionKindValue) {
+    static glyphOf(kind: $CodeCompletionKindValue) {
         return (() => { const $s = kind; if ((($s === 'method' || $s === 'function') || $s === 'constructor')) return 'm'; if (($s === 'field' || $s === 'variable')) return 'v'; if ($s === 'property') return 'p'; if ($s === 'event') return 'e'; if ($s === 'class') return 'C'; if ($s === 'struct') return 'S'; if ($s === 'interface') return 'I'; if ($s === 'enum') return 'E'; if ($s === 'typeParameter') return 'T'; if ($s === 'module') return 'N'; if (($s === 'enumMember' || $s === 'constant')) return 'c'; if ((($s === 'value' || $s === 'unit') || $s === 'color')) return '#'; if ($s === 'keyword') return 'k'; if ($s === 'snippet') return 's'; if ($s === 'operator') return 'o'; if ($s === 'reference') return 'r'; if ($s === 'file') return 'f'; if ($s === 'folder') return 'd'; return 'a'; })();
     }
 
-    static inkOf(kind: CodeCompletionKindValue) {
+    static inkOf(kind: $CodeCompletionKindValue) {
         return (() => { const $s = kind; if (((($s === 'method' || $s === 'function') || $s === 'constructor') || $s === 'event')) return 'function'; if (((((($s === 'class' || $s === 'struct') || $s === 'interface') || $s === 'enum') || $s === 'typeParameter') || $s === 'module')) return 'type'; if ($s === 'property') return 'property'; if (($s === 'enumMember' || $s === 'constant')) return 'constant'; if ((($s === 'value' || $s === 'unit') || $s === 'color')) return 'number'; if (($s === 'keyword' || $s === 'snippet')) return 'keyword'; if ($s === 'operator') return 'operator'; return 'plain'; })();
     }
 
     static marked(label: string, marks: number[], ink: ColorToken, accent: ColorToken) {
         let marked = new Array(label.length).fill(false);
-        for (const at of marks) {
+        for (const at of $eq.collections.sequenceWalk(marks)) {
             if (at >= 0 && at < label.length) marked[at] = true;
         }
         let runs: TextRun[] = [];
         let from = 0;
         for (let i = 1; i <= label.length; i++) {
             if (i < label.length && marked[i] === marked[from]) continue;
-            runs.push(new TextRun($eq.text.substring(label, from, i - from), marked[from] ? accent : ink, true));
+            $eq.collections.listAdd(runs, new TextRun($eq.text.substring(label, from, i - from), marked[from] ? accent : ink, true));
             from = i;
         }
         return runs;

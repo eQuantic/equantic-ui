@@ -71,6 +71,14 @@ public sealed record TableTheme
     /// <summary>The colour of a DataTable's header and row borders (<see cref="IAppTheme.Border"/>).</summary>
     public ColorToken? BorderColor { get; init; }
 
+    /// <summary>The colour of the line that says where a carried DataTable column lands
+    /// (<see cref="IAppTheme.FocusRing"/>, #1538).</summary>
+    public ColorToken? ColumnDropColor { get; init; }
+
+    /// <summary>The colour of the edge a DataTable column's resize handle shows under the pointer; under the
+    /// keyboard the focus ring says where it is (<see cref="IAppTheme.FocusRing"/>, #1538).</summary>
+    public ColorToken? ResizeHandleColor { get; init; }
+
     /// <summary>
     /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s: what <paramref name="over"/>
     /// names wins, what it leaves null is <paramref name="under"/>'s. Null when
@@ -95,5 +103,7 @@ public sealed record TableTheme
             SortIconSize = over.SortIconSize ?? under.SortIconSize,
             BorderWidth = over.BorderWidth ?? under.BorderWidth,
             BorderColor = over.BorderColor ?? under.BorderColor,
+            ColumnDropColor = over.ColumnDropColor ?? under.ColumnDropColor,
+            ResizeHandleColor = over.ResizeHandleColor ?? under.ResizeHandleColor,
         };
 }

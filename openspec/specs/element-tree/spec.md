@@ -158,12 +158,39 @@ component.
 
 An `Overlay`'s child and an `Anchored` panel SHALL be built when their layer is realized in a frame,
 and a layer that is not realized in a frame (an overlay closed with motion, a panel closed or no
-longer hovered) SHALL unmount what it holds.
+longer hovered) SHALL unmount what it holds. A frame whose realizer drew only parts of the tree
+(`BuildOwner.DrewOnly`) SHALL judge only the layers inside those parts: a layer outside them SHALL keep
+what it holds, and a frame whose realizer says nothing SHALL have drawn the whole tree.
+`BuildOwner.WaitsForALayer` SHALL answer whether a marked position waits for its layer to be shown.
 
 #### Scenario: A menu closes
 
 - **WHEN** an anchored panel holding a stateful component is open for a frame and closed in the next
 - **THEN** the component mounted in the first frame and unmounted in the second
+
+#### Scenario: A patch render elsewhere on the page
+
+- **WHEN** a page holds a counter and an open non-modal overlay over another counter, and the first
+  counter is pressed twice in the browser, then the second
+- **THEN** no counter unmounts, and the second reads `b: 1`
+
+#### Scenario: A panel closed in a patch render
+
+- **WHEN** a component holding an open anchored panel over a counter closes it with its own `SetState`,
+  and the browser lowers that component alone
+- **THEN** the panel's counter unmounts
+
+#### Scenario: A frame that drew one part
+
+- **WHEN** an owner's frame says it drew only a counter's position, and an open overlay beside it was
+  not shown
+- **THEN** the overlay keeps what it holds, and a later frame that says nothing takes it out
+
+#### Scenario: Photon draws every frame whole
+
+- **WHEN** a Photon host draws two frames after a `SetState` outside an open overlay and an open
+  anchored panel, then one after a `SetState` inside the overlay
+- **THEN** neither layer's component unmounts, and the one inside the overlay builds in the third frame
 
 ### Requirement: A position keeps its node's state
 
@@ -841,3 +868,22 @@ binding SHALL stay.
 
 - **WHEN** a page declares a shortcut beside a counter, and the counter changes its state
 - **THEN** one component is lowered and the shortcut is still live
+
+### Requirement: A tree's error boundary is its own
+
+Each tree SHALL build through an error boundary of its own, and its owner SHALL be made from it. The
+boundary's diagnostics, its report and its tally of contained components SHALL be the tree's, never an
+async flow's: the server SHALL keep one for a request and hand it to the request's host and to each
+round's channels, a Photon host SHALL keep one for its window, and each shell SHALL arm its window's
+with the app's report and read its tally beside its frame summary.
+
+#### Scenario: Two windows in one process
+
+- **WHEN** a component throws in one window's tree and the other window's tree builds without a failure
+- **THEN** the first window's tally names it and its report hears it, and the second window's tally is
+  empty and its report hears nothing
+
+#### Scenario: A failure inside an escape-hatch page
+
+- **WHEN** a write-once bridge inside an escape-hatch page contains a failure while the server renders it
+- **THEN** it is reported through the request's boundary, as a failure in a write-once page is
