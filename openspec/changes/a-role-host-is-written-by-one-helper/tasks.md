@@ -29,7 +29,7 @@ with `EQ_WIKI_DIR` set as the delivery gives it.
   design.md writes it, and move the width contract's comments there, citing #239, #241 and the two
   suites. Change `LowerMergeSemantics` and `LowerExcludeSemantics` to the new shape. The one-argument
   shape goes
-- [ ] 2.2 Send `LowerProgress`, `LowerAdjustable`, `LowerLiveRegion` and `LowerGroup`
+- [x] 2.2 Send `LowerProgress`, `LowerAdjustable`, `LowerLiveRegion` and `LowerGroup`
   (`WebLoweringVisitor.Interaction.cs`) through it, `Adjustable` with `takesPointer: true`, and delete
   each one's own `Fills`, `CapsAt`, `HtmlStyle` and `aria-label` lines. Verify: the Web suite whole
   passes with the counts of 1.1 plus the rows of 1.2 and 1.3, the component pins hold with no

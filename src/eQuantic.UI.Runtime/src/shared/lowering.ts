@@ -4920,7 +4920,9 @@ function lowerExcludeSemantics(node: ExcludeSemanticsNode, context: LoweringCont
  *
  * What differs is the role's `attributes` (none for the two that bear no role), the accessible `label`,
  * written right after them when it is not empty, and whether the host `takesPointer` (`pointer-events:
- * auto`, the adjustable's). The child is not lowered here. The style's key order is the C# twin's.
+ * auto`, the adjustable's). The child is not lowered here. The style's keys are written in the
+ * order the adjustable's host always had (width, max-width, pointer-events, height), so the order
+ * the atomic rules are first registered in does not move.
  */
 function semanticsHost(
   child: VisualNodeValue,

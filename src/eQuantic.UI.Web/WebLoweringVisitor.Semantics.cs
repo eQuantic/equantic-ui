@@ -51,7 +51,10 @@ internal sealed partial class WebLoweringVisitor
     /// What differs is the role's <paramref name="attributes"/> (none for the two that bear no role),
     /// the accessible <paramref name="label"/>, written right after them when it is not empty, and
     /// whether the host <paramref name="takesPointer"/> (<c>pointer-events: auto</c>), which the one wrapper
-    /// that is a tab stop and operated says. The child is not lowered here, and what a wrapper adds after the host stays with it.
+    /// that is a tab stop and operated says. The helper takes the caller's map OVER: it stores it as the
+    /// host's attributes and writes the accessible name into it, and <c>Progress</c> and
+    /// <c>Adjustable</c> go on writing their value attributes into the same map. The child is not lowered
+    /// here, and what a wrapper adds after the host stays with it.
     /// </para>
     /// </summary>
     private RealizedElement SemanticsHost(

@@ -66,7 +66,20 @@ describe('a role-bearing host has the bounds of what it names', () => {
 
 const cappedTrack = () => ({
   ...hugTrack(),
-  style: { width: { kind: 'fixed', value: 120 }, maxWidth: { kind: 'fixed', value: 200 }, height: { kind: 'fixed', value: 8 } },
+  style: {
+    width: { kind: 'fixed', value: 120 },
+    maxWidth: { kind: 'fixed', value: 200 },
+    height: { kind: 'fixed', value: 8 },
+  },
+});
+
+const fillCappedTrack = () => ({
+  ...hugTrack(),
+  style: {
+    width: { kind: 'fill' },
+    maxWidth: { kind: 'fixed', value: 200 },
+    height: { kind: 'fixed', value: 8 },
+  },
 });
 
 const fillDownTrack = () => ({
@@ -90,7 +103,8 @@ describe('the semantics host takes the child whole contract', () => {
     ['excludeSemantics', (child: unknown) => ({ nodeKind: 'excludeSemantics', child })],
   ] as const) {
     it(`${name} passes the cap and the height through`, () => {
-      const lower = (child: unknown) => styleOf(lowerVisualNode(wrap(child) as unknown as VisualNodeValue, ctx));
+      const lower = (child: unknown) =>
+        styleOf(lowerVisualNode(wrap(child) as unknown as VisualNodeValue, ctx));
       const plain = lower(hugTrack());
 
       expect(plain).toContain('width: fit-content');
@@ -99,6 +113,13 @@ describe('the semantics host takes the child whole contract', () => {
       expect(lower(fillTrack())).toContain('width: 100%');
       expect(lower(cappedTrack())).toContain('max-width: 200px');
       expect(lower(fillDownTrack())).toContain('height: 100%');
+      // The cap goes through on the fill branch too, never one without the other.
+      const fillCapped = lower(fillCappedTrack());
+      expect(fillCapped).toContain('width: 100%');
+      expect(fillCapped).toContain('max-width: 200px');
+      // The pointer is taken by the one wrapper that is a tab stop and operated, and by none of the others.
+      if (name === 'adjustable') expect(plain).toContain('pointer-events: auto');
+      else expect(plain).not.toContain('pointer-events');
     });
   }
 });

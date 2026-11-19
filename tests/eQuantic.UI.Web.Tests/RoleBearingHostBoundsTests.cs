@@ -47,6 +47,9 @@ public class RoleBearingHostBoundsTests
     /// takes only the width would drop (#1517).</summary>
     private static Box CappedTrack() => new(new BoxStyle { Width = 120, MaxWidth = 200, Height = 8 });
 
+    /// <summary>A track that fills across and is capped: the cap goes through on the fill branch too.</summary>
+    private static Box FillCappedTrack() => new(new BoxStyle { Width = SizeValue.Fill, MaxWidth = 200, Height = 8 });
+
     private static Box FillDownTrack() => new(new BoxStyle { Width = 120, Height = SizeValue.Fill });
 
     /// <summary>Every wrapper the semantics host writes: the width contract holds for all six, the role
@@ -111,6 +114,13 @@ public class RoleBearingHostBoundsTests
             .And.NotContain("fit-content");
         capped.Should().Contain("max-width: 200px", $"{name}'s host takes the child's cap through with the width");
         down.Should().Contain("height: 100%", $"{name}'s host fills down when its child does");
+        var fillCapped = Render(wrap(FillCappedTrack())).Attributes.GetValueOrDefault("style", "");
+        fillCapped.Should().Contain("width: 100%").And.Contain("max-width: 200px",
+            $"{name}'s host takes the cap through on the fill branch too, never one without the other");
+
+        // The pointer is taken by the one wrapper that is a tab stop and operated, and by none of the others.
+        if (name == "Adjustable") plain.Should().Contain("pointer-events: auto");
+        else plain.Should().NotContain("pointer-events", $"{name}'s host does not take the pointer");
     }
 
     /// <summary>
