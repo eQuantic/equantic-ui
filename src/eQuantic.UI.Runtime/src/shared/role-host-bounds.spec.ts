@@ -63,3 +63,42 @@ describe('a role-bearing host has the bounds of what it names', () => {
     });
   }
 });
+
+const cappedTrack = () => ({
+  ...hugTrack(),
+  style: { width: { kind: 'fixed', value: 120 }, maxWidth: { kind: 'fixed', value: 200 }, height: { kind: 'fixed', value: 8 } },
+});
+
+const fillDownTrack = () => ({
+  ...hugTrack(),
+  style: { width: { kind: 'fixed', value: 120 }, height: { kind: 'fill' } },
+});
+
+/**
+ * The host takes the child's WHOLE contract (C# cross-pin: RoleBearingHostBoundsTests): the width, the
+ * cap through as `max-width` and a filling height as `height: 100%`, on every wrapper the one host
+ * writes. A host that kept the width and dropped the others passes the suite above (#1517).
+ */
+describe('the semantics host takes the child whole contract', () => {
+  for (const [name, wrap] of [
+    ['progress', (child: unknown) => ({ nodeKind: 'progress', child, label: 'Uploading' })],
+    ['adjustable', (child: unknown) => ({ nodeKind: 'adjustable', child, onAdjust: () => {} })],
+    ['liveRegion', (child: unknown) => ({ nodeKind: 'liveRegion', child, label: 'Upload status' })],
+    ['group', (child: unknown) => ({ nodeKind: 'group', child, label: 'Shipping' })],
+    // These two bear no role: the width contract is all their host is.
+    ['mergeSemantics', (child: unknown) => ({ nodeKind: 'mergeSemantics', child })],
+    ['excludeSemantics', (child: unknown) => ({ nodeKind: 'excludeSemantics', child })],
+  ] as const) {
+    it(`${name} passes the cap and the height through`, () => {
+      const lower = (child: unknown) => styleOf(lowerVisualNode(wrap(child) as unknown as VisualNodeValue, ctx));
+      const plain = lower(hugTrack());
+
+      expect(plain).toContain('width: fit-content');
+      expect(plain).not.toContain('max-width');
+      expect(plain).not.toContain('height');
+      expect(lower(fillTrack())).toContain('width: 100%');
+      expect(lower(cappedTrack())).toContain('max-width: 200px');
+      expect(lower(fillDownTrack())).toContain('height: 100%');
+    });
+  }
+});

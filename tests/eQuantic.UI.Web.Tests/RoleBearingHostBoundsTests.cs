@@ -43,6 +43,24 @@ public class RoleBearingHostBoundsTests
 
     private static Box FillTrack() => new(new BoxStyle { Width = SizeValue.Fill, Height = 8 });
 
+    /// <summary>A track that hugs and is capped, and one that fills down: the two things a host that
+    /// takes only the width would drop (#1517).</summary>
+    private static Box CappedTrack() => new(new BoxStyle { Width = 120, MaxWidth = 200, Height = 8 });
+
+    private static Box FillDownTrack() => new(new BoxStyle { Width = 120, Height = SizeValue.Fill });
+
+    /// <summary>Every wrapper the semantics host writes: the width contract holds for all six, the role
+    /// only for the four that bear one.</summary>
+    public static TheoryData<string, Func<VisualNode, VisualNode>> HostWrappers() => new()
+    {
+        { "Progress", child => new Progress(child) { Label = "Uploading" } },
+        { "Adjustable", child => new Adjustable(child, _ => { }) },
+        { "LiveRegion", child => new LiveRegion(child) { Label = "Upload status" } },
+        { "Group", child => new Group(child) { Label = "Shipping" } },
+        { "MergeSemantics", child => new MergeSemantics(child) },
+        { "ExcludeSemantics", child => new ExcludeSemantics(child) },
+    };
+
     public static TheoryData<string, VisualNode, VisualNode> RoleBearingWrappers() => new()
     {
         { "Progress", new Progress(HugTrack()) { Label = "Uploading" }, new Progress(FillTrack()) },
@@ -71,6 +89,28 @@ public class RoleBearingHostBoundsTests
             + "child's own 100% would resolve against a shrink-to-fit box and collapse");
         fillHost.Attributes.GetValueOrDefault("style", "").Should().NotContain("fit-content",
             "the two are exclusive — a host that said both would be deciding nothing");
+    }
+
+    /// <summary>
+    /// The host takes the child's WHOLE contract, on every wrapper that writes it: the width, the cap
+    /// through as <c>max-width</c> and a filling height as <c>height: 100%</c>. A host that kept the width
+    /// and dropped the others is the half-contract that made the Link diverge, and the suite above reads
+    /// only the width.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(HostWrappers))]
+    public void TheHostTakesTheChildsWholeContract(string name, Func<VisualNode, VisualNode> wrap)
+    {
+        var plain = Render(wrap(HugTrack())).Attributes.GetValueOrDefault("style", "");
+        var capped = Render(wrap(CappedTrack())).Attributes.GetValueOrDefault("style", "");
+        var down = Render(wrap(FillDownTrack())).Attributes.GetValueOrDefault("style", "");
+
+        plain.Should().Contain("width: fit-content", $"{name}'s host hugs a child that hugs")
+            .And.NotContain("max-width").And.NotContain("height");
+        Render(wrap(FillTrack())).Attributes.GetValueOrDefault("style", "").Should().Contain("width: 100%")
+            .And.NotContain("fit-content");
+        capped.Should().Contain("max-width: 200px", $"{name}'s host takes the child's cap through with the width");
+        down.Should().Contain("height: 100%", $"{name}'s host fills down when its child does");
     }
 
     /// <summary>
