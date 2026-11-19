@@ -1,6 +1,1 @@
 #nullable enable
-[EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.PictureFrom(int start) -> eQuantic.UI.Native.Engine.Picture!
-[EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.DrawPicture(eQuantic.UI.Native.Engine.Picture! picture, in eQuantic.UI.Primitives.Matrix2D offset) -> void
-[EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.CurrentTransform.get -> eQuantic.UI.Primitives.Matrix2D
-[EQX0001]eQuantic.UI.Native.Engine.Picture
-[EQX0001]eQuantic.UI.Native.Engine.Picture.Count.get -> int
