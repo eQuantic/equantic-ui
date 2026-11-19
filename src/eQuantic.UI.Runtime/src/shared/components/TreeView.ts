@@ -1,4 +1,4 @@
-import { $eq, Anchored, Box, BoxStyle, BuildContext, Color, ColorToken, ContextRequest, ContextTarget, ControlMetrics, CornerRadii, DateTime, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, ListTheme, MenuItem, MenuPanel, Navigable, NavigableMoveValue, Positioned, Pressable, Row, ScrollRequest, ScrollView, SdkStrings, Shortcut, SizeValue, Sortable, SortableItem, SortDrop, Stack, StatefulComponent, StyleDiff, Text, TextEntry, TreeMove, TreeNode, TreePlace, TreeRowState, TreeViewRow, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, $NavigableMoveValue, Anchored, Box, BoxStyle, BuildContext, Color, ColorToken, ContextRequest, ContextTarget, ControlMetrics, CornerRadii, DateTime, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, ListTheme, MenuItem, MenuPanel, Navigable, Positioned, Pressable, Row, ScrollRequest, ScrollView, SdkStrings, Shortcut, SizeValue, Sortable, SortableItem, SortDrop, Stack, StatefulComponent, StyleDiff, Text, TextEntry, TreeMove, TreeNode, TreePlace, TreeRowState, TreeViewRow, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TreeView extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TreeView';
@@ -859,7 +859,7 @@ export class TreeView extends StatefulComponent {
         return this.setState(() => this._menuKey = null);
     }
 
-    move(move: NavigableMoveValue) {
+    move(move: $NavigableMoveValue) {
         if (this._rows.length === 0) return;
         let at = this.activeIndex();
         if (at < 0) {

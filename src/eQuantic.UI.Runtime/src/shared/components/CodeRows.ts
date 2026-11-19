@@ -1,4 +1,4 @@
-import { $eq, CodeCollapse, CodeFiller, CodeRow, CodeRowKindValue } from "../runtime-exports";
+import { $CodeRowKindValue, $eq, CodeCollapse, CodeFiller, CodeRow } from "../runtime-exports";
 
 export class CodeRows {
     constructor(lineCount: number, fillers: CodeFiller[], collapses: CodeCollapse[]) {
@@ -47,7 +47,7 @@ export class CodeRows {
         this.rowCount = row;
     }
 
-    _kinds!: CodeRowKindValue[];
+    _kinds!: $CodeRowKindValue[];
     _lines!: number[];
     _lineCounts!: number[];
     _rows!: number[];
@@ -57,7 +57,7 @@ export class CodeRows {
     lineCount!: number;
     rowCount!: number;
 
-    add(kind: CodeRowKindValue, line: number, lineCount: number, row: number, rowCount: number, source: number, label: string | null) {
+    add(kind: $CodeRowKindValue, line: number, lineCount: number, row: number, rowCount: number, source: number, label: string | null) {
         $eq.collections.listAdd(this._kinds, kind);
         $eq.collections.listAdd(this._lines, line);
         $eq.collections.listAdd(this._lineCounts, lineCount);

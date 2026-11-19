@@ -1,4 +1,4 @@
-import { Point, PointerKindValue, PointerPhaseValue, Rect, ScrollAxisValue, Size, TableOffset, TableScrollRequest, TableSpans } from "../runtime-exports";
+import { $PointerKindValue, $PointerPhaseValue, $ScrollAxisValue, Point, Rect, Size, TableOffset, TableScrollRequest, TableSpans } from "../runtime-exports";
 
 export class TableScroll {
     constructor() {
@@ -42,7 +42,7 @@ export class TableScroll {
     _barAcross!: boolean;
     _held!: number | null;
     _honoured!: number | null;
-    _dragging!: ScrollAxisValue | null;
+    _dragging!: $ScrollAxisValue | null;
     _grab!: number;
     _panning!: boolean;
     _panAt!: Point;
@@ -126,7 +126,7 @@ export class TableScroll {
         return turned ? new TableOffset(0, leftAcross) : new TableOffset(leftAcross, leftDown);
     }
 
-    pointer(phase: PointerPhaseValue, position: Point, kind: PointerKindValue, time: number) {
+    pointer(phase: $PointerPhaseValue, position: Point, kind: $PointerKindValue, time: number) {
         switch (phase) {
             case 'down':
                 return this.press(position, kind, time);
@@ -202,12 +202,12 @@ export class TableScroll {
         return Math.min(Math.max(past * TableScroll.autoScrollRate, -TableScroll.autoScrollCap), TableScroll.autoScrollCap);
     }
 
-    trackOf(axis: ScrollAxisValue) {
+    trackOf(axis: $ScrollAxisValue) {
         if (axis === 'horizontal') return this._barAcross ? new Rect(0, this._viewport.height, this._viewport.width, TableScroll.thickness) : null;
         return this._barDown ? new Rect(this._viewport.width, 0, TableScroll.thickness, this._viewport.height) : null;
     }
 
-    thumbOf(axis: ScrollAxisValue) {
+    thumbOf(axis: $ScrollAxisValue) {
         let track: any; 
         if (!((track = this.trackOf(axis)) != null)) return null;
         let horizontal = axis === 'horizontal';
@@ -288,10 +288,10 @@ export class TableScroll {
         this._held = null;
     }
 
-    press(at: Point, kind: PointerKindValue, time: number) {
+    press(at: Point, kind: $PointerKindValue, time: number) {
         this._dragging = null;
         this._panning = false;
-        for (const axis of (['vertical', 'horizontal'] as ScrollAxisValue[])) {
+        for (const axis of (['vertical', 'horizontal'] as $ScrollAxisValue[])) {
             let track: any; 
             if (!((track = this.trackOf(axis)) != null) || !TableScroll.contains(track, at)) continue;
             this.letGo();

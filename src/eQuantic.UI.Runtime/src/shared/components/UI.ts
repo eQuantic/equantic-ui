@@ -1,7 +1,7 @@
-import { $eq, AdaptiveNode, Adjustable, AdjustableRoleValue, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, CodeSurface, ColorToken, Column, ContextMenu, ContextRequest, ContextTarget, CookieConsent, CornerRadii, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragAxisValue, DragDismiss, Draggable, Drawer, Drawing, DropTarget, EdgeInsets, EmptyState, ExcludeSemantics, FileUpload, Flexible, Grid, GridTrack, Group, HitTestBehaviorValue, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, Listener, ListItem, ListTheme, ListView, LiveRegion, LiveRegionUrgencyValue, LoopEffectValue, LoopMotion, MainAlignValue, Markdown, MenuItem, MergeSemantics, Mermaid, Navigable, NavigableMoveValue, NavigableRoleValue, NavigationRail, NavItem, OptionGroup, Overlay, PickedFile, Pinned, PointerEvent, Positioned, Presence, PresenceMotionValue, Pressable, PressableRoleValue, Progress, ProgressBar, RangeValue, Row, SafeArea, ScrollAxisValue, ScrollView, SdkStrings, SearchField, SegmentedControl, Select, SheetSurface, Shortcut, Simulated, Size, SizeValue, SizeVariantValue, Skeleton, Slider, Sortable, SortableItem, SortableTheme, SortAnnouncements, SortDrop, Spacer, Spinner, Stack, Stepper, Switch, TableCellRoleValue, TableOffset, TableRange, TableRoleValue, TableScroll, TableScrollRequest, TableSpans, TableView, TableViewCell, TableViewport, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TreeEditRequest, TreeMove, TreeNode, TreeReloadRequest, TreeRowState, TreeView, TypeRoleValue, TypeStyle, UploadedFile, UploadPolicy, VariantValue, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "../runtime-exports";
+import { $AdjustableRoleValue, $AlignmentValue, $CrossAlignValue, $DragAxisValue, $eq, $HitTestBehaviorValue, $IconsValue, $ImageFitValue, $LiveRegionUrgencyValue, $LoopEffectValue, $MainAlignValue, $NavigableMoveValue, $NavigableRoleValue, $PresenceMotionValue, $PressableRoleValue, $ScrollAxisValue, $SizeVariantValue, $TableCellRoleValue, $TableRoleValue, $TextAlignmentValue, $TypeRoleValue, $VariantValue, AdaptiveNode, Adjustable, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, CodeSurface, ColorToken, Column, ContextMenu, ContextRequest, ContextTarget, CookieConsent, CornerRadii, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, DropTarget, EdgeInsets, EmptyState, ExcludeSemantics, FileUpload, Flexible, Grid, GridTrack, Group, Hoverable, Icon, IconButton, IconGlyph, Image, InFlow, InView, KeyChord, Link, ListDetail, Listener, ListItem, ListTheme, ListView, LiveRegion, LoopMotion, Markdown, MenuItem, MergeSemantics, Mermaid, Navigable, NavigationRail, NavItem, OptionGroup, Overlay, PickedFile, Pinned, PointerEvent, Positioned, Presence, Pressable, Progress, ProgressBar, RangeValue, Row, SafeArea, ScrollView, SdkStrings, SearchField, SegmentedControl, Select, SheetSurface, Shortcut, Simulated, Size, SizeValue, Skeleton, Slider, Sortable, SortableItem, SortableTheme, SortAnnouncements, SortDrop, Spacer, Spinner, Stack, Stepper, Switch, TableOffset, TableRange, TableScroll, TableScrollRequest, TableSpans, TableView, TableViewCell, TableViewport, Tabs, Text, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TreeEditRequest, TreeMove, TreeNode, TreeReloadRequest, TreeRowState, TreeView, TypeStyle, UploadedFile, UploadPolicy, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "../runtime-exports";
 
 export class UI {
-    static column(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
+    static column(gap: number = 0, main: $MainAlignValue = 'start', cross: $CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
         let node = new Column(gap, main, cross, wrap, runGap, padding, { width: width, height: height });
         if (children != null) for (const child of children) node.add(child);
         return node;
@@ -19,7 +19,7 @@ export class UI {
         return new Simulated(state, child);
     }
 
-    static row(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'center', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
+    static row(gap: number = 0, main: $MainAlignValue = 'start', cross: $CrossAlignValue = 'center', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
         let node = new Row(gap, main, cross, wrap, runGap, padding, { width: width, height: height });
         if (children != null) for (const child of children) node.add(child);
         return node;
@@ -35,7 +35,7 @@ export class UI {
         return new Canvas(draw, width, height, { onPointerDown: onPointerDown, onPointerMove: onPointerMove, onPointerUp: onPointerUp, onPointerLeave: onPointerLeave, label: label });
     }
 
-    static stack(align: AlignmentValue = 'topStart', width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
+    static stack(align: $AlignmentValue = 'topStart', width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
         let node = new Stack(align, { width: width, height: height });
         if (children != null) for (const child of children) node.add(child);
         return node;
@@ -45,7 +45,7 @@ export class UI {
         return new Box(style, child);
     }
 
-    static text(content: string, role: TypeRoleValue = 'bodyL', color: ColorToken | null = null, maxLines: number = 0, align: TextAlignmentValue = 'start', mono: boolean = false, tabular: boolean = false, styleOverride: TypeStyle | null = null, headingLevel: number = 0) {
+    static text(content: string, role: $TypeRoleValue = 'bodyL', color: ColorToken | null = null, maxLines: number = 0, align: $TextAlignmentValue = 'start', mono: boolean = false, tabular: boolean = false, styleOverride: TypeStyle | null = null, headingLevel: number = 0) {
         return new Text(content, role, color, maxLines, align, mono, tabular, styleOverride, headingLevel);
     }
 
@@ -53,7 +53,7 @@ export class UI {
         return new TextEntry(value, onChanged, { label: label, placeholder: placeholder, disabled: disabled, obscure: obscure });
     }
 
-    static pressable(child: VisualNode, onPressed: (() => void) | null = null, label: string | null = null, selected: boolean | null = null, disabled: boolean = false, expanded: boolean | null = null, role: PressableRoleValue = 'button', canRequestFocus: boolean = true) {
+    static pressable(child: VisualNode, onPressed: (() => void) | null = null, label: string | null = null, selected: boolean | null = null, disabled: boolean = false, expanded: boolean | null = null, role: $PressableRoleValue = 'button', canRequestFocus: boolean = true) {
         return new Pressable(child, onPressed, { label: label, selected: selected, disabled: disabled, expanded: expanded, role: role, canRequestFocus: canRequestFocus });
     }
 
@@ -73,7 +73,7 @@ export class UI {
         return new Drawing(artwork, width, height, tint, label);
     }
 
-    static image(source: string, width: number, height: number, fit: ImageFitValue = 'cover', label: string = '') {
+    static image(source: string, width: number, height: number, fit: $ImageFitValue = 'cover', label: string = '') {
         return new Image(source, width, height, fit, label);
     }
 
@@ -97,17 +97,17 @@ export class UI {
         return new Positioned(child, top, end, bottom, start, { topFraction: topFraction, endFraction: endFraction, bottomFraction: bottomFraction, startFraction: startFraction, shiftX: shiftX, shiftY: shiftY });
     }
 
-    static scrollView(child: VisualNode, axis: ScrollAxisValue = 'vertical', width?: SizeValue, height?: SizeValue) {
+    static scrollView(child: VisualNode, axis: $ScrollAxisValue = 'vertical', width?: SizeValue, height?: SizeValue) {
         return new ScrollView(child, axis, { width: width, height: height });
     }
 
-    static tableViewport(rows: TableSpans, columns: TableSpans, scroll: any, pinnedRows: number = 0, pinnedColumns: number = 0, width?: SizeValue, height?: SizeValue, request: TableScrollRequest | null = null, onScrolled: ((tableOffset: TableOffset) => void) | null = null, onViewportChanged: ((size: Size) => void) | null = null, label: string | null = null, canRequestFocus: boolean = true, role: TableRoleValue = 'group', children: VisualNode[] | null = null) {
+    static tableViewport(rows: TableSpans, columns: TableSpans, scroll: any, pinnedRows: number = 0, pinnedColumns: number = 0, width?: SizeValue, height?: SizeValue, request: TableScrollRequest | null = null, onScrolled: ((tableOffset: TableOffset) => void) | null = null, onViewportChanged: ((size: Size) => void) | null = null, label: string | null = null, canRequestFocus: boolean = true, role: $TableRoleValue = 'group', children: VisualNode[] | null = null) {
         let node = new TableViewport(rows, columns, scroll, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, width: width, height: height, request: request, onScrolled: onScrolled, onViewportChanged: onViewportChanged, label: label, canRequestFocus: canRequestFocus, role: role });
         if (children != null) for (const child of children) node.add((($as: any) => $as instanceof TableViewCell ? $as : null)(child) ?? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'A table viewport places TableViewCells, and nothing else.', { paramName: 'children' })));
         return node;
     }
 
-    static tableViewCell(row: number, column: number, child: VisualNode, mark: boolean = false, rows: number = 1, columns: number = 1, role: TableCellRoleValue = 'cell', selected: boolean = false, current: boolean = false) {
+    static tableViewCell(row: number, column: number, child: VisualNode, mark: boolean = false, rows: number = 1, columns: number = 1, role: $TableCellRoleValue = 'cell', selected: boolean = false, current: boolean = false) {
         return new TableViewCell(row, column, child, mark, { rows: rows, columns: columns, role: role, selected: selected, current: current });
     }
 
@@ -131,7 +131,7 @@ export class UI {
         return new Hoverable(child, onChanged);
     }
 
-    static presence(child: VisualNode, enter: PresenceMotionValue = 'fade') {
+    static presence(child: VisualNode, enter: $PresenceMotionValue = 'fade') {
         return new Presence(child, enter);
     }
 
@@ -147,7 +147,7 @@ export class UI {
         return new Progress(child, { label: label, value: value, valueText: valueText });
     }
 
-    static liveRegion(child: VisualNode, urgency: LiveRegionUrgencyValue = 'polite', label: string = '') {
+    static liveRegion(child: VisualNode, urgency: $LiveRegionUrgencyValue = 'polite', label: string = '') {
         return new LiveRegion(child, { urgency: urgency, label: label });
     }
 
@@ -163,11 +163,11 @@ export class UI {
         return new ExcludeSemantics(child, { excluding: excluding });
     }
 
-    static adjustable(child: VisualNode, onAdjust: (int: number) => void, value: RangeValue | null = null, role: AdjustableRoleValue = 'slider', valueText: string | null = null, axis: DragAxisValue = 'horizontal') {
+    static adjustable(child: VisualNode, onAdjust: (int: number) => void, value: RangeValue | null = null, role: $AdjustableRoleValue = 'slider', valueText: string | null = null, axis: $DragAxisValue = 'horizontal') {
         return new Adjustable(child, onAdjust, { value: value, role: role, valueText: valueText, axis: axis });
     }
 
-    static navigable(onMove: (navigableMove: NavigableMoveValue) => void, rows: VisualNode[], label: string = '', role: NavigableRoleValue = 'grid', hasHeaderRow: boolean = false, activeCell: [number, number] | null = null) {
+    static navigable(onMove: (navigableMove: $NavigableMoveValue) => void, rows: VisualNode[], label: string = '', role: $NavigableRoleValue = 'grid', hasHeaderRow: boolean = false, activeCell: [number, number] | null = null) {
         return new Navigable(onMove, rows, { label: label, role: role, hasHeaderRow: hasHeaderRow, activeCell: activeCell });
     }
 
@@ -183,7 +183,7 @@ export class UI {
         return new CameraPreview(session, width, height, { cornerRadius: cornerRadius, label: label });
     }
 
-    static loopMotion(child: VisualNode, effect: LoopEffectValue, fromX: number, toX: number, durationMs: number, hideAtRest: boolean = false) {
+    static loopMotion(child: VisualNode, effect: $LoopEffectValue, fromX: number, toX: number, durationMs: number, hideAtRest: boolean = false) {
         return new LoopMotion(child, effect, fromX, toX, durationMs, { hideAtRest: hideAtRest });
     }
 
@@ -199,7 +199,7 @@ export class UI {
         return new WebFrame(content, title, { sandbox: sandbox, cornerRadius: cornerRadius });
     }
 
-    static button(label: string, variant: VariantValue = 'primary', size: SizeVariantValue = 'medium', onPressed: (() => void) | null = null) {
+    static button(label: string, variant: $VariantValue = 'primary', size: $SizeVariantValue = 'medium', onPressed: (() => void) | null = null) {
         return new Button(label, variant, size, onPressed);
     }
 
@@ -215,19 +215,19 @@ export class UI {
         return new Chip(label, kind, selected, onPressed, onRemove);
     }
 
-    static badge(count: number = 0, max: number = 99, variant: VariantValue = 'destructive') {
+    static badge(count: number = 0, max: number = 99, variant: $VariantValue = 'destructive') {
         return new Badge(count, max, variant);
     }
 
-    static dotBadge(variant: VariantValue = 'destructive') {
+    static dotBadge(variant: $VariantValue = 'destructive') {
         return Badge.asDot(variant);
     }
 
-    static avatar(initials: string, size: SizeVariantValue = 'medium', name: string | null = null) {
+    static avatar(initials: string, size: $SizeVariantValue = 'medium', name: string | null = null) {
         return new Avatar(initials, size, name);
     }
 
-    static banner(status: VariantValue, title: string, body: string | null = null) {
+    static banner(status: $VariantValue, title: string, body: string | null = null) {
         return new Banner(status, title, body);
     }
 
@@ -239,7 +239,7 @@ export class UI {
         return new Switch(on, onChanged, { label: label, disabled: disabled });
     }
 
-    static slider(value: number, onChanged: ((float: number) => void) | null = null, min: number = 0, max: number = 1, step: number = 0, label: string = '', valueText: string | null = null, disabled: boolean = false, variant: VariantValue = 'primary') {
+    static slider(value: number, onChanged: ((float: number) => void) | null = null, min: number = 0, max: number = 1, step: number = 0, label: string = '', valueText: string | null = null, disabled: boolean = false, variant: $VariantValue = 'primary') {
         return new Slider(value, onChanged, { min: min, max: max, step: step, label: label, valueText: valueText, disabled: disabled, variant: variant });
     }
 
@@ -267,7 +267,7 @@ export class UI {
         return new Select(options, selectedIndex, onChanged, placeholder, groups);
     }
 
-    static textInput(value: string, onChanged: ((string: string) => void) | null = null, label: string = '', placeholder: string | null = null, helper: string | null = null, error: string | null = null, leading: IconsValue | null = null, size: SizeVariantValue = 'large', trailing: VisualNode | null = null) {
+    static textInput(value: string, onChanged: ((string: string) => void) | null = null, label: string = '', placeholder: string | null = null, helper: string | null = null, error: string | null = null, leading: $IconsValue | null = null, size: $SizeVariantValue = 'large', trailing: VisualNode | null = null) {
         return new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing);
     }
 
@@ -275,7 +275,7 @@ export class UI {
         return new SearchField(query, onChanged, placeholder, onSubmit);
     }
 
-    static progressBar(value: number | null = null, variant: VariantValue = 'primary', label: string = '', valueText: string | null = null, prominent: boolean = false) {
+    static progressBar(value: number | null = null, variant: $VariantValue = 'primary', label: string = '', valueText: string | null = null, prominent: boolean = false) {
         return new ProgressBar(value, variant, { label: label, valueText: valueText, prominent: prominent });
     }
 
@@ -295,7 +295,7 @@ export class UI {
         return new CultureSwitcher(options);
     }
 
-    static iconButton(glyph: Icon, label: string, kind: string = 'standard', size: SizeVariantValue = 'medium', onPressed: (() => void) | null = null) {
+    static iconButton(glyph: Icon, label: string, kind: string = 'standard', size: $SizeVariantValue = 'medium', onPressed: (() => void) | null = null) {
         return new IconButton(glyph, label, kind, size, onPressed);
     }
 
@@ -347,7 +347,7 @@ export class UI {
         return new Dialog(title, body, actions, dismissible, onDismiss);
     }
 
-    static toast(message: string, status: VariantValue = 'info', actionLabel: string | null = null, onAction: (() => void) | null = null) {
+    static toast(message: string, status: $VariantValue = 'info', actionLabel: string | null = null, onAction: (() => void) | null = null) {
         return new Toast(message, status, actionLabel, onAction);
     }
 
@@ -359,11 +359,11 @@ export class UI {
         return new Skeleton(shape, width, height);
     }
 
-    static tableView(rows: TableSpans, columns: TableSpans, cellBuilder: (arg1: number, arg2: number) => VisualNode | null, pinnedRows: number = 0, pinnedColumns: number = 0, overscan: number = 3, width?: SizeValue, height?: SizeValue, marks: TableViewCell[] | null = null, request: TableScrollRequest | null = null, onScrolled: ((tableOffset: TableOffset) => void) | null = null, onViewportChanged: ((size: Size) => void) | null = null, label: string | null = null, canRequestFocus: boolean = true, scroll: TableScroll | null = null, role: TableRoleValue = 'group', cellRole: ((arg1: number, arg2: number) => TableCellRoleValue) | null = null, selected: ((arg1: number, arg2: number) => boolean) | null = null, current: TableRange | null = null) {
+    static tableView(rows: TableSpans, columns: TableSpans, cellBuilder: (arg1: number, arg2: number) => VisualNode | null, pinnedRows: number = 0, pinnedColumns: number = 0, overscan: number = 3, width?: SizeValue, height?: SizeValue, marks: TableViewCell[] | null = null, request: TableScrollRequest | null = null, onScrolled: ((tableOffset: TableOffset) => void) | null = null, onViewportChanged: ((size: Size) => void) | null = null, label: string | null = null, canRequestFocus: boolean = true, scroll: TableScroll | null = null, role: $TableRoleValue = 'group', cellRole: ((arg1: number, arg2: number) => $TableCellRoleValue) | null = null, selected: ((arg1: number, arg2: number) => boolean) | null = null, current: TableRange | null = null) {
         return new TableView(rows, columns, cellBuilder, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, overscan: overscan, width: width, height: height, marks: marks, request: request, onScrolled: onScrolled, onViewportChanged: onViewportChanged, label: label, canRequestFocus: canRequestFocus, scroll: scroll, role: role, cellRole: cellRole, selected: selected, current: current });
     }
 
-    static sortable(child: VisualNode, id: string, onDropped: (sortDrop: SortDrop) => void, announcements: SortAnnouncements | null = null, style: SortableTheme | null = null, group: string = '', axis: DragAxisValue = 'vertical', nests: boolean = false, onHovered: ((sortDrop: SortDrop | null) => void) | null = null, accepts: ((value: SortDrop) => boolean) | null = null, enabled: boolean = true, label: string = '') {
+    static sortable(child: VisualNode, id: string, onDropped: (sortDrop: SortDrop) => void, announcements: SortAnnouncements | null = null, style: SortableTheme | null = null, group: string = '', axis: $DragAxisValue = 'vertical', nests: boolean = false, onHovered: ((sortDrop: SortDrop | null) => void) | null = null, accepts: ((value: SortDrop) => boolean) | null = null, enabled: boolean = true, label: string = '') {
         return new Sortable(child, id, onDropped, announcements ?? SdkStrings.sorting, style, { label: label, group: group, axis: axis, nests: nests, onHovered: onHovered, accepts: accepts, enabled: enabled });
     }
 
@@ -379,7 +379,7 @@ export class UI {
         return new ContextTarget(child, onRequested, { enabled: enabled });
     }
 
-    static listener(child: VisualNode, onPointerDown: ((pointerEvent: PointerEvent) => void) | null = null, onPointerMove: ((pointerEvent: PointerEvent) => void) | null = null, onPointerUp: ((pointerEvent: PointerEvent) => void) | null = null, onPointerCancel: ((pointerEvent: PointerEvent) => void) | null = null, onPointerHover: ((pointerEvent: PointerEvent) => void) | null = null, onPointerScroll: ((pointerEvent: PointerEvent) => void) | null = null, behavior: HitTestBehaviorValue = 'deferToChild') {
+    static listener(child: VisualNode, onPointerDown: ((pointerEvent: PointerEvent) => void) | null = null, onPointerMove: ((pointerEvent: PointerEvent) => void) | null = null, onPointerUp: ((pointerEvent: PointerEvent) => void) | null = null, onPointerCancel: ((pointerEvent: PointerEvent) => void) | null = null, onPointerHover: ((pointerEvent: PointerEvent) => void) | null = null, onPointerScroll: ((pointerEvent: PointerEvent) => void) | null = null, behavior: $HitTestBehaviorValue = 'deferToChild') {
         return new Listener(child, { onPointerDown: onPointerDown, onPointerMove: onPointerMove, onPointerUp: onPointerUp, onPointerCancel: onPointerCancel, onPointerHover: onPointerHover, onPointerScroll: onPointerScroll, behavior: behavior });
     }
 

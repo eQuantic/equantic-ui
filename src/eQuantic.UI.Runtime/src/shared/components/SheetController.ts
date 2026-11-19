@@ -1,4 +1,4 @@
-import { $eq, CellRef, CodeCommandValue, CodeDocument, CodeEditorController, CodeGrid, CodeKeymap, CodeRange, DateTime, KeyboardConventionValue, Point, PointerKindValue, PointerPhaseValue, Rect, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetEditModeValue, SheetEntryLanguage, SheetEntryViewValue, SheetFormulaBar, SheetGrid, SheetHistory, SheetKeymap, SheetMotionValue, SheetMoveValue, SheetNameBox, SheetRange, SheetReference, SheetSelection, SheetSummary, Size, TsvCodec } from "../runtime-exports";
+import { $CodeCommandValue, $eq, $KeyboardConventionValue, $PointerKindValue, $PointerPhaseValue, $SheetAxisValue, $SheetEditModeValue, $SheetEntryViewValue, $SheetMotionValue, $SheetMoveValue, CellRef, CodeDocument, CodeEditorController, CodeGrid, CodeKeymap, CodeRange, DateTime, Point, Rect, SheetCellSnapshot, SheetDocument, SheetEdit, SheetEntryLanguage, SheetFormulaBar, SheetGrid, SheetHistory, SheetKeymap, SheetNameBox, SheetRange, SheetReference, SheetSelection, SheetSummary, Size, TsvCodec } from "../runtime-exports";
 
 export class SheetController {
     constructor(rows: number = 1000, cols: number = 26) {
@@ -63,7 +63,7 @@ export class SheetController {
     history!: SheetHistory;
     changed!: ((sheetEdit: SheetEdit) => void) | null;
     refreshed!: (() => void) | null;
-    moved!: SheetMoveValue;
+    moved!: $SheetMoveValue;
     _refreshedActive!: CellRef;
     _refreshedSelection!: SheetRange;
     addingRanges!: boolean;
@@ -78,16 +78,16 @@ export class SheetController {
     _lastInUse!: CellRef;
     editing!: boolean;
     entry!: CodeEditorController;
-    editMode!: SheetEditModeValue;
-    entryView!: SheetEntryViewValue;
+    editMode!: $SheetEditModeValue;
+    entryView!: $SheetEntryViewValue;
     now!: () => DateTime;
     fillSource!: SheetRange | null;
     fillTarget!: SheetRange | null;
     grid!: SheetGrid;
     _selecting!: boolean;
     _tapped!: CellRef | null;
-    _tappedHeader!: [SheetAxisValue | null, number, boolean] | null;
-    _headerDrag!: SheetAxisValue | null;
+    _tappedHeader!: [$SheetAxisValue | null, number, boolean] | null;
+    _headerDrag!: $SheetAxisValue | null;
     _entryPressed!: boolean;
     _slide!: number;
     _rise!: number;
@@ -98,7 +98,7 @@ export class SheetController {
     _focusVersion!: number;
     hasKeyboard!: boolean;
     tabReleased!: boolean;
-    _entryKeysFor!: KeyboardConventionValue | null;
+    _entryKeysFor!: $KeyboardConventionValue | null;
     static fillHandleGrab: number = 8;
 
     get selection(): SheetRange {
@@ -289,7 +289,7 @@ export class SheetController {
         this.setActiveRange(range);
     }
 
-    move(dRow: number, dCol: number, motion: SheetMotionValue = 'cell', extend: boolean = false) {
+    move(dRow: number, dCol: number, motion: $SheetMotionValue = 'cell', extend: boolean = false) {
         let from = extend ? this._selection.focus : this.activeCell;
         let landed = (() => { const $s = motion; if ($s === 'dataEdge') return this.dataEdge(from, dRow, dCol); if ($s === 'rowBoundary') return new CellRef(from.row, dCol < 0 ? 0 : this.document.cols - 1); if ($s === 'sheetBoundary') return dRow < 0 || dCol < 0 ? new CellRef(0, 0) : this.lastCellInUse(); return new CellRef(from.row + dRow, from.col + dCol); })();
         landed = this.document.clamp(landed);
@@ -561,7 +561,7 @@ export class SheetController {
         return this.addingRanges || (modifiers & 4) !== 0;
     }
 
-    beginEdit(seed: string, mode: SheetEditModeValue) {
+    beginEdit(seed: string, mode: $SheetEditModeValue) {
         this.editing = true;
         this.editMode = mode;
         this.entryView = 'cell';
@@ -575,7 +575,7 @@ export class SheetController {
         if (this.editing) this.editMode = 'edit';
     }
 
-    holdEntryIn(view: SheetEntryViewValue) {
+    holdEntryIn(view: $SheetEntryViewValue) {
         this.entryView = view;
         this.useView();
     }
@@ -674,7 +674,7 @@ export class SheetController {
         return true;
     }
 
-    insert(axis: SheetAxisValue, at: number, count: number = 1) {
+    insert(axis: $SheetAxisValue, at: number, count: number = 1) {
         if (count < 1) return;
         let selectionBefore = this.selected();
         if (axis === 'rows') this.document.shiftRows(at, count); else this.document.shiftCols(at, count);
@@ -682,7 +682,7 @@ export class SheetController {
         this.commit(($n3 = new SheetEdit(), $n3.kind = axis === 'rows' ? 'insertRows' : 'insertCols', $n3.at = at, $n3.count = count, $n3.selectionBefore = selectionBefore, $n3.selectionAfter = this.selected(), $n3));
     }
 
-    delete(axis: SheetAxisValue, at: number, count: number = 1) {
+    delete(axis: $SheetAxisValue, at: number, count: number = 1) {
         if (count < 1) return;
         let selectionBefore = this.selected();
         let removed = axis === 'rows' ? this.document.shiftRows(at, -count) : this.document.shiftCols(at, -count);
@@ -692,7 +692,7 @@ export class SheetController {
         this.commit(($n4 = new SheetEdit(), $n4.kind = axis === 'rows' ? 'deleteRows' : 'deleteCols', $n4.at = at, $n4.count = count, $n4.removed = removed, $n4.selectionBefore = selectionBefore, $n4.selectionAfter = this.selected(), $n4));
     }
 
-    resize(axis: SheetAxisValue, index: number, size: number) {
+    resize(axis: $SheetAxisValue, index: number, size: number) {
         let old = axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index);
         if (Math.abs(Math.fround(old - size)) < Math.fround(0.01)) return;
         if (axis === 'rows') this.document.setRowHeight(index, size); else this.document.setColWidth(index, size);
@@ -908,7 +908,7 @@ export class SheetController {
         return this.inEditor(position) ? 'text' : this.onFillHandle(position) ? 'crosshair' : 'default';
     }
 
-    handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any) {
+    handleKey(key: string, modifiers: number, convention: $KeyboardConventionValue, clipboard: any) {
         return SheetKeymap.handle(this, key, modifiers, convention, clipboard);
     }
 
@@ -944,11 +944,11 @@ export class SheetController {
         if (focused) this.tabReleased = false; else if (this.editing && this.entryView === 'cell') this.entry.focusChanged(false);
     }
 
-    static notACellsCommand(command: CodeCommandValue) {
+    static notACellsCommand(command: $CodeCommandValue) {
         return (((((((((((((((command === 'indent' || command === 'outdent') || command === 'toggleLineComment') || command === 'moveLinesUp') || command === 'moveLinesDown') || command === 'copyLinesUp') || command === 'copyLinesDown') || command === 'deleteLines') || command === 'joinLines') || command === 'insertLineAbove') || command === 'insertLineBelow') || command === 'completionShow') || command === 'signatureHelpShow') || command === 'hoverShow') || command === 'problemNext') || command === 'problemPrevious');
     }
 
-    entryKey(key: string, modifiers: number, convention: KeyboardConventionValue) {
+    entryKey(key: string, modifiers: number, convention: $KeyboardConventionValue) {
         if (this._entryKeysFor !== convention) {
             $eq.collections.clear(this.entry.keyBindings);
             for (const binding of $eq.collections.sequenceWalk(CodeKeymap.defaults(convention))) {
@@ -960,7 +960,7 @@ export class SheetController {
         return this.entry.handleKey(key, modifiers, convention, null);
     }
 
-    handlePointer(phase: PointerPhaseValue, position: Point, modifiers: number, clicks: number, kind: PointerKindValue) {
+    handlePointer(phase: $PointerPhaseValue, position: Point, modifiers: number, clicks: number, kind: $PointerKindValue) {
         switch (phase) {
             case 'down':
                 {
@@ -1103,7 +1103,7 @@ export class SheetController {
         return true;
     }
 
-    headerAt(point: Point): [SheetAxisValue | null, number, boolean, boolean] {
+    headerAt(point: Point): [$SheetAxisValue | null, number, boolean, boolean] {
         let overColumns = point.y >= 0 && point.y < this.grid.headerHeight;
         let overRows = point.x >= 0 && point.x < this.grid.headerWidth;
         if (!overColumns && !overRows) return [null, 0, false, false];
@@ -1121,7 +1121,7 @@ export class SheetController {
         return ['rows', row, false, this.grid.resizeGrip > 0 && point.y >= bottom - this.grid.resizeGrip];
     }
 
-    pressHeader(axis: SheetAxisValue | null, index: number, corner: boolean, modifiers: number) {
+    pressHeader(axis: $SheetAxisValue | null, index: number, corner: boolean, modifiers: number) {
         let along: any; 
         if (corner || !((along = axis) != null)) {
             this.selectAll();

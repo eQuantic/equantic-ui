@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, LiveRegion, Row, SizeValue, SizeVariantValue, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
+import { $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, LiveRegion, Row, SizeValue, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
 
 export class TextInput extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TextInput';
@@ -15,7 +15,7 @@ export class TextInput extends StatefulComponent {
     declare error: any;
     declare leading: any;
     declare trailing: any;
-    declare size: SizeVariantValue;
+    declare size: $SizeVariantValue;
 
     get disabled() {
         return this._disabled;

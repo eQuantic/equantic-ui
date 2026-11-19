@@ -1,4 +1,4 @@
-import { $eq, Box, BuildContext, Size, SizeValue, StatefulComponent, TableOffset, TableRoleValue, TableScroll, TableSpans, TableViewCell, TableViewport, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, $TableRoleValue, Box, BuildContext, Size, SizeValue, StatefulComponent, TableOffset, TableScroll, TableSpans, TableViewCell, TableViewport, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TableView extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TableView';
@@ -24,7 +24,7 @@ export class TableView extends StatefulComponent {
     declare label: any;
     declare scroll: any;
     declare canRequestFocus: boolean;
-    declare role: TableRoleValue;
+    declare role: $TableRoleValue;
     declare cellRole: any;
     declare selected: ((arg1: number, arg2: number) => boolean) | null;
     declare current: any;

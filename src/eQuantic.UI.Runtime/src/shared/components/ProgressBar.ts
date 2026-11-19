@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Progress, RangeValue, Row, SizeValue, Spacer, StatefulComponent, UiComponent, VariantValue } from "../runtime-exports";
+import { $eq, $VariantValue, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Progress, RangeValue, Row, SizeValue, Spacer, StatefulComponent, UiComponent } from "../runtime-exports";
 
 export class ProgressBar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.ProgressBar';
@@ -10,7 +10,7 @@ export class ProgressBar extends StatefulComponent {
     _label: string = '';
     _valueText: any = null;
     declare value: any;
-    declare variant: VariantValue;
+    declare variant: $VariantValue;
 
     get prominent() {
         return this._prominent;

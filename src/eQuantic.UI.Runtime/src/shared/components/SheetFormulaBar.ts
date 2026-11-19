@@ -1,4 +1,4 @@
-import { CodeGrid, KeyboardConventionValue, Point, PointerPhaseValue, Rect, SheetController, SheetKeymap, TextReading } from "../runtime-exports";
+import { $KeyboardConventionValue, $PointerPhaseValue, CodeGrid, Point, Rect, SheetController, SheetKeymap, TextReading } from "../runtime-exports";
 
 export class SheetFormulaBar {
     constructor(sheet: SheetController) {
@@ -46,7 +46,7 @@ export class SheetFormulaBar {
         this._sheet.holdEntryIn('formulaBar');
     }
 
-    handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any) {
+    handleKey(key: string, modifiers: number, convention: $KeyboardConventionValue, clipboard: any) {
         if (!this._sheet.editing && (key === 'Tab' || key === 'Escape')) return false;
         if (SheetKeymap.isModifierKey(key)) return false;
         this.take();
@@ -81,7 +81,7 @@ export class SheetFormulaBar {
         return this._sheet.paste(text);
     }
 
-    handlePointer(phase: PointerPhaseValue, position: Point, modifiers: number, clicks: number) {
+    handlePointer(phase: $PointerPhaseValue, position: Point, modifiers: number, clicks: number) {
         {
             const $s = phase;
             if ($s === 'down') {

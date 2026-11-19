@@ -1,4 +1,4 @@
-import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
+import { $CodeTokenKindValue, $eq, CodeDocument, CodeLanguageRules, CodeToken } from "../runtime-exports";
 
 export class XmlLanguage {
     static $interfaces = ['eQuantic.UI.Code.ICodeLanguage'];
@@ -63,7 +63,7 @@ export class XmlLanguage {
             if (CodeDocument.isWordChar(c)) {
                 let end = i;
                 while (end < line.length && (CodeDocument.isWordChar(line[end]) || line[end] === '-' || line[end] === ':')) end++;
-                let kind: CodeTokenKindValue = XmlLanguage.nextNonSpace(line, end) === '=' ? 'property' : 'plain';
+                let kind: $CodeTokenKindValue = XmlLanguage.nextNonSpace(line, end) === '=' ? 'property' : 'plain';
                 $eq.collections.listAdd(into, new CodeToken(i, end - i, kind));
                 i = end;
                 continue;
