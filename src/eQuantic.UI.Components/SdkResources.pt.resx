@@ -339,4 +339,25 @@
   <data name="TableColumns" xml:space="preserve">
     <value>Colunas</value>
   </data>
+  <data name="AmountExpected" xml:space="preserve">
+    <value>Introduza um valor, como {0}</value>
+  </data>
+  <data name="WholeNumberExpected" xml:space="preserve">
+    <value>Introduza um número inteiro, como {0}</value>
+  </data>
+  <data name="ValueBetween" xml:space="preserve">
+    <value>Introduza um valor entre {0} e {1}</value>
+  </data>
+  <data name="ValueAtLeast" xml:space="preserve">
+    <value>Introduza pelo menos {0}</value>
+  </data>
+  <data name="ValueAtMost" xml:space="preserve">
+    <value>Introduza no máximo {0}</value>
+  </data>
+  <data name="NamedWithAffixes" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+  <data name="ValueWithUnit" xml:space="preserve">
+    <value>{0} {1}</value>
+  </data>
 </root>

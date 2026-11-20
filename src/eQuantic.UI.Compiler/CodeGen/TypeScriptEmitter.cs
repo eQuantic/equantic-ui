@@ -282,12 +282,15 @@ public class TypeScriptEmitter
     /// reaches a user as a blank page, never as an error, which is why both import paths consult
     /// this and not just the one that happened to hit it first.
     /// </summary>
-    private static readonly HashSet<string> RuntimeValueTypes = new(StringComparer.Ordinal)
+    internal static readonly IReadOnlySet<string> RuntimeValueTypes = new HashSet<string>(StringComparer.Ordinal)
     {
         "DateTime", "DateOnly", "TimeOnly", "TimeSpan", "DateTimeOffset", "Decimal",
         // The cancellation trio (utils/cancellation.ts): built through `$eq.cancellation`, named by
         // the parameter a provider takes its token in.
         "CancellationToken", "CancellationTokenSource", "CancellationTokenRegistration",
+        // A culture's number format, read through `$eq.text.numberFormat` and named by the parameter a
+        // method takes it in: the culture's data under .NET's names (utils/culture.ts, #1765).
+        "NumberFormatInfo",
     };
 
     /// <summary>

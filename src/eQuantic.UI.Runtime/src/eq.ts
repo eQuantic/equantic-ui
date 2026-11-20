@@ -138,6 +138,7 @@ import {
 import {
   asNumber,
   format,
+  numberFormatInfo,
   recordText,
   recordTextGroup,
   stringFormat,
@@ -543,6 +544,8 @@ export const $eq = {
     /** A text's case and a char's, as .NET changes them, in the page's culture or the invariant one. */
     toUpper,
     toLower,
+    /** `NumberFormatInfo`: the page's culture's, or the invariant one's, as .NET's own object (#1765). */
+    numberFormat: numberFormatInfo,
   },
   /** A dictionary's indexer read, which fails on a missing key the way .NET does, and its write,
    * which answers the value written as C#'s assignment does. */

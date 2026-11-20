@@ -589,6 +589,18 @@ public static class UI
     public static Stepper Stepper(int value, Action<int>? onChanged = null) =>
         new Stepper(value, onChanged);
 
+    /// <summary>An amount of money in a currency's minor units, typed in the culture's way.</summary>
+    public static MoneyInput MoneyInput(long? amount, Action<long?>? onChanged, string label, Currency currency,
+        long? min = null, long? max = null, string? placeholder = null, string? helper = null,
+        string? error = null, SizeVariant size = SizeVariant.Large) =>
+        new MoneyInput(amount, onChanged, label, currency, min, max, placeholder, helper, error, size);
+
+    /// <summary>A whole number with its unit beside it, typed in the culture's way.</summary>
+    public static NumberInput NumberInput(int? value, Action<int?>? onChanged, string label, string unit = "",
+        int? min = null, int? max = null, string? placeholder = null, string? helper = null,
+        string? error = null, SizeVariant size = SizeVariant.Large) =>
+        new NumberInput(value, onChanged, label, unit, min, max, placeholder, helper, error, size);
+
     /// <summary>A date, typed or picked from a calendar.</summary>
     public static DatePicker DatePicker(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
         DateOnly? min = null, DateOnly? max = null, string label = "") =>
@@ -620,8 +632,9 @@ public static class UI
     /// for whatever belongs at the end of the row — a picker's opener, a clear affordance.</summary>
     public static TextInput TextInput(string value, Action<string>? onChanged = null, string label = "",
         string? placeholder = null, string? helper = null, string? error = null,
-        Icons? leading = null, SizeVariant size = SizeVariant.Large, VisualNode? trailing = null) =>
-        new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing);
+        Icons? leading = null, SizeVariant size = SizeVariant.Large, VisualNode? trailing = null,
+        TextEntryKind kind = TextEntryKind.Text, string? prefix = null, string? suffix = null) =>
+        new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing, kind, prefix, suffix);
 
     /// <summary>The search entry. Null placeholder = the SDK's localized default.</summary>
     public static SearchField SearchField(string query, Action<string>? onChanged = null,

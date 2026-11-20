@@ -44,7 +44,7 @@ export class DatePicker extends StatefulComponent {
         let panel = new Box(new BoxStyle({ background: slot?.panelFill ?? theme.surface, cornerRadius: new CornerRadii(slot?.panelRadius ?? theme.shape('medium')), borderWidth: slot?.panelBorderWidth ?? 1, borderColor: slot?.panelBorderColor ?? theme.border, elevation: slot?.panelElevation ?? 2, padding: EdgeInsets.all(slot?.panelPadding ?? 12) }), new Calendar(this.selected, $eq.delegates.bound(this, this.pick), this.min, this.max));
         let opener: VisualNode = new Anchored(new Pressable(new Icon(IconGlyph.fromIcons('calendar'), slot?.openerIconSize ?? 20, slot?.openerColor ?? theme.textSecondary), $eq.delegates.bound(this, this.toggle), { label: SdkStrings.chooseDate, expanded: this._open }), panel, { open: this._open && !this.disabled, onDismiss: $eq.delegates.bound(this, this.close).bind(this), panelRole: 'dialog' });
         opener = new Shortcut(opener, KeyChord.escape, $eq.delegates.bound(this, this.close), { enabled: this._open && !this.disabled });
-        return new TextInput(shown, $eq.delegates.bound(this, this.type), this.label, SdkStrings.dateFormatHint, null, invalid ? SdkStrings.dateFormatHint : null, null, 'large', this.disabled ? null : opener, { disabled: this.disabled });
+        return new TextInput(shown, $eq.delegates.bound(this, this.type), this.label, SdkStrings.dateFormatHint, null, invalid ? SdkStrings.dateFormatHint : null, null, 'large', this.disabled ? null : opener, 'text', null, null, { disabled: this.disabled });
     }
 
     adoptConfig(next: UiComponent) {

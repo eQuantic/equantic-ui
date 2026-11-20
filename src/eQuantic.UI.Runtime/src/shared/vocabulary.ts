@@ -10,7 +10,7 @@
 
 import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { NodeKind } from './node-kinds.generated';
-import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue } from './enums.generated';
+import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue, TextEntryKindValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
 import type { AppTheme, ContextRequest, PointerEvent } from './value-types';
 import { iconPaths } from './icons.generated';
@@ -1235,6 +1235,8 @@ interface TextEntryConfig {
   onFocusChanged?: ((focused: boolean) => void) | null;
   disabled?: boolean;
   obscure?: boolean;
+  /** What the field takes (C# `Kind`). */
+  kind?: TextEntryKindValue;
   role?: string;
   /** Takes focus on mount (the command-palette contract). */
   autofocus?: boolean;
@@ -1260,6 +1262,8 @@ export class TextEntry extends VisualNode {
   onFocusChanged: ((focused: boolean) => void) | null = null;
   disabled = false;
   obscure = false;
+  /** What the field takes: its keyboard, its autofill, and that a value is no prose. */
+  kind: TextEntryKindValue = 'text';
   role = 'bodyL';
   autofocus = false;
   selectOnFocus = false;

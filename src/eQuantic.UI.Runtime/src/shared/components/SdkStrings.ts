@@ -341,6 +341,34 @@ export class SdkStrings {
         return $eq.text.stringFormat($eq.str('SdkResources', 'UnfoldLines'), $eq.text.asNumber(from, 'int32'), $eq.text.asNumber(to, 'int32'));
     }
 
+    static amountExpected(example: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'AmountExpected'), example);
+    }
+
+    static wholeNumberExpected(example: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'WholeNumberExpected'), example);
+    }
+
+    static valueBetween(least: string, most: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'ValueBetween'), least, most);
+    }
+
+    static valueAtLeast(least: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'ValueAtLeast'), least);
+    }
+
+    static valueAtMost(most: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'ValueAtMost'), most);
+    }
+
+    static namedWithAffixes(label: string, affixes: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'NamedWithAffixes'), label, affixes);
+    }
+
+    static valueWithUnit(number: string, unit: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'ValueWithUnit'), number, unit);
+    }
+
     static hint(pattern: string, letters: string) {
         let day = letters.length > 0 ? letters[0] : 'D';
         let month = letters.length > 1 ? letters[1] : 'M';
