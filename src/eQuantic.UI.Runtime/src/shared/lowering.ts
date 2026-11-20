@@ -145,7 +145,7 @@ import type {
   TableViewportNode,
   VisualNodeValue,
 } from './nodes';
-import type { KeyboardConventionValue } from './enums.generated';
+import type { KeyboardConventionValue, TextEntryKindValue } from './enums.generated';
 import { declareShortcut, shortcutMark } from '../dom/shortcuts';
 import { installScrolledController } from './scrolled-pinned';
 import { declareScrollViewport } from './scroll-viewports';
@@ -1824,6 +1824,28 @@ function lowerOverlay(node: OverlayNode, context: LoweringContext, path: string)
   return layer;
 }
 
+/** Each kind's keyboard (`inputmode`) and autofill (`autocomplete`), `text` having neither (C# twin). */
+const ENTRY_KINDS: Readonly<Record<TextEntryKindValue, readonly [string | null, string | null]>> = {
+  text: [null, null],
+  email: ['email', 'email'],
+  phone: ['tel', 'tel'],
+  url: ['url', 'url'],
+  number: ['numeric', null],
+  decimal: ['decimal', null],
+};
+
+/** C# twin (`WriteKind`): what a single-line entry's kind says to the browser, in the server's order.
+ * `inputmode` and not `type`, but for the telephone: `type="email"` and `type="number"` refuse the
+ * selection API `caretAtEnd` and `selectAll` call, and a number input writes only the invariant point. */
+function writeKind(input: HtmlNode, kind: TextEntryKindValue, obscure: boolean): void {
+  const [mode, autofill] = ENTRY_KINDS[kind];
+  if (mode === null) return;
+  input.attributes['inputmode'] = mode;
+  if (autofill !== null && !obscure) input.attributes['autocomplete'] = autofill;
+  input.attributes['spellcheck'] = 'false';
+  input.attributes['autocapitalize'] = 'none';
+}
+
 /** Spec B9/B10 mirror: the REAL chrome-less <input> — identical DOM to the C# SSR realizer, plus
  * the client-only handlers (input → onChanged, Enter → onSubmit, focus/blur → onFocusChanged). */
 function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode {
@@ -1846,8 +1868,10 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
     input.attributes['rows'] = String(lines);
     if (node.value.length > 0) input.children = [textLeaf(node.value)];
   } else {
-    input.attributes['type'] = node.obscure === true ? 'password' : 'text';
+    const kind = node.kind ?? 'text';
+    input.attributes['type'] = node.obscure === true ? 'password' : kind === 'phone' ? 'tel' : 'text';
     input.attributes['value'] = node.value;
+    writeKind(input, kind, node.obscure === true);
   }
   if (node.placeholder != null) input.attributes['placeholder'] = node.placeholder;
   // The accessible NAME — a placeholder vanishes under text, so it never substitutes for one.

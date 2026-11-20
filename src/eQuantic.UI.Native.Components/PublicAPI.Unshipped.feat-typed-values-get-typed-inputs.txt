@@ -1,0 +1,2 @@
+#nullable enable
+[EQX0001]eQuantic.UI.Native.Components.TextInputSession.Kind.get -> eQuantic.UI.Primitives.TextEntryKind

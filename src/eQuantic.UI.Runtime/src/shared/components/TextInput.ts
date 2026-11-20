@@ -1,4 +1,4 @@
-import { $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, LiveRegion, Row, SizeValue, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
+import { $eq, $SizeVariantValue, $TextEntryKindValue, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, LiveRegion, Row, SizeValue, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
 
 export class TextInput extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TextInput';
@@ -16,6 +16,9 @@ export class TextInput extends StatefulComponent {
     declare leading: any;
     declare trailing: any;
     declare size: $SizeVariantValue;
+    declare kind: $TextEntryKindValue;
+    declare prefix: any;
+    declare suffix: any;
 
     get disabled() {
         return this._disabled;
@@ -49,7 +52,7 @@ export class TextInput extends StatefulComponent {
         this._onFocusChanged = value;
     }
 
-    constructor(value?: any, onChanged: any = null, label: any = '', placeholder: any = null, helper: any = null, error: any = null, leading: any = null, size: any = 'large', trailing: any = null, props?: any) {
+    constructor(value?: any, onChanged: any = null, label: any = '', placeholder: any = null, helper: any = null, error: any = null, leading: any = null, size: any = 'large', trailing: any = null, kind: any = 'text', prefix: any = null, suffix: any = null, props?: any) {
         super();
         if (value !== undefined) this.value = value;
         if (onChanged !== undefined) this.onChanged = onChanged;
@@ -60,7 +63,11 @@ export class TextInput extends StatefulComponent {
         if (leading !== undefined) this.leading = leading;
         if (size !== undefined) this.size = size;
         if (trailing !== undefined) this.trailing = trailing;
+        if (kind !== undefined) this.kind = kind;
+        if (prefix !== undefined) this.prefix = prefix;
+        if (suffix !== undefined) this.suffix = suffix;
         if (this.size === undefined) this.size = 'small';
+        if (this.kind === undefined) this.kind = 'text';
         if (size === 'small') throw $eq.exceptions.create(['System.ArgumentOutOfRangeException', 'System.ArgumentException', 'System.SystemException', 'System.Exception'], 'TextInput has no Small size — text + padding can\'t fit 32dp (spec B9).', { paramName: 'size' });
         this.value = value;
         this.onChanged = onChanged;
@@ -71,6 +78,9 @@ export class TextInput extends StatefulComponent {
         this.leading = leading;
         this.trailing = trailing;
         this.size = size;
+        this.kind = kind;
+        this.prefix = prefix;
+        this.suffix = suffix;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
@@ -91,13 +101,17 @@ export class TextInput extends StatefulComponent {
         if ((leading = this.leading) != null) {
             row.add(new Icon(IconGlyph.fromIcons(leading), slot?.iconSize ?? 20, theme.textMuted));
         }
+        let prefix: any; 
+        if ((($0) => (($0 != null && $0.length > 0) && (prefix = $0, true)))(this.prefix)) row.add(TextInput.affix(prefix, theme));
         row.add(new Flexible(new TextEntry(this.value, this.onChanged == null ? null : (value: string) => {
             this.value = value;
             this.onChanged?.(value);
-        }, { placeholder: this.placeholder, label: this.label.length > 0 ? this.label : null, description: caption.length > 0 ? caption : null, invalid: hasError, disabled: this.disabled, obscure: this.obscure, autofocus: this.autofocus, onFocusChanged: (focused: boolean) => {
+        }, { placeholder: this.placeholder, label: this.accessibleName(), kind: this.kind, description: caption.length > 0 ? caption : null, invalid: hasError, disabled: this.disabled, obscure: this.obscure, autofocus: this.autofocus, onFocusChanged: (focused: boolean) => {
             this.setState(() => this._focused = focused);
             this.onFocusChanged?.(focused);
         } }), 1));
+        let suffix: any; 
+        if ((($0) => (($0 != null && $0.length > 0) && (suffix = $0, true)))(this.suffix)) row.add(TextInput.affix(suffix, theme));
         let trailing: any; 
         if ((trailing = this.trailing) != null) {
             row.add(trailing);
@@ -125,10 +139,23 @@ export class TextInput extends StatefulComponent {
         this.leading = fresh.leading;
         this.trailing = fresh.trailing;
         this.size = fresh.size;
+        this.kind = fresh.kind;
+        this.prefix = fresh.prefix;
+        this.suffix = fresh.suffix;
         this._disabled = fresh.disabled;
         this._autofocus = fresh.autofocus;
         this._obscure = fresh.obscure;
         this._onFocusChanged = fresh.onFocusChanged;
+    }
+
+    static affix(text: string, theme: any) {
+        return new Text(text, 'bodyL', theme.textMuted, 1);
+    }
+
+    accessibleName() {
+        if (this.label.length === 0) return null;
+        let affixes = (this.prefix ?? '') + ((($0) => ($0 != null && $0.length > 0))(this.prefix) && (($0) => ($0 != null && $0.length > 0))(this.suffix) ? ' ' : '') + (this.suffix ?? '');
+        return affixes.length > 0 ? `${this.label} (${affixes})` : this.label;
     }
 }
 
