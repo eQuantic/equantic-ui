@@ -16,11 +16,11 @@ public sealed class AmountDriver
 {
     private static readonly IAppTheme Theme = PhotonTheme.Instance;
 
-    private readonly string _culture;
+    private readonly CultureInfo _culture;
     private readonly Func<object?, UiComponent> _make;
     private readonly List<long?> _handed = [];
 
-    private AmountDriver(string culture, Func<AmountDriver, object?, UiComponent> make, object? initial)
+    private AmountDriver(CultureInfo culture, Func<AmountDriver, object?, UiComponent> make, object? initial)
     {
         _culture = culture;
         _make = value => make(this, value);
@@ -34,10 +34,19 @@ public sealed class AmountDriver
 
     public static AmountDriver Money(string culture, long? amount, Currency currency, long? min = null,
         long? max = null, string? error = null, bool disabled = false) =>
+        Money(new CultureInfo(culture), amount, currency, min, max, error, disabled);
+
+    /// <summary>A money field under a culture of the caller's own, the fixture's data on the host's name.</summary>
+    public static AmountDriver Money(CultureInfo culture, long? amount, Currency currency, long? min = null,
+        long? max = null, string? error = null, bool disabled = false) =>
         new(culture, (driver, value) => new MoneyInput(value is null ? null : Convert.ToInt64(value, CultureInfo.InvariantCulture), handed => driver._handed.Add(handed), "Price", currency,
             min, max, error: error) { Disabled = disabled }, amount);
 
     public static AmountDriver Number(string culture, int? value, string unit, int? min = null, int? max = null) =>
+        Number(new CultureInfo(culture), value, unit, min, max);
+
+    /// <summary>A number field under a culture of the caller's own.</summary>
+    public static AmountDriver Number(CultureInfo culture, int? value, string unit, int? min = null, int? max = null) =>
         new(culture, (driver, number) => new NumberInput(number is null ? null : Convert.ToInt32(number, CultureInfo.InvariantCulture), handed => driver._handed.Add(handed), "Price", unit,
             min, max), value);
 
@@ -106,11 +115,12 @@ public sealed class AmountDriver
         throw new InvalidOperationException("the entry sits alone");
     }
 
-    public static T Under<T>(string culture, Func<T> body)
+    public static T Under<T>(string culture, Func<T> body) => Under(new CultureInfo(culture), body);
+
+    public static T Under<T>(CultureInfo asked, Func<T> body)
     {
         var previousFormat = CultureInfo.CurrentCulture;
         var previousUi = CultureInfo.CurrentUICulture;
-        var asked = new CultureInfo(culture);
         try
         {
             CultureInfo.CurrentCulture = asked;
@@ -124,7 +134,7 @@ public sealed class AmountDriver
         }
     }
 
-    private static void Under(string culture, Action body) => Under(culture, () =>
+    private static void Under(CultureInfo culture, Action body) => Under(culture, () =>
     {
         body();
         return 0;

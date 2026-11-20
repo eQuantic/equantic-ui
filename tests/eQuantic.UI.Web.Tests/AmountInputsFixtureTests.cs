@@ -14,6 +14,12 @@ namespace eQuantic.UI.Web.Tests;
 /// the DOM. A PIN: the file is compared with what the C# answers now, and written only with
 /// <c>EQ_UPDATE_AMOUNT_FIXTURE=1</c>, so a change of behaviour on this side is reviewed in the fixture's diff
 /// before the other side is held to it.
+/// <para>
+/// The C# answers under the fixture's OWN number formats, as the browser does, never the host's: each host
+/// reads its cultures from its own ICU, and ja-JP's currency symbol is <c>¥</c> on one and the full-width
+/// <c>￥</c> on another, so a pin over the host's data failed on every machine but the one that wrote it. The
+/// host's data is read once, when the fixture is written.
+/// </para>
 /// </summary>
 public class AmountInputsFixtureTests
 {
@@ -44,11 +50,16 @@ public class AmountInputsFixtureTests
 
     private static readonly long[] Amounts = [0, 5, 1250, 123450, -123450, 123456789012];
 
-    private static Dictionary<string, object> Fixture() =>
-        AmountInputsTests.Cultures.ToDictionary(culture => culture, culture => (object)new Dictionary<string, object>
+    /// <summary>The fixture, its cultures built by <paramref name="cultureOf"/>: the host's own when the
+    /// fixture is written, the fixture's data when it is compared.</summary>
+    private static Dictionary<string, object> Fixture(Func<string, CultureInfo> cultureOf) =>
+        AmountInputsTests.Cultures.ToDictionary(name => name, name => (object)Case(cultureOf(name)));
+
+    private static Dictionary<string, object> Case(CultureInfo culture) =>
+        new()
         {
             // The culture's number format, as the server sends it: the rest of what it sends is no field's.
-            ["numberFormat"] = JsonDocument.Parse(CultureFormatBridge.SerializeJson(new CultureInfo(culture)))
+            ["numberFormat"] = JsonDocument.Parse(CultureFormatBridge.SerializeJson(culture))
                 .RootElement.GetProperty("numberFormat"),
             ["formats"] = new[] { Currency.Euro, Currency.Yen, Currency.SwissFranc }.SelectMany(currency => Amounts.Select(amount =>
                 new Dictionary<string, object>
@@ -58,9 +69,35 @@ public class AmountInputsFixtureTests
                     ["text"] = AmountDriver.Under(culture, () => currency.Format(amount)),
                 })).ToList(),
             ["scripts"] = Scripts.Select(script => Run(culture, script)).ToList(),
-        });
+        };
 
-    private static Dictionary<string, object?> Run(string culture, Script script)
+    /// <summary>
+    /// The culture <paramref name="name"/> with the number format the fixture recorded for it: a writable copy
+    /// of the host's, every scalar and group size set from the file, by .NET's own names.
+    /// </summary>
+    private static CultureInfo Recorded(string name, JsonElement numberFormat)
+    {
+        var culture = (CultureInfo)(name.Length == 0 ? CultureInfo.InvariantCulture : new CultureInfo(name)).Clone();
+        var format = (NumberFormatInfo)culture.NumberFormat.Clone();
+        foreach (var member in numberFormat.EnumerateObject())
+        {
+            var property = typeof(NumberFormatInfo).GetProperty(member.Name,
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.IgnoreCase)
+                ?? throw new InvalidOperationException($"the fixture names {member.Name}, which NumberFormatInfo has not");
+            object value = member.Value.ValueKind switch
+            {
+                JsonValueKind.String => member.Value.GetString()!,
+                JsonValueKind.Number => member.Value.GetInt32(),
+                JsonValueKind.Array => member.Value.EnumerateArray().Select(size => size.GetInt32()).ToArray(),
+                _ => throw new InvalidOperationException($"{member.Name} is {member.Value.ValueKind}"),
+            };
+            property.SetValue(format, value);
+        }
+        culture.NumberFormat = format;
+        return culture;
+    }
+
+    private static Dictionary<string, object?> Run(CultureInfo culture, Script script)
     {
         var currency = new[] { Currency.Euro, Currency.Yen, Currency.SwissFranc }.FirstOrDefault(c => c.Code == script.Code);
         var driver = script.Kind == "money"
@@ -105,15 +142,19 @@ public class AmountInputsFixtureTests
     public void TheTwinsFixture_IsWhatTheServerAnswers()
     {
         var path = FixturePath();
-        var written = FixtureJson.Write(Fixture(), FixtureJson.Readable);
         if (Environment.GetEnvironmentVariable(UpdateVariable) == "1")
         {
-            File.WriteAllText(path, written);
+            File.WriteAllText(path, FixtureJson.Write(Fixture(name => new CultureInfo(name)), FixtureJson.Readable));
             return;
         }
 
         File.Exists(path).Should().BeTrue($"the twin replays this fixture: write it with {UpdateVariable}=1");
-        File.ReadAllText(path).Should().Be(written,
+        var committed = File.ReadAllText(path);
+        using var recorded = JsonDocument.Parse(committed);
+        var cultures = recorded.RootElement.EnumerateObject()
+            .ToDictionary(culture => culture.Name, culture => culture.Value.GetProperty("numberFormat").Clone());
+        cultures.Keys.Should().BeEquivalentTo(AmountInputsTests.Cultures, "every culture the drivers probe is in the fixture");
+        committed.Should().Be(FixtureJson.Write(Fixture(name => Recorded(name, cultures[name])), FixtureJson.Readable),
             $"the C# answers differently from the fixture the browser is held to: read the diff, then regenerate with {UpdateVariable}=1");
     }
 }
