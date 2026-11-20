@@ -395,9 +395,10 @@ internal sealed partial class EmitVisitor
 
     /// <summary>
     /// The style a box paints with this frame: its own, with each active state's diff laid over it
-    /// in the handoff's order — its own hover, then its control's focus, then its control's press,
-    /// so a press beats a focus and a focus beats a hover, member by member, as the web's selectors
-    /// do by specificity (#508). A state is active when the host tracks it (the hover chain by position,
+    /// in the handoff's order — its header's scroll, then its own hover, then its control's focus,
+    /// then its control's press, so a press beats a focus, a focus beats a hover and a hover beats
+    /// the scroll, member by member, as the web's selectors do by specificity (#508, #1769). A state
+    /// is active when the host tracks it (the hover chain by position,
     /// the control's scope for focus and press) or a <see cref="Simulated"/> node pictures it. One
     /// answer for both halves of the box, the wrapper that fades and moves it and the chrome that
     /// fills, borders and shadows it, so the two cannot disagree about what state the box is in.
@@ -406,6 +407,9 @@ internal sealed partial class EmitVisitor
     {
         var press = s.Press;
         var style = box.Style;
+        // The nearest header's scroll, under every state of the box's own and its control's (#1769).
+        if (box.Style.Scrolled is { IsEmpty: false } scrolled && press.InScrolledHeader)
+            style = Over(style, scrolled);
         // Inside an enabled control the hover is the control's; elsewhere it is the box's own (#614).
         if (box.Style.Hover is { IsEmpty: false } hover
             && ((press.ControlHovered ?? press.IsHovered(s.Node, box))
