@@ -519,6 +519,43 @@ function symbols(): PictureSymbols {
   return found;
 }
 
+/** What `NumberFormatInfo` reads for a culture whose data did not travel, by locale. */
+const numberFormatsByLocale = new Map<string, NumberFormatData>();
+
+/**
+ * `NumberFormatInfo.CurrentInfo` and `CultureInfo.CurrentCulture.NumberFormat` (`invariant` false), and
+ * the invariant culture's (`invariant` true): the object the culture travels as, whose members are .NET's
+ * own under their own names (#1765). For a culture whose data did not travel, the separators and signs
+ * `Intl` writes in its locale and the invariant culture's patterns, which is how `C` is laid out then.
+ */
+export function numberFormatInfo(invariant: boolean): NumberFormatData {
+  if (invariant) return INVARIANT_FORMAT.numberFormat;
+  const data = cultureFormat();
+  if (data !== null) return data.numberFormat;
+  const locale = activeFormatLocale();
+  const known = numberFormatsByLocale.get(locale);
+  if (known !== undefined) return known;
+  const { decimal, group, groupSizes, minus, plus, percent, perMille } = symbols();
+  const found: NumberFormatData = {
+    ...INVARIANT_FORMAT.numberFormat,
+    numberDecimalSeparator: decimal,
+    numberGroupSeparator: group,
+    numberGroupSizes: [...groupSizes],
+    negativeSign: minus,
+    positiveSign: plus,
+    currencyDecimalSeparator: decimal,
+    currencyGroupSeparator: group,
+    currencyGroupSizes: [...groupSizes],
+    percentSymbol: percent,
+    percentDecimalSeparator: decimal,
+    percentGroupSeparator: group,
+    percentGroupSizes: [...groupSizes],
+    perMilleSymbol: perMille,
+  };
+  numberFormatsByLocale.set(locale, found);
+  return found;
+}
+
 /** The sign a rounded number is written with: a zero keeps one only where its type does. */
 function signOf(number: Numeric, minus: string): string {
   return number.exact.negative && (number.signedZero || !isZero(number.exact)) ? minus : '';

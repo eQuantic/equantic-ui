@@ -233,6 +233,17 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
     /// <summary>Emission template ({0}, {1}, … are the converted arguments), or null = fenced.</summary>
     private static string? MethodTable(SpecialType home, string name, int argCount, bool indexed)
     {
+        // A decimal is the runtime's Decimal, which rounds itself to whole units in any of .NET's
+        // directions, the scale .NET keeps included: decimal's and Math's Truncate, Floor and Ceiling
+        // (#1765, where a money field asks whether an amount has more digits than its currency).
+        if (home == SpecialType.System_Decimal)
+            return (name, argCount) switch
+            {
+                ("Truncate", 1) => "{0}.round(0, 'toZero')",
+                ("Floor", 1) => "{0}.round(0, 'toNegativeInfinity')",
+                ("Ceiling", 1) => "{0}.round(0, 'toPositiveInfinity')",
+                _ => null,
+            };
         if (home == SpecialType.System_Single && SingleTable(name, argCount) is { } single) return single;
         if (IsFloating(home))
         {

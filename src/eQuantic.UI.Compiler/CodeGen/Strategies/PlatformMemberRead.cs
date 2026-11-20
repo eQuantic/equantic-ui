@@ -28,6 +28,20 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// </summary>
 internal static class PlatformMemberRead
 {
+    /// <summary>The scalar members of <c>NumberFormatInfo</c> the culture's data carries by their names.
+    /// Only read: a write would change the culture every formatter of the page reads. Declared before
+    /// <see cref="CarriedByName"/>, which reads it as the type is initialized.</summary>
+    private static readonly string[] NumberFormatMembers =
+    [
+        "NumberDecimalSeparator", "NumberGroupSeparator", "NumberDecimalDigits", "NumberNegativePattern",
+        "NegativeSign", "PositiveSign",
+        "CurrencySymbol", "CurrencyDecimalSeparator", "CurrencyGroupSeparator", "CurrencyDecimalDigits",
+        "CurrencyPositivePattern", "CurrencyNegativePattern",
+        "PercentSymbol", "PercentDecimalSeparator", "PercentGroupSeparator", "PercentDecimalDigits",
+        "PercentPositivePattern", "PercentNegativePattern", "PerMilleSymbol",
+        "PositiveInfinitySymbol", "NegativeInfinitySymbol",
+    ];
+
     /// <summary>
     /// The members the browser reads by their own name, each by the type that declares it first (an
     /// override is its root's), with what carries it.
@@ -52,7 +66,12 @@ internal static class PlatformMemberRead
         // The pair a dictionary yields, which $eq.collections.pair makes.
         ("System.Collections.Generic.KeyValuePair`2", "Key"),
         ("System.Collections.Generic.KeyValuePair`2", "Value"),
+        // A culture's number format, which travels under .NET's names (utils/culture.ts, #1765): its
+        // scalars. Not its group sizes, which .NET hands out as a copy and the browser would hand out as
+        // the culture's own array, nor NaNSymbol, whose twin name is not the one the data carries.
+        .. NumberFormatMembers.Select(member => ("System.Globalization.NumberFormatInfo", member)),
     ];
+
 
     /// <summary>
     /// Reports EQ2004 and answers true when <paramref name="symbol"/>, read at <paramref name="node"/>,
@@ -68,10 +87,18 @@ internal static class PlatformMemberRead
     internal static bool ReportIfUntranslated(ISymbol? symbol, SyntaxNode node, ConversionContext context)
     {
         if (IsFromRefusedRead(node, context)) return false;
-        if (!NothingCarries(symbol)) return false;
+        var written = !NothingCarries(symbol);
+        if (written && !(IsWritten(node) && IsReadOnlyCarried(symbol))) return false;
 
         var read = context.SemanticHelper.Original(node);
         context.RefusedReads.Add(read);
+        if (written)
+        {
+            context.Report(read, ConversionSeverity.Error, "EQ2004",
+                $"'{symbol!.ContainingType.ToDisplayString()}.{symbol.Name}' is read in the browser and never written: "
+                + "the culture's number format is the object every formatter of the page reads.");
+            return true;
+        }
         context.Report(read, ConversionSeverity.Error, "EQ2004", symbol!.ContainingType.IsPackages()
             ? $"'{symbol.ContainingType.ToDisplayString()}.{symbol.Name}' has no JavaScript translation: "
                 + $"{symbol.ContainingType.PackageReason()}, so the read would name a class nothing defines. "
@@ -120,6 +147,29 @@ internal static class PlatformMemberRead
         return symbol is IPropertySymbol { IsStatic: true } or IFieldSymbol { IsStatic: true, HasConstantValue: false }
             && symbol.ContainingType.IsPackages()
             && ReportIfUntranslated(symbol, node, context);
+    }
+
+    /// <summary>Whether a member carried by its name is carried for reading only: a culture's number
+    /// format, whose object every formatter of the page reads.</summary>
+    private static bool IsReadOnlyCarried(ISymbol? symbol) =>
+        symbol is IPropertySymbol && Root(symbol).Type == "System.Globalization.NumberFormatInfo";
+
+    /// <summary>Whether <paramref name="node"/> is written: the left of an assignment, simple or compound,
+    /// the operand of an increment or a decrement, or an argument passed by <c>ref</c> or <c>out</c>.</summary>
+    private static bool IsWritten(SyntaxNode node)
+    {
+        var place = node;
+        while (place.Parent is ParenthesizedExpressionSyntax) place = place.Parent;
+        return place.Parent switch
+        {
+            AssignmentExpressionSyntax assignment => assignment.Left == place,
+            PrefixUnaryExpressionSyntax unary => unary.IsKind(SyntaxKind.PreIncrementExpression)
+                || unary.IsKind(SyntaxKind.PreDecrementExpression),
+            PostfixUnaryExpressionSyntax unary => unary.IsKind(SyntaxKind.PostIncrementExpression)
+                || unary.IsKind(SyntaxKind.PostDecrementExpression),
+            ArgumentSyntax argument => !argument.RefKindKeyword.IsKind(SyntaxKind.None),
+            _ => false,
+        };
     }
 
     internal static bool IsFromRefusedRead(SyntaxNode node, ConversionContext context)
