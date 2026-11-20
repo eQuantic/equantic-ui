@@ -59,6 +59,7 @@ import {
   CONTROL_FOCUS,
   CONTROL_HOVER,
   CONTROL_PRESSED,
+  HEADER_SCROLLED,
   ensureAdaptiveGate,
   gateCompactUntil,
   gateExpandedFrom,
@@ -3726,6 +3727,12 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
   if (focus && !(simulatedState & SIMULATED_FOCUSED)) appendDiff(result, CONTROL_FOCUS, focus, style);
   if (pressed && !(simulatedState & SIMULATED_PRESSED))
     appendDiff(result, CONTROL_PRESSED, pressed, style);
+  // The HEADER's scroll (C# twin, #1769): a rule on the nearest header's attribute, which the
+  // controller sets, so a header with no scrolled style of its own is tracked as soon as a box asks.
+  if (style.scrolled) {
+    appendDiff(result, HEADER_SCROLLED, style.scrolled, style);
+    installScrolledController();
+  }
 
   if (box.child) {
     const child = lowerNode(box.child, context, null, path + '/0');

@@ -9,7 +9,7 @@
 
 import type { AppTheme, ColorToken } from './value-types';
 import { getPhotonTheme } from './photon-context';
-import { SCROLLED_MARKER } from './markers';
+import { PINNED_MARKER, SCROLLED_MARKER } from './markers';
 import { createStyleElement } from '../utils/page-nonce';
 import type { HtmlNode } from '../core/types';
 import { reachedInto } from './lowered-records';
@@ -483,10 +483,19 @@ export const CONTROL_FOCUS = 'focus';
 export const CONTROL_PRESSED = 'pressed';
 
 /**
+ * The family of a HEADER's scroll: a box's `scrolled` diff applies while the nearest pinned header
+ * around it carries SCROLLED_MARKER (C# `StyleSink.HeaderScrolled`, #1769). Not `scrolled`, the
+ * header's own rule's hash (atomizeScrolled): one class names one rule.
+ */
+export const HEADER_SCROLLED = 'header-scrolled';
+
+/**
  * The C# `StyleSink.StateSelector`: a hover is the box's own pseudo-class, and a focus and a press
  * are its control's, selecting every box inside an enabled control in that state and not a box of a
  * control nested in it (#616). Specificity orders them (hover 0,2,0 under focus 0,3,0 under pressed
  * 0,4,0), never their order in the sheet; the nesting rule rides in a `:where()`, which weighs nothing.
+ * A header's scroll is (0,1,1), over the resting class and under all three, and is the nearest
+ * header's: exact for a header nested in another, as the C# twin says (#1769).
  */
 export function stateSelector(family: string, className: string): string {
   // (0,2,0), the weight of the box's own :hover it stands for (C# twin, #614).
@@ -501,6 +510,11 @@ export function stateSelector(family: string, className: string): string {
     return (
       `.eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .${className}` +
       `:not(:where(.eq-pressable:not(:active) .${className}))`
+    );
+  if (family === HEADER_SCROLLED)
+    return (
+      `html :where([${SCROLLED_MARKER}]) .${className}` +
+      `:not(:where([${SCROLLED_MARKER}] [${PINNED_MARKER}]:not([${SCROLLED_MARKER}]) .${className}))`
     );
   return `.${className}${family}`;
 }

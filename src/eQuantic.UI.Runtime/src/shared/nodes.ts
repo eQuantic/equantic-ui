@@ -287,6 +287,8 @@ export interface BoxStyleValue {
   focus?: StyleDiffValue | null;
   /** Style diff while the control the box is inside is pressed (C# `BoxStyle.Pressed`). */
   pressed?: StyleDiffValue | null;
+  /** Style diff while the nearest pinned header around the box is scrolled (C# `BoxStyle.Scrolled`, #1769). */
+  scrolled?: StyleDiffValue | null;
   /** CSS cursor mirror — the C# PointerCursor member name in camelCase ('crosshair', 'colResize'). */
   cursor?: string;
 }

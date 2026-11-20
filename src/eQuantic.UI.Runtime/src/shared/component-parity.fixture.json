@@ -973,6 +973,43 @@
       ]
     }
   ],
+  "header-scrolled-boxes": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1xlbso6 eq-1yhij0h eq-2jl817",
+        "data-eq-pinned": "1"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-179up68 eq-1a36kfj eq-1awcttm eq-1bl8m2b eq-1eb13m5 eq-1yxcnfo eq-bo3n4y eq-kngwsg"
+              },
+              "events": [],
+              "children": []
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-12ve49g eq-1eb13m5 eq-1eoeorz eq-1su9m49 eq-bo3n4y eq-g7fowl eq-gvrheo eq-va9mrb"
+              },
+              "events": [],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "box-hover-border-edge": [
     {
       "tag": "div",

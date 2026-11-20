@@ -129,6 +129,21 @@ public class ComponentParityFixtureTests
             },
             Transition = new TransitionSpec(StyleChannels.Colors),
         }, NoPresses),
+        // The boxes inside a header follow its scroll (#1769), on a header with no scrolled style of
+        // its own: the header-scrolled family, beside a hover on the same fill.
+        ("header-scrolled-boxes", new Pinned(Stack(0,
+            new Box(new BoxStyle
+            {
+                Width = 96, Height = 96,
+                Transition = new TransitionSpec(StyleChannels.Opacity | StyleChannels.Transform),
+                Scrolled = new StyleDiff { Opacity = 0, Transform = Transform2D.Scale(0.6f) },
+            }),
+            new Box(new BoxStyle
+            {
+                Width = 80, Height = 32, Background = Theme.SurfaceSubtle,
+                Scrolled = new StyleDiff { Background = Theme.Surface },
+                Hover = new StyleDiff { Background = Theme.SurfaceHighlight },
+            }))), NoPresses),
         // The same builder writes a hover border along the edges the box draws, and a width alone
         // in the base's colour, as Photon draws them (#506).
         ("box-hover-border-edge", new Box(new BoxStyle
