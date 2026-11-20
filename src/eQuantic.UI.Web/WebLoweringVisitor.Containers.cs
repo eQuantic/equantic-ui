@@ -954,6 +954,11 @@ internal sealed partial class WebLoweringVisitor
             if (simulated.HasFlag(SimulatedState.Pressed)) ApplyDiff(element.Style, pressed, box.Style);
             else AppendDiff(element, StyleSink.ControlPressed, pressed, box.Style);
         }
+        // The HEADER's scroll (#1769): the nearest pinned header around the box decides, whoever
+        // lowers it, so it is a rule on the header's attribute and never a flag of this walk, which a
+        // component boundary would hide. Its weight puts it under the three above.
+        if (box.Style.Scrolled is { IsEmpty: false } headerScrolled)
+            AppendDiff(element, StyleSink.HeaderScrolled, headerScrolled, box.Style);
 
         if (box.Child is not null && Lower(box.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
         {
