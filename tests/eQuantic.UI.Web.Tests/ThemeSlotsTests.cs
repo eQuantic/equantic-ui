@@ -55,6 +55,7 @@ public class ThemeSlotsTests
         [nameof(IAppTheme.Badge)] = "badge",
         [nameof(IAppTheme.Calendar)] = "calendar",
         [nameof(IAppTheme.Markdown)] = "markdown",
+        [nameof(IAppTheme.Sortable)] = "sortable",
     };
 
     /// <summary>
@@ -544,6 +545,7 @@ public class ThemeSlotsTests
         public BadgeTheme? Badge => inner.Badge;
         public CalendarTheme? Calendar => inner.Calendar;
         public MarkdownTheme? Markdown => inner.Markdown;
+        public SortableTheme? Sortable => inner.Sortable;
         public ColorToken Code(CodeTokenKind kind) => inner.Code(kind);
         public float DisabledOpacity => inner.DisabledOpacity;
         public VariantColors Colors(Variant variant) => inner.Colors(variant);
@@ -593,6 +595,8 @@ public class ThemeSlotsTests
         public BadgeTheme? Badge => inner.Badge;
         public CalendarTheme? Calendar => inner.Calendar;
         public MarkdownTheme? Markdown => inner.Markdown;
+        // PhotonTheme sets no look of a carried item (#1602), so this theme answers one to be carried across.
+        public SortableTheme? Sortable => new() { LiftedOpacity = 0.25f, CopyElevation = 5 };
         public ColorToken Code(CodeTokenKind kind) => new(Color.FromRgb(0x11, 0x22, (byte)kind));
         public float DisabledOpacity => inner.DisabledOpacity;
         public VariantColors Colors(Variant variant) => inner.Colors(variant);

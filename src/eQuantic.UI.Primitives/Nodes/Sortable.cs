@@ -22,13 +22,21 @@ public sealed class Sortable : SingleChildNode
 {
     public override string NodeKind => "sortable";
 
-    public Sortable(VisualNode child, string id, Action<SortDrop> onDropped, SortAnnouncements? announcements = null)
+    public Sortable(VisualNode child, string id, Action<SortDrop> onDropped, SortAnnouncements? announcements = null,
+        SortableTheme? style = null)
         : base(child)
     {
         Id = id;
         OnDropped = onDropped;
         Announcements = announcements;
+        Style = style;
     }
+
+    /// <summary>The look of an item carried from this list (#1602), laid over the theme's
+    /// (<see cref="IAppTheme.Sortable"/>) member by member, on every target: the item dimmed in its place, the copy
+    /// that follows a pointer, its shadow and how far it leans. Null takes the theme's look. A carried item keeps
+    /// the look of the list it was picked up from, in every list of the group.</summary>
+    public SortableTheme? Style { get; init; }
 
     /// <summary>What a reader hears while an item of this list is sorted by the keyboard: how to, and each step,
     /// on every target, in the words of the list the item was picked up from. <c>UI.Sortable</c> gives the SDK's

@@ -1,4 +1,4 @@
-import { $eq } from "../runtime-exports";
+import { $eq, SortableTheme } from "../runtime-exports";
 
 export class SortPlacement {
     static tiltPerSpeed: number = 8;
@@ -10,9 +10,16 @@ export class SortPlacement {
     static edgeStep: number = 14;
     static liftedOpacity: number = 0.4;
     static copyOpacity: number = 0.92;
-    static copyShadowOffsetY: number = 12;
-    static copyShadowBlur: number = 28;
-    static copyShadowAlpha: number = 0.28;
+    static copyElevation: number = 4;
+
+    static look(theme: SortableTheme | null, own: SortableTheme | null) {
+        let look = SortableTheme.merge(theme, own);
+        return new SortableTheme({ liftedOpacity: SortPlacement.opacity(look?.liftedOpacity ?? Math.fround(SortPlacement.liftedOpacity)), copyOpacity: SortPlacement.opacity(look?.copyOpacity ?? Math.fround(SortPlacement.copyOpacity)), copyElevation: look?.copyElevation ?? SortPlacement.copyElevation, maxLean: look?.maxLean ?? SortPlacement.tiltMax });
+    }
+
+    static opacity(value: number) {
+        return Math.min(1, Math.max(0, value));
+    }
 
     static place(starts: number[], extents: number[], at: number, nests: boolean): [number, number] {
         for (let i = 0; i < $eq.collections.count(starts); i++) {
@@ -24,11 +31,12 @@ export class SortPlacement {
         return [$eq.collections.count(starts), -1];
     }
 
-    static tilt(across: number, milliseconds: number) {
+    static tilt(across: number, milliseconds: number, most: number) {
         if (milliseconds <= 0) return null;
+        if (most <= 0) return 0;
         let angle = Math.fround(-Math.fround(across / milliseconds) * SortPlacement.tiltPerSpeed);
-        if (angle > SortPlacement.tiltMax) return SortPlacement.tiltMax;
-        if (angle < -SortPlacement.tiltMax) return -SortPlacement.tiltMax;
+        if (angle > most) return most;
+        if (angle < -most) return -most;
         return angle === 0 ? 0 : angle;
     }
 

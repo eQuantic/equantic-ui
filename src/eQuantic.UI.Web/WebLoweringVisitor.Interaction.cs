@@ -1142,6 +1142,17 @@ internal sealed partial class WebLoweringVisitor
             child.RawAttributes["data-eq-sort-say-dropped-into"] = words.DroppedInto;
             child.RawAttributes["data-eq-sort-say-put-back"] = words.PutBack;
         }
+        // The list's own look of a carried item (#1602), each member it sets, which the controller lays over the
+        // browser's theme when it lifts an item from this list (SortPlacement.Look, the arithmetic both targets
+        // run). A list with no style of its own writes none, and takes the theme's.
+        if (sortable.Style is { } own)
+        {
+            if (own.LiftedOpacity is { } lifted) child.RawAttributes["data-eq-sort-look-lifted"] = TokenCss.Number(lifted);
+            if (own.CopyOpacity is { } copy) child.RawAttributes["data-eq-sort-look-copy-opacity"] = TokenCss.Number(copy);
+            if (own.CopyElevation is { } level)
+                child.RawAttributes["data-eq-sort-look-copy-elevation"] = level.ToString(CultureInfo.InvariantCulture);
+            if (own.MaxLean is { } lean) child.RawAttributes["data-eq-sort-look-lean"] = TokenCss.Number(lean);
+        }
         child.CustomEvents["eq-sort-dropped"] = ClientDispatches;
         if (sortable.OnHovered is not null) child.CustomEvents["eq-sort-hovered"] = ClientDispatches;
         if (sortable.Accepts is not null) child.CustomEvents["eq-sort-accepts"] = ClientDispatches;

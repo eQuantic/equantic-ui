@@ -1,0 +1,33 @@
+#nullable enable
+eQuantic.UI.Primitives.Sortable.Sortable(eQuantic.UI.Primitives.VisualNode! child, string! id, System.Action<eQuantic.UI.Primitives.SortDrop!>! onDropped, eQuantic.UI.Primitives.SortAnnouncements? announcements = null, eQuantic.UI.Primitives.SortableTheme? style = null) -> void
+eQuantic.UI.Primitives.Sortable.Style.get -> eQuantic.UI.Primitives.SortableTheme?
+eQuantic.UI.Primitives.Sortable.Style.init -> void
+const eQuantic.UI.Primitives.SortPlacement.CopyElevation = 4 -> int
+static eQuantic.UI.Primitives.SortPlacement.Look(eQuantic.UI.Primitives.SortableTheme? theme, eQuantic.UI.Primitives.SortableTheme? own) -> eQuantic.UI.Primitives.SortableTheme!
+static eQuantic.UI.Primitives.SortPlacement.Tilt(float across, float milliseconds, float most) -> float?
+static eQuantic.UI.Primitives.AppThemeExtensions.With(this eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ControlsTheme? controls = null, eQuantic.UI.Primitives.ButtonTheme? button = null, eQuantic.UI.Primitives.IconButtonTheme? iconButton = null, eQuantic.UI.Primitives.InputTheme? input = null, eQuantic.UI.Primitives.SelectionControlsTheme? selectionControls = null, eQuantic.UI.Primitives.SegmentedTheme? segmented = null, eQuantic.UI.Primitives.ChipTheme? chip = null, eQuantic.UI.Primitives.ModalTheme? modal = null, eQuantic.UI.Primitives.MenuTheme? menu = null, eQuantic.UI.Primitives.NoticeTheme? notice = null, eQuantic.UI.Primitives.ProgressTheme? progress = null, eQuantic.UI.Primitives.CardTheme? card = null, eQuantic.UI.Primitives.NavigationTheme? navigation = null, eQuantic.UI.Primitives.ListTheme? list = null, eQuantic.UI.Primitives.TableTheme? table = null, eQuantic.UI.Primitives.BadgeTheme? badge = null, eQuantic.UI.Primitives.CalendarTheme? calendar = null, eQuantic.UI.Primitives.MarkdownTheme? markdown = null, eQuantic.UI.Primitives.SortableTheme? sortable = null) -> eQuantic.UI.Primitives.IAppTheme!
+eQuantic.UI.Primitives.IAppTheme.Sortable.get -> eQuantic.UI.Primitives.SortableTheme?
+eQuantic.UI.Primitives.SortableTheme
+eQuantic.UI.Primitives.SortableTheme.<Clone>$() -> eQuantic.UI.Primitives.SortableTheme!
+eQuantic.UI.Primitives.SortableTheme.Equals(eQuantic.UI.Primitives.SortableTheme? other) -> bool
+eQuantic.UI.Primitives.SortableTheme.SortableTheme() -> void
+override eQuantic.UI.Primitives.SortableTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.SortableTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.SortableTheme.ToString() -> string!
+static eQuantic.UI.Primitives.SortableTheme.operator !=(eQuantic.UI.Primitives.SortableTheme? left, eQuantic.UI.Primitives.SortableTheme? right) -> bool
+static eQuantic.UI.Primitives.SortableTheme.operator ==(eQuantic.UI.Primitives.SortableTheme? left, eQuantic.UI.Primitives.SortableTheme? right) -> bool
+eQuantic.UI.Primitives.SortableTheme.LiftedOpacity.get -> float?
+eQuantic.UI.Primitives.SortableTheme.LiftedOpacity.init -> void
+eQuantic.UI.Primitives.SortableTheme.CopyOpacity.get -> float?
+eQuantic.UI.Primitives.SortableTheme.CopyOpacity.init -> void
+eQuantic.UI.Primitives.SortableTheme.CopyElevation.get -> int?
+eQuantic.UI.Primitives.SortableTheme.CopyElevation.init -> void
+eQuantic.UI.Primitives.SortableTheme.MaxLean.get -> float?
+eQuantic.UI.Primitives.SortableTheme.MaxLean.init -> void
+static eQuantic.UI.Primitives.SortableTheme.Merge(eQuantic.UI.Primitives.SortableTheme? under, eQuantic.UI.Primitives.SortableTheme? over) -> eQuantic.UI.Primitives.SortableTheme?
+*REMOVED*eQuantic.UI.Primitives.Sortable.Sortable(eQuantic.UI.Primitives.VisualNode! child, string! id, System.Action<eQuantic.UI.Primitives.SortDrop!>! onDropped, eQuantic.UI.Primitives.SortAnnouncements? announcements = null) -> void
+*REMOVED*static eQuantic.UI.Primitives.AppThemeExtensions.With(this eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ControlsTheme? controls = null, eQuantic.UI.Primitives.ButtonTheme? button = null, eQuantic.UI.Primitives.IconButtonTheme? iconButton = null, eQuantic.UI.Primitives.InputTheme? input = null, eQuantic.UI.Primitives.SelectionControlsTheme? selectionControls = null, eQuantic.UI.Primitives.SegmentedTheme? segmented = null, eQuantic.UI.Primitives.ChipTheme? chip = null, eQuantic.UI.Primitives.ModalTheme? modal = null, eQuantic.UI.Primitives.MenuTheme? menu = null, eQuantic.UI.Primitives.NoticeTheme? notice = null, eQuantic.UI.Primitives.ProgressTheme? progress = null, eQuantic.UI.Primitives.CardTheme? card = null, eQuantic.UI.Primitives.NavigationTheme? navigation = null, eQuantic.UI.Primitives.ListTheme? list = null, eQuantic.UI.Primitives.TableTheme? table = null, eQuantic.UI.Primitives.BadgeTheme? badge = null, eQuantic.UI.Primitives.CalendarTheme? calendar = null, eQuantic.UI.Primitives.MarkdownTheme? markdown = null) -> eQuantic.UI.Primitives.IAppTheme!
+*REMOVED*static eQuantic.UI.Primitives.SortPlacement.Tilt(float across, float milliseconds) -> float?
+*REMOVED*const eQuantic.UI.Primitives.SortPlacement.CopyShadowAlpha = 0.28 -> double
+*REMOVED*const eQuantic.UI.Primitives.SortPlacement.CopyShadowBlur = 28 -> float
+*REMOVED*const eQuantic.UI.Primitives.SortPlacement.CopyShadowOffsetY = 12 -> float

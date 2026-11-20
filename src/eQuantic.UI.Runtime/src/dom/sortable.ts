@@ -16,6 +16,9 @@
 import { SortPlacement } from '../shared/components/SortPlacement';
 import { SortWords } from '../shared/components/SortWords';
 import { SortAnnouncements, SortDrop } from '../shared/value-types';
+import { SortableTheme } from '../shared/theme-slots';
+import { getPhotonTheme } from '../shared/photon-context';
+import { num, tokenValue } from '../shared/css-values';
 import { activeItemOf } from './active-item';
 import { followPointer, pointerDownDelegate } from './pointer-gesture';
 import { holdShortcuts } from './shortcuts';
@@ -77,6 +80,8 @@ function onPointerDown(down: PointerEvent): void {
   let frame = 0;
   let movedAt = performance.now();
   const leans = !prefersReducedMotion();
+  // One carry, one look: the item is carried as the list it was picked up from says, over every list of the group.
+  const look = lookOf(source);
 
   const report = (list: HTMLElement, drop: SortDrop | null): void => {
     list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: drop }));
@@ -145,7 +150,7 @@ function onPointerDown(down: PointerEvent): void {
         : (ev) => Math.hypot(ev.clientX - down.clientX, ev.clientY - down.clientY) > SortPlacement.pickUpTravel,
     holdMs: down.pointerType === 'touch' ? SortPlacement.holdMs : undefined,
     armed: () => {
-      copy = lift(item);
+      copy = lift(item, look);
       releaseShortcuts = holdShortcuts();
       host.addEventListener('keydown', escape, true);
       frame = requestAnimationFrame(scroll);
@@ -156,7 +161,7 @@ function onPointerDown(down: PointerEvent): void {
       if (copy) {
         copy.style.transform = `translate(${ev.clientX - down.clientX}px, ${ev.clientY - down.clientY}px)`;
         if (leans) {
-          const angle = SortPlacement.tilt(ev.clientX - pointer.x, now - movedAt);
+          const angle = SortPlacement.tilt(ev.clientX - pointer.x, now - movedAt, look.maxLean ?? SortPlacement.tiltMax);
           if (angle !== null) copy.style.setProperty('rotate', `${angle}deg`);
         }
       }
@@ -177,8 +182,40 @@ function onPointerDown(down: PointerEvent): void {
   });
 }
 
-/** The copy that follows the pointer, laid over the item where it stands, and the item dimmed under it. */
-function lift(item: HTMLElement): HTMLElement {
+/** The list's own look of a carried item (#1602), each member its lowering wrote; null for a list with none. */
+function ownLookOf(list: HTMLElement): SortableTheme | null {
+  // A member it does not say, or says as no number, is the theme's.
+  const read = (name: string): number | null => {
+    const value = list.getAttribute(name)?.trim();
+    const number = value ? Number(value) : Number.NaN;
+    return Number.isFinite(number) ? number : null;
+  };
+  const liftedOpacity = read('data-eq-sort-look-lifted');
+  const copyOpacity = read('data-eq-sort-look-copy-opacity');
+  const copyElevation = read('data-eq-sort-look-copy-elevation');
+  const maxLean = read('data-eq-sort-look-lean');
+  return liftedOpacity === null && copyOpacity === null && copyElevation === null && maxLean === null
+    ? null
+    : new SortableTheme({ liftedOpacity, copyOpacity, copyElevation, maxLean });
+}
+
+/** The look of an item carried from a list (#1602): the browser's theme's, the list's own over it, and the defaults
+ * where neither says, by the arithmetic both targets run. Every member of the answer is set. */
+function lookOf(list: HTMLElement): SortableTheme {
+  return SortPlacement.look(getPhotonTheme().sortable ?? null, ownLookOf(list));
+}
+
+/** The copy's shadow: the theme's for the look's elevation level, in the C# `TokenCss.Shadow` spelling. */
+function shadowOf(level: number): string {
+  const spec = getPhotonTheme().elevation(level);
+  return spec.blur === 0 && spec.offsetY === 0 && spec.spread === 0
+    ? 'none'
+    : `0 ${num(spec.offsetY)}px ${num(spec.blur)}px ${num(spec.spread)}px ${tokenValue(spec.color)}`;
+}
+
+/** The copy that follows the pointer, laid over the item where it stands, and the item dimmed under it, as the
+ * look says. */
+function lift(item: HTMLElement, look: SortableTheme): HTMLElement {
   const box = item.getBoundingClientRect();
   const copy = item.cloneNode(true) as HTMLElement;
   // A copy is a picture: no id answers twice, and nothing in it is a list or an item of its own.
@@ -202,15 +239,15 @@ function lift(item: HTMLElement): HTMLElement {
     margin: '0',
     pointerEvents: 'none',
     zIndex: '2147483000',
-    opacity: String(SortPlacement.copyOpacity),
-    boxShadow: `0 ${SortPlacement.copyShadowOffsetY}px ${SortPlacement.copyShadowBlur}px rgba(0, 0, 0, ${SortPlacement.copyShadowAlpha})`,
+    opacity: num(look.copyOpacity ?? SortPlacement.copyOpacity),
+    boxShadow: shadowOf(look.copyElevation ?? SortPlacement.copyElevation),
     cursor: 'grabbing',
     // The lean is the individual `rotate`, apart from the `transform` that places the copy, so easing it
     // never makes the copy trail the pointer.
     transition: 'rotate 0.1s ease-out',
   });
   item.ownerDocument.body.appendChild(copy);
-  item.style.opacity = String(SortPlacement.liftedOpacity);
+  item.style.opacity = num(look.liftedOpacity ?? SortPlacement.liftedOpacity);
   item.setAttribute('data-eq-sort-lifted', '');
   return copy;
 }
@@ -424,7 +461,8 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement, fromComposite: 
       : say(moved, name, index + 1, countIn(list), labelOf(list));
   };
 
-  item.style.opacity = String(SortPlacement.liftedOpacity);
+  // The keyboard's carry dims the item as the list it was picked up from says, and draws no copy.
+  item.style.opacity = num(lookOf(source).liftedOpacity ?? SortPlacement.liftedOpacity);
   item.setAttribute('data-eq-sort-lifted', '');
   list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: dropAt(list, index) }));
   announce(say(words?.pickedUp, name, index + 1, countIn(list), labelOf(list)));

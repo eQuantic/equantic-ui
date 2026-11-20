@@ -14,6 +14,8 @@ import { SortAnnouncements, type SortDrop } from '../shared/value-types';
 import { SdkStrings } from '../shared/components/SdkStrings';
 import { SortPlacement } from '../shared/components/SortPlacement';
 import { SortWords } from '../shared/components/SortWords';
+import { AppThemeExtensions, SortableTheme } from '../shared/theme-slots';
+import { num, tokenValue } from '../shared/css-values';
 import { resetSortableController } from './sortable';
 
 setPhotonTheme(photonTheme);
@@ -34,6 +36,8 @@ class Board extends StatefulComponent {
     private readonly words: SortAnnouncements | null = SdkStrings.sorting,
     // The done column's own words, when a test gives it words of its own.
     private readonly doneWords: SortAnnouncements | null | undefined = undefined,
+    // The todo column's own look of a carried card (#1602).
+    private readonly style: SortableTheme | null = null,
   ) {
     super();
   }
@@ -47,7 +51,7 @@ class Board extends StatefulComponent {
         list.add(item as never);
       }
       const words = id === 'done' && this.doneWords !== undefined ? this.doneWords : this.words;
-      return new Sortable(list as never, id, (drop: SortDrop) => dropped.push(drop), words, {
+      return new Sortable(list as never, id, (drop: SortDrop) => dropped.push(drop), words, id === 'todo' ? this.style : null, {
         group: this.group,
         nests: this.nests,
         label: id === 'todo' ? 'To do' : 'Done',
@@ -58,7 +62,7 @@ class Board extends StatefulComponent {
     row.add(column('todo', ['a', 'b', 'c', 'locked-1']) as never);
     row.add(column('done', this.doneCards) as never);
     row.add(
-      new Sortable(new Column(0) as never, 'other', (drop: SortDrop) => dropped.push(drop), this.words, {
+      new Sortable(new Column(0) as never, 'other', (drop: SortDrop) => dropped.push(drop), this.words, null, {
         group: 'else',
       }) as never,
     );
@@ -183,6 +187,71 @@ describe('lists a pointer sorts', () => {
     expect(dropped[0].index).toBe(0);
   });
 
+  describe('the look of a carried card (#1602)', () => {
+    afterEach(() => setPhotonTheme(photonTheme));
+
+    /** The theme's shadow for a level, in the spelling the controller writes. */
+    const shadowFor = (level: number): string => {
+      const spec = photonTheme.elevation(level);
+      return `0 ${num(spec.offsetY)}px ${num(spec.blur)}px ${num(spec.spread)}px ${tokenValue(spec.color)}`;
+    };
+
+    /** Carries card a fast to the right, leaving the pointer down, and answers the copy. */
+    const carryFast = (container: HTMLElement): HTMLElement => {
+      pointer(item(container, 'a'), 'pointerdown', 10, 20);
+      pointer(document, 'pointermove', 20, 20);
+      pointer(document, 'pointermove', 120, 20);
+      return document.body.lastElementChild as HTMLElement;
+    };
+
+    it("takes the defaults where neither the theme nor the list says, the theme's level 4 shadow included", () => {
+      const container = mount(new Board());
+      const copy = carryFast(container);
+      expect(item(container, 'a').style.opacity).toBe('0.4');
+      expect(copy.style.opacity).toBe('0.92');
+      expect(copy.getAttribute('style')).toContain(`box-shadow: ${shadowFor(4)}`);
+      pointer(document, 'pointerup', 120, 20);
+    });
+
+    it("is the theme's, with the list's own laid over it member by member", () => {
+      setPhotonTheme(
+        // Every slot before the sortable one left as the theme has it.
+        AppThemeExtensions.with(photonTheme, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, new SortableTheme({
+          liftedOpacity: 0.25,
+          copyOpacity: 0.7,
+          copyElevation: 5,
+          maxLean: 6,
+        })),
+      );
+      const container = mount(new Board(false, null, 'board', [], null, SdkStrings.sorting, undefined,
+        new SortableTheme({ copyOpacity: 0.5 })));
+      const copy = carryFast(container);
+      expect(item(container, 'a').style.opacity).toBe('0.25');
+      expect(copy.style.opacity).toBe('0.5');
+      expect(copy.getAttribute('style')).toContain(`box-shadow: ${shadowFor(5)}`);
+      // Fast to the right leans the copy back, no further than the theme's most.
+      expect(copy.style.getPropertyValue('rotate')).toBe('-6deg');
+      pointer(document, 'pointerup', 120, 20);
+    });
+
+    it("takes the theme's member where a list's element says no number", () => {
+      const container = mount(new Board(false, null, 'board', [], null, SdkStrings.sorting, undefined,
+        new SortableTheme({ liftedOpacity: 0.25 })));
+      container.querySelector('[data-eq-sort-id="todo"]')!.setAttribute('data-eq-sort-look-lifted', ' ');
+      carryFast(container);
+      expect(item(container, 'a').style.opacity).toBe('0.4');
+      pointer(document, 'pointerup', 120, 20);
+    });
+
+    it("keeps the copy upright where the list's look leans no further", () => {
+      const container = mount(new Board(false, null, 'board', [], null, SdkStrings.sorting, undefined,
+        new SortableTheme({ maxLean: 0 })));
+      const copy = carryFast(container);
+      expect(copy.style.getPropertyValue('rotate')).toBe('0deg');
+      pointer(document, 'pointerup', 120, 20);
+    });
+  });
+
   it('asks the guard, and drops nothing on a refused place', () => {
     const container = mount(new Board(false, 'locked'));
     drag(container, 'locked-1', [[220, 130], [250, 20]]);
@@ -260,10 +329,10 @@ describe('lists a pointer sorts', () => {
   });
 
   it("leans the copy against the pointer's speed across, up to 12 degrees, as the Space's board does", () => {
-    expect(SortPlacement.tilt(10, 10)).toBe(-8);
-    expect(SortPlacement.tilt(-40, 10)).toBe(12);
-    expect(SortPlacement.tilt(0, 16)).toBe(0);
-    expect(SortPlacement.tilt(5, 0)).toBeNull();
+    expect(SortPlacement.tilt(10, 10, SortPlacement.tiltMax)).toBe(-8);
+    expect(SortPlacement.tilt(-40, 10, SortPlacement.tiltMax)).toBe(12);
+    expect(SortPlacement.tilt(0, 16, SortPlacement.tiltMax)).toBe(0);
+    expect(SortPlacement.tilt(5, 0, SortPlacement.tiltMax)).toBeNull();
 
     let now = 1000;
     const clock = vi.spyOn(performance, 'now').mockImplementation(() => now);

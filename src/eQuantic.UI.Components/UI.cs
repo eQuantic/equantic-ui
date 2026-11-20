@@ -823,12 +823,13 @@ public static class UI
 
     /// <summary>A list whose items a pointer and the keyboard put in order, and which takes the items of the lists
     /// of its group; the drop is the app's to apply (#1535). Each step of the keyboard's is said in
-    /// <paramref name="announcements"/>, the SDK's words in the reader's culture when the app gives none (#1564).</summary>
+    /// <paramref name="announcements"/>, the SDK's words in the reader's culture when the app gives none (#1564), and a
+    /// carried item looks as <paramref name="style"/> says over the theme's look (#1602).</summary>
     public static Sortable Sortable(VisualNode child, string id, Action<SortDrop> onDropped,
-        SortAnnouncements? announcements = null, string group = "", DragAxis axis = DragAxis.Vertical,
-        bool nests = false, Action<SortDrop?>? onHovered = null, Func<SortDrop, bool>? accepts = null,
-        bool enabled = true, string label = "") =>
-        new Sortable(child, id, onDropped, announcements ?? SdkStrings.Sorting)
+        SortAnnouncements? announcements = null, SortableTheme? style = null, string group = "",
+        DragAxis axis = DragAxis.Vertical, bool nests = false, Action<SortDrop?>? onHovered = null,
+        Func<SortDrop, bool>? accepts = null, bool enabled = true, string label = "") =>
+        new Sortable(child, id, onDropped, announcements ?? SdkStrings.Sorting, style)
         {
             Label = label,
             Group = group,

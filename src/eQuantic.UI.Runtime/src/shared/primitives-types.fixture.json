@@ -222,6 +222,7 @@
   "SortWords",
   "Sortable",
   "SortableItem",
+  "SortableTheme",
   "Space",
   "Spacer",
   "Spinner",

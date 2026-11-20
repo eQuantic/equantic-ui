@@ -28,6 +28,7 @@ import type {
   ProgressTheme,
   SegmentedTheme,
   SelectionControlsTheme,
+  SortableTheme,
   TableTheme,
 } from './theme-slots';
 import { hashesByValue } from '../utils/hash';
@@ -707,6 +708,8 @@ export interface AppTheme {
   calendar?: CalendarTheme | null;
   /** The rendered document's slot (C# `IAppTheme.Markdown`), absent or null for each component's own defaults. */
   markdown?: MarkdownTheme | null;
+  /** The look of an item carried in a sortable list (#1602); null, `SortPlacement`'s defaults. */
+  sortable?: SortableTheme | null;
   disabledOpacity: number;
   /**
    * The face this theme sets CODE in (C# `IAppTheme.MonoFamily`), or undefined for the platform's
