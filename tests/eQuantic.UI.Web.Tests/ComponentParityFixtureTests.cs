@@ -177,6 +177,12 @@ public class ComponentParityFixtureTests
         ("tabs", new Tabs(["One", "Two", "Three"], 1), NoPresses),
         ("search-field", new SearchField("term"), NoPresses),
         ("text-input", new TextInput("value", null, "Label"), NoPresses),
+        // A kind and the affixes beside the entry (#1761), and the two fields built on them (#1764). Each with a
+        // helper, so the line under it is not the empty one `text-input` is a known divergence for.
+        ("text-input-kind", new TextInput("a@b", null, "E-mail", helper: "Where the receipt goes",
+            kind: TextEntryKind.Email, prefix: "to", suffix: "@work"), NoPresses),
+        ("money-input", new MoneyInput(123450, null, "Price", Currency.Euro, helper: "VAT included"), NoPresses),
+        ("number-input", new NumberInput(3, null, "Lead time", "days", 1, 30, helper: "Working days"), NoPresses),
         ("radio-group", new RadioGroup(["a", "b"], 0), NoPresses),
         ("empty-state", new EmptyState(new Icon(Icons.Search), "Nothing here", "Try another term"), NoPresses),
 

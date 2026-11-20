@@ -202,6 +202,8 @@ export type TableRoleValue = 'group' | 'table' | 'grid';
 
 export type TextAlignmentValue = 'start' | 'center' | 'end';
 
+export type TextEntryKindValue = 'text' | 'email' | 'phone' | 'url' | 'number' | 'decimal';
+
 export type ThemeModeValue = 'light' | 'dark';
 
 export type TypeRoleValue =
@@ -292,6 +294,7 @@ export type {
     TableCellRoleValue as $TableCellRoleValue,
     TableRoleValue as $TableRoleValue,
     TextAlignmentValue as $TextAlignmentValue,
+    TextEntryKindValue as $TextEntryKindValue,
     ThemeModeValue as $ThemeModeValue,
     TypeRoleValue as $TypeRoleValue,
     UploadStateValue as $UploadStateValue,

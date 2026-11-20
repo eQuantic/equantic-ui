@@ -1,0 +1,82 @@
+#nullable enable
+*REMOVED*eQuantic.UI.Components.TextInput.TextInput(string! value, System.Action<string!>? onChanged = null, string! label = "", string? placeholder = null, string? helper = null, string? error = null, eQuantic.UI.Primitives.Icons? leading = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large, eQuantic.UI.Primitives.VisualNode? trailing = null) -> void
+*REMOVED*static eQuantic.UI.Components.UI.TextInput(string! value, System.Action<string!>? onChanged = null, string! label = "", string? placeholder = null, string? helper = null, string? error = null, eQuantic.UI.Primitives.Icons? leading = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large, eQuantic.UI.Primitives.VisualNode? trailing = null) -> eQuantic.UI.Components.TextInput!
+*REMOVED*eQuantic.UI.Components.FormInput.FormInput(eQuantic.UI.Primitives.FormController! form, string! name, string! label = "", string? placeholder = null, string? helper = null, eQuantic.UI.Primitives.Icons? leading = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large) -> void
+eQuantic.UI.Components.Currency
+eQuantic.UI.Components.Currency.<Clone>$() -> eQuantic.UI.Components.Currency!
+eQuantic.UI.Components.Currency.Currency(string! Code, string! Symbol, int MinorDigits) -> void
+eQuantic.UI.Components.Currency.Deconstruct(out string! Code, out string! Symbol, out int MinorDigits) -> void
+eQuantic.UI.Components.Currency.Equals(eQuantic.UI.Components.Currency? other) -> bool
+override eQuantic.UI.Components.Currency.Equals(object? obj) -> bool
+override eQuantic.UI.Components.Currency.GetHashCode() -> int
+override eQuantic.UI.Components.Currency.ToString() -> string!
+static eQuantic.UI.Components.Currency.operator !=(eQuantic.UI.Components.Currency? left, eQuantic.UI.Components.Currency? right) -> bool
+static eQuantic.UI.Components.Currency.operator ==(eQuantic.UI.Components.Currency? left, eQuantic.UI.Components.Currency? right) -> bool
+eQuantic.UI.Components.Currency.Code.get -> string!
+eQuantic.UI.Components.Currency.Code.init -> void
+eQuantic.UI.Components.Currency.Symbol.get -> string!
+eQuantic.UI.Components.Currency.Symbol.init -> void
+eQuantic.UI.Components.Currency.MinorDigits.get -> int
+eQuantic.UI.Components.Currency.MinorDigits.init -> void
+static readonly eQuantic.UI.Components.Currency.Euro -> eQuantic.UI.Components.Currency!
+static readonly eQuantic.UI.Components.Currency.UsDollar -> eQuantic.UI.Components.Currency!
+static readonly eQuantic.UI.Components.Currency.PoundSterling -> eQuantic.UI.Components.Currency!
+static readonly eQuantic.UI.Components.Currency.BrazilianReal -> eQuantic.UI.Components.Currency!
+static readonly eQuantic.UI.Components.Currency.SwissFranc -> eQuantic.UI.Components.Currency!
+static readonly eQuantic.UI.Components.Currency.Yen -> eQuantic.UI.Components.Currency!
+eQuantic.UI.Components.Currency.Format(long amount) -> string!
+eQuantic.UI.Components.Currency.ToMajor(long amount) -> decimal
+eQuantic.UI.Components.Currency.ToMinor(decimal major) -> long?
+eQuantic.UI.Components.FormInput.FormInput(eQuantic.UI.Primitives.FormController! form, string! name, string! label = "", string? placeholder = null, string? helper = null, eQuantic.UI.Primitives.Icons? leading = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large, eQuantic.UI.Primitives.TextEntryKind kind = eQuantic.UI.Primitives.TextEntryKind.Text, string? prefix = null, string? suffix = null) -> void
+eQuantic.UI.Components.FormInput.Kind.get -> eQuantic.UI.Primitives.TextEntryKind
+eQuantic.UI.Components.FormInput.Kind.init -> void
+eQuantic.UI.Components.FormInput.Prefix.get -> string?
+eQuantic.UI.Components.FormInput.Prefix.init -> void
+eQuantic.UI.Components.FormInput.Suffix.get -> string?
+eQuantic.UI.Components.FormInput.Suffix.init -> void
+override eQuantic.UI.Components.MoneyInput.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.MoneyInput
+eQuantic.UI.Components.MoneyInput.MoneyInput(long? amount, System.Action<long?>? onChanged, string! label, eQuantic.UI.Components.Currency! currency, long? min = null, long? max = null, string? placeholder = null, string? helper = null, string? error = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large) -> void
+eQuantic.UI.Components.MoneyInput.Amount.get -> long?
+eQuantic.UI.Components.MoneyInput.OnChanged.get -> System.Action<long?>?
+eQuantic.UI.Components.MoneyInput.Label.get -> string!
+eQuantic.UI.Components.MoneyInput.Currency.get -> eQuantic.UI.Components.Currency!
+eQuantic.UI.Components.MoneyInput.Min.get -> long?
+eQuantic.UI.Components.MoneyInput.Max.get -> long?
+eQuantic.UI.Components.MoneyInput.Placeholder.get -> string?
+eQuantic.UI.Components.MoneyInput.Helper.get -> string?
+eQuantic.UI.Components.MoneyInput.Error.get -> string?
+eQuantic.UI.Components.MoneyInput.Size.get -> eQuantic.UI.Primitives.SizeVariant
+eQuantic.UI.Components.MoneyInput.Disabled.get -> bool
+eQuantic.UI.Components.MoneyInput.Disabled.init -> void
+override eQuantic.UI.Components.MoneyInput.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+eQuantic.UI.Components.NumberInput
+eQuantic.UI.Components.NumberInput.NumberInput(int? value, System.Action<int?>? onChanged, string! label, string! unit = "", int? min = null, int? max = null, string? placeholder = null, string? helper = null, string? error = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large) -> void
+eQuantic.UI.Components.NumberInput.Value.get -> int?
+eQuantic.UI.Components.NumberInput.OnChanged.get -> System.Action<int?>?
+eQuantic.UI.Components.NumberInput.Label.get -> string!
+eQuantic.UI.Components.NumberInput.Unit.get -> string!
+eQuantic.UI.Components.NumberInput.Min.get -> int?
+eQuantic.UI.Components.NumberInput.Max.get -> int?
+eQuantic.UI.Components.NumberInput.Placeholder.get -> string?
+eQuantic.UI.Components.NumberInput.Helper.get -> string?
+eQuantic.UI.Components.NumberInput.Error.get -> string?
+eQuantic.UI.Components.NumberInput.Size.get -> eQuantic.UI.Primitives.SizeVariant
+eQuantic.UI.Components.NumberInput.Disabled.get -> bool
+eQuantic.UI.Components.NumberInput.Disabled.init -> void
+override eQuantic.UI.Components.NumberInput.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.NumberInput.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+static eQuantic.UI.Components.SdkStrings.AmountExpected(string! example) -> string!
+static eQuantic.UI.Components.SdkStrings.WholeNumberExpected(string! example) -> string!
+static eQuantic.UI.Components.SdkStrings.ValueBetween(string! least, string! most) -> string!
+static eQuantic.UI.Components.SdkStrings.ValueAtLeast(string! least) -> string!
+static eQuantic.UI.Components.SdkStrings.ValueAtMost(string! most) -> string!
+eQuantic.UI.Components.TextInput.TextInput(string! value, System.Action<string!>? onChanged = null, string! label = "", string? placeholder = null, string? helper = null, string? error = null, eQuantic.UI.Primitives.Icons? leading = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large, eQuantic.UI.Primitives.VisualNode? trailing = null, eQuantic.UI.Primitives.TextEntryKind kind = eQuantic.UI.Primitives.TextEntryKind.Text, string? prefix = null, string? suffix = null) -> void
+eQuantic.UI.Components.TextInput.Kind.get -> eQuantic.UI.Primitives.TextEntryKind
+eQuantic.UI.Components.TextInput.Prefix.get -> string?
+eQuantic.UI.Components.TextInput.Suffix.get -> string?
+static eQuantic.UI.Components.UI.MoneyInput(long? amount, System.Action<long?>? onChanged, string! label, eQuantic.UI.Components.Currency! currency, long? min = null, long? max = null, string? placeholder = null, string? helper = null, string? error = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large) -> eQuantic.UI.Components.MoneyInput!
+static eQuantic.UI.Components.UI.NumberInput(int? value, System.Action<int?>? onChanged, string! label, string! unit = "", int? min = null, int? max = null, string? placeholder = null, string? helper = null, string? error = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large) -> eQuantic.UI.Components.NumberInput!
+static eQuantic.UI.Components.UI.TextInput(string! value, System.Action<string!>? onChanged = null, string! label = "", string? placeholder = null, string? helper = null, string? error = null, eQuantic.UI.Primitives.Icons? leading = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large, eQuantic.UI.Primitives.VisualNode? trailing = null, eQuantic.UI.Primitives.TextEntryKind kind = eQuantic.UI.Primitives.TextEntryKind.Text, string? prefix = null, string? suffix = null) -> eQuantic.UI.Components.TextInput!
+static eQuantic.UI.Components.SdkStrings.NamedWithAffixes(string! label, string! affixes) -> string!
+static eQuantic.UI.Components.SdkStrings.ValueWithUnit(string! number, string! unit) -> string!

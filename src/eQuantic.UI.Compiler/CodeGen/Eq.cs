@@ -573,6 +573,10 @@ public static class Eq
 
     /// <summary><c>ICollection&lt;T&gt;.IsReadOnly</c>, of what the interface holds when the code runs.</summary>
     public const string CollectionIsReadOnly = "$eq.collections.isReadOnly";
+
+    /// <summary>A culture's <c>NumberFormatInfo</c>, the page's or (handed true) the invariant one's: the
+    /// object the culture travels as, under .NET's names (#1765).</summary>
+    public const string NumberFormat = "$eq.text.numberFormat";
     /// <summary><c>List&lt;T&gt;.RemoveAt</c> and <c>IList&lt;T&gt;.RemoveAt</c>: the index checked as .NET checks it (#1160).</summary>
     public const string ListRemoveAt = "$eq.collections.listRemoveAt";
     /// <summary><c>List&lt;T&gt;.RemoveRange</c>: the range checked as .NET checks it (#1160).</summary>

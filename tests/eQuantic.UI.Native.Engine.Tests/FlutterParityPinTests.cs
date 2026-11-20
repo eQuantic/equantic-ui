@@ -391,6 +391,9 @@ public class FlutterParityPinTests
         ["ThemeData"] = () => Has("IAppTheme") && Has("Density") && Nothing("CupertinoThemeData"),
         ["MediaQuery"] = () => Has("SafeArea") && Nothing("MediaQuery"),
         ["MediaQuery.viewInsets"] = () => HasMember("PhotonHost", "ViewInsets"),
+        ["TextField.keyboardType"] = () => HasMember("TextEntry", "Kind") && Has("TextEntryKind"),
+        ["InputDecoration.prefixText"] = () => HasMember("TextInput", "Prefix") && HasMember("TextInput", "Suffix")
+            && Has("MoneyInput") && Has("NumberInput"),
 
         // 10 — lifecycle and windows
         ["WidgetsBindingObserver"] = () => Nothing("WidgetsBindingObserver", "AppLifecycleState"),

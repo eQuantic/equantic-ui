@@ -72,8 +72,10 @@ export class Decimal {
     readonly scale: number,
   ) {}
 
-  static from(value: string | number | Decimal): Decimal {
+  static from(value: string | number | bigint | Decimal): Decimal {
     if (value instanceof Decimal) return value; // pass-through (operands may already be Decimal)
+    // A long is a BigInt here, and C# converts one to a decimal implicitly: its digits are exact.
+    if (typeof value === 'bigint') return new Decimal(value, 0);
     const text = (typeof value === 'string' ? value : String(value)).trim();
     const match = /^([+-]?)(\d*)(?:\.(\d*))?$/.exec(text);
     if (!match) throw new Error(`Invalid decimal literal: '${text}'`);
@@ -494,7 +496,7 @@ function fromBinary(value: number, exponent: number, digits: 7 | 15): Decimal {
   return new Decimal(negative ? -mantissa : mantissa, power);
 }
 
-export function dec(value: string | number | Decimal): Decimal {
+export function dec(value: string | number | bigint | Decimal): Decimal {
   return Decimal.from(value);
 }
 

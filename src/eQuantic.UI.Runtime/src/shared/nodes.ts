@@ -55,6 +55,7 @@ import type {
   SizeKindValue,
   TableCellRoleValue,
   TableRoleValue,
+  TextEntryKindValue,
   VectorPaintKindValue,
 } from './enums.generated';
 import type { NodeKind } from './node-kinds.generated';
@@ -732,6 +733,8 @@ export interface TextEntryNode extends VisualNodeValue {
   onFocusChanged?: ((focused: boolean) => void) | null;
   disabled?: boolean;
   obscure?: boolean;
+  /** What the field takes (C# `TextEntryKind`): its keyboard, its autofill, and that a value is no prose. */
+  kind?: TextEntryKindValue;
   role: string;
   /** Takes focus on MOUNT (the command-palette contract) — the attribute alone only fires on the
    * initial document parse, so the client lowering focuses it too. */
