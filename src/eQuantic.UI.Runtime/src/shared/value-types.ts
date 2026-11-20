@@ -868,8 +868,10 @@ export class SortDrop {
   readonly to: string;
   readonly index: number;
   readonly into: string | null = null;
+  /** The depth the carried item takes, in a list whose items have depths (C# `SortDrop.Depth`, #1594). */
+  readonly depth: number | null = null;
 
-  constructor(item = '', from = '', to = '', index = 0, config?: { into?: string | null }) {
+  constructor(item = '', from = '', to = '', index = 0, config?: { into?: string | null; depth?: number | null }) {
     this.item = item;
     this.from = from;
     this.to = to;

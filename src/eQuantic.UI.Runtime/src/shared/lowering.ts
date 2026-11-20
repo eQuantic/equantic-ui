@@ -6037,6 +6037,8 @@ function lowerSortable(
     }
   }
   if (node.nests) child.attributes['data-eq-sort-nests'] = '1';
+  // A list whose items have depths (#1594): how far across the axis one depth is indented. C# twin: LowerSortable.
+  if (node.indent !== undefined && node.indent > 0) child.attributes['data-eq-sort-indent'] = num(node.indent);
   if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
   // The words a reader hears while the keyboard sorts (#1564), which the controller reads from the list the item
   // was picked up from. A list with none says nothing. C# twin: LowerSortable.
@@ -6098,6 +6100,8 @@ function lowerSortableItem(
   child.attributes['data-eq-sort-item'] = node.id;
   // The name the keyboard's steps say, when the item has one of its own (#1538; C# twin: LowerSortableItem).
   if (node.name) child.attributes['data-eq-sort-name'] = node.name;
+  // The item's depth in a list whose items have depths (#1594); 0, the top, is written as nothing.
+  if (node.depth !== undefined && node.depth > 0) child.attributes['data-eq-sort-depth'] = String(node.depth);
   if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
   // The keyboard sorts an item from its focus (#1536): one that takes none of its own becomes a Tab stop
   // (the C# twin decides by the same tags).

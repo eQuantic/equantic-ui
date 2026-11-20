@@ -1,0 +1,11 @@
+#nullable enable
+eQuantic.UI.Primitives.SortDrop.Depth.get -> int?
+eQuantic.UI.Primitives.SortDrop.Depth.init -> void
+eQuantic.UI.Primitives.Sortable.Indent.get -> float
+eQuantic.UI.Primitives.Sortable.Indent.init -> void
+eQuantic.UI.Primitives.SortableItem.Depth.get -> int
+eQuantic.UI.Primitives.SortableItem.Depth.init -> void
+static eQuantic.UI.Primitives.SortPlacement.Wanted(int depth, float travelled, float indent) -> int
+static eQuantic.UI.Primitives.SortPlacement.Depths(int wants, int? above, int? below) -> System.Collections.Generic.IReadOnlyList<int>!
+static eQuantic.UI.Primitives.SortPlacement.KeyDepth(int depth, int step, int? above, int? below) -> int
+static eQuantic.UI.Primitives.SortPlacement.Siblings(System.Collections.Generic.IReadOnlyList<int>! depths, int index, int depth) -> (int Holder, int Position, int Count)

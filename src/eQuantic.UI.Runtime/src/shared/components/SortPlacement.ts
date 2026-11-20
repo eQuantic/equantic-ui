@@ -56,5 +56,47 @@ export class SortPlacement {
         place = Math.max(0, Math.min(place + step, others * 2));
         return place % 2 === 1 ? [Math.trunc((place - 1) / 2), Math.trunc((place - 1) / 2)] : [Math.trunc(place / 2), -1];
     }
+
+    static wanted(depth: number, travelled: number, indent: number) {
+        return indent <= 0 ? depth : depth + $eq.num.saturate(Math.floor(Math.fround(Math.fround(travelled / indent) + 0.5)));
+    }
+
+    static depths(wants: number, above: number | null, below: number | null) {
+        let [shallowest, deepest] = SortPlacement.depthRange(above, below);
+        let first = Math.max(shallowest, Math.min(wants, deepest));
+        let depths = [first];
+        for (let depth = first - 1; depth >= shallowest; depth--) $eq.collections.listAdd(depths, depth);
+        for (let depth = first + 1; depth <= deepest; depth++) $eq.collections.listAdd(depths, depth);
+        return depths;
+    }
+
+    static keyDepth(depth: number, step: number, above: number | null, below: number | null) {
+        let [shallowest, deepest] = SortPlacement.depthRange(above, below);
+        let next = depth + step;
+        return next < shallowest || next > deepest ? depth : next;
+    }
+
+    static depthRange(above: number | null, below: number | null): [number, number] {
+        let shallowest = below ?? 0;
+        let before: any; 
+        return [shallowest, (before = above) != null ? Math.max(before + 1, shallowest) : shallowest];
+    }
+
+    static siblings(depths: number[], index: number, depth: number): [number, number, number] {
+        let holder = -1;
+        let position = 1;
+        for (let i = index - 1; i >= 0; i--) {
+            if ($eq.collections.item(depths, i) < depth) {
+                if ($eq.collections.item(depths, i) === depth - 1) holder = i;
+                break;
+            }
+            if ($eq.collections.item(depths, i) === depth) position++;
+        }
+        let count = position;
+        for (let i = index; i < $eq.collections.count(depths) && $eq.collections.item(depths, i) >= depth; i++) {
+            if ($eq.collections.item(depths, i) === depth) count++;
+        }
+        return [holder, position, count];
+    }
 }
 

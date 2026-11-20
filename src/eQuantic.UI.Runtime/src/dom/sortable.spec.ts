@@ -81,7 +81,7 @@ function give(element: Element, box: Box): void {
     ({ ...box, right: box.left + box.width, bottom: box.top + box.height, x: box.left, y: box.top, toJSON: () => box }) as DOMRect;
 }
 
-function mount(board: Board): HTMLElement {
+function mount(board: StatefulComponent): HTMLElement {
   const container = document.createElement('div');
   document.body.appendChild(container);
   board.mount(container);
@@ -528,5 +528,179 @@ describe('SortWords.fill (#1564)', () => {
     ['{}{0}{10}', ['a'], '{}a{10}'],
   ])('fills %j', (text, holes, expected) => {
     expect(SortWords.fill(text, holes)).toBe(expected);
+  });
+});
+
+/**
+ * A list whose items have depths (#1594), an outline of one group with a second list beside it: src (0), App.cs (1),
+ * Program.cs (1), docs (0) and README.md (0), 40 tall from y 0, one depth 16 across; and `next`, holding z. The C# twin
+ * of the arithmetic is `SortPlacementDepthTests`, and Photon carries the same outline in `SortableHostTests`.
+ */
+class Outline extends StatefulComponent {
+  constructor(private readonly guard: ((drop: SortDrop) => boolean) | null = null) {
+    super();
+  }
+
+  build(): Row {
+    const row = new Row(0);
+    const list = new Column(0);
+    for (const [name, depth] of [['src', 0], ['App.cs', 1], ['Program.cs', 1], ['docs', 0], ['README.md', 0]] as const)
+      list.add(new SortableItem(new Text(name) as never, name, { depth }) as never);
+    row.add(
+      new Sortable(list as never, 'files', (drop: SortDrop) => dropped.push(drop), SdkStrings.sorting, null, {
+        group: 'outline',
+        nests: true,
+        indent: 16,
+        label: 'Files',
+        onHovered: (drop: SortDrop | null) => hovered.push(drop),
+        accepts: this.guard,
+      }) as never,
+    );
+    const next = new Column(0);
+    next.add(new SortableItem(new Text('z') as never, 'z') as never);
+    row.add(
+      new Sortable(next as never, 'next', (drop: SortDrop) => dropped.push(drop), SdkStrings.sorting, null, {
+        group: 'outline',
+        label: 'Next',
+        onHovered: (drop: SortDrop | null) => hovered.push(drop),
+      }) as never,
+    );
+    return row as never;
+  }
+}
+
+describe('a list whose items have depths (#1594)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('requestAnimationFrame', () => 0);
+    vi.stubGlobal('cancelAnimationFrame', () => undefined);
+  });
+
+  afterEach(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    resetSortableController();
+    vi.unstubAllGlobals();
+    document.body.innerHTML = '';
+    boxes.clear();
+    dropped.length = 0;
+    hovered.length = 0;
+  });
+
+  const place = (drop: SortDrop | undefined) => [drop?.index, drop?.into, drop?.depth];
+
+  it('writes the indent on the list and each depth on its item, nothing for the top', () => {
+    const container = mount(new Outline());
+    expect(container.querySelector('[data-eq-sort-id="files"]')?.getAttribute('data-eq-sort-indent')).toBe('16');
+    expect(item(container, 'App.cs').getAttribute('data-eq-sort-depth')).toBe('1');
+    expect(item(container, 'docs').hasAttribute('data-eq-sort-depth')).toBe(false);
+    expect(container.querySelector('[data-eq-sort-id="next"]')?.hasAttribute('data-eq-sort-indent')).toBe(false);
+  });
+
+  it("keeps the item's own depth until the pointer travels an indent across, then takes it deeper", () => {
+    const container = mount(new Outline());
+    // README.md (160..200, pressed at x 10) to docs' top quarter, before docs: after Program.cs (1), before docs (0).
+    drag(container, 'README.md', [[10, 170], [10, 125]], false);
+    expect(place(last(hovered)!)).toEqual([3, null, 0]);
+    pointer(document, 'pointermove', 26, 125);
+    expect(place(last(hovered)!)).toEqual([3, null, 1]);
+    pointer(document, 'pointermove', 42, 125);
+    expect(place(last(hovered)!)).toEqual([3, null, 2]);
+    // As deep as one past Program.cs, no further.
+    pointer(document, 'pointermove', 90, 125);
+    expect(place(last(hovered)!)).toEqual([3, null, 2]);
+    pointer(document, 'pointermove', 26, 125);
+    pointer(document, 'pointerup', 26, 125);
+    expect(place(dropped[0])).toEqual([3, null, 1]);
+  });
+
+  it('gives a refused depth way to the nearest the place allows, shallower first', () => {
+    const container = mount(new Outline((drop) => drop.depth !== 1));
+    drag(container, 'README.md', [[10, 170], [26, 125]]);
+    expect(place(dropped[0])).toEqual([3, null, 0]);
+  });
+
+  it('carries the subtree with the item: no place among its own children', () => {
+    const container = mount(new Outline());
+    // src (0..40) over Program.cs (80..120): its children are no places, so this is src's own place, before docs.
+    drag(container, 'src', [[10, 30], [10, 90]]);
+    expect(hovered.filter(Boolean).every((drop) => drop!.index === 0)).toBe(true);
+    expect(place(dropped[0])).toEqual([0, null, 0]);
+  });
+
+  it('reports no depth for a place inside an item', () => {
+    const container = mount(new Outline());
+    drag(container, 'README.md', [[10, 170], [26, 140]]);
+    expect(place(dropped[0])).toEqual([3, 'docs', null]);
+  });
+
+  describe('by the keyboard', () => {
+    const press = (key: string): void => {
+      (document.activeElement ?? document.body).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    };
+    const said = (): string => document.querySelector('[data-eq-sort-announcer]')?.textContent ?? '';
+
+    it('steps the depth with the cross arrows and says the level, among its siblings under their holder', () => {
+      const container = mount(new Outline());
+      item(container, 'README.md').focus();
+      press(' ');
+      expect(said()).toBe('Picked up README.md, position 3 of 3 in Files.');
+      // After docs, inside docs, before docs.
+      press('ArrowUp');
+      press('ArrowUp');
+      expect(said()).toBe('README.md is at position 2 of 3 in Files.');
+      press('ArrowRight');
+      expect(said()).toBe('README.md is at position 3 of 3 in src.');
+      expect(place(last(hovered)!)).toEqual([3, null, 1]);
+      press('ArrowRight');
+      expect(said()).toBe('README.md is at position 1 of 1 in Program.cs.');
+      expect(place(last(hovered)!)).toEqual([3, null, 2]);
+      press('ArrowLeft');
+      press('Enter');
+      expect(place(dropped[0])).toEqual([3, null, 1]);
+      expect(said()).toBe('Dropped README.md at position 3 of 3 in src.');
+    });
+
+    it('keeps the depth it chose as the item moves along, within each place', () => {
+      const container = mount(new Outline());
+      item(container, 'README.md').focus();
+      press(' ');
+      press('ArrowUp');
+      press('ArrowUp');
+      press('ArrowRight');
+      // Up past docs' place and into Program.cs: before Program.cs the place allows depth 1 only, which it wants.
+      press('ArrowUp');
+      press('ArrowUp');
+      expect(place(last(hovered)!)).toEqual([2, null, 1]);
+    });
+
+    it('passes over a refused depth, and says so when none is left that way', () => {
+      const container = mount(new Outline((drop) => drop.depth !== 1));
+      item(container, 'README.md').focus();
+      press(' ');
+      press('ArrowUp');
+      press('ArrowUp');
+      press('ArrowRight');
+      expect(place(last(hovered)!)).toEqual([3, null, 2]);
+      press('ArrowLeft');
+      expect(place(last(hovered)!)).toEqual([3, null, 0]);
+      press('Escape');
+
+      const refusing = mount(new Outline((drop) => drop.depth !== 2));
+      item(refusing, 'README.md').focus();
+      press(' ');
+      press('ArrowUp');
+      press('ArrowUp');
+      press('ArrowRight');
+      press('ArrowRight');
+      expect(said()).toBe('README.md cannot go there.');
+    });
+
+    it('moves to the next list of its group once the place offers no other depth', () => {
+      const container = mount(new Outline());
+      item(container, 'src').focus();
+      press(' ');
+      // src's own place, first: before docs, at the top only.
+      press('ArrowRight');
+      expect(last(hovered)?.to).toBe('next');
+    });
   });
 });

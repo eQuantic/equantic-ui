@@ -59,7 +59,8 @@ namespace eQuantic.UI.Components;
 /// each node row a <see cref="SortableItem"/>, so a pointer or the keyboard carries a node before, after or
 /// inside another, and the app is told the node, its new parent and the sibling it lands after. A place that
 /// would put a node inside itself is never offered, <see cref="CanMove"/> may refuse more, and a closed folder
-/// held under a carried node opens.
+/// held under a carried node opens. The rows have depths (#1594): between the end of a subtree and the next row, the
+/// pointer's travel across or the keyboard's Right and Left pick how deep the node lands.
 /// </para>
 /// </summary>
 public sealed class TreeView : StatefulComponent
@@ -142,9 +143,14 @@ public sealed class TreeView : StatefulComponent
     private string? _activeParent;
 
     /// <summary>The row a carried node would land at, and how (<see cref="DropInto"/>, <see cref="DropBefore"/>,
-    /// <see cref="DropAfter"/>), drawn while it is carried.</summary>
+    /// <see cref="DropAfter"/>), and the level whose indentation the line starts from, drawn while it is carried.</summary>
     private string? _dropKey;
     private int _dropKind;
+    private int _dropLevel;
+
+    /// <summary>The indentation of one level at the last build: the sortable's depth across the axis (#1594), and
+    /// whether a carried node's subtree is left out of its places.</summary>
+    private float _indent;
 
     /// <summary>The closed folder a carried node is held inside, and which wait is the live one.</summary>
     private string? _pauseKey;
@@ -343,6 +349,7 @@ public sealed class TreeView : StatefulComponent
         // The theme's list slot, then the tree's own style over it (#1545).
         var slot = ListTheme.Merge(context.Theme.List, Style);
         _rowHeight = slot?.TreeRowHeight ?? ControlMetrics.Height(context, SizeVariant.Small);
+        _indent = slot?.TreeIndent ?? Space.S4;
         _rows = Flatten();
         // A status item that went away (its load finished) hands the keyboard to the node it stood under,
         // which is where the person was.
@@ -383,6 +390,8 @@ public sealed class TreeView : StatefulComponent
             {
                 Axis = DragAxis.Vertical,
                 Nests = true,
+                // The rows' levels are the sortable's depths, one indentation apart (#1594).
+                Indent = _indent,
                 Label = Label,
                 Accepts = Accepts,
                 OnHovered = Hovered,
@@ -483,7 +492,7 @@ public sealed class TreeView : StatefulComponent
         var plain = RowSurface(context, slot, row.Level, content, fill, ringed && !renaming, busy, quiet,
             mark == DropInto ? DropColor(context, slot) : null);
         var surface = mark == DropBefore || mark == DropAfter
-            ? DropLine(context, slot, row.Level, plain, after: mark == DropAfter)
+            ? DropLine(context, slot, _dropLevel > 0 ? _dropLevel : row.Level, plain, after: mark == DropAfter)
             : plain;
 
         // Each row is keyed by what it shows, at every layer around it, so a row is the same element on every target
@@ -503,7 +512,7 @@ public sealed class TreeView : StatefulComponent
         if (node is null) return item;
         // A node row is what a tree that moves its nodes carries; the creation field and the status rows are not.
         if (OnMoved is not null)
-            item = new SortableItem(item, node.Key) { Key = key, Enabled = !busy && _editKey is null };
+            item = new SortableItem(item, node.Key) { Key = key, Enabled = !busy && _editKey is null, Depth = row.Level - 1 };
         // A target per row, so a pointer asks for the menu of the row it is over and the keyboard for the menu
         // of the tree's active item; ONE menu open, built when it opens.
         if (MenuBuilder is not null)
@@ -958,7 +967,7 @@ public sealed class TreeView : StatefulComponent
         slot?.TreeDropColor ?? context.Theme.FocusRing;
 
     /// <summary>The row's surface with the line along its top edge (its bottom edge for the last row), from the
-    /// row's own indentation: the level the carried node would take.</summary>
+    /// indentation of the level the carried node would take: the row's own, or the one its depth chose (#1594).</summary>
     private VisualNode DropLine(ComponentContext context, ListTheme? slot, int level, VisualNode surface, bool after)
     {
         var start = (slot?.TreePaddingX ?? Space.S2) + (level - 1) * (slot?.TreeIndent ?? Space.S4);
@@ -974,14 +983,46 @@ public sealed class TreeView : StatefulComponent
         return stack;
     }
 
-    /// <summary>The node rows a carried node is placed among, the carried one left out: the sortable's items, in
-    /// the order the sortable counts them.</summary>
+    /// <summary>The node rows a carried node is placed among: the sortable's items, in the order the sortable counts
+    /// them, the carried one left out, and with depths the rows of its subtree too, which it carries (#1594).</summary>
     private List<TreeViewRow> OthersThan(string carried)
     {
         var others = new List<TreeViewRow>();
+        // The carried row's level while the rows of its subtree follow it; 0 once they end.
+        var carries = 0;
         foreach (var row in _rows)
-            if (row.Node is not null && row.Key != carried) others.Add(row);
+        {
+            if (carries > 0 && row.Level > carries) continue;
+            carries = 0;
+            if (row.Node is null) continue;
+            if (row.Key == carried)
+            {
+                if (_indent > 0) carries = row.Level;
+                continue;
+            }
+            others.Add(row);
+        }
         return others;
+    }
+
+    /// <summary>The parent a place at a depth means (#1594): the ancestor, one level shallower than the depth, of the row
+    /// before the place, which is that row itself when the depth is one deeper than it; null at depth 0.</summary>
+    private string? ParentAtDepth(List<TreeViewRow> others, int index, int depth)
+    {
+        if (depth == 0 || index == 0) return null;
+        var key = others[index - 1].Key;
+        while (LevelOf(key) > depth)
+        {
+            if (ParentOf(key) is not { } parent) return null;
+            key = parent;
+        }
+        return key;
+    }
+
+    private int LevelOf(string key)
+    {
+        var at = IndexOfNode(key);
+        return at >= 0 ? _rows[at].Level : 0;
     }
 
     /// <summary>The node a visible row shows, by its key.</summary>
@@ -1006,40 +1047,41 @@ public sealed class TreeView : StatefulComponent
 
     /// <summary>
     /// Where a sortable's place stands among the node rows a carried node is placed among: inside the row at
-    /// <c>At</c>, before it, or after it as the last; <c>(0, -1)</c> when there is no such row. The one reading both
-    /// the drawn place and the reported move take, so the two never part.
+    /// <c>At</c>, before it, or after it as the last; <c>(0, -1, 0)</c> when there is no such row. <c>Level</c> is the
+    /// level the node would take, the one its depth chose (#1594) or the row's own. The one reading both the drawn place
+    /// and the reported move take, so the two never part.
     /// </summary>
-    private static (int Kind, int At) PlaceOf(SortDrop drop, List<TreeViewRow> others)
+    private static (int Kind, int At, int Level) PlaceOf(SortDrop drop, List<TreeViewRow> others)
     {
         if (drop.Into is { } into)
         {
             for (var i = 0; i < others.Count; i++)
-                if (others[i].Key == into) return (DropInto, i);
-            return (0, -1);
+                if (others[i].Key == into) return (DropInto, i, others[i].Level + 1);
+            return (0, -1, 0);
         }
-        if (drop.Index < others.Count) return (DropBefore, drop.Index);
-        return others.Count > 0 ? (DropAfter, others.Count - 1) : (0, -1);
+        if (drop.Index < others.Count)
+            return (DropBefore, drop.Index, drop.Depth is { } depth ? depth + 1 : others[drop.Index].Level);
+        if (others.Count == 0) return (0, -1, 0);
+        var last = others.Count - 1;
+        return (DropAfter, last, drop.Depth is { } after ? after + 1 : others[last].Level);
     }
 
     /// <summary>
-    /// The move a sortable's place means: inside a node, as its first child; before a row, among that row's
-    /// siblings, after the nearest earlier one; after the last row, among its siblings. Null when the carried node
-    /// is not a visible one.
+    /// The move a sortable's place means: inside a node, as its first child; between two rows, under the parent the
+    /// place's depth means (#1594), or without one the parent of the row after it (of the last row, at the end), after
+    /// that parent's last child before the place. Null when the carried node is not a visible one.
     /// </summary>
     private TreeMove? MoveOf(SortDrop drop)
     {
         if (NodeOf(drop.Item) is not { } node) return null;
         var others = OthersThan(drop.Item);
-        var (kind, at) = PlaceOf(drop, others);
+        var (kind, at, _) = PlaceOf(drop, others);
         if (kind == DropInto) return new TreeMove(node, others[at].Node, null);
-        if (kind == DropBefore)
-        {
-            var parent = others[at].ParentKey;
-            return new TreeMove(node, NodeOf(parent), SiblingBefore(others, at, parent));
-        }
-        if (kind == DropAfter) return new TreeMove(node, NodeOf(others[at].ParentKey), others[at].Node);
         // Nothing to land among: the top level, unless the node it was to land inside is gone.
-        return drop.Into is null ? new TreeMove(node, null, null) : null;
+        if (kind == 0) return drop.Into is null ? new TreeMove(node, null, null) : null;
+        var index = kind == DropBefore ? at : others.Count;
+        var parent = drop.Depth is { } depth ? ParentAtDepth(others, index, depth) : others[at].ParentKey;
+        return new TreeMove(node, NodeOf(parent), SiblingBefore(others, index, parent));
     }
 
     /// <summary>The tree's guard, then the app's: a node never lands inside a leaf, nor inside itself or one of its
@@ -1057,12 +1099,14 @@ public sealed class TreeView : StatefulComponent
     {
         string? key = null;
         var kind = 0;
+        var level = 0;
         if (drop is not null)
         {
             var others = OthersThan(drop.Item);
-            var (placed, at) = PlaceOf(drop, others);
+            var (placed, at, deep) = PlaceOf(drop, others);
             kind = placed;
             key = at >= 0 ? others[at].Key : null;
+            level = deep;
         }
         var pause = kind == DropInto && NodeOf(key) is { } folder && !_open.Contains(folder.Key) && HasChevron(folder)
             ? key
@@ -1071,6 +1115,7 @@ public sealed class TreeView : StatefulComponent
         {
             _dropKey = key;
             _dropKind = kind;
+            _dropLevel = level;
         });
         if (pause == _pauseKey) return;
         _pauseKey = pause;
@@ -1100,6 +1145,7 @@ public sealed class TreeView : StatefulComponent
         {
             _dropKey = null;
             _dropKind = 0;
+            _dropLevel = 0;
         });
         if (move is null || OnMoved is not { } handler) return;
         var from = ParentOf(move.Node.Key);

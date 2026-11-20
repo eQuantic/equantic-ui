@@ -185,4 +185,60 @@ public class TreeMoveTests : IDisposable
         harness.Page.Moved.Should().Equal("README.md>docs|");
         harness.Page.Pressed.Should().BeEmpty("the Enter that dropped the node was the carry's alone");
     }
+
+    // ---- the depth a node lands at (#1594) ------------------------------------------------------------------------
+
+    /// <summary>A point over the top eighth of the row of <paramref name="key"/>, <paramref name="across"/> points from
+    /// where <paramref name="carried"/>'s row is pressed: the gap before that row, at the depth the travel asks for.</summary>
+    private static Point Before(Harness harness, string key, string carried, float across)
+    {
+        var row = harness.RowBox(key);
+        return new Point(harness.Row(carried).X + across, row.Y + row.Height / 8);
+    }
+
+    [Fact]
+    public void AMouse_LandsAFileAsTheLastChildOfAnOpenFolder_WhenItTravelsAnIndentAcross()
+    {
+        var harness = Open();
+        Carry(harness, "README.md", Before(harness, "docs", "README.md", 16));
+
+        harness.Page.Moved.Should().Equal("README.md>src|src/Program.cs");
+    }
+
+    [Fact]
+    public void AMouse_LandsItAtTheTopLevelThere_WhenItDoesNotTravelAcross()
+    {
+        var harness = Open();
+        Carry(harness, "README.md", Before(harness, "docs", "README.md", 0));
+
+        harness.Page.Moved.Should().Equal("README.md>|src");
+    }
+
+    [Fact]
+    public void AMouse_LandsAFoldersLastChildAtTheTopLevelAfterIt_WhenItTravelsBack()
+    {
+        var harness = Open();
+        Carry(harness, "src/Program.cs", Before(harness, "docs", "src/Program.cs", -16));
+
+        harness.Page.Moved.Should().Equal("src/Program.cs>|src");
+    }
+
+    [Fact]
+    public void TheKeyboard_PutsTheActiveNodeAtTheEndOfAnOpenFolder()
+    {
+        var harness = Open();
+        harness.Key("Tab");
+        harness.Key("ArrowDown");
+        harness.Key("End");
+
+        harness.Key(" ");
+        // Inside locked is refused and passed over: before locked, inside docs, before docs.
+        harness.Key("ArrowUp");
+        harness.Key("ArrowUp");
+        harness.Key("ArrowUp");
+        harness.Key("ArrowRight");
+        harness.Key("Enter");
+
+        harness.Page.Moved.Should().Equal("README.md>src|src/Program.cs");
+    }
 }

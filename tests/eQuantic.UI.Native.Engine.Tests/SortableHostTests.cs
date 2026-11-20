@@ -566,4 +566,155 @@ public class SortableHostTests
         board.Dropped.Should().ContainSingle();
         host.Semantics().Should().NotContain(node => node.Live != null);
     }
+
+    // ---- a list whose items have depths (#1594) ------------------------------------------------------------------
+
+    /// <summary>The outline <c>sortable.spec.ts</c> carries: src (0), App.cs (1), Program.cs (1), docs (0) and README.md
+    /// (0), 40 tall, one depth 16 across, in a list of a group beside a second list holding z.</summary>
+    private sealed class Outline : StatefulComponent
+    {
+        public List<SortDrop?> Hovered { get; } = [];
+        public List<SortDrop> Dropped { get; } = [];
+        public Func<SortDrop, bool>? Guard { get; init; }
+
+        private static SortableItem Item(string name, int depth) =>
+            new(new Pressable(new Box(new BoxStyle { Width = SizeValue.Fill, Height = CardHeight }), () => { }) { Label = name },
+                name) { Depth = depth };
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var files = new Column(gap: 0);
+            foreach (var (name, depth) in new[] { ("src", 0), ("App.cs", 1), ("Program.cs", 1), ("docs", 0), ("README.md", 0) })
+                files.Add(Item(name, depth));
+            var next = new Column(gap: 0);
+            next.Add(Item("z", 0));
+            var row = new Row(gap: 20);
+            row.Add(new Sortable(new Box(new BoxStyle { Width = ColumnWidth }, files), "files", Dropped.Add, OwnWords)
+            {
+                Group = "outline",
+                Nests = true,
+                Indent = 16,
+                Label = "Files",
+                OnHovered = Hovered.Add,
+                Accepts = Guard,
+            });
+            row.Add(new Sortable(new Box(new BoxStyle { Width = ColumnWidth }, next), "next", Dropped.Add, OwnWords)
+            {
+                Group = "outline",
+                Label = "Next",
+                OnHovered = Hovered.Add,
+            });
+            return row;
+        }
+    }
+
+    private static PhotonHost OpenOutline(Outline outline)
+    {
+        var host = new PhotonHost(outline, PhotonTheme.Instance, ThemeMode.Light, 400, 600);
+        host.RenderFrame(new DisplayListBuilder(), 0);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        return host;
+    }
+
+    private static Rect ItemBox(PhotonHost host, string id) =>
+        Walk(host.LastFrame!.Root).First(n => n.Source is SortableItem { } item && item.Id == id).Bounds;
+
+    /// <summary>A mouse picks README.md up and holds it over docs' top eighth, before docs, <paramref name="across"/>
+    /// points toward the end of the cross axis; the place last reported.</summary>
+    private static SortDrop? HoldBeforeDocs(PhotonHost host, Outline outline, float across)
+    {
+        var readme = CardAt(host, "README.md");
+        var docs = ItemBox(host, "docs");
+        host.PressDown(readme.X, readme.Y);
+        host.PointerMove(readme.X, readme.Y - 10);
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        host.PointerMove(readme.X + across, docs.Y + docs.Height / 8);
+        host.RenderFrame(new DisplayListBuilder(), 48);
+        return outline.Hovered[^1];
+    }
+
+    [Fact]
+    public void AListWithDepths_KeepsTheItemsOwnDepth_UntilThePointerTravelsAnIndentAcross()
+    {
+        var outline = new Outline();
+        var host = OpenOutline(outline);
+
+        HoldBeforeDocs(host, outline, 0).Should().Be(new SortDrop("README.md", "files", "files", 3) { Depth = 0 });
+        var y = ItemBox(host, "docs").Y + ItemBox(host, "docs").Height / 8;
+        var x = CardAt(host, "README.md").X;
+        host.PointerMove(x + 16, y);
+        outline.Hovered[^1].Should().Be(new SortDrop("README.md", "files", "files", 3) { Depth = 1 });
+        host.PointerMove(x + 32, y);
+        outline.Hovered[^1]!.Depth.Should().Be(2);
+        // Four indents across, still over the list (150 wide).
+        host.PointerMove(x + 60, y);
+        outline.Hovered[^1]!.Depth.Should().Be(2, "no deeper than one past Program.cs");
+        host.PointerMove(x + 16, y);
+        host.PressUp(x + 16, y);
+
+        outline.Dropped.Should().ContainSingle().Which.Should().Be(new SortDrop("README.md", "files", "files", 3) { Depth = 1 });
+    }
+
+    [Fact]
+    public void AListWithDepths_GivesARefusedDepthWayToAShallowerOne()
+    {
+        var outline = new Outline { Guard = drop => drop.Depth != 1 };
+        var host = OpenOutline(outline);
+
+        HoldBeforeDocs(host, outline, 16)!.Depth.Should().Be(0);
+    }
+
+    [Fact]
+    public void AListWithDepths_CarriesTheItemsSubtree_WhichIsNoPlaceOfItsOwn()
+    {
+        var outline = new Outline();
+        var host = OpenOutline(outline);
+        var src = CardAt(host, "src");
+        var program = CardAt(host, "Program.cs");
+
+        host.PressDown(src.X, src.Y);
+        host.PointerMove(src.X, src.Y + 10);
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        host.PointerMove(src.X, program.Y);
+        host.PressUp(src.X, program.Y);
+
+        outline.Hovered.Where(drop => drop is not null).Should().OnlyContain(drop => drop!.Index == 0);
+        outline.Dropped.Should().ContainSingle().Which.Should().Be(new SortDrop("src", "files", "files", 0) { Depth = 0 });
+    }
+
+    [Fact]
+    public void AListWithDepths_TheCrossArrowsStepTheDepth_AndAReaderHearsTheLevel()
+    {
+        var outline = new Outline();
+        var host = OpenOutline(outline);
+        for (var i = 0; i < 5; i++) host.KeyDown("Tab");
+        var time = 32f;
+        host.RenderFrame(new DisplayListBuilder(), time);
+        host.TakeAnnouncements();
+
+        Step(host, " ", ref time).Select(said => said.Text).Should().Equal("Took README.md (3/3, Files).");
+        // After docs, inside docs, before docs.
+        Step(host, "ArrowUp", ref time);
+        Step(host, "ArrowUp", ref time).Select(said => said.Text).Should().Equal("README.md now 2/3 in Files.");
+        Step(host, "ArrowRight", ref time).Select(said => said.Text).Should().Equal("README.md now 3/3 in src.");
+        Step(host, "ArrowRight", ref time).Select(said => said.Text).Should().Equal("README.md now 1/1 in Program.cs.");
+        Step(host, "ArrowLeft", ref time);
+        Step(host, "Enter", ref time).Select(said => said.Text).Should().Equal("Left README.md at 3/3 in src.");
+
+        outline.Dropped.Should().ContainSingle().Which.Should().Be(new SortDrop("README.md", "files", "files", 3) { Depth = 1 });
+    }
+
+    [Fact]
+    public void AListWithDepths_TheCrossArrowMovesToTheNextList_OnceThePlaceOffersNoOtherDepth()
+    {
+        var outline = new Outline();
+        var host = OpenOutline(outline);
+        host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder(), 32);
+
+        host.KeyDown(" ").Should().BeTrue();
+        host.KeyDown("ArrowRight").Should().BeTrue();
+
+        outline.Hovered[^1]!.To.Should().Be("next");
+    }
 }
