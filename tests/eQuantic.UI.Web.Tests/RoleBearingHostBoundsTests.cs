@@ -124,6 +124,30 @@ public class RoleBearingHostBoundsTests
     }
 
     /// <summary>
+    /// The host writes the caller's attributes (the role's) and THEN the accessible name, as the tree wrote
+    /// them before the helper: the delivery's claim is byte equality, and a host that wrote the name first
+    /// passes every other test here (#1517).
+    /// </summary>
+    [Theory]
+    [InlineData("Progress", "role,aria-label")]
+    [InlineData("Adjustable", "role,tabindex,aria-label")]
+    [InlineData("LiveRegion", "role,aria-live,aria-atomic,aria-label")]
+    [InlineData("Group", "role,aria-label")]
+    public void TheHostWritesTheRolesAttributesThenTheAccessibleName(string name, string order)
+    {
+        VisualNode node = name switch
+        {
+            "Progress" => new Progress(HugTrack()) { Label = "Uploading" },
+            "Adjustable" => new Adjustable(HugTrack(), _ => { }) { Label = "Volume" },
+            "LiveRegion" => new LiveRegion(HugTrack()) { Label = "Upload status" },
+            _ => new Group(HugTrack()) { Label = "Shipping" },
+        };
+
+        Render(node).Attributes.Keys.Where(key => key != "style").Take(order.Split(',').Length)
+            .Should().Equal(order.Split(','), $"{name}'s host writes the role's attributes, then its name");
+    }
+
+    /// <summary>
     /// THE STEP THE OTHER TWO DID NOT NEED. <c>Progress</c> and <c>Adjustable</c> are handed a
     /// FILLING track by every component that uses them, so the rule changed their announcement and
     /// nothing a user could see. A <see cref="Spreadsheet"/> moved a real page: its window of cells

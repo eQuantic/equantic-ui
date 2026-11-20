@@ -123,3 +123,23 @@ describe('the semantics host takes the child whole contract', () => {
     });
   }
 });
+
+/**
+ * The host writes the caller's attributes (the role's) and THEN the accessible name, as the tree wrote
+ * them before the helper: the delivery's claim is byte equality, and a host that wrote the name first
+ * passes every other test here (#1517). C# cross-pin: RoleBearingHostBoundsTests.
+ */
+describe('the semantics host writes the role attributes, then the accessible name', () => {
+  for (const [name, node, order] of [
+    ['progress', { nodeKind: 'progress', label: 'Uploading' }, ['role', 'aria-label']],
+    ['adjustable', { nodeKind: 'adjustable', label: 'Volume', onAdjust: () => {} }, ['role', 'tabindex', 'aria-label']],
+    ['liveRegion', { nodeKind: 'liveRegion', label: 'Upload status' }, ['role', 'aria-live', 'aria-atomic', 'aria-label']],
+    ['group', { nodeKind: 'group', label: 'Shipping' }, ['role', 'aria-label']],
+  ] as const) {
+    it(`${name} writes ${order.join(', ')}`, () => {
+      const host = lowerVisualNode({ ...node, child: hugTrack() } as unknown as VisualNodeValue, ctx);
+      const keys = Object.keys((host as { attributes: Record<string, string> }).attributes).filter((k) => k !== 'style' && k !== 'class');
+      expect(keys.slice(0, order.length)).toEqual([...order]);
+    });
+  }
+});
