@@ -10,6 +10,7 @@
 export const sdkNeutralStrings: Record<string, string> = {
   'AcceptCookies': "Accept",
   'AddToSelection': "Add to Selection",
+  'AmountExpected': "Enter an amount, such as {0}",
   'Back': "Back",
   'CellAnnouncement': "{0}, {1}",
   'CellBlank': "blank",
@@ -120,4 +121,8 @@ export const sdkNeutralStrings: Record<string, string> = {
   'UploadResume': "Resume",
   'UploadSending': "{0} of {1}",
   'UploadWaiting': "Waiting",
+  'ValueAtLeast': "Enter at least {0}",
+  'ValueAtMost': "Enter at most {0}",
+  'ValueBetween': "Enter a value from {0} to {1}",
+  'WholeNumberExpected': "Enter a whole number, such as {0}",
 };

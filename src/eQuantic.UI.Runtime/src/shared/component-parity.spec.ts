@@ -82,6 +82,9 @@ import { Tooltip } from './components/Tooltip';
 import { Tabs } from './components/Tabs';
 import { SearchField } from './components/SearchField';
 import { TextInput } from './components/TextInput';
+import { Currency } from './components/Currency';
+import { MoneyInput } from './components/MoneyInput';
+import { NumberInput } from './components/NumberInput';
 import { RadioGroup } from './components/RadioGroup';
 import { EmptyState } from './components/EmptyState';
 import { Menu } from './components/Menu';
@@ -431,6 +434,11 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     tabs: still(new Tabs(['One', 'Two', 'Three'], 1)),
     'search-field': still(new SearchField('term')),
     'text-input': still(new TextInput('value', null, 'Label')),
+    'text-input-kind': still(
+      new TextInput('a@b', null, 'E-mail', null, 'Where the receipt goes', null, null, 'large', null, 'email', 'to', '@work'),
+    ),
+    'money-input': still(new MoneyInput(123450n, null, 'Price', Currency.euro, null, null, null, 'VAT included')),
+    'number-input': still(new NumberInput(3, null, 'Lead time', 'days', 1, 30, null, 'Working days')),
     'radio-group': still(new RadioGroup(['a', 'b'], 0)),
     'empty-state': still(new EmptyState(new Icon(IconGlyph.fromIcons('search')), 'Nothing here', 'Try another term')),
     'menu-closed': still(new Menu(new Button('Open'), [new MenuItem('One'), new MenuItem('Two')])),

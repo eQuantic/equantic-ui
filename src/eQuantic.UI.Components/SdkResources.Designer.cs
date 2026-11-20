@@ -586,5 +586,30 @@ namespace eQuantic.UI.Components
         {
             get { return ResourceManager.GetString("TableColumns", Culture)!; }
         }
-}
+
+        internal static string AmountExpected
+        {
+            get { return ResourceManager.GetString("AmountExpected", Culture)!; }
+        }
+
+        internal static string WholeNumberExpected
+        {
+            get { return ResourceManager.GetString("WholeNumberExpected", Culture)!; }
+        }
+
+        internal static string ValueBetween
+        {
+            get { return ResourceManager.GetString("ValueBetween", Culture)!; }
+        }
+
+        internal static string ValueAtLeast
+        {
+            get { return ResourceManager.GetString("ValueAtLeast", Culture)!; }
+        }
+
+        internal static string ValueAtMost
+        {
+            get { return ResourceManager.GetString("ValueAtMost", Culture)!; }
+        }
+    }
 }

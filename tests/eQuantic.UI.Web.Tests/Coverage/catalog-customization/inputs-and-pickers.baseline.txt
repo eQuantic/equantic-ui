@@ -1,5 +1,5 @@
 # Inputs, pickers and segmented controls. Their slice is #1548. The format is README.md's.
-# owns: Calendar CultureSwitcher DatePicker DateTimePicker FileUpload FormInput SearchField SegmentedControl Select Stepper TextInput TimePicker CultureOption OptionGroup
+# owns: Calendar CultureSwitcher DatePicker DateTimePicker FileUpload FormInput MoneyInput NumberInput SearchField SegmentedControl Select Stepper TextInput TimePicker CultureOption Currency OptionGroup
 Calendar  style  #1548: CalendarTheme
 Calendar.Label  text  kept: the grid's accessible name
 CultureOption.Flag  text  kept: a flag's emoji, a glyph every target draws as text
@@ -7,6 +7,8 @@ CultureOption.Label  text  kept: the language's name in itself, an option's name
 CultureOption.Name  text  kept: the culture's name, an identifier
 CultureOption.Short  text  kept: the two or three letters the closed control says
 CultureSwitcher  style  #1548: InputTheme
+Currency.Code  text  kept: the currency's ISO 4217 code, an identifier
+Currency.Symbol  text  kept: part of the amount, drawn beside it and announced with the field's name (#1764)
 DatePicker  style  #1548: InputTheme and CalendarTheme
 DatePicker(label)  text  #1548: the field's label, a node
 DateTimePicker  style  #1548: InputTheme and CalendarTheme
@@ -20,6 +22,19 @@ FormInput.Helper  text  #1548: the helper below the field, a node
 FormInput.Label  text  #1548: the field's label, a node
 FormInput.Name  text  kept: the form field's name, the key its value is posted under
 FormInput.Placeholder  text  kept: a text field's placeholder is drawn by the field itself, as text
+FormInput.Prefix  text  kept: part of the value, drawn beside it and announced with the field's name, as Stepper.Suffix is (#1761)
+FormInput.Suffix  text  kept: part of the value, drawn beside it and announced with the field's name, as Stepper.Suffix is (#1761)
+MoneyInput  style  #1548: InputTheme
+MoneyInput(error)  text  #1548: the error below the field, a node
+MoneyInput(helper)  text  #1548: the helper below the field, a node
+MoneyInput(label)  text  #1548: the field's label, a node
+MoneyInput(placeholder)  text  kept: a text field's placeholder is drawn by the field itself, as text
+NumberInput  style  #1548: InputTheme
+NumberInput(error)  text  #1548: the error below the field, a node
+NumberInput(helper)  text  #1548: the helper below the field, a node
+NumberInput(label)  text  #1548: the field's label, a node
+NumberInput(placeholder)  text  kept: a text field's placeholder is drawn by the field itself, as text
+NumberInput(unit)  text  kept: part of the value, written and announced with the number, as Stepper.Suffix is (#1764)
 OptionGroup.Label  text  kept: the group's name, its accessible name and heading (#1521)
 OptionGroup.Options  text  kept: an option's name, as Select's; the option builder draws it (#1548)
 SearchField  style  #1548: InputTheme
@@ -38,6 +53,8 @@ TextInput(error)  text  #1548: the error below the field, a node
 TextInput(helper)  text  #1548: the helper below the field, a node
 TextInput(label)  text  #1548: the field's label, a node
 TextInput(placeholder)  text  kept: a text field's placeholder is drawn by the field itself, as text
+TextInput(prefix)  text  kept: part of the value, drawn beside it and announced with the field's name, as Stepper.Suffix is (#1761)
+TextInput(suffix)  text  kept: part of the value, drawn beside it and announced with the field's name, as Stepper.Suffix is (#1761)
 TextInput(value)  text  kept: the field's value
 TimePicker  style  #1548: InputTheme
 TimePicker(label)  text  #1548: the field's label, a node
