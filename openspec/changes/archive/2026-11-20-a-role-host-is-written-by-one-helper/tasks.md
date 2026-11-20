@@ -63,6 +63,6 @@ with `EQ_WIKI_DIR` set as the delivery gives it.
 
 - [x] 5.1 One entry for the ledger citing #1517, as a file of its own under `docs/ledger/`. No wiki page
   describes these hosts, so no wiki branch is owed
-- [ ] 5.2 Archive the change with `scripts/openspec.sh archive a-role-host-is-written-by-one-helper --yes`
+- [x] 5.2 Archive the change with `scripts/openspec.sh archive a-role-host-is-written-by-one-helper --yes`
   before the merge, and run `./scripts/check-openspec.sh`. Verify: it passes, and `openspec/specs`
   does not move (`skip_specs`)
