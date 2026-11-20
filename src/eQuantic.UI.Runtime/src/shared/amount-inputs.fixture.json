@@ -1,127 +1,37 @@
 {
   "": {
-    "format": {
-      "numberFormat": {
-        "numberDecimalSeparator": ".",
-        "numberGroupSeparator": ",",
-        "numberGroupSizes": [
-          3
-        ],
-        "numberDecimalDigits": 2,
-        "numberNegativePattern": 1,
-        "negativeSign": "-",
-        "positiveSign": "+",
-        "currencySymbol": "¤",
-        "currencyDecimalSeparator": ".",
-        "currencyGroupSeparator": ",",
-        "currencyGroupSizes": [
-          3
-        ],
-        "currencyDecimalDigits": 2,
-        "currencyPositivePattern": 0,
-        "currencyNegativePattern": 0,
-        "percentSymbol": "%",
-        "percentDecimalSeparator": ".",
-        "percentGroupSeparator": ",",
-        "percentGroupSizes": [
-          3
-        ],
-        "percentDecimalDigits": 2,
-        "percentPositivePattern": 0,
-        "percentNegativePattern": 0,
-        "perMilleSymbol": "‰",
-        "nanSymbol": "NaN",
-        "positiveInfinitySymbol": "Infinity",
-        "negativeInfinitySymbol": "-Infinity"
-      },
-      "dateTimeFormat": {
-        "shortDatePattern": "MM/dd/yyyy",
-        "longDatePattern": "dddd, dd MMMM yyyy",
-        "shortTimePattern": "HH:mm",
-        "longTimePattern": "HH:mm:ss",
-        "monthDayPattern": "MMMM dd",
-        "yearMonthPattern": "yyyy MMMM",
-        "dateSeparator": "/",
-        "timeSeparator": ":",
-        "eraName": "A.D.",
-        "firstDayOfWeek": 0,
-        "dayNames": [
-          "Sunday",
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-          "Friday",
-          "Saturday"
-        ],
-        "abbreviatedDayNames": [
-          "Sun",
-          "Mon",
-          "Tue",
-          "Wed",
-          "Thu",
-          "Fri",
-          "Sat"
-        ],
-        "monthNames": [
-          "January",
-          "February",
-          "March",
-          "April",
-          "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December"
-        ],
-        "abbreviatedMonthNames": [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec"
-        ],
-        "monthGenitiveNames": [
-          "January",
-          "February",
-          "March",
-          "April",
-          "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December"
-        ],
-        "abbreviatedMonthGenitiveNames": [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec"
-        ],
-        "amDesignator": "AM",
-        "pmDesignator": "PM"
-      }
+    "numberFormat": {
+      "numberDecimalSeparator": ".",
+      "numberGroupSeparator": ",",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 2,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "¤",
+      "currencyDecimalSeparator": ".",
+      "currencyGroupSeparator": ",",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 0,
+      "currencyNegativePattern": 0,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ".",
+      "percentGroupSeparator": ",",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 2,
+      "percentPositivePattern": 0,
+      "percentNegativePattern": 0,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "Infinity",
+      "negativeInfinitySymbol": "-Infinity"
     },
     "formats": [
       {
@@ -745,128 +655,38 @@
     ]
   },
   "en": {
-    "format": {
-      "numberFormat": {
-        "numberDecimalSeparator": ".",
-        "numberGroupSeparator": ",",
-        "numberGroupSizes": [
-          3
-        ],
-        "numberDecimalDigits": 3,
-        "numberNegativePattern": 1,
-        "negativeSign": "-",
-        "positiveSign": "+",
-        "currencySymbol": "¤",
-        "currencyDecimalSeparator": ".",
-        "currencyGroupSeparator": ",",
-        "currencyGroupSizes": [
-          3
-        ],
-        "currencyDecimalDigits": 2,
-        "currencyPositivePattern": 0,
-        "currencyNegativePattern": 1,
-        "percentSymbol": "%",
-        "percentDecimalSeparator": ".",
-        "percentGroupSeparator": ",",
-        "percentGroupSizes": [
-          3
-        ],
-        "percentDecimalDigits": 3,
-        "percentPositivePattern": 1,
-        "percentNegativePattern": 1,
-        "perMilleSymbol": "‰",
-        "nanSymbol": "NaN",
-        "positiveInfinitySymbol": "∞",
-        "negativeInfinitySymbol": "-∞"
-      },
-      "dateTimeFormat": {
-        "shortDatePattern": "M/d/yyyy",
-        "longDatePattern": "dddd, MMMM d, yyyy",
-        "shortTimePattern": "h:mm\u202Ftt",
-        "longTimePattern": "h:mm:ss\u202Ftt",
-        "monthDayPattern": "MMMM d",
-        "yearMonthPattern": "MMMM yyyy",
-        "dateSeparator": "/",
-        "timeSeparator": ":",
-        "eraName": "AD",
-        "firstDayOfWeek": 0,
-        "dayNames": [
-          "Sunday",
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-          "Friday",
-          "Saturday"
-        ],
-        "abbreviatedDayNames": [
-          "Sun",
-          "Mon",
-          "Tue",
-          "Wed",
-          "Thu",
-          "Fri",
-          "Sat"
-        ],
-        "monthNames": [
-          "January",
-          "February",
-          "March",
-          "April",
-          "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December"
-        ],
-        "abbreviatedMonthNames": [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec"
-        ],
-        "monthGenitiveNames": [
-          "January",
-          "February",
-          "March",
-          "April",
-          "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December"
-        ],
-        "abbreviatedMonthGenitiveNames": [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec"
-        ],
-        "amDesignator": "AM",
-        "pmDesignator": "PM"
-      }
+    "numberFormat": {
+      "numberDecimalSeparator": ".",
+      "numberGroupSeparator": ",",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "¤",
+      "currencyDecimalSeparator": ".",
+      "currencyGroupSeparator": ",",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 0,
+      "currencyNegativePattern": 1,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ".",
+      "percentGroupSeparator": ",",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 1,
+      "percentNegativePattern": 1,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
     },
     "formats": [
       {
@@ -1490,128 +1310,38 @@
     ]
   },
   "en-US": {
-    "format": {
-      "numberFormat": {
-        "numberDecimalSeparator": ".",
-        "numberGroupSeparator": ",",
-        "numberGroupSizes": [
-          3
-        ],
-        "numberDecimalDigits": 3,
-        "numberNegativePattern": 1,
-        "negativeSign": "-",
-        "positiveSign": "+",
-        "currencySymbol": "$",
-        "currencyDecimalSeparator": ".",
-        "currencyGroupSeparator": ",",
-        "currencyGroupSizes": [
-          3
-        ],
-        "currencyDecimalDigits": 2,
-        "currencyPositivePattern": 0,
-        "currencyNegativePattern": 1,
-        "percentSymbol": "%",
-        "percentDecimalSeparator": ".",
-        "percentGroupSeparator": ",",
-        "percentGroupSizes": [
-          3
-        ],
-        "percentDecimalDigits": 3,
-        "percentPositivePattern": 1,
-        "percentNegativePattern": 1,
-        "perMilleSymbol": "‰",
-        "nanSymbol": "NaN",
-        "positiveInfinitySymbol": "∞",
-        "negativeInfinitySymbol": "-∞"
-      },
-      "dateTimeFormat": {
-        "shortDatePattern": "M/d/yyyy",
-        "longDatePattern": "dddd, MMMM d, yyyy",
-        "shortTimePattern": "h:mm\u202Ftt",
-        "longTimePattern": "h:mm:ss\u202Ftt",
-        "monthDayPattern": "MMMM d",
-        "yearMonthPattern": "MMMM yyyy",
-        "dateSeparator": "/",
-        "timeSeparator": ":",
-        "eraName": "AD",
-        "firstDayOfWeek": 0,
-        "dayNames": [
-          "Sunday",
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-          "Friday",
-          "Saturday"
-        ],
-        "abbreviatedDayNames": [
-          "Sun",
-          "Mon",
-          "Tue",
-          "Wed",
-          "Thu",
-          "Fri",
-          "Sat"
-        ],
-        "monthNames": [
-          "January",
-          "February",
-          "March",
-          "April",
-          "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December"
-        ],
-        "abbreviatedMonthNames": [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec"
-        ],
-        "monthGenitiveNames": [
-          "January",
-          "February",
-          "March",
-          "April",
-          "May",
-          "June",
-          "July",
-          "August",
-          "September",
-          "October",
-          "November",
-          "December"
-        ],
-        "abbreviatedMonthGenitiveNames": [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec"
-        ],
-        "amDesignator": "AM",
-        "pmDesignator": "PM"
-      }
+    "numberFormat": {
+      "numberDecimalSeparator": ".",
+      "numberGroupSeparator": ",",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "$",
+      "currencyDecimalSeparator": ".",
+      "currencyGroupSeparator": ",",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 0,
+      "currencyNegativePattern": 1,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ".",
+      "percentGroupSeparator": ",",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 1,
+      "percentNegativePattern": 1,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
     },
     "formats": [
       {
@@ -2235,128 +1965,38 @@
     ]
   },
   "pt-PT": {
-    "format": {
-      "numberFormat": {
-        "numberDecimalSeparator": ",",
-        "numberGroupSeparator": "\u00A0",
-        "numberGroupSizes": [
-          3
-        ],
-        "numberDecimalDigits": 3,
-        "numberNegativePattern": 1,
-        "negativeSign": "-",
-        "positiveSign": "+",
-        "currencySymbol": "€",
-        "currencyDecimalSeparator": ",",
-        "currencyGroupSeparator": "\u00A0",
-        "currencyGroupSizes": [
-          3
-        ],
-        "currencyDecimalDigits": 2,
-        "currencyPositivePattern": 3,
-        "currencyNegativePattern": 8,
-        "percentSymbol": "%",
-        "percentDecimalSeparator": ",",
-        "percentGroupSeparator": "\u00A0",
-        "percentGroupSizes": [
-          3
-        ],
-        "percentDecimalDigits": 3,
-        "percentPositivePattern": 1,
-        "percentNegativePattern": 1,
-        "perMilleSymbol": "‰",
-        "nanSymbol": "NaN",
-        "positiveInfinitySymbol": "∞",
-        "negativeInfinitySymbol": "-∞"
-      },
-      "dateTimeFormat": {
-        "shortDatePattern": "dd/MM/yyyy",
-        "longDatePattern": "dddd, d 'de' MMMM 'de' yyyy",
-        "shortTimePattern": "HH:mm",
-        "longTimePattern": "HH:mm:ss",
-        "monthDayPattern": "d 'de' MMMM",
-        "yearMonthPattern": "MMMM 'de' yyyy",
-        "dateSeparator": "/",
-        "timeSeparator": ":",
-        "eraName": "d.C.",
-        "firstDayOfWeek": 0,
-        "dayNames": [
-          "domingo",
-          "segunda-feira",
-          "terça-feira",
-          "quarta-feira",
-          "quinta-feira",
-          "sexta-feira",
-          "sábado"
-        ],
-        "abbreviatedDayNames": [
-          "domingo",
-          "segunda",
-          "terça",
-          "quarta",
-          "quinta",
-          "sexta",
-          "sábado"
-        ],
-        "monthNames": [
-          "janeiro",
-          "fevereiro",
-          "março",
-          "abril",
-          "maio",
-          "junho",
-          "julho",
-          "agosto",
-          "setembro",
-          "outubro",
-          "novembro",
-          "dezembro"
-        ],
-        "abbreviatedMonthNames": [
-          "jan.",
-          "fev.",
-          "mar.",
-          "abr.",
-          "mai.",
-          "jun.",
-          "jul.",
-          "ago.",
-          "set.",
-          "out.",
-          "nov.",
-          "dez."
-        ],
-        "monthGenitiveNames": [
-          "janeiro",
-          "fevereiro",
-          "março",
-          "abril",
-          "maio",
-          "junho",
-          "julho",
-          "agosto",
-          "setembro",
-          "outubro",
-          "novembro",
-          "dezembro"
-        ],
-        "abbreviatedMonthGenitiveNames": [
-          "jan.",
-          "fev.",
-          "mar.",
-          "abr.",
-          "mai.",
-          "jun.",
-          "jul.",
-          "ago.",
-          "set.",
-          "out.",
-          "nov.",
-          "dez."
-        ],
-        "amDesignator": "AM",
-        "pmDesignator": "PM"
-      }
+    "numberFormat": {
+      "numberDecimalSeparator": ",",
+      "numberGroupSeparator": "\u00A0",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "€",
+      "currencyDecimalSeparator": ",",
+      "currencyGroupSeparator": "\u00A0",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 3,
+      "currencyNegativePattern": 8,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ",",
+      "percentGroupSeparator": "\u00A0",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 1,
+      "percentNegativePattern": 1,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
     },
     "formats": [
       {
@@ -2972,128 +2612,38 @@
     ]
   },
   "pt-BR": {
-    "format": {
-      "numberFormat": {
-        "numberDecimalSeparator": ",",
-        "numberGroupSeparator": ".",
-        "numberGroupSizes": [
-          3
-        ],
-        "numberDecimalDigits": 3,
-        "numberNegativePattern": 1,
-        "negativeSign": "-",
-        "positiveSign": "+",
-        "currencySymbol": "R$",
-        "currencyDecimalSeparator": ",",
-        "currencyGroupSeparator": ".",
-        "currencyGroupSizes": [
-          3
-        ],
-        "currencyDecimalDigits": 2,
-        "currencyPositivePattern": 2,
-        "currencyNegativePattern": 9,
-        "percentSymbol": "%",
-        "percentDecimalSeparator": ",",
-        "percentGroupSeparator": ".",
-        "percentGroupSizes": [
-          3
-        ],
-        "percentDecimalDigits": 3,
-        "percentPositivePattern": 1,
-        "percentNegativePattern": 1,
-        "perMilleSymbol": "‰",
-        "nanSymbol": "NaN",
-        "positiveInfinitySymbol": "∞",
-        "negativeInfinitySymbol": "-∞"
-      },
-      "dateTimeFormat": {
-        "shortDatePattern": "dd/MM/yyyy",
-        "longDatePattern": "dddd, d 'de' MMMM 'de' yyyy",
-        "shortTimePattern": "HH:mm",
-        "longTimePattern": "HH:mm:ss",
-        "monthDayPattern": "d 'de' MMMM",
-        "yearMonthPattern": "MMMM 'de' yyyy",
-        "dateSeparator": "/",
-        "timeSeparator": ":",
-        "eraName": "d.C.",
-        "firstDayOfWeek": 0,
-        "dayNames": [
-          "domingo",
-          "segunda-feira",
-          "terça-feira",
-          "quarta-feira",
-          "quinta-feira",
-          "sexta-feira",
-          "sábado"
-        ],
-        "abbreviatedDayNames": [
-          "dom.",
-          "seg.",
-          "ter.",
-          "qua.",
-          "qui.",
-          "sex.",
-          "sáb."
-        ],
-        "monthNames": [
-          "janeiro",
-          "fevereiro",
-          "março",
-          "abril",
-          "maio",
-          "junho",
-          "julho",
-          "agosto",
-          "setembro",
-          "outubro",
-          "novembro",
-          "dezembro"
-        ],
-        "abbreviatedMonthNames": [
-          "jan.",
-          "fev.",
-          "mar.",
-          "abr.",
-          "mai.",
-          "jun.",
-          "jul.",
-          "ago.",
-          "set.",
-          "out.",
-          "nov.",
-          "dez."
-        ],
-        "monthGenitiveNames": [
-          "janeiro",
-          "fevereiro",
-          "março",
-          "abril",
-          "maio",
-          "junho",
-          "julho",
-          "agosto",
-          "setembro",
-          "outubro",
-          "novembro",
-          "dezembro"
-        ],
-        "abbreviatedMonthGenitiveNames": [
-          "jan.",
-          "fev.",
-          "mar.",
-          "abr.",
-          "mai.",
-          "jun.",
-          "jul.",
-          "ago.",
-          "set.",
-          "out.",
-          "nov.",
-          "dez."
-        ],
-        "amDesignator": "AM",
-        "pmDesignator": "PM"
-      }
+    "numberFormat": {
+      "numberDecimalSeparator": ",",
+      "numberGroupSeparator": ".",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "R$",
+      "currencyDecimalSeparator": ",",
+      "currencyGroupSeparator": ".",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 2,
+      "currencyNegativePattern": 9,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ",",
+      "percentGroupSeparator": ".",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 1,
+      "percentNegativePattern": 1,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
     },
     "formats": [
       {
@@ -3717,128 +3267,38 @@
     ]
   },
   "de-DE": {
-    "format": {
-      "numberFormat": {
-        "numberDecimalSeparator": ",",
-        "numberGroupSeparator": ".",
-        "numberGroupSizes": [
-          3
-        ],
-        "numberDecimalDigits": 3,
-        "numberNegativePattern": 1,
-        "negativeSign": "-",
-        "positiveSign": "+",
-        "currencySymbol": "€",
-        "currencyDecimalSeparator": ",",
-        "currencyGroupSeparator": ".",
-        "currencyGroupSizes": [
-          3
-        ],
-        "currencyDecimalDigits": 2,
-        "currencyPositivePattern": 3,
-        "currencyNegativePattern": 8,
-        "percentSymbol": "%",
-        "percentDecimalSeparator": ",",
-        "percentGroupSeparator": ".",
-        "percentGroupSizes": [
-          3
-        ],
-        "percentDecimalDigits": 3,
-        "percentPositivePattern": 0,
-        "percentNegativePattern": 0,
-        "perMilleSymbol": "‰",
-        "nanSymbol": "NaN",
-        "positiveInfinitySymbol": "∞",
-        "negativeInfinitySymbol": "-∞"
-      },
-      "dateTimeFormat": {
-        "shortDatePattern": "dd.MM.yyyy",
-        "longDatePattern": "dddd, d. MMMM yyyy",
-        "shortTimePattern": "HH:mm",
-        "longTimePattern": "HH:mm:ss",
-        "monthDayPattern": "d. MMMM",
-        "yearMonthPattern": "MMMM yyyy",
-        "dateSeparator": ".",
-        "timeSeparator": ":",
-        "eraName": "n. Chr.",
-        "firstDayOfWeek": 1,
-        "dayNames": [
-          "Sonntag",
-          "Montag",
-          "Dienstag",
-          "Mittwoch",
-          "Donnerstag",
-          "Freitag",
-          "Samstag"
-        ],
-        "abbreviatedDayNames": [
-          "So",
-          "Mo",
-          "Di",
-          "Mi",
-          "Do",
-          "Fr",
-          "Sa"
-        ],
-        "monthNames": [
-          "Januar",
-          "Februar",
-          "März",
-          "April",
-          "Mai",
-          "Juni",
-          "Juli",
-          "August",
-          "September",
-          "Oktober",
-          "November",
-          "Dezember"
-        ],
-        "abbreviatedMonthNames": [
-          "Jan",
-          "Feb",
-          "Mär",
-          "Apr",
-          "Mai",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Okt",
-          "Nov",
-          "Dez"
-        ],
-        "monthGenitiveNames": [
-          "Januar",
-          "Februar",
-          "März",
-          "April",
-          "Mai",
-          "Juni",
-          "Juli",
-          "August",
-          "September",
-          "Oktober",
-          "November",
-          "Dezember"
-        ],
-        "abbreviatedMonthGenitiveNames": [
-          "Jan.",
-          "Feb.",
-          "März",
-          "Apr.",
-          "Mai",
-          "Juni",
-          "Juli",
-          "Aug.",
-          "Sept.",
-          "Okt.",
-          "Nov.",
-          "Dez."
-        ],
-        "amDesignator": "AM",
-        "pmDesignator": "PM"
-      }
+    "numberFormat": {
+      "numberDecimalSeparator": ",",
+      "numberGroupSeparator": ".",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "€",
+      "currencyDecimalSeparator": ",",
+      "currencyGroupSeparator": ".",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 3,
+      "currencyNegativePattern": 8,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ",",
+      "percentGroupSeparator": ".",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 0,
+      "percentNegativePattern": 0,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
     },
     "formats": [
       {
@@ -4462,128 +3922,38 @@
     ]
   },
   "de-AT": {
-    "format": {
-      "numberFormat": {
-        "numberDecimalSeparator": ",",
-        "numberGroupSeparator": "\u00A0",
-        "numberGroupSizes": [
-          3
-        ],
-        "numberDecimalDigits": 3,
-        "numberNegativePattern": 1,
-        "negativeSign": "-",
-        "positiveSign": "+",
-        "currencySymbol": "€",
-        "currencyDecimalSeparator": ",",
-        "currencyGroupSeparator": ".",
-        "currencyGroupSizes": [
-          3
-        ],
-        "currencyDecimalDigits": 2,
-        "currencyPositivePattern": 2,
-        "currencyNegativePattern": 9,
-        "percentSymbol": "%",
-        "percentDecimalSeparator": ",",
-        "percentGroupSeparator": "\u00A0",
-        "percentGroupSizes": [
-          3
-        ],
-        "percentDecimalDigits": 3,
-        "percentPositivePattern": 0,
-        "percentNegativePattern": 0,
-        "perMilleSymbol": "‰",
-        "nanSymbol": "NaN",
-        "positiveInfinitySymbol": "∞",
-        "negativeInfinitySymbol": "-∞"
-      },
-      "dateTimeFormat": {
-        "shortDatePattern": "dd.MM.yyyy",
-        "longDatePattern": "dddd, d. MMMM yyyy",
-        "shortTimePattern": "HH:mm",
-        "longTimePattern": "HH:mm:ss",
-        "monthDayPattern": "d. MMMM",
-        "yearMonthPattern": "MMMM yyyy",
-        "dateSeparator": ".",
-        "timeSeparator": ":",
-        "eraName": "n. Chr.",
-        "firstDayOfWeek": 1,
-        "dayNames": [
-          "Sonntag",
-          "Montag",
-          "Dienstag",
-          "Mittwoch",
-          "Donnerstag",
-          "Freitag",
-          "Samstag"
-        ],
-        "abbreviatedDayNames": [
-          "So",
-          "Mo",
-          "Di",
-          "Mi",
-          "Do",
-          "Fr",
-          "Sa"
-        ],
-        "monthNames": [
-          "Jänner",
-          "Februar",
-          "März",
-          "April",
-          "Mai",
-          "Juni",
-          "Juli",
-          "August",
-          "September",
-          "Oktober",
-          "November",
-          "Dezember"
-        ],
-        "abbreviatedMonthNames": [
-          "Jän",
-          "Feb",
-          "Mär",
-          "Apr",
-          "Mai",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Okt",
-          "Nov",
-          "Dez"
-        ],
-        "monthGenitiveNames": [
-          "Jänner",
-          "Februar",
-          "März",
-          "April",
-          "Mai",
-          "Juni",
-          "Juli",
-          "August",
-          "September",
-          "Oktober",
-          "November",
-          "Dezember"
-        ],
-        "abbreviatedMonthGenitiveNames": [
-          "Jän.",
-          "Feb.",
-          "März",
-          "Apr.",
-          "Mai",
-          "Juni",
-          "Juli",
-          "Aug.",
-          "Sep.",
-          "Okt.",
-          "Nov.",
-          "Dez."
-        ],
-        "amDesignator": "AM",
-        "pmDesignator": "PM"
-      }
+    "numberFormat": {
+      "numberDecimalSeparator": ",",
+      "numberGroupSeparator": "\u00A0",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "€",
+      "currencyDecimalSeparator": ",",
+      "currencyGroupSeparator": ".",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 2,
+      "currencyNegativePattern": 9,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ",",
+      "percentGroupSeparator": "\u00A0",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 0,
+      "percentNegativePattern": 0,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
     },
     "formats": [
       {
@@ -5199,128 +4569,38 @@
     ]
   },
   "de-CH": {
-    "format": {
-      "numberFormat": {
-        "numberDecimalSeparator": ".",
-        "numberGroupSeparator": "'",
-        "numberGroupSizes": [
-          3
-        ],
-        "numberDecimalDigits": 3,
-        "numberNegativePattern": 1,
-        "negativeSign": "-",
-        "positiveSign": "+",
-        "currencySymbol": "CHF",
-        "currencyDecimalSeparator": ".",
-        "currencyGroupSeparator": "'",
-        "currencyGroupSizes": [
-          3
-        ],
-        "currencyDecimalDigits": 2,
-        "currencyPositivePattern": 2,
-        "currencyNegativePattern": 2,
-        "percentSymbol": "%",
-        "percentDecimalSeparator": ".",
-        "percentGroupSeparator": "'",
-        "percentGroupSizes": [
-          3
-        ],
-        "percentDecimalDigits": 3,
-        "percentPositivePattern": 1,
-        "percentNegativePattern": 1,
-        "perMilleSymbol": "‰",
-        "nanSymbol": "NaN",
-        "positiveInfinitySymbol": "∞",
-        "negativeInfinitySymbol": "-∞"
-      },
-      "dateTimeFormat": {
-        "shortDatePattern": "dd.MM.yyyy",
-        "longDatePattern": "dddd, d. MMMM yyyy",
-        "shortTimePattern": "HH:mm",
-        "longTimePattern": "HH:mm:ss",
-        "monthDayPattern": "d. MMMM",
-        "yearMonthPattern": "MMMM yyyy",
-        "dateSeparator": ".",
-        "timeSeparator": ":",
-        "eraName": "n. Chr.",
-        "firstDayOfWeek": 1,
-        "dayNames": [
-          "Sonntag",
-          "Montag",
-          "Dienstag",
-          "Mittwoch",
-          "Donnerstag",
-          "Freitag",
-          "Samstag"
-        ],
-        "abbreviatedDayNames": [
-          "So",
-          "Mo",
-          "Di",
-          "Mi",
-          "Do",
-          "Fr",
-          "Sa"
-        ],
-        "monthNames": [
-          "Januar",
-          "Februar",
-          "März",
-          "April",
-          "Mai",
-          "Juni",
-          "Juli",
-          "August",
-          "September",
-          "Oktober",
-          "November",
-          "Dezember"
-        ],
-        "abbreviatedMonthNames": [
-          "Jan",
-          "Feb",
-          "Mär",
-          "Apr",
-          "Mai",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Okt",
-          "Nov",
-          "Dez"
-        ],
-        "monthGenitiveNames": [
-          "Januar",
-          "Februar",
-          "März",
-          "April",
-          "Mai",
-          "Juni",
-          "Juli",
-          "August",
-          "September",
-          "Oktober",
-          "November",
-          "Dezember"
-        ],
-        "abbreviatedMonthGenitiveNames": [
-          "Jan.",
-          "Feb.",
-          "März",
-          "Apr.",
-          "Mai",
-          "Juni",
-          "Juli",
-          "Aug.",
-          "Sept.",
-          "Okt.",
-          "Nov.",
-          "Dez."
-        ],
-        "amDesignator": "AM",
-        "pmDesignator": "PM"
-      }
+    "numberFormat": {
+      "numberDecimalSeparator": ".",
+      "numberGroupSeparator": "'",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "CHF",
+      "currencyDecimalSeparator": ".",
+      "currencyGroupSeparator": "'",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 2,
+      "currencyNegativePattern": 2,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ".",
+      "percentGroupSeparator": "'",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 1,
+      "percentNegativePattern": 1,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
     },
     "formats": [
       {
@@ -5928,128 +5208,38 @@
     ]
   },
   "nl-NL": {
-    "format": {
-      "numberFormat": {
-        "numberDecimalSeparator": ",",
-        "numberGroupSeparator": ".",
-        "numberGroupSizes": [
-          3
-        ],
-        "numberDecimalDigits": 3,
-        "numberNegativePattern": 1,
-        "negativeSign": "-",
-        "positiveSign": "+",
-        "currencySymbol": "€",
-        "currencyDecimalSeparator": ",",
-        "currencyGroupSeparator": ".",
-        "currencyGroupSizes": [
-          3
-        ],
-        "currencyDecimalDigits": 2,
-        "currencyPositivePattern": 2,
-        "currencyNegativePattern": 12,
-        "percentSymbol": "%",
-        "percentDecimalSeparator": ",",
-        "percentGroupSeparator": ".",
-        "percentGroupSizes": [
-          3
-        ],
-        "percentDecimalDigits": 3,
-        "percentPositivePattern": 1,
-        "percentNegativePattern": 1,
-        "perMilleSymbol": "‰",
-        "nanSymbol": "NaN",
-        "positiveInfinitySymbol": "∞",
-        "negativeInfinitySymbol": "-∞"
-      },
-      "dateTimeFormat": {
-        "shortDatePattern": "dd-MM-yyyy",
-        "longDatePattern": "dddd d MMMM yyyy",
-        "shortTimePattern": "HH:mm",
-        "longTimePattern": "HH:mm:ss",
-        "monthDayPattern": "d MMMM",
-        "yearMonthPattern": "MMMM yyyy",
-        "dateSeparator": "-",
-        "timeSeparator": ":",
-        "eraName": "n.Chr.",
-        "firstDayOfWeek": 1,
-        "dayNames": [
-          "zondag",
-          "maandag",
-          "dinsdag",
-          "woensdag",
-          "donderdag",
-          "vrijdag",
-          "zaterdag"
-        ],
-        "abbreviatedDayNames": [
-          "zo",
-          "ma",
-          "di",
-          "wo",
-          "do",
-          "vr",
-          "za"
-        ],
-        "monthNames": [
-          "januari",
-          "februari",
-          "maart",
-          "april",
-          "mei",
-          "juni",
-          "juli",
-          "augustus",
-          "september",
-          "oktober",
-          "november",
-          "december"
-        ],
-        "abbreviatedMonthNames": [
-          "jan",
-          "feb",
-          "mrt",
-          "apr",
-          "mei",
-          "jun",
-          "jul",
-          "aug",
-          "sep",
-          "okt",
-          "nov",
-          "dec"
-        ],
-        "monthGenitiveNames": [
-          "januari",
-          "februari",
-          "maart",
-          "april",
-          "mei",
-          "juni",
-          "juli",
-          "augustus",
-          "september",
-          "oktober",
-          "november",
-          "december"
-        ],
-        "abbreviatedMonthGenitiveNames": [
-          "jan",
-          "feb",
-          "mrt",
-          "apr",
-          "mei",
-          "jun",
-          "jul",
-          "aug",
-          "sep",
-          "okt",
-          "nov",
-          "dec"
-        ],
-        "amDesignator": "AM",
-        "pmDesignator": "PM"
-      }
+    "numberFormat": {
+      "numberDecimalSeparator": ",",
+      "numberGroupSeparator": ".",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "€",
+      "currencyDecimalSeparator": ",",
+      "currencyGroupSeparator": ".",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 2,
+      "currencyNegativePattern": 12,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ",",
+      "percentGroupSeparator": ".",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 1,
+      "percentNegativePattern": 1,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
     },
     "formats": [
       {
@@ -6673,128 +5863,38 @@
     ]
   },
   "fr-FR": {
-    "format": {
-      "numberFormat": {
-        "numberDecimalSeparator": ",",
-        "numberGroupSeparator": "\u202F",
-        "numberGroupSizes": [
-          3
-        ],
-        "numberDecimalDigits": 3,
-        "numberNegativePattern": 1,
-        "negativeSign": "-",
-        "positiveSign": "+",
-        "currencySymbol": "€",
-        "currencyDecimalSeparator": ",",
-        "currencyGroupSeparator": "\u202F",
-        "currencyGroupSizes": [
-          3
-        ],
-        "currencyDecimalDigits": 2,
-        "currencyPositivePattern": 3,
-        "currencyNegativePattern": 8,
-        "percentSymbol": "%",
-        "percentDecimalSeparator": ",",
-        "percentGroupSeparator": "\u202F",
-        "percentGroupSizes": [
-          3
-        ],
-        "percentDecimalDigits": 3,
-        "percentPositivePattern": 0,
-        "percentNegativePattern": 0,
-        "perMilleSymbol": "‰",
-        "nanSymbol": "NaN",
-        "positiveInfinitySymbol": "∞",
-        "negativeInfinitySymbol": "-∞"
-      },
-      "dateTimeFormat": {
-        "shortDatePattern": "dd/MM/yyyy",
-        "longDatePattern": "dddd d MMMM yyyy",
-        "shortTimePattern": "HH:mm",
-        "longTimePattern": "HH:mm:ss",
-        "monthDayPattern": "d MMMM",
-        "yearMonthPattern": "MMMM yyyy",
-        "dateSeparator": "/",
-        "timeSeparator": ":",
-        "eraName": "ap. J.-C.",
-        "firstDayOfWeek": 1,
-        "dayNames": [
-          "dimanche",
-          "lundi",
-          "mardi",
-          "mercredi",
-          "jeudi",
-          "vendredi",
-          "samedi"
-        ],
-        "abbreviatedDayNames": [
-          "dim.",
-          "lun.",
-          "mar.",
-          "mer.",
-          "jeu.",
-          "ven.",
-          "sam."
-        ],
-        "monthNames": [
-          "janvier",
-          "février",
-          "mars",
-          "avril",
-          "mai",
-          "juin",
-          "juillet",
-          "août",
-          "septembre",
-          "octobre",
-          "novembre",
-          "décembre"
-        ],
-        "abbreviatedMonthNames": [
-          "janv.",
-          "févr.",
-          "mars",
-          "avr.",
-          "mai",
-          "juin",
-          "juil.",
-          "août",
-          "sept.",
-          "oct.",
-          "nov.",
-          "déc."
-        ],
-        "monthGenitiveNames": [
-          "janvier",
-          "février",
-          "mars",
-          "avril",
-          "mai",
-          "juin",
-          "juillet",
-          "août",
-          "septembre",
-          "octobre",
-          "novembre",
-          "décembre"
-        ],
-        "abbreviatedMonthGenitiveNames": [
-          "janv.",
-          "févr.",
-          "mars",
-          "avr.",
-          "mai",
-          "juin",
-          "juil.",
-          "août",
-          "sept.",
-          "oct.",
-          "nov.",
-          "déc."
-        ],
-        "amDesignator": "AM",
-        "pmDesignator": "PM"
-      }
+    "numberFormat": {
+      "numberDecimalSeparator": ",",
+      "numberGroupSeparator": "\u202F",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "€",
+      "currencyDecimalSeparator": ",",
+      "currencyGroupSeparator": "\u202F",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 3,
+      "currencyNegativePattern": 8,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ",",
+      "percentGroupSeparator": "\u202F",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 0,
+      "percentNegativePattern": 0,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
     },
     "formats": [
       {
@@ -7410,128 +6510,38 @@
     ]
   },
   "ja-JP": {
-    "format": {
-      "numberFormat": {
-        "numberDecimalSeparator": ".",
-        "numberGroupSeparator": ",",
-        "numberGroupSizes": [
-          3
-        ],
-        "numberDecimalDigits": 3,
-        "numberNegativePattern": 1,
-        "negativeSign": "-",
-        "positiveSign": "+",
-        "currencySymbol": "¥",
-        "currencyDecimalSeparator": ".",
-        "currencyGroupSeparator": ",",
-        "currencyGroupSizes": [
-          3
-        ],
-        "currencyDecimalDigits": 0,
-        "currencyPositivePattern": 0,
-        "currencyNegativePattern": 1,
-        "percentSymbol": "%",
-        "percentDecimalSeparator": ".",
-        "percentGroupSeparator": ",",
-        "percentGroupSizes": [
-          3
-        ],
-        "percentDecimalDigits": 3,
-        "percentPositivePattern": 1,
-        "percentNegativePattern": 1,
-        "perMilleSymbol": "‰",
-        "nanSymbol": "NaN",
-        "positiveInfinitySymbol": "∞",
-        "negativeInfinitySymbol": "-∞"
-      },
-      "dateTimeFormat": {
-        "shortDatePattern": "yyyy/MM/dd",
-        "longDatePattern": "yyyy年M月d日 dddd",
-        "shortTimePattern": "H:mm",
-        "longTimePattern": "H:mm:ss",
-        "monthDayPattern": "M月d日",
-        "yearMonthPattern": "yyyy年M月",
-        "dateSeparator": "/",
-        "timeSeparator": ":",
-        "eraName": "西暦",
-        "firstDayOfWeek": 0,
-        "dayNames": [
-          "日曜日",
-          "月曜日",
-          "火曜日",
-          "水曜日",
-          "木曜日",
-          "金曜日",
-          "土曜日"
-        ],
-        "abbreviatedDayNames": [
-          "日",
-          "月",
-          "火",
-          "水",
-          "木",
-          "金",
-          "土"
-        ],
-        "monthNames": [
-          "1月",
-          "2月",
-          "3月",
-          "4月",
-          "5月",
-          "6月",
-          "7月",
-          "8月",
-          "9月",
-          "10月",
-          "11月",
-          "12月"
-        ],
-        "abbreviatedMonthNames": [
-          "1月",
-          "2月",
-          "3月",
-          "4月",
-          "5月",
-          "6月",
-          "7月",
-          "8月",
-          "9月",
-          "10月",
-          "11月",
-          "12月"
-        ],
-        "monthGenitiveNames": [
-          "1月",
-          "2月",
-          "3月",
-          "4月",
-          "5月",
-          "6月",
-          "7月",
-          "8月",
-          "9月",
-          "10月",
-          "11月",
-          "12月"
-        ],
-        "abbreviatedMonthGenitiveNames": [
-          "1月",
-          "2月",
-          "3月",
-          "4月",
-          "5月",
-          "6月",
-          "7月",
-          "8月",
-          "9月",
-          "10月",
-          "11月",
-          "12月"
-        ],
-        "amDesignator": "午前",
-        "pmDesignator": "午後"
-      }
+    "numberFormat": {
+      "numberDecimalSeparator": ".",
+      "numberGroupSeparator": ",",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "¥",
+      "currencyDecimalSeparator": ".",
+      "currencyGroupSeparator": ",",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 0,
+      "currencyPositivePattern": 0,
+      "currencyNegativePattern": 1,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ".",
+      "percentGroupSeparator": ",",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 1,
+      "percentNegativePattern": 1,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
     },
     "formats": [
       {

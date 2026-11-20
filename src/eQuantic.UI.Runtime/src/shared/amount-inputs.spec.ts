@@ -9,7 +9,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import fixture from './amount-inputs.fixture.json';
 import { StatefulComponent } from '../core/component';
-import { installCulture, type CultureFormat } from '../utils/culture';
+import { INVARIANT_FORMAT, installCulture, type CultureFormat, type NumberFormatData } from '../utils/culture';
 import { photonTheme } from './design-system.generated';
 import { setPhotonTheme } from './photon-context';
 import { Currency } from './components/Currency';
@@ -40,7 +40,7 @@ interface Script {
 }
 
 interface CultureCase {
-  format: CultureFormat;
+  numberFormat: NumberFormatData;
   formats: { currency: string; amount: string; text: string }[];
   scripts: Script[];
 }
@@ -107,8 +107,10 @@ function observe(container: HTMLElement, page: Page): Seen {
 describe('money and numbers as the server writes and reads them (#1764)', () => {
   afterEach(() => installCulture('', '', {}));
 
-  for (const [culture, { format, formats, scripts }] of Object.entries(cultures)) {
+  for (const [culture, { numberFormat, formats, scripts }] of Object.entries(cultures)) {
     const label = culture === '' ? 'the invariant culture' : culture;
+    // What the server installs for the culture, as far as a number reads it.
+    const format: CultureFormat = { ...INVARIANT_FORMAT, numberFormat };
 
     it(`writes money as .NET's C with the currency's symbol and digits, in ${label}`, () => {
       installCulture('', culture, {}, culture === '' ? null : format);

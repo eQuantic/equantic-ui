@@ -21,7 +21,7 @@ hides what is typed.
 |---|---|---|---|
 | `Text` | `text` | | |
 | `Email` | `text` | `email` | `email` |
-| `Phone` | `tel` | | `tel` |
+| `Phone` | `tel` | `tel` | `tel` |
 | `Url` | `text` | `url` | `url` |
 | `Number` | `text` | `numeric` | |
 | `Decimal` | `text` | `decimal` | |

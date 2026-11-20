@@ -47,7 +47,9 @@ public class AmountInputsFixtureTests
     private static Dictionary<string, object> Fixture() =>
         AmountInputsTests.Cultures.ToDictionary(culture => culture, culture => (object)new Dictionary<string, object>
         {
-            ["format"] = JsonDocument.Parse(CultureFormatBridge.SerializeJson(new CultureInfo(culture))).RootElement,
+            // The culture's number format, as the server sends it: the rest of what it sends is no field's.
+            ["numberFormat"] = JsonDocument.Parse(CultureFormatBridge.SerializeJson(new CultureInfo(culture)))
+                .RootElement.GetProperty("numberFormat"),
             ["formats"] = new[] { Currency.Euro, Currency.Yen, Currency.SwissFranc }.SelectMany(currency => Amounts.Select(amount =>
                 new Dictionary<string, object>
                 {

@@ -72,7 +72,8 @@ instead.
 ### Requirement: A number input takes a whole number with its unit
 
 A `NumberInput` SHALL take a whole number and a unit, show the number as the culture writes it with
-the unit as its suffix, read what is typed in the culture, open the digits keypad (kind `Number`), hand
+the unit as its suffix, grouped at rest and plain while edited, read what is typed in the culture with a
+sign and no group separator, open the digits keypad (kind `Number`), hand
 `OnChanged` a number inside `Min` and `Max` and null for an emptied field, and say when what is typed is
 no whole number or is outside the range.
 
@@ -80,3 +81,8 @@ no whole number or is outside the range.
 
 - **WHEN** a `NumberInput` with the unit `dias`, `Min` 1 and `Max` 30 is typed `45`, then `3`
 - **THEN** `45` is not handed on and the field is invalid, then 3 is handed on
+
+#### Scenario: No group separator
+
+- **WHEN** `2,5` is typed into a `NumberInput` in en
+- **THEN** nothing is handed on, and the field is invalid; in .NET's `AllowThousands` it was twenty-five

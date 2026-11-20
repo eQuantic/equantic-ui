@@ -64,3 +64,18 @@ build with EQ2004.
 
 - **WHEN** a component assigns `NumberFormatInfo.CurrentInfo.CurrencySymbol`
 - **THEN** the build fails with EQ2004
+
+### Requirement: A decimal truncates, floors and ceils as .NET does
+
+`decimal.Truncate`, `decimal.Floor` and `decimal.Ceiling`, and `Math`'s over a decimal, SHALL answer the
+whole number .NET answers, in its direction and with the scale .NET keeps, on the runtime's `Decimal`.
+
+#### Scenario: A negative fraction
+
+- **WHEN** browser-side code computes `Math.Truncate(-0.5m)`, `Math.Floor(-0.5m)` and `Math.Ceiling(-0.5m)`
+- **THEN** they are `0`, `-1` and `0`, as in .NET
+
+#### Scenario: Whether an amount has more digits than its currency
+
+- **WHEN** browser-side code compares `decimal.Truncate(12505m / 10m)` with `12505m / 10m`
+- **THEN** they differ, as in .NET
