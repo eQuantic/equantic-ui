@@ -155,7 +155,8 @@ internal static class PlatformMemberRead
         symbol is IPropertySymbol && Root(symbol).Type == "System.Globalization.NumberFormatInfo";
 
     /// <summary>Whether <paramref name="node"/> is written: the left of an assignment, simple or compound,
-    /// the operand of an increment or a decrement, or an argument passed by <c>ref</c> or <c>out</c>.</summary>
+    /// the operand of an increment or a decrement, or an argument passed by <c>ref</c> or <c>out</c>, never by
+    /// <c>in</c>.</summary>
     private static bool IsWritten(SyntaxNode node)
     {
         var place = node;
@@ -167,7 +168,9 @@ internal static class PlatformMemberRead
                 || unary.IsKind(SyntaxKind.PreDecrementExpression),
             PostfixUnaryExpressionSyntax unary => unary.IsKind(SyntaxKind.PostIncrementExpression)
                 || unary.IsKind(SyntaxKind.PostDecrementExpression),
-            ArgumentSyntax argument => !argument.RefKindKeyword.IsKind(SyntaxKind.None),
+            // `in` passes a read-only reference: a read.
+            ArgumentSyntax argument => argument.RefKindKeyword.IsKind(SyntaxKind.RefKeyword)
+                || argument.RefKindKeyword.IsKind(SyntaxKind.OutKeyword),
             _ => false,
         };
     }

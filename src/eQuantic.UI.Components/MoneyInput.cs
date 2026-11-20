@@ -7,9 +7,9 @@ namespace eQuantic.UI.Components;
 /// An amount of money, typed: a <see cref="TextInput"/> of kind <see cref="TextEntryKind.Decimal"/>, so a
 /// phone opens the decimal keypad, holding an amount in the currency's minor units (cents for the euro).
 /// <para>
-/// The field writes the amount as the culture writes a number with the currency's digits, grouped while
-/// it rests (<c>1 234,50</c>) and plain while it is edited (<c>1234,50</c>), so an edit never meets a group
-/// separator. The currency's symbol is not part of the text, which the reader would have to type around:
+/// The field writes the amount as the culture writes a number with the currency's digits (<c>1 234,50</c>),
+/// and what is typed stays as it was typed until the field is left: taking the focus rewrites nothing, since a
+/// value written under a pointer's press moves the caret to the end. The currency's symbol is not part of the text, which the reader would have to type around:
 /// it is the field's prefix or suffix, on the side the culture writes its own (<c>12,50 €</c> in pt-PT,
 /// <c>€ 12.50</c> in English), and part of the field's accessible name.
 /// </para>
@@ -30,12 +30,15 @@ public sealed class MoneyInput : StatefulComponent
     /// every money field gets wrong.</summary>
     private string? _typing;
 
-    private bool _focused;
-
     public MoneyInput(long? amount, Action<long?>? onChanged, string label, Currency currency,
         long? min = null, long? max = null, string? placeholder = null, string? helper = null,
         string? error = null, SizeVariant size = SizeVariant.Large)
     {
+        // A field of text, which has no small size (spec B9): refused here, where TextInput would refuse it at
+        // the first build, inside the page's error boundary.
+        if (size == SizeVariant.Small)
+            throw new ArgumentOutOfRangeException(nameof(size),
+                "A text field has no Small size: text and padding cannot fit 32dp (spec B9).");
         Amount = amount;
         OnChanged = onChanged;
         Label = label;
@@ -102,7 +105,7 @@ public sealed class MoneyInput : StatefulComponent
 
     public override VisualNode Build(ComponentContext context)
     {
-        var shown = _typing ?? (Amount is { } amount ? Write(amount, _focused) : "");
+        var shown = _typing ?? (Amount is { } amount ? Write(amount) : "");
         // The symbol goes where the culture writes its own: before the amount for $n and $ n, after it for
         // n$ and n $.
         var leads = NumberFormatInfo.CurrentInfo.CurrencyPositivePattern is 0 or 2;
@@ -125,19 +128,18 @@ public sealed class MoneyInput : StatefulComponent
         SetState(() => _typing = text);
     }
 
-    /// <summary>Arriving shows the amount plain, for editing; leaving settles what was typed into the
-    /// amount's own text, unless it is not one the field takes, which stays for the reader to correct.</summary>
-    private void Focus(bool focused) => SetState(() =>
+    /// <summary>Leaving settles what was typed into the amount's own text, unless it is not one the field
+    /// takes, which stays for the reader to correct.</summary>
+    private void Focus(bool focused)
     {
-        _focused = focused;
-        if (!focused && _typing is { } typed && Complaint(typed) is null) _typing = null;
-    });
+        if (!focused && _typing is { } typed && Complaint(typed) is null) SetState(() => _typing = null);
+    }
 
     /// <summary>What the field says is wrong with what was typed, or null.</summary>
     private string? Complaint(string typed)
     {
         if (typed.Trim().Length == 0) return null;
-        if (Read(typed, Currency) is not { } amount) return SdkStrings.AmountExpected(Write(1250, true));
+        if (Read(typed, Currency) is not { } amount) return SdkStrings.AmountExpected(Write(1250));
         if (InRange(amount)) return null;
         if (Min is { } min && Max is { } max) return SdkStrings.ValueBetween(Currency.Format(min), Currency.Format(max));
         return Min is { } least ? SdkStrings.ValueAtLeast(Currency.Format(least)) : SdkStrings.ValueAtMost(Currency.Format(Max!.Value));
@@ -145,9 +147,8 @@ public sealed class MoneyInput : StatefulComponent
 
     private bool InRange(long amount) => (Min is not { } min || amount >= min) && (Max is not { } max || amount <= max);
 
-    /// <summary>The amount as the field writes it: grouped at rest, plain while edited.</summary>
-    private string Write(long amount, bool plain) =>
-        Currency.ToMajor(amount).ToString((plain ? "F" : "N") + Currency.MinorDigits);
+    /// <summary>The amount as the field writes it: the culture's number, grouped, with the currency's digits.</summary>
+    private string Write(long amount) => Currency.ToMajor(amount).ToString("N" + Currency.MinorDigits);
 
     /// <summary>Whether what was typed says <paramref name="amount"/>: nothing for none, or that amount. Text
     /// that is no amount says nothing at all, not even none.</summary>

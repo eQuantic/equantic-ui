@@ -1,4 +1,4 @@
-import { $eq, $SizeVariantValue, $TextEntryKindValue, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, LiveRegion, Row, SizeValue, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
+import { $eq, $SizeVariantValue, $TextEntryKindValue, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, LiveRegion, Row, SdkStrings, SizeValue, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
 
 export class TextInput extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TextInput';
@@ -155,7 +155,7 @@ export class TextInput extends StatefulComponent {
     accessibleName() {
         if (this.label.length === 0) return null;
         let affixes = (this.prefix ?? '') + ((($0) => ($0 != null && $0.length > 0))(this.prefix) && (($0) => ($0 != null && $0.length > 0))(this.suffix) ? ' ' : '') + (this.suffix ?? '');
-        return affixes.length > 0 ? `${this.label} (${affixes})` : this.label;
+        return affixes.length > 0 ? SdkStrings.namedWithAffixes(this.label, affixes) : this.label;
     }
 }
 

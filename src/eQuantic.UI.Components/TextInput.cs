@@ -231,6 +231,6 @@ public sealed class TextInput : StatefulComponent
     {
         if (Label.Length == 0) return null;
         var affixes = (Prefix ?? "") + (Prefix is { Length: > 0 } && Suffix is { Length: > 0 } ? " " : "") + (Suffix ?? "");
-        return affixes.Length > 0 ? $"{Label} ({affixes})" : Label;
+        return affixes.Length > 0 ? SdkStrings.NamedWithAffixes(Label, affixes) : Label;
     }
 }

@@ -361,6 +361,14 @@ export class SdkStrings {
         return $eq.text.stringFormat($eq.str('SdkResources', 'ValueAtMost'), most);
     }
 
+    static namedWithAffixes(label: string, affixes: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'NamedWithAffixes'), label, affixes);
+    }
+
+    static valueWithUnit(number: string, unit: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'ValueWithUnit'), number, unit);
+    }
+
     static hint(pattern: string, letters: string) {
         let day = letters.length > 0 ? letters[0] : 'D';
         let month = letters.length > 1 ? letters[1] : 'M';

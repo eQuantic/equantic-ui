@@ -361,4 +361,10 @@
   <data name="ValueAtMost" xml:space="preserve">
     <value>Enter at most {0}</value>
   </data>
+  <data name="NamedWithAffixes" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+  <data name="ValueWithUnit" xml:space="preserve">
+    <value>{0} {1}</value>
+  </data>
 </root>

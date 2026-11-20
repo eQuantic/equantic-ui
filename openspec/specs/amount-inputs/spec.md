@@ -20,8 +20,8 @@ label followed by the affixes in parentheses. A field with neither SHALL be name
 ### Requirement: A money input writes an amount as the culture writes it
 
 A `MoneyInput` SHALL take an amount in minor units and a `Currency`, and SHALL show it as the culture
-writes a number with the currency's minor digits: grouped (`N`) while the field rests, plain (`F`)
-while it has the keyboard. The currency's symbol SHALL be the field's prefix where the culture's
+writes a number with the currency's minor digits, grouped (`N`). What is typed SHALL stay as typed
+until the field is left, and taking the focus SHALL rewrite nothing, so the caret stays where it was put. The currency's symbol SHALL be the field's prefix where the culture's
 `CurrencyPositivePattern` puts the symbol first (0 and 2) and its suffix where it puts it last (1 and 3).
 The entry SHALL be of kind `Decimal`.
 
@@ -30,10 +30,10 @@ The entry SHALL be of kind `Decimal`.
 - **WHEN** a `MoneyInput` holding 123450 cents of `Currency.Euro` rests, in pt-PT and in en
 - **THEN** pt-PT shows `1 234,50` with the suffix `€`, and en shows `1,234.50` with the prefix `€`
 
-#### Scenario: Editing
+#### Scenario: Taking the focus
 
-- **WHEN** the same field takes the keyboard in pt-PT
-- **THEN** it shows `1234,50`
+- **WHEN** the same field takes the keyboard in pt-PT, `1234,5` is typed, and the field is left
+- **THEN** it shows `1 234,50` on focus, `1234,5` while typed, and `1 234,50` again
 
 #### Scenario: A currency with no minor unit
 
@@ -78,7 +78,7 @@ instead.
 ### Requirement: A number input takes a whole number with its unit
 
 A `NumberInput` SHALL take a whole number and a unit, show the number as the culture writes it with
-the unit as its suffix, grouped at rest and plain while edited, read what is typed in the culture with a
+the unit as its suffix, grouped, read what is typed in the culture with a
 sign and no group separator, open the digits keypad (kind `Number`), hand
 `OnChanged` a number inside `Min` and `Max` and null for an emptied field, and say when what is typed is
 no whole number or is outside the range.

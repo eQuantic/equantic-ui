@@ -611,5 +611,15 @@ namespace eQuantic.UI.Components
         {
             get { return ResourceManager.GetString("ValueAtMost", Culture)!; }
         }
+
+        internal static string NamedWithAffixes
+        {
+            get { return ResourceManager.GetString("NamedWithAffixes", Culture)!; }
+        }
+
+        internal static string ValueWithUnit
+        {
+            get { return ResourceManager.GetString("ValueWithUnit", Culture)!; }
+        }
     }
 }

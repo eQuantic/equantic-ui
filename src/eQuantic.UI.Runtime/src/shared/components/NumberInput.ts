@@ -3,7 +3,6 @@ import { $eq, $SizeVariantValue, BuildContext, SdkStrings, StatefulComponent, Te
 export class NumberInput extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.NumberInput';
     _typing: any = null;
-    _focused: boolean = false;
     _disabled: boolean = false;
     declare value: any;
     declare onChanged: ((int: number | null) => void) | null;
@@ -37,6 +36,7 @@ export class NumberInput extends StatefulComponent {
         if (error !== undefined) this.error = error;
         if (size !== undefined) this.size = size;
         if (this.size === undefined) this.size = 'small';
+        if (size === 'small') throw $eq.exceptions.create(['System.ArgumentOutOfRangeException', 'System.ArgumentException', 'System.SystemException', 'System.Exception'], 'A text field has no Small size: text and padding cannot fit 32dp (spec B9).', { paramName: 'size' });
         this.value = value;
         this.onChanged = onChanged;
         this.label = label;
@@ -52,7 +52,7 @@ export class NumberInput extends StatefulComponent {
 
     build(_context: BuildContext) {
         let value: any; 
-        let shown = this._typing ?? ((value = this.value) != null ? NumberInput.write(value, this._focused) : '');
+        let shown = this._typing ?? ((value = this.value) != null ? NumberInput.write(value) : '');
         let typed: any; 
         let error = this.error ?? ((typed = this._typing) != null ? this.complaint(typed) : null);
         return new TextInput(shown, this.onChanged == null ? null : $eq.delegates.bound(this, this.type), this.label, this.placeholder, this.helper, error, null, this.size, null, 'number', null, this.unit.length > 0 ? this.unit : null, { disabled: this.disabled, onFocusChanged: $eq.delegates.bound(this, this.focus).bind(this) });
@@ -82,17 +82,14 @@ export class NumberInput extends StatefulComponent {
     }
 
     focus(focused: boolean) {
-        return this.setState(() => {
-            this._focused = focused;
-            let typed: any; 
-            if (!focused && (typed = this._typing) != null && this.complaint(typed) == null) this._typing = null;
-        });
+        let typed: any; 
+        if (!focused && (typed = this._typing) != null && this.complaint(typed) == null) this.setState(() => this._typing = null);
     }
 
     complaint(typed: string) {
         if ($eq.text.trim(typed).length === 0) return null;
         let number: any; 
-        if (!((number = NumberInput.read(typed)) != null)) return SdkStrings.wholeNumberExpected(NumberInput.write(12, true));
+        if (!((number = NumberInput.read(typed)) != null)) return SdkStrings.wholeNumberExpected(NumberInput.write(12));
         if (this.inRange(number)) return null;
         let min: any; let max: any; 
         if ((min = this.min) != null && (max = this.max) != null) return SdkStrings.valueBetween(this.withUnit(min), this.withUnit(max));
@@ -105,12 +102,12 @@ export class NumberInput extends StatefulComponent {
         return (!((min = this.min) != null) || number >= min) && (!((max = this.max) != null) || number <= max);
     }
 
-    static write(number: number, plain: boolean) {
-        return $eq.text.format(number, plain ? 'D' : 'N0', undefined, undefined, 'int32');
+    static write(number: number) {
+        return $eq.text.format(number, 'N0', undefined, undefined, 'int32');
     }
 
     withUnit(number: number) {
-        return this.unit.length > 0 ? `${$eq.text.format(number, 'N0', undefined, undefined, 'int32')} ${this.unit}` : `${$eq.text.format(number, 'N0', undefined, undefined, 'int32')}`;
+        return this.unit.length > 0 ? SdkStrings.valueWithUnit(NumberInput.write(number), this.unit) : NumberInput.write(number);
     }
 
     static says(typed: string, number: any) {

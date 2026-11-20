@@ -190,6 +190,14 @@ public static class SdkStrings
     public static string ValueAtMost(string most) =>
         string.Format(CultureInfo.CurrentCulture, SdkResources.ValueAtMost, most);
 
+    /// <summary>A field's accessible name with what is drawn beside its text: <c>Price (€)</c>.</summary>
+    public static string NamedWithAffixes(string label, string affixes) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.NamedWithAffixes, label, affixes);
+
+    /// <summary>A number with its unit, in the language's order: <c>30 days</c>.</summary>
+    public static string ValueWithUnit(string number, string unit) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ValueWithUnit, number, unit);
+
     /// <summary>
     /// What shape the typed row expects: <c>MM/DD/YYYY</c> in the United States,
     /// <c>DD/MM/AAAA</c> in Brazil, <c>YYYY-MM-DD</c> in Sweden.

@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=349 · fenced=123 · invalid-probe=6 · native=555
+# totals: eq=352 · fenced=120 · invalid-probe=6 · native=555
 fenced:EQ2004  Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -248,7 +248,7 @@ native         DateTimeOffset.UtcTicks
 native         DateTimeOffset.Year
 fenced:EQ2004  Decimal.Abs(Decimal)
 fenced:EQ2004  Decimal.Add(Decimal,Decimal)
-fenced:EQ2004  Decimal.Ceiling(Decimal)
+eq             Decimal.Ceiling(Decimal)
 fenced:EQ2004  Decimal.Clamp(Decimal,Decimal,Decimal)
 fenced:EQ2004  Decimal.Compare(Decimal,Decimal)
 fenced:EQ2004  Decimal.CompareTo(Decimal)
@@ -258,7 +258,7 @@ fenced:EQ2004  Decimal.Divide(Decimal,Decimal)
 eq             Decimal.Equals(Decimal)
 fenced:EQ2004  Decimal.Equals(Decimal,Decimal)
 eq             Decimal.Equals(Object)
-fenced:EQ2004  Decimal.Floor(Decimal)
+eq             Decimal.Floor(Decimal)
 fenced:EQ2004  Decimal.FromOACurrency(Int64)
 fenced:EQ2004  Decimal.GetBits(Decimal)
 fenced:EQ2004  Decimal.IsCanonical(Decimal)
@@ -298,7 +298,7 @@ eq             Decimal.ToString(String)
 fenced:EQ2004  Decimal.ToUInt16(Decimal)
 fenced:EQ2004  Decimal.ToUInt32(Decimal)
 fenced:EQ2004  Decimal.ToUInt64(Decimal)
-fenced:EQ2004  Decimal.Truncate(Decimal)
+eq             Decimal.Truncate(Decimal)
 eq             Decimal.Zero
 native         Dictionary<String,Int32>.Add(String,Int32)
 fenced:EQ2004  Dictionary<String,Int32>.Capacity

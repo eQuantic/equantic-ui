@@ -9,8 +9,8 @@ namespace eQuantic.UI.Components;
 /// and the unit is its suffix, part of the field's accessible name.
 /// <para>
 /// Where <see cref="Stepper"/> steps a small count with two buttons, this takes a number typed whole: 250 g
-/// is one word here and fifty presses there. The number is written as the culture writes it, grouped while
-/// the field rests and plain while it is edited, read in the culture with no group separator, and handed on as soon as it is one
+/// is one word here and fifty presses there. The number is written as the culture writes it, read in the
+/// culture with no group separator, and handed on as soon as it is one
 /// inside <see cref="Min"/> and <see cref="Max"/>; null when the field is emptied, and nothing when what is
 /// typed is no whole number or is out of range, which the field says.
 /// </para>
@@ -20,12 +20,15 @@ public sealed class NumberInput : StatefulComponent
     /// <summary>What the reader has typed, while it has not been settled; null shows the value.</summary>
     private string? _typing;
 
-    private bool _focused;
-
     public NumberInput(int? value, Action<int?>? onChanged, string label, string unit = "",
         int? min = null, int? max = null, string? placeholder = null, string? helper = null,
         string? error = null, SizeVariant size = SizeVariant.Large)
     {
+        // A field of text, which has no small size (spec B9): refused here, where TextInput would refuse it at
+        // the first build, inside the page's error boundary.
+        if (size == SizeVariant.Small)
+            throw new ArgumentOutOfRangeException(nameof(size),
+                "A text field has no Small size: text and padding cannot fit 32dp (spec B9).");
         Value = value;
         OnChanged = onChanged;
         Label = label;
@@ -86,7 +89,7 @@ public sealed class NumberInput : StatefulComponent
 
     public override VisualNode Build(ComponentContext context)
     {
-        var shown = _typing ?? (Value is { } value ? Write(value, _focused) : "");
+        var shown = _typing ?? (Value is { } value ? Write(value) : "");
         // The app's error first: it knows what the field is for.
         var error = Error ?? (_typing is { } typed ? Complaint(typed) : null);
         return new TextInput(shown, OnChanged is null ? null : Type, Label, Placeholder, Helper, error,
@@ -104,17 +107,17 @@ public sealed class NumberInput : StatefulComponent
         SetState(() => _typing = text);
     }
 
-    private void Focus(bool focused) => SetState(() =>
+    /// <summary>Leaving settles what was typed, unless it is not a number the field takes.</summary>
+    private void Focus(bool focused)
     {
-        _focused = focused;
-        if (!focused && _typing is { } typed && Complaint(typed) is null) _typing = null;
-    });
+        if (!focused && _typing is { } typed && Complaint(typed) is null) SetState(() => _typing = null);
+    }
 
     /// <summary>What the field says is wrong with what was typed, or null.</summary>
     private string? Complaint(string typed)
     {
         if (typed.Trim().Length == 0) return null;
-        if (Read(typed) is not { } number) return SdkStrings.WholeNumberExpected(Write(12, true));
+        if (Read(typed) is not { } number) return SdkStrings.WholeNumberExpected(Write(12));
         if (InRange(number)) return null;
         if (Min is { } min && Max is { } max) return SdkStrings.ValueBetween(WithUnit(min), WithUnit(max));
         return Min is { } least ? SdkStrings.ValueAtLeast(WithUnit(least)) : SdkStrings.ValueAtMost(WithUnit(Max!.Value));
@@ -122,19 +125,18 @@ public sealed class NumberInput : StatefulComponent
 
     private bool InRange(int number) => (Min is not { } min || number >= min) && (Max is not { } max || number <= max);
 
-    /// <summary>The number as the field writes it: grouped at rest, plain while edited.</summary>
-    private static string Write(int number, bool plain) => number.ToString(plain ? "D" : "N0");
+    /// <summary>The number as the field writes it: the culture's, grouped.</summary>
+    private static string Write(int number) => number.ToString("N0");
 
-    /// <summary>A bound as a message names it: the number, then the unit.</summary>
-    private string WithUnit(int number) => Unit.Length > 0 ? $"{number:N0} {Unit}" : $"{number:N0}";
+    /// <summary>A bound as a message names it: the number with its unit, in the language's order.</summary>
+    private string WithUnit(int number) => Unit.Length > 0 ? SdkStrings.ValueWithUnit(Write(number), Unit) : Write(number);
 
     private static bool Says(string typed, int? number) =>
         typed.Trim().Length == 0 ? number is null : Read(typed) is { } read && read == number;
 
     /// <summary>
-    /// What was typed as a whole number in the culture, or null. No group separators: the field shows the
-    /// number plain while it is edited, so none is ever typed around, and .NET reads them wherever they
-    /// stand, which made English's <c>2,5</c> twenty-five.
+    /// What was typed as a whole number in the culture, or null. No group separators: .NET reads them wherever
+    /// they stand, which made English's <c>2,5</c> twenty-five, and a count is typed without them.
     /// </summary>
     private static int? Read(string typed) =>
         int.TryParse(typed.Trim(), NumberStyles.Integer, CultureInfo.CurrentCulture, out var number) ? number : null;

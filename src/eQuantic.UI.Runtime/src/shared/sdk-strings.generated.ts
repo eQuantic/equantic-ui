@@ -43,6 +43,7 @@ export const sdkNeutralStrings: Record<string, string> = {
   'ImplementationsCount': "Implementations ({0})",
   'LineNumbered': "Line {0}",
   'NameBox': "Name box",
+  'NamedWithAffixes': "{0} ({1})",
   'NextChange': "Next change",
   'NextMatch': "Next match",
   'NextMonth': "Next month",
@@ -124,5 +125,6 @@ export const sdkNeutralStrings: Record<string, string> = {
   'ValueAtLeast': "Enter at least {0}",
   'ValueAtMost': "Enter at most {0}",
   'ValueBetween': "Enter a value from {0} to {1}",
+  'ValueWithUnit': "{0} {1}",
   'WholeNumberExpected': "Enter a whole number, such as {0}",
 };

@@ -81,14 +81,27 @@ public class AmountInputsTests
         AmountDriver.Money("en", 1235, Currency.Yen).Observe().Value.Should().Be("1,235");
     }
 
+    /// <summary>Taking the focus rewrites nothing: a value written under a pointer's press moves the browser's
+    /// caret to the end, so the text the person clicked into is the text they edit.</summary>
     [Fact]
-    public void Editing_ShowsThePlainAmount_AndLeavingGroupsItAgain()
+    public void TakingTheFocus_RewritesNothing_AndLeavingGroupsWhatWasTyped()
     {
         var field = AmountDriver.Money("pt-PT", 123450, Currency.Euro);
         field.Focus(true);
-        field.Observe().Value.Should().Be("1234,50");
+        field.Observe().Value.Should().Be("1\u00A0234,50");
+        field.Type("1234,5");
+        field.Observe().Value.Should().Be("1234,5");
         field.Focus(false);
         field.Observe().Value.Should().Be("1\u00A0234,50");
+    }
+
+    [Fact]
+    public void AGroupedAmountEdited_IsStillRead()
+    {
+        // Deleting a digit of 1,234.50 leaves a group out of place, which the culture's grouping still reads.
+        var field = AmountDriver.Money("en", 123450, Currency.Euro);
+        field.Type("1,23.50");
+        field.Handed.Should().Equal([12350L]);
     }
 
     [Fact]
@@ -232,7 +245,7 @@ public class AmountInputsTests
         var grams = AmountDriver.Number("en", 12500, "g");
         grams.Observe().Value.Should().Be("12,500");
         grams.Focus(true);
-        grams.Observe().Value.Should().Be("12500");
+        grams.Observe().Value.Should().Be("12,500");
         grams.Type("1500");
         grams.Handed.Should().Equal([1500]);
         // No group separator is read: English's 2,5 would be twenty-five.

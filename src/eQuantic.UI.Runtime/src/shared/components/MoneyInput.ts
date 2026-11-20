@@ -3,7 +3,6 @@ import { $eq, $SizeVariantValue, BuildContext, Currency, SdkStrings, StatefulCom
 export class MoneyInput extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.MoneyInput';
     _typing: any = null;
-    _focused: boolean = false;
     _disabled: boolean = false;
     declare amount: any;
     declare onChanged: ((long: bigint | null) => void) | null;
@@ -37,6 +36,7 @@ export class MoneyInput extends StatefulComponent {
         if (error !== undefined) this.error = error;
         if (size !== undefined) this.size = size;
         if (this.size === undefined) this.size = 'small';
+        if (size === 'small') throw $eq.exceptions.create(['System.ArgumentOutOfRangeException', 'System.ArgumentException', 'System.SystemException', 'System.Exception'], 'A text field has no Small size: text and padding cannot fit 32dp (spec B9).', { paramName: 'size' });
         this.amount = amount;
         this.onChanged = onChanged;
         this.label = label;
@@ -52,7 +52,7 @@ export class MoneyInput extends StatefulComponent {
 
     build(_context: BuildContext) {
         let amount: any; 
-        let shown = this._typing ?? ((amount = this.amount) != null ? this.write(amount, this._focused) : '');
+        let shown = this._typing ?? ((amount = this.amount) != null ? this.write(amount) : '');
         let leads = (($0) => ($0 === 0 || $0 === 2))($eq.text.numberFormat(false).currencyPositivePattern);
         let typed: any; 
         let error = this.error ?? ((typed = this._typing) != null ? this.complaint(typed) : null);
@@ -83,17 +83,14 @@ export class MoneyInput extends StatefulComponent {
     }
 
     focus(focused: boolean) {
-        return this.setState(() => {
-            this._focused = focused;
-            let typed: any; 
-            if (!focused && (typed = this._typing) != null && this.complaint(typed) == null) this._typing = null;
-        });
+        let typed: any; 
+        if (!focused && (typed = this._typing) != null && this.complaint(typed) == null) this.setState(() => this._typing = null);
     }
 
     complaint(typed: string) {
         if ($eq.text.trim(typed).length === 0) return null;
         let amount: any; 
-        if (!((amount = MoneyInput.read(typed, this.currency)) != null)) return SdkStrings.amountExpected(this.write(1250n, true));
+        if (!((amount = MoneyInput.read(typed, this.currency)) != null)) return SdkStrings.amountExpected(this.write(1250n));
         if (this.inRange(amount)) return null;
         let min: any; let max: any; 
         if ((min = this.min) != null && (max = this.max) != null) return SdkStrings.valueBetween(this.currency.format(min), this.currency.format(max));
@@ -106,8 +103,8 @@ export class MoneyInput extends StatefulComponent {
         return (!((min = this.min) != null) || amount >= min) && (!((max = this.max) != null) || amount <= max);
     }
 
-    write(amount: bigint, plain: boolean) {
-        return $eq.text.format(this.currency.toMajor(amount), (plain ? 'F' : 'N') + $eq.text.format(this.currency.minorDigits, null, undefined, undefined, 'int32'));
+    write(amount: bigint) {
+        return $eq.text.format(this.currency.toMajor(amount), 'N' + $eq.text.format(this.currency.minorDigits, null, undefined, undefined, 'int32'));
     }
 
     static says(typed: string, amount: any, currency: Currency) {
