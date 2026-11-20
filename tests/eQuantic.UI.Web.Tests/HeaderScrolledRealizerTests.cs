@@ -157,6 +157,34 @@ public class HeaderScrolledRealizerTests
             .Should().BeTrue("the box's");
     }
 
+    /// <summary>
+    /// A picture of a hovered box in a scrolled header shows the hover, as a real hover does and as
+    /// Photon draws it. The simulated hover is written into the resting declarations, which the
+    /// scrolled rule outweighs, so the scrolled rule carries the hover's fill itself.
+    /// </summary>
+    [Fact]
+    public void ASimulatedHover_StaysOverTheScrolledFill()
+    {
+        var (header, css) = InAHeader(new Simulated(SimulatedState.Hovered, new Box(new BoxStyle
+        {
+            Width = 80, Height = 32,
+            Background = Solid(0x01),
+            Scrolled = new StyleDiff { Background = Solid(0x02), Opacity = 0.5f },
+            Hover = new StyleDiff { Background = Solid(0x03) },
+        })));
+        var box = Walk(header).Single(element => (element.ClassName ?? "").Split(' ')
+            .Any(cls => css.Contains($"{UnderAScrolledHeader}{cls}:")));
+
+        Regex.IsMatch(css, $@"html :where\(\[data-eq-scrolled\]\) \.eq-[a-z0-9]+:not\([^{{}}]*\)\{{background-color:{Regex.Escape(TokenCss.Value(Solid(0x03)))}\}}")
+            .Should().BeTrue("scrolled, the pictured hover's fill");
+        css.Should().NotContain(TokenCss.Value(Solid(0x02)), "the scrolled fill is under the hover");
+        RuleWriting(css, box, "opacity:0.5").Selector.Should().StartWith(UnderAScrolledHeader,
+            "what the hover does not set is the scroll's");
+    }
+
+    private static IEnumerable<HtmlElement> Walk(HtmlElement element) =>
+        element.Children.OfType<HtmlElement>().SelectMany(Walk).Prepend(element);
+
     /// <summary>A box that declares no diff takes no rule, and an empty diff is none.</summary>
     [Fact]
     public void AnEmptyDiff_WritesNoRule()

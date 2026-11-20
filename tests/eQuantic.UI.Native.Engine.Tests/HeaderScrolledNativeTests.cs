@@ -143,6 +143,25 @@ public class HeaderScrolledNativeTests
         Fills(frame, Dark).Should().BeFalse("not the scrolled one under it");
     }
 
+    /// <summary>
+    /// A panel the header opens is a layer of its own on Photon, drawn after the page with a scope of
+    /// its own, and on the web an element inside the header's. Its boxes follow the header there, and
+    /// here as well: the layer carries the state it was found in.
+    /// </summary>
+    [Fact]
+    public void APanelTheHeaderOpens_FollowsItsScroll()
+    {
+        static VisualNode Menu() => new Pinned(new Anchored(
+            new Box(new BoxStyle { Width = 80, Height = 32 }),
+            Link())
+        {
+            Open = true,
+        });
+
+        Fills(Frame(Page(Menu(), 20)), Dark).Should().BeTrue("the header it was opened from is scrolled");
+        Fills(Frame(Page(Menu(), 0)), Dark).Should().BeFalse("and at rest it rests");
+    }
+
     /// <summary>A page whose scroll a test moves between frames, the shape a reader's scroll has.</summary>
     private sealed class Scrolling : StatefulComponent
     {

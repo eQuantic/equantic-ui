@@ -4,7 +4,22 @@ import { PINNED_MARKER, SCROLLED_MARKER } from './markers';
 import { resetScrolledController } from './scrolled-pinned';
 import { effectiveStyle, HEADER_SCROLLED, stateSelector, stateStyle } from './style-atomizer';
 import { Transform2D } from './value-types';
-import { Box, BoxStyle, Pinned, StyleDiff } from './vocabulary';
+import { Box, BoxStyle, Pinned, Simulated, StyleDiff } from './vocabulary';
+
+/** The lowered box that carries a header-scrolled class: under however many wrappers. */
+const findBox = (node: HtmlNode): HtmlNode => {
+  if (stateStyle(node, HEADER_SCROLLED) !== '') return node;
+  for (const child of node.children) {
+    if (typeof child === 'object' && child !== null && 'attributes' in child) {
+      try {
+        return findBox(child as HtmlNode);
+      } catch {
+        /* not under this one */
+      }
+    }
+  }
+  throw new Error('no box carries a header-scrolled class');
+};
 
 /**
  * A box's `scrolled` diff (C# `BoxStyle.Scrolled`, #1769): the boxes INSIDE a pinned header follow
@@ -28,6 +43,27 @@ describe('a box follows the scrolled state of the header it is in (#1769)', () =
 
     expect(stateStyle(box, HEADER_SCROLLED)).toBe('opacity: 0; transform: scale(0.6)');
     expect(effectiveStyle(box)).not.toContain('opacity');
+  });
+
+  // A picture of a hovered box shows the hover in a scrolled header too (C# twin): the scrolled rule
+  // outweighs the resting declarations the picture is written into, so it carries the hover's fill.
+  it('lays a simulated hover over the scrolled diff', () => {
+    const header = new Pinned(
+      new Simulated(
+        1,
+        new Box(
+          new BoxStyle({
+            width: 80,
+            height: 32,
+            scrolled: new StyleDiff({ opacity: 0.5, transform: Transform2D.scale(0.6) }),
+            hover: new StyleDiff({ opacity: 0.75 }),
+          }),
+        ),
+      ),
+    ).render();
+    const box = findBox(header);
+
+    expect(stateStyle(box, HEADER_SCROLLED)).toBe('opacity: 0.75; transform: scale(0.6)');
   });
 
   it("writes the C# twin's selector, byte for byte", () => {
