@@ -286,6 +286,25 @@ public class WikiClaimsCompile
         _ = Primitives.Pinned.ScrolledThreshold;
         _ = Primitives.Pinned.ScrolledBase;
 
+        // Styling, "What is inside a header that scrolls" (preview.70): a large badge that gives way to
+        // a small mark with the name once the page scrolls, both inside the one link.
+        var badge = Text("F", TypeRole.Display);
+        var markAndName = Text("Francine", TypeRole.Label);
+        var glide = new TransitionSpec(StyleChannels.Opacity | StyleChannels.Transform, Motion.BaseMs);
+        _ = Pinned(Link("/", Stack(Alignment.CenterStart, children: [
+            Box(new BoxStyle
+            {
+                Transition = glide,
+                Scrolled = new StyleDiff { Opacity = 0, Transform = Transform2D.Scale(0.6f) },
+            }, badge),
+            Box(new BoxStyle
+            {
+                Opacity = 0,
+                Transition = glide,
+                Scrolled = new StyleDiff { Opacity = 1 },
+            }, markAndName),
+        ]), label: "Home"));
+
         // WriteOnceComponents, "A weight of zero takes no share" (preview.61, #680): a picture that
         // starts at 540 and never grows, beside text that takes the rest.
         var story = new Row(gap: Space.S6) { Wrap = true, Width = SizeValue.Fill };
