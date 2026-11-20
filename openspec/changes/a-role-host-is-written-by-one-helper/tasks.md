@@ -53,7 +53,7 @@ with `EQ_WIKI_DIR` set as the delivery gives it.
 - [x] 4.1 The parity net executed on both sides: `ComponentParityFixtureTests` and
   `component-parity.spec.ts` against the same fixture, with `component-parity.fixture.json` unchanged
   in the diff. Verify: both green, and `git diff --stat` shows no pin, fixture or baseline file
-- [ ] 4.2 `dotnet build samples/DefaultUIDashboard`, served, and a page holding a progress bar, a
+- [x] 4.2 `dotnet build samples/DefaultUIDashboard`, served, and a page holding a progress bar, a
   slider, a toast (live region) and a grouped select opened in a browser. Verify: the server's markup
   of each host and the hydrated DOM's are the same element, with the same classes, and the console shows
   no hydration mismatch
