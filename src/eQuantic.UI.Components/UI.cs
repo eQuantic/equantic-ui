@@ -165,13 +165,15 @@ public static class UI
     /// <summary>Navigation semantics: the child becomes a link to <paramref name="destination"/>.
     /// <paramref name="label"/> names an icon-only link; <paramref name="current"/> marks the link
     /// that points at the page the reader is ON (<c>aria-current="page"</c> — a sidebar's active
-    /// row stated to assistive tech, not just painted).</summary>
+    /// row stated to assistive tech, not just painted); <paramref name="opensBeside"/> opens the
+    /// destination beside the page, keeping the reader where they are (#941).</summary>
     public static Link Link(string destination, VisualNode child, string? label = null,
-        bool current = false) =>
+        bool current = false, bool opensBeside = false) =>
         new Link(destination, child)
         {
             Label = label,
             Current = current,
+            OpensBeside = opensBeside,
         };
 
     /// <summary>
@@ -605,21 +607,23 @@ public static class UI
         string? error = null, SizeVariant size = SizeVariant.Large) =>
         new NumberInput(value, onChanged, label, unit, min, max, placeholder, helper, error, size);
 
-    /// <summary>A date, typed or picked from a calendar.</summary>
+    /// <summary>A date, typed or picked from a calendar. <paramref name="labelHidden"/> draws no label, for a
+    /// form that lays its own, and the label still names the field (#1780).</summary>
     public static DatePicker DatePicker(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
-        DateOnly? min = null, DateOnly? max = null, string label = "") =>
-        new DatePicker(selected, onChanged, min, max, label);
+        DateOnly? min = null, DateOnly? max = null, string label = "", bool labelHidden = false) =>
+        new DatePicker(selected, onChanged, min, max, label) { LabelHidden = labelHidden };
 
     /// <summary>A time of day, picked from a list of slots.</summary>
     public static TimePicker TimePicker(TimeOnly? selected = null, Action<TimeOnly>? onChanged = null,
         int stepMinutes = 30, TimeOnly? min = null, TimeOnly? max = null, string label = "") =>
         new TimePicker(selected, onChanged, stepMinutes, min, max, label);
 
-    /// <summary>A moment — the date and the time, as one value.</summary>
+    /// <summary>A moment — the date and the time, as one value. <paramref name="labelHidden"/> draws no label
+    /// above the date, for a form that lays its own (#1780).</summary>
     public static DateTimePicker DateTimePicker(DateTime? selected = null, Action<DateTime>? onChanged = null,
         DateTime? min = null, DateTime? max = null, int stepMinutes = 30,
-        string dateLabel = "", string timeLabel = "") =>
-        new DateTimePicker(selected, onChanged, min, max, stepMinutes, dateLabel, timeLabel);
+        string dateLabel = "", string timeLabel = "", bool labelHidden = false) =>
+        new DateTimePicker(selected, onChanged, min, max, stepMinutes, dateLabel, timeLabel) { LabelHidden = labelHidden };
 
     /// <summary>A month at a time — the grid a date is picked from.</summary>
     public static Calendar Calendar(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
@@ -633,12 +637,18 @@ public static class UI
         new Select(options, selectedIndex, onChanged, placeholder, groups);
 
     /// <summary>The full text field: label, helper, error, leading icon, and a trailing SLOT
-    /// for whatever belongs at the end of the row — a picker's opener, a clear affordance.</summary>
+    /// for whatever belongs at the end of the row — a picker's opener, a clear affordance.
+    /// <paramref name="labelHidden"/> draws no label, for a form that lays its own, and the label still
+    /// names the field (#1780).</summary>
     public static TextInput TextInput(string value, Action<string>? onChanged = null, string label = "",
         string? placeholder = null, string? helper = null, string? error = null,
         Icons? leading = null, SizeVariant size = SizeVariant.Large, VisualNode? trailing = null,
-        TextEntryKind kind = TextEntryKind.Text, string? prefix = null, string? suffix = null) =>
-        new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing, kind, prefix, suffix);
+        TextEntryKind kind = TextEntryKind.Text, string? prefix = null, string? suffix = null,
+        bool labelHidden = false) =>
+        new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing, kind, prefix, suffix)
+        {
+            LabelHidden = labelHidden,
+        };
 
     /// <summary>The search entry. Null placeholder = the SDK's localized default.</summary>
     public static SearchField SearchField(string query, Action<string>? onChanged = null,

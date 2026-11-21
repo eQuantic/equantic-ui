@@ -713,6 +713,8 @@ export interface LinkNode extends VisualNodeValue {
   keepsPosition?: boolean;
   /** This link points at the page the reader is ON — aria-current="page" (C# twin). */
   current?: boolean;
+  /** Opens the destination beside the page, in a new tab (C# `Link.OpensBeside`, #941). */
+  opensBeside?: boolean;
 }
 
 /** Gestures v2: vertical drag-to-dismiss — the child follows a downward drag; releasing past the
@@ -1128,6 +1130,11 @@ export interface ImageNode extends VisualNodeValue {
   fit: string;
   label: string;
   cornerRadius?: CornerRadiiValue;
+  /** C# `Image.FocalPoint`: the picture's point held at the same fraction of the box (#1785); the
+   * centre when absent. */
+  focalPoint?: Point | null;
+  /** C# `Image.Zoom`: how much closer than its fit, around the focal point; 1 when absent. */
+  zoom?: number;
 }
 
 /** Wire shape of the C# `IconGlyph`: target-neutral path data (any pack or the curated set). */

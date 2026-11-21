@@ -1,0 +1,15 @@
+#nullable enable
+*REMOVED*static eQuantic.UI.Components.UI.Link(string! destination, eQuantic.UI.Primitives.VisualNode! child, string? label = null, bool current = false) -> eQuantic.UI.Primitives.Link!
+static eQuantic.UI.Components.UI.Link(string! destination, eQuantic.UI.Primitives.VisualNode! child, string? label = null, bool current = false, bool opensBeside = false) -> eQuantic.UI.Primitives.Link!
+eQuantic.UI.Components.DatePicker.LabelHidden.get -> bool
+eQuantic.UI.Components.DatePicker.LabelHidden.init -> void
+eQuantic.UI.Components.DateTimePicker.LabelHidden.get -> bool
+eQuantic.UI.Components.DateTimePicker.LabelHidden.init -> void
+eQuantic.UI.Components.TextInput.LabelHidden.get -> bool
+eQuantic.UI.Components.TextInput.LabelHidden.init -> void
+*REMOVED*static eQuantic.UI.Components.UI.DatePicker(System.DateOnly? selected = null, System.Action<System.DateOnly>? onChanged = null, System.DateOnly? min = null, System.DateOnly? max = null, string! label = "") -> eQuantic.UI.Components.DatePicker!
+static eQuantic.UI.Components.UI.DatePicker(System.DateOnly? selected = null, System.Action<System.DateOnly>? onChanged = null, System.DateOnly? min = null, System.DateOnly? max = null, string! label = "", bool labelHidden = false) -> eQuantic.UI.Components.DatePicker!
+*REMOVED*static eQuantic.UI.Components.UI.DateTimePicker(System.DateTime? selected = null, System.Action<System.DateTime>? onChanged = null, System.DateTime? min = null, System.DateTime? max = null, int stepMinutes = 30, string! dateLabel = "", string! timeLabel = "") -> eQuantic.UI.Components.DateTimePicker!
+static eQuantic.UI.Components.UI.DateTimePicker(System.DateTime? selected = null, System.Action<System.DateTime>? onChanged = null, System.DateTime? min = null, System.DateTime? max = null, int stepMinutes = 30, string! dateLabel = "", string! timeLabel = "", bool labelHidden = false) -> eQuantic.UI.Components.DateTimePicker!
+*REMOVED*static eQuantic.UI.Components.UI.TextInput(string! value, System.Action<string!>? onChanged = null, string! label = "", string? placeholder = null, string? helper = null, string? error = null, eQuantic.UI.Primitives.Icons? leading = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large, eQuantic.UI.Primitives.VisualNode? trailing = null, eQuantic.UI.Primitives.TextEntryKind kind = eQuantic.UI.Primitives.TextEntryKind.Text, string? prefix = null, string? suffix = null) -> eQuantic.UI.Components.TextInput!
+static eQuantic.UI.Components.UI.TextInput(string! value, System.Action<string!>? onChanged = null, string! label = "", string? placeholder = null, string? helper = null, string? error = null, eQuantic.UI.Primitives.Icons? leading = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large, eQuantic.UI.Primitives.VisualNode? trailing = null, eQuantic.UI.Primitives.TextEntryKind kind = eQuantic.UI.Primitives.TextEntryKind.Text, string? prefix = null, string? suffix = null, bool labelHidden = false) -> eQuantic.UI.Components.TextInput!

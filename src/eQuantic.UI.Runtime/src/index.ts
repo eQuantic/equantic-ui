@@ -291,6 +291,7 @@ export {
   PhotonTheme,
 } from './shared/design-system.generated';
 export { Navigator } from './router/navigator';
+export { DevelopmentNotices } from './shared/development-notices';
 export { StyleBuilder } from './utils/style-builder';
 export { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 

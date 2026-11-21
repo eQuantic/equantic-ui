@@ -78,7 +78,7 @@ public readonly record struct DragRegion(Rect Bounds, Element Element, VisualNod
 /// one region per line under ONE id: the pointer needs both rectangles, the keyboard needs one stop.
 /// </para>
 /// </summary>
-public readonly record struct LinkRegion(Rect Bounds, string Destination, int Id);
+public readonly record struct LinkRegion(Rect Bounds, string Destination, int Id, bool OpensBeside = false);
 
 /// <summary>Spec S8: a keyboard binding that is live because its subtree is on screen — the host
 /// dispatches a key press to the LAST registered match (the dialog on top wins the chord). A

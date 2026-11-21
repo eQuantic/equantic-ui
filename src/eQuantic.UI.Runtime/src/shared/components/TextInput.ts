@@ -3,6 +3,7 @@ import { $eq, $SizeVariantValue, $TextEntryKindValue, Box, BoxStyle, BuildContex
 export class TextInput extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TextInput';
     _focused: boolean = false;
+    _labelHidden: boolean = false;
     _disabled: boolean = false;
     _autofocus: boolean = false;
     _obscure: boolean = false;
@@ -10,6 +11,15 @@ export class TextInput extends StatefulComponent {
     declare value: string;
     declare onChanged: ((string: string) => void) | null;
     declare label: string;
+
+    get labelHidden() {
+        return this._labelHidden;
+    }
+
+    set labelHidden(value) {
+        this._labelHidden = value;
+    }
+
     declare placeholder: any;
     declare helper: any;
     declare error: any;
@@ -118,7 +128,7 @@ export class TextInput extends StatefulComponent {
         }
         let container = new Box(new BoxStyle({ width: SizeValue.fill, height: height, background: this.disabled ? slot?.disabledFill ?? theme.surfaceSubtle : slot?.fill ?? theme.surface, cornerRadius: new CornerRadii(slot?.radius ?? theme.shape('medium')), borderWidth: borderWidth, borderColor: borderColor, padding: EdgeInsets.symmetric(paddingX, 0) }), row);
         let top = new Column(slot?.labelGap ?? 6, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        if (this.label.length > 0) top.add(new Text(this.label, slot?.labelRole ?? 'label', theme.textSecondary));
+        if (this.label.length > 0 && !this.labelHidden) top.add(new Text(this.label, slot?.labelRole ?? 'label', theme.textSecondary));
         top.add(container);
         let captionColor = hasError ? theme.colors('destructive').base : theme.textMuted;
         let column = new Column(slot?.captionGap ?? 5, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
@@ -133,6 +143,7 @@ export class TextInput extends StatefulComponent {
         this.value = fresh.value;
         this.onChanged = fresh.onChanged;
         this.label = fresh.label;
+        this._labelHidden = fresh.labelHidden;
         this.placeholder = fresh.placeholder;
         this.helper = fresh.helper;
         this.error = fresh.error;

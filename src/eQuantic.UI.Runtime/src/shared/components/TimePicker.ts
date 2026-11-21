@@ -1,10 +1,12 @@
-import { $eq, Anchored, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, Pressable, Row, ScrollView, SdkStrings, Shortcut, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, TimeOnly, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Anchored, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, DevelopmentNotices, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, Pressable, Row, ScrollView, SdkStrings, Shortcut, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, TimeOnly, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TimePicker extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TimePicker';
     _open: boolean = false;
     _highlight: number = 0;
     _disabled: boolean = false;
+    _reported: any = null;
+    _composed: boolean = false;
     static panelHeight: number = 260;
     declare selected: any;
     declare onChanged: ((timeOnly: TimeOnly) => void) | null;
@@ -19,6 +21,14 @@ export class TimePicker extends StatefulComponent {
 
     set disabled(value) {
         this._disabled = value;
+    }
+
+    get composed() {
+        return this._composed;
+    }
+
+    set composed(value) {
+        this._composed = value;
     }
 
     constructor(selected: any = null, onChanged: any = null, stepMinutes: any = 30, min: any = null, max: any = null, label: any = '', props?: any) {
@@ -80,6 +90,9 @@ export class TimePicker extends StatefulComponent {
     adoptConfig(next: UiComponent) {
         let fresh: any; 
         if (!((next instanceof TimePicker && (fresh = next, true)))) return;
+        let said: any; 
+        if ((said = this._reported) != null && fresh.selected == null && !this.composed) DevelopmentNotices.say(`A TimePicker reported ${$eq.text.format(said, 't')} through onChanged and was drawn again with no time, ` + 'so its field emptied: a picker shows the time it is handed. Hand it back the time onChanged reports.');
+        this._reported = null;
         this.selected = fresh.selected;
         this.onChanged = fresh.onChanged;
         this.stepMinutes = TimePicker.step(fresh.stepMinutes);
@@ -87,6 +100,7 @@ export class TimePicker extends StatefulComponent {
         this.max = fresh.max;
         this.label = fresh.label;
         this._disabled = fresh.disabled;
+        this._composed = fresh.composed;
     }
 
     static step(minutes: number) {
@@ -105,6 +119,7 @@ export class TimePicker extends StatefulComponent {
     }
 
     pick(time: TimeOnly) {
+        if (!(this.onChanged == null)) this._reported = time;
         this.onChanged?.(time);
         this.setState(() => this._open = false);
     }

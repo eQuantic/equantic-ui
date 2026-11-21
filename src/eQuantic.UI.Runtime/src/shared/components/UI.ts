@@ -57,8 +57,8 @@ export class UI {
         return new Pressable(child, onPressed, { label: label, selected: selected, disabled: disabled, expanded: expanded, role: role, canRequestFocus: canRequestFocus });
     }
 
-    static link(destination: string, child: VisualNode, label: string | null = null, current: boolean = false) {
-        return new Link(destination, child, { label: label, current: current });
+    static link(destination: string, child: VisualNode, label: string | null = null, current: boolean = false, opensBeside: boolean = false) {
+        return new Link(destination, child, { label: label, current: current, opensBeside: opensBeside });
     }
 
     static icon(glyph: IconGlyph, size: number = 24, color: ColorToken | null = null, label: string | null = null) {
@@ -255,16 +255,16 @@ export class UI {
         return new NumberInput(value, onChanged, label, unit, min, max, placeholder, helper, error, size);
     }
 
-    static datePicker(selected: DateOnly | null = null, onChanged: ((dateOnly: DateOnly) => void) | null = null, min: DateOnly | null = null, max: DateOnly | null = null, label: string = '') {
-        return new DatePicker(selected, onChanged, min, max, label);
+    static datePicker(selected: DateOnly | null = null, onChanged: ((dateOnly: DateOnly) => void) | null = null, min: DateOnly | null = null, max: DateOnly | null = null, label: string = '', labelHidden: boolean = false) {
+        return new DatePicker(selected, onChanged, min, max, label, { labelHidden: labelHidden });
     }
 
     static timePicker(selected: TimeOnly | null = null, onChanged: ((timeOnly: TimeOnly) => void) | null = null, stepMinutes: number = 30, min: TimeOnly | null = null, max: TimeOnly | null = null, label: string = '') {
         return new TimePicker(selected, onChanged, stepMinutes, min, max, label);
     }
 
-    static dateTimePicker(selected: DateTime | null = null, onChanged: ((dateTime: DateTime) => void) | null = null, min: DateTime | null = null, max: DateTime | null = null, stepMinutes: number = 30, dateLabel: string = '', timeLabel: string = '') {
-        return new DateTimePicker(selected, onChanged, min, max, stepMinutes, dateLabel, timeLabel);
+    static dateTimePicker(selected: DateTime | null = null, onChanged: ((dateTime: DateTime) => void) | null = null, min: DateTime | null = null, max: DateTime | null = null, stepMinutes: number = 30, dateLabel: string = '', timeLabel: string = '', labelHidden: boolean = false) {
+        return new DateTimePicker(selected, onChanged, min, max, stepMinutes, dateLabel, timeLabel, { labelHidden: labelHidden });
     }
 
     static calendar(selected: DateOnly | null = null, onChanged: ((dateOnly: DateOnly) => void) | null = null, min: DateOnly | null = null, max: DateOnly | null = null) {
@@ -275,8 +275,8 @@ export class UI {
         return new Select(options, selectedIndex, onChanged, placeholder, groups);
     }
 
-    static textInput(value: string, onChanged: ((string: string) => void) | null = null, label: string = '', placeholder: string | null = null, helper: string | null = null, error: string | null = null, leading: $IconsValue | null = null, size: $SizeVariantValue = 'large', trailing: VisualNode | null = null, kind: $TextEntryKindValue = 'text', prefix: string | null = null, suffix: string | null = null) {
-        return new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing, kind, prefix, suffix);
+    static textInput(value: string, onChanged: ((string: string) => void) | null = null, label: string = '', placeholder: string | null = null, helper: string | null = null, error: string | null = null, leading: $IconsValue | null = null, size: $SizeVariantValue = 'large', trailing: VisualNode | null = null, kind: $TextEntryKindValue = 'text', prefix: string | null = null, suffix: string | null = null, labelHidden: boolean = false) {
+        return new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing, kind, prefix, suffix, { labelHidden: labelHidden });
     }
 
     static searchField(query: string, onChanged: ((string: string) => void) | null = null, placeholder: string | null = null, onSubmit: (() => void) | null = null) {
