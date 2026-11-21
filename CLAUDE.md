@@ -778,7 +778,9 @@ screen composes both identically.
   (two components share a name).
 - A factory SHADOWS its type for types reached by `using` (the framework's, not the app's own):
   `Spacer.Fixed(34)` → use `Gap(34)`, `Badge.AsDot(v)` → `DotBadge(v)`. A conformance test fails
-  naming any new one.
+  naming any new one. An app's component that declares a static member gets a `global using` alias
+  from the generator, so `ProductEditor.Toggled(…)` reads from any namespace (#1781), except where a
+  file imports another type of its name, which the alias would capture.
 - eqc reads FILES, so generated sources must be on disk (`EmitCompilerGeneratedFiles`) and scoped
   to the configuration being built (`--generated`), or types arrive twice and resolve to neither.
   eqc takes that list from `ProjectCompilationHelper.GetCompilationUnits` and walks for nothing
