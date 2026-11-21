@@ -53,7 +53,11 @@ component reaches needs no mark now, and one a component reaches must not carry 
   (`AppFactorySurfaceGenerator`, `ComponentAliases`).
 - Neither the public surface nor the developer surface moves (`IsComponent` is internal; the generator is a
   tool).
-- No break: the dashboard sample's served JavaScript is byte for byte what `main` serves. What changes is
-  that an unreached type's diagnostics are no longer said, and that a component with statics is aliased.
+- No break for a page: the dashboard sample's served JavaScript is byte for byte what `main` serves. What
+  changes is that an unreached type's diagnostics are no longer said, that a component with statics is
+  aliased, and that a class, a record or a static class under `Pages` or at the project's root is an entry
+  point of the bundle only once a component reaches it, since the server loads pages and the layout by
+  name and nothing else (a conformance test that bundled a root static class nobody named now names it
+  from a component).
 - Rules followed: 2 (the app's case is one test of a general rule, the referenced projects' rule applied to
   the app), 9 (C#'s own precedence of an alias, rather than a factory under another name), 13.
