@@ -54,6 +54,18 @@
         measuring against it announces the samples too, since they do not live under src. The branch
         comes out of .git/HEAD rather than from running git, so it costs a file read.
     -->
+    <!--
+        One version, stated once (#1788). global.json's msbuild-sdks pins this SDK, and the SDK pins its
+        packages to its own version (Sdk.props). A project that sets EQuanticUIVersion to another
+        restored packages of one version under an SDK of the other, which built and then failed in odd
+        ways, so it fails here, before the packages are collected for a restore and before a build.
+    -->
+    <Target Name="EQuanticRequireOneVersion" BeforeTargets="CollectPackageReferences;PrepareForBuild"
+        Condition="'$(_EQuanticSdkVersion)' != '' AND '$(EQuanticUIVersion)' != '$(_EQuanticSdkVersion)'">
+        <Error Code="EQ4010"
+            Text="This project builds with eQuantic.UI.Sdk $(_EQuanticSdkVersion), the version global.json pins, and sets EQuanticUIVersion to $(EQuanticUIVersion). The SDK ships with its packages at its own version and reads it itself: remove EQuanticUIVersion, and change the version in global.json alone." />
+    </Target>
+
     <Target Name="EQuanticAnnounceDevSource" BeforeTargets="Build"
             Condition="'$(IsEQuanticDevMode)' == 'true'
                        AND !$([MSBuild]::EnsureTrailingSlash('$(MSBuildProjectDirectory)').StartsWith($([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))))))">

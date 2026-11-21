@@ -57,12 +57,17 @@
         installed package's nuspec (the same mechanism eQuantic.UI.Sdk uses). A wildcard fallback
         would exclude prereleases — a preview SDK could never restore its own preview packages.
     -->
-    <PropertyGroup Condition="'$(EQuanticUIVersion)' == ''">
+    <PropertyGroup>
         <_EQuanticNativeSdkNuspecPath>$(MSBuildThisFileDirectory)../equantic.ui.sdk.native.nuspec</_EQuanticNativeSdkNuspecPath>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(EQuanticUIVersion)' == '' AND Exists('$(_EQuanticNativeSdkNuspecPath)')">
-        <EQuanticUIVersion>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(_EQuanticNativeSdkNuspecPath)')),
-            '&lt;version&gt;(.+?)&lt;/version&gt;').Groups[1].Value)</EQuanticUIVersion>
+    <!-- Read whether or not the project set EQuanticUIVersion: a different one fails with EQ4010
+         (Sdk.targets), naming both, since an app states the version once, in global.json (#1788). -->
+    <PropertyGroup Condition="Exists('$(_EQuanticNativeSdkNuspecPath)')">
+        <_EQuanticSdkVersion>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(_EQuanticNativeSdkNuspecPath)')),
+            '&lt;version&gt;(.+?)&lt;/version&gt;').Groups[1].Value)</_EQuanticSdkVersion>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(EQuanticUIVersion)' == '' AND '$(_EQuanticSdkVersion)' != ''">
+        <EQuanticUIVersion>$(_EQuanticSdkVersion)</EQuanticUIVersion>
     </PropertyGroup>
     <PropertyGroup Condition="'$(EQuanticUIVersion)' == ''">
         <EQuanticUIVersion>*-*</EQuanticUIVersion>
