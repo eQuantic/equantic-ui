@@ -5797,6 +5797,117 @@ record of a release, the wiki's Upgrading page is the distillate.
   node lands as the last child of an open folder or among the shallower rows after it, and the line follows the depth
   ([#1594](https://github.com/eQuantic/equantic-ui/issues/1594)). Proposed and archived through OpenSpec
   (`openspec/specs/sortable-lists`, `openspec/specs/tree-view`).
+- **2026-11-18 · A date is written and read in the calendar of its culture**: a Bug under #1174
+  ([#1191](https://github.com/eQuantic/equantic-ui/issues/1191)). th-TH counts the Thai Buddhist years, fa-IR the
+  Persian calendar's and ar-SA Um Al Qura's, and the browser wrote and read the Gregorian numbers under those
+  calendars' names: `15/1/2567` read as the year 2567. The culture's format data now carries its calendar, measured by
+  the server from .NET's own: a count of years ahead of the Gregorian one, or each month's shorter length and a bit a
+  year for each month whose length varies, so the Persian leap years .NET computes from the equinox arrive as .NET has
+  them. The writer writes a date's year, month, day and era in it and refuses a day it does not write in its own
+  words; the reader reads a date's numbers, this year and a year of two digits in it, and the ISO form in the
+  Gregorian calendar, as .NET does, and the era's name or abbreviation beside a date, as .NET reads it in every
+  culture, an era spelled as a designator being the designator; a designator beside a date with no clock is that
+  date's noon or midnight (`1/15/2024 PM`), where the browser refused it. A calendar of eras or of a thirteenth month is refused by the server rather than
+  written in Gregorian numbers. Measured on both sides by `CultureCalendarConformanceTests` in four cultures, and over
+  each calendar's whole range by `CalendarBridgeTests`. Proposed and archived through OpenSpec
+  (`openspec/specs/runtime-dates`).
+- **2026-11-19 · An issue the board adds at the same moment still gets its points**: `scripts/new-issue.py`
+  makes its add to Project 11 again when GitHub refuses it because the board's own workflow added the
+  issue at the same moment, and sets the status and the points on the item it answers, where it left the
+  issue without its points and said it was not whole (#1645, one of the 127 issues of the 3D epic). Adding
+  an issue the board holds answers its item, measured, so a second add is safe. A test runs the script
+  whole against a board in memory, in CI's `roadmap` job
+  ([#1752](https://github.com/eQuantic/equantic-ui/issues/1752)). Proposed and archived through OpenSpec
+  (`openspec/specs/working-agreement`).
+- **2026-11-21 · 0.2.0-preview.70 released** from `45f25c9d6`: a field that says what it takes, with the
+  keyboard and the autofill made for it on every target, and `MoneyInput` and `NumberInput` reading an
+  amount or a count in the culture (#1761, #1764, #1765), a carried item that looks as the theme's
+  `SortableTheme` says (#1602), a tree that drops a node at the depth the pointer or the keyboard picks
+  (#1594), and a box inside a pinned header that follows its scrolled state (#1769). The release folded
+  nine API files, nine ledger entries and one runtime delta, for a base of 376,365 bytes, and each break is
+  on the Upgrading page. The tag's run published on its third attempt, `samples` failing both times in its
+  edit-to-view step where the same commit had passed on main: on the first it hung 45 minutes, and on the
+  second the native window did not draw an edit in 300 s, so one edit of six was measured, and the web's
+  warm median measured 1,518 ms over the 1.5 s ceiling (#1473). The run pushed 54 packages and wrote the
+  release page at 13:28Z, and an app restores at 0.2.0-preview.70 from nuget.org
+  ([#1772](https://github.com/eQuantic/equantic-ui/issues/1772),
+  *[v0.2.0-preview.70](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.70)*).
+- **2026-11-21 · A page carries only what it shows**: a real site's pages carried the whole app. Every
+  string: eqc now writes which strings each page reads through the modules it reaches, a catalog holds
+  only what browser code reads, and the server inlines a page's and its layout's strings, a navigation
+  bringing the next page's. Every arm of every adaptive node: a served page still carries them behind
+  their media gates and hydrates so, then the browser holds the one arm the window resolves, as Photon
+  does, at the same slot on every target, and renders again when the window crosses a threshold. And
+  the one thing a page should keep across a resize, it lost: `GlobalKey` carries a position, and every
+  stateful component below it, to another parent in the same build, Flutter's way, so the native
+  template's screen keeps its count when a phone turns to landscape and back
+  ([#1782](https://github.com/eQuantic/equantic-ui/issues/1782),
+  [#1783](https://github.com/eQuantic/equantic-ui/issues/1783),
+  [#797](https://github.com/eQuantic/equantic-ui/issues/797)). Proposed and archived through OpenSpec
+  (`openspec/specs/page-culture`, `element-tree`, `adaptive-layout`).
+- **2026-11-21 · A page hydrates in its tests**: a real site's pages passed every test of the server's HTML
+  and broke only once they hydrated, and the last of them said nothing even in development.
+  `HydrationAssert.PageAsync(factory, "/catalogue")`, in `eQuantic.UI.Testing`, serves the app on a port,
+  runs the page's scripts against the server's markup in happy-dom under the embedded bun the app was built
+  with, and fails naming an error the page reported, a text, an attribute or an element the browser drew
+  otherwise, or a page the router chose that the server did not draw; hydration now records what it wrote
+  over, and the browser says in development when its router and the server chose different pages, at load
+  and after a navigation. A site of pages alone, with no component of its own, failed its build on the
+  generated-sources prune, and builds
+  ([#1775](https://github.com/eQuantic/equantic-ui/issues/1775),
+  [#1778](https://github.com/eQuantic/equantic-ui/issues/1778)). Proposed and archived through OpenSpec
+  (`openspec/specs/component-testing`, `hydration-contract`, `page-routes`).
+- **2026-11-21 · Server code is known without a mark, and a component's helpers reach out**: a middleware,
+  an endpoint or a configuration reader no component names failed the build until it was marked
+  `[ServerOnly]`, and a `[GeneratedRegex]` failed it from inside the regex generator's file. A class, a
+  record, a static class or a generated type of the app's is now a module only when a component reaches
+  it through what it imports, the rule a referenced project's type already followed; the dashboard's
+  served JavaScript is byte for byte what it was. And a component's static helper read from another
+  namespace was CS0119, the factory's `global using static` winning over a file's `using`: the generator
+  aliases a component that declares statics, except where a file imports another type of its name
+  ([#1779](https://github.com/eQuantic/equantic-ui/issues/1779),
+  [#1781](https://github.com/eQuantic/equantic-ui/issues/1781)). Proposed and archived through OpenSpec
+  (`openspec/specs/client-boundary`, `component-factories`).
+- **2026-11-21 · The build refuses what an app met only in the browser**: a real site listed its
+  browser-only pitfalls and scanned its own sources for one of them. Measured on `main`, `string.Format`,
+  overloads and a `long` quotient were already refused or right; an `Icon` of 22 dp, a resx accessor read
+  into a static and a type named like the SDK's passed the build. EQ3106 now reads a constant against its
+  parameter's `[AllowedValues]` (the icon's four sizes), EQ3107 warns of a static read from a catalog,
+  both analyzers ship in the web and the native SDK, and EQ1005 refuses a module that names a type of
+  the app's and one of the SDK's under one name. And a stateful section a page hands what its prefetch
+  loads was drawn with the page's defaults, since the server kept the instance its first frame built:
+  while the data rounds run, only what loads keeps its instance now (`BuildOwner.KeepsInstance`)
+  ([#1776](https://github.com/eQuantic/equantic-ui/issues/1776),
+  [#1777](https://github.com/eQuantic/equantic-ui/issues/1777)). Proposed and archived through OpenSpec
+  (`openspec/specs/build-analyzers`, `transpiler-names`, `element-tree`).
+- **2026-11-21 · The components a real site worked around**: five gaps, each met in a browser. A picker
+  drawn again without the value it reported says so in development now (`DevelopmentNotices`, written to
+  the console by the development runtime and to the logger by a Photon app in Development), and
+  `LabelHidden` leaves a field's label out of the drawing for a form that lays its own.
+  `Image.FocalPoint` and `Image.Zoom` frame a photograph the way the site's `FramedImage` did, as
+  `object-position` and a scale around it on the web and the same arithmetic on Photon. A canvas whose
+  handlers follow a drag writes `touch-action: none`, so a finger's drag moves what they move instead of
+  scrolling the page, while a chart's hover leaves the scroll to the page. `Navigator.OpenAsync` and
+  `DownloadAsync` open what an action answered with from the handler that awaited it, and
+  `Link.OpensBeside` opens a destination in a new tab cut from the page
+  ([#1780](https://github.com/eQuantic/equantic-ui/issues/1780),
+  [#1785](https://github.com/eQuantic/equantic-ui/issues/1785),
+  [#1786](https://github.com/eQuantic/equantic-ui/issues/1786),
+  [#1787](https://github.com/eQuantic/equantic-ui/issues/1787),
+  [#941](https://github.com/eQuantic/equantic-ui/issues/941)). Proposed and archived through OpenSpec
+  (`openspec/specs/development-notices`, `image-framing`, `opening-addresses`, `links`, `raw-pointer`,
+  `text-entry`).
+- **2026-11-21 · The SDK writes what an app kept by hand**: a real site kept three things the SDK
+  already knew. Its catalogs' accessors: a neutral `.resx` with no Designer now gets its class from
+  MSBuild's own `GenerateResource`, beside a mirror of the `.resx` where eqc reads a catalog, and the
+  templates and samples drop their Designers with the same bytes in the browser. Its version, in two
+  places: the SDK compares its own version with `EQuanticUIVersion`, and a different one fails with
+  EQ4010 before the packages are restored. And `new` for a library's components: the components of a
+  referenced project get factories like the app's own, and a package's get none
+  ([#1784](https://github.com/eQuantic/equantic-ui/issues/1784),
+  [#1788](https://github.com/eQuantic/equantic-ui/issues/1788),
+  [#818](https://github.com/eQuantic/equantic-ui/issues/818)). Proposed and archived through OpenSpec
+  (`openspec/specs/resource-accessors`, `sdk-version`, `component-factories`).
 
 ## Retired documents
 

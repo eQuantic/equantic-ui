@@ -586,6 +586,8 @@ eQuantic.UI.Web.HtmlStyle.TouchAction.get -> string?
 eQuantic.UI.Web.HtmlStyle.TouchAction.set -> void
 eQuantic.UI.Web.HtmlStyle.Transform.get -> string?
 eQuantic.UI.Web.HtmlStyle.Transform.set -> void
+eQuantic.UI.Web.HtmlStyle.TransformOrigin.get -> string?
+eQuantic.UI.Web.HtmlStyle.TransformOrigin.set -> void
 eQuantic.UI.Web.HtmlStyle.Transition.get -> string?
 eQuantic.UI.Web.HtmlStyle.Transition.set -> void
 eQuantic.UI.Web.HtmlStyle.Translate.get -> string?

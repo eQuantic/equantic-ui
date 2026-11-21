@@ -89,6 +89,7 @@ eQuantic.UI.Primitives.AdaptiveNode.ExpandedFrom.init -> void
 eQuantic.UI.Primitives.AdaptiveNode.Medium.get -> eQuantic.UI.Primitives.VisualNode?
 eQuantic.UI.Primitives.AdaptiveNode.MediumFrom.get -> float
 eQuantic.UI.Primitives.AdaptiveNode.MediumFrom.init -> void
+eQuantic.UI.Primitives.AdaptiveNode.ResolveIndex(float widthDp) -> int
 eQuantic.UI.Primitives.AdaptiveNode.ResolveWidth(float widthDp) -> eQuantic.UI.Primitives.VisualNode!
 eQuantic.UI.Primitives.Adjustable
 eQuantic.UI.Primitives.Adjustable.Adjustable(eQuantic.UI.Primitives.VisualNode! child, System.Action<int>! onAdjust) -> void
@@ -341,6 +342,9 @@ eQuantic.UI.Primitives.BuildOwner.DrewOnly(System.Collections.Generic.IReadOnlyL
 eQuantic.UI.Primitives.BuildOwner.EndFrame() -> void
 eQuantic.UI.Primitives.BuildOwner.HasDirty.get -> bool
 eQuantic.UI.Primitives.BuildOwner.HoldsEveryArm.get -> bool
+eQuantic.UI.Primitives.BuildOwner.HoldsEveryArm.set -> void
+eQuantic.UI.Primitives.BuildOwner.KeepsInstance.get -> System.Func<eQuantic.UI.Primitives.StatefulComponent!, bool>?
+eQuantic.UI.Primitives.BuildOwner.KeepsInstance.set -> void
 eQuantic.UI.Primitives.BuildOwner.Live.get -> bool
 eQuantic.UI.Primitives.BuildOwner.Marks.get -> int
 eQuantic.UI.Primitives.BuildOwner.NavigationRequested.get -> System.Action<string!>?
@@ -711,6 +715,7 @@ eQuantic.UI.Primitives.DensityPair.Compact.get -> float?
 eQuantic.UI.Primitives.DensityPair.Compact.init -> void
 eQuantic.UI.Primitives.DensityPair.DensityPair() -> void
 eQuantic.UI.Primitives.DensityPair.Equals(eQuantic.UI.Primitives.DensityPair? other) -> bool
+eQuantic.UI.Primitives.DevelopmentNotices
 eQuantic.UI.Primitives.DeviceCapability
 eQuantic.UI.Primitives.DeviceCapability.Biometrics = 7 -> eQuantic.UI.Primitives.DeviceCapability
 eQuantic.UI.Primitives.DeviceCapability.Camera = 0 -> eQuantic.UI.Primitives.DeviceCapability
@@ -982,6 +987,9 @@ eQuantic.UI.Primitives.GeoLocation.Latitude.get -> double
 eQuantic.UI.Primitives.GeoLocation.Latitude.init -> void
 eQuantic.UI.Primitives.GeoLocation.Longitude.get -> double
 eQuantic.UI.Primitives.GeoLocation.Longitude.init -> void
+eQuantic.UI.Primitives.GlobalKey
+eQuantic.UI.Primitives.GlobalKey.GlobalKey(string? label = null) -> void
+eQuantic.UI.Primitives.GlobalKey.Label.get -> string?
 eQuantic.UI.Primitives.GoogleFontAttribute
 eQuantic.UI.Primitives.GoogleFontAttribute.Family.get -> string!
 eQuantic.UI.Primitives.GoogleFontAttribute.GoogleFontAttribute(string! family, params eQuantic.UI.Primitives.FontWeight[]! weights) -> void
@@ -1389,12 +1397,16 @@ eQuantic.UI.Primitives.Image.DarkSource.get -> string?
 eQuantic.UI.Primitives.Image.DarkSource.init -> void
 eQuantic.UI.Primitives.Image.Fit.get -> eQuantic.UI.Primitives.ImageFit
 eQuantic.UI.Primitives.Image.Fit.init -> void
+eQuantic.UI.Primitives.Image.FocalPoint.get -> eQuantic.UI.Primitives.Point
+eQuantic.UI.Primitives.Image.FocalPoint.init -> void
 eQuantic.UI.Primitives.Image.Height.get -> float
 eQuantic.UI.Primitives.Image.Image(string! source, float width, float height, eQuantic.UI.Primitives.ImageFit fit = eQuantic.UI.Primitives.ImageFit.Cover, string! label = "") -> void
 eQuantic.UI.Primitives.Image.Label.get -> string!
 eQuantic.UI.Primitives.Image.Label.init -> void
 eQuantic.UI.Primitives.Image.Source.get -> string!
 eQuantic.UI.Primitives.Image.Width.get -> float
+eQuantic.UI.Primitives.Image.Zoom.get -> float
+eQuantic.UI.Primitives.Image.Zoom.init -> void
 eQuantic.UI.Primitives.ImageData
 eQuantic.UI.Primitives.ImageData.<Clone>$() -> eQuantic.UI.Primitives.ImageData!
 eQuantic.UI.Primitives.ImageData.ByteCount.get -> int
@@ -1519,6 +1531,8 @@ eQuantic.UI.Primitives.Link.KeepsPosition.init -> void
 eQuantic.UI.Primitives.Link.Label.get -> string?
 eQuantic.UI.Primitives.Link.Label.init -> void
 eQuantic.UI.Primitives.Link.Link(string! destination, eQuantic.UI.Primitives.VisualNode! child) -> void
+eQuantic.UI.Primitives.Link.OpensBeside.get -> bool
+eQuantic.UI.Primitives.Link.OpensBeside.init -> void
 eQuantic.UI.Primitives.ListTheme
 eQuantic.UI.Primitives.ListTheme.<Clone>$() -> eQuantic.UI.Primitives.ListTheme!
 eQuantic.UI.Primitives.ListTheme.ChevronColor.get -> eQuantic.UI.Primitives.ColorToken?
@@ -1976,8 +1990,10 @@ eQuantic.UI.Primitives.NavigationTheme.TitleSize.init -> void
 eQuantic.UI.Primitives.NavigationTheme.TitleWeight.get -> eQuantic.UI.Primitives.FontWeight?
 eQuantic.UI.Primitives.NavigationTheme.TitleWeight.init -> void
 eQuantic.UI.Primitives.Navigator
+eQuantic.UI.Primitives.Navigator.DownloadAsync(string! address, string! fileName) -> System.Threading.Tasks.ValueTask<bool>
 eQuantic.UI.Primitives.Navigator.Go(string! destination) -> void
 eQuantic.UI.Primitives.Navigator.Location.get -> string!
+eQuantic.UI.Primitives.Navigator.OpenAsync(string! address) -> System.Threading.Tasks.ValueTask<bool>
 eQuantic.UI.Primitives.NetworkKind
 eQuantic.UI.Primitives.NetworkKind.Cellular = 2 -> eQuantic.UI.Primitives.NetworkKind
 eQuantic.UI.Primitives.NetworkKind.None = 0 -> eQuantic.UI.Primitives.NetworkKind
@@ -3441,6 +3457,8 @@ eQuantic.UI.Primitives.VisualNode.AlignSelf.init -> void
 eQuantic.UI.Primitives.VisualNode.Bookmark.get -> string?
 eQuantic.UI.Primitives.VisualNode.Bookmark.init -> void
 eQuantic.UI.Primitives.VisualNode.DesignOrigin
+eQuantic.UI.Primitives.VisualNode.GlobalKey.get -> eQuantic.UI.Primitives.GlobalKey?
+eQuantic.UI.Primitives.VisualNode.GlobalKey.init -> void
 eQuantic.UI.Primitives.VisualNode.GridSpan.get -> int
 eQuantic.UI.Primitives.VisualNode.GridSpan.init -> void
 eQuantic.UI.Primitives.VisualNode.Key.get -> string?
@@ -3563,6 +3581,7 @@ override eQuantic.UI.Primitives.FontFile.GetHashCode() -> int
 override eQuantic.UI.Primitives.FontFile.ToString() -> string!
 override eQuantic.UI.Primitives.FrameTick.GetHashCode() -> int
 override eQuantic.UI.Primitives.GeoLocation.GetHashCode() -> int
+override eQuantic.UI.Primitives.GlobalKey.ToString() -> string!
 override eQuantic.UI.Primitives.Grid.NodeKind.get -> string!
 override eQuantic.UI.Primitives.GridPattern.GetHashCode() -> int
 override eQuantic.UI.Primitives.GridTrack.GetHashCode() -> int
@@ -3835,6 +3854,9 @@ static eQuantic.UI.Primitives.DensityLadder.operator ==(eQuantic.UI.Primitives.D
 static eQuantic.UI.Primitives.DensityPair.Merge(eQuantic.UI.Primitives.DensityPair? under, eQuantic.UI.Primitives.DensityPair? over) -> eQuantic.UI.Primitives.DensityPair?
 static eQuantic.UI.Primitives.DensityPair.operator !=(eQuantic.UI.Primitives.DensityPair? left, eQuantic.UI.Primitives.DensityPair? right) -> bool
 static eQuantic.UI.Primitives.DensityPair.operator ==(eQuantic.UI.Primitives.DensityPair? left, eQuantic.UI.Primitives.DensityPair? right) -> bool
+static eQuantic.UI.Primitives.DevelopmentNotices.Say(string! notice) -> void
+static eQuantic.UI.Primitives.DevelopmentNotices.Sink.get -> System.Action<string!>?
+static eQuantic.UI.Primitives.DevelopmentNotices.Sink.set -> void
 static eQuantic.UI.Primitives.DivergingScale.operator !=(eQuantic.UI.Primitives.DivergingScale left, eQuantic.UI.Primitives.DivergingScale right) -> bool
 static eQuantic.UI.Primitives.DivergingScale.operator ==(eQuantic.UI.Primitives.DivergingScale left, eQuantic.UI.Primitives.DivergingScale right) -> bool
 static eQuantic.UI.Primitives.EdgeInsets.All(float value) -> eQuantic.UI.Primitives.EdgeInsets
