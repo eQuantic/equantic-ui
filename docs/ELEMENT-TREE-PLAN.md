@@ -737,7 +737,9 @@ E1 to E4 change no public signature an app calls; E5 and E6 add to it.
 
 ## 6. Not in this plan
 
-- `GlobalKey`, the element that moves between parents. Nothing needs it yet.
+- ~~`GlobalKey`, the element that moves between parents.~~ Landed outside the plan (#797), when an
+  adaptive node's two arms needed one screen: a keyed position that leaves is parked for the build, and
+  one that still stands elsewhere is taken from its parent, as Flutter's `_retakeInactiveElement` does.
 - `InheritedModel`'s aspects, a dependency on part of a value. The first inherited components are
   small enough that rebuilding all their dependents costs nothing worth the API.
 - `FocusManager` and the rest of `PhotonHost`'s split (the audit's step 11): the element tree makes
