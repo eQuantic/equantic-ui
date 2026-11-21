@@ -19,16 +19,17 @@ public class AppFactorySurfaceGeneratorTests
 
     /// <summary>The surface for <paramref name="appCode"/>, and the errors of the app compiled with it.</summary>
     private static (string Source, IReadOnlyList<Diagnostic> Diagnostics, IReadOnlyList<Diagnostic> Errors) RunCompiled(
-        string appCode)
+        string appCode, string? secondFile = null)
     {
-        var tree = CSharpSyntaxTree.ParseText(appCode, path: "App.cs");
+        var trees = new List<SyntaxTree> { CSharpSyntaxTree.ParseText(appCode, path: "App.cs") };
+        if (secondFile is not null) trees.Add(CSharpSyntaxTree.ParseText(secondFile, path: "Second.cs"));
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             .Select(p => (MetadataReference)TestReferences.Of(p))
             .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
             .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.PageAttribute).Assembly.Location));
-        var compilation = CSharpCompilation.Create("App", [tree], references,
+        var compilation = CSharpCompilation.Create("App", trees, references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: NullableContextOptions.Enable));
 
@@ -96,6 +97,116 @@ public class AppFactorySurfaceGeneratorTests
             public override VisualNode Build(ComponentContext context) => new Text(Title);
         }
         """;
+
+    /// <summary>
+    /// A component's static helpers are reachable from another namespace (#1781). The factory comes in
+    /// through a <c>global using static</c>, the type through a file's <c>using</c>, both at one level, and
+    /// C# took the method: <c>ProductEditor.Toggled(true)</c> was CS0119, so the app moved every helper to a
+    /// class of its own. The generator aliases the name, which outranks both, and the factory still answers
+    /// a call of it.
+    /// </summary>
+    [Fact]
+    public void AComponentsStaticHelper_IsCalledFromAnotherNamespace_AndItsFactoryStillAnswersACall()
+    {
+        var (source, diagnostics, errors) = RunCompiled("""
+            namespace Shop.Components
+            {
+                using eQuantic.UI.Primitives;
+
+                public sealed class ProductEditor(string name) : StatelessComponent
+                {
+                    public const int MaxName = 40;
+                    public static bool Toggled(bool on) => !on;
+                    public override VisualNode Build(ComponentContext context) => new Text(name, TypeRole.BodyM);
+                }
+
+                public sealed class Plain(string name) : StatelessComponent
+                {
+                    public override VisualNode Build(ComponentContext context) => new Text(name, TypeRole.BodyM);
+                }
+            }
+            """, """
+            using eQuantic.UI.Primitives;
+            using Shop.Components;
+
+            namespace Shop.Pages;
+
+            public static class Orders
+            {
+                public static VisualNode Row(bool on) =>
+                    ProductEditor.Toggled(on) && ProductEditor.MaxName > 0 ? ProductEditor("a") : Plain("b");
+            }
+            """);
+
+        diagnostics.Should().BeEmpty();
+        errors.Should().BeEmpty("the helper, the constant and both factories bind");
+        source.Should().Contain("global using ProductEditor = global::Shop.Components.ProductEditor;")
+            .And.NotContain("global using Plain =", "a component with no static member keeps what it had");
+    }
+
+    /// <summary>
+    /// An alias outranks every type of its name a file imports at the same level, so a component named like
+    /// one gets none: <c>Timer</c> is in <c>System.Threading</c>, which a file imports, and the file's
+    /// <c>Timer</c> stays the platform's.
+    /// </summary>
+    [Fact]
+    public void AComponentNamedLikeATypeAFileImports_GetsNoAlias()
+    {
+        var (source, _, errors) = RunCompiled("""
+            namespace Shop.Components
+            {
+                using eQuantic.UI.Primitives;
+
+                public sealed class Timer(string label) : StatelessComponent
+                {
+                    public static string Format(int seconds) => seconds + "s";
+                    public override VisualNode Build(ComponentContext context) => new Text(label, TypeRole.BodyM);
+                }
+            }
+            """, """
+            using System.Threading;
+
+            namespace Shop.Server;
+
+            public static class Ticks
+            {
+                public static Timer Start(TimerCallback callback) => new Timer(callback, null, 0, 1000);
+            }
+            """);
+
+        errors.Should().BeEmpty("the server's Timer is the platform's, as it was");
+        source.Should().NotContain("global using Timer =");
+    }
+
+    /// <summary>A file's own alias of the component's name, and a class a file imports with <c>using static</c>
+    /// that nests a type of it, keep the component unaliased: a global alias would collide with the first and
+    /// capture the second.</summary>
+    [Theory]
+    [InlineData("using Timer = System.Threading.Timer;\n\nnamespace Shop.Server;\n\npublic static class Ticks { public static Timer? Held; }")]
+    [InlineData("using static Shop.Legacy.Clocks;\n\nnamespace Shop.Server;\n\npublic static class Ticks { public static Timer? Held; }")]
+    public void AComponentNamedLikeAnAliasOrANestedTypeAFileImports_GetsNoAlias(string server)
+    {
+        var (source, _, errors) = RunCompiled("""
+            namespace Shop.Components
+            {
+                using eQuantic.UI.Primitives;
+
+                public sealed class Timer(string label) : StatelessComponent
+                {
+                    public static string Format(int seconds) => seconds + "s";
+                    public override VisualNode Build(ComponentContext context) => new Text(label, TypeRole.BodyM);
+                }
+            }
+
+            namespace Shop.Legacy
+            {
+                public static class Clocks { public sealed class Timer { } }
+            }
+            """, server);
+
+        errors.Should().BeEmpty("the server file's Timer is what it imported, as it was");
+        source.Should().NotContain("global using Timer =");
+    }
 
     /// <summary>
     /// The values a constructor parameter allows reach its factory's parameter (#1776): the build reads

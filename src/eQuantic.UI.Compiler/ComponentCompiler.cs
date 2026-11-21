@@ -403,6 +403,7 @@ public class ComponentCompiler
         foreach (var component in list)
         {
             var result = Compile(component);
+            result.IsComponent = !component.IsRecordType && !component.IsPlainClass && !component.IsStaticHelper && !component.IsUnionType;
             if (duplicated.TryGetValue(TwinNameOf(component), out var namesakes))
             {
                 result.Success = false;
@@ -930,6 +931,10 @@ public class CompilationResult
     /// mentioned. Where the file sits in the project has nothing to do with it.
     /// </summary>
     public bool IsPage { get; set; }
+
+    /// <summary>A component's module, rather than a record's, a plain class's, a static class's or a union's:
+    /// a component is a root of what the browser reaches (AppModules).</summary>
+    internal bool IsComponent { get; set; }
     public string TypeScript { get; set; } = string.Empty;
     public string JavaScript { get; set; } = string.Empty;
     public string? SourceMap { get; set; }
