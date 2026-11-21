@@ -369,6 +369,31 @@
         file), then eqc itself. They were one target, and the middle one is where a value of the
         project reached a shell (#836): it is a target of its own so a test runs it as it ships.
     -->
+    <!--
+        A component of a referenced project is composed like the app's own (#818): `Wordmark()`, not
+        `new Wordmark()`. The factory surface's generator sees a referenced project only as metadata,
+        and a package's components must not get factories (eqc compiles a referenced PROJECT from its
+        source, #624, and has no source for a package), so it is told which assemblies came from
+        projects: the ones eqc compiles from source, without the SDK's own projects and icon packs
+        (_EQuanticCompilerInputs keeps the same set). Set before the compiler's options are written.
+    -->
+    <Target Name="_EQuanticFactoryReferences" BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun"
+            DependsOnTargets="ResolveReferences;FindReferenceAssembliesForReferences"
+            Condition="'$(EQuanticGenerateFactorySurface)' != 'false'">
+        <PropertyGroup>
+            <_EqFactorySdkRoot Condition="'$(IsEQuanticDevMode)' == 'true'">$([System.IO.Path]::GetFullPath('$(_DevRootDir)'))</_EqFactorySdkRoot>
+        </PropertyGroup>
+        <ItemGroup>
+            <_EqFactoryProjectAssembly Include="@(ReferencePathWithRefAssemblies)"
+                Condition="'%(ReferencePathWithRefAssemblies.MSBuildSourceProjectFile)' != ''
+                           And !Exists('$([System.IO.Path]::GetDirectoryName(%(ReferencePathWithRefAssemblies.MSBuildSourceProjectFile)))/EQuanticIconPack.marker')
+                           And ('$(_EqFactorySdkRoot)' == '' Or !$([System.String]::Copy('%(ReferencePathWithRefAssemblies.MSBuildSourceProjectFile)').StartsWith('$(_EqFactorySdkRoot)')))" />
+        </ItemGroup>
+        <PropertyGroup>
+            <_EqReferencedProjects>@(_EqFactoryProjectAssembly->'%(Filename)')</_EqReferencedProjects>
+        </PropertyGroup>
+    </Target>
+
     <Target Name="_EQuanticCompilerInputs"
         DependsOnTargets="ResolveReferences;FindReferenceAssembliesForReferences;AddImplicitDefineConstants;GenerateGlobalUsings"
         Condition="'$(EnableEQuanticUICompilation)' == 'true'">

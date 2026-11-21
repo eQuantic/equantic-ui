@@ -65,13 +65,58 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
             .Where(static component => component is not null)
             .Collect();
 
-        context.RegisterSourceOutput(components.Combine(context.CompilationProvider),
-            static (spc, pair) => Emit(spc, pair.Left, pair.Right));
+        // A referenced PROJECT's components get factories too (#818). The SDK names the assemblies that came
+        // from projects (_EqReferencedProjects): a package's components have no source eqc compiles, so no
+        // module a factory could import.
+        var referenced = context.CompilationProvider.Combine(context.AnalyzerConfigOptionsProvider)
+            .Select(static (pair, token) => ReferencedComponents(pair.Left, pair.Right, token));
+
+        context.RegisterSourceOutput(components.Combine(referenced).Combine(context.CompilationProvider),
+            static (spc, pair) => Emit(spc, pair.Left.Left, pair.Left.Right, pair.Right));
     }
 
-    private static void Emit(SourceProductionContext spc, ImmutableArray<Component?> all, Compilation compilation)
+    /// <summary>The build property the SDK writes: the referenced projects' assembly names, ';'-separated.</summary>
+    internal const string ReferencedProjectsProperty = "build_property._EqReferencedProjects";
+
+    /// <summary>Every component with a factory in the assemblies of the projects the app references.</summary>
+    private static ImmutableArray<Component> ReferencedComponents(
+        Compilation compilation, Microsoft.CodeAnalysis.Diagnostics.AnalyzerConfigOptionsProvider options,
+        System.Threading.CancellationToken token)
     {
-        var found = all.Where(c => c is not null).Select(c => c!).ToList();
+        if (!options.GlobalOptions.TryGetValue(ReferencedProjectsProperty, out var value) || string.IsNullOrWhiteSpace(value))
+            return ImmutableArray<Component>.Empty;
+        var projects = new HashSet<string>(
+            value.Split(new[] { ';' }, System.StringSplitOptions.RemoveEmptyEntries).Select(name => name.Trim()),
+            System.StringComparer.Ordinal);
+        var found = ImmutableArray.CreateBuilder<Component>();
+        foreach (var assembly in compilation.SourceModule.ReferencedAssemblySymbols)
+        {
+            if (!projects.Contains(assembly.Name)) continue;
+            Collect(assembly.GlobalNamespace, found, token);
+        }
+        return found.ToImmutable();
+    }
+
+    private static void Collect(INamespaceOrTypeSymbol container, ImmutableArray<Component>.Builder found,
+        System.Threading.CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (container is INamespaceSymbol ns)
+            foreach (var inner in ns.GetNamespaceMembers()) Collect(inner, found, token);
+        foreach (var type in container.GetTypeMembers())
+        {
+            if (Describe(type) is { } component) found.Add(component);
+            Collect(type, found, token);
+        }
+    }
+
+    private static void Emit(SourceProductionContext spc, ImmutableArray<Component?> all,
+        ImmutableArray<Component> referenced, Compilation compilation)
+    {
+        var own = all.Where(c => c is not null).Select(c => c!).ToList();
+        // The app's own first: a referenced component named like one of the app's loses the factory to it,
+        // with the same warning two of the app's own get (EQ3102).
+        var found = own.Concat(referenced).ToList();
         foreach (var component in found.Where(c => c.ElectedCount > 1))
             spc.ReportDiagnostic(Diagnostic.Create(AmbiguousElection, component.Location,
                 component.Name, component.ElectedCount));
@@ -83,7 +128,7 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
         // compile, and which the developer would read as the generator being broken rather than as
         // a name they own. Report it and keep the first, so the rest of the surface still exists.
         var byName = new Dictionary<string, Component>();
-        foreach (var component in usable.OrderBy(c => c.FullName, System.StringComparer.Ordinal))
+        foreach (var component in usable.OrderBy(c => c.IsReferenced).ThenBy(c => c.FullName, System.StringComparer.Ordinal))
         {
             if (byName.TryGetValue(component.Name, out var winner))
             {
@@ -95,8 +140,11 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
         }
 
         // The surface lives in the namespace the app's components share — the shortest common one,
-        // so a project that grew subfolders still gets ONE surface rather than several.
-        var surfaceNamespace = CommonNamespace(byName.Values.Select(c => c.Namespace));
+        // so a project that grew subfolders still gets ONE surface rather than several. A referenced
+        // project's namespace is its own and does not narrow it; an app whose only components are a
+        // library's has its surface in the namespace its assembly is named by.
+        var ownNamespaces = byName.Values.Where(c => !c.IsReferenced).Select(c => c.Namespace).ToList();
+        var surfaceNamespace = ownNamespaces.Count > 0 ? CommonNamespace(ownNamespaces) : NamespaceOf(compilation.AssemblyName);
         if (surfaceNamespace.Length == 0) return;
 
         var source = new StringBuilder();
@@ -148,6 +196,13 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
         spc.AddSource("AppUI.g.cs", source.ToString());
     }
 
+    /// <summary>The assembly's name as a namespace, or empty when a part of it is no identifier.</summary>
+    private static string NamespaceOf(string? assemblyName) =>
+        assemblyName is { Length: > 0 }
+        && assemblyName.Split('.').All(part => SyntaxFacts.IsValidIdentifier(part))
+            ? assemblyName
+            : "";
+
     /// <summary>The longest namespace prefix every component shares, on dot boundaries.</summary>
     private static string CommonNamespace(IEnumerable<string> namespaces)
     {
@@ -168,11 +223,15 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
     {
         public Component(string ns, string name, string fullName, int electedCount,
             List<(string Type, string Name, string? Default, bool IsDependency, bool IsRequired, string Allowed)> parameters, Location location,
-            bool hasStatics)
+            bool hasStatics, bool isReferenced)
         {
             Namespace = ns; Name = name; FullName = fullName;
             ElectedCount = electedCount; Parameters = parameters; Location = location; HasStatics = hasStatics;
+            IsReferenced = isReferenced;
         }
+
+        /// <summary>Whether it is declared in a referenced project rather than in the app (#818).</summary>
+        public bool IsReferenced { get; }
 
         /// <summary>Whether it declares a static member the rest of the app may read: a helper, a constant.</summary>
         public bool HasStatics { get; }
@@ -186,9 +245,13 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
         public Location Location { get; }
     }
 
-    private static Component? Describe(GeneratorSyntaxContext ctx, System.Threading.CancellationToken token)
+    private static Component? Describe(GeneratorSyntaxContext ctx, System.Threading.CancellationToken token) =>
+        ctx.SemanticModel.GetDeclaredSymbol(ctx.Node, token) is INamedTypeSymbol symbol ? Describe(symbol) : null;
+
+    /// <summary>A component with a factory, from its symbol: the app's own, or one a referenced project
+    /// declares, read as metadata.</summary>
+    private static Component? Describe(INamedTypeSymbol symbol)
     {
-        if (ctx.SemanticModel.GetDeclaredSymbol(ctx.Node, token) is not INamedTypeSymbol symbol) return null;
         if (!FactorySurface.HasFactory(symbol)) return null;
 
         // WIDEST by default — the rule the emitter already applies to overloads — or the elected one.
@@ -214,7 +277,8 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
             symbol.TypeParameters.Length == 0 && symbol.GetMembers().Any(member =>
                 (member.IsStatic || member is INamedTypeSymbol) && !member.IsImplicitlyDeclared
                 && member is not IMethodSymbol { MethodKind: not MethodKind.Ordinary }
-                && member.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal));
+                && member.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal),
+            symbol.Locations.All(location => !location.IsInSource));
     }
 
     /// <summary>
