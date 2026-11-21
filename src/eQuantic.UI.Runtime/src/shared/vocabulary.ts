@@ -64,9 +64,30 @@ export { StyleChannels } from './value-types';
  */
 export type EqConfig = Record<string, unknown>;
 
+/**
+ * Mirror of the C# `GlobalKey` (#797): an identity a node keeps wherever it is placed. A node that carries
+ * one, moved under another parent in one build, takes its position along, and the stateful components below
+ * it keep their instances. The identity is the instance: an app makes one and keeps it in a field of the
+ * component that builds the tree. The label is for a reader, never compared.
+ */
+export class GlobalKey {
+  readonly label: string | null;
+
+  constructor(label: string | null = null, config?: EqConfig) {
+    this.label = label;
+    if (config) Object.assign(this, config);
+  }
+
+  toString(): string {
+    return this.label ? `GlobalKey(${this.label})` : 'GlobalKey';
+  }
+}
+
 export abstract class VisualNode {
   abstract readonly nodeKind: NodeKind;
   key?: string | null;
+  /** The identity this node keeps wherever it is placed (the C# `VisualNode.GlobalKey`, #797). */
+  globalKey?: GlobalKey | null;
   /**
    * A named place a link can reach (the C# `VisualNode.Bookmark`), which becomes this element's
    * `id`. Distinct from `key`: a key is reconciler identity and need only be unique among siblings,
@@ -288,6 +309,7 @@ export class Box extends VisualNode {
 
 interface FlexConfig {
   key?: string | null;
+  globalKey?: GlobalKey | null;
   main?: MainAlignValue;
   cross?: CrossAlignValue;
   wrap?: boolean;
@@ -474,6 +496,7 @@ interface AdaptiveConfig {
   mediumFrom?: number;
   expandedFrom?: number;
   key?: string | null;
+  globalKey?: GlobalKey | null;
 }
 
 /** Mirror of the C# `AdaptiveNode` (spec S6): up to three variants, switched at the node's own thresholds. */
@@ -495,9 +518,16 @@ export class AdaptiveNode extends VisualNode {
   /** The variant for a window `widthDp` wide, at this node's thresholds: the one every target holds and
    * draws, the gates showing it at the same widths (C# twin: `ResolveWidth`, #1465). */
   resolveWidth(widthDp: number): VisualNode {
-    if (this.expanded && widthDp >= this.expandedFrom) return this.expanded;
-    if (this.medium && widthDp >= this.mediumFrom) return this.medium;
-    return this.compact;
+    const index = this.resolveIndex(widthDp);
+    return index === 2 ? this.expanded! : index === 1 ? this.medium! : this.compact;
+  }
+
+  /** Which arm a window `widthDp` wide shows, as its slot: 0 compact, 1 medium, 2 expanded. The arm stands
+   * at that slot on every target, held alone or beside the others (C# twin: `ResolveIndex`, #1783). */
+  resolveIndex(widthDp: number): number {
+    if (this.expanded && widthDp >= this.expandedFrom) return 2;
+    if (this.medium && widthDp >= this.mediumFrom) return 1;
+    return 0;
   }
 }
 

@@ -1,4 +1,4 @@
-import { $eq, ChildSlots, NodeSlots, VisualNode } from "../runtime-exports";
+import { $eq, AdaptiveNode, ChildSlots, NodeSlots, VisualNode } from "../runtime-exports";
 import { Element } from "./Element";
 
 export class NodeElement extends Element {
@@ -85,6 +85,7 @@ export class NodeElement extends Element {
         }
         let count = slots.count;
         while (this._children.length < count) $eq.collections.listAdd(this._children, null);
+        if (!this.owner.holdsEveryArm && this.configuration instanceof AdaptiveNode) this.carryTheArmAcross(slots);
         for (let slot = 0; slot < count; slot++) {
             if (slot === this._deferred) continue;
             $eq.collections.listSet(this._children, slot, this.updateChild(this._children[slot], slots.item(slot), slot, force));
@@ -93,6 +94,22 @@ export class NodeElement extends Element {
             let gone: any; 
             if ((gone = this._children[slot]) != null) this.owner.deactivate(gone);
             $eq.collections.listRemoveAt(this._children, slot);
+        }
+    }
+
+    carryTheArmAcross(slots: NodeSlots) {
+        let shown = -1;
+        for (let slot = 0; slot < slots.count; slot++) if (!(slots.item(slot) == null)) shown = slot;
+        if (shown < 0 || !(this._children[shown] == null)) return;
+        let from = -1;
+        for (let slot = 0; slot < this._children.length; slot++) {
+            if (this._children[slot] == null) continue;
+            if (from >= 0) return;
+            from = slot;
+        }
+        if (from >= 0 && Element.canUpdate((this._children[from]!).configuration, slots.item(shown)!)) {
+            $eq.collections.listSet(this._children, shown, this._children[from]);
+            $eq.collections.listSet(this._children, from, null);
         }
     }
 
@@ -156,6 +173,20 @@ export class NodeElement extends Element {
         let state = this.state;
         this.state = null;
         ((($as: any) => $eq.types.implements($as, 'System.IDisposable') ? $as : null)(state))?.dispose();
+    }
+
+    forgetChild(child: Element) {
+        for (let slot = 0; slot < this._children.length; slot++) {
+            if ((this._children[slot] === child)) $eq.collections.listSet(this._children, slot, null);
+        }
+    }
+
+    fillForgotten() {
+        let slots = ChildSlots.of(this.configuration, this.owner.windowWidth, this.owner.holdsEveryArm);
+        for (let slot = 0; slot < slots.count && slot < this._children.length; slot++) {
+            let node: any; 
+            if (slot !== this._deferred && this._children[slot] == null && (node = slots.item(slot)) != null) $eq.collections.listSet(this._children, slot, this.inflate(node, slot));
+        }
     }
 
     deactivateChildren() {

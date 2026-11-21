@@ -135,10 +135,13 @@ public class ComponentCompiler
     /// in the tail one of them reaches.
     /// </para>
     /// </summary>
-    private void CollectResourceUses(IEnumerable<Services.ResourceUse> uses)
+    private void CollectResourceUses(IEnumerable<Services.ResourceUse> uses, CompilationResult? result = null)
     {
         foreach (var use in uses)
         {
+            // The module's own reads too (#1782): a page ships the strings its modules read, and a
+            // catalogue the strings the modules the browser reaches read.
+            result?.StringKeys.Add($"{use.Id}/{use.Key}");
             _usesSeen?.Add(use);
             if (!_resourceUses.TryGetValue(use.Id, out var aggregated))
                 _resourceUses.Add(use.Id, aggregated = new AggregatedResource(use.Id, use.DesignerPath));
@@ -715,7 +718,7 @@ public class ComponentCompiler
                 // for a consumer that runs the module directly, and nothing upstream would notice.
                 result.TypeScript = new RecordTypeEmitter(recordConverter, modules) { Referenced = referenced }
                     .EmitModule(component.ValueTypeSyntax, TypeAnnotations);
-                CollectResourceUses(recordConverter.ResourceUses);
+                CollectResourceUses(recordConverter.ResourceUses, result);
                 result.Success = true;
                 CollectDiagnostics(result, component.SourcePath, recordConverter.Diagnostics);
                 return result;
@@ -727,7 +730,7 @@ public class ComponentCompiler
             {
                 var pm = component.SyntaxTree != null ? _semanticModelProvider.GetSemanticModel(component.SyntaxTree) : null;
                 result.TypeScript = _tsEmitter.EmitPlainClassModule(plainClass, pm);
-                CollectResourceUses(_tsEmitter.GetLastResourceUses());
+                CollectResourceUses(_tsEmitter.GetLastResourceUses(), result);
                 AttachSourceMap(result, component);
                 result.Success = true;
                 CollectDiagnostics(result, component.SourcePath, _tsEmitter.GetLastDiagnostics());
@@ -740,7 +743,7 @@ public class ComponentCompiler
             {
                 var sm = component.SyntaxTree != null ? _semanticModelProvider.GetSemanticModel(component.SyntaxTree) : null;
                 result.TypeScript = _tsEmitter.EmitStaticHelperModule(staticClass, sm);
-                CollectResourceUses(_tsEmitter.GetLastResourceUses());
+                CollectResourceUses(_tsEmitter.GetLastResourceUses(), result);
                 AttachSourceMap(result, component);
                 result.Success = true;
                 CollectDiagnostics(result, component.SourcePath, _tsEmitter.GetLastDiagnostics());
@@ -784,7 +787,7 @@ public class ComponentCompiler
             // the build; warnings are surfaced but do not. Replaces silent verbatim fallbacks.
             CollectDiagnostics(result, component.SourcePath, _tsEmitter.GetLastDiagnostics());
 
-            CollectResourceUses(_tsEmitter.GetLastResourceUses());
+            CollectResourceUses(_tsEmitter.GetLastResourceUses(), result);
 
             if (result.Errors.Count > 0)
             {
@@ -943,6 +946,10 @@ public class CompilationResult
     /// it: what the build compiles next, since a referenced project's type is a module only when a
     /// written module imports it (#624).</summary>
     internal IReadOnlyList<Services.ReferencedType> ReferencedTypes { get; set; } = [];
+    /// <summary>The catalogue strings this module reads, as <c>id/key</c> (#1782): what a page that reaches it
+    /// ships, and what a catalogue holds of the app's own resx.</summary>
+    internal SortedSet<string> StringKeys { get; } = new(StringComparer.Ordinal);
+
     public List<CompilationError> Errors { get; set; } = new();
     public List<CompilationError> Warnings { get; set; } = new();
 }

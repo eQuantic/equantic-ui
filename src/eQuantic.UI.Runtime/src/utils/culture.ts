@@ -237,6 +237,13 @@ const warned = new Set<string>();
  * fetched. A second switch back is instant and silent. */
 const catalogs = new Map<string, Record<string, string>>();
 
+/** The cultures whose WHOLE catalog is in memory (#1782). The shell inlines only the strings its page
+ * reads and a navigation adds the next page's, so a key read beyond them asks for the rest once. */
+const whole = new Set<string>();
+
+/** The cultures whose whole catalog is being asked for, so a burst of misses asks once. */
+const completing = new Set<string>();
+
 /** The catalogs the build wrote, as the server listed them for the page (`neutral` among them), or
  * null where no server said. A culture with no catalog of its own was asked for one and answered
  * 404 before its parents or `neutral` were tried (#825). Keyed by the name in lower case, as .NET
@@ -311,6 +318,8 @@ export function installCulture(
 ): void {
   active = { ui, format };
   activeStrings = strings;
+  // What was installed is what a page was handed, until a switch says it fetched the whole (#1782).
+  whole.delete(ui);
   activeFormat = formatData ?? (format.length === 0 ? INVARIANT_FORMAT : null);
   warned.clear();
   if (ui.length > 0) catalogs.set(ui, strings);
@@ -326,6 +335,46 @@ export function installCulture(
   if (ui.length > 0 && typeof document !== 'undefined' && document.documentElement) {
     document.documentElement.lang = ui;
   }
+}
+
+/**
+ * Adds a page's strings to the active culture's catalog (#1782): what a navigation's payload brings of
+ * the page it opens, which the document it started from was not handed.
+ */
+export function addStrings(strings: Record<string, string>): void {
+  activeStrings = { ...activeStrings, ...strings };
+  if (active.ui.length > 0) catalogs.set(active.ui, activeStrings);
+}
+
+/**
+ * Asks once for the active culture's whole catalog, after a key it was not handed was read (#1782), and
+ * draws again with it. A page is handed the strings its modules read; one read some other way (a key a
+ * build could not see) still arrives, a moment later, rather than as its key for good.
+ */
+function completeActiveCatalog(): void {
+  const ui = active.ui;
+  if (whole.has(ui) || completing.has(ui)) return;
+  completing.add(ui);
+  void (async () => {
+    try {
+      for (const candidate of [...parentChain(ui), 'neutral']) {
+        const name = catalogToAskFor(candidate);
+        if (name === null) continue;
+        const loaded = await loadCatalog(name);
+        if (loaded === null) continue;
+        whole.add(ui);
+        if (active.ui === ui) {
+          addStrings(loaded);
+          warned.clear();
+          invalidate?.();
+        }
+        return;
+      }
+      whole.add(ui);
+    } finally {
+      completing.delete(ui);
+    }
+  })();
 }
 
 /** Registers the re-render (boot) and the catalog loader (a host with its own transport). */
@@ -365,20 +414,22 @@ export async function setCulture(ui: string, format?: string): Promise<void> {
   const formatName = format ?? ui;
   if (ui === active.ui && formatName === active.format) return;
 
-  const [strings, data] = await Promise.all([catalogFor(ui), formatFor(formatName)]);
-  installCulture(ui, formatName, strings ?? activeStrings, data);
+  const [found, data] = await Promise.all([catalogFor(ui), formatFor(formatName)]);
+  installCulture(ui, formatName, found?.strings ?? activeStrings, data);
+  if (found?.whole) whole.add(ui);
   invalidate?.();
 }
 
-/** The UI culture's catalog, from memory or by the server's walk, or undefined when none answers. */
-async function catalogFor(ui: string): Promise<Record<string, string> | undefined> {
+/** The UI culture's catalog, from memory or by the server's walk, and whether it is the whole one, or
+ * undefined when none answers. */
+async function catalogFor(ui: string): Promise<{ strings: Record<string, string>; whole: boolean } | undefined> {
   const known = catalogs.get(ui);
-  if (known !== undefined) return known;
+  if (known !== undefined) return { strings: known, whole: whole.has(ui) };
   for (const candidate of [...parentChain(ui), 'neutral']) {
     const name = catalogToAskFor(candidate);
     if (name === null) continue;
     const loaded = await loadCatalog(name);
-    if (loaded !== null) return loaded;
+    if (loaded !== null) return { strings: loaded, whole: true };
   }
   return undefined;
 }
@@ -449,6 +500,13 @@ export function str(id: string, key: string): string {
     const builtIn = sdkNeutralStrings[key];
     // Only when the catalog is silent: an app translating the SDK's chrome keeps its translation.
     if (builtIn !== undefined) return builtIn;
+  }
+
+  // Not handed with the page (#1782): the rest of the catalog is asked for, and the tree drawn again
+  // with it. Only a key the whole catalog lacks is warned about.
+  if (active.ui.length > 0 && !whole.has(active.ui)) {
+    completeActiveCatalog();
+    return key;
   }
 
   if (!warned.has(flat)) {

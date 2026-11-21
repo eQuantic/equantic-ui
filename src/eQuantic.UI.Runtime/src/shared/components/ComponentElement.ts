@@ -128,6 +128,22 @@ export class ComponentElement extends Element {
         this._child = null;
     }
 
+    forgetChild(child: Element) {
+        if ((this._child === child)) this._child = null;
+    }
+
+    fillForgotten() {
+        if (this._child == null) this.rebuild(false);
+    }
+
+    onRebased() {
+        if (this._dependencies == null) return;
+        for (const dependency of this._dependencies) dependency.removeDependent(this);
+        this._dependencies = null;
+        this.dependenciesChanged = true;
+        this.markNeedsBuild();
+    }
+
     onDeactivated() {
         this.owner.forgetFrameReader(this);
         this.owner.forgetRouteReader(this);

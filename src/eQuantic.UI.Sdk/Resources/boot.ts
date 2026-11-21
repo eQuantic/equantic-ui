@@ -38,6 +38,12 @@ import {
   warmPageState,
 } from '../../eQuantic.UI.Runtime/src/router/page-state';
 import { Component } from '../../eQuantic.UI.Runtime/src/core/types';
+import {
+  anyThresholdNoted,
+  documentHoldsEveryArm,
+  holdOneArm,
+  setAdaptiveInvalidator,
+} from '../../eQuantic.UI.Runtime/src/shared/adaptive-window';
 
 // --- Constants ---
 const APP_ROOT_ID = 'app';
@@ -309,10 +315,21 @@ export async function boot(): Promise<void> {
     const hydrating = servedContent && config.ssr !== false && servedMarkupAgrees;
     const atHydration = densityForHydration(config.density, hydrating, ownDensity);
     if (atHydration) setPhotonDensity(atHydration);
+    // A page drawn here rather than adopted holds one arm of each adaptive node from its first render.
+    if (!hydrating) holdOneArm();
     await loadAndMountPage(root, pageName, config);
-    settleDensity(ownDensity, () =>
-      (currentComponent as unknown as { _scheduleRender?: () => void } | null)?._scheduleRender?.(),
-    );
+    const renderPage = () =>
+      (currentComponent as unknown as { _scheduleRender?: () => void } | null)?._scheduleRender?.();
+    settleDensity(ownDensity, renderPage);
+    // A served page hydrates with every arm of its adaptive nodes, as the server wrote them behind their
+    // gates; then the document holds the one arm each window resolves, as Photon does, so the arms it
+    // hides stop running, and renders again when the window crosses a threshold (#1783).
+    setAdaptiveInvalidator(renderPage);
+    if (documentHoldsEveryArm()) {
+      holdOneArm();
+      // A page with no adaptive node of more than one arm holds the same tree either way.
+      if (anyThresholdNoted()) renderPage();
+    }
 
     // Phase 2: when the server provided a route table, enable client-side (SPA) navigation —
     // internal link clicks swap the page bundle in place instead of triggering a full reload.

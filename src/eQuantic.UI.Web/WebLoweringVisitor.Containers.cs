@@ -1301,7 +1301,9 @@ internal sealed partial class WebLoweringVisitor
         void AddVariant(VisualNode variant, string gate, int index)
         {
             if (Arm(variant, place, index) is not { } lowered) return;
-            var gated = new RealizedElement("div") { AdaptiveGate = gate };
+            // Keyed by the arm's index, as the browser keys it: once a page has hydrated the browser holds
+            // the one arm its window resolves (#1783), and the key is how its render keeps that arm's box.
+            var gated = new RealizedElement("div") { AdaptiveGate = gate, Key = $"arm{index}" };
             gated.Children.Add(lowered);
             wrapper.Children.Add(gated);
         }

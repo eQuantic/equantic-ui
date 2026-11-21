@@ -201,6 +201,27 @@ public sealed class ComponentElement : Element
         _child = null;
     }
 
+    internal override void ForgetChild(Element child)
+    {
+        if (ReferenceEquals(_child, child)) _child = null;
+    }
+
+    internal override void FillForgotten()
+    {
+        if (_child is null) Rebuild(force: false);
+    }
+
+    private protected override void OnRebased()
+    {
+        if (_dependencies is null) return;
+        foreach (var dependency in _dependencies) dependency.RemoveDependent(this);
+        _dependencies = null;
+        DependenciesChanged = true;
+        // Marked as well as forced: the move's update builds what it reaches, and a position in a layer
+        // below it (a deferred slot) builds when its layer is next shown, reading its values again there.
+        MarkNeedsBuild();
+    }
+
     private protected override void OnDeactivated()
     {
         Owner.ForgetFrameReader(this);

@@ -6,6 +6,7 @@ import { Component, HtmlNode, RenderContext } from './types';
 import type { VisualNodeValue } from '../shared/nodes';
 import type { CrossAlignValue } from '../shared/enums.generated';
 import type { ComponentElement } from '../shared/components/ComponentElement';
+import type { GlobalKey } from '../shared/vocabulary';
 import { RenderManager } from '../dom/renderer';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
@@ -257,6 +258,10 @@ export abstract class UiComponent extends Component {
 
   /** The C# `VisualNode.Key` mirror: part of the reconciler identity (path + type + key). */
   key: string | null = null;
+
+  /** The C# `VisualNode.GlobalKey` mirror (#797): the identity the component's position keeps wherever
+   * the tree places it. A field, as `key` is, so eqc's list of runtime members sees it. */
+  globalKey: GlobalKey | null = null;
 
   /**
    * The C# `VisualNode.Bookmark`, `AlignSelf` and `GridSpan`, which a component carries as any node
