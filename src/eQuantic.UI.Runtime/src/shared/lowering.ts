@@ -4855,21 +4855,7 @@ function chordId(chord: KeyChordValue | undefined): string {
  * Two rules that look alike and are not, so they are written out rather than shared.
  */
 function lowerProgress(node: ProgressNode, context: LoweringContext, path: string): HtmlNode {
-  const fill = fills(node.child);
-  const cap = capsAt(node.child);
-  const host = element('div', {
-    // FIT-CONTENT, not nothing: this host CARRIES THE ROLE, so its box is the bounds a reader
-    // announces and a focus highlight draws. A bare block div stretches to the container while the
-    // bar stays its own width, and the two stop describing the same thing — on Photon
-    // `MeasureWrapper` gives the wrapper exactly the child's bounds.
-    width: fill.width ? '100%' : 'fit-content',
-    // The child's cap comes THROUGH (C# twin: LowerProgress) — a wrapper that takes the width and
-    // drops the maximum is the half-contract that made the Link diverge once already.
-    'max-width': sizeValue(cap),
-    height: fill.height ? '100%' : undefined,
-  });
-  host.attributes['role'] = 'progressbar';
-  if (node.label) host.attributes['aria-label'] = node.label;
+  const host = semanticsHost(node.child, { role: 'progressbar' }, node.label, false);
   const value = node.value;
   if (value) {
     host.attributes['aria-valuenow'] = num(value.now);
@@ -4894,22 +4880,15 @@ function lowerProgress(node: ProgressNode, context: LoweringContext, path: strin
  * added to the DOM after load is announced at all, so this states both rather than relying on it.
  */
 function lowerLiveRegion(node: LiveRegionNode, context: LoweringContext, path: string): HtmlNode {
-  const fill = fills(node.child);
-  const cap = capsAt(node.child);
   const assertive = node.urgency === 'assertive';
-  const host = element('div', {
-    // Same rule as lowerProgress: this host CARRIES THE ROLE, so its box is the bounds a reader
-    // announces — and the child's cap comes through with the 100%, never one without the other.
-    width: fill.width ? '100%' : 'fit-content',
-    'max-width': sizeValue(cap),
-    height: fill.height ? '100%' : undefined,
-  });
-  host.attributes['role'] = assertive ? 'alert' : 'status';
-  host.attributes['aria-live'] = assertive ? 'assertive' : 'polite';
-  // The region is announced as a WHOLE when any part of it changes. Without this a reader reads
-  // only the changed node, so a banner whose title and body both change is announced as a fragment.
-  host.attributes['aria-atomic'] = 'true';
-  if (node.label) host.attributes['aria-label'] = node.label;
+  // The region is announced as a WHOLE when any part of it changes (aria-atomic). Without this a reader
+  // reads only the changed node, so a banner whose title and body both change is announced as a fragment.
+  const host = semanticsHost(
+    node.child,
+    { role: assertive ? 'alert' : 'status', 'aria-live': assertive ? 'assertive' : 'polite', 'aria-atomic': 'true' },
+    node.label,
+    false,
+  );
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;
@@ -4921,15 +4900,7 @@ function lowerLiveRegion(node: LiveRegionNode, context: LoweringContext, path: s
  * host takes the child's fill and cap, as every role-bearing wrapper's does.
  */
 function lowerGroup(node: GroupNode, context: LoweringContext, path: string): HtmlNode {
-  const fill = fills(node.child);
-  const cap = capsAt(node.child);
-  const host = element('div', {
-    width: fill.width ? '100%' : 'fit-content',
-    'max-width': sizeValue(cap),
-    height: fill.height ? '100%' : undefined,
-  });
-  host.attributes['role'] = 'group';
-  if (node.label) host.attributes['aria-label'] = node.label;
+  const host = semanticsHost(node.child, { role: 'group' }, node.label, false);
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;
@@ -4941,7 +4912,7 @@ function lowerGroup(node: GroupNode, context: LoweringContext, path: string): Ht
  * child's fill and cap, as the group's does.
  */
 function lowerMergeSemantics(node: MergeSemanticsNode, context: LoweringContext, path: string): HtmlNode {
-  const host = semanticsHost(node.child);
+  const host = semanticsHost(node.child, {}, undefined, false);
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) {
     host.children.push(child);
@@ -4955,22 +4926,45 @@ function lowerMergeSemantics(node: MergeSemanticsNode, context: LoweringContext,
  * excludes, and a plain one when it does not, so the shape is the same either way.
  */
 function lowerExcludeSemantics(node: ExcludeSemanticsNode, context: LoweringContext, path: string): HtmlNode {
-  const host = semanticsHost(node.child);
+  const host = semanticsHost(node.child, {}, undefined, false);
   if (node.excluding !== false) host.attributes['aria-hidden'] = 'true';
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;
 }
 
-/** The host both write: layout-transparent, by the role-bearing wrappers' one rule (C# twin: SemanticsHost). */
-function semanticsHost(child: VisualNodeValue): HtmlNode {
+/**
+ * THE ONE HOST of the six wrappers that put an element between a parent and its child to carry semantics
+ * (C# twin: SemanticsHost): progress, adjustable, liveRegion, group, mergeSemantics, excludeSemantics. It
+ * is the web's stand-in for Flutter's `Semantics` proxy box, which takes exactly its child's size, and it
+ * writes the rule once: the box a reader outlines is the box it names, so the host takes the child's width
+ * contract (`fit-content`, or `100%` when the child fills), the child's cap as `max-width` and `100%` height
+ * when the child fills down. A wrapper that took the width and dropped the rest is the half-contract that
+ * made the Link diverge (#239, #241, held by role-host-bounds.spec.ts).
+ *
+ * What differs is the role's `attributes` (none for the two that bear no role), the accessible `label`,
+ * written right after them when it is not empty, and whether the host `takesPointer` (`pointer-events:
+ * auto`, the adjustable's). The child is not lowered here. The style's keys are written in the
+ * order the adjustable's host always had (width, max-width, pointer-events, height), so the order
+ * the atomic rules are first registered in does not move.
+ */
+function semanticsHost(
+  child: VisualNodeValue,
+  attributes: Record<string, string>,
+  label: string | undefined,
+  takesPointer: boolean,
+): HtmlNode {
   const fill = fills(child);
   const cap = capsAt(child);
-  return element('div', {
+  const host = element('div', {
     width: fill.width ? '100%' : 'fit-content',
     'max-width': sizeValue(cap),
+    'pointer-events': takesPointer ? 'auto' : undefined,
     height: fill.height ? '100%' : undefined,
   });
+  for (const [name, value] of Object.entries(attributes)) host.attributes[name] = value;
+  if (label) host.attributes['aria-label'] = label;
+  return host;
 }
 
 /** The ARIA roles of the controls a merge's stop becomes (C# twin: MergedReading's ControlRoles). */
@@ -5104,16 +5098,6 @@ function saysSomething(node: HtmlNode): boolean {
  * Tab stop, so the browser's own focus order matches the native one.
  */
 function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: string): HtmlNode {
-  const fill = fills(node.child);
-  const cap = capsAt(node.child);
-  const host = element('div', {
-    // Same rule as lowerProgress, and it bites harder here: this host is a TAB STOP, so a block div
-    // stretched to the container draws the focus ring around empty space beside the control.
-    width: fill.width ? '100%' : 'fit-content',
-    'max-width': sizeValue(cap),
-    'pointer-events': 'auto',
-    height: fill.height ? '100%' : undefined,
-  });
   const role = node.role ?? 'slider';
   // ARIA pairs the role with the value, so BOTH halves are derived here rather than copied (C# twin:
   // WebLoweringVisitor's AriaRole). The value is a SLIDER's or a SEPARATOR's and no other role's, and
@@ -5122,9 +5106,12 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
   // rule unoutrunnable, since the component library is not the only way an adjustable node is built.
   const valued = role === 'slider' || role === 'separator';
   const value = valued ? node.value : undefined;
-  host.attributes['role'] = valued && !value ? 'group' : role;
-  host.attributes['tabindex'] = '0';
-  if (node.label) host.attributes['aria-label'] = node.label;
+  const host = semanticsHost(
+    node.child,
+    { role: valued && !value ? 'group' : role, tabindex: '0' },
+    node.label,
+    true,
+  );
   // The orientation a reader hears (C# twin: AriaOrientation), only on a host that IS a slider or a
   // separator. A separator is the line between two things, across the axis it moves on, and ARIA's
   // default for it is horizontal, so it is always written; a horizontal slider writes nothing.
