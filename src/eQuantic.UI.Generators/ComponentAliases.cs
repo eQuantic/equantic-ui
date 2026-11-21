@@ -33,23 +33,41 @@ internal static class ComponentAliases
         var list = candidates.ToList();
         if (list.Count == 0) return [];
 
-        var imported = new List<INamespaceSymbol>();
+        // What a file brings in at the compilation unit's level: a namespace's types, a class's nested types
+        // through `using static`, and a name of its own through an alias, which a global alias of the same
+        // name would collide with.
+        var imported = new List<INamespaceOrTypeSymbol>();
+        var aliased = new HashSet<string>(System.StringComparer.Ordinal);
         var seen = new HashSet<string>(System.StringComparer.Ordinal);
         foreach (var tree in compilation.SyntaxTrees)
         {
             if (tree.GetRoot() is not CompilationUnitSyntax unit) continue;
             foreach (var directive in unit.Usings)
             {
-                if (directive.Alias is not null || !directive.StaticKeyword.IsKind(SyntaxKind.None)) continue;
+                if (directive.Alias is { } alias)
+                {
+                    aliased.Add(alias.Name.Identifier.ValueText);
+                    continue;
+                }
+
                 var name = directive.Name?.ToString().Replace("global::", "") ?? "";
-                if (name.Length > 0 && seen.Add(name) && Namespace(compilation, name) is { } space) imported.Add(space);
+                if (name.Length == 0 || !seen.Add(name)) continue;
+                if (directive.StaticKeyword.IsKind(SyntaxKind.None))
+                {
+                    if (Namespace(compilation, name) is { } space) imported.Add(space);
+                }
+                else if (compilation.GetSemanticModel(tree).GetSymbolInfo(directive.Name!).Symbol is INamedTypeSymbol type)
+                {
+                    imported.Add(type);
+                }
             }
         }
 
         return list
+            .Where(candidate => !aliased.Contains(candidate.Name))
             .Where(candidate => !compilation.GlobalNamespace.GetMembers(candidate.Name).Any())
-            .Where(candidate => !imported.Any(space =>
-                space.ToDisplayString() != candidate.Namespace && !space.GetTypeMembers(candidate.Name).IsEmpty))
+            .Where(candidate => !imported.Any(holder =>
+                holder.ToDisplayString() != candidate.Namespace && !holder.GetTypeMembers(candidate.Name).IsEmpty))
             .Select(candidate => candidate.Name)
             .ToList();
     }

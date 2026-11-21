@@ -7,7 +7,8 @@ each component with a factory that declares a static member or a nested type the
 `ProductEditor.Toggled(true)` binds to the component in a file that imports its namespace with a `using`
 at the compilation unit's level, while `ProductEditor("a")` still binds to the factory. It SHALL write no
 alias for a generic component, nor for a component whose name a namespace imported at the compilation
-unit's level by any file of the app declares as another type, nor one the global namespace declares.
+unit's level by any file of the app declares as another type, a class a file imports with `using static`
+nests, an alias a file declares names, or the global namespace declares.
 
 #### Scenario: A helper and a constant from another namespace
 

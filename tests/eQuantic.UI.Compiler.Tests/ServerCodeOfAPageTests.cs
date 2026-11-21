@@ -421,6 +421,37 @@ public sealed class ServerCodeOfAPageTests
         built.Module("Home").Should().NotBeNull("the page is still written");
     }
 
+    /// <summary>
+    /// A generator's own file the app never names, as the regex generator writes for a
+    /// <c>[GeneratedRegex]</c>: runners and helpers built on what no browser has. It reached eqc as client
+    /// code and failed the build from inside a file the app never wrote (#1779).
+    /// </summary>
+    [Fact]
+    public void AGeneratedFileNoComponentNames_IsServerCode_AndNoModule()
+    {
+        // Under the project's obj, where the build writes what a generator emitted and eqc reads it.
+        using var solution = App(("Screens/Home.cs", Page("StatelessComponent")),
+            ("obj/Debug/generated/Regex/RegexGenerator.g.cs", """
+                namespace System.Text.RegularExpressions.Generated
+                {
+                    file static class Utilities
+                    {
+                        public static bool Kept(string path) => global::System.IO.File.Exists(path);
+                    }
+
+                    internal sealed class Runner
+                    {
+                        public string Read(string path) => global::System.IO.File.ReadAllText(path);
+                    }
+                }
+                """));
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Errors.Should().BeEmpty();
+        built.Module("Runner").Should().BeNull("nothing the browser runs names it");
+    }
+
     /// <summary>The namespace is the test, never a prefix of a type's name: <c>System.IObservable</c>
     /// starts with <c>System.IO</c>, and its <c>Subscribe</c> was refused as file-system access. An
     /// exception of a server namespace is a value the runtime builds and tests by name (#611), so a

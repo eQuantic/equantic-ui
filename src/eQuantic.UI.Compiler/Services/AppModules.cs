@@ -55,6 +55,8 @@ internal sealed class AppModules
 
         while (pending.TryDequeue(out var module))
         {
+            // By name, as the module imports it: a page that names a referenced project's `Status` and the
+            // app's own reaches both, and their one file is the collision the bundle refuses (EQ1005).
             foreach (Match import in SiblingImport.Matches(module.Result.TypeScript))
             foreach (var imported in byName[import.Groups["module"].Value])
                 if (reached.Add(imported)) pending.Enqueue(imported);

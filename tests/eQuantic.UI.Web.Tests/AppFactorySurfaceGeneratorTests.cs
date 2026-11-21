@@ -177,6 +177,36 @@ public class AppFactorySurfaceGeneratorTests
         source.Should().NotContain("global using Timer =");
     }
 
+    /// <summary>A file's own alias of the component's name, and a class a file imports with <c>using static</c>
+    /// that nests a type of it, keep the component unaliased: a global alias would collide with the first and
+    /// capture the second.</summary>
+    [Theory]
+    [InlineData("using Timer = System.Threading.Timer;\n\nnamespace Shop.Server;\n\npublic static class Ticks { public static Timer? Held; }")]
+    [InlineData("using static Shop.Legacy.Clocks;\n\nnamespace Shop.Server;\n\npublic static class Ticks { public static Timer? Held; }")]
+    public void AComponentNamedLikeAnAliasOrANestedTypeAFileImports_GetsNoAlias(string server)
+    {
+        var (source, _, errors) = RunCompiled("""
+            namespace Shop.Components
+            {
+                using eQuantic.UI.Primitives;
+
+                public sealed class Timer(string label) : StatelessComponent
+                {
+                    public static string Format(int seconds) => seconds + "s";
+                    public override VisualNode Build(ComponentContext context) => new Text(label, TypeRole.BodyM);
+                }
+            }
+
+            namespace Shop.Legacy
+            {
+                public static class Clocks { public sealed class Timer { } }
+            }
+            """, server);
+
+        errors.Should().BeEmpty("the server file's Timer is what it imported, as it was");
+        source.Should().NotContain("global using Timer =");
+    }
+
     [Fact]
     public void AComponent_GetsAFactoryNamedAfterIt_MirroringTheWidestConstructor()
     {
