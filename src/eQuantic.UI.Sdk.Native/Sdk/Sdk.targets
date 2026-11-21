@@ -18,6 +18,62 @@
         siblings are not hypothetical — equantic-ui-web, equantic-ui-compiler and equantic-ui.wiki
         all sit beside this tree.
     -->
+    <!--
+        One version, stated once (#1788). global.json's msbuild-sdks pins this SDK, and the SDK pins its
+        packages to its own version (Sdk.props). A project that sets EQuanticUIVersion to another
+        restored packages of one version under an SDK of the other, which built and then failed in odd
+        ways, so it fails here, before the packages are collected for a restore and before a build.
+    -->
+    <Target Name="EQuanticRequireOneVersion" BeforeTargets="CollectPackageReferences;PrepareForBuild"
+        Condition="'$(_EQuanticSdkVersion)' != '' AND '$(EQuanticUIVersion)' != '$(_EQuanticSdkVersion)'">
+        <Error Code="EQ4010"
+            Text="This project builds with eQuantic.UI.Sdk.Native $(_EQuanticSdkVersion), the version global.json pins, and sets EQuanticUIVersion to $(EQuanticUIVersion). The SDK ships with its packages at its own version and reads it itself: remove EQuanticUIVersion, and change the version in global.json alone." />
+    </Target>
+
+    <!--
+        A catalog's typed accessors are the build's to write (#1784): a site kept a script that wrote
+        each Strings.Designer.cs from its neutral .resx, and a CI step that failed when the committed
+        file differed, which it did over a stray blank line. MSBuild's own GenerateResource writes
+        them, from the StronglyTyped* metadata set here, in the shape Visual Studio's
+        ResXFileCodeGenerator writes (one internal class with a static ResourceManager and Culture,
+        and one static string per key), which is the shape eqc turns into lookups in the browser
+        (ResourceShape). Its namespace is the project's root namespace and the .resx's folder, as
+        Visual Studio names it, and its ResourceManager's base name is the manifest name MSBuild gave
+        the resource, so the satellite assemblies answer it even where MSBuild named the resource
+        without its folder (a project built through a symbolic link to its folder). The class lands in the
+        compiler's generated tree, where eqc reads generated sources.
+
+        A culture's .resx gets nothing: the neutral one carries the keys. A neutral .resx with a
+        Designer.cs beside it keeps it, so an app that has one changes nothing, and so does one whose
+        project already set the StronglyTyped* metadata itself. Neither does a .resx read the
+        ASP.NET Core way through IStringLocalizer: one named by a dotted path (Views.Home.Index.resx),
+        which no class can be named after, or one beside the marker class it is named for
+        (SharedResource.cs beside SharedResource.resx). A key added while a hot reload runs gets its
+        accessor at the next build: the reload's compile runs eqc, not the resources.
+    -->
+    <Target Name="EQuanticResourceAccessors" AfterTargets="CreateManifestResourceNames" BeforeTargets="CoreResGen"
+            Condition="'@(EmbeddedResource)' != ''">
+        <PropertyGroup>
+            <_EqAccessorsDir Condition="'$(CompilerGeneratedFilesOutputPath)' != ''">$(CompilerGeneratedFilesOutputPath)/eQuantic.UI.Resources/</_EqAccessorsDir>
+            <_EqAccessorsDir Condition="'$(_EqAccessorsDir)' == ''">$(IntermediateOutputPath)generated/eQuantic.UI.Resources/</_EqAccessorsDir>
+        </PropertyGroup>
+        <ItemGroup>
+            <EmbeddedResource Update="@(EmbeddedResource)"
+                Condition="'%(Extension)' == '.resx' AND '%(EmbeddedResource.WithCulture)' != 'true'
+                           AND '%(EmbeddedResource.StronglyTypedLanguage)' == '' AND '%(EmbeddedResource.GenerateResource)' != 'false'
+                           AND !Exists('%(RootDir)%(Directory)%(Filename).Designer.cs')
+                           AND !Exists('%(RootDir)%(Directory)%(Filename).cs')
+                           AND $([System.Text.RegularExpressions.Regex]::IsMatch('%(Filename)', '^[A-Za-z_][A-Za-z0-9_]*$'))
+                           AND !$([System.IO.Path]::IsPathRooted('%(RelativeDir)')) AND !$([System.String]::Copy('%(RelativeDir)').StartsWith('..'))"
+                StronglyTypedLanguage="C#"
+                StronglyTypedClassName="%(Filename)"
+                StronglyTypedNamespace="$([System.Text.RegularExpressions.Regex]::Replace($([System.Text.RegularExpressions.Regex]::Replace($([System.Text.RegularExpressions.Regex]::Replace('$(RootNamespace)/%(RelativeDir)', '[/\\]+', '.')), '[^\w.]', '_')), '\.$', ''))"
+                StronglyTypedManifestPrefix="$([System.Text.RegularExpressions.Regex]::Replace('%(ManifestResourceName)', '\.[^.]+$', ''))"
+                StronglyTypedFileName="$(_EqAccessorsDir)%(ManifestResourceName).Designer.cs" />
+        </ItemGroup>
+        <MakeDir Directories="$(_EqAccessorsDir)" Condition="'@(EmbeddedResource->HasMetadata('StronglyTypedFileName'))' != ''" />
+    </Target>
+
     <Target Name="EQuanticAnnounceDevSource" BeforeTargets="Build"
             Condition="'$(IsEQuanticDevMode)' == 'true'
                        AND !$([MSBuild]::EnsureTrailingSlash('$(MSBuildProjectDirectory)').StartsWith($([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))))))">

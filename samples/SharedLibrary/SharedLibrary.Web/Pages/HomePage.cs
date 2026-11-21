@@ -65,8 +65,9 @@ public sealed class HomePage : StatefulComponent
             Padding = EdgeInsets.All(Space.S6),
         },
         Column(gap: Space.S4, children: [
-            // The library's component. Its name comes from the LIBRARY's catalogue.
-            new Wordmark(),
+            // The library's component, composed with its factory like the app's own (#818). Its name
+            // comes from the LIBRARY's catalogue.
+            Wordmark(),
             // The app's own catalogue has a Title too, and so does the library's: two catalogues of
             // one class name, each read showing its own project's text.
             Text(Strings.Title, TypeRole.Heading, theme.TextPrimary, maxLines: 2),
