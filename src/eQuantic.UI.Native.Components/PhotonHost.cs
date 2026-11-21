@@ -2028,6 +2028,7 @@ public sealed partial class PhotonHost
             for (var i = 0; i < links.Count; i++)
             {
                 if (links[i].Id != id) continue;
+                if (OpenedBeside(links[i])) return true;
                 if (_navigationRequested is null) return false;
                 _navigationRequested(links[i].Destination);
                 return true;
@@ -3204,15 +3205,33 @@ public sealed partial class PhotonHost
     private bool ResolveLink(float x, float y)
     {
         var regions = _lastFrame?.LinkRegions;
-        if (regions is null || _navigationRequested is null) return false;
+        if (regions is null) return false;
         var point = new Point(x, y);
         for (var i = regions.Count - 1; i >= 0; i--)
         {
             if (!Covers(regions, i, regions[i].Bounds, point)) continue;
+            if (OpenedBeside(regions[i])) return true;
+            if (_navigationRequested is null) return false;
             _navigationRequested(regions[i].Destination);
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// A link that opens beside the page (<see cref="Link.OpensBeside"/>, #941), handed to the system
+    /// when its destination is an absolute <c>http</c> or <c>https</c> address and the shell opens
+    /// addresses (<see cref="IUrlLauncher"/>). False for an app's own route, which navigates in place.
+    /// </summary>
+    private static bool OpenedBeside(LinkRegion link)
+    {
+        if (!link.OpensBeside
+            || !Uri.TryCreate(link.Destination, UriKind.Absolute, out var url)
+            || url.Scheme is not ("http" or "https")
+            || CapabilityScope.Resolve<IUrlLauncher>() is not { } launcher)
+            return false;
+        _ = launcher.OpenUrlAsync(url).AsTask();
+        return true;
     }
 
     /// <summary>

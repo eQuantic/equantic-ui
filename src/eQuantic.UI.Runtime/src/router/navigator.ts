@@ -10,6 +10,7 @@
 
 import { getCurrentRoute } from './current-route';
 import { splitCulturePath } from '../utils/culture-routes';
+import { exception } from '../utils/exceptions';
 
 type NavigationHandler = (destination: string) => void;
 
@@ -31,6 +32,47 @@ export interface ContextNavigator {
    * route's.
    */
   readonly location: string;
+  /**
+   * C# `Navigator.OpenAsync`: the address in a new tab, beside the app (#1787). A browser lets a page
+   * open one for a few seconds after a person's press, so a handler that awaited an action still may;
+   * past that it blocks the tab, and the answer is false.
+   */
+  openAsync(address: string): Promise<boolean>;
+  /** C# `Navigator.DownloadAsync`: the file at the address, downloaded under the name. */
+  downloadAsync(address: string, fileName: string): Promise<boolean>;
+}
+
+/**
+ * The address resolved against the page, or null for one the browser must not be handed: only `http`
+ * and `https` open, so an address a server or a person wrote can never run script in a tab the page
+ * opened (`javascript:`, `data:`).
+ */
+function opened(address: string): URL | null {
+  if (!address) throw exception('System.ArgumentException', "The value cannot be an empty string. (Parameter 'address')");
+  if (typeof window === 'undefined' || typeof document === 'undefined') return null;
+  let url: URL;
+  try {
+    url = new URL(address, document.baseURI);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    console.warn(`[eQuantic] '${address}' is not opened: a page opens only http and https addresses.`);
+    return null;
+  }
+  return url;
+}
+
+/** The new tab, cut from the page that opened it, so it cannot reach back into it (`window.opener`). */
+function openTab(url: URL): boolean {
+  const tab = window.open(url.href, '_blank');
+  if (!tab) return false;
+  try {
+    tab.opener = null;
+  } catch {
+    // A tab of another origin may refuse the write; it is already cut from this page then.
+  }
+  return true;
 }
 
 export const Navigator = {
@@ -58,6 +100,37 @@ export const Navigator = {
 
 const contextNavigator: ContextNavigator = {
   go: (destination: string) => Navigator.go(destination),
+  openAsync(address: string): Promise<boolean> {
+    try {
+      const url = opened(address);
+      return Promise.resolve(url !== null && openTab(url));
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  },
+  downloadAsync(address: string, fileName: string): Promise<boolean> {
+    try {
+      if (!fileName) throw exception('System.ArgumentException', "The value cannot be an empty string. (Parameter 'fileName')");
+      const url = opened(address);
+      if (url === null) return Promise.resolve(false);
+      // A browser honours the name of a file of the page's own origin and ignores another's, where it
+      // would navigate the page away: that one opens in a tab instead.
+      if (url.origin !== window.location.origin) return Promise.resolve(openTab(url));
+      const anchor = document.createElement('a');
+      anchor.href = url.href;
+      anchor.download = fileName;
+      anchor.style.display = 'none';
+      document.body.appendChild(anchor);
+      try {
+        anchor.click();
+      } finally {
+        anchor.remove();
+      }
+      return Promise.resolve(true);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  },
   get location(): string {
     return typeof window !== 'undefined' ? splitCulturePath(window.location.pathname)[1] : getCurrentRoute().path;
   },

@@ -68,4 +68,56 @@ public class ImageRealizerTests
     {
         Render(new Primitives.Image("/photo.jpg", 40, 40)).Tag.Should().Be("img");
     }
+
+    /// <summary>A round 220 frame of a portrait, held at (0.3, 0.7) and zoomed 1.5, as the issue
+    /// measures it (#1785).</summary>
+    private static Primitives.Image Framed(float zoom = 1.5f) => new("/portraits/francine.jpg", 220, 220, ImageFit.Cover, "Francine")
+    {
+        CornerRadius = new CornerRadii(110),
+        FocalPoint = new Point(0.3f, 0.7f),
+        Zoom = zoom,
+    };
+
+    [Fact]
+    public void AFocalPoint_IsTheObjectPosition()
+    {
+        var node = Render(Framed(zoom: 1f));
+
+        node.Tag.Should().Be("img", "with no zoom nothing overflows the element, and no frame is needed");
+        node.Attributes["style"].Should().Contain("object-position: 30% 70%").And.Contain("border-radius: 110px")
+            .And.NotContain("transform");
+    }
+
+    [Fact]
+    public void AZoom_ScalesAroundTheFocalPoint_InsideAFrameThatClips()
+    {
+        var frame = Render(Framed());
+
+        frame.Tag.Should().Be("span");
+        frame.Attributes["style"].Should().Contain("display: inline-block").And.Contain("width: 220px")
+            .And.Contain("overflow: hidden").And.Contain("border-radius: 110px");
+        var picture = frame.Children.Should().ContainSingle().Which;
+        picture.Tag.Should().Be("img");
+        picture.Attributes["style"].Should().Contain("object-fit: cover").And.Contain("object-position: 30% 70%")
+            .And.Contain("transform: scale(1.5)").And.Contain("transform-origin: 30% 70%")
+            .And.NotContain("border-radius", "the frame clips, and carries the radius");
+    }
+
+    [Fact]
+    public void TheDefaults_WriteWhatAnImageAlwaysWrote()
+    {
+        Render(new Primitives.Image("/photo.jpg", 40, 40)).Attributes["style"]
+            .Should().NotContain("object-position").And.NotContain("transform");
+    }
+
+    /// <summary>SSR and the client style the framed picture ONE way: the classes are cross-pinned with
+    /// <c>image-framing-parity.spec.ts</c>, which asserts the same strings for the same node.</summary>
+    [Fact]
+    public void TheFramedPicture_CarriesTheClassesTheTwinProduces()
+    {
+        var frame = WebRealizer.Lower(Framed(), PhotonTheme.Instance, 1f, new StyleSink()).Render();
+
+        frame.Attributes.GetValueOrDefault("class").Should().Be("eq-12dgucd eq-1fusabo eq-elib30 eq-lc8w9s eq-mbtjfn");
+        frame.Children[0].Attributes.GetValueOrDefault("class").Should().Be("eq-12dgucd eq-18isjz0 eq-19qisgk eq-1cnz5gh eq-1fusabo eq-racph6");
+    }
 }

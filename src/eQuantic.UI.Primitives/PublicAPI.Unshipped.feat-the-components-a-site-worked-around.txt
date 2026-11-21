@@ -1,0 +1,13 @@
+#nullable enable
+eQuantic.UI.Primitives.Navigator.DownloadAsync(string! address, string! fileName) -> System.Threading.Tasks.ValueTask<bool>
+eQuantic.UI.Primitives.Navigator.OpenAsync(string! address) -> System.Threading.Tasks.ValueTask<bool>
+eQuantic.UI.Primitives.Image.FocalPoint.get -> eQuantic.UI.Primitives.Point
+eQuantic.UI.Primitives.Image.FocalPoint.init -> void
+eQuantic.UI.Primitives.Image.Zoom.get -> float
+eQuantic.UI.Primitives.Image.Zoom.init -> void
+eQuantic.UI.Primitives.DevelopmentNotices
+static eQuantic.UI.Primitives.DevelopmentNotices.Say(string! notice) -> void
+static eQuantic.UI.Primitives.DevelopmentNotices.Sink.get -> System.Action<string!>?
+static eQuantic.UI.Primitives.DevelopmentNotices.Sink.set -> void
+eQuantic.UI.Primitives.Link.OpensBeside.get -> bool
+eQuantic.UI.Primitives.Link.OpensBeside.init -> void

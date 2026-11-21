@@ -30,13 +30,14 @@ public class CanvasUnderALayerTests
     private static string StyleOf(HtmlNode node) => node.Attributes.GetValueOrDefault("style") ?? "";
 
     /// <summary>A screen: an unpainted Column holding a Stack of canvas + chrome.</summary>
-    private static VisualNode Screen(bool interactive)
+    private static VisualNode Screen(bool interactive, bool pressed = false)
     {
         var canvas = new Canvas(p => p.FillCircle(new Point(p.Size.Width / 2, p.Size.Height / 2), 80, Theme.BorderStrong),
             SizeValue.Fill, SizeValue.Fill)
         {
             Label = "Sunburst",
             OnPointerMove = interactive ? _ => { } : null,
+            OnPointerDown = pressed ? _ => { } : null,
         };
 
         var stack = new Stack { Width = SizeValue.Fixed(200), Height = SizeValue.Fixed(200) };
@@ -68,6 +69,33 @@ public class CanvasUnderALayerTests
         var svg = rendered.Should().ContainSingle(n => n.Tag == "svg").Subject;
         StyleOf(svg).Should().Contain("pointer-events: auto",
             "a canvas that listens must take the pointer back from whatever it inherits");
+        StyleOf(svg).Should().NotContain("touch-action",
+            "a canvas that only hovers (a chart's tooltip) leaves a finger's scroll to the page");
+    }
+
+    /// <summary>
+    /// A canvas whose handlers follow a drag, a press and a move, claims the finger (#1786): with the
+    /// browser's default a phone scrolled the page under the frame editor's drag and cancelled the
+    /// pointer stream. The class string is cross-pinned with <c>canvas-parity.spec.ts</c>.
+    /// </summary>
+    [Fact]
+    public void ACanvasThatFollowsADrag_ClaimsTheFinger_AsTheTwinDoes()
+    {
+        var rendered = Walk(WebRealizer.Lower(Screen(interactive: true, pressed: true), Theme, 1f, new StyleSink()).Render()).ToList();
+        var svg = rendered.Single(n => n.Tag == "svg");
+
+        svg.Attributes.GetValueOrDefault("class").Should().Be("eq-16x7aca eq-182ppyb eq-1jjc6f6 eq-akjizx eq-g7fowl");
+        var inline = Walk(WebRealizer.Lower(Screen(interactive: true, pressed: true), Theme).Render()).Single(n => n.Tag == "svg");
+        StyleOf(inline).Should().Contain("touch-action: none");
+    }
+
+    [Fact]
+    public void ACanvasThatOnlyTakesAPress_LeavesTheFingerToThePage()
+    {
+        var svg = Walk(WebRealizer.Lower(Screen(interactive: false, pressed: true), Theme).Render()).Single(n => n.Tag == "svg");
+
+        StyleOf(svg).Should().Contain("pointer-events: auto");
+        StyleOf(svg).Should().NotContain("touch-action", "a tap does not scroll, and a scroll across it is the page's");
     }
 
     /// <summary>
@@ -94,5 +122,6 @@ public class CanvasUnderALayerTests
 
         StyleOf(svg).Should().Contain("pointer-events: none",
             "a canvas with no handlers must not swallow the press that belongs under it");
+        StyleOf(svg).Should().NotContain("touch-action");
     }
 }

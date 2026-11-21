@@ -78,4 +78,50 @@ public class LinkTests
         host.PressUp(region.Bounds.Center.X, region.Bounds.Center.Y)
             .Should().BeFalse("no seam registered — the tap falls through");
     }
+
+    private sealed class Launcher : IUrlLauncher
+    {
+        public List<Uri> Opened { get; } = [];
+        public ValueTask<bool> OpenUrlAsync(Uri url) { Opened.Add(url); return ValueTask.FromResult(true); }
+        public bool CanOpen(Uri url) => true;
+    }
+
+    /// <summary>A link that opens beside the page (#941): an absolute address goes to the system's browser,
+    /// and the app's own screen stays where it is; an app route, with no second page to open, navigates.
+    /// Both ways a person follows a link say the same: the pointer's tap and the activation a keyboard or a
+    /// screen reader sends by id.</summary>
+    [Theory]
+    [InlineData("https://example.com/terms", true, false)]
+    [InlineData("/terms", false, false)]
+    [InlineData("https://example.com/terms", true, true)]
+    [InlineData("/terms", false, true)]
+    public void ALinkThatOpensBeside_HandsAnAddressToTheSystem_AndNavigatesARoute(
+        string destination, bool goesToTheSystem, bool byActivation)
+    {
+        var column = new Column(gap: 0) { Width = SizeValue.Fill };
+        column.Add(new Link(destination, new Text("Terms", TypeRole.Label)) { OpensBeside = true });
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 360, 300);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        string? navigated = null;
+        host.NavigationRequested = href => navigated = href;
+        var launcher = new Launcher();
+
+        using (CapabilityScope.With<IUrlLauncher>(launcher))
+        {
+            var region = frame.LinkRegions.Single();
+            region.OpensBeside.Should().BeTrue();
+            if (byActivation)
+            {
+                host.Activate(region.Id).Should().BeTrue();
+            }
+            else
+            {
+                host.PressDown(region.Bounds.Center.X, region.Bounds.Center.Y);
+                host.PressUp(region.Bounds.Center.X, region.Bounds.Center.Y);
+            }
+        }
+
+        launcher.Opened.Select(url => url.AbsoluteUri).Should().Equal(goesToTheSystem ? [destination] : []);
+        navigated.Should().Be(goesToTheSystem ? null : destination);
+    }
 }

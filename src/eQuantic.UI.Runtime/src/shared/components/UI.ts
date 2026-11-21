@@ -57,8 +57,8 @@ export class UI {
         return new Pressable(child, onPressed, { label: label, selected: selected, disabled: disabled, expanded: expanded, role: role, canRequestFocus: canRequestFocus });
     }
 
-    static link(destination: string, child: VisualNode, label: string | null = null, current: boolean = false) {
-        return new Link(destination, child, { label: label, current: current });
+    static link(destination: string, child: VisualNode, label: string | null = null, current: boolean = false, opensBeside: boolean = false) {
+        return new Link(destination, child, { label: label, current: current, opensBeside: opensBeside });
     }
 
     static icon(glyph: IconGlyph, size: number = 24, color: ColorToken | null = null, label: string | null = null) {

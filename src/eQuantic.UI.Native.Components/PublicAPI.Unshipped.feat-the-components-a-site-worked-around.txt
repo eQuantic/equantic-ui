@@ -1,0 +1,7 @@
+#nullable enable
+*REMOVED*[EQX0001]eQuantic.UI.Native.Components.LinkRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out string! Destination, out int Id) -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Components.LinkRegion.LinkRegion(eQuantic.UI.Primitives.Rect Bounds, string! Destination, int Id) -> void
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out string! Destination, out int Id, out bool OpensBeside) -> void
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.LinkRegion(eQuantic.UI.Primitives.Rect Bounds, string! Destination, int Id, bool OpensBeside = false) -> void
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.OpensBeside.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.OpensBeside.init -> void

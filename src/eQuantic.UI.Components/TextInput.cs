@@ -42,6 +42,14 @@ public sealed class TextInput : StatefulComponent
     public string Value { get; private set; }
     public Action<string>? OnChanged { get; private set; }
     public string Label { get; private set; }
+
+    /// <summary>
+    /// Whether the label is left out of the drawing, for a form that lays its labels out itself: it
+    /// still names the field for assistive technology, and nothing above the box repeats the one the
+    /// form already drew (#1780). Backed by a field, so <see cref="AdoptConfig"/> can carry it.
+    /// </summary>
+    public bool LabelHidden { get => _labelHidden; init => _labelHidden = value; }
+    private bool _labelHidden;
     public string? Placeholder { get; private set; }
     public string? Helper { get; private set; }
 
@@ -109,6 +117,7 @@ public sealed class TextInput : StatefulComponent
         Value = fresh.Value;
         OnChanged = fresh.OnChanged;
         Label = fresh.Label;
+        _labelHidden = fresh.LabelHidden;
         Placeholder = fresh.Placeholder;
         Helper = fresh.Helper;
         Error = fresh.Error;
@@ -200,7 +209,7 @@ public sealed class TextInput : StatefulComponent
         }, row);
 
         var top = new Column(gap: slot?.LabelGap ?? 6) { Width = SizeValue.Fill };
-        if (Label.Length > 0) top.Add(new Text(Label, slot?.LabelRole ?? TypeRole.Label, theme.TextSecondary));
+        if (Label.Length > 0 && !LabelHidden) top.Add(new Text(Label, slot?.LabelRole ?? TypeRole.Label, theme.TextSecondary));
         top.Add(container);
 
         // The helper/error line is ALWAYS reserved — swaps never shift the form (spec B9).

@@ -48,9 +48,23 @@ public sealed class DateTimePicker : StatefulComponent
     public bool Disabled { get => _disabled; init => _disabled = value; }
     private bool _disabled;
 
+    /// <summary>Whether the date's label is left out of the drawing for a form that lays its labels out
+    /// itself; both still name their fields for assistive technology (<see cref="TextInput.LabelHidden"/>).</summary>
+    public bool LabelHidden { get => _labelHidden; init => _labelHidden = value; }
+    private bool _labelHidden;
+
+    /// <summary>The moment this picker last reported, until its parent draws it again (#1780).</summary>
+    private DateTime? _reported;
+
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not DateTimePicker fresh) return;
+        // Drawn again with no moment after it reported one, both halves empty while the page keeps the
+        // moment (DatePicker says why this is said).
+        if (_reported is { } said && fresh.Selected is null)
+            DevelopmentNotices.Say($"A DateTimePicker reported {said:g} through onChanged and was drawn again with no moment, "
+                + "so its fields emptied: a picker shows the moment it is handed. Hand it back the moment onChanged reports.");
+        _reported = null;
         // NULL is a value the app can hand down, so the comparison includes it: a parent that
         // clears the moment is moving it as surely as one that changes it, and a picker still
         // showing yesterday's halves after a Clear button is the bug that reads as "it ignored me".
@@ -63,6 +77,7 @@ public sealed class DateTimePicker : StatefulComponent
         DateLabel = fresh.DateLabel;
         TimeLabel = fresh.TimeLabel;
         _disabled = fresh.Disabled;
+        _labelHidden = fresh.LabelHidden;
         // The app moved the moment, so both halves follow it — the same rule the Calendar keeps
         // for its view, and for the same reason: a control that ignores the value it was handed
         // looks broken long before anyone calls it wrong.
@@ -80,9 +95,9 @@ public sealed class DateTimePicker : StatefulComponent
             Min is { } lower ? DateOnly.FromDateTime(lower) : null,
             Max is { } upper ? DateOnly.FromDateTime(upper) : null,
             DateLabel)
-        { Disabled = Disabled }));
+        { Disabled = Disabled, LabelHidden = LabelHidden, Composed = true }));
         row.Add(new Flexible(new TimePicker(_time, PickTime, StepMinutes, label: TimeLabel)
-        { Disabled = Disabled }));
+        { Disabled = Disabled, Composed = true }));
         return row;
     }
 
@@ -109,6 +124,7 @@ public sealed class DateTimePicker : StatefulComponent
         if (Min is { } min && moment < min) return;
         if (Max is { } max && moment > max) return;
         Selected = moment;
+        _reported = moment;
         OnChanged?.Invoke(moment);
     }
 }

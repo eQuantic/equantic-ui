@@ -26,6 +26,10 @@ public sealed class DatePicker : StatefulComponent
     /// reformatting under the cursor is the thing every date field gets wrong.</summary>
     private string? _typing;
 
+    /// <summary>The day this picker last reported through <see cref="OnChanged"/>, until its parent
+    /// draws it again: what that drawing should hand back (#1780).</summary>
+    private DateOnly? _reported;
+
     public DatePicker(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
         DateOnly? min = null, DateOnly? max = null, string label = "")
     {
@@ -46,9 +50,28 @@ public sealed class DatePicker : StatefulComponent
     public bool Disabled { get => _disabled; init => _disabled = value; }
     private bool _disabled;
 
+    /// <summary>Whether the label is left out of the drawing for a form that lays its labels out
+    /// itself; it still names the field for assistive technology (<see cref="TextInput.LabelHidden"/>).</summary>
+    public bool LabelHidden { get => _labelHidden; init => _labelHidden = value; }
+    private bool _labelHidden;
+
+    /// <summary>A half of a picker that says the notice for the whole (<see cref="DateTimePicker"/>), so
+    /// this one says none: the halves only follow the whole, and the page made one mistake (#1780).</summary>
+    internal bool Composed { get => _composed; init => _composed = value; }
+    private bool _composed;
+
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not DatePicker fresh) return;
+
+        // A picker shows the date it is HANDED. Drawn again with none, after it reported one, its field
+        // empties while the page keeps the day underneath: `new DatePicker(null, ChooseDay)` lived three
+        // slices in an app before anyone saw it. Said in development, as React says it of a component
+        // that turns uncontrolled.
+        if (_reported is { } said && fresh.Selected is null && !Composed)
+            DevelopmentNotices.Say($"A DatePicker reported {said:d} through onChanged and was drawn again with no date, "
+                + "so its field emptied: a picker shows the date it is handed. Hand it back the day onChanged reports.");
+        _reported = null;
 
         // What the reader typed outlives a re-render — it has to, or a parent that rebuilds on
         // every keystroke erases the word being written. What it must NOT outlive is the app
@@ -67,6 +90,8 @@ public sealed class DatePicker : StatefulComponent
         Max = fresh.Max;
         Label = fresh.Label;
         _disabled = fresh.Disabled;
+        _labelHidden = fresh.LabelHidden;
+        _composed = fresh.Composed;
     }
 
     public override VisualNode Build(ComponentContext context)
@@ -126,12 +151,14 @@ public sealed class DatePicker : StatefulComponent
             trailing: Disabled ? null : opener)
         {
             Disabled = Disabled,
+            LabelHidden = LabelHidden,
         };
     }
 
     /// <summary>A day chosen in the grid: commit it, close, and let the field show it again.</summary>
     private void Pick(DateOnly day)
     {
+        _reported = day;
         OnChanged?.Invoke(day);
         SetState(() =>
         {
@@ -154,7 +181,11 @@ public sealed class DatePicker : StatefulComponent
     private void Type(string text)
     {
         var parsed = Parse(text);
-        if (parsed is { } day && InRange(day)) OnChanged?.Invoke(day);
+        if (parsed is { } day && InRange(day))
+        {
+            _reported = day;
+            OnChanged?.Invoke(day);
+        }
         SetState(() => _typing = text);
     }
 

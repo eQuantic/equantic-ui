@@ -1,10 +1,12 @@
-import { $eq, BuildContext, DateOnly, DatePicker, DateTime, Flexible, Row, SizeValue, StatefulComponent, TimeOnly, TimePicker, UiComponent } from "../runtime-exports";
+import { $eq, BuildContext, DateOnly, DatePicker, DateTime, DevelopmentNotices, Flexible, Row, SizeValue, StatefulComponent, TimeOnly, TimePicker, UiComponent } from "../runtime-exports";
 
 export class DateTimePicker extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.DateTimePicker';
     _date: any = null;
     _time: any = null;
     _disabled: boolean = false;
+    _labelHidden: boolean = false;
+    _reported: any = null;
     declare selected: any;
     declare onChanged: ((dateTime: DateTime) => void) | null;
     declare min: any;
@@ -19,6 +21,14 @@ export class DateTimePicker extends StatefulComponent {
 
     set disabled(value) {
         this._disabled = value;
+    }
+
+    get labelHidden() {
+        return this._labelHidden;
+    }
+
+    set labelHidden(value) {
+        this._labelHidden = value;
     }
 
     constructor(selected: any = null, onChanged: any = null, min: any = null, max: any = null, stepMinutes: any = 30, dateLabel: any = '', timeLabel: any = '', props?: any) {
@@ -48,14 +58,17 @@ export class DateTimePicker extends StatefulComponent {
     build(_context: BuildContext) {
         let row = new Row(12, 'start', 'center', false, null, null, { cross: 'start', width: SizeValue.fill });
         let lower: any; let upper: any; 
-        row.add(new Flexible(new DatePicker(this._date, $eq.delegates.bound(this, this.pickDate), (lower = this.min) != null ? $eq.time.dateOnly.fromDateTime(lower) : null, (upper = this.max) != null ? $eq.time.dateOnly.fromDateTime(upper) : null, this.dateLabel, { disabled: this.disabled })));
-        row.add(new Flexible(new TimePicker(this._time, $eq.delegates.bound(this, this.pickTime), this.stepMinutes, null, null, this.timeLabel, { disabled: this.disabled })));
+        row.add(new Flexible(new DatePicker(this._date, $eq.delegates.bound(this, this.pickDate), (lower = this.min) != null ? $eq.time.dateOnly.fromDateTime(lower) : null, (upper = this.max) != null ? $eq.time.dateOnly.fromDateTime(upper) : null, this.dateLabel, { disabled: this.disabled, labelHidden: this.labelHidden, composed: true })));
+        row.add(new Flexible(new TimePicker(this._time, $eq.delegates.bound(this, this.pickTime), this.stepMinutes, null, null, this.timeLabel, { disabled: this.disabled, composed: true })));
         return row;
     }
 
     adoptConfig(next: UiComponent) {
         let fresh: any; 
         if (!((next instanceof DateTimePicker && (fresh = next, true)))) return;
+        let said: any; 
+        if ((said = this._reported) != null && fresh.selected == null) DevelopmentNotices.say(`A DateTimePicker reported ${$eq.text.format(said, 'g')} through onChanged and was drawn again with no moment, ` + 'so its fields emptied: a picker shows the moment it is handed. Hand it back the moment onChanged reports.');
+        this._reported = null;
         let moved = !$eq.equals(fresh.selected, this.selected);
         this.selected = fresh.selected;
         this.onChanged = fresh.onChanged;
@@ -65,6 +78,7 @@ export class DateTimePicker extends StatefulComponent {
         this.dateLabel = fresh.dateLabel;
         this.timeLabel = fresh.timeLabel;
         this._disabled = fresh.disabled;
+        this._labelHidden = fresh.labelHidden;
         if (moved) {
             let value: any; 
             this._date = (value = this.selected) != null ? $eq.time.dateOnly.fromDateTime(value) : null;
@@ -92,6 +106,7 @@ export class DateTimePicker extends StatefulComponent {
         let max: any; 
         if ((max = this.max) != null && (moment.compareTo(max) > 0)) return;
         this.selected = moment;
+        this._reported = moment;
         this.onChanged?.(moment);
     }
 }

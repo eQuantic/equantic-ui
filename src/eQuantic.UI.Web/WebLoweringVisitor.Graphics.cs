@@ -134,6 +134,15 @@ internal sealed partial class WebLoweringVisitor
             // card behind it and the tooltip never came. On Photon the canvas registers its own
             // region; this is the same statement in the DOM's language (see lowering.ts).
             svg.Style.PointerEvents = "auto";
+            // And a finger's drag is the canvas's, not the page's, when its handlers FOLLOW a drag: a
+            // press and a move (#1786). With the browser's default `touch-action` a phone scrolled the
+            // sheet under the frame editor's drag and cancelled the pointer stream it was following. A
+            // canvas that only hovers (a chart's tooltip) or only takes a press leaves the finger to the
+            // page, or a full-width chart would trap the scroll. Flutter's rule: a GestureDetector with
+            // a pan wins the arena, a MouseRegion and a tap do not. Photon routes the touch to the
+            // canvas's region already. The twin writes the same declaration (lowering.ts).
+            if (canvas.OnPointerDown is not null && canvas.OnPointerMove is not null)
+                svg.Style.TouchAction = "none";
         }
         else
         {
@@ -460,6 +469,15 @@ internal sealed partial class WebLoweringVisitor
     /// rrect clip via border-radius; empty alt = decorative (HTML semantics).</summary>
     private HtmlElement LowerImage(Primitives.Image image)
     {
+        // The focal point and the zoom (#1785) in the browser's own terms: `object-position` holds the
+        // picture's point at the same fraction of the box, and a scale around that point zooms it, which
+        // keeps the point in place and the box covered. A zoomed picture overflows its element, so a
+        // frame of the box's size clips it and carries the radius. The defaults write nothing, so a page
+        // that sets neither is the markup it always was. The twin writes the same declarations.
+        var held = image.FocalPoint != new Point(0.5f, 0.5f) || image.Zoom != 1;
+        var origin = held ? $"{Fraction(image.FocalPoint.X)} {Fraction(image.FocalPoint.Y)}" : null;
+        var zoomed = image.Zoom != 1;
+        var radius = image.CornerRadius.IsZero ? null : TokenCss.Radius(image.CornerRadius);
         var element = new RealizedElement("img")
         {
             Style = new HtmlStyle
@@ -472,7 +490,10 @@ internal sealed partial class WebLoweringVisitor
                     ImageFit.Stretch => "fill",
                     _ => "cover",
                 },
-                BorderRadius = image.CornerRadius.IsZero ? null : TokenCss.Radius(image.CornerRadius),
+                ObjectPosition = origin,
+                Transform = zoomed ? $"scale({TokenCss.Number(image.Zoom)})" : null,
+                TransformOrigin = zoomed ? origin : null,
+                BorderRadius = zoomed ? null : radius,
             },
             RawAttributes = new Dictionary<string, string>
             {
@@ -480,7 +501,7 @@ internal sealed partial class WebLoweringVisitor
                 ["alt"] = image.Label,
             },
         };
-        if (image.DarkSource is not { Length: > 0 } darkSource) return element;
+        if (image.DarkSource is not { Length: > 0 } darkSource) return zoomed ? Framed(image, radius, element) : element;
 
         // A PAIR of artworks, resolved the way a ColorToken is: both ship, CSS shows one. The
         // generated .eq-themed-* rules follow the OS preference AND the app's own forced mode
@@ -502,6 +523,28 @@ internal sealed partial class WebLoweringVisitor
         };
         pair.Children.Add(element);
         pair.Children.Add(dark);
-        return pair;
+        return zoomed ? Framed(image, radius, pair) : pair;
+    }
+
+    /// <summary>A fraction of the box as a CSS percentage, the single product written as every number
+    /// is (<see cref="TokenCss.Number"/>), so the twin's <c>num</c> mints the same atomic class.</summary>
+    private static string Fraction(float value) => TokenCss.Number(value * 100f) + "%";
+
+    /// <summary>The box a zoomed picture is clipped by: its size, its radius, and no overflow.</summary>
+    private static HtmlElement Framed(Primitives.Image image, string? radius, HtmlElement picture)
+    {
+        var frame = new RealizedElement("span")
+        {
+            Style = new HtmlStyle
+            {
+                Display = Display.InlineBlock,
+                Width = TokenCss.Px(image.Width),
+                Height = TokenCss.Px(image.Height),
+                Overflow = "hidden",
+                BorderRadius = radius,
+            },
+        };
+        frame.Children.Add(picture);
+        return frame;
     }
 }

@@ -1,0 +1,3 @@
+#nullable enable
+eQuantic.UI.Web.HtmlStyle.TransformOrigin.get -> string?
+eQuantic.UI.Web.HtmlStyle.TransformOrigin.set -> void

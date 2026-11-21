@@ -14,6 +14,7 @@ import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue, TextEntr
 import type { HtmlNode } from '../core/types';
 import type { AppTheme, ContextRequest, PointerEvent } from './value-types';
 import { iconPaths } from './icons.generated';
+import { exception } from '../utils/exceptions';
 import type {
   BoxStyleValue,
   ColorTokenValue,
@@ -1207,11 +1208,13 @@ export class Link extends VisualNode {
   keepsPosition = false;
   /** This link points at the page the reader is ON — aria-current="page" (C# twin). */
   current = false;
+  /** Opens the destination beside the page, in a new tab (C# twin, #941). */
+  opensBeside = false;
 
   constructor(
     destination: string,
     child: VisualChild,
-    config?: { label?: string | null; keepsPosition?: boolean; current?: boolean },
+    config?: { label?: string | null; keepsPosition?: boolean; current?: boolean; opensBeside?: boolean },
   ) {
     super();
     this.destination = destination;
@@ -1547,6 +1550,11 @@ export class Image extends VisualNode {
   fit: string;
   label: string;
   cornerRadius?: CornerRadii;
+  darkSource?: string | null;
+  /** C# `Image.FocalPoint` (#1785): fractions of the picture, 0..1 on each axis; the centre by default. */
+  focalPoint: { x: number; y: number } = { x: 0.5, y: 0.5 };
+  /** C# `Image.Zoom` (#1785): 1, the fit, or closer. */
+  zoom = 1;
 
   constructor(
     source: string,
@@ -1554,7 +1562,12 @@ export class Image extends VisualNode {
     height: number,
     fit = 'cover',
     label = '',
-    config?: { cornerRadius?: CornerRadii },
+    config?: {
+      cornerRadius?: CornerRadii;
+      darkSource?: string | null;
+      focalPoint?: { x: number; y: number };
+      zoom?: number;
+    },
   ) {
     super();
     this.source = source;
@@ -1563,6 +1576,14 @@ export class Image extends VisualNode {
     this.fit = fit;
     this.label = label;
     if (config) Object.assign(this, config);
+    // The C# init accessors' rules, so a page refuses in the browser what it refuses on the server.
+    const { x, y } = this.focalPoint;
+    if (!(x >= 0 && x <= 1) || !(y >= 0 && y <= 1)) {
+      throw exception('System.ArgumentOutOfRangeException', 'A focal point is a fraction of the picture on each axis, from 0 to 1. (Parameter \'FocalPoint\')');
+    }
+    if (!(this.zoom >= 1) || !Number.isFinite(this.zoom)) {
+      throw exception('System.ArgumentOutOfRangeException', 'A zoom draws the picture at its fit (1) or closer, never farther. (Parameter \'Zoom\')');
+    }
   }
 }
 

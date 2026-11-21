@@ -1698,6 +1698,11 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   if (destination !== null && warmsOnHover(destination)) anchor.attributes['data-prefetch'] = '';
   // The page you are ON (C# twin): only the current link says so.
   if (node.current === true) anchor.attributes['aria-current'] = 'page';
+  // Beside the page (C# twin, #941): a new tab, cut from this one; the router leaves it to the browser.
+  if (node.opensBeside === true) {
+    anchor.attributes['target'] = '_blank';
+    anchor.attributes['rel'] = 'noopener noreferrer';
+  }
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) anchor.children.push(child);
   return anchor;
@@ -2843,19 +2848,48 @@ function lowerImage(node: ImageNode): HtmlNode {
   const hasRadius =
     !!radius &&
     (radius.topLeft > 0 || radius.topRight > 0 || radius.bottomRight > 0 || radius.bottomLeft > 0);
+  // The focal point and the zoom (C# twin, #1785): `object-position` holds the picture's point at the
+  // same fraction of the box, a scale around it zooms, and a zoomed picture is clipped by a frame of the
+  // box's size that carries the radius. Each fraction is the single product the server writes.
+  const focal = node.focalPoint ?? { x: 0.5, y: 0.5 };
+  const zoom = node.zoom ?? 1;
+  const zoomed = zoom !== 1;
+  const held = Math.fround(focal.x) !== 0.5 || Math.fround(focal.y) !== 0.5 || zoomed;
+  const origin = held ? `${num(Math.fround(focal.x) * 100)}% ${num(Math.fround(focal.y) * 100)}%` : undefined;
+  const radiusCss = hasRadius && radius ? radiusValue(radius) : undefined;
   const sizing = atomicAttrs({
     width: px(node.width),
     height: px(node.height),
-    'border-radius': hasRadius && radius ? radiusValue(radius) : undefined,
+    'border-radius': zoomed ? undefined : radiusCss,
     'object-fit': fit,
+    'object-position': origin,
+    transform: zoomed ? `scale(${num(zoom)})` : undefined,
+    'transform-origin': zoomed ? origin : undefined,
   });
+  const framed = (picture: HtmlNode): HtmlNode =>
+    zoomed
+      ? {
+          tag: 'span',
+          attributes: {
+            ...atomicAttrs({
+              display: 'inline-block',
+              width: px(node.width),
+              height: px(node.height),
+              overflow: 'hidden',
+              'border-radius': radiusCss,
+            }),
+          },
+          events: {},
+          children: [picture],
+        }
+      : picture;
   const light: HtmlNode = {
     tag: 'img',
     attributes: { ...sizing, src: node.source, alt: node.label ?? '' },
     events: {},
     children: [],
   };
-  if (!node.darkSource) return light;
+  if (!node.darkSource) return framed(light);
 
   // A PAIR of artworks (C# twin): both ship, the generated .eq-themed-* rules show one — the OS
   // preference by default, the app's forced data-theme when it set one.
@@ -2876,12 +2910,12 @@ function lowerImage(node: ImageNode): HtmlNode {
     events: {},
     children: [],
   };
-  return {
+  return framed({
     tag: 'span',
     attributes: { ...atomicAttrs({ display: 'contents' }) },
     events: {},
     children: [light, dark],
-  };
+  });
 }
 
 /** The one revolution the eight bars stagger over — the C# `Spinner.RevolutionMs`, which divides by
@@ -3138,6 +3172,8 @@ function lowerCanvas(node: CanvasNodeValue, context: LoweringContext): HtmlNode 
   const listens = Boolean(
     node.onPointerDown || node.onPointerMove || node.onPointerUp || node.onPointerLeave,
   );
+  // Handlers that follow a drag, a press and a move, claim the finger (C# twin, #1786).
+  const drags = Boolean(node.onPointerDown && node.onPointerMove);
 
   const attributes: Record<string, string | undefined> = {
     // DECLARATIONS, not a hand-built string: `atomicAttrs` hashes each (property, value) into the
@@ -3157,6 +3193,11 @@ function lowerCanvas(node: CanvasNodeValue, context: LoweringContext): HtmlNode 
       // registers a region per canvas and skips one with no handlers — so this is the same rule
       // said in the DOM's language. The C# realizer writes the identical pair.
       'pointer-events': listens ? 'auto' : 'none',
+      // A finger's drag is the canvas's, not the page's, when its handlers follow one (#1786): with
+      // the default `touch-action` a phone scrolled the sheet and cancelled the pointer stream they
+      // were following. A canvas that only hovers or only takes a press leaves the finger to the
+      // page. The C# realizer writes the same declaration.
+      'touch-action': drags ? 'none' : undefined,
     }),
   };
   // A viewBox only when the box is known: a filling canvas draws in the same coordinates the

@@ -795,6 +795,14 @@ internal sealed partial class WebLoweringVisitor
         // The page you are ON. Only the current link carries it — aria-current="false" on the other
         // nine is legal, useless, and read out loud.
         if (link.Current) element.AriaCurrent = "page";
+        // Beside the page (#941): a new tab, cut from this one, which the router leaves to the browser.
+        // Written in this order on both sides, so the attributes the server sends are the ones the
+        // browser's lowering would write.
+        if (link.OpensBeside)
+        {
+            element.RawAttributes["target"] = "_blank";
+            element.RawAttributes["rel"] = "noopener noreferrer";
+        }
         if (Lower(link.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
             element.Children.Add(child);
         return element;
