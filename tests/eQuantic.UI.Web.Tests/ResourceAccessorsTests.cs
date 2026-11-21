@@ -146,6 +146,33 @@ public class ResourceAccessorsTests
         }
     }
 
+    /// <summary>
+    /// A .resx read the ASP.NET Core way, through <c>IStringLocalizer</c>, gets no class: one named by a
+    /// dotted path no class can be named after, and one beside the marker class it is named for, which a
+    /// generated class of the same name would collide with.
+    /// </summary>
+    [Fact]
+    public void ACatalogReadThroughIStringLocalizer_GetsNoClass_AndTheAppStillBuilds()
+    {
+        var dir = App("eQuantic.UI.Sdk", handKept: false, "EQuanticResourceAccessors", "_EQuanticMirrorResources");
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "Resources", "Pages.Index.resx"), Resx(("Title", "Home")));
+            File.WriteAllText(Path.Combine(dir, "Resources", "SharedResource.resx"), Resx(("Hello", "Hello")));
+            File.WriteAllText(Path.Combine(dir, "Resources", "SharedResource.cs"),
+                "namespace Probe.Resources; public sealed class SharedResource { }");
+
+            BuildAndRun(dir).Should().Equal(["One page", "Uma página"], "the other catalogs build as they did");
+            var mirror = Path.Combine(dir, "obj", "Debug", "net10.0", "generated", "eQuantic.UI.Resources", "Resources");
+            File.Exists(Path.Combine(mirror, "Pages.Index.Designer.cs")).Should().BeFalse();
+            File.Exists(Path.Combine(mirror, "SharedResource.Designer.cs")).Should().BeFalse();
+        }
+        finally
+        {
+            Delete(dir);
+        }
+    }
+
     [Fact]
     public void ANativeAppsCatalog_GetsItsAccessorsToo()
     {

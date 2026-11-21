@@ -45,7 +45,11 @@
 
         A culture's .resx gets nothing: the neutral one carries the keys. A neutral .resx with a
         Designer.cs beside it keeps it, so an app that has one changes nothing, and so does one whose
-        project already set the StronglyTyped* metadata itself.
+        project already set the StronglyTyped* metadata itself. Neither does a .resx read the
+        ASP.NET Core way through IStringLocalizer: one named by a dotted path (Views.Home.Index.resx),
+        which no class can be named after, or one beside the marker class it is named for
+        (SharedResource.cs beside SharedResource.resx). A key added while a hot reload runs gets its
+        accessor at the next build: the reload's compile runs eqc, not the resources.
     -->
     <Target Name="EQuanticResourceAccessors" AfterTargets="CreateManifestResourceNames" BeforeTargets="CoreResGen"
             Condition="'@(EmbeddedResource)' != ''">
@@ -57,7 +61,10 @@
             <EmbeddedResource Update="@(EmbeddedResource)"
                 Condition="'%(Extension)' == '.resx' AND '%(EmbeddedResource.WithCulture)' != 'true'
                            AND '%(EmbeddedResource.StronglyTypedLanguage)' == '' AND '%(EmbeddedResource.GenerateResource)' != 'false'
-                           AND !Exists('%(RootDir)%(Directory)%(Filename).Designer.cs')"
+                           AND !Exists('%(RootDir)%(Directory)%(Filename).Designer.cs')
+                           AND !Exists('%(RootDir)%(Directory)%(Filename).cs')
+                           AND $([System.Text.RegularExpressions.Regex]::IsMatch('%(Filename)', '^[A-Za-z_][A-Za-z0-9_]*$'))
+                           AND !$([System.IO.Path]::IsPathRooted('%(RelativeDir)')) AND !$([System.String]::Copy('%(RelativeDir)').StartsWith('..'))"
                 StronglyTypedLanguage="C#"
                 StronglyTypedClassName="%(Filename)"
                 StronglyTypedNamespace="$([System.Text.RegularExpressions.Regex]::Replace($([System.Text.RegularExpressions.Regex]::Replace($([System.Text.RegularExpressions.Regex]::Replace('$(RootNamespace)/%(RelativeDir)', '[/\\]+', '.')), '[^\w.]', '_')), '\.$', ''))"
