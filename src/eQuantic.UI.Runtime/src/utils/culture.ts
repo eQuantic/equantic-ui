@@ -64,6 +64,8 @@ export interface DateTimeFormatData {
   dateSeparator: string;
   timeSeparator: string;
   eraName: string;
+  /** The era's abbreviation, which .NET reads beside a date as it reads its name (ar-SA's `هـ`). */
+  abbreviatedEraName: string;
   /** The day a week starts on, as `System.DayOfWeek` counts: 0 is Sunday. */
   firstDayOfWeek: number;
   /** Sunday first, as `System.DayOfWeek` counts. */
@@ -77,6 +79,48 @@ export interface DateTimeFormatData {
   abbreviatedMonthGenitiveNames: string[];
   amDesignator: string;
   pmDesignator: string;
+  /** The calendar every number of a date above is counted in (#1191). */
+  calendar: CalendarData;
+}
+
+/**
+ * A culture's calendar, as the server measures .NET's own (`CalendarBridge`): the Gregorian months under
+ * another count of years (`yearOffset`, 543 for th-TH's Thai Buddhist calendar, 0 for the Gregorian one),
+ * or months of its own (`months`, fa-IR's Persian calendar and ar-SA's Um Al Qura one). `utils/calendar.ts`
+ * reads it.
+ */
+export interface CalendarData {
+  /** The calendar's type, which .NET names when it refuses a clock: `System.Globalization.GregorianCalendar`. */
+  name: string;
+  /** The last year a year of two digits reads as: 2049 in the Gregorian calendar, 2572 in the Thai Buddhist. */
+  twoDigitYearMax: number;
+  /** The years its count is ahead of the Gregorian one, for a calendar of the Gregorian months. */
+  yearOffset?: number;
+  /** The months of a calendar of its own. */
+  months?: CalendarMonths;
+  /** The first and the last day it writes, as days since 0001-01-01, where they are not a DateTime's. */
+  firstDay?: number;
+  lastDay?: number;
+  /** .NET's refusal of a day outside them, the sentence before the parameter's name. */
+  outOfRange?: string;
+  /** Whether a DateTime of the first day writes its text with no format in the invariant sortable form,
+   * as .NET does where its calendar cannot write the year 1. */
+  timeOfDayInvariant?: boolean;
+}
+
+/** Twelve months of a calendar's own, year by year from `firstYear`, which starts on day `start`. */
+export interface CalendarMonths {
+  firstYear: number;
+  /** The day the first year starts on, as days since 0001-01-01. */
+  start: number;
+  /** How many years it counts. */
+  years: number;
+  /** Each month's shorter length, the first month first. */
+  lengths: number[];
+  /** The months, 1 to 12, whose length varies from one year to another. */
+  varying: number[];
+  /** For every year, a bit for each month in `varying`, set where that month is a day longer: base64. */
+  longer: string;
 }
 
 /**
@@ -152,6 +196,7 @@ export const INVARIANT_FORMAT: CultureFormat = Object.freeze({
     dateSeparator: '/',
     timeSeparator: ':',
     eraName: 'A.D.',
+    abbreviatedEraName: 'AD',
     firstDayOfWeek: 0,
     dayNames: INVARIANT_DAYS,
     abbreviatedDayNames: INVARIANT_DAYS.map((day) => day.slice(0, 3)),
@@ -161,6 +206,7 @@ export const INVARIANT_FORMAT: CultureFormat = Object.freeze({
     abbreviatedMonthGenitiveNames: INVARIANT_MONTHS.map((month) => month.slice(0, 3)),
     amDesignator: 'AM',
     pmDesignator: 'PM',
+    calendar: Object.freeze({ name: 'System.Globalization.GregorianCalendar', twoDigitYearMax: 2049, yearOffset: 0 }),
   }),
 });
 
