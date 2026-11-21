@@ -53,7 +53,7 @@ public class ServerActionRegistry : IServerActionRegistry
         foreach (var type in componentTypes)
         {
             var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                .Where(m => m.GetCustomAttribute<ServerActionAttribute>() != null);
+                .Where(m => !m.IsSpecialName && m.GetCustomAttribute<ServerActionAttribute>() != null);
             
             foreach (var method in methods)
             {

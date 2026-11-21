@@ -190,6 +190,26 @@ public class DefaultInterfaceMemberEmissionTests
             public interface INotify { string Changed() => "changed"; }
             public sealed class Eventful : INotify { public event System.Action Changed; }
             """,
+        // A default event (#1511): its accessors are the twin's, under the names every subscription calls.
+        ["Rung.cs"] = """
+            namespace App;
+            public static class RangCounter { public static int N; }
+            public interface IBell { event System.Action Rang { add { RangCounter.N++; } remove { RangCounter.N--; } } }
+            public sealed class Rung : IBell { }
+            """,
+        // And a method of the class on the event's name: the twin holds `rang()` beside `$add$rang`, no clash.
+        ["Ringing.cs"] = """
+            namespace App;
+            public interface IChime { event System.Action Rang { add { RangCounter.N++; } remove { RangCounter.N--; } } }
+            public sealed class Ringing : IChime { public string Rang() => "r"; }
+            """,
+        // Two default events on one name, which C# compiles: `addToEvent` would reach one of them for both.
+        ["Both.cs"] = """
+            namespace App;
+            public interface IA { event System.Action E { add { RangCounter.N++; } remove { RangCounter.N--; } } }
+            public interface IB { event System.Action E { add { RangCounter.N += 10; } remove { RangCounter.N -= 10; } } }
+            public sealed class Both : IA, IB { }
+            """,
         // A primary constructor's parameter on the name of a default: the twin holds it as a field.
         ["Captured.cs"] = """
             namespace App;
@@ -386,6 +406,43 @@ public class DefaultInterfaceMemberEmissionTests
         result.Errors.Should().ContainSingle(error => error.Code == "EQ1007")
             .Which.Message.Should().Contain("'Eventful' takes the default 'INotify.Changed', which lowers to `changed`, "
                 + "and so does 'Eventful.Changed'");
+    }
+
+    /// <summary>An interface's default event reaches the twin of a class that takes it (#1511): its add and
+    /// remove, under the names a subscription through the interface calls. <c>DefaultInterfaceMembers</c>
+    /// skipped events, so neither was written and nothing said so.</summary>
+    [Fact]
+    public void APlainClassTakesTheDefaultEventsAccessors()
+    {
+        var result = Compile("Rung");
+
+        result.TypeScript.Should().MatchRegex(@"\$add\$rang\(value");
+        result.TypeScript.Should().MatchRegex(@"\$remove\$rang\(value");
+        result.Errors.Should().NotContain(error => error.Code == "EQ1008");
+    }
+
+    /// <summary>A class's method on a default event's name (#1511): the twin holds the method under
+    /// <c>rang</c> and the event's accessors under <c>$add$rang</c> and <c>$remove$rang</c>, so nothing
+    /// collides and the build refuses nothing (EQ1007).</summary>
+    [Fact]
+    public void AClassMethodOnADefaultEventsNameIsNoClash()
+    {
+        var result = Compile("Ringing");
+
+        result.TypeScript.Should().MatchRegex(@"\$add\$rang\(value");
+        result.TypeScript.Should().MatchRegex(@"\brang\(\)");
+    }
+
+    /// <summary>Two default events on one name (#1511): each takes `$add$e` and `$remove$e` on the twin, so
+    /// one would answer the other's subscriptions.</summary>
+    [Fact]
+    public void TwoDefaultEventsOnOneNameAreRefused()
+    {
+        var result = Compile("Both", succeeds: false);
+
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1007")
+            .Which.Message.Should().Contain("'Both' takes the default 'IB.E'")
+            .And.Contain("'IA.E'");
     }
 
     /// <summary>A primary constructor's parameter on the name of a default (found in review, #418): the

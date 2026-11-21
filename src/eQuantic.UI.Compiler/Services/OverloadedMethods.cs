@@ -429,7 +429,8 @@ internal static class OverloadedMethods
                 var owner = contract is null
                     ? $"{Owner(implementation)}, which it inherits from '{current.Name}' with the defaults that call it"
                     : $"the default {Owner(implementation)}, which it inherits from '{current.Name}'";
-                inherited.TryAdd(Lowered(implementation), new Holder(owner, FromInterface: true, contract));
+                foreach (var name in Claimed(implementation))
+                    inherited.TryAdd(name, new Holder(owner, FromInterface: true, contract));
             }
         }
 
@@ -464,14 +465,17 @@ internal static class OverloadedMethods
         }
 
         foreach (var (implementation, _, contract) in DefaultInterfaceMembers.Of(declared, model.Compilation))
+            foreach (var name in Claimed(implementation))
+                if (RefusedOn(name, implementation, contract)) break;
+
+        bool RefusedOn(string name, ISymbol implementation, ISymbol? contract)
         {
-            var name = Lowered(implementation);
             var owner = Owner(implementation);
             // A default, or a private helper copied with one, on a name the twin holds itself (#1146).
             if (MembersOnOneName.ADefaultOn(type, isComponent, name, model) is { } held)
             {
                 Refuse($"'{declared.Name}' takes the default {owner}, which lowers to `{name}`, {held}");
-                continue;
+                return true;
             }
             if (taken.TryGetValue(name, out var earlier))
             {
@@ -479,7 +483,7 @@ internal static class OverloadedMethods
                     + "C# reaches a default through its interface, and the twin holds it as a member of its own, one "
                     + $"per name, so it would keep one of them. Declare {implementation.DeclaredName()} in "
                     + $"'{declared.Name}', or give one of them its own name.");
-                continue;
+                return true;
             }
             taken[name] = owner;
             // The same interface member's default, more specific here than in the base, is the
@@ -487,12 +491,20 @@ internal static class OverloadedMethods
             if (!inherited.TryGetValue(name, out var holder)
                 || (holder.Contract is not null && contract is not null
                     && SymbolEqualityComparer.Default.Equals(holder.Contract, contract)))
-                continue;
+                return false;
             Refuse($"'{declared.Name}' takes the default {owner}, which lowers to `{name}`, and so does {holder.Owner}. "
                 + "A JavaScript class chain has one member per name, so one of them would answer the other's calls. "
                 + "Give one of them its own name.");
+            return true;
         }
     }
+
+    /// <summary>The names a default holds on its twin: a member's own, and a default event's two accessors
+    /// (<see cref="CodeGen.EventAccessors.Name"/>, #1511), never the event's name, which the twin leaves free.</summary>
+    private static IEnumerable<string> Claimed(ISymbol implementation) =>
+        implementation is IEventSymbol e
+            ? [CodeGen.EventAccessors.Name("add", Lowered(e)), CodeGen.EventAccessors.Name("remove", Lowered(e))]
+            : [Lowered(implementation)];
 
     /// <summary>The parameters of a class's or a struct's primary constructor, which the twin assigns
     /// to fields of the same name. A record's are its positional properties, members already.</summary>

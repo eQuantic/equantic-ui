@@ -46,7 +46,7 @@ internal static class DefaultInterfaceMembers
         {
             foreach (var member in contract.GetMembers())
             {
-                if (member.IsStatic || member is not (IPropertySymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary }))
+                if (member.IsStatic || member is not (IPropertySymbol or IEventSymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary }))
                     continue;
                 if (type.FindImplementationForInterfaceMember(member) is not { } implementation
                     || implementation.ContainingType.TypeKind != TypeKind.Interface
@@ -75,7 +75,7 @@ internal static class DefaultInterfaceMembers
                 if (model.GetSymbolInfo(name).Symbol is not { IsStatic: false, IsAbstract: false } helper
                     || helper.DeclaredAccessibility != Accessibility.Private
                     || helper.ContainingType?.TypeKind != TypeKind.Interface
-                    || helper is not (IPropertySymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary })
+                    || helper is not (IPropertySymbol or IEventSymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary })
                     || Services.PlainClassModule.IsServerOnly(helper)
                     || !seen.Add(helper))
                     continue;
@@ -149,6 +149,15 @@ internal static class DefaultInterfaceMembers
         + $"{reached.ContainingType.Name}.{reached.Name}, a static member of an interface, and an interface has no "
         + $"JavaScript form to hold it, so the default cannot be written into {type.Name}'s twin. Declare "
         + $"{implementation.Name} in {type.Name}, or keep {type.Name} out of client code.";
+
+    /// <summary>The error for a vocabulary default event: the runtime carries its interface, and a twin reaches
+    /// the runtime's copy of a default method or property by delegating to it, which an event's accessors have
+    /// no form for (#1511). None of the vocabulary's interfaces declares one.</summary>
+    public static string Undelegated(INamedTypeSymbol type, ISymbol implementation) =>
+        $"{type.Name} relies on the default event {implementation.ContainingType.Name}.{implementation.Name}, "
+        + $"whose interface the runtime carries, but a twin delegates only a default method or property to the "
+        + $"runtime's copy, so the browser's {type.Name} would have no accessors for {implementation.Name}. "
+        + $"Declare {implementation.Name} in {type.Name}, or keep {type.Name} out of client code.";
 
     /// <summary>
     /// The error for a default whose body cannot be written and that the runtime does not carry:

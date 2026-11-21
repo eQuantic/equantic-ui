@@ -100,7 +100,8 @@ internal static class ServerOnlyContracts
                 if (type.IsKeptOut() || !Takes(type, declaring)) continue;
                 foreach (var member in type.AllInterfaces.SelectMany(@interface => @interface.GetMembers()).OfType<IMethodSymbol>())
                 {
-                    if (member.MethodKind is not (MethodKind.Ordinary or MethodKind.UserDefinedOperator or MethodKind.Conversion))
+                    if (member.MethodKind is not (MethodKind.Ordinary or MethodKind.UserDefinedOperator or MethodKind.Conversion
+                        or MethodKind.EventAdd or MethodKind.EventRemove))
                         continue;
                     if (type.FindImplementationForInterfaceMember(member) is IMethodSymbol implementation
                         && methods.Contains(implementation.OriginalDefinition))
@@ -114,9 +115,11 @@ internal static class ServerOnlyContracts
     }
 
     /// <summary>
-    /// The methods, operators and conversions of a compilation's source that no twin holds, found by the
-    /// rule the emitters leave them out by: a project's every member is not bound to learn which few they
-    /// are, since the rule binds only a member that writes an attribute or is a partial method.
+    /// The methods, operators, conversions and event accessors of a compilation's source that no twin holds,
+    /// found by the rule the emitters leave them out by: a project's every member is not bound to learn which
+    /// few they are, since the rule binds only a member that writes an attribute or is a partial method. An
+    /// event's <c>[ServerOnly]</c> accessor fulfils the interface's accessor and overrides the base's as a
+    /// method does (#1512).
     /// </summary>
     private static IEnumerable<IMethodSymbol> ServerOnlyMethods(Compilation compilation)
     {
@@ -124,8 +127,9 @@ internal static class ServerOnlyContracts
         {
             var model = compilation.GetSemanticModel(tree);
             foreach (var declaration in tree.GetRoot()
-                         .DescendantNodes(node => node is CompilationUnitSyntax or BaseNamespaceDeclarationSyntax or TypeDeclarationSyntax)
-                         .OfType<BaseMethodDeclarationSyntax>())
+                         .DescendantNodes(node => node is CompilationUnitSyntax or BaseNamespaceDeclarationSyntax or TypeDeclarationSyntax
+                             or EventDeclarationSyntax or AccessorListSyntax)
+                         .Where(node => node is BaseMethodDeclarationSyntax or AccessorDeclarationSyntax { Parent.Parent: EventDeclarationSyntax }))
             {
                 if (!Parser.ComponentParser.StaysOnTheServer(declaration, inAComponent: false, model)) continue;
                 if (model.GetDeclaredSymbol(declaration) is IMethodSymbol method) yield return method;

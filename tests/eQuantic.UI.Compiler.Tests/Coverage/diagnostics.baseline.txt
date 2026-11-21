@@ -8,7 +8,7 @@ EQ1004 eQuantic.UI.Compiler/CodeGen/ConversionContext.cs eQuantic.UI.Compiler/Co
 EQ1005 eQuantic.UI.Compiler/Services/AppBuild.cs
 EQ1006 eQuantic.UI.Compiler/Services/AppBuild.cs
 EQ1007 eQuantic.UI.Compiler/Services/MembersOnOneName.cs eQuantic.UI.Compiler/Services/OverloadedMethods.cs
-EQ1008 eQuantic.UI.Compiler/CodeGen/RecordTypeEmitter.cs eQuantic.UI.Compiler/CodeGen/TypeScriptEmitter.cs
+EQ1008 eQuantic.UI.Compiler/CodeGen/DefaultMemberWriter.cs
 EQ1009 eQuantic.UI.Compiler/CodeGen/TwinConstructor.cs
 EQ2001 eQuantic.UI.Compiler/CodeGen/Strategies/Special/UnsupportedConstructStrategy.cs eQuantic.UI.Compiler/Services/AppBuild.cs
 EQ2002 eQuantic.UI.Compiler/CodeGen/Strategies/Statements/GotoStatementStrategy.cs
@@ -25,6 +25,7 @@ EQ2012 eQuantic.UI.Compiler/ComponentCompiler.cs
 EQ2013 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs
 EQ2014 eQuantic.UI.Compiler/CodeGen/Strategies/ExceptionTypes.cs
 EQ2015 eQuantic.UI.Compiler/CodeGen/Strategies/InterfaceTests.cs
+EQ2016 eQuantic.UI.Compiler/Services/ServerMarksOnAccessors.cs
 EQ2100 eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringStaticStrategy.cs
 EQ2101 eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringStaticStrategy.cs
 EQ2102 eQuantic.UI.Compiler/CodeGen/Extensions/ServerPlatform.cs

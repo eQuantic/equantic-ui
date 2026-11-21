@@ -472,6 +472,25 @@ public class TypeScriptEmitter
                     EmitHydrationMap(c, HydrationManifest.Of(componentSymbol, classModel.Compilation));
                 }
 
+                // Computed/get-set/static properties, the statics that initialize in order and the
+                // indexers are members of the twin on EVERY path (#1513): written only for a concrete
+                // component, an abstract base's indexer and statics and a primitive's indexer and bodied
+                // properties reached no twin. Auto-props flow through the base Object.assign(props).
+                EmitComponentProperties(component, c, slots);
+                if (orderedStatics)
+                {
+                    component.UsedHelpers.Add(Eq.Import);
+                    foreach (var member in TypeInitializer.Members(component.ClassSyntax!, component.Name, initializedStatics,
+                                 _converter, Lowering, TypeAnnotations, _converter.Layout))
+                        c.Member(member, member.Origin?.Member);
+                }
+                if (component.ClassSyntax is { } indexed)
+                {
+                    _converter.SetCurrentClass(component.Name);
+                    foreach (var indexer in indexed.TwinMembers().OfType<IndexerDeclarationSyntax>())
+                        EmitIndexer(indexer, c);
+                }
+
                 if (component.IsPrimitive)
                 {
                     // Remove field declarations for primitives.
@@ -593,23 +612,6 @@ public class TypeScriptEmitter
                     || component.Methods.Count > 0 || component.Properties.Count > 0
                     || component.Constructors.Count > 0)
                 {
-                    // Computed/get-set/static properties become real TS members (auto-props flow through
-                    // the base Object.assign(props) instead).
-                    EmitComponentProperties(component, c, slots);
-                    if (orderedStatics)
-                    {
-                        component.UsedHelpers.Add(Eq.Import);
-                        foreach (var member in TypeInitializer.Members(component.ClassSyntax!, component.Name, initializedStatics,
-                                     _converter, Lowering, TypeAnnotations, _converter.Layout))
-                            c.Member(member, member.Origin?.Member);
-                    }
-                    if (component.ClassSyntax is { } indexed)
-                    {
-                        _converter.SetCurrentClass(component.Name);
-                        foreach (var indexer in indexed.TwinMembers().OfType<IndexerDeclarationSyntax>())
-                            EmitIndexer(indexer, c);
-                    }
-
                     // Constructor: assign positional params, apply auto-property defaults (only when a prop
                     // wasn't supplied — the base ctor's Object.assign runs first), then run the C# ctor body.
                     var ctorDef = component.Constructors.OrderByDescending(ct => ct.Parameters.Count).FirstOrDefault();
@@ -2111,20 +2113,6 @@ public class TypeScriptEmitter
         foreach (var member in Lowering.Indexer(indexer, DeclaredType)) c.Member(member, member.Origin?.Member ?? indexer);
     }
 
-    /// <summary>A vocabulary default the class takes from the interface's ASSEMBLY, where eqc has no
-    /// body to convert: the twin delegates to the runtime's copy, which the runtime import brings in.</summary>
-    private void EmitDelegatedDefault(ISymbol implementation, TypeScriptCodeBuilder.ClassBuilder c)
-    {
-        var (name, parameters, call) = DefaultInterfaceMembers.Delegation(implementation);
-        _converter.UsedRuntimeTypes.Add(implementation.ContainingType.Name);
-        var body = JsStatement.Block([JsStatement.Return(JsExpr.Callish(call))]);
-        if (implementation is IMethodSymbol)
-            c.Member(JsClassMember.Method("", name, "",
-                string.Join(", ", parameters.Select(parameter => TypeAnnotations ? $"{parameter}: any" : parameter)), "", body));
-        else
-            c.Member(JsClassMember.Getter("", name, "", body));
-    }
-
     /// <summary>The declarations of the defaults a class takes (see <see cref="EmitInheritedDefaults"/>),
     /// for the scans that decide the module's imports: a default names types its class never does.</summary>
     private IEnumerable<MemberDeclarationSyntax> InheritedDeclarations(TypeDeclarationSyntax? declaration) =>
@@ -2137,48 +2125,42 @@ public class TypeScriptEmitter
     /// The DEFAULT INTERFACE MEMBERS the class relies on (#414), written into its twin: JavaScript
     /// has no interface to hold them, so a class that did not declare one had no such member at all,
     /// and <c>PlainTextLanguage</c>'s twin answered <c>rules</c> with undefined. Each body converts
-    /// under its interface's file, where its names resolve. A default the transpiler cannot read,
-    /// because its interface is compiled into a referenced assembly the runtime does not carry, refuses the class (EQ1008).
+    /// under its interface's file, where its names resolve, through the one dispatch both emitters share
+    /// (<see cref="DefaultMemberWriter"/>).
     /// </summary>
     private void EmitInheritedDefaults(TypeDeclarationSyntax? declaration, TypeScriptCodeBuilder.ClassBuilder c)
     {
-        if (declaration is null || ModelFor(declaration) is not { } model
-            || model.GetDeclaredSymbol(declaration) is not INamedTypeSymbol self)
-            return;
-        foreach (var (implementation, member, _) in DefaultInterfaceMembers.Of(self, model.Compilation))
+        if (declaration is not null) new ClassDefaults(this, c).WriteAll(declaration);
+    }
+
+    /// <summary>The defaults a class or a component takes, written as its own members are.</summary>
+    private sealed class ClassDefaults(TypeScriptEmitter emitter, TypeScriptCodeBuilder.ClassBuilder c)
+        : DefaultMemberWriter(emitter._converter, emitter.ModelFor)
+    {
+        protected override void Method(MethodDeclarationSyntax method) => emitter.EmitClassMethod(method, c, asStatic: false);
+
+        protected override void Property(PropertyDeclarationSyntax property)
         {
-            if (member is not null && ModelFor(member) is { } memberModel
-                && DefaultInterfaceMembers.InterfaceStaticIn(member, memberModel) is { } reached)
-            {
-                _converter.Report(declaration, ConversionSeverity.Error, "EQ1008",
-                    DefaultInterfaceMembers.Homeless(self, implementation, reached));
-                continue;
-            }
-            switch (member)
-            {
-                case PropertyDeclarationSyntax property when property.ExpressionBody != null
-                    || property.AccessorList?.Accessors.Any(a => a.Body != null || a.ExpressionBody != null) == true:
-                    _converter.InFileOf(property, () =>
-                    {
-                        EmitGetter(property, c, "");
-                        EmitSetter(property, c, "");
-                    });
-                    break;
-                case MethodDeclarationSyntax method when method.Body != null || method.ExpressionBody != null:
-                    _converter.InFileOf(method, () => EmitClassMethod(method, c, asStatic: false));
-                    break;
-                // A default indexer, as the class's own is written (#427).
-                case IndexerDeclarationSyntax indexer:
-                    _converter.InFileOf(indexer, () => EmitIndexer(indexer, c));
-                    break;
-                case null when DefaultInterfaceMembers.RuntimeCarries(implementation.ContainingType):
-                    EmitDelegatedDefault(implementation, c);
-                    break;
-                default:
-                    _converter.Report(declaration, ConversionSeverity.Error, "EQ1008",
-                        DefaultInterfaceMembers.Unreadable(self, implementation));
-                    break;
-            }
+            emitter.EmitGetter(property, c, "");
+            emitter.EmitSetter(property, c, "");
+        }
+
+        protected override void Indexer(IndexerDeclarationSyntax indexer) => emitter.EmitIndexer(indexer, c);
+
+        protected override void Event(EventDeclarationSyntax e)
+        {
+            foreach (var member in emitter.Lowering.EventAccessors(e, emitter.DeclaredType, asStatic: false))
+                c.Member(member, member.Origin?.Member);
+        }
+
+        protected override void Delegated(ISymbol implementation, string name, IReadOnlyList<string> parameters, string call)
+        {
+            var body = JsStatement.Block([JsStatement.Return(JsExpr.Callish(call))]);
+            if (implementation is IMethodSymbol)
+                c.Member(JsClassMember.Method("", name, "",
+                    string.Join(", ", parameters.Select(parameter => emitter.TypeAnnotations ? $"{parameter}: any" : parameter)), "", body));
+            else
+                c.Member(JsClassMember.Getter("", name, "", body));
         }
     }
 

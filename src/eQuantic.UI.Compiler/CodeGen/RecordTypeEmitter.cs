@@ -639,53 +639,7 @@ public class RecordTypeEmitter
 
         // The DEFAULT INTERFACE MEMBERS the type relies on (#414): JavaScript has no interface to
         // hold them, so a record or a struct that did not declare one had no such member at all.
-        // Each body converts under its interface's file, where its names resolve.
-        if (ModelFor(type) is { } typeModel && typeModel.GetDeclaredSymbol(type) is INamedTypeSymbol self)
-        {
-            foreach (var (implementation, member, _) in DefaultInterfaceMembers.Of(self, typeModel.Compilation))
-            {
-                if (member is not null && ModelFor(member) is { } memberModel
-                    && DefaultInterfaceMembers.InterfaceStaticIn(member, memberModel) is { } reached)
-                {
-                    _converter.Report(type, ConversionSeverity.Error, "EQ1008",
-                        DefaultInterfaceMembers.Homeless(self, implementation, reached));
-                    continue;
-                }
-                switch (member)
-                {
-                    // A [ServerOnly] default is none of these: DefaultInterfaceMembers leaves it out. Asked
-                    // here, in this arm's condition, it sent the default to the last arm, which refused it
-                    // as a body nothing could read (EQ1008).
-                    case MethodDeclarationSyntax method when method.Body != null || method.ExpressionBody != null:
-                        _converter.InFileOf(method, () => sb.Append(EmitMethod(method, name)));
-                        break;
-                    case PropertyDeclarationSyntax property when ComputedGetter(property) is not null || IsSetterOnly(property):
-                        _converter.InFileOf(property, () => sb.Append(ComputedProperty(property, name)));
-                        break;
-                    // A default indexer, as the type's own is written (#427).
-                    case IndexerDeclarationSyntax indexer:
-                        _converter.InFileOf(indexer, () =>
-                        {
-                            _converter.SetCurrentClass(name);
-                            foreach (var lowered in _lowering.Indexer(indexer, TsTypeOf)) sb.Append(Written(lowered));
-                        });
-                        break;
-                    // A vocabulary default from the interface's assembly, with no body to convert:
-                    // the twin delegates to the runtime's copy.
-                    case null when DefaultInterfaceMembers.RuntimeCarries(implementation.ContainingType):
-                        var (delegatedName, parameters, call) = DefaultInterfaceMembers.Delegation(implementation);
-                        _converter.UsedRuntimeTypes.Add(implementation.ContainingType.Name);
-                        sb.Append(implementation is IMethodSymbol
-                            ? $"{delegatedName}({string.Join(", ", parameters.Select(p => tsTypeDeclarations ? $"{p}: any" : p))}) {{ return {call}; }} "
-                            : $"get {delegatedName}() {{ return {call}; }} ");
-                        break;
-                    default:
-                        _converter.Report(type, ConversionSeverity.Error, "EQ1008",
-                            DefaultInterfaceMembers.Unreadable(self, implementation));
-                        break;
-                }
-            }
-        }
+        new RecordDefaults(this, sb, name, tsTypeDeclarations).WriteAll(type);
 
         // .NET record ToString ("Name { X = …, Y = … }") unless the user overrode it (any other member
         // named ToString is EQ1007's, #1146, where it took this one's place in silence): the members
@@ -1094,5 +1048,31 @@ public class RecordTypeEmitter
         var elements = "[" + string.Join(", ", tuple.Elements.Select(element =>
             TypeDeclarationExtensions.TsTypeFor(element.Type, ModelFor(element.Type)))) + "]";
         return ": " + (returnType is NullableTypeSyntax ? TypeScriptEmitter.OrNull(elements) : elements);
+    }
+
+    /// <summary>The defaults a record or a struct takes, written as its own members are.</summary>
+    private sealed class RecordDefaults(RecordTypeEmitter emitter, StringBuilder sb, string className, bool tsTypeDeclarations)
+        : DefaultMemberWriter(emitter._converter, emitter.ModelFor)
+    {
+        protected override void Method(MethodDeclarationSyntax method) => sb.Append(emitter.EmitMethod(method, className));
+
+        protected override void Property(PropertyDeclarationSyntax property) => sb.Append(emitter.ComputedProperty(property, className));
+
+        protected override void Indexer(IndexerDeclarationSyntax indexer)
+        {
+            emitter._converter.SetCurrentClass(className);
+            foreach (var lowered in emitter._lowering.Indexer(indexer, emitter.TsTypeOf)) sb.Append(Written(lowered));
+        }
+
+        protected override void Event(EventDeclarationSyntax e)
+        {
+            emitter._converter.SetCurrentClass(className);
+            foreach (var member in emitter._lowering.EventAccessors(e, emitter.TsTypeOf, asStatic: false)) sb.Append(Written(member));
+        }
+
+        protected override void Delegated(ISymbol implementation, string name, IReadOnlyList<string> parameters, string call) =>
+            sb.Append(implementation is IMethodSymbol
+                ? $"{name}({string.Join(", ", parameters.Select(p => tsTypeDeclarations ? $"{p}: any" : p))}) {{ return {call}; }} "
+                : $"get {name}() {{ return {call}; }} ");
     }
 }

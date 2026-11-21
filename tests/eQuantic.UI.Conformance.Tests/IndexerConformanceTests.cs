@@ -316,4 +316,63 @@ public class IndexerConformanceTests
     [InlineData(false)]
     public void AnIndexersKeys_ArePassedByParameter(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Keyed, typeAnnotations, KeyedCases);
+
+    /// <summary>A component's indexer on each of its paths (#1513): an abstract base that holds only a field
+    /// and an indexer took the branch that writes nothing for a member it does not count, and a primitive, an
+    /// <c>HtmlElement</c>, a branch of its own. The two rows after them are the other members those branches
+    /// held back: an abstract base's statics that initialize in order, and a primitive's bodied and static
+    /// properties.</summary>
+    private const string EveryComponentPath = """
+        using eQuantic.UI.Primitives;
+        using eQuantic.UI.Web;
+
+        public abstract class Grid : StatelessComponent
+        {
+            protected int[] _c = new int[3];
+            public int this[int i] { get => _c[i]; set => _c[i] = value * 2; }
+        }
+
+        public sealed class Cells : Grid
+        {
+            public override VisualNode Build(ComponentContext context) => new Text("cells", TypeRole.BodyM);
+        }
+
+        public abstract class Board : StatelessComponent
+        {
+            protected static readonly int[] Seed = new[] { 1, 2, 3 };
+        }
+
+        public sealed class Tiles : Board
+        {
+            public int At(int i) => Seed[i];
+            public override VisualNode Build(ComponentContext context) => new Text("tiles", TypeRole.BodyM);
+        }
+
+        public sealed class Strip : HtmlElement
+        {
+            public int this[int i] { get => i * 10; set => Last = value + i; }
+            public int Last { get; set; }
+            public int Twice => Last * 2;
+            public static int Count { get; set; } = 7;
+            public override HtmlNode Render() => new HtmlNode { Tag = "span" };
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] EveryComponentPathCases =
+    [
+        ("an abstract component base's indexer",
+            "var c = new Cells(); c[1] = 4; var y = (c[2] = 5); return c[1] * 100 + c[2] + y;"),                // 815
+        ("a primitive component's indexer",
+            "var s = new Strip(); s[3] = 4; return s[2] + s.Last;"),                                              // 27
+        ("an abstract component base's statics that initialize in order",
+            "return new Tiles().At(1);"),                                                                         // 2
+        ("a primitive component's bodied and static properties",
+            "var s = new Strip { Last = 3 }; return s.Twice + Strip.Count;"),                                     // 13
+    ];
+
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void EveryComponentPathsIndexer_ReachesItsTwin(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(EveryComponentPath, typeAnnotations, EveryComponentPathCases);
 }
