@@ -412,6 +412,12 @@ function gateCondition(gate: string): { media: string; shownOutside: boolean } |
   return null;
 }
 
+/** The media condition under which a window is at least `dp` wide, spelled as the gates spell it, so a
+ *  reader of the window's width and the gates' CSS cross a threshold at the same width (#1783). */
+export function adaptiveThresholdMedia(dp: number): string {
+  return `(min-width: ${gatePx(gateUnits(dp))})`;
+}
+
 /** Whether a class is an Adaptive arm's gate (`eq-vc600`, `eq-vm600-840`, `eq-vx840`). */
 export function isAdaptiveGate(className: string): boolean {
   return gateCondition(className) !== null;

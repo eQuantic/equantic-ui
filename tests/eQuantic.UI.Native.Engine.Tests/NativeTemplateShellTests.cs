@@ -103,6 +103,59 @@ public class NativeTemplateShellTests
     }
 
     /// <summary>
+    /// The screen a shell builds in both variants of its adaptive node keeps its state when the window
+    /// crosses the threshold, both ways, as Photon builds it (#797): the drawer template's counter read
+    /// "Pressed 0 times" after a phone turned to landscape and back, because each variant built its own.
+    /// </summary>
+    [Theory]
+    [InlineData("tabs", new[] { "tabs", "_destinations" })]
+    [InlineData("drawer", new[] { "drawer", "_destinations" })]
+    public void TheScreenKeepsItsState_WhenTheWindowCrossesTheThreshold(string shell, string[] folders)
+    {
+        var context = new AssemblyLoadContext($"Crossing_{shell}", isCollectible: true);
+        try
+        {
+            using var image = new MemoryStream();
+            CompileShell(shell, folders).Emit(image, manifestResources: NeutralStrings())
+                .Success.Should().BeTrue($"--shell {shell} has to emit");
+            image.Position = 0;
+            var assembly = context.LoadFromStream(image);
+            var appShell = (UiComponent)Activator.CreateInstance(assembly.GetType("EQuanticNativeApp.AppShell")!)!;
+            var screenType = assembly.GetType("EQuanticNativeApp.Screens.ActivityScreen")!;
+            var count = screenType.GetField("_count", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var owner = new ComponentBoundary().Owner();
+            var themed = new ComponentContext(PhotonTheme.Instance);
+
+            UiComponent ScreenAt(float width)
+            {
+                var root = owner.Build(appShell, themed, width, rebuildAll: true);
+                owner.EndFrame();
+                UiComponent? found = null;
+                void Visit(Element element)
+                {
+                    if (element is ComponentElement position && position.Component.GetType() == screenType) found ??= position.Component;
+                    element.VisitChildren(Visit);
+                }
+
+                Visit(root);
+                return found ?? throw new InvalidOperationException($"--shell {shell} shows no ActivityScreen at {width}dp");
+            }
+
+            var phone = ScreenAt(400);
+            count.SetValue(phone, 2);
+
+            ScreenAt(1000).Should().BeSameAs(phone, $"--shell {shell}: the screen moves into the wide variant");
+            var back = ScreenAt(400);
+            back.Should().BeSameAs(phone, $"--shell {shell}: and back into the phone's");
+            count.GetValue(back).Should().Be(2);
+        }
+        finally
+        {
+            context.Unload();
+        }
+    }
+
+    /// <summary>
     /// The template's neutral <c>.resx</c> files as the manifest resources their accessor classes
     /// read. An in-memory emit has no build to compile them, and a shell that says a word through
     /// <c>Strings</c> — the blank one does — would otherwise fail on the missing resource rather

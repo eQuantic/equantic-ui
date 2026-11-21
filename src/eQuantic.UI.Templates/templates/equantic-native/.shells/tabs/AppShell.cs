@@ -11,7 +11,8 @@ namespace EQuanticNativeApp;
 /// One list of destinations, one selected index, one handler. Under 600dp they sit in a bar across
 /// the bottom; past it they stand up as a rail on the leading edge. Nothing here listens for a
 /// resize and nothing keeps a second state: <c>AdaptiveNode</c> carries both trees and the target
-/// picks one (the web emits both behind media queries, Photon lays out the one that fits).
+/// picks one (the server writes both behind media queries, then the browser keeps the one that fits,
+/// as Photon lays out only that one).
 /// </para>
 /// </summary>
 public sealed class AppShell : StatefulComponent
@@ -27,6 +28,11 @@ public sealed class AppShell : StatefulComponent
 
     private int _destination;
 
+    // The screen is built in both variants, and the key is what makes it ONE screen: when the window
+    // crosses 600dp (a phone turning to landscape, a window resized) its position moves into the other
+    // tree, and what it holds comes with it.
+    private readonly GlobalKey _screen = new("screen");
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
@@ -37,9 +43,9 @@ public sealed class AppShell : StatefulComponent
             .With(AppBar(Destinations[_destination].Label))
             .With(Flexible(_destination switch
             {
-                1 => new SearchScreen(),
-                2 => new ProfileScreen(),
-                _ => new ActivityScreen(),
+                1 => new SearchScreen { GlobalKey = _screen },
+                2 => new ProfileScreen { GlobalKey = _screen },
+                _ => new ActivityScreen { GlobalKey = _screen },
             }));
 
         var phone = new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill }

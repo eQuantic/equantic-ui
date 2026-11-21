@@ -177,6 +177,7 @@ export {
   Image,
   ScrollView,
   LoopMotion,
+  GlobalKey,
   GridPattern,
   LinearGradient,
   RadialGradient,

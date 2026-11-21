@@ -42,6 +42,7 @@ import { ElementFrame } from './element-frame';
 // `element-frame.ts` gives; its classes through the seam the barrel registers them in.
 import type { BuildOwner, Element as Position } from './runtime-exports';
 import { liveOwner as makeLiveOwner, structuralOwner as makeStructuralOwner } from './element-engine';
+import { adaptiveWindowWidth, documentHoldsEveryArm, noteThreshold } from './adaptive-window';
 import type { VisualNode } from './vocabulary';
 import {
   ambientLoweringContext,
@@ -304,12 +305,15 @@ function structuralOwner(): BuildOwner {
  * only the marked ones in a render the page's owners asked for.
  */
 function buildTree(owner: BuildOwner, node: VisualNodeValue, context: LoweringContext): Position {
+  // A tree the page keeps holds what the document holds: every arm of an adaptive node until the page has
+  // hydrated, the one the window resolves after (#1783). A tree laid out once keeps every arm behind its
+  // gate, since nothing renders it again when the window changes.
+  if (owner.live) owner.holdsEveryArm = documentHoldsEveryArm();
   return owner.build(
     node as unknown as VisualNode,
     componentContextOf(context) as RenderContext,
-    // Never read: the browser's owners hold every arm of an adaptive node (`liveOwner`), as the web
-    // draws them all behind their gates, so no arm is resolved for a window's width.
-    Number.POSITIVE_INFINITY,
+    // Read only where one arm is held: an owner that holds every arm resolves none.
+    owner.holdsEveryArm ? Number.POSITIVE_INFINITY : adaptiveWindowWidth(),
     getActivePass()?.rebuildAll ?? true,
   );
 }
@@ -692,8 +696,11 @@ function lowerNodeKind(
   if (rule) {
     if (foreign.nodeKind === 'adaptive') {
       placing = null;
-      return lowerAdaptive(node as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
-        placeChild(arm, armPath, context, rule),
+      return lowerAdaptive(
+        node as unknown as AdaptiveNodeValue,
+        path,
+        (arm, armPath) => placeChild(arm, armPath, context, rule),
+        context,
       );
     }
     if (!buildsItsOwnNode(node)) placing = null;
@@ -778,8 +785,11 @@ function lowerNodeKind(
     case 'adaptive':
       // Reached from a parent with no rule of its own for a direct child — the arms lower as the
       // node was asked to, on the same axis. A flex, a grid and a stack place them themselves.
-      return lowerAdaptive(node as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
-        lowerNode(arm, context, horizontalAxis, armPath),
+      return lowerAdaptive(
+        node as unknown as AdaptiveNodeValue,
+        path,
+        (arm, armPath) => lowerNode(arm, context, horizontalAxis, armPath),
+        context,
       );
     case 'shortcut':
       return lowerShortcut(node as unknown as ShortcutNode, context, horizontalAxis, path);
@@ -4027,8 +4037,11 @@ function placeChild(
   if ((child as { nodeKind?: string }).nodeKind === 'adaptive') {
     return decorate(
       child,
-      lowerAdaptive(child as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
-        placeChild(arm, armPath, context, rule),
+      lowerAdaptive(
+        child as unknown as AdaptiveNodeValue,
+        path,
+        (arm, armPath) => placeChild(arm, armPath, context, rule),
+        context,
       ),
     );
   }
@@ -5746,17 +5759,52 @@ function liveInEnclosingArms(): (() => boolean) | undefined {
 /**
  * Spec S6 mirror of the C# LowerAdaptive: every declared variant gated by the fixed media rules,
  * each arm lowered by `place` — the rule of the parent that lays it out.
+ *
+ * WHERE THE DOCUMENT HOLDS ONE ARM (#1783), the node's position holds the arm the window resolves and
+ * no other, and that arm is lowered alone, with no gate: the engine chose it for the window's width,
+ * and a gate whose media query disagreed by a fraction of a pixel would show nothing. Each arm's box is
+ * keyed by its index, the same in both cases, so the render after hydration keeps the shown arm's DOM
+ * and takes the others out, and a window crossing a threshold swaps one box for the other.
  */
 function lowerAdaptive(
   node: AdaptiveNodeValue,
   path: string,
   place: (arm: VisualNodeValue, path: string) => HtmlNode | null,
+  context: LoweringContext,
 ): HtmlNode {
   if (!node.medium && !node.expanded) {
     return place(node.compact, path + '/0') ?? element('div', { display: 'contents' });
   }
+  const mediumFrom = node.mediumFrom ?? 600;
+  const expandedFrom = node.expandedFrom ?? 840;
+  if (node.medium) noteThreshold(mediumFrom);
+  if (node.expanded) noteThreshold(expandedFrom);
   const wrapper = element('div', { display: 'contents' });
+  const position = context.frame?.elementAt(node) ?? null;
+  // Where every arm is held, each declared arm is lowered, and one the frame has no position for fails
+  // as any component the frame did not build does; only an owner holding one arm leaves arms out.
+  const holds = (index: number): boolean =>
+    position === null || position.owner.holdsEveryArm || position.childAt(index) !== null;
+  if (position !== null && !position.owner.holdsEveryArm) {
+    const arms = [node.compact, node.medium, node.expanded];
+    const held = [0, 1, 2].filter((index) => arms[index] && holds(index));
+    if (held.length === 1) {
+      const shown = held[0];
+      const lowered = place(arms[shown]!, `${path}/${shown}`);
+      if (lowered) {
+        const box = element('div', { display: 'contents' });
+        box.key = `arm${shown}`;
+        box.children.push(lowered);
+        wrapper.children.push(box);
+      }
+      return wrapper;
+    }
+  }
   const addVariant = (variant: VisualNodeValue, gate: string, index: number) => {
+    // A position that holds its arms one at a time is lowered above; one that still holds more (a render
+    // that rebuilt only what was marked, right after the document stopped holding every arm) draws the
+    // ones it holds, gated, until the page renders whole.
+    if (!holds(index)) return;
     // Every declared arm is MOUNTED and only one is shown, so what an arm subscribes to has to know
     // which gate it sits behind — Photon lays out the one arm, and nothing in the others exists.
     const outer = enclosingGates;
@@ -5771,6 +5819,7 @@ function lowerAdaptive(
     ensureAdaptiveGate(gate);
     wrapper.children.push({
       tag: 'div',
+      key: `arm${index}`,
       attributes: { class: gate },
       events: {},
       children: [lowered],
@@ -5778,8 +5827,6 @@ function lowerAdaptive(
   };
   // Ranges chain off the DECLARED variants and this node's thresholds (C# twin) — a design that
   // switches at 1024 gets 1024 gates, not the spec's 600/840.
-  const mediumFrom = node.mediumFrom ?? 600;
-  const expandedFrom = node.expandedFrom ?? 840;
   addVariant(node.compact, gateCompactUntil(node.medium ? mediumFrom : expandedFrom), 0);
   if (node.medium)
     addVariant(node.medium, gateMediumFrom(mediumFrom, node.expanded ? expandedFrom : 0), 1);

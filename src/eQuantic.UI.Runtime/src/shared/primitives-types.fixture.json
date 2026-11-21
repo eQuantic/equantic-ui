@@ -125,6 +125,7 @@
   "FormField",
   "FrameTick",
   "GeoLocation",
+  "GlobalKey",
   "Grid",
   "GridPattern",
   "GridTrack",

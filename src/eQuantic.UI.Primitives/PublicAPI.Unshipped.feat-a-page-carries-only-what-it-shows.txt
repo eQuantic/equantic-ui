@@ -1,0 +1,9 @@
+#nullable enable
+eQuantic.UI.Primitives.AdaptiveNode.ResolveIndex(float widthDp) -> int
+eQuantic.UI.Primitives.BuildOwner.HoldsEveryArm.set -> void
+eQuantic.UI.Primitives.GlobalKey
+eQuantic.UI.Primitives.GlobalKey.GlobalKey(string? label = null) -> void
+eQuantic.UI.Primitives.GlobalKey.Label.get -> string?
+eQuantic.UI.Primitives.VisualNode.GlobalKey.get -> eQuantic.UI.Primitives.GlobalKey?
+eQuantic.UI.Primitives.VisualNode.GlobalKey.init -> void
+override eQuantic.UI.Primitives.GlobalKey.ToString() -> string!

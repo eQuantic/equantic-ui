@@ -1,4 +1,4 @@
-import { $eq, BuildContext, ComponentElement, Element, ElementIds, NodeElement, StatefulComponent, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, BuildContext, ComponentElement, DevelopmentNotices, Element, ElementIds, GlobalKey, NodeElement, StatefulComponent, UiComponent, VisualNode } from "../runtime-exports";
 
 export class BuildOwner {
     constructor(buildComponent: (arg1: UiComponent, arg2: BuildContext, arg3: number) => VisualNode = undefined!, holdsEveryArm: boolean = undefined!, ids: ElementIds | null = undefined!, live: boolean = undefined!) {
@@ -47,6 +47,11 @@ export class BuildOwner {
         this.navigationRequested = null;
         this.keepsInstance = null;
         this.keyScratch = $eq.collections.dictionary();
+        this._held = $eq.collections.dictionary(null, 'item');
+        this._parked = $eq.collections.dictionary(null, 'item');
+        this._placed = $eq.collections.hashSet('item');
+        this._forgetful = [];
+        this._settlingParked = false;
         $eq.guard.throwIfNull(buildComponent, 'buildComponent');
         this._buildComponent = buildComponent;
         this._ids = ids ?? new ElementIds();
@@ -85,6 +90,11 @@ export class BuildOwner {
     navigationRequested!: ((string: string) => void) | null;
     keepsInstance!: ((value: StatefulComponent) => boolean) | null;
     keyScratch!: any;
+    _held!: any;
+    _parked!: any;
+    _placed!: Set<Element>;
+    _forgetful!: Element[];
+    _settlingParked!: boolean;
 
     get hasDirty(): boolean {
         return this._dirty.length > 0 || this._dirtyNextFrame.length > 0;
@@ -145,6 +155,74 @@ export class BuildOwner {
         return this.marks++;
     }
 
+    hold(key: GlobalKey, element: Element) {
+        let holders: any; 
+        if (!(($0) => ($0.has(key) ? ((holders = $0.get(key)), true) : ((holders = null), false)))(this._held)) {
+            holders = [];
+            $eq.mapSet(this._held, key, holders);
+        }
+        $eq.collections.listAdd(holders, element);
+        if (this._inFrameBuild) $eq.collections.setAdd(this._placed, element);
+    }
+
+    letGo(key: GlobalKey, element: Element) {
+        let holders: any; 
+        if (!(($0) => ($0.has(key) ? ((holders = $0.get(key)), true) : ((holders = null), false)))(this._held)) return;
+        $eq.collections.remove(holders, element, 'item');
+        if (holders.length === 0) this._held.delete(key);
+    }
+
+    park(key: GlobalKey, element: Element) {
+        if (!this._inFrameBuild || this._settlingParked || this._parked.has(key)) return false;
+        $eq.mapSet(this._parked, key, element);
+        return true;
+    }
+
+    retake(key: GlobalKey, configuration: VisualNode, parent: Element) {
+        if (!this._inFrameBuild) return null;
+        let parked: any; 
+        if ((($0) => ($0.has(key) ? ((parked = $0.get(key)), true) : ((parked = null), false)))(this._parked)) {
+            this._parked.delete(key);
+            if (!Element.canUpdate(parked.configuration, configuration)) {
+                parked.leave();
+                return null;
+            }
+            $eq.collections.setAdd(this._placed, parked);
+            return parked;
+        }
+        let holders: any; 
+        if (this.holdsEveryArm || !(($0) => ($0.has(key) ? ((holders = $0.get(key)), true) : ((holders = null), false)))(this._held) || holders.length !== 1) return null;
+        let held = holders[0];
+        let from: any; 
+        if (!held.isActive || !((from = held.parent) != null) || !Element.canUpdate(held.configuration, configuration) || parent.isAtOrBelow(held)) return null;
+        if (this._placed.has(held)) {
+            DevelopmentNotices.say(`${key} is placed at two positions in one frame: one of them starts again, with none of the ` + 'other\'s state. A global key names one position at a time.');
+            return null;
+        }
+        from.forgetChild(held);
+        $eq.collections.listAdd(this._forgetful, from);
+        $eq.collections.setAdd(this._placed, held);
+        return held;
+    }
+
+    settleGlobalKeys() {
+        if (this._parked.size > 0) {
+            this._settlingParked = true;
+            try {
+                let leaving: Element[] = $eq.collections.listCopy(this._parked.values());
+                this._parked.clear();
+                for (const element of $eq.collections.listWalk(leaving)) element.leave();
+            } finally {
+                this._settlingParked = false;
+            }
+        }
+        for (let i = 0; i < this._forgetful.length; i++) {
+            if (this._forgetful[i].isActive) this._forgetful[i].fillForgotten();
+        }
+        $eq.collections.listClear(this._forgetful);
+        this._placed.clear();
+    }
+
     build(root: VisualNode, context: BuildContext, windowWidth: number, rebuildAll: boolean) {
         let previous = this._context;
         this._context = context;
@@ -166,8 +244,12 @@ export class BuildOwner {
             }
             this.buildDirty();
         } finally {
-            this._inFrameBuild = false;
-            this.exitBuild();
+            try {
+                this.settleGlobalKeys();
+            } finally {
+                this._inFrameBuild = false;
+                this.exitBuild();
+            }
         }
         return this.root;
     }
