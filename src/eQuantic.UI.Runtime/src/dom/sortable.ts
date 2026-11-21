@@ -66,7 +66,7 @@ function itemsOf(list: HTMLElement): HTMLElement[] {
 /** How far across the axis one depth of a list's items is indented, or 0 for a list without depths (#1594). */
 function indentOf(list: HTMLElement): number {
   const indent = Number(list.getAttribute('data-eq-sort-indent') ?? '0');
-  return Number.isFinite(indent) && indent > 0 ? indent : 0;
+  return SortPlacement.hasDepths(indent) ? indent : 0;
 }
 
 /** An item's depth in a list whose items have depths; 0 for one that says none. */

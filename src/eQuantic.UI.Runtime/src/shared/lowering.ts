@@ -6038,7 +6038,9 @@ function lowerSortable(
   }
   if (node.nests) child.attributes['data-eq-sort-nests'] = '1';
   // A list whose items have depths (#1594): how far across the axis one depth is indented. C# twin: LowerSortable.
-  if (node.indent !== undefined && node.indent > 0) child.attributes['data-eq-sort-indent'] = num(node.indent);
+  // A finite indent above 0, the rule SortPlacement.HasDepths states (the lowering cannot import the twin).
+  if (node.indent !== undefined && Number.isFinite(node.indent) && node.indent > 0)
+    child.attributes['data-eq-sort-indent'] = num(node.indent);
   if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
   // The words a reader hears while the keyboard sorts (#1564), which the controller reads from the list the item
   // was picked up from. A list with none says nothing. C# twin: LowerSortable.

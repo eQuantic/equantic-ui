@@ -264,7 +264,7 @@ public sealed partial class PhotonHost
     /// </summary>
     private SortDrop? FirstAccepted(SortGesture sort, Sortable list, int index, int into, int wants)
     {
-        if (into >= 0 || list.Indent <= 0)
+        if (into >= 0 || !SortPlacement.HasDepths(list.Indent))
         {
             var drop = PlaceDrop(sort, list, index, into, null);
             return list.Accepts?.Invoke(drop) != false ? drop : null;
@@ -319,7 +319,7 @@ public sealed partial class PhotonHost
             if (regions[i].Node is not SortableItem item) continue;
             if (ReferenceEquals(at, carried))
             {
-                if (node.Indent > 0) carries = DepthOf(item);
+                if (SortPlacement.HasDepths(node.Indent)) carries = DepthOf(item);
                 continue;
             }
             if (carries is { } depth && DepthOf(item) > depth) continue;
@@ -543,7 +543,7 @@ public sealed partial class PhotonHost
             // Its own place, which no guard is asked about: in a list with depths its own depth is always one the place
             // allows (#1594).
             CountIn(regions[list].Element, at);
-            var picked = PlaceDrop(sort, sortable, sort.KeyIndex, -1, sortable.Indent > 0
+            var picked = PlaceDrop(sort, sortable, sort.KeyIndex, -1, SortPlacement.HasDepths(sortable.Indent)
                 ? SortPlacement.Depths(DepthOf(item), Above(sort.KeyIndex), Below(sort.KeyIndex))[0]
                 : null);
             sort.KeyDepth = picked.Depth;

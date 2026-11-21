@@ -1130,7 +1130,7 @@ internal sealed partial class WebLoweringVisitor
         if (sortable.Nests) child.RawAttributes["data-eq-sort-nests"] = "1";
         // A list whose items have depths (#1594): how far across the axis one depth is indented, which the controller
         // divides the pointer's travel across by. A list without depths writes none.
-        if (sortable.Indent > 0) child.RawAttributes["data-eq-sort-indent"] = TokenCss.Number(sortable.Indent);
+        if (SortPlacement.HasDepths(sortable.Indent)) child.RawAttributes["data-eq-sort-indent"] = TokenCss.Number(sortable.Indent);
         if (!sortable.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
         // The words a reader hears while the keyboard sorts (#1564), which the controller reads from the list the
         // item was picked up from. A list with none says nothing.

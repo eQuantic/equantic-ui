@@ -1,4 +1,4 @@
-import { $eq, $NavigableMoveValue, Anchored, Box, BoxStyle, BuildContext, Color, ColorToken, ContextRequest, ContextTarget, ControlMetrics, CornerRadii, DateTime, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, ListTheme, MenuItem, MenuPanel, Navigable, Positioned, Pressable, Row, ScrollRequest, ScrollView, SdkStrings, Shortcut, SizeValue, Sortable, SortableItem, SortDrop, Stack, StatefulComponent, StyleDiff, Text, TextEntry, TreeMove, TreeNode, TreePlace, TreeRowState, TreeViewRow, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, $NavigableMoveValue, Anchored, Box, BoxStyle, BuildContext, Color, ColorToken, ContextRequest, ContextTarget, ControlMetrics, CornerRadii, DateTime, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, ListTheme, MenuItem, MenuPanel, Navigable, Positioned, Pressable, Row, ScrollRequest, ScrollView, SdkStrings, Shortcut, SizeValue, Sortable, SortableItem, SortDrop, SortPlacement, Stack, StatefulComponent, StyleDiff, Text, TextEntry, TreeMove, TreeNode, TreePlace, TreeRowState, TreeViewRow, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TreeView extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TreeView';
@@ -718,7 +718,7 @@ export class TreeView extends StatefulComponent {
             carries = 0;
             if (row.node == null) continue;
             if (row.key === carried) {
-                if (this._indent > 0) carries = row.level;
+                if (SortPlacement.hasDepths(this._indent)) carries = row.level;
                 continue;
             }
             $eq.collections.listAdd(others, row);

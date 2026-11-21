@@ -57,8 +57,12 @@ export class SortPlacement {
         return place % 2 === 1 ? [Math.trunc((place - 1) / 2), Math.trunc((place - 1) / 2)] : [Math.trunc(place / 2), -1];
     }
 
+    static hasDepths(indent: number) {
+        return indent > 0 && Number.isFinite(indent);
+    }
+
     static wanted(depth: number, travelled: number, indent: number) {
-        return indent <= 0 ? depth : depth + $eq.num.saturate(Math.floor(Math.fround(Math.fround(travelled / indent) + 0.5)));
+        return SortPlacement.hasDepths(indent) ? depth + $eq.num.saturate(Math.floor(Math.fround(Math.fround(travelled / indent) + 0.5))) : depth;
     }
 
     static depths(wants: number, above: number | null, below: number | null) {

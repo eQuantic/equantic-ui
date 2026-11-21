@@ -666,10 +666,12 @@ describe('a list whose items have depths (#1594)', () => {
       press('ArrowUp');
       press('ArrowUp');
       press('ArrowRight');
-      // Up past docs' place and into Program.cs: before Program.cs the place allows depth 1 only, which it wants.
+      press('ArrowRight');
+      // Up into Program.cs, then before it, where the place allows depths 1 and 2: the 2 it chose, not its own 0 kept
+      // in range, which would be 1.
       press('ArrowUp');
       press('ArrowUp');
-      expect(place(last(hovered)!)).toEqual([2, null, 1]);
+      expect(place(last(hovered)!)).toEqual([2, null, 2]);
     });
 
     it('passes over a refused depth, and says so when none is left that way', () => {

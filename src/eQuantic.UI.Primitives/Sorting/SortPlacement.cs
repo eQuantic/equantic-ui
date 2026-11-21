@@ -140,6 +140,11 @@ public static class SortPlacement
 
     // ---- a list whose items have depths (#1594) ------------------------------------------------------------
 
+    /// <summary>Whether a list whose <see cref="Sortable.Indent"/> is <paramref name="indent"/> has items with depths: a
+    /// finite indent above 0. Every realizer asks this one rule, so an indent that is not a number, or is infinite,
+    /// gives no depths on any target.</summary>
+    public static bool HasDepths(float indent) => indent > 0 && float.IsFinite(indent);
+
     /// <summary>
     /// The depth a pointer asks for in a list whose items have depths: the carried item's own
     /// <paramref name="depth"/>, one deeper for each <paramref name="indent"/> it <paramref name="travelled"/> across the
@@ -148,7 +153,7 @@ public static class SortPlacement
     /// knowledge of where depth 0 starts across the list. A list with no indent asks for the item's own depth.
     /// </summary>
     public static int Wanted(int depth, float travelled, float indent) =>
-        indent <= 0 ? depth : depth + (int)MathF.Floor(travelled / indent + 0.5f);
+        HasDepths(indent) ? depth + (int)MathF.Floor(travelled / indent + 0.5f) : depth;
 
     /// <summary>
     /// The depths a carried item may take at a place of a list whose items have depths, in the order a realizer offers

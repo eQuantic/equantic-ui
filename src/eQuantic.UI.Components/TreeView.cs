@@ -997,7 +997,7 @@ public sealed class TreeView : StatefulComponent
             if (row.Node is null) continue;
             if (row.Key == carried)
             {
-                if (_indent > 0) carries = row.Level;
+                if (SortPlacement.HasDepths(_indent)) carries = row.Level;
                 continue;
             }
             others.Add(row);

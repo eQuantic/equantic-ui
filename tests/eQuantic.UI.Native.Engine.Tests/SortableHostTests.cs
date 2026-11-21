@@ -732,6 +732,28 @@ public class SortableHostTests
     }
 
     [Fact]
+    public void AListWithDepths_KeepsTheDepthTheKeyboardChose_AsTheItemMovesAlong()
+    {
+        var outline = new Outline();
+        var host = OpenOutline(outline);
+        for (var i = 0; i < 5; i++) host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder(), 32);
+
+        host.KeyDown(" ");
+        host.KeyDown("ArrowUp");
+        host.KeyDown("ArrowUp");
+        host.KeyDown("ArrowRight");
+        host.KeyDown("ArrowRight");
+        // Into Program.cs, then before it, where the place allows depths 1 and 2.
+        host.KeyDown("ArrowUp");
+        host.KeyDown("ArrowUp");
+
+        outline.Hovered[^1].Should().Be(new SortDrop("README.md", "files", "files", 2) { Depth = 2 },
+            "the 2 it chose, not its own 0 kept in range, which would be 1");
+        host.KeyDown("Escape");
+    }
+
+    [Fact]
     public void AListWithDepths_TheCrossArrowMovesToTheNextList_OnceThePlaceOffersNoOtherDepth()
     {
         var outline = new Outline();

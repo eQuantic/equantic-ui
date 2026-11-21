@@ -23,6 +23,19 @@ public class SortPlacementDepthTests
     public void ThePointer_AsksForOneDepthPerIndentItTravelledAcross(int depth, float travelled, float indent, int expected) =>
         SortPlacement.Wanted(depth, travelled, indent).Should().Be(expected);
 
+    [Theory]
+    [InlineData(16f, true)]
+    [InlineData(0.5f, true)]
+    [InlineData(0f, false)]
+    [InlineData(-16f, false)]
+    [InlineData(float.NaN, false)]
+    [InlineData(float.PositiveInfinity, false)]
+    public void AListHasDepths_OnlyWithAFiniteIndentAboveZero(float indent, bool expected)
+    {
+        SortPlacement.HasDepths(indent).Should().Be(expected);
+        if (!expected) SortPlacement.Wanted(1, 64, indent).Should().Be(1, "a list without depths asks for the item's own");
+    }
+
     [Fact]
     public void APlace_AllowsFromTheDepthBelowToOneDeeperThanTheItemAbove_TheWantedOneFirst()
     {
