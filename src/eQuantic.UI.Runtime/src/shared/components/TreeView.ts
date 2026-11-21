@@ -1,4 +1,4 @@
-import { $eq, $NavigableMoveValue, Anchored, Box, BoxStyle, BuildContext, Color, ColorToken, ContextRequest, ContextTarget, ControlMetrics, CornerRadii, DateTime, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, ListTheme, MenuItem, MenuPanel, Navigable, Positioned, Pressable, Row, ScrollRequest, ScrollView, SdkStrings, Shortcut, SizeValue, Sortable, SortableItem, SortDrop, Stack, StatefulComponent, StyleDiff, Text, TextEntry, TreeMove, TreeNode, TreePlace, TreeRowState, TreeViewRow, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, $NavigableMoveValue, Anchored, Box, BoxStyle, BuildContext, Color, ColorToken, ContextRequest, ContextTarget, ControlMetrics, CornerRadii, DateTime, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, ListTheme, MenuItem, MenuPanel, Navigable, Positioned, Pressable, Row, ScrollRequest, ScrollView, SdkStrings, Shortcut, SizeValue, Sortable, SortableItem, SortDrop, SortPlacement, Stack, StatefulComponent, StyleDiff, Text, TextEntry, TreeMove, TreeNode, TreePlace, TreeRowState, TreeViewRow, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TreeView extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TreeView';
@@ -41,6 +41,8 @@ export class TreeView extends StatefulComponent {
     _activeParent: any = null;
     _dropKey: any = null;
     _dropKind: number = 0;
+    _dropLevel: number = 0;
+    _indent: number = 0;
     _pauseKey: any = null;
     _pauseSerial: number = 0;
     _scrollToActive: boolean = false;
@@ -267,6 +269,7 @@ export class TreeView extends StatefulComponent {
         this.adoptRequests();
         let slot = ListTheme.merge(context.theme.list, this.style);
         this._rowHeight = slot?.treeRowHeight ?? ControlMetrics.height(context, 'small');
+        this._indent = slot?.treeIndent ?? 16;
         this._rows = this.flatten();
         let statusKey: any; 
         if (this._activeIsStatus && (statusKey = this._activeKey) != null && !this.hasStatusRow(statusKey)) this._activeIsStatus = false;
@@ -286,7 +289,7 @@ export class TreeView extends StatefulComponent {
         let tree: VisualNode = new Navigable($eq.delegates.bound(this, this.move), items, { role: 'tree', label: this.label, activeCell: active >= 0 ? [active, 0] : null, onTextSearch: $eq.delegates.bound(this, this.search).bind(this), focusVersion: this._focusVersion });
         let editing = !(this._editKey == null);
         if (!(this.onMoved == null)) {
-            tree = new Sortable(tree, 'tree', $eq.delegates.bound(this, this.dropped), SdkStrings.sorting, null, { axis: 'vertical', nests: true, label: this.label, accepts: $eq.delegates.bound(this, this.accepts).bind(this), onHovered: $eq.delegates.bound(this, this.hovered).bind(this), enabled: !editing });
+            tree = new Sortable(tree, 'tree', $eq.delegates.bound(this, this.dropped), SdkStrings.sorting, null, { axis: 'vertical', nests: true, indent: this._indent, label: this.label, accepts: $eq.delegates.bound(this, this.accepts).bind(this), onHovered: $eq.delegates.bound(this, this.hovered).bind(this), enabled: !editing });
         }
         let menuOpen = !(this._menuKey == null);
         let activeNode = active >= 0 ? this._rows[active].node : null;
@@ -375,11 +378,11 @@ export class TreeView extends StatefulComponent {
         let mark = !(node == null) && this._dropKey === node.key ? this._dropKind : 0;
         let fill = selected ? theme.colors('primary').subtle : mark === TreeView.dropInto ? theme.selection : null;
         let plain = this.rowSurface(context, slot, row.level, content, fill, ringed && !renaming, busy, quiet, mark === TreeView.dropInto ? TreeView.dropColor(context, slot) : null);
-        let surface = mark === TreeView.dropBefore || mark === TreeView.dropAfter ? this.dropLine(context, slot, row.level, plain, mark === TreeView.dropAfter) : plain;
+        let surface = mark === TreeView.dropBefore || mark === TreeView.dropAfter ? this.dropLine(context, slot, this._dropLevel > 0 ? this._dropLevel : row.level, plain, mark === TreeView.dropAfter) : plain;
         let key = node == null ? `status/${row.key}` : node.key;
         let item: VisualNode = new Pressable(surface, busy || renaming ? null : () => this.press(row, false), { key: key, role: 'treeItem', label: label, selected: node == null ? null : selected, expanded: chevron ? open : null, treePlace: new TreePlace(row.level, row.position, row.count), disabled: busy });
         if (node == null) return item;
-        if (!(this.onMoved == null)) item = new SortableItem(item, node.key, { key: key, enabled: !busy && this._editKey == null });
+        if (!(this.onMoved == null)) item = new SortableItem(item, node.key, { key: key, enabled: !busy && this._editKey == null, depth: row.level - 1 });
         if (!(this.menuBuilder == null)) item = new ContextTarget(item, (request) => this.requestMenu(node, request), { key: key, enabled: !busy && !renaming });
         if (this._menuKey === node.key) {
             item = new Anchored(item, MenuPanel.build(context, this._menuItems, true, this._menuHighlight, $eq.delegates.bound(this, this.chooseMenu)), { key: key, at: this._menuAt, placement: 'bottomStart', open: true, onDismiss: $eq.delegates.bound(this, this.closeMenu).bind(this), panelRole: 'menu', activeIndex: this._menuHighlight });
@@ -709,8 +712,34 @@ export class TreeView extends StatefulComponent {
 
     othersThan(carried: string) {
         let others: TreeViewRow[] = [];
-        for (const row of $eq.collections.listWalk(this._rows)) if (!(row.node == null) && row.key !== carried) $eq.collections.listAdd(others, row);
+        let carries = 0;
+        for (const row of $eq.collections.listWalk(this._rows)) {
+            if (carries > 0 && row.level > carries) continue;
+            carries = 0;
+            if (row.node == null) continue;
+            if (row.key === carried) {
+                if (SortPlacement.hasDepths(this._indent)) carries = row.level;
+                continue;
+            }
+            $eq.collections.listAdd(others, row);
+        }
         return others;
+    }
+
+    parentAtDepth(others: TreeViewRow[], index: number, depth: number) {
+        if (depth === 0 || index === 0) return null;
+        let key = others[index - 1].key;
+        while (this.levelOf(key) > depth) {
+            let parent: any; 
+            if (!((parent = this.parentOf(key)) != null)) return null;
+            key = parent;
+        }
+        return key;
+    }
+
+    levelOf(key: string) {
+        let at = this.indexOfNode(key);
+        return at >= 0 ? this._rows[at].level : 0;
     }
 
     nodeOf(key: any) {
@@ -729,28 +758,33 @@ export class TreeView extends StatefulComponent {
         return null;
     }
 
-    static placeOf(drop: SortDrop, others: TreeViewRow[]): [number, number] {
+    static placeOf(drop: SortDrop, others: TreeViewRow[]): [number, number, number] {
         let into: any; 
         if ((into = drop.into) != null) {
-            for (let i = 0; i < others.length; i++) if (others[i].key === into) return [TreeView.dropInto, i];
-            return [0, -1];
+            for (let i = 0; i < others.length; i++) if (others[i].key === into) return [TreeView.dropInto, i, others[i].level + 1];
+            return [0, -1, 0];
         }
-        if (drop.index < others.length) return [TreeView.dropBefore, drop.index];
-        return others.length > 0 ? [TreeView.dropAfter, others.length - 1] : [0, -1];
+        if (drop.index < others.length) {
+            let depth: any; 
+            return [TreeView.dropBefore, drop.index, (depth = drop.depth) != null ? depth + 1 : others[drop.index].level];
+        }
+        if (others.length === 0) return [0, -1, 0];
+        let last = others.length - 1;
+        let after: any; 
+        return [TreeView.dropAfter, last, (after = drop.depth) != null ? after + 1 : others[last].level];
     }
 
     moveOf(drop: SortDrop) {
         let node: any; 
         if (!((node = this.nodeOf(drop.item)) != null)) return null;
         let others = this.othersThan(drop.item);
-        let [kind, at] = TreeView.placeOf(drop, others);
+        let [kind, at, ] = TreeView.placeOf(drop, others);
         if (kind === TreeView.dropInto) return new TreeMove(node, others[at].node, null);
-        if (kind === TreeView.dropBefore) {
-            let parent = others[at].parentKey;
-            return new TreeMove(node, this.nodeOf(parent), this.siblingBefore(others, at, parent));
-        }
-        if (kind === TreeView.dropAfter) return new TreeMove(node, this.nodeOf(others[at].parentKey), others[at].node);
-        return drop.into == null ? new TreeMove(node, null, null) : null;
+        if (kind === 0) return drop.into == null ? new TreeMove(node, null, null) : null;
+        let index = kind === TreeView.dropBefore ? at : others.length;
+        let depth: any; 
+        let parent = (depth = drop.depth) != null ? this.parentAtDepth(others, index, depth) : others[at].parentKey;
+        return new TreeMove(node, this.nodeOf(parent), this.siblingBefore(others, index, parent));
     }
 
     accepts(drop: SortDrop) {
@@ -763,17 +797,20 @@ export class TreeView extends StatefulComponent {
     hovered(drop: any) {
         let key: string | null = null;
         let kind = 0;
+        let level = 0;
         if (!(drop == null)) {
             let others = this.othersThan(drop.item);
-            let [placed, at] = TreeView.placeOf(drop, others);
+            let [placed, at, deep] = TreeView.placeOf(drop, others);
             kind = placed;
             key = at >= 0 ? others[at].key : null;
+            level = deep;
         }
         let folder: any; 
         let pause = kind === TreeView.dropInto && (folder = this.nodeOf(key)) != null && !this._open.has(folder.key) && this.hasChevron(folder) ? key : null;
         this.setState(() => {
             this._dropKey = key;
             this._dropKind = kind;
+            this._dropLevel = level;
         });
         if (pause === this._pauseKey) return;
         this._pauseKey = pause;
@@ -799,6 +836,7 @@ export class TreeView extends StatefulComponent {
         this.setState(() => {
             this._dropKey = null;
             this._dropKind = 0;
+            this._dropLevel = 0;
         });
         let handler: any; 
         if (move == null || !((handler = this.onMoved) != null)) return;

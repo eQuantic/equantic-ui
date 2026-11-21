@@ -1067,6 +1067,9 @@ internal sealed partial class WebLoweringVisitor
             }
         }
         if (sortable.Nests) child.RawAttributes["data-eq-sort-nests"] = "1";
+        // A list whose items have depths (#1594): how far across the axis one depth is indented, which the controller
+        // divides the pointer's travel across by. A list without depths writes none.
+        if (SortPlacement.HasDepths(sortable.Indent)) child.RawAttributes["data-eq-sort-indent"] = TokenCss.Number(sortable.Indent);
         if (!sortable.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
         // The words a reader hears while the keyboard sorts (#1564), which the controller reads from the list the
         // item was picked up from. A list with none says nothing.
@@ -1113,6 +1116,8 @@ internal sealed partial class WebLoweringVisitor
         // The name the keyboard's steps say, when the item has one of its own (#1538); the controller reads it
         // before what the item's subtree says.
         if (item.Name is { Length: > 0 } name) child.RawAttributes["data-eq-sort-name"] = name;
+        // The item's depth in a list whose items have depths (#1594); 0, the top, is written as nothing.
+        if (item.Depth > 0) child.RawAttributes["data-eq-sort-depth"] = item.Depth.ToString(CultureInfo.InvariantCulture);
         if (!item.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
         // The keyboard sorts an item from its focus (#1536): one that takes none of its own (a box, not a
         // button or a link) becomes a Tab stop. The TS twin decides by the same tags.

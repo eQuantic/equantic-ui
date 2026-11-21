@@ -450,6 +450,27 @@ public class WikiClaimsCompile
                 style: new SortableTheme { LiftedOpacity = 0.25f, MaxLean = 0 });
     }
 
+    /// <summary>Components, "Sortable", depths (#1594): an outline whose rows have depths, and the depth a drop lands
+    /// at.</summary>
+    private sealed class OutlinePage : Primitives.StatefulComponent
+    {
+        private sealed record OutlineRow(string Id, string Title, int Depth);
+
+        private readonly List<OutlineRow> rows = [new("intro", "Introduction", 0), new("why", "Why", 1)];
+
+        private static VisualNode Line(OutlineRow row) => Text(row.Title, TypeRole.BodyM);
+
+        private void Move(string item, int index, int? depth) { }
+
+        public override VisualNode Build(ComponentContext context) =>
+            Sortable(
+                Column(children: [.. rows.Select(row => SortableItem(Line(row), row.Id, depth: row.Depth))]),
+                id: "outline",
+                onDropped: drop => SetState(() => Move(drop.Item, drop.Index, drop.Depth)),
+                nests: true,
+                indent: 24);
+    }
+
     /// <summary>Components, "TreeView: a tree the keyboard walks" (preview.69, #1530): a repository's
     /// files, the top folder from the server and every folder below it loaded as it opens.</summary>
     private sealed class FilesPage : Primitives.StatefulComponent

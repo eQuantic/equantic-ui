@@ -2,8 +2,8 @@ namespace eQuantic.UI.Primitives;
 
 /// <summary>
 /// The arithmetic of a sort, written ONCE for every realizer (#1535, #1536, #1537): where a carried item
-/// lands among the other items of a list, how far its copy leans for the pointer's speed, and where a key
-/// moves it. The browser's controller runs its transpiled twin and the Photon host runs this, so the two
+/// lands among the other items of a list, how far its copy leans for the pointer's speed, where a key
+/// moves it, and in a list whose items have depths the depth it takes there and where a reader hears it is (#1594). The browser's controller runs its transpiled twin and the Photon host runs this, so the two
 /// targets cannot place an item differently. What a realizer does on its own is only what it alone can: read
 /// the items' boxes and the pointer.
 /// </summary>
@@ -136,5 +136,87 @@ public static class SortPlacement
         var place = into >= 0 ? into * 2 + 1 : index * 2;
         place = Math.Max(0, Math.Min(place + step, others * 2));
         return place % 2 == 1 ? ((place - 1) / 2, (place - 1) / 2) : (place / 2, -1);
+    }
+
+    // ---- a list whose items have depths (#1594) ------------------------------------------------------------
+
+    /// <summary>Whether a list whose <see cref="Sortable.Indent"/> is <paramref name="indent"/> has items with depths: a
+    /// finite indent above 0. Every realizer asks this one rule, so an indent that is not a number, or is infinite,
+    /// gives no depths on any target.</summary>
+    public static bool HasDepths(float indent) => indent > 0 && float.IsFinite(indent);
+
+    /// <summary>
+    /// The depth a pointer asks for in a list whose items have depths: the carried item's own
+    /// <paramref name="depth"/>, one deeper for each <paramref name="indent"/> it <paramref name="travelled"/> across the
+    /// axis toward its end since it picked the item up (one shallower for each back), rounded to the nearest, as
+    /// dnd-kit's sortable tree projects it. Read from the travel rather than from where the pointer is, it needs no
+    /// knowledge of where depth 0 starts across the list. A list with no indent asks for the item's own depth.
+    /// </summary>
+    public static int Wanted(int depth, float travelled, float indent) =>
+        HasDepths(indent) ? depth + (int)MathF.Floor(travelled / indent + 0.5f) : depth;
+
+    /// <summary>
+    /// The depths a carried item may take at a place of a list whose items have depths, in the order a realizer offers
+    /// them to the list's guard. The place lies between the item before it, at depth <paramref name="above"/>, and the
+    /// item after it, at depth <paramref name="below"/>, either null at an end of the list: coming before the one after,
+    /// the carried item is at least as deep; it may follow the one before or any of its ancestors down to that depth, or
+    /// be its child, one deeper. First the depth it <paramref name="wants"/>, kept in that range, then each shallower
+    /// one, then each deeper one, so a refused depth gives way to the nearest the place allows, shallower first.
+    /// </summary>
+    public static IReadOnlyList<int> Depths(int wants, int? above, int? below)
+    {
+        var (shallowest, deepest) = DepthRange(above, below);
+        var first = Math.Max(shallowest, Math.Min(wants, deepest));
+        var depths = new List<int> { first };
+        for (var depth = first - 1; depth >= shallowest; depth--) depths.Add(depth);
+        for (var depth = first + 1; depth <= deepest; depth++) depths.Add(depth);
+        return depths;
+    }
+
+    /// <summary>The depth a cross arrow asks for at a place of a list whose items have depths: one deeper or one
+    /// shallower than <paramref name="depth"/> (<paramref name="step"/> 1 or -1), or <paramref name="depth"/> itself
+    /// when the place allows none further that way (the range <see cref="Depths"/> keeps to).</summary>
+    public static int KeyDepth(int depth, int step, int? above, int? below)
+    {
+        var (shallowest, deepest) = DepthRange(above, below);
+        var next = depth + step;
+        return next < shallowest || next > deepest ? depth : next;
+    }
+
+    /// <summary>The shallowest and the deepest depth a place between items at <paramref name="above"/> and
+    /// <paramref name="below"/> allows.</summary>
+    private static (int Shallowest, int Deepest) DepthRange(int? above, int? below)
+    {
+        var shallowest = below ?? 0;
+        return (shallowest, above is { } before ? Math.Max(before + 1, shallowest) : shallowest);
+    }
+
+    /// <summary>
+    /// Where a place at a <paramref name="depth"/> stands among the items of a list whose items have depths, for what a
+    /// reader hears: <paramref name="depths"/> are the items' depths with the carried item and what it carries left out,
+    /// and the place lies before the item at <paramref name="index"/>. The holder is the nearest item before the place
+    /// one depth shallower (-1 at depth 0, where the list holds it); the position, from one, and the count, the carried
+    /// item included, are among the items at that depth under the same holder. A list whose items are all at depth 0
+    /// answers no holder, the index plus one and every item plus one, which is what a list without depths says.
+    /// </summary>
+    public static (int Holder, int Position, int Count) Siblings(IReadOnlyList<int> depths, int index, int depth)
+    {
+        var holder = -1;
+        var position = 1;
+        for (var i = index - 1; i >= 0; i--)
+        {
+            if (depths[i] < depth)
+            {
+                if (depths[i] == depth - 1) holder = i;
+                break;
+            }
+            if (depths[i] == depth) position++;
+        }
+        var count = position;
+        for (var i = index; i < depths.Count && depths[i] >= depth; i++)
+        {
+            if (depths[i] == depth) count++;
+        }
+        return (holder, position, count);
     }
 }

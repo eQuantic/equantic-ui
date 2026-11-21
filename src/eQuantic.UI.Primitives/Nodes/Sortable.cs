@@ -63,6 +63,15 @@ public sealed class Sortable : SingleChildNode
     /// <see cref="SortDrop.Into"/> then names: a tree's folders.</summary>
     public bool Nests { get; init; }
 
+    /// <summary>
+    /// How far across the <see cref="Axis"/> one depth of the items is indented, in logical pixels: a tree's
+    /// indentation per level (#1594). Above 0 the list's items have depths (<see cref="SortableItem.Depth"/>): an item
+    /// carries the deeper items right after it, its subtree, and a place between two items says in
+    /// <see cref="SortDrop.Depth"/> the depth the item takes there, which a pointer picks by its travel across the axis
+    /// and the keyboard by its cross arrows (<see cref="SortPlacement.Depths"/>). 0, the default, the list has none.
+    /// </summary>
+    public float Indent { get; init; }
+
     /// <summary>Where a carried item would land while it is over this list, each time that changes, and
     /// <c>null</c> once it leaves or the drag ends. Opt-in, because each report builds the component again.</summary>
     public Action<SortDrop?>? OnHovered { get; init; }

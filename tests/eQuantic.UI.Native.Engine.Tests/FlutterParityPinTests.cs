@@ -236,7 +236,7 @@ public class FlutterParityPinTests
         // once for both targets.
         ["ReorderableListView"] = () => HasMember("Sortable", "OnDropped") && HasMember("Sortable", "Accepts")
             && HasMember("Sortable", "OnHovered") && HasMember("Sortable", "Group") && Has("SortableItem")
-            && HasMember("SortDrop", "Into"),
+            && HasMember("SortDrop", "Into") && HasMember("Sortable", "Indent") && HasMember("SortDrop", "Depth"),
         // The table composes the vocabulary's nodes to move and size its columns, which Flutter's leaves to the app.
         ["DataTable"] = () => HasMember("DataTable", "ColumnOrder") && HasMember("DataTable", "OnColumnsReordered")
             && HasMember("DataTable", "OnColumnResized") && HasMember("DataColumn", "MinWidth")

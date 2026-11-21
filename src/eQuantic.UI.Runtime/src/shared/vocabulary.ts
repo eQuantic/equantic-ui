@@ -1106,6 +1106,8 @@ export class Sortable extends VisualNode {
   group = '';
   axis = 'vertical';
   nests = false;
+  /** How far across the axis one depth of the items is indented; above 0 the items have depths (C# `Sortable.Indent`, #1594). */
+  indent = 0;
   label = '';
   onHovered: ((drop: SortDrop | null) => void) | null = null;
   accepts: ((drop: SortDrop) => boolean) | null = null;
@@ -1137,6 +1139,8 @@ export class SortableItem extends VisualNode {
   enabled = true;
   /** The name the keyboard's steps say. C# twin: `SortableItem.Name`. */
   name = '';
+  /** The item's depth in a list whose items have depths. C# twin: `SortableItem.Depth` (#1594). */
+  depth = 0;
 
   constructor(child: VisualChild, id: string, config?: EqConfig) {
     super();

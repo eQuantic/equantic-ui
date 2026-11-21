@@ -129,6 +129,15 @@ function carry(container: HTMLElement, label: string, y: number, release = true)
   if (release) pointer(document, 'pointerup', 10, y);
 }
 
+/** A mouse presses a row at x 30 and carries it to `y`, `across` pixels toward the end of the rows (#1594). */
+function carryAcross(container: HTMLElement, label: string, y: number, across: number, release = true): void {
+  const from = boxes.get(row(container, label))!;
+  pointer(row(container, label), 'pointerdown', 30, from.top + 16);
+  pointer(document, 'pointermove', 30, from.top + 16 + (y > from.top ? 8 : -8));
+  pointer(document, 'pointermove', 30 + across, y);
+  if (release) pointer(document, 'pointerup', 30 + across, y);
+}
+
 const key = (target: HTMLElement, name: string) =>
   target.dispatchEvent(new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true }));
 
@@ -240,6 +249,58 @@ describe('a TreeView whose nodes move, in the browser', () => {
     await until(() => row(container, 'App.cs').getAttribute('aria-disabled') !== 'true');
   });
 
+  it("lands a file as the last child of an open folder when the pointer travels an indent across (#1594)", async () => {
+    const container = await mount();
+    expect(tree(container).closest('[data-eq-sort]')?.getAttribute('data-eq-sort-indent') ?? tree(container).getAttribute('data-eq-sort-indent')).toBe('16');
+    // Between Ui.cs (src's last child) and docs, over docs' top quarter.
+    carryAcross(container, 'README.md', 130, 16);
+    expect(moved).toEqual(['README.md>src|src/Ui.cs']);
+  });
+
+  it('lands it among the top level there when the pointer does not travel across', async () => {
+    const container = await mount();
+    carryAcross(container, 'README.md', 130, 0);
+    expect(moved).toEqual(['README.md>|src']);
+  });
+
+  it("lands a folder's last child at the top level after the folder when the pointer travels back", async () => {
+    const container = await mount();
+    // Ui.cs's own gap, before docs, one indent toward the start.
+    carryAcross(container, 'Ui.cs', 110, -16);
+    expect(moved).toEqual(['src/Ui.cs>|src']);
+  });
+
+  it("never offers a place among the carried folder's own children", async () => {
+    const container = await mount();
+    const before = parts(row(container, 'App.cs'));
+    carryAcross(container, 'src', 40, 16, false);
+    await nextFrame();
+    expect(parts(row(container, 'App.cs'))).toBe(before);
+    pointer(document, 'pointerup', 46, 40);
+    expect(moved).toEqual([]);
+  });
+
+  it("draws the line from the indentation of the depth the pointer chose, not from the row's own", async () => {
+    const container = await mount();
+    /** Where the line over docs starts: the `left` of the box that holds it, read from the atomic sheet. */
+    const lineStart = (): string | null => {
+      const classes = new Set(Array.from(row(container, 'docs').querySelectorAll('*')).flatMap((at) => Array.from(at.classList)));
+      const sheet = document.getElementById('eq-atomic') as HTMLStyleElement | null;
+      for (const rule of Array.from(sheet?.sheet?.cssRules ?? [])) {
+        const match = /^\.([\w-]+)\s*\{\s*left:\s*([\d.]+px)/.exec(rule.cssText);
+        if (match && classes.has(match[1])) return match[2];
+      }
+      return null;
+    };
+    expect(lineStart()).toBeNull();
+    carryAcross(container, 'README.md', 130, 0, false);
+    await until(() => lineStart() !== null);
+    expect(lineStart()).toBe('8px');
+    pointer(document, 'pointermove', 46, 130);
+    await until(() => lineStart() === '24px');
+    pointer(document, 'pointerup', 46, 130);
+  });
+
   it('moves the active node by the keyboard, over the refused folder, into the one above, and keeps the focus', async () => {
     const container = await mount();
     tree(container).focus();
@@ -262,5 +323,25 @@ describe('a TreeView whose nodes move, in the browser', () => {
     await nextFrame();
     expect(document.activeElement).toBe(tree(container));
     expect(active(container)).toBe('README.md');
+  });
+
+  it('puts the active node at the end of an open folder by the keyboard, saying where (#1594)', async () => {
+    const container = await mount();
+    tree(container).focus();
+    key(tree(container), 'ArrowDown');
+    await nextFrame();
+    key(tree(container), 'End');
+    await nextFrame();
+
+    key(tree(container), ' ');
+    // Inside locked is refused and passed over: before locked, inside docs, before docs.
+    key(tree(container), 'ArrowUp');
+    key(tree(container), 'ArrowUp');
+    key(tree(container), 'ArrowUp');
+    expect(document.querySelector('[data-eq-sort-announcer]')?.textContent).toBe('README.md is at position 2 of 4 in Files.');
+    key(tree(container), 'ArrowRight');
+    expect(document.querySelector('[data-eq-sort-announcer]')?.textContent).toBe('README.md is at position 4 of 4 in src.');
+    key(tree(container), 'Enter');
+    expect(moved).toEqual(['README.md>src|src/Ui.cs']);
   });
 });

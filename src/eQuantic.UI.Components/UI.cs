@@ -824,14 +824,16 @@ public static class UI
     /// <summary>A list whose items a pointer and the keyboard put in order, and which takes the items of the lists
     /// of its group; the drop is the app's to apply (#1535). Each step of the keyboard's is said in
     /// <paramref name="announcements"/>, the SDK's words in the reader's culture when the app gives none (#1564), and a
-    /// carried item looks as <paramref name="style"/> says over the theme's look (#1602).</summary>
+    /// carried item looks as <paramref name="style"/> says over the theme's look (#1602). Above 0,
+    /// <paramref name="indent"/> gives the items depths, one per its distance across the axis (#1594).</summary>
     public static Sortable Sortable(VisualNode child, string id, Action<SortDrop> onDropped,
         SortAnnouncements? announcements = null, SortableTheme? style = null, string group = "",
         DragAxis axis = DragAxis.Vertical, bool nests = false, Action<SortDrop?>? onHovered = null,
-        Func<SortDrop, bool>? accepts = null, bool enabled = true, string label = "") =>
+        Func<SortDrop, bool>? accepts = null, bool enabled = true, string label = "", float indent = 0) =>
         new Sortable(child, id, onDropped, announcements ?? SdkStrings.Sorting, style)
         {
             Label = label,
+            Indent = indent,
             Group = group,
             Axis = axis,
             Nests = nests,
@@ -841,9 +843,10 @@ public static class UI
         };
 
     /// <summary>One item of a <see cref="Primitives.Sortable"/>, named by its id in what the list reports, and by
-    /// <paramref name="name"/>, when given, in what the keyboard's steps say.</summary>
-    public static SortableItem SortableItem(VisualNode child, string id, bool enabled = true, string name = "") =>
-        new SortableItem(child, id) { Enabled = enabled, Name = name };
+    /// <paramref name="name"/>, when given, in what the keyboard's steps say; at <paramref name="depth"/> in a list
+    /// whose items have depths (#1594).</summary>
+    public static SortableItem SortableItem(VisualNode child, string id, bool enabled = true, string name = "", int depth = 0) =>
+        new SortableItem(child, id) { Enabled = enabled, Name = name, Depth = depth };
 
     /// <summary>
     /// An area a person drops files onto: <paramref name="onDropped"/> hands over what landed, and

@@ -504,6 +504,7 @@ export interface SortDropValue {
   readonly to: string;
   readonly index: number;
   readonly into: string | null;
+  readonly depth: number | null;
 }
 
 /** The value a C# `SortAnnouncements` crosses as (#1564): the words a reader hears while the keyboard sorts,
@@ -531,6 +532,8 @@ export interface SortableNode extends VisualNodeValue {
   group?: string;
   axis?: string;
   nests?: boolean;
+  /** How far across the axis one depth of the items is indented (C# `Sortable.Indent`, #1594); 0, no depths. */
+  indent?: number;
   label?: string;
   onHovered?: ((drop: SortDropValue | null) => void) | null;
   accepts?: ((drop: SortDropValue) => boolean) | null;
@@ -545,6 +548,8 @@ export interface SortableItemNode extends VisualNodeValue {
   enabled?: boolean;
   /** The name the keyboard's steps say (C# `SortableItem.Name`); empty, what the item's subtree says. */
   name?: string;
+  /** The item's depth in a list whose items have depths (C# `SortableItem.Depth`, #1594). */
+  depth?: number;
 }
 
 /** Wire shape of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
