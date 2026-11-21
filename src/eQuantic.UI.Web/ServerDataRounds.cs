@@ -125,18 +125,31 @@ public sealed class ServerDataRounds
     {
         ArgumentNullException.ThrowIfNull(frame);
         ArgumentNullException.ThrowIfNull(load);
-        var rounds = 0;
-        for (var frames = 1; ; frames++)
+        // Only what loads keeps its instance from one frame to the next (BuildOwner.KeepsInstance): any
+        // other stateful component takes what its parent hands it once the data is there, as it is built
+        // in the browser from the same data, rather than the values its parent had before it loaded (#1776).
+        var owner = _host.Owner;
+        var kept = owner.KeepsInstance;
+        owner.KeepsInstance = static component => component is IServerPrefetch;
+        try
         {
-            var due = Next(frame());
-            if (due.Count == 0) return true;
-            if ((ReachedNew && ++rounds >= maxRounds) || frames >= maxRounds * FramesPerRound) return false;
-
-            foreach (var component in due)
+            var rounds = 0;
+            for (var frames = 1; ; frames++)
             {
-                await load(component).ConfigureAwait(false);
-                Loaded(component);
+                var due = Next(frame());
+                if (due.Count == 0) return true;
+                if ((ReachedNew && ++rounds >= maxRounds) || frames >= maxRounds * FramesPerRound) return false;
+
+                foreach (var component in due)
+                {
+                    await load(component).ConfigureAwait(false);
+                    Loaded(component);
+                }
             }
+        }
+        finally
+        {
+            owner.KeepsInstance = kept;
         }
     }
 

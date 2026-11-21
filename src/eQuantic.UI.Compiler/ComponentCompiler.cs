@@ -339,6 +339,52 @@ public class ComponentCompiler
             && ComponentParser.ClrIdentity(declaration) == type.Identity));
 
     /// <summary>
+    /// Why a name declared more than once in one file is refused: the halves of ONE type (EQ2009), which
+    /// eqc cannot merge, or TWO types of one name in different namespaces (EQ1005, #1777), whose twins
+    /// are one file. The second read "partial declarations?", about two records that were never partial.
+    /// </summary>
+    private static CompilationError Duplicated(ComponentDefinition component, List<ComponentDefinition> namesakes)
+    {
+        var at = DeclarationOf(component)?.Identifier.GetLocation().GetLineSpan().StartLinePosition;
+        var error = Duplicated(component, namesakes, out var code);
+        return new CompilationError
+        {
+            Code = code,
+            SourcePath = component.SourcePath,
+            Line = at is { } line ? line.Line + 1 : 0,
+            Column = at is { } column ? column.Character + 1 : 0,
+            Message = error,
+        };
+    }
+
+    /// <summary>The name a definition's twin is written under: its owners' twin names and its own.</summary>
+    private static string TwinNameOf(ComponentDefinition component) =>
+        DeclarationOf(component) is { } declaration
+            ? CodeGen.TypeSyntaxExtensions.TwinTypeName(declaration)
+            : component.Name;
+
+    private static string Duplicated(ComponentDefinition component, List<ComponentDefinition> namesakes, out string code)
+    {
+        var identities = namesakes
+            .Select(namesake => DeclarationOf(namesake) is { } declaration ? ComponentParser.ClrIdentity(declaration) : namesake.Name)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        if (identities.Count > 1)
+        {
+            code = "EQ1005";
+            return $"two types are named '{component.Name}' in this file: '{string.Join("' and '", identities)}'. "
+                + "Their twins are ONE file, and the second would silently replace the first: the code that used "
+                + "one would get the other's members. Namespaces do not separate them, because a twin is named "
+                + "for its TYPE. Rename one of them.";
+        }
+
+        code = "EQ2009";
+        return $"'{component.Name}' is declared more than once in this file (partial "
+            + "declarations?). eqc emits one module per declaration and cannot merge "
+            + "them yet — combine the members into a single declaration.";
+    }
+
+    /// <summary>
     /// Every parsed component through <see cref="Compile"/>, with one file-level check first: two
     /// declarations of the SAME name (partial halves, above all — C# 13/14 partial properties,
     /// constructors and events make them likely) each emit a WHOLE module today, and whichever
@@ -348,26 +394,20 @@ public class ComponentCompiler
     private IEnumerable<CompilationResult> CompileAll(IEnumerable<ComponentDefinition> components)
     {
         var list = components.ToList();
-        var duplicated = list.GroupBy(c => c.Name, StringComparer.Ordinal)
+        // By the name each twin is written under, which is what collides: a nested `Deck.Card` is
+        // `Deck$Card` and meets no top-level `Card`.
+        var duplicated = list.GroupBy(TwinNameOf, StringComparer.Ordinal)
             .Where(g => g.Count() > 1)
-            .Select(g => g.Key)
-            .ToHashSet(StringComparer.Ordinal);
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
 
         foreach (var component in list)
         {
             var result = Compile(component);
             result.IsComponent = !component.IsRecordType && !component.IsPlainClass && !component.IsStaticHelper && !component.IsUnionType;
-            if (duplicated.Contains(component.Name))
+            if (duplicated.TryGetValue(TwinNameOf(component), out var namesakes))
             {
                 result.Success = false;
-                result.Errors.Add(new CompilationError
-                {
-                    Code = "EQ2009",
-                    SourcePath = component.SourcePath,
-                    Message = $"'{component.Name}' is declared more than once in this file (partial "
-                        + "declarations?). eqc emits one module per declaration and cannot merge "
-                        + "them yet — combine the members into a single declaration.",
-                });
+                result.Errors.Add(Duplicated(component, namesakes));
             }
 
             // A [ServerAction] on an ABSTRACT component cannot be addressed, and the failure is
@@ -478,9 +518,14 @@ public class ComponentCompiler
         // runs and asked by all of them; and, after, which of those it imports. Every emit path
         // below returns on its own, so both halves live here, around them.
         ReferencedNames referenced;
+        List<CompilationError> shared;
         try
         {
             referenced = ReferencedNamesOf(component);
+            // A name the module would import twice, for a type of the app's and one of the runtime's:
+            // one of the two would be the other in the browser (#1777). Read by the same walk, so it
+            // fails as that walk fails: this module, and no other.
+            shared = SharedWithTheRuntime(component);
         }
         catch (Exception ex)
         {
@@ -495,6 +540,16 @@ public class ComponentCompiler
                 Errors = [new CompilationError { Message = ex.Message, SourcePath = component.SourcePath }],
             };
         }
+
+        // Refused before any emitter runs.
+        if (shared.Count > 0)
+            return new CompilationResult
+            {
+                ComponentName = component.Name,
+                Namespace = component.Namespace,
+                Success = false,
+                Errors = shared,
+            };
 
         _tsEmitter.Referenced = referenced;
         var result = CompileModule(component, referenced);
@@ -512,17 +567,60 @@ public class ComponentCompiler
         if (_referencedModules is null || component.SyntaxTree is null || DeclarationOf(component) is not { } declaration
             || !_referencedModules.CanBeNamedFrom(component.SyntaxTree.FilePath))
             return ReferencedNames.None;
-        var model = _semanticModelProvider.GetSemanticModel(component.SyntaxTree);
+        return new ReferencedNames(_referencedModules,
+            NamedBy(component, declaration, _semanticModelProvider.GetSemanticModel(component.SyntaxTree)));
+    }
+
+    /// <summary>
+    /// The types the module of <paramref name="declaration"/> names, by symbol: its own syntax and the
+    /// defaults it takes from its interfaces, whose bodies are written into its twin. Server code stays
+    /// on the server, and what it names is not what the module names: a <c>[ServerOnly]</c> method of
+    /// any shape, and a component's Server Action body.
+    /// </summary>
+    private NamedSourceTypes NamedBy(ComponentDefinition component, Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax declaration,
+        SemanticModel model)
+    {
         var declarations = new List<SyntaxNode> { declaration };
         if (model.GetDeclaredSymbol(declaration) is INamedTypeSymbol self)
             declarations.AddRange(DefaultInterfaceMembers.Of(self, model.Compilation)
                 .Select(inherited => inherited.Declaration).OfType<SyntaxNode>());
-        // Server code stays on the server, and what it names is not what the module names: a
-        // [ServerOnly] method of any shape, and a component's Server Action body.
         var asComponent = !component.IsRecordType && !component.IsPlainClass && !component.IsStaticHelper && !component.IsUnionType;
-        return new ReferencedNames(_referencedModules, NamedSourceTypes.Of(declarations,
+        return NamedSourceTypes.Of(declarations,
             node => ReferenceEquals(node.SyntaxTree, model.SyntaxTree) ? model : model.Compilation.ModelOf(node.SyntaxTree),
-            asComponent, _services));
+            asComponent, _services);
+    }
+
+    /// <summary>
+    /// A type of the app's and a type the runtime carries, under one name in one module (EQ1005, #1777):
+    /// the app's own <c>Text</c> record beside the vocabulary's <c>Text</c>. The module imports the name
+    /// once, from the runtime, and the code that built the app's type built the vocabulary's, with nothing
+    /// in the build to say so. Two types of the app's under one name are their twins' one file, which the
+    /// bundle refuses (<see cref="Services.EmittedTwins"/>), and a build none of whose types takes the
+    /// name of one of the runtime's walks nothing here.
+    /// </summary>
+    private List<CompilationError> SharedWithTheRuntime(ComponentDefinition component)
+    {
+        if (component.SyntaxTree is null || DeclarationOf(component) is not { } declaration) return [];
+        var model = _semanticModelProvider.GetSemanticModel(component.SyntaxTree);
+        // Asked of the project's compilation, which lives as long as the build: the model's own is made
+        // for this file alone (SemanticModelProvider replaces its tree), and a cache keyed on it would
+        // answer the question again for every module.
+        if (!(_semanticModelProvider.ProjectCompilation ?? model.Compilation).DeclaresATypeNamedLikeTheRuntimes()) return [];
+
+        var line = declaration.Identifier.GetLocation().GetLineSpan().StartLinePosition;
+        return NamedBy(component, declaration, model).SharedWithTheRuntime()
+            .Select(shared => new CompilationError
+            {
+                Code = "EQ1005",
+                SourcePath = component.SourcePath,
+                Line = line.Line + 1,
+                Column = line.Character + 1,
+                Message = $"'{shared.Name}' names two types in the module of '{component.Name}': "
+                    + $"'{shared.Source.ToDisplayString()}', and the SDK's '{shared.Runtime.ToDisplayString()}'. A module "
+                    + "imports a name once, so the code that used one of them would get the other in the browser. "
+                    + $"Rename '{shared.Source.ToDisplayString()}'.",
+            })
+            .ToList();
     }
 
     private CompilationResult CompileModule(ComponentDefinition component, ReferencedNames referenced)
