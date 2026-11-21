@@ -2,6 +2,7 @@ using eQuantic.UI.Generators;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Xunit;
 
 namespace eQuantic.UI.Web.Tests;
@@ -95,6 +96,56 @@ public class AppFactorySurfaceGeneratorTests
             public override VisualNode Build(ComponentContext context) => new Text(Title);
         }
         """;
+
+    /// <summary>
+    /// The values a constructor parameter allows reach its factory's parameter (#1776): the build reads
+    /// a constant against the parameter the CALL binds (EQ3106), and a screen calls the factory, so a mark
+    /// on the constructor alone let <c>Tile(span: 3)</c> through. Written as literals, since the mark may
+    /// name a constant the generated file cannot see.
+    /// </summary>
+    [Fact]
+    public async Task TheValuesAParameterAllows_ReachItsFactory_AndTheBuildReadsThem()
+    {
+        const string app = """
+            using System.ComponentModel.DataAnnotations;
+            using eQuantic.UI.Primitives;
+
+            namespace Demo;
+
+            public static class Spans { public const int Wide = 2; }
+
+            public sealed class Tile([AllowedValues(1, Spans.Wide, ErrorMessage = "A tile spans one column or two.")] int span) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text(span.ToString(), TypeRole.BodyM);
+            }
+
+            public static class Screen
+            {
+                public static VisualNode Narrow() => Tile(span: 1);
+                public static VisualNode TooWide() => Tile(span: 3);
+            }
+            """;
+        var (source, diagnostics, errors) = RunCompiled(app);
+
+        diagnostics.Should().BeEmpty();
+        errors.Should().BeEmpty();
+        source.Should().Contain(
+            "Tile([global::System.ComponentModel.DataAnnotations.AllowedValues(1, 2, ErrorMessage = \"A tile spans one column or two.\")] int span)");
+
+        var tree = CSharpSyntaxTree.ParseText(app, path: "App.cs");
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(p => (MetadataReference)TestReferences.Of(p))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+        CSharpGeneratorDriver.Create(new AppFactorySurfaceGenerator())
+            .RunGeneratorsAndUpdateCompilation(CSharpCompilation.Create("App", [tree], references,
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)), out var withSurface, out _);
+        var reported = await withSurface.WithAnalyzers([new AllowedValueAnalyzer()]).GetAnalyzerDiagnosticsAsync();
+
+        reported.Select(diagnostic => diagnostic.GetMessage()).Should().Equal(
+            "3 is not a value 'span' of Tile(…) allows: it takes 1 or 2. A tile spans one column or two.");
+    }
 
     [Fact]
     public void AComponent_GetsAFactoryNamedAfterIt_MirroringTheWidestConstructor()
