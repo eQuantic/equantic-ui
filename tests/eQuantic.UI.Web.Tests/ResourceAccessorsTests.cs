@@ -95,6 +95,26 @@ public class ResourceAccessorsTests
         return stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
+    /// <summary>
+    /// The sources of the compilation a design-time build of <c>Compile</c> alone ends with: the build dotnet watch
+    /// loads the compilation it applies an edit to from, as an editor does. It runs no <c>PrepareResources</c>, where
+    /// a build writes the accessors, unless the SDK asks for it (#1801).
+    /// </summary>
+    private static string[] DesignTimeSources(string dir)
+    {
+        var project = Path.Combine(dir, "Probe.csproj");
+        var (restored, restoreOutput, restoreError) = ChildProcess.Dotnet(["restore", project, "-nologo"], Deadline, RepoRoot());
+        restored.Should().Be(0, restoreOutput + restoreError);
+        var (built, output, error) = ChildProcess.Dotnet(
+            ["msbuild", project, "-nologo", "-t:Compile", "-p:DesignTimeBuild=true", "-p:SkipCompilerExecution=true",
+             "-p:ProvideCommandLineArgs=true", "-getItem:Compile"], Deadline, RepoRoot());
+        built.Should().Be(0, output + error);
+        using var items = System.Text.Json.JsonDocument.Parse(output);
+        return items.RootElement.GetProperty("Items").GetProperty("Compile").EnumerateArray()
+            .Select(item => Path.GetFileName(item.GetProperty("FullPath").GetString()!))
+            .ToArray();
+    }
+
     private static void Delete(string dir)
     {
         try { Directory.Delete(dir, recursive: true); } catch (IOException) { /* a temp dir */ }
@@ -166,6 +186,27 @@ public class ResourceAccessorsTests
             var mirror = Path.Combine(dir, "obj", "Debug", "net10.0", "generated", "eQuantic.UI.Resources", "Resources");
             File.Exists(Path.Combine(mirror, "Pages.Index.Designer.cs")).Should().BeFalse();
             File.Exists(Path.Combine(mirror, "SharedResource.Designer.cs")).Should().BeFalse();
+        }
+        finally
+        {
+            Delete(dir);
+        }
+    }
+
+    [Theory]
+    [InlineData("eQuantic.UI.Sdk", new[] { "EQuanticResourceAccessors", "_EQuanticMirrorResources", "EQuanticResourceAccessorsCompiled" })]
+    [InlineData("eQuantic.UI.Sdk.Native", new[] { "EQuanticResourceAccessors", "EQuanticResourceAccessorsCompiled" })]
+    public void ACatalogWithNoDesigner_IsInTheCompilationADesignTimeBuildLoads(string sdk, string[] targets)
+    {
+        // Every save under dotnet watch ended with CS0234 on the catalog's namespace, so no edit reached the
+        // server and the page drew over its markup: the compilation dotnet watch loads had no accessor class.
+        var dir = App(sdk, handKept: false, targets);
+        try
+        {
+            // The web SDK names the file after the .resx, in its mirror of the folders; the native one after
+            // the manifest name (Probe.Strings.Designer.cs).
+            DesignTimeSources(dir).Should().Contain(source => source.EndsWith("Strings.Designer.cs", StringComparison.Ordinal),
+                "dotnet watch and an editor load the compilation from a design-time build of Compile alone");
         }
         finally
         {
