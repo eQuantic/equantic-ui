@@ -152,6 +152,26 @@ describe('lists a pointer sorts', () => {
     pressed = [];
   });
 
+  it('leaves no selection after a drag of an item made of text (#1598)', () => {
+    const container = mount(new Board());
+    const from = item(container, 'a');
+    const box = boxes.get(from)!;
+    pointer(from, 'pointerdown', box.left + 10, box.top + 20);
+    // The selection a mouse press on the item's words starts, which jsdom does not make itself.
+    document.getSelection()!.selectAllChildren(from);
+    const path: [number, number][] = [
+      [20, 30],
+      [20, 70],
+      [20, 90],
+    ];
+    for (const [x, y] of path) pointer(document, 'pointermove', x, y);
+    expect(document.getSelection()!.toString()).toBe('');
+    pointer(document, 'pointerup', 20, 90);
+    expect(dropped).toHaveLength(1);
+    expect(document.getSelection()!.toString()).toBe('');
+    expect(document.documentElement.style.userSelect).toBe('');
+  });
+
   it('moves an item down its own list, counting the list without it', () => {
     const container = mount(new Board());
     // From a (0..40) to below b's middle (60) and above c's (100).
