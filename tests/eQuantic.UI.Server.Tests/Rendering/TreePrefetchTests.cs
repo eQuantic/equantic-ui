@@ -1106,4 +1106,45 @@ public class TreePrefetchTests
             .Should().BeTrue($"the navigation reaches what the greeting composed; payload was: {navigated.SerializedState}");
         greeted.GetProperty("_said").GetString().Should().Be("hello, loaded");
     }
+    /// <summary>A STATEFUL section that loads nothing and shows the number its page hands it.</summary>
+    private sealed class DownloadsSection(long downloads) : Primitives.StatefulComponent
+    {
+        private readonly long _downloads = downloads;
+
+        public override VisualNode Build(ComponentContext context) => new Text($"Section: {_downloads}", TypeRole.BodyM);
+    }
+
+    /// <summary>A page that loads the number and hands it to a stateful section through its constructor.</summary>
+    [Page("/tree-prefetch-into-a-stateful-section")]
+    private sealed class PageHandingItsDataToAStatefulSection : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private long _downloads = -1;
+
+        [ServerOnly]
+        public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+            => _downloads = await services.GetRequiredService<ICounts>().GetAsync(cancellationToken);
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2);
+            column.Add(new Text($"Page: {_downloads}", TypeRole.Heading));
+            column.Add(new DownloadsSection(_downloads));
+            return column;
+        }
+    }
+
+    [Fact]
+    public async Task AStatefulSectionThePageHandsWhatItLoaded_IsDrawnWithIt()
+    {
+        // The page is drawn before its prefetch runs, and the section with it, handed -1. A position keeps
+        // a stateful instance, so the second drawing kept that one, and the served page said "Page: 675617"
+        // over "Section: -1" (#1776). The section loads nothing of its own: it takes what the page hands it.
+        var context = RequestWith(out _);
+
+        var result = await CreateService()
+            .RenderPageAsync(typeof(PageHandingItsDataToAStatefulSection), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("Page: 675617").And.Contain("Section: 675617").And.NotContain("Section: -1");
+    }
 }

@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Primitives.BuildOwner.KeepsInstance.get -> System.Func<eQuantic.UI.Primitives.StatefulComponent!, bool>?
+eQuantic.UI.Primitives.BuildOwner.KeepsInstance.set -> void
