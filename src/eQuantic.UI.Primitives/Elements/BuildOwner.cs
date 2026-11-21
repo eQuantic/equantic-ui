@@ -165,6 +165,21 @@ public sealed class BuildOwner
     /// </summary>
     public Action<string>? NavigationRequested { get; set; }
 
+    /// <summary>
+    /// Which stateful instances a position KEEPS when its parent's build hands it a fresh one: every one
+    /// when null, which is what a tree drawn for a person always answers, and otherwise only those this
+    /// answers true for, while every other one gives the position to the fresh instance.
+    /// <para>
+    /// The server's data rounds answer it while they run (<c>ServerDataRounds</c>): only a component that
+    /// loads data keeps its instance, since what it loaded is the page's data, and every other one takes
+    /// what its parent hands it now. A section the page built before its prefetch ran was handed the
+    /// values the page had then, and kept them: the page drew its own loaded text beside a section of
+    /// empty labels, and nothing in the build said why (#1776). Between rounds nothing has happened to an
+    /// instance that loads nothing, so the fresh one is the one the browser builds from the same data.
+    /// </para>
+    /// </summary>
+    public Func<StatefulComponent, bool>? KeepsInstance { get; set; }
+
     /// <summary>The table a list's keyed members are claimed through (see <see cref="NodeElement"/>),
     /// one for the whole tree because the claiming never runs inside another.</summary>
     internal Dictionary<string, Element> KeyScratch { get; } = new(StringComparer.Ordinal);

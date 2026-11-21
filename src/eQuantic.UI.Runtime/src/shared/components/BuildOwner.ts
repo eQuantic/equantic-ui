@@ -45,6 +45,7 @@ export class BuildOwner {
         this.holdsEveryArm = false;
         this.windowWidth = 0;
         this.navigationRequested = null;
+        this.keepsInstance = null;
         this.keyScratch = $eq.collections.dictionary();
         $eq.guard.throwIfNull(buildComponent, 'buildComponent');
         this._buildComponent = buildComponent;
@@ -82,6 +83,7 @@ export class BuildOwner {
     holdsEveryArm!: boolean;
     windowWidth!: number;
     navigationRequested!: ((string: string) => void) | null;
+    keepsInstance!: ((value: StatefulComponent) => boolean) | null;
     keyScratch!: any;
 
     get hasDirty(): boolean {

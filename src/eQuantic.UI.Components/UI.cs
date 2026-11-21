@@ -187,7 +187,11 @@ public static class UI
     /// factory named after the type, which is the rule the extra name was working around.
     /// </para>
     /// </summary>
-    public static Icon Icon(IconGlyph glyph, float size = 24, ColorToken? color = null, string? label = null) =>
+    public static Icon Icon(IconGlyph glyph,
+        [System.ComponentModel.DataAnnotations.AllowedValues(IconSize.Sm, IconSize.Dense, IconSize.Md, IconSize.Lg,
+            ErrorMessage = "An icon of any other size throws when it is built, on the server and in the browser alike: the "
+                + "scale is for content, and a glyph in a box of another size is a Vector.")] float size = IconSize.Md,
+        ColorToken? color = null, string? label = null) =>
         new Icon(glyph, size, color, label);
 
     /// <summary>A vector shape at any size — an icon freed of the size whitelist, and of the
