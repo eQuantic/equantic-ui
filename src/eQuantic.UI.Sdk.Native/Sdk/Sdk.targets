@@ -74,6 +74,18 @@
         <MakeDir Directories="$(_EqAccessorsDir)" Condition="'@(EmbeddedResource->HasMetadata('StronglyTypedFileName'))' != ''" />
     </Target>
 
+    <!--
+        The accessors are in the compilation of a build that runs Compile alone (#1801). MSBuild's
+        CoreResGen writes them and adds them to Compile, inside PrepareResources, which a build runs
+        before Compile and CompileDependsOn does not name. dotnet watch loads the compilation it applies
+        an edit to from a design-time build of Compile alone, as an editor does, so that compilation
+        had no accessor class: every save failed with CS0234 on the catalog's namespace, no edit reached
+        the server, and the page drew over its markup. A Designer.cs beside the .resx was a source file,
+        which every loader sees. A build has run PrepareResources by then, so this asks nothing of it.
+    -->
+    <Target Name="EQuanticResourceAccessorsCompiled" BeforeTargets="CoreCompile" DependsOnTargets="PrepareResources"
+            Condition="'@(EmbeddedResource)' != ''" />
+
     <Target Name="EQuanticAnnounceDevSource" BeforeTargets="Build"
             Condition="'$(IsEQuanticDevMode)' == 'true'
                        AND !$([MSBuild]::EnsureTrailingSlash('$(MSBuildProjectDirectory)').StartsWith($([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))))))">
