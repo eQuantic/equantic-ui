@@ -85,7 +85,7 @@ export class DatePicker extends StatefulComponent {
     }
 
     pick(day: DateOnly) {
-        this._reported = day;
+        if (!(this.onChanged == null)) this._reported = day;
         this.onChanged?.(day);
         this.setState(() => {
             this._open = false;
@@ -97,7 +97,7 @@ export class DatePicker extends StatefulComponent {
         let parsed = DatePicker.parse(text);
         let day: any; 
         if ((day = parsed) != null && this.inRange(day)) {
-            this._reported = day;
+            if (!(this.onChanged == null)) this._reported = day;
             this.onChanged?.(day);
         }
         this.setState(() => this._typing = text);

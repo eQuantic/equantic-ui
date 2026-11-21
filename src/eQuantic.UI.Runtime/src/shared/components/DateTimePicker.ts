@@ -106,7 +106,7 @@ export class DateTimePicker extends StatefulComponent {
         let max: any; 
         if ((max = this.max) != null && (moment.compareTo(max) > 0)) return;
         this.selected = moment;
-        this._reported = moment;
+        if (!(this.onChanged == null)) this._reported = moment;
         this.onChanged?.(moment);
     }
 }

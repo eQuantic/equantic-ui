@@ -119,7 +119,7 @@ export class TimePicker extends StatefulComponent {
     }
 
     pick(time: TimeOnly) {
-        this._reported = time;
+        if (!(this.onChanged == null)) this._reported = time;
         this.onChanged?.(time);
         this.setState(() => this._open = false);
     }
