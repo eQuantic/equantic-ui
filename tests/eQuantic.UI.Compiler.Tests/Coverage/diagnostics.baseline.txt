@@ -5,7 +5,7 @@ EQ1001 eQuantic.UI.Compiler/CodeGen/CSharpToJsConverter.cs
 EQ1002 eQuantic.UI.Compiler/CodeGen/CSharpToJsConverter.cs
 EQ1003 eQuantic.UI.Compiler/CodeGen/CSharpToJsConverter.cs
 EQ1004 eQuantic.UI.Compiler/CodeGen/ConversionContext.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectInitializer.cs eQuantic.UI.Compiler/CodeGen/Strategies/Types/DateTimeConstructionStrategy.cs
-EQ1005 eQuantic.UI.Compiler/Services/AppBuild.cs
+EQ1005 eQuantic.UI.Compiler/ComponentCompiler.cs eQuantic.UI.Compiler/Services/AppBuild.cs
 EQ1006 eQuantic.UI.Compiler/Services/AppBuild.cs
 EQ1007 eQuantic.UI.Compiler/Services/MembersOnOneName.cs eQuantic.UI.Compiler/Services/OverloadedMethods.cs
 EQ1008 eQuantic.UI.Compiler/CodeGen/RecordTypeEmitter.cs eQuantic.UI.Compiler/CodeGen/TypeScriptEmitter.cs
@@ -52,6 +52,8 @@ EQ3102 eQuantic.UI.Generators/AppFactorySurfaceGenerator.cs
 EQ3103 eQuantic.UI.Generators/FormModelGenerator.cs
 EQ3104 eQuantic.UI.Generators/FormModelGenerator.cs
 EQ3105 eQuantic.UI.Generators/FormModelGenerator.cs
+EQ3106 Shared/AllowedValueAnalyzer.cs
+EQ3107 Shared/CultureFrozenResourceAnalyzer.cs
 EQ4001 eQuantic.UI.Sdk.Native/Sdk/Sdk.targets eQuantic.UI.Sdk/Sdk/Sdk.targets
 EQ4002 eQuantic.UI.Sdk/Sdk/Sdk.targets
 EQ4003 eQuantic.UI.Native.Build/Program.cs
