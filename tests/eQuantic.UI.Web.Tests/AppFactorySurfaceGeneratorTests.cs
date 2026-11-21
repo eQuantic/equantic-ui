@@ -148,6 +148,32 @@ public class AppFactorySurfaceGeneratorTests
     }
 
     [Fact]
+    public void AnAllowedEnumValue_IsWrittenAsItsGloballyQualifiedType()
+    {
+        // The factory sits in the components' namespace, where a namespace of the app's can capture an
+        // unqualified `Shop.Model.Mode`: the value is cast to the type as `global::` names it.
+        var (source, _, errors) = RunCompiled("""
+            using System.ComponentModel.DataAnnotations;
+            using eQuantic.UI.Primitives;
+
+            namespace Shop.Model { public enum Mode { Grid, List, Table } }
+
+            namespace Shop.UI
+            {
+                public sealed class Grid([AllowedValues(global::Shop.Model.Mode.Grid, global::Shop.Model.Mode.List)] global::Shop.Model.Mode mode) : StatelessComponent
+                {
+                    public override VisualNode Build(ComponentContext context) => new Text(mode.ToString(), TypeRole.BodyM);
+                }
+            }
+
+            namespace Shop.UI.Shop { public static class Model { } }
+            """);
+
+        errors.Should().BeEmpty(source);
+        source.Should().Contain("AllowedValues((global::Shop.Model.Mode)(0), (global::Shop.Model.Mode)(1))");
+    }
+
+    [Fact]
     public void AComponent_GetsAFactoryNamedAfterIt_MirroringTheWidestConstructor()
     {
         var (source, diagnostics) = Run(Card);

@@ -223,7 +223,12 @@ internal sealed class NamedSourceTypes
         if (inSource && ObjectCreationStrategy.TwinIsWritten(definition))
             _written.TryAdd(definition.TwinReference(), definition);
         else if (!inSource && definition.IsRuntimeProvided())
-            _runtime.TryAdd(definition.TwinReference(), definition);
+        {
+            // Under every name the module may import it by: the context a component builds with is
+            // `ComponentContext` as a value and `BuildContext` as an annotation (ExportedName).
+            _runtime.TryAdd(RuntimeProvidedTypeScanner.ExportedName(definition, asValue: true), definition);
+            _runtime.TryAdd(RuntimeProvidedTypeScanner.ExportedName(definition, asValue: false), definition);
+        }
     }
 
     /// <summary>

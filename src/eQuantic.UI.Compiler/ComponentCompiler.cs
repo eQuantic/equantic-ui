@@ -345,28 +345,43 @@ public class ComponentCompiler
     /// </summary>
     private static CompilationError Duplicated(ComponentDefinition component, List<ComponentDefinition> namesakes)
     {
+        var at = DeclarationOf(component)?.Identifier.GetLocation().GetLineSpan().StartLinePosition;
+        var error = Duplicated(component, namesakes, out var code);
+        return new CompilationError
+        {
+            Code = code,
+            SourcePath = component.SourcePath,
+            Line = at is { } line ? line.Line + 1 : 0,
+            Column = at is { } column ? column.Character + 1 : 0,
+            Message = error,
+        };
+    }
+
+    /// <summary>The name a definition's twin is written under: its owners' twin names and its own.</summary>
+    private static string TwinNameOf(ComponentDefinition component) =>
+        DeclarationOf(component) is { } declaration
+            ? CodeGen.TypeSyntaxExtensions.TwinTypeName(declaration)
+            : component.Name;
+
+    private static string Duplicated(ComponentDefinition component, List<ComponentDefinition> namesakes, out string code)
+    {
         var identities = namesakes
             .Select(namesake => DeclarationOf(namesake) is { } declaration ? ComponentParser.ClrIdentity(declaration) : namesake.Name)
             .Distinct(StringComparer.Ordinal)
             .ToList();
-        return identities.Count > 1
-            ? new CompilationError
-            {
-                Code = "EQ1005",
-                SourcePath = component.SourcePath,
-                Message = $"two types are named '{component.Name}' in this file: '{string.Join("' and '", identities)}'. "
-                    + "Their twins are ONE file, and the second would silently replace the first: the code that used "
-                    + "one would get the other's members. Namespaces do not separate them, because a twin is named "
-                    + "for its TYPE. Rename one of them.",
-            }
-            : new CompilationError
-            {
-                Code = "EQ2009",
-                SourcePath = component.SourcePath,
-                Message = $"'{component.Name}' is declared more than once in this file (partial "
-                    + "declarations?). eqc emits one module per declaration and cannot merge "
-                    + "them yet — combine the members into a single declaration.",
-            };
+        if (identities.Count > 1)
+        {
+            code = "EQ1005";
+            return $"two types are named '{component.Name}' in this file: '{string.Join("' and '", identities)}'. "
+                + "Their twins are ONE file, and the second would silently replace the first: the code that used "
+                + "one would get the other's members. Namespaces do not separate them, because a twin is named "
+                + "for its TYPE. Rename one of them.";
+        }
+
+        code = "EQ2009";
+        return $"'{component.Name}' is declared more than once in this file (partial "
+            + "declarations?). eqc emits one module per declaration and cannot merge "
+            + "them yet — combine the members into a single declaration.";
     }
 
     /// <summary>
@@ -379,14 +394,16 @@ public class ComponentCompiler
     private IEnumerable<CompilationResult> CompileAll(IEnumerable<ComponentDefinition> components)
     {
         var list = components.ToList();
-        var duplicated = list.GroupBy(c => c.Name, StringComparer.Ordinal)
+        // By the name each twin is written under, which is what collides: a nested `Deck.Card` is
+        // `Deck$Card` and meets no top-level `Card`.
+        var duplicated = list.GroupBy(TwinNameOf, StringComparer.Ordinal)
             .Where(g => g.Count() > 1)
             .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
 
         foreach (var component in list)
         {
             var result = Compile(component);
-            if (duplicated.TryGetValue(component.Name, out var namesakes))
+            if (duplicated.TryGetValue(TwinNameOf(component), out var namesakes))
             {
                 result.Success = false;
                 result.Errors.Add(Duplicated(component, namesakes));
@@ -500,9 +517,14 @@ public class ComponentCompiler
         // runs and asked by all of them; and, after, which of those it imports. Every emit path
         // below returns on its own, so both halves live here, around them.
         ReferencedNames referenced;
+        List<CompilationError> shared;
         try
         {
             referenced = ReferencedNamesOf(component);
+            // A name the module would import twice, for a type of the app's and one of the runtime's:
+            // one of the two would be the other in the browser (#1777). Read by the same walk, so it
+            // fails as that walk fails: this module, and no other.
+            shared = SharedWithTheRuntime(component);
         }
         catch (Exception ex)
         {
@@ -518,9 +540,8 @@ public class ComponentCompiler
             };
         }
 
-        // A name the module would import twice, for a type of the app's and one of the runtime's: one
-        // of the two would be the other in the browser (#1777). Refused before any emitter runs.
-        if (SharedWithTheRuntime(component) is { Count: > 0 } shared)
+        // Refused before any emitter runs.
+        if (shared.Count > 0)
             return new CompilationResult
             {
                 ComponentName = component.Name,
@@ -580,7 +601,10 @@ public class ComponentCompiler
     {
         if (component.SyntaxTree is null || DeclarationOf(component) is not { } declaration) return [];
         var model = _semanticModelProvider.GetSemanticModel(component.SyntaxTree);
-        if (!model.Compilation.DeclaresATypeNamedLikeTheRuntimes()) return [];
+        // Asked of the project's compilation, which lives as long as the build: the model's own is made
+        // for this file alone (SemanticModelProvider replaces its tree), and a cache keyed on it would
+        // answer the question again for every module.
+        if (!(_semanticModelProvider.ProjectCompilation ?? model.Compilation).DeclaresATypeNamedLikeTheRuntimes()) return [];
 
         var line = declaration.Identifier.GetLocation().GetLineSpan().StartLinePosition;
         return NamedBy(component, declaration, model).SharedWithTheRuntime()

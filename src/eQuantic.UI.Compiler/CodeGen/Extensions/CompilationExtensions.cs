@@ -71,14 +71,19 @@ internal static class CompilationExtensions
             if (member is not INamedTypeSymbol type) continue;
             var ofTheRuntime = Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(space.ToDisplayString());
             if (ofTheRuntime == source) continue;
-            Types(type, names);
+            Types(type, names, source);
         }
     }
 
-    private static void Types(INamedTypeSymbol type, HashSet<string> names)
+    private static void Types(INamedTypeSymbol type, HashSet<string> names, bool source)
     {
-        if (type.TypeKind is TypeKind.Class or TypeKind.Struct) names.Add(type.TwinReference());
-        foreach (var nested in type.GetTypeMembers()) Types(nested, names);
+        if (type.TypeKind is TypeKind.Class or TypeKind.Struct)
+        {
+            names.Add(type.TwinReference());
+            // A type of the runtime's is imported under every name it is exported by (`BuildContext`).
+            if (!source) names.Add(Services.RuntimeProvidedTypeScanner.ExportedName(type, asValue: false));
+        }
+        foreach (var nested in type.GetTypeMembers()) Types(nested, names, source);
     }
 
     /// <summary>Every compilation this one references as a compilation, directly or through another,

@@ -215,7 +215,11 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
                 || attribute.ConstructorArguments.Length != 1
                 || attribute.ConstructorArguments[0].Kind != TypedConstantKind.Array)
                 continue;
-            var arguments = attribute.ConstructorArguments[0].Values.Select(value => value.ToCSharpString())
+            var values = attribute.ConstructorArguments[0].Values.Select(Literal).ToList();
+            // A value with no literal this file can write (an array, a type) leaves the mark off: the
+            // factory then builds as it always did, and the constructor's own check still runs.
+            if (values.Any(value => value is null)) return "";
+            var arguments = values
                 .Concat(attribute.NamedArguments
                     .Where(named => named.Key == "ErrorMessage" && named.Value.Value is string)
                     .Select(named => "ErrorMessage = " + named.Value.ToCSharpString()));
@@ -224,6 +228,16 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
 
         return "";
     }
+
+    /// <summary>One value of the mark as a literal the generated file can write wherever it stands: a
+    /// constant as C# spells it, an enum's value cast to its globally qualified type. Null otherwise.</summary>
+    private static string? Literal(TypedConstant value) => value.Kind switch
+    {
+        TypedConstantKind.Primitive => value.ToCSharpString(),
+        TypedConstantKind.Enum when value.Type is { } type =>
+            $"({type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})({value.Value})",
+        _ => null,
+    };
 
     /// <summary>
     /// A parameter's default, spelled so the factory MIRRORS the constructor — an omitted argument

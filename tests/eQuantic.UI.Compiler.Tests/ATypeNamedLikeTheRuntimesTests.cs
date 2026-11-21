@@ -201,6 +201,63 @@ public class ATypeNamedLikeTheRuntimesTests
     }
 
     [Fact]
+    public void TheCollisionInOneFile_IsSaidAtTheDeclaration()
+    {
+        var results = Compile("""
+            namespace Shop.A { public sealed record Card(string Title); }
+            namespace Shop.B { public sealed record Card(int Price); }
+            """);
+
+        results.SelectMany(result => result.Errors).Select(error => (error.Line, error.Column))
+            .Should().BeEquivalentTo([(1, 41), (2, 41)], "each error points at the record it refuses, `Card`");
+    }
+
+    [Fact]
+    public void ANestedTypeAndATopLevelOneOfItsName_AreTwoTwins()
+    {
+        // `Deck.Card` is written as `Deck$Card`, which meets no top-level `Card`: no collision, and no
+        // partial type either.
+        var results = Compile("""
+            namespace Shop
+            {
+                public sealed record Card(string Title);
+
+                public static class Deck
+                {
+                    public sealed record Card(int Price);
+
+                    public static int Price(Card card) => card.Price;
+                }
+            }
+            """);
+
+        results.SelectMany(result => result.Errors).Should().NotContain(error => error.Code == "EQ1005" || error.Code == "EQ2009");
+    }
+
+    [Fact]
+    public void AnAppsClassNamedLikeTheContextsAnnotation_IsRefused()
+    {
+        // The runtime exports a component's context under two names: `ComponentContext` as a value and
+        // `BuildContext` as an annotation, which a module that takes a context imports.
+        var results = Compile("""
+            namespace Shop
+            {
+                using eQuantic.UI.Primitives;
+
+                public sealed class BuildContext { public string Name { get; } = "build"; }
+
+                public static class Labels
+                {
+                    public static string Of(ComponentContext context) => new BuildContext().Name;
+                }
+            }
+            """);
+
+        results.Single(result => result.ComponentName == "Labels").Errors.Should().ContainSingle(error => error.Code == "EQ1005"
+            && error.Message.Contains("'Shop.BuildContext', and the SDK's 'eQuantic.UI.Primitives.ComponentContext'"));
+    }
+
+    [Fact]
     public void TheHalvesOfOnePartialType_AreStillThePartialType()
     {
         var results = Compile("""
