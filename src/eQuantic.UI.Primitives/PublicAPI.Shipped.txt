@@ -47,10 +47,8 @@ const eQuantic.UI.Primitives.Radius.Xl = 20 -> float
 const eQuantic.UI.Primitives.Radius.Xs = 4 -> float
 const eQuantic.UI.Primitives.Sizing.ButtonMinWidth = 64 -> float
 const eQuantic.UI.Primitives.Sizing.SwitchInset = 3 -> float
+const eQuantic.UI.Primitives.SortPlacement.CopyElevation = 4 -> int
 const eQuantic.UI.Primitives.SortPlacement.CopyOpacity = 0.92 -> double
-const eQuantic.UI.Primitives.SortPlacement.CopyShadowAlpha = 0.28 -> double
-const eQuantic.UI.Primitives.SortPlacement.CopyShadowBlur = 28 -> float
-const eQuantic.UI.Primitives.SortPlacement.CopyShadowOffsetY = 12 -> float
 const eQuantic.UI.Primitives.SortPlacement.EdgeStep = 14 -> float
 const eQuantic.UI.Primitives.SortPlacement.EdgeZone = 32 -> float
 const eQuantic.UI.Primitives.SortPlacement.HoldMs = 250 -> float
@@ -322,6 +320,8 @@ eQuantic.UI.Primitives.BoxStyle.Pattern.get -> eQuantic.UI.Primitives.GridPatter
 eQuantic.UI.Primitives.BoxStyle.Pattern.init -> void
 eQuantic.UI.Primitives.BoxStyle.Pressed.get -> eQuantic.UI.Primitives.StyleDiff?
 eQuantic.UI.Primitives.BoxStyle.Pressed.init -> void
+eQuantic.UI.Primitives.BoxStyle.Scrolled.get -> eQuantic.UI.Primitives.StyleDiff?
+eQuantic.UI.Primitives.BoxStyle.Scrolled.init -> void
 eQuantic.UI.Primitives.BoxStyle.Shadow.get -> eQuantic.UI.Primitives.ShadowSpec?
 eQuantic.UI.Primitives.BoxStyle.Shadow.init -> void
 eQuantic.UI.Primitives.BoxStyle.Shadows.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.ShadowSpec>?
@@ -1105,6 +1105,7 @@ eQuantic.UI.Primitives.IAppTheme.Selection.get -> eQuantic.UI.Primitives.ColorTo
 eQuantic.UI.Primitives.IAppTheme.SelectionControls.get -> eQuantic.UI.Primitives.SelectionControlsTheme?
 eQuantic.UI.Primitives.IAppTheme.Shape(eQuantic.UI.Primitives.ShapeScale scale) -> float
 eQuantic.UI.Primitives.IAppTheme.Sheet.get -> eQuantic.UI.Primitives.SheetTheme?
+eQuantic.UI.Primitives.IAppTheme.Sortable.get -> eQuantic.UI.Primitives.SortableTheme?
 eQuantic.UI.Primitives.IAppTheme.Surface.get -> eQuantic.UI.Primitives.ColorToken
 eQuantic.UI.Primitives.IAppTheme.SurfaceHighlight.get -> eQuantic.UI.Primitives.ColorToken
 eQuantic.UI.Primitives.IAppTheme.SurfaceSubtle.get -> eQuantic.UI.Primitives.ColorToken
@@ -2768,6 +2769,8 @@ eQuantic.UI.Primitives.SortAnnouncements.SortAnnouncements(string! Instructions,
 eQuantic.UI.Primitives.SortDrop
 eQuantic.UI.Primitives.SortDrop.<Clone>$() -> eQuantic.UI.Primitives.SortDrop!
 eQuantic.UI.Primitives.SortDrop.Deconstruct(out string! Item, out string! From, out string! To, out int Index) -> void
+eQuantic.UI.Primitives.SortDrop.Depth.get -> int?
+eQuantic.UI.Primitives.SortDrop.Depth.init -> void
 eQuantic.UI.Primitives.SortDrop.Equals(eQuantic.UI.Primitives.SortDrop? other) -> bool
 eQuantic.UI.Primitives.SortDrop.From.get -> string!
 eQuantic.UI.Primitives.SortDrop.From.init -> void
@@ -2795,6 +2798,8 @@ eQuantic.UI.Primitives.Sortable.Group.get -> string!
 eQuantic.UI.Primitives.Sortable.Group.init -> void
 eQuantic.UI.Primitives.Sortable.Id.get -> string!
 eQuantic.UI.Primitives.Sortable.Id.init -> void
+eQuantic.UI.Primitives.Sortable.Indent.get -> float
+eQuantic.UI.Primitives.Sortable.Indent.init -> void
 eQuantic.UI.Primitives.Sortable.Label.get -> string!
 eQuantic.UI.Primitives.Sortable.Label.init -> void
 eQuantic.UI.Primitives.Sortable.Nests.get -> bool
@@ -2803,8 +2808,12 @@ eQuantic.UI.Primitives.Sortable.OnDropped.get -> System.Action<eQuantic.UI.Primi
 eQuantic.UI.Primitives.Sortable.OnDropped.init -> void
 eQuantic.UI.Primitives.Sortable.OnHovered.get -> System.Action<eQuantic.UI.Primitives.SortDrop?>?
 eQuantic.UI.Primitives.Sortable.OnHovered.init -> void
-eQuantic.UI.Primitives.Sortable.Sortable(eQuantic.UI.Primitives.VisualNode! child, string! id, System.Action<eQuantic.UI.Primitives.SortDrop!>! onDropped, eQuantic.UI.Primitives.SortAnnouncements? announcements = null) -> void
+eQuantic.UI.Primitives.Sortable.Sortable(eQuantic.UI.Primitives.VisualNode! child, string! id, System.Action<eQuantic.UI.Primitives.SortDrop!>! onDropped, eQuantic.UI.Primitives.SortAnnouncements? announcements = null, eQuantic.UI.Primitives.SortableTheme? style = null) -> void
+eQuantic.UI.Primitives.Sortable.Style.get -> eQuantic.UI.Primitives.SortableTheme?
+eQuantic.UI.Primitives.Sortable.Style.init -> void
 eQuantic.UI.Primitives.SortableItem
+eQuantic.UI.Primitives.SortableItem.Depth.get -> int
+eQuantic.UI.Primitives.SortableItem.Depth.init -> void
 eQuantic.UI.Primitives.SortableItem.Enabled.get -> bool
 eQuantic.UI.Primitives.SortableItem.Enabled.init -> void
 eQuantic.UI.Primitives.SortableItem.Id.get -> string!
@@ -2812,6 +2821,18 @@ eQuantic.UI.Primitives.SortableItem.Id.init -> void
 eQuantic.UI.Primitives.SortableItem.Name.get -> string!
 eQuantic.UI.Primitives.SortableItem.Name.init -> void
 eQuantic.UI.Primitives.SortableItem.SortableItem(eQuantic.UI.Primitives.VisualNode! child, string! id) -> void
+eQuantic.UI.Primitives.SortableTheme
+eQuantic.UI.Primitives.SortableTheme.<Clone>$() -> eQuantic.UI.Primitives.SortableTheme!
+eQuantic.UI.Primitives.SortableTheme.CopyElevation.get -> int?
+eQuantic.UI.Primitives.SortableTheme.CopyElevation.init -> void
+eQuantic.UI.Primitives.SortableTheme.CopyOpacity.get -> float?
+eQuantic.UI.Primitives.SortableTheme.CopyOpacity.init -> void
+eQuantic.UI.Primitives.SortableTheme.Equals(eQuantic.UI.Primitives.SortableTheme? other) -> bool
+eQuantic.UI.Primitives.SortableTheme.LiftedOpacity.get -> float?
+eQuantic.UI.Primitives.SortableTheme.LiftedOpacity.init -> void
+eQuantic.UI.Primitives.SortableTheme.MaxLean.get -> float?
+eQuantic.UI.Primitives.SortableTheme.MaxLean.init -> void
+eQuantic.UI.Primitives.SortableTheme.SortableTheme() -> void
 eQuantic.UI.Primitives.Space
 eQuantic.UI.Primitives.Spacer
 eQuantic.UI.Primitives.Spacer.AnimateChanges.get -> bool
@@ -3073,6 +3094,8 @@ eQuantic.UI.Primitives.TextEntry.Disabled.get -> bool
 eQuantic.UI.Primitives.TextEntry.Disabled.init -> void
 eQuantic.UI.Primitives.TextEntry.Invalid.get -> bool
 eQuantic.UI.Primitives.TextEntry.Invalid.init -> void
+eQuantic.UI.Primitives.TextEntry.Kind.get -> eQuantic.UI.Primitives.TextEntryKind
+eQuantic.UI.Primitives.TextEntry.Kind.init -> void
 eQuantic.UI.Primitives.TextEntry.Label.get -> string?
 eQuantic.UI.Primitives.TextEntry.Label.init -> void
 eQuantic.UI.Primitives.TextEntry.Lines.get -> int
@@ -3094,6 +3117,13 @@ eQuantic.UI.Primitives.TextEntry.SelectOnFocus.init -> void
 eQuantic.UI.Primitives.TextEntry.TextEntry(string! value, System.Action<string!>? onChanged = null) -> void
 eQuantic.UI.Primitives.TextEntry.Value.get -> string!
 eQuantic.UI.Primitives.TextEntry.Value.init -> void
+eQuantic.UI.Primitives.TextEntryKind
+eQuantic.UI.Primitives.TextEntryKind.Decimal = 5 -> eQuantic.UI.Primitives.TextEntryKind
+eQuantic.UI.Primitives.TextEntryKind.Email = 1 -> eQuantic.UI.Primitives.TextEntryKind
+eQuantic.UI.Primitives.TextEntryKind.Number = 4 -> eQuantic.UI.Primitives.TextEntryKind
+eQuantic.UI.Primitives.TextEntryKind.Phone = 2 -> eQuantic.UI.Primitives.TextEntryKind
+eQuantic.UI.Primitives.TextEntryKind.Text = 0 -> eQuantic.UI.Primitives.TextEntryKind
+eQuantic.UI.Primitives.TextEntryKind.Url = 3 -> eQuantic.UI.Primitives.TextEntryKind
 eQuantic.UI.Primitives.TextReading
 eQuantic.UI.Primitives.TextReading.Anchor.get -> int
 eQuantic.UI.Primitives.TextReading.Anchor.init -> void
@@ -3641,6 +3671,9 @@ override eQuantic.UI.Primitives.SortDrop.GetHashCode() -> int
 override eQuantic.UI.Primitives.SortDrop.ToString() -> string!
 override eQuantic.UI.Primitives.Sortable.NodeKind.get -> string!
 override eQuantic.UI.Primitives.SortableItem.NodeKind.get -> string!
+override eQuantic.UI.Primitives.SortableTheme.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.SortableTheme.GetHashCode() -> int
+override eQuantic.UI.Primitives.SortableTheme.ToString() -> string!
 override eQuantic.UI.Primitives.Spacer.NodeKind.get -> string!
 override eQuantic.UI.Primitives.Spinner.NodeKind.get -> string!
 override eQuantic.UI.Primitives.SpringSpec.GetHashCode() -> int
@@ -3743,7 +3776,7 @@ override sealed eQuantic.UI.Primitives.Vector.Accept<TState, TResult>(eQuantic.U
 override sealed eQuantic.UI.Primitives.Vector.NodeKind.get -> string!
 override sealed eQuantic.UI.Primitives.WebFrame.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.WebFrame.NodeKind.get -> string!
-static eQuantic.UI.Primitives.AppThemeExtensions.With(this eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ControlsTheme? controls = null, eQuantic.UI.Primitives.ButtonTheme? button = null, eQuantic.UI.Primitives.IconButtonTheme? iconButton = null, eQuantic.UI.Primitives.InputTheme? input = null, eQuantic.UI.Primitives.SelectionControlsTheme? selectionControls = null, eQuantic.UI.Primitives.SegmentedTheme? segmented = null, eQuantic.UI.Primitives.ChipTheme? chip = null, eQuantic.UI.Primitives.ModalTheme? modal = null, eQuantic.UI.Primitives.MenuTheme? menu = null, eQuantic.UI.Primitives.NoticeTheme? notice = null, eQuantic.UI.Primitives.ProgressTheme? progress = null, eQuantic.UI.Primitives.CardTheme? card = null, eQuantic.UI.Primitives.NavigationTheme? navigation = null, eQuantic.UI.Primitives.ListTheme? list = null, eQuantic.UI.Primitives.TableTheme? table = null, eQuantic.UI.Primitives.BadgeTheme? badge = null, eQuantic.UI.Primitives.CalendarTheme? calendar = null, eQuantic.UI.Primitives.MarkdownTheme? markdown = null) -> eQuantic.UI.Primitives.IAppTheme!
+static eQuantic.UI.Primitives.AppThemeExtensions.With(this eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ControlsTheme? controls = null, eQuantic.UI.Primitives.ButtonTheme? button = null, eQuantic.UI.Primitives.IconButtonTheme? iconButton = null, eQuantic.UI.Primitives.InputTheme? input = null, eQuantic.UI.Primitives.SelectionControlsTheme? selectionControls = null, eQuantic.UI.Primitives.SegmentedTheme? segmented = null, eQuantic.UI.Primitives.ChipTheme? chip = null, eQuantic.UI.Primitives.ModalTheme? modal = null, eQuantic.UI.Primitives.MenuTheme? menu = null, eQuantic.UI.Primitives.NoticeTheme? notice = null, eQuantic.UI.Primitives.ProgressTheme? progress = null, eQuantic.UI.Primitives.CardTheme? card = null, eQuantic.UI.Primitives.NavigationTheme? navigation = null, eQuantic.UI.Primitives.ListTheme? list = null, eQuantic.UI.Primitives.TableTheme? table = null, eQuantic.UI.Primitives.BadgeTheme? badge = null, eQuantic.UI.Primitives.CalendarTheme? calendar = null, eQuantic.UI.Primitives.MarkdownTheme? markdown = null, eQuantic.UI.Primitives.SortableTheme? sortable = null) -> eQuantic.UI.Primitives.IAppTheme!
 static eQuantic.UI.Primitives.BadgeTheme.Merge(eQuantic.UI.Primitives.BadgeTheme? under, eQuantic.UI.Primitives.BadgeTheme? over) -> eQuantic.UI.Primitives.BadgeTheme?
 static eQuantic.UI.Primitives.BadgeTheme.operator !=(eQuantic.UI.Primitives.BadgeTheme? left, eQuantic.UI.Primitives.BadgeTheme? right) -> bool
 static eQuantic.UI.Primitives.BadgeTheme.operator ==(eQuantic.UI.Primitives.BadgeTheme? left, eQuantic.UI.Primitives.BadgeTheme? right) -> bool
@@ -3976,12 +4009,21 @@ static eQuantic.UI.Primitives.SortAnnouncements.operator !=(eQuantic.UI.Primitiv
 static eQuantic.UI.Primitives.SortAnnouncements.operator ==(eQuantic.UI.Primitives.SortAnnouncements? left, eQuantic.UI.Primitives.SortAnnouncements? right) -> bool
 static eQuantic.UI.Primitives.SortDrop.operator !=(eQuantic.UI.Primitives.SortDrop? left, eQuantic.UI.Primitives.SortDrop? right) -> bool
 static eQuantic.UI.Primitives.SortDrop.operator ==(eQuantic.UI.Primitives.SortDrop? left, eQuantic.UI.Primitives.SortDrop? right) -> bool
+static eQuantic.UI.Primitives.SortPlacement.Depths(int wants, int? above, int? below) -> System.Collections.Generic.IReadOnlyList<int>!
 static eQuantic.UI.Primitives.SortPlacement.EdgeScroll(float at, float start, float end) -> float
+static eQuantic.UI.Primitives.SortPlacement.HasDepths(float indent) -> bool
+static eQuantic.UI.Primitives.SortPlacement.KeyDepth(int depth, int step, int? above, int? below) -> int
 static eQuantic.UI.Primitives.SortPlacement.KeyStep(int index, int into, int step, int others, bool nests) -> (int Index, int Into)
+static eQuantic.UI.Primitives.SortPlacement.Look(eQuantic.UI.Primitives.SortableTheme? theme, eQuantic.UI.Primitives.SortableTheme? own) -> eQuantic.UI.Primitives.SortableTheme!
 static eQuantic.UI.Primitives.SortPlacement.Place(System.Collections.Generic.IReadOnlyList<float>! starts, System.Collections.Generic.IReadOnlyList<float>! extents, float at, bool nests) -> (int Index, int Into)
+static eQuantic.UI.Primitives.SortPlacement.Siblings(System.Collections.Generic.IReadOnlyList<int>! depths, int index, int depth) -> (int Holder, int Position, int Count)
 static eQuantic.UI.Primitives.SortPlacement.Step(int index, int step, int count) -> int
-static eQuantic.UI.Primitives.SortPlacement.Tilt(float across, float milliseconds) -> float?
+static eQuantic.UI.Primitives.SortPlacement.Tilt(float across, float milliseconds, float most) -> float?
+static eQuantic.UI.Primitives.SortPlacement.Wanted(int depth, float travelled, float indent) -> int
 static eQuantic.UI.Primitives.SortWords.Fill(string! text, params string![]! holes) -> string!
+static eQuantic.UI.Primitives.SortableTheme.Merge(eQuantic.UI.Primitives.SortableTheme? under, eQuantic.UI.Primitives.SortableTheme? over) -> eQuantic.UI.Primitives.SortableTheme?
+static eQuantic.UI.Primitives.SortableTheme.operator !=(eQuantic.UI.Primitives.SortableTheme? left, eQuantic.UI.Primitives.SortableTheme? right) -> bool
+static eQuantic.UI.Primitives.SortableTheme.operator ==(eQuantic.UI.Primitives.SortableTheme? left, eQuantic.UI.Primitives.SortableTheme? right) -> bool
 static eQuantic.UI.Primitives.Spacer.Fixed(float length) -> eQuantic.UI.Primitives.Spacer!
 static eQuantic.UI.Primitives.SpringSpec.operator !=(eQuantic.UI.Primitives.SpringSpec left, eQuantic.UI.Primitives.SpringSpec right) -> bool
 static eQuantic.UI.Primitives.SpringSpec.operator ==(eQuantic.UI.Primitives.SpringSpec left, eQuantic.UI.Primitives.SpringSpec right) -> bool
