@@ -66,6 +66,66 @@
             Text="This project builds with eQuantic.UI.Sdk $(_EQuanticSdkVersion), the version global.json pins, and sets EQuanticUIVersion to $(EQuanticUIVersion). The SDK ships with its packages at its own version and reads it itself: remove EQuanticUIVersion, and change the version in global.json alone." />
     </Target>
 
+    <!--
+        A catalog's typed accessors are the build's to write (#1784): a site kept a script that wrote
+        each Strings.Designer.cs from its neutral .resx, and a CI step that failed when the committed
+        file differed, which it did over a stray blank line. MSBuild's own GenerateResource writes
+        them, from the StronglyTyped* metadata set here, in the shape Visual Studio's
+        ResXFileCodeGenerator writes (one internal class with a static ResourceManager and Culture,
+        and one static string per key), which is the shape eqc turns into lookups in the browser
+        (ResourceShape). Its namespace is the project's root namespace and the .resx's folder, as
+        Visual Studio names it, and its ResourceManager's base name is the manifest name MSBuild gave
+        the resource, so the satellite assemblies answer it even where MSBuild named the resource
+        without its folder (a project built through a symbolic link to its folder). The class lands in the
+        compiler's generated tree, where eqc reads generated sources.
+        eqc reads a catalog's .resx and its cultures BESIDE the file that declares the class (ResxFiles),
+        so the generated tree mirrors the project's folders: Resources/Strings.resx gets
+        generated/eQuantic.UI.Resources/Resources/Strings.Designer.cs, with copies of Strings.resx and
+        its cultures beside it, refreshed before eqc runs, a hot reload's compile included.
+
+        A culture's .resx gets nothing: the neutral one carries the keys. A neutral .resx with a
+        Designer.cs beside it keeps it, so an app that has one changes nothing, and so does one whose
+        project already set the StronglyTyped* metadata itself.
+    -->
+    <Target Name="EQuanticResourceAccessors" AfterTargets="CreateManifestResourceNames" BeforeTargets="CoreResGen"
+            DependsOnTargets="_EQuanticMirrorResources" Condition="'@(EmbeddedResource)' != ''">
+        <PropertyGroup>
+            <_EqAccessorsDir Condition="'$(CompilerGeneratedFilesOutputPath)' != ''">$(CompilerGeneratedFilesOutputPath)/eQuantic.UI.Resources/</_EqAccessorsDir>
+            <_EqAccessorsDir Condition="'$(_EqAccessorsDir)' == ''">$(IntermediateOutputPath)generated/eQuantic.UI.Resources/</_EqAccessorsDir>
+        </PropertyGroup>
+        <ItemGroup>
+            <EmbeddedResource Update="@(EmbeddedResource)"
+                Condition="'%(Extension)' == '.resx' AND '%(EmbeddedResource.WithCulture)' != 'true'
+                           AND '%(EmbeddedResource.StronglyTypedLanguage)' == '' AND '%(EmbeddedResource.GenerateResource)' != 'false'
+                           AND !Exists('%(RootDir)%(Directory)%(Filename).Designer.cs')
+                           AND !$([System.IO.Path]::IsPathRooted('%(RelativeDir)')) AND !$([System.String]::Copy('%(RelativeDir)').StartsWith('..'))"
+                StronglyTypedLanguage="C#"
+                StronglyTypedClassName="%(Filename)"
+                StronglyTypedNamespace="$([System.Text.RegularExpressions.Regex]::Replace($([System.Text.RegularExpressions.Regex]::Replace($([System.Text.RegularExpressions.Regex]::Replace('$(RootNamespace)/%(RelativeDir)', '[/\\]+', '.')), '[^\w.]', '_')), '\.$', ''))"
+                StronglyTypedManifestPrefix="$([System.Text.RegularExpressions.Regex]::Replace('%(ManifestResourceName)', '\.[^.]+$', ''))"
+                StronglyTypedFileName="$(_EqAccessorsDir)%(RelativeDir)%(Filename).Designer.cs" />
+        </ItemGroup>
+        <!-- The folder exists: _EQuanticMirrorResources copied the .resx into it before CoreResGen. -->
+    </Target>
+
+    <!-- The copies eqc reads beside a generated accessor class (EQuanticResourceAccessors): every .resx
+         under the project, mirrored into the generated tree, skipped when unchanged. -->
+    <Target Name="_EQuanticMirrorResources" BeforeTargets="CoreResGen;CompileEQuanticUI"
+            Condition="'@(EmbeddedResource)' != ''">
+        <PropertyGroup>
+            <_EqAccessorsDir Condition="'$(CompilerGeneratedFilesOutputPath)' != ''">$(CompilerGeneratedFilesOutputPath)/eQuantic.UI.Resources/</_EqAccessorsDir>
+            <_EqAccessorsDir Condition="'$(_EqAccessorsDir)' == ''">$(IntermediateOutputPath)generated/eQuantic.UI.Resources/</_EqAccessorsDir>
+        </PropertyGroup>
+        <ItemGroup>
+            <!-- Mirrored by the path the project names them by, which is relative for every .resx the
+                 project's own folders hold. One named outside them gets no mirror and no accessors. -->
+            <_EqMirroredResx Include="@(EmbeddedResource)"
+                Condition="'%(Extension)' == '.resx' AND !$([System.IO.Path]::IsPathRooted('%(RelativeDir)')) AND !$([System.String]::Copy('%(RelativeDir)').StartsWith('..'))" />
+        </ItemGroup>
+        <Copy SourceFiles="@(_EqMirroredResx)" DestinationFiles="@(_EqMirroredResx->'$(_EqAccessorsDir)%(RelativeDir)%(Filename)%(Extension)')"
+              SkipUnchangedFiles="true" />
+    </Target>
+
     <Target Name="EQuanticAnnounceDevSource" BeforeTargets="Build"
             Condition="'$(IsEQuanticDevMode)' == 'true'
                        AND !$([MSBuild]::EnsureTrailingSlash('$(MSBuildProjectDirectory)').StartsWith($([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))))))">
