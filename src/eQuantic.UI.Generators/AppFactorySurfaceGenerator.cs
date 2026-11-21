@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Generators;
@@ -114,9 +115,11 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
             // A CAPABILITY never reaches the signature: a caller composing a component has no
             // container to reach into, and eqc already resolves it on the other side. The factory
             // asks the same scope the SSR pipeline arms, so both targets construct alike.
+            // The values a parameter allows travel with it (EQ3106): a screen calls the factory, and the
+            // analyzer reads the parameter the CALL binds.
             var parameters = string.Join(", ", component.Parameters
                 .Where(p => !p.IsDependency)
-                .Select(p => p.Default is null ? $"{p.Type} {p.Name}" : $"{p.Type} {p.Name} = {p.Default}"));
+                .Select(p => p.Allowed + (p.Default is null ? $"{p.Type} {p.Name}" : $"{p.Type} {p.Name} = {p.Default}")));
             // A capability the component declared it CANNOT work without is required by name: a
             // target that does not have it gets a sentence saying which one and where, instead of a
             // null that travels into the component and fails somewhere inside it. One the component
@@ -157,7 +160,7 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
     private sealed class Component
     {
         public Component(string ns, string name, string fullName, int electedCount,
-            List<(string Type, string Name, string? Default, bool IsDependency, bool IsRequired)> parameters, Location location)
+            List<(string Type, string Name, string? Default, bool IsDependency, bool IsRequired, string Allowed)> parameters, Location location)
         {
             Namespace = ns; Name = name; FullName = fullName;
             ElectedCount = electedCount; Parameters = parameters; Location = location;
@@ -168,7 +171,7 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
         /// <summary>Globally qualified, so the factory body is never ambiguous.</summary>
         public string FullName { get; }
         public int ElectedCount { get; }
-        public List<(string Type, string Name, string? Default, bool IsDependency, bool IsRequired)> Parameters { get; }
+        public List<(string Type, string Name, string? Default, bool IsDependency, bool IsRequired, string Allowed)> Parameters { get; }
         public Location Location { get; }
     }
 
@@ -186,7 +189,8 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
                 Name: p.Name,
                 Default: DefaultLiteral(p),
                 IsDependency: CapabilityRule.IsDependency(p.Type),
-                IsRequired: CapabilityRule.IsRequired(p)))
+                IsRequired: CapabilityRule.IsRequired(p),
+                Allowed: AllowedValues(p)))
             .ToList();
 
         return new Component(
@@ -197,6 +201,43 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
             parameters,
             symbol.Locations.FirstOrDefault() ?? Location.None);
     }
+
+    /// <summary>
+    /// The parameter's <c>[AllowedValues]</c>, written again for the factory's parameter with its values
+    /// and its words, each a literal: the mark's own spelling may name a constant the generated file
+    /// cannot see. Empty for a parameter with no mark.
+    /// </summary>
+    private static string AllowedValues(IParameterSymbol parameter)
+    {
+        foreach (var attribute in parameter.GetAttributes())
+        {
+            if (attribute.AttributeClass?.ToDisplayString() != "System.ComponentModel.DataAnnotations.AllowedValuesAttribute"
+                || attribute.ConstructorArguments.Length != 1
+                || attribute.ConstructorArguments[0].Kind != TypedConstantKind.Array)
+                continue;
+            var values = attribute.ConstructorArguments[0].Values.Select(Literal).ToList();
+            // A value with no literal this file can write (an array, a type) leaves the mark off: the
+            // factory then builds as it always did, and the constructor's own check still runs.
+            if (values.Any(value => value is null)) return "";
+            var arguments = values
+                .Concat(attribute.NamedArguments
+                    .Where(named => named.Key == "ErrorMessage" && named.Value.Value is string)
+                    .Select(named => "ErrorMessage = " + named.Value.ToCSharpString()));
+            return $"[global::System.ComponentModel.DataAnnotations.AllowedValues({string.Join(", ", arguments)})] ";
+        }
+
+        return "";
+    }
+
+    /// <summary>One value of the mark as a literal the generated file can write wherever it stands: a
+    /// constant as C# spells it, an enum's value cast to its globally qualified type. Null otherwise.</summary>
+    private static string? Literal(TypedConstant value) => value.Kind switch
+    {
+        TypedConstantKind.Primitive => value.ToCSharpString(),
+        TypedConstantKind.Enum when value.Type is { } type =>
+            $"({type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})({value.Value})",
+        _ => null,
+    };
 
     /// <summary>
     /// A parameter's default, spelled so the factory MIRRORS the constructor — an omitted argument

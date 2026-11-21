@@ -81,13 +81,21 @@ export class ComponentElement extends Element {
             this.configuration = configuration;
             let next = (configuration as UiComponent);
             let retained: any; 
-            if ((($0) => ($0 instanceof StatefulComponent && (retained = $0, true)))(this.component)) {
-                if (!(retained === next)) retained.adoptConfig(next);
+            if ((($0) => ($0 instanceof StatefulComponent && (retained = $0, true)))(this.component) && !(retained === next)) {
+                let keeps: any; 
+                if (!((keeps = this.owner.keepsInstance) != null) || keeps(retained)) retained.adoptConfig(next); else this.take(retained, next);
             } else {
                 this.component = next;
             }
         }
         this.rebuild(force);
+    }
+
+    take(retained: StatefulComponent, next: UiComponent) {
+        if (this.owner.live && retained.leavePosition(this)) this.owner.queueUnmount(retained);
+        this.component = next;
+        let stateful: any; 
+        if (this.owner.live && (next instanceof StatefulComponent && (stateful = next, true)) && stateful.enterPosition(this)) this.owner.queueMount(this);
     }
 
     rebuild(force: boolean) {

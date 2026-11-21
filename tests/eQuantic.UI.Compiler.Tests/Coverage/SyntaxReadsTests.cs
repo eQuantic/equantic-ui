@@ -38,6 +38,8 @@ public class SyntaxReadsTests
             "reads declarations alone (the field names of a type, its chain and the types derived from it), which a save that changed bodies alone leaves as they were",
         ["src/eQuantic.UI.Compiler/Services/ResourceClasses.cs:IdCache"] =
             "reads declarations alone (the names of the resource classes), which a save that changed bodies alone leaves as they were",
+        ["src/eQuantic.UI.Compiler/CodeGen/Extensions/CompilationExtensions.cs:NamedLikeTheRuntime"] =
+            "reads declarations alone (the names of the classes and structs of the app and of the runtime), which a save that changed bodies alone leaves as they were",
     };
 
     private static readonly HashSet<string> KeyedBy = new(StringComparer.Ordinal)
