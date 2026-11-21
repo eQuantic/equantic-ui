@@ -210,7 +210,7 @@ public sealed class TimePicker : StatefulComponent
 
     private void Pick(TimeOnly time)
     {
-        _reported = time;
+        if (OnChanged is not null) _reported = time;
         OnChanged?.Invoke(time);
         SetState(() => _open = false);
     }

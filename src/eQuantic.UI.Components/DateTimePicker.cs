@@ -124,7 +124,7 @@ public sealed class DateTimePicker : StatefulComponent
         if (Min is { } min && moment < min) return;
         if (Max is { } max && moment > max) return;
         Selected = moment;
-        _reported = moment;
+        if (OnChanged is not null) _reported = moment;
         OnChanged?.Invoke(moment);
     }
 }

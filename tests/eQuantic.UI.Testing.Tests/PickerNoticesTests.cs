@@ -6,10 +6,6 @@ using static eQuantic.UI.Components.UI;
 
 namespace eQuantic.UI.Testing.Tests;
 
-/// <summary>The notices are a process-wide channel, so the tests that read it run alone.</summary>
-[CollectionDefinition(nameof(DevelopmentNoticesCollection), DisableParallelization = true)]
-public sealed class DevelopmentNoticesCollection;
-
 /// <summary>
 /// A picker drawn again without the value it reported says so in development, and a form that lays its
 /// labels out itself draws a picker without its own (#1780). An order form drew
@@ -113,6 +109,42 @@ public class PickerNoticesTests
 
             tester.Find("Pressed 1").Should().NotBeNull("the form was drawn again");
             heard.Should().BeEmpty("an empty picker handed nothing is what it was told to be");
+        }
+        finally
+        {
+            DevelopmentNotices.Sink = null;
+        }
+    }
+
+    /// <summary>A form whose picker has no handler, drawn again for another reason.</summary>
+    private sealed class UnheardForm : StatefulComponent
+    {
+        private int _presses;
+
+        public override VisualNode Build(ComponentContext context) =>
+            Column(children:
+            [
+                DatePicker(label: "Day"),
+                Button($"Pressed {_presses}", onPressed: () => SetState(() => _presses++)),
+            ]);
+    }
+
+    [Fact]
+    public void APickerNobodyListensTo_DrawnAgainAfterADay_SaysNothing()
+    {
+        var heard = Listen();
+        try
+        {
+            using var tester = new ComponentTester(culture: CultureInfo.GetCultureInfo("en-US"));
+            tester.Pump(new UnheardForm());
+
+            tester.EnterText("Day", "7/17/2026");
+            tester.Pump();
+            tester.Tap("Pressed 0");
+            tester.Pump();
+
+            tester.Find("Pressed 1").Should().NotBeNull("the form was drawn again");
+            heard.Should().BeEmpty("a picker with no onChanged reported nothing to anyone");
         }
         finally
         {

@@ -67,7 +67,9 @@ public sealed class DatePicker : StatefulComponent
         // A picker shows the date it is HANDED. Drawn again with none, after it reported one, its field
         // empties while the page keeps the day underneath: `new DatePicker(null, ChooseDay)` lived three
         // slices in an app before anyone saw it. Said in development, as React says it of a component
-        // that turns uncontrolled.
+        // that turns uncontrolled. A page that keeps the day without drawing the picker again and then
+        // clears it on purpose reads the same from here, and hears the notice too: the picker cannot
+        // see the page's intent, only what it reported and what it is handed.
         if (_reported is { } said && fresh.Selected is null && !Composed)
             DevelopmentNotices.Say($"A DatePicker reported {said:d} through onChanged and was drawn again with no date, "
                 + "so its field emptied: a picker shows the date it is handed. Hand it back the day onChanged reports.");
@@ -158,7 +160,8 @@ public sealed class DatePicker : StatefulComponent
     /// <summary>A day chosen in the grid: commit it, close, and let the field show it again.</summary>
     private void Pick(DateOnly day)
     {
-        _reported = day;
+        // Remembered only when someone hears it: a picker with no handler reported nothing.
+        if (OnChanged is not null) _reported = day;
         OnChanged?.Invoke(day);
         SetState(() =>
         {
@@ -183,7 +186,7 @@ public sealed class DatePicker : StatefulComponent
         var parsed = Parse(text);
         if (parsed is { } day && InRange(day))
         {
-            _reported = day;
+            if (OnChanged is not null) _reported = day;
             OnChanged?.Invoke(day);
         }
         SetState(() => _typing = text);

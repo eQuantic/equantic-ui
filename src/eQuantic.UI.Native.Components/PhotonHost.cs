@@ -3222,15 +3222,20 @@ public sealed partial class PhotonHost
     /// A link that opens beside the page (<see cref="Link.OpensBeside"/>, #941), handed to the system
     /// when its destination is an absolute <c>http</c> or <c>https</c> address and the shell opens
     /// addresses (<see cref="IUrlLauncher"/>). False for an app's own route, which navigates in place.
+    /// The press is the link's once it is handed over, whatever the system answers, as a browser's
+    /// blocked tab still took the click; a launcher that fails says so through <see cref="Log"/>.
     /// </summary>
-    private static bool OpenedBeside(LinkRegion link)
+    private bool OpenedBeside(LinkRegion link)
     {
         if (!link.OpensBeside
             || !Uri.TryCreate(link.Destination, UriKind.Absolute, out var url)
             || url.Scheme is not ("http" or "https")
             || CapabilityScope.Resolve<IUrlLauncher>() is not { } launcher)
             return false;
-        _ = launcher.OpenUrlAsync(url).AsTask();
+        var log = Log;
+        _ = launcher.OpenUrlAsync(url).AsTask().ContinueWith(
+            opening => log?.Invoke($"[eQuantic.UI] the system could not open '{url}': {opening.Exception?.GetBaseException().Message}"),
+            CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
         return true;
     }
 
