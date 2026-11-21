@@ -60,7 +60,7 @@ None.
 ## Impact
 
 - `src/eQuantic.UI.Primitives`: `Sortable.Indent`, `SortableItem.Depth`, `SortDrop.Depth`, `SortPlacement.Depths`,
-  `SortPlacement.Wanted`, `SortPlacement.Siblings`.
+  `SortPlacement.Wanted`, `SortPlacement.KeyDepth`, `SortPlacement.Siblings`.
 - `src/eQuantic.UI.Components`: `UI.Sortable(…, indent:)`, `UI.SortableItem(…, depth:)`, `TreeView`.
 - `src/eQuantic.UI.Web`: the lowering of a sortable and its items.
 - `src/eQuantic.UI.Runtime`: `lowering.ts`, `vocabulary.ts`, `nodes.ts`, `value-types.ts`, `dom/sortable.ts`, the
