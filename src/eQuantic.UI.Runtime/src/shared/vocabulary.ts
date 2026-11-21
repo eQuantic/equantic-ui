@@ -203,6 +203,8 @@ interface BoxStyleConfig {
   hover?: StyleDiff | null;
   focus?: StyleDiff | null;
   pressed?: StyleDiff | null;
+  /** While the nearest pinned header around the box is scrolled (C# `BoxStyle.Scrolled`, #1769). */
+  scrolled?: StyleDiff | null;
   /** CSS cursor mirror — the C# PointerCursor member name in camelCase ('crosshair', 'colResize'). */
   cursor?: string;
 }
@@ -253,6 +255,8 @@ export class BoxStyle {
   hover?: StyleDiff | null;
   focus?: StyleDiff | null;
   pressed?: StyleDiff | null;
+  /** The nearest pinned header's scroll (C# `BoxStyle.Scrolled`, #1769). */
+  scrolled?: StyleDiff | null;
   cursor?: string;
 
   constructor(config?: BoxStyleConfig) {

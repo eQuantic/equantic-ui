@@ -59,6 +59,7 @@ import {
   CONTROL_FOCUS,
   CONTROL_HOVER,
   CONTROL_PRESSED,
+  HEADER_SCROLLED,
   ensureAdaptiveGate,
   gateCompactUntil,
   gateExpandedFrom,
@@ -3726,6 +3727,18 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
   if (focus && !(simulatedState & SIMULATED_FOCUSED)) appendDiff(result, CONTROL_FOCUS, focus, style);
   if (pressed && !(simulatedState & SIMULATED_PRESSED))
     appendDiff(result, CONTROL_PRESSED, pressed, style);
+  // The HEADER's scroll (C# twin, #1769): a rule on the nearest header's attribute, which the
+  // controller sets, so a header with no scrolled style of its own is tracked as soon as a box asks.
+  // A simulated state was written into the resting declarations, which the scrolled rule outweighs,
+  // so the state it pictures is laid over the scroll, in the order a real one wins (C# twin).
+  if (style.scrolled) {
+    let scrolled: StyleDiffValue = style.scrolled;
+    if (style.hover && simulatedState & SIMULATED_HOVERED) scrolled = laidOver(scrolled, style.hover);
+    if (focus && simulatedState & SIMULATED_FOCUSED) scrolled = laidOver(scrolled, focus);
+    if (pressed && simulatedState & SIMULATED_PRESSED) scrolled = laidOver(scrolled, pressed);
+    appendDiff(result, HEADER_SCROLLED, scrolled, style);
+    installScrolledController();
+  }
 
   if (box.child) {
     const child = lowerNode(box.child, context, null, path + '/0');
@@ -3831,6 +3844,13 @@ function applyDiff(
   style: BoxStyleValue,
 ): void {
   Object.assign(entries, diffEntries(diff, style));
+}
+
+/** `over`'s members laid over `under`'s, each one it sets replacing the other's (C# `LaidOver`, #1769). */
+function laidOver(under: StyleDiffValue, over: StyleDiffValue): StyleDiffValue {
+  const laid: Record<string, unknown> = { ...under };
+  for (const [member, value] of Object.entries(over)) if (value !== undefined && value !== null) laid[member] = value;
+  return laid as StyleDiffValue;
 }
 
 /** Spec S5 mirror of the C# AppendDiff — identical declaration strings, pseudo-hashed classes. */

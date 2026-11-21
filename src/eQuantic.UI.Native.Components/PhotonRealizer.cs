@@ -432,7 +432,7 @@ public static class PhotonRealizer
             realizedLayers.Add(queued.Layer);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
-            EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { HoveredPart = hoveredPart, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
+            EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { HoveredPart = hoveredPart, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView, InScrolledHeader = queued.InScrolledHeader },
                 theme, mode, contrast, builder, motion, overlays));
         }
 

@@ -388,6 +388,30 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         transition: new TransitionSpec(StyleChannels.colors),
       }),
     ),
+    'header-scrolled-boxes': still(
+      new Pinned(
+        column(
+          0,
+          new Box(
+            new BoxStyle({
+              width: 96,
+              height: 96,
+              transition: new TransitionSpec(StyleChannels.opacity | StyleChannels.transform),
+              scrolled: new StyleDiff({ opacity: 0, transform: Transform2D.scale(0.6) }),
+            }),
+          ),
+          new Box(
+            new BoxStyle({
+              width: 80,
+              height: 32,
+              background: photonTheme.surfaceSubtle,
+              scrolled: new StyleDiff({ background: photonTheme.surface }),
+              hover: new StyleDiff({ background: photonTheme.surfaceHighlight }),
+            }),
+          ),
+        ),
+      ),
+    ),
     'box-hover-border-edge': still(
       new Box(
         new BoxStyle({
