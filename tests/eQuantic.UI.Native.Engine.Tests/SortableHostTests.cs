@@ -577,6 +577,11 @@ public class SortableHostTests
         public List<SortDrop> Dropped { get; } = [];
         public Func<SortDrop, bool>? Guard { get; init; }
 
+        /// <summary>The id the fourth row goes by, which a test changes while an item is carried over it.</summary>
+        private string _docs = "docs";
+
+        public void Rename(string id) => SetState(() => _docs = id);
+
         private static SortableItem Item(string name, int depth) =>
             new(new Pressable(new Box(new BoxStyle { Width = SizeValue.Fill, Height = CardHeight }), () => { }) { Label = name },
                 name) { Depth = depth };
@@ -584,7 +589,7 @@ public class SortableHostTests
         public override VisualNode Build(ComponentContext context)
         {
             var files = new Column(gap: 0);
-            foreach (var (name, depth) in new[] { ("src", 0), ("App.cs", 1), ("Program.cs", 1), ("docs", 0), ("README.md", 0) })
+            foreach (var (name, depth) in new[] { ("src", 0), ("App.cs", 1), ("Program.cs", 1), (_docs, 0), ("README.md", 0) })
                 files.Add(Item(name, depth));
             var next = new Column(gap: 0);
             next.Add(Item("z", 0));
@@ -653,6 +658,28 @@ public class SortableHostTests
         host.PressUp(x + 16, y);
 
         outline.Dropped.Should().ContainSingle().Which.Should().Be(new SortDrop("README.md", "files", "files", 3) { Depth = 1 });
+    }
+
+    [Fact]
+    public void ThePlaceIsAskedAgain_WhenTheItemsAroundItChange_AtTheSameIndex()
+    {
+        var outline = new Outline();
+        var host = OpenOutline(outline);
+        var readme = CardAt(host, "README.md");
+        var docs = CardAt(host, "docs");
+        host.PressDown(readme.X, readme.Y);
+        host.PointerMove(readme.X, readme.Y - 10);
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        host.PointerMove(readme.X, docs.Y);
+        outline.Hovered[^1]!.Into.Should().Be("docs");
+
+        // The row under the pointer is another item now, at the same index.
+        outline.Rename("notes");
+        host.RenderFrame(new DisplayListBuilder(), 48);
+        host.PointerMove(readme.X, docs.Y + 1);
+
+        outline.Hovered[^1]!.Into.Should().Be("notes", "a place is the items around it, not only its index");
+        host.PointerCancel();
     }
 
     [Fact]

@@ -202,11 +202,13 @@ public sealed partial class PhotonHost
             var horizontal = list.Axis == DragAxis.Horizontal;
             // The depth the pointer asks for, from its travel across since it picked the item up (#1594).
             var travelled = horizontal ? sort.Pointer.Y - sort.Start.Y : sort.Pointer.X - sort.Start.X;
-            var wants = SortPlacement.Wanted(sort.ItemNode.Depth, travelled, list.Indent);
+            var wants = SortPlacement.Wanted(DepthOf(sort.ItemNode), travelled, list.Indent);
             var (index, into) = SpotIn(regions, target, sort, sort.Pointer);
+            var before = index > 0 ? _sortIds[index - 1] : null;
+            var here = index < _sortIds.Count ? _sortIds[index] : null;
             if (sort.Asked is not { } asked || !ReferenceEquals(asked.List, at) || asked.Index != index
-                || asked.Into != into || asked.Wants != wants)
-                sort.Asked = (at, index, into, wants, FirstAccepted(sort, list, index, into, wants));
+                || asked.Into != into || asked.Before != before || asked.At != here || asked.Wants != wants)
+                sort.Asked = (at, index, into, before, here, wants, FirstAccepted(sort, list, index, into, wants));
             if (sort.Asked.Value.Drop is { } drop) next = (at, list, drop);
         }
         Report(sort, next);
@@ -317,18 +319,21 @@ public sealed partial class PhotonHost
             if (regions[i].Node is not SortableItem item) continue;
             if (ReferenceEquals(at, carried))
             {
-                if (node.Indent > 0) carries = item.Depth;
+                if (node.Indent > 0) carries = DepthOf(item);
                 continue;
             }
-            if (carries is { } depth && item.Depth > depth) continue;
+            if (carries is { } depth && DepthOf(item) > depth) continue;
             carries = null;
             var box = regions[i].Bounds;
             _sortStarts.Add(horizontal ? box.X : box.Y);
             _sortExtents.Add(horizontal ? box.Width : box.Height);
             _sortIds.Add(item.Id);
-            _sortDepths.Add(item.Depth);
+            _sortDepths.Add(DepthOf(item));
         }
     }
+
+    /// <summary>An item's depth as the web reads it: one below 0 is the top, as its lowering writes nothing for it.</summary>
+    private static int DepthOf(SortableItem item) => Math.Max(0, item.Depth);
 
     private static bool InsideAny(Element at, List<Element> lists)
     {
@@ -534,12 +539,12 @@ public sealed partial class PhotonHost
             _sort = sort;
             sort.KeyList = (regions[list].Element, sortable);
             sort.KeyIndex = IndexIn(regions, list, at);
-            sort.KeyWants = item.Depth;
+            sort.KeyWants = DepthOf(item);
             // Its own place, which no guard is asked about: in a list with depths its own depth is always one the place
             // allows (#1594).
             CountIn(regions[list].Element, at);
             var picked = PlaceDrop(sort, sortable, sort.KeyIndex, -1, sortable.Indent > 0
-                ? SortPlacement.Depths(item.Depth, Above(sort.KeyIndex), Below(sort.KeyIndex))[0]
+                ? SortPlacement.Depths(DepthOf(item), Above(sort.KeyIndex), Below(sort.KeyIndex))[0]
                 : null);
             sort.KeyDepth = picked.Depth;
             Report(sort, (regions[list].Element, sortable, picked));

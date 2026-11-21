@@ -159,8 +159,10 @@ function onPointerDown(down: PointerEvent): void {
     list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: drop }));
   };
 
-  // The guard is asked once per place and depth asked for, not once per move: a tree's walks its subtree.
-  let asked: { list: HTMLElement; index: number; into: number; wants: number; drop: SortDrop | null } | null = null;
+  // The guard is asked once per place and depth asked for, not once per move: a tree's walks its subtree. A place is
+  // its list, its index and item inside, the items around it (rows that open above shift what an index means) and the
+  // depth asked for.
+  let asked: { list: HTMLElement; key: string; drop: SortDrop | null } | null = null;
   const scrollers = new Map<HTMLElement, HTMLElement | null>();
   const ownDepth = depthOf(item);
 
@@ -175,8 +177,10 @@ function onPointerDown(down: PointerEvent): void {
       const wants = SortPlacement.wanted(ownDepth, travelled, indentOf(list));
       const others = othersOf(list, item);
       const [index, into] = spotIn(list, others, pointer.x, pointer.y);
-      if (!(asked && asked.list === list && asked.index === index && asked.into === into && asked.wants === wants))
-        asked = { list, index, into, wants, drop: firstAccepted(list, placesAt(list, id, from, others, index, into, wants)) };
+      const around = [others[index - 1], others[index]].map((at) => at?.getAttribute('data-eq-sort-item') ?? '');
+      const key = JSON.stringify([index, into, wants, ...around]);
+      if (!(asked && asked.list === list && asked.key === key))
+        asked = { list, key, drop: firstAccepted(list, placesAt(list, id, from, others, index, into, wants)) };
       next = asked.drop ? { list, drop: asked.drop } : null;
     }
     if (landing && (!next || next.list !== landing.list)) report(landing.list, null);

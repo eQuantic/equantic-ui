@@ -61,9 +61,10 @@ internal sealed class SortGesture(Element item, SortableItem itemNode, Element s
     /// <summary>Where it would land now: the list, its node and the drop that list would report.</summary>
     public (Element List, Sortable Node, SortDrop Drop)? Landing { get; set; }
 
-    /// <summary>The last spot a pointer offered a list's guard, with the depth it asked for (#1594), and the drop the
-    /// guard took there, or null when it refused them all: a guard is asked once per place and depth asked for.</summary>
-    public (Element List, int Index, int Into, int Wants, SortDrop? Drop)? Asked { get; set; }
+    /// <summary>The last spot a pointer offered a list's guard, the ids of the items around it (rows that open above
+    /// shift what an index means), the depth it asked for (#1594), and the drop the guard took there, or null when it
+    /// refused them all: a guard is asked once per place and depth asked for.</summary>
+    public (Element List, int Index, int Into, string? Before, string? At, int Wants, SortDrop? Drop)? Asked { get; set; }
 
     /// <summary>The list a keyboard's carry is in, and the place in it.</summary>
     public (Element List, Sortable Node)? KeyList { get; set; }
