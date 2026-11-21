@@ -8,6 +8,7 @@ import type { CrossAlignValue } from '../shared/enums.generated';
 import type { ComponentElement } from '../shared/components/ComponentElement';
 import type { GlobalKey } from '../shared/vocabulary';
 import { RenderManager } from '../dom/renderer';
+import type { HydrationResult } from '../dom/reconciler';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
 import { hydrate, type HydrationSpec } from '../utils/hydrate';
@@ -457,10 +458,11 @@ export abstract class StatelessComponent extends UiComponent {
    * shared shell. The caller has already determined SSR content is present, so this bypasses the
    * `data-ssr` gate that {@link mount} uses.
    */
-  hydrate(container: HTMLElement): void {
+  hydrate(container: HTMLElement): HydrationResult {
     const node = this.render();
-    this._renderManager.hydrate(node, container);
+    const result = this._renderManager.hydrate(node, container);
     this._mounted = true;
+    return result;
   }
 
   /**
@@ -682,11 +684,12 @@ export abstract class StatefulComponent extends UiComponent {
     this.notifyMounted();
   }
 
-  hydrate(container: HTMLElement): void {
-    this._renderManager.hydrate(this.render(), container);
+  hydrate(container: HTMLElement): HydrationResult {
+    const result = this._renderManager.hydrate(this.render(), container);
     this._mounted = true;
     // The root has no parent to mount it — see notifyMounted.
     this.notifyMounted();
+    return result;
   }
 
   mountReconcile(container: HTMLElement, previousNode: HtmlNode | null): HtmlNode {

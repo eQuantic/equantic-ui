@@ -1,0 +1,63 @@
+#nullable enable
+eQuantic.UI.Testing.HydrationAssert
+static eQuantic.UI.Testing.HydrationAssert.PageAsync<TEntryPoint>(Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<TEntryPoint!>! factory, string! path, eQuantic.UI.Testing.HydrationOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<eQuantic.UI.Testing.HydrationReport!>!
+eQuantic.UI.Testing.HydrationDifference.Client.get -> string?
+eQuantic.UI.Testing.HydrationDifference.Client.init -> void
+eQuantic.UI.Testing.HydrationDifference
+eQuantic.UI.Testing.HydrationDifference.<Clone>$() -> eQuantic.UI.Testing.HydrationDifference!
+eQuantic.UI.Testing.HydrationDifference.Deconstruct(out string! Kind, out string! Where, out string? Name, out string? Server, out string? Client) -> void
+eQuantic.UI.Testing.HydrationDifference.Equals(eQuantic.UI.Testing.HydrationDifference? other) -> bool
+eQuantic.UI.Testing.HydrationDifference.HydrationDifference(string! Kind, string! Where, string? Name, string? Server, string? Client) -> void
+override eQuantic.UI.Testing.HydrationDifference.Equals(object? obj) -> bool
+override eQuantic.UI.Testing.HydrationDifference.GetHashCode() -> int
+static eQuantic.UI.Testing.HydrationDifference.operator !=(eQuantic.UI.Testing.HydrationDifference? left, eQuantic.UI.Testing.HydrationDifference? right) -> bool
+static eQuantic.UI.Testing.HydrationDifference.operator ==(eQuantic.UI.Testing.HydrationDifference? left, eQuantic.UI.Testing.HydrationDifference? right) -> bool
+eQuantic.UI.Testing.HydrationDifference.Kind.get -> string!
+eQuantic.UI.Testing.HydrationDifference.Kind.init -> void
+eQuantic.UI.Testing.HydrationDifference.Where.get -> string!
+eQuantic.UI.Testing.HydrationDifference.Where.init -> void
+eQuantic.UI.Testing.HydrationDifference.Name.get -> string?
+eQuantic.UI.Testing.HydrationDifference.Name.init -> void
+eQuantic.UI.Testing.HydrationDifference.Server.get -> string?
+eQuantic.UI.Testing.HydrationDifference.Server.init -> void
+override eQuantic.UI.Testing.HydrationDifference.ToString() -> string!
+eQuantic.UI.Testing.HydrationException.HydrationException(eQuantic.UI.Testing.HydrationReport! report) -> void
+eQuantic.UI.Testing.HydrationException.Report.get -> eQuantic.UI.Testing.HydrationReport!
+eQuantic.UI.Testing.HydrationException
+eQuantic.UI.Testing.HydrationOptions.Width.get -> int
+eQuantic.UI.Testing.HydrationOptions.Width.init -> void
+eQuantic.UI.Testing.HydrationOptions
+eQuantic.UI.Testing.HydrationOptions.HydrationOptions() -> void
+eQuantic.UI.Testing.HydrationOptions.Timeout.get -> System.TimeSpan
+eQuantic.UI.Testing.HydrationOptions.Timeout.init -> void
+eQuantic.UI.Testing.HydrationReport.Address.get -> string!
+eQuantic.UI.Testing.HydrationReport.Address.init -> void
+eQuantic.UI.Testing.HydrationReport.Booted.get -> bool
+eQuantic.UI.Testing.HydrationReport.Booted.init -> void
+eQuantic.UI.Testing.HydrationReport.Page.get -> string?
+eQuantic.UI.Testing.HydrationReport.Page.init -> void
+eQuantic.UI.Testing.HydrationReport.RoutedPage.get -> string?
+eQuantic.UI.Testing.HydrationReport.RoutedPage.init -> void
+eQuantic.UI.Testing.HydrationReport.Hydrated.get -> bool
+eQuantic.UI.Testing.HydrationReport.Hydrated.init -> void
+eQuantic.UI.Testing.HydrationReport.DrewOver.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Testing.HydrationReport.DrewOver.init -> void
+eQuantic.UI.Testing.HydrationReport.Warnings.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Testing.HydrationReport.Warnings.init -> void
+eQuantic.UI.Testing.HydrationReport.Differences.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Testing.HydrationDifference!>!
+eQuantic.UI.Testing.HydrationReport.Differences.init -> void
+eQuantic.UI.Testing.HydrationReport.Errors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Testing.HydrationReport.Errors.init -> void
+eQuantic.UI.Testing.HydrationReport.MissingStrings.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Testing.HydrationReport.MissingStrings.init -> void
+eQuantic.UI.Testing.HydrationReport.Problems.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Testing.HydrationReport.Passed.get -> bool
+override eQuantic.UI.Testing.HydrationReport.ToString() -> string!
+eQuantic.UI.Testing.HydrationReport
+eQuantic.UI.Testing.HydrationReport.<Clone>$() -> eQuantic.UI.Testing.HydrationReport!
+eQuantic.UI.Testing.HydrationReport.Equals(eQuantic.UI.Testing.HydrationReport? other) -> bool
+eQuantic.UI.Testing.HydrationReport.HydrationReport() -> void
+override eQuantic.UI.Testing.HydrationReport.Equals(object? obj) -> bool
+override eQuantic.UI.Testing.HydrationReport.GetHashCode() -> int
+static eQuantic.UI.Testing.HydrationReport.operator !=(eQuantic.UI.Testing.HydrationReport? left, eQuantic.UI.Testing.HydrationReport? right) -> bool
+static eQuantic.UI.Testing.HydrationReport.operator ==(eQuantic.UI.Testing.HydrationReport? left, eQuantic.UI.Testing.HydrationReport? right) -> bool
