@@ -11,8 +11,9 @@ namespace eQuantic.UI.Compiler.Services;
 /// through the regex generator's own file. Now the app's types follow the referenced projects' rule.
 /// <para>
 /// The ROOTS are the app's components, its pages and its layout among them, wherever their files sit: a
-/// screen a shell composes, or a page a route in <c>Program.cs</c> names, is a module as it always was, and
-/// a component that runs only on the server is still marked <c>[ServerOnly]</c>. From them the walk follows
+/// screen a shell composes, or a page a route in <c>Program.cs</c> names, is a module as it always was: a
+/// component crosses whatever it is marked, and what of it runs on the server alone is a <c>[ServerOnly]</c>
+/// member or a Server Action. From them the walk follows
 /// each module's imports of its sibling modules (<c>./Name</c>), the same edges the bundler follows, so a
 /// class, a record, a static class or a generated type is a module exactly when the browser code names it.
 /// What is never reached is server code by inference: its module is not written and nothing it reported

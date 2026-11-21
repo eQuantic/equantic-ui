@@ -25,7 +25,8 @@ Measured on `main`, in the dashboard sample's real build:
   sit); from them the build follows each module's imports of its sibling modules, the edges the bundler
   follows. What is never reached is server code by inference: no module is written for it and nothing it
   reported is said. A component that names such a type reaches it and gets its diagnostics where they are.
-  A component that runs only on the server is still marked `[ServerOnly]`.
+  A component crosses whatever it is marked, as before: what of it runs on the server alone is a
+  `[ServerOnly]` member or a Server Action.
 - **A component that declares a static member gets a `global using` alias** beside its factory, which
   outranks both the factory and a file's `using` of its namespace, so its helpers and constants read from
   anywhere in the app while a call of the name still reaches the factory. No alias is written for a
