@@ -594,7 +594,8 @@ the parity rows it closes flip.
    in build order while the server counted as its lowering met a component, and the two orders part at
    an adaptive node's arms and at a deferred layer. So every arm of an adaptive node is a position on
    the web, which draws them all behind its gates (`BuildOwner(…, holdsEveryArm)`, and no window size
-   class or width decides an arm there), and a composed component's data is keyed by where it stands,
+   class or width decides an arm there; since #1783 the browser holds every arm only until the page has
+   hydrated, then the one its window resolves, at the same slot), and a composed component's data is keyed by where it stands,
    `r{tree}/{type}@{slots}`, read off the element on both sides (`Element.Slot`, `SlotsBelow`,
    `BuildOwner.Building`); 3.8 says why. eqc met one more emission defect on the way (#1483, a `for`
    head's declared type), fixed by the bug sweep. E3b-2 (#1454) moves the path attributes and the
