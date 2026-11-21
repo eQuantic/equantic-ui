@@ -65,10 +65,11 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
             .Where(static component => component is not null)
             .Collect();
 
-        context.RegisterSourceOutput(components, static (spc, all) => Emit(spc, all));
+        context.RegisterSourceOutput(components.Combine(context.CompilationProvider),
+            static (spc, pair) => Emit(spc, pair.Left, pair.Right));
     }
 
-    private static void Emit(SourceProductionContext spc, ImmutableArray<Component?> all)
+    private static void Emit(SourceProductionContext spc, ImmutableArray<Component?> all, Compilation compilation)
     {
         var found = all.Where(c => c is not null).Select(c => c!).ToList();
         foreach (var component in found.Where(c => c.ElectedCount > 1))
@@ -104,6 +105,12 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
         // The global using is what makes the factories reachable with no import in any file — the
         // same way the SDK puts its own surface in scope.
         source.AppendLine($"global using static {surfaceNamespace}.AppUI;");
+        // A component's statics stay reachable as `ProductEditor.Toggled(…)` (#1781). The factory brought in
+        // by the line above and the type a file brings in with `using` stand at one level, and C# took the
+        // method, so the call did not compile where the component's namespace is not the caller's. An
+        // alias outranks both there, and a call of the name still finds the factory.
+        foreach (var name in ComponentAliases.Of(byName.Values.Where(c => c.HasStatics).Select(c => (c.Name, c.Namespace)), compilation))
+            source.AppendLine($"global using {name} = {byName[name].FullName};");
         source.AppendLine();
         source.AppendLine($"namespace {surfaceNamespace};");
         source.AppendLine();
@@ -160,11 +167,15 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
     private sealed class Component
     {
         public Component(string ns, string name, string fullName, int electedCount,
-            List<(string Type, string Name, string? Default, bool IsDependency, bool IsRequired, string Allowed)> parameters, Location location)
+            List<(string Type, string Name, string? Default, bool IsDependency, bool IsRequired, string Allowed)> parameters, Location location,
+            bool hasStatics)
         {
             Namespace = ns; Name = name; FullName = fullName;
-            ElectedCount = electedCount; Parameters = parameters; Location = location;
+            ElectedCount = electedCount; Parameters = parameters; Location = location; HasStatics = hasStatics;
         }
+
+        /// <summary>Whether it declares a static member the rest of the app may read: a helper, a constant.</summary>
+        public bool HasStatics { get; }
 
         public string Namespace { get; }
         public string Name { get; }
@@ -199,7 +210,11 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
             symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
             elected,
             parameters,
-            symbol.Locations.FirstOrDefault() ?? Location.None);
+            symbol.Locations.FirstOrDefault() ?? Location.None,
+            symbol.TypeParameters.Length == 0 && symbol.GetMembers().Any(member =>
+                (member.IsStatic || member is INamedTypeSymbol) && !member.IsImplicitlyDeclared
+                && member is not IMethodSymbol { MethodKind: not MethodKind.Ordinary }
+                && member.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal));
     }
 
     /// <summary>

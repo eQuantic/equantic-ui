@@ -717,6 +717,9 @@ public sealed class AppBuild
 
             var compiledFiles = new List<string>();
             var units = 0;
+            // The app's own modules, written once the walk from the roots says which the browser reaches
+            // (AppModules, #1779): what no page reaches is server code, whatever it is marked.
+            var appModules = new AppModules();
             foreach (var group in compileUnits)
             {
                 var dir = group.Key;
@@ -751,10 +754,13 @@ public sealed class AppBuild
                         var identity = string.IsNullOrEmpty(result.Namespace)
                             ? result.ComponentName
                             : $"{result.Namespace}.{result.ComponentName}";
-                        Write(result, file, isEntryCandidate, identity, path => Path.GetRelativePath(dir, path));
+                        appModules.Add(result, file, isEntryCandidate, identity, path => Path.GetRelativePath(dir, path));
                     }
                 }
             }
+
+            foreach (var module in appModules.Reached(result => layoutModules.Contains((result.Namespace, result.ComponentName))))
+                Write(module.Result, module.File, module.IsEntryCandidate, module.Identity, module.Describe);
 
             CompiledFiles = compiledFiles;
             if (_reusable.Count > 0)
