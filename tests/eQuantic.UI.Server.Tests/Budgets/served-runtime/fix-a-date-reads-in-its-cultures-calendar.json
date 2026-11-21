@@ -1,4 +1,0 @@
-{
-  "deltaBytes": 1301,
-  "bought": "A culture\u0027s calendar (utils/calendar.ts): a date is written and read in th-TH\u0027s Thai Buddhist years, fa-IR\u0027s Persian calendar and ar-SA\u0027s Um Al Qura one, as .NET counts them, where the browser wrote and read the Gregorian numbers (#1191)"
-}

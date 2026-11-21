@@ -113,14 +113,16 @@
 [EQX0001]eQuantic.UI.Native.Components.LinkRegion
 [EQX0001]eQuantic.UI.Native.Components.LinkRegion.Bounds.get -> eQuantic.UI.Primitives.Rect
 [EQX0001]eQuantic.UI.Native.Components.LinkRegion.Bounds.init -> void
-[EQX0001]eQuantic.UI.Native.Components.LinkRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out string! Destination, out int Id) -> void
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out string! Destination, out int Id, out bool OpensBeside) -> void
 [EQX0001]eQuantic.UI.Native.Components.LinkRegion.Destination.get -> string!
 [EQX0001]eQuantic.UI.Native.Components.LinkRegion.Destination.init -> void
 [EQX0001]eQuantic.UI.Native.Components.LinkRegion.Equals(eQuantic.UI.Native.Components.LinkRegion other) -> bool
 [EQX0001]eQuantic.UI.Native.Components.LinkRegion.Id.get -> int
 [EQX0001]eQuantic.UI.Native.Components.LinkRegion.Id.init -> void
 [EQX0001]eQuantic.UI.Native.Components.LinkRegion.LinkRegion() -> void
-[EQX0001]eQuantic.UI.Native.Components.LinkRegion.LinkRegion(eQuantic.UI.Primitives.Rect Bounds, string! Destination, int Id) -> void
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.LinkRegion(eQuantic.UI.Primitives.Rect Bounds, string! Destination, int Id, bool OpensBeside = false) -> void
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.OpensBeside.get -> bool
+[EQX0001]eQuantic.UI.Native.Components.LinkRegion.OpensBeside.init -> void
 [EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement
 [EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement.Deconstruct(out int Id, out string! Label, out string! Text, out eQuantic.UI.Primitives.LiveRegionUrgency Urgency) -> void
 [EQX0001]eQuantic.UI.Native.Components.LiveAnnouncement.Equals(eQuantic.UI.Native.Components.LiveAnnouncement other) -> bool
