@@ -363,6 +363,7 @@
 [EQX0001]eQuantic.UI.Native.Components.TextInputChange.Retargeted = 2 -> eQuantic.UI.Native.Components.TextInputChange
 [EQX0001]eQuantic.UI.Native.Components.TextInputChange.ValueChanged = 4 -> eQuantic.UI.Native.Components.TextInputChange
 [EQX0001]eQuantic.UI.Native.Components.TextInputSession
+[EQX0001]eQuantic.UI.Native.Components.TextInputSession.Kind.get -> eQuantic.UI.Primitives.TextEntryKind
 [EQX0001]eQuantic.UI.Native.Components.TextInputSession.Obscure.get -> bool
 [EQX0001]eQuantic.UI.Native.Components.TextInputSession.Poll() -> eQuantic.UI.Native.Components.TextInputChange
 [EQX0001]eQuantic.UI.Native.Components.TextInputSession.Submit() -> bool

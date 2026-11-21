@@ -5722,6 +5722,81 @@ record of a release, the wiki's Upgrading page is the distillate.
   the runner's spread over the bar, and within that spread the run says whether the median met the
   bar instead of asking for the ceiling to come down
   ([#900](https://github.com/eQuantic/equantic-ui/issues/900)).
+- **2026-11-16 · A type named like an enum's union is its own**: a module eqc writes names a vocabulary enum's union
+  `$DensityValue`, a `$` C# cannot spell, where it named it `DensityValue` and an app's `record DensityValue` was taken
+  for the union, imported from the runtime, and the page did not load
+  ([#1427](https://github.com/eQuantic/equantic-ui/issues/1427)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-classes`).
+- **2026-11-18 · A drag on the web leaves no text selected**: every gesture on the web's gesture core, a sortable list,
+  a draggable and a sheet dismissed by dragging, clears the selection its press started once it arms and lets none
+  start until it ends, where a drag of a table's heading made of text left its words selected from the press to the
+  drop ([#1598](https://github.com/eQuantic/equantic-ui/issues/1598)). Proposed and archived through OpenSpec
+  (`openspec/specs/gestures`).
+- **2026-11-18 · The look of a carried item is the theme's and the list's**: `SortableTheme` is a new slot of the
+  theme (`IAppTheme.Sortable`, `With(sortable:)`), and `Sortable` takes `style`, laid over it member by member: the
+  opacity of the item in its place, the copy's opacity, the copy's shadow as a level of the theme's elevation scale and
+  the most the copy leans. Where neither says, the defaults are `SortPlacement`'s, written once with the arithmetic
+  both targets run (`SortPlacement.Look`), and the copy's shadow becomes the theme's level 4, the offset and blur it
+  had in the theme's own colour. The web's controller lays a list's own look, written on its element, over the
+  browser's theme when it lifts an item, and Photon resolves the same look when it lifts one
+  ([#1602](https://github.com/eQuantic/equantic-ui/issues/1602)). Proposed and archived through OpenSpec
+  (`openspec/specs/sortable-lists`).
+- **2026-11-19 · 0.2.0-preview.69 released** from `f357bbd7`: a web edit on screen at a warm median of
+  about half a second (#900), LINQ and `List<T>` answering as .NET's do (#685, #863), the browser and the
+  server on the element engine (#1093, #1094), a theme slot for every component family and a theme over a
+  subtree (#938, #1395), the raw pointer over any subtree and a subtree heard as one or not at all (#1562,
+  #1567), the tree, sortable lists, a table that reorders and resizes its columns and a context menu that
+  eQuantic Space asked for (#1510), and the per-change files the release folds (#1489), the first release
+  to fold them: 15 API files, 125 ledger entries and three runtime deltas, for a base of 371,091 bytes.
+  Each break is on the Upgrading page, four of them written by the release from the Shipped diff. The
+  tag's run published on its third attempt: `samples` hung 49 minutes in its edit-to-view step on the
+  first, and on the second the web's warm median measured 1,676 ms over the 1.5 s ceiling at a load
+  average of 46 to 78, where the same commit had passed on main. The run pushed 54 packages and wrote the
+  release page at 11:09Z, and an app restores at 0.2.0-preview.69 from nuget.org
+  ([#1622](https://github.com/eQuantic/equantic-ui/issues/1622),
+  *[v0.2.0-preview.69](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.69)*).
+- **2026-11-19 · A role-bearing wrapper's host is written by one helper on each producer**: `Progress`, `Adjustable`,
+  `LiveRegion` and `Group` each wrote their host's width contract by hand, `LowerGroup` a near-copy of
+  `LowerLiveRegion` and `lowerGroup` of `lowerLiveRegion`, and that contract had already diverged between the two
+  producers once. Each producer now writes the host of all six semantics wrappers (`Progress`, `Adjustable`, `LiveRegion`,
+  `Group`, `MergeSemantics`, `ExcludeSemantics`) through one helper, `SemanticsHost` and `semanticsHost`, which takes the
+  child, the role's attributes, the accessible name and whether the host takes the pointer, and hands the host back;
+  the wrappers call it, and `RoleBearingHostBoundsTests` and `role-host-bounds.spec.ts` hold every row with no pin
+  moving ([#1517](https://github.com/eQuantic/equantic-ui/issues/1517)). Proposed through OpenSpec
+  as the change `a-role-host-is-written-by-one-helper`.
+- **2026-11-19 · The Wallet video has a 16:9 cut**: `Wallet Agency 16x9` joins the 4:5 and 9:16 cuts in
+  `promotion/wallet-video/`, the same scene, timing and score framed for 1920x1080, for YouTube and an article's
+  embed. The 4:5 comps were duplicated at the new size, their layers moved by half the change, the camera's zoom
+  brought from 1500 to 1200 so the phones keep their height, and each precomp's anchor set to the new centre. It
+  was published as the first video of the eQuantic Labs channel
+  ([#1754](https://github.com/eQuantic/equantic-ui/issues/1754)).
+- **2026-11-20 · A box follows its header's scroll**: `BoxStyle.Scrolled` is what a box inside a `Pinned`
+  header looks like while that header is scrolled, so a header swaps what it shows as the page scrolls (a large
+  badge giving way to a small mark with the brand's name) with its boxes' own transitions and nothing rebuilt.
+  The nearest header decides, and a control's hover, focus and press are laid over the diff. On the web a rule
+  selects on the header's `data-eq-scrolled`, weighing between a box's resting class and its hover; on Photon the
+  header carries its state to its subtree. The dashboard's `/header` page is where a browser reads it
+  ([#1769](https://github.com/eQuantic/equantic-ui/issues/1769)).
+- **2026-11-20 · Typed values take typed inputs**: a `TextEntry` says what kind of value it takes (`Email`,
+  `Phone`, `Url`, `Number`, `Decimal`) and each target opens that keyboard and offers its autofill: `inputmode`
+  and `autocomplete` on the web, the keyboard and content type on iOS, the input type on Android. `TextInput`
+  and `FormInput` take the kind and a prefix and a suffix beside the text. `MoneyInput` takes an amount in a
+  currency's minor units and writes and reads it in the culture, the symbol where the culture puts its own and
+  the other decimal separator a phone's keypad may show read too; `NumberInput` takes a whole number with its
+  unit. A culture's `NumberFormatInfo` crosses to the browser, and `decimal.Truncate`, `Floor` and `Ceiling` with
+  it ([#1761](https://github.com/eQuantic/equantic-ui/issues/1761),
+  [#1764](https://github.com/eQuantic/equantic-ui/issues/1764),
+  [#1765](https://github.com/eQuantic/equantic-ui/issues/1765)).
+- **2026-11-21 · A tree drops a node at the depth the pointer picks**: a `Sortable` whose `Indent` is above 0 has
+  items with depths (`SortableItem.Depth`), an item carries the deeper items right after it, and a place between two
+  items reports in `SortDrop.Depth` the depth the carried item takes there, from the depth of the item after the place
+  to one deeper than the item before it. A pointer asks for one depth per `Indent` it travelled across, the keyboard's
+  cross arrows step it before moving to the neighbouring list, a refused depth gives way to the nearest one, shallower
+  first, and a reader hears the position among the items at that depth under their holder. `SortPlacement` holds the
+  arithmetic, which the browser's controller and the Photon host both run. `TreeView` gives its rows their depths, so a
+  node lands as the last child of an open folder or among the shallower rows after it, and the line follows the depth
+  ([#1594](https://github.com/eQuantic/equantic-ui/issues/1594)). Proposed and archived through OpenSpec
+  (`openspec/specs/sortable-lists`, `openspec/specs/tree-view`).
 
 ## Retired documents
 

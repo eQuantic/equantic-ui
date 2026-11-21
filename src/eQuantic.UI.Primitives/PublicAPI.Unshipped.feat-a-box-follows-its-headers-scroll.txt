@@ -1,3 +1,0 @@
-#nullable enable
-eQuantic.UI.Primitives.BoxStyle.Scrolled.get -> eQuantic.UI.Primitives.StyleDiff?
-eQuantic.UI.Primitives.BoxStyle.Scrolled.init -> void

@@ -1,7 +1,0 @@
-#nullable enable
-const eQuantic.UI.Compiler.CodeGen.Eq.NumberFormat = "$eq.text.numberFormat" -> string!
-eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.NumberFormatInfoStrategy
-eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.NumberFormatInfoStrategy.NumberFormatInfoStrategy() -> void
-eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.NumberFormatInfoStrategy.Priority.get -> int
-eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.NumberFormatInfoStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
-eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.NumberFormatInfoStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
