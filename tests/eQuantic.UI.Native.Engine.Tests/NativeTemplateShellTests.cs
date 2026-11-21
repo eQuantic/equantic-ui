@@ -103,7 +103,7 @@ public class NativeTemplateShellTests
     }
 
     /// <summary>
-    /// The template's neutral <c>.resx</c> files as the manifest resources their Designer classes
+    /// The template's neutral <c>.resx</c> files as the manifest resources their accessor classes
     /// read. An in-memory emit has no build to compile them, and a shell that says a word through
     /// <c>Strings</c> — the blank one does — would otherwise fail on the missing resource rather
     /// than on anything this test is about.
@@ -140,16 +140,16 @@ public class NativeTemplateShellTests
         var files = folders
             .Select(folder => Path.Combine(root, ".shells", folder))
             .SelectMany(folder => Directory.GetFiles(folder, "*.cs", SearchOption.AllDirectories))
-            // Resources/Strings.Designer.cs is the ordinary Designer accessor, and every shell that
-            // reads a string needs it.
-            .Concat(Directory.GetFiles(Path.Combine(root, "Resources"), "*.cs"))
             .ToList();
 
         files.Should().NotBeEmpty($"--shell {shell} must actually have sources");
 
+        // The template ships its .resx and no Designer: the SDK's build writes the accessors every shell
+        // that reads a string needs (#1784).
         var trees = files
             .Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path))
             .Append(CSharpSyntaxTree.ParseText(ImplicitUsings))
+            .Append(CSharpSyntaxTree.ParseText(ResxAccessors.Source(Path.Combine(root, "Resources", "Strings.resx"), "EQuanticNativeApp.Resources")))
             .ToList();
 
         return CSharpCompilation.Create($"Shell_{shell}", trees, References(),
