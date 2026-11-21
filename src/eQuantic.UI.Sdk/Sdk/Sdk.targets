@@ -263,8 +263,9 @@
         </UnpackProgram>
     </Target>
 
+    <!-- Returns the path, for a test project's HydrationAssert to run the same bun (eQuantic.UI.Testing, #1775). -->
     <Target Name="ResolveBunPath" BeforeTargets="CompileEQuanticUI"
-        DependsOnTargets="EnsureBunExtracted">
+        DependsOnTargets="EnsureBunExtracted" Returns="$(BunPath)">
         <PropertyGroup Condition="'$(BunPath)' != ''">
             <BunPath>$(BunPath.Trim())</BunPath>
         </PropertyGroup>
@@ -358,6 +359,11 @@
         </PropertyGroup>
         <ItemGroup Condition="'$(_EQuanticCompileRan)' == 'true'">
             <_EQuanticGeneratedFile Include="$(CompilerGeneratedFilesOutputPath)/**/*.cs" Exclude="@(Compile)" />
+        </ItemGroup>
+        <!-- Apart, and only over files that exist: a condition that batches over an empty item list is still
+             evaluated once, with empty metadata, and an app no generator wrote a file for failed its build
+             on GetLastWriteTime('') (an app of pages alone, #1775's fixture site). -->
+        <ItemGroup Condition="'@(_EQuanticGeneratedFile)' != ''">
             <_EQuanticStaleGeneratedFile Include="@(_EQuanticGeneratedFile)"
                 Condition="$([System.IO.File]::GetLastWriteTime('%(FullPath)').ToUniversalTime().Ticks) &lt; $(_EQuanticStaleBeforeTicks)" />
         </ItemGroup>

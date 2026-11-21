@@ -829,6 +829,9 @@ public static class UIExtensions
         LocalizeCanonical(context, options, metadata);
 
         var payload = new StringBuilder("{");
+        // The page this server resolved for the URL, by its module's name, as the document names it: the
+        // browser's router chose its own, and says so when the two differ (#1778).
+        if (page is not null) payload.Append("\"page\":").Append(JsonSerializer.Serialize(TwinName.OfType(page))).Append(',');
         payload.Append("\"title\":").Append(JsonSerializer.Serialize(metadata.Title));
         payload.Append(",\"head\":").Append(JsonSerializer.Serialize(metadata.RenderTags()));
         if (prepared?.SerializedState is { Length: > 0 } state)

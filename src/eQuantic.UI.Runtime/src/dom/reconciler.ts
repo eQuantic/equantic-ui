@@ -72,6 +72,48 @@ export interface HydrationResult {
   success: boolean;
   attachedListeners: number;
   warnings: string[];
+  /**
+   * What the client's tree said differently from the server's markup, which hydration wrote over in
+   * silence (#1302): a text, an attribute. Recorded so a page's test can say the two disagreed (#1775),
+   * since a label the browser drew blank over the server's text is a page that broke only once it
+   * hydrated. Empty when the two agree.
+   */
+  differences: HydrationDifference[];
+}
+
+/** One place where the client's tree and the server's markup said different things (#1775). */
+export interface HydrationDifference {
+  /** A text node's content, one attribute of an element, or an element only the server wrote. */
+  kind: 'text' | 'attribute' | 'element';
+  /** The element, as a path from the hydrated root (`div > section:nth-child(2) > p`). */
+  where: string;
+  /** The attribute's name; absent for a text. */
+  name?: string;
+  /** What the server wrote (an element's tag), or null where it wrote nothing. */
+  server: string | null;
+  /** What the client's tree says, or null where it says nothing (an empty text is ''). */
+  client: string | null;
+}
+
+/** Whether two class attributes name the same classes, whatever their order: CSS reads them as a set. */
+function sameClasses(server: string | null, client: string | null): boolean {
+  const classes = (value: string | null) => [...new Set((value ?? '').split(/\s+/).filter(Boolean))].sort().join(' ');
+  return classes(server) === classes(client);
+}
+
+/** The element as a path a reader can find: each step its tag, with its place among same-tag siblings. */
+function pathOf(element: Element | null): string {
+  const steps: string[] = [];
+  for (let at = element; at && at.parentElement && at.tagName.toLowerCase() !== 'body'; at = at.parentElement) {
+    if (at.id) {
+      steps.unshift(`${at.tagName.toLowerCase()}#${at.id}`);
+      break;
+    }
+    const same = Array.from(at.parentElement.children).filter((child) => child.tagName === at!.tagName);
+    const step = at.tagName.toLowerCase();
+    steps.unshift(same.length > 1 ? `${step}:nth-of-type(${same.indexOf(at) + 1})` : step);
+  }
+  return steps.join(' > ');
 }
 
 /**
@@ -930,7 +972,7 @@ export class Reconciler {
   hydrate(
     existingElement: Node,
     virtualNode: HtmlNode,
-    result: HydrationResult = { success: true, attachedListeners: 0, warnings: [] },
+    result: HydrationResult = { success: true, attachedListeners: 0, warnings: [], differences: [] },
   ): HydrationResult {
     // Text node: the client's text, when the server wrote another (#1302).
     if (virtualNode.tag === '#text') {
@@ -940,7 +982,15 @@ export class Reconciler {
         return result;
       }
       const text = virtualNode.textContent ?? '';
-      if (existingElement.textContent !== text) existingElement.textContent = text;
+      if (existingElement.textContent !== text) {
+        result.differences.push({
+          kind: 'text',
+          where: pathOf(existingElement.parentElement),
+          server: existingElement.textContent,
+          client: text,
+        });
+        existingElement.textContent = text;
+      }
       return result;
     }
 
@@ -1007,6 +1057,16 @@ export class Reconciler {
       delete wanted[name];
       delete written[name];
     }
+    for (const name of new Set([...Object.keys(written), ...Object.keys(wanted)])) {
+      // A framework marker is the client's infrastructure, which the server has no reason to write.
+      if (name.startsWith('data-eq-')) continue;
+      const server = hasOwn(written, name) && written[name] !== undefined ? String(written[name]) : null;
+      const client = hasOwn(wanted, name) && wanted[name] !== undefined && wanted[name] !== null
+        ? String(wanted[name]) : null;
+      if (server !== client && !(name === 'class' && sameClasses(server, client))) {
+        result.differences.push({ kind: 'attribute', where: pathOf(existingElement), name, server, client });
+      }
+    }
     this.updateAttributes(existingElement, written, wanted);
 
     // Recursively hydrate children. Both sides must use the SAME skip rule, otherwise
@@ -1035,6 +1095,18 @@ export class Reconciler {
       }
 
       this.hydrate(existingChild, virtualChild, result);
+    }
+
+    // What the server wrote past the client's children stays in the document, as it always did; it is
+    // recorded, because a label the client draws empty is exactly this: the empty text is no child of
+    // the client's, and the server's text is left where it was (#1775).
+    for (let i = virtualChildren.length; i < existingChildren.length; i++) {
+      const extra = existingChildren[i];
+      result.differences.push(
+        extra.nodeType === Node.TEXT_NODE
+          ? { kind: 'text', where: pathOf(existingElement), server: extra.textContent, client: '' }
+          : { kind: 'element', where: pathOf(existingElement), server: (extra as Element).tagName.toLowerCase(), client: null },
+      );
     }
 
     return result;
@@ -1067,7 +1139,7 @@ export class Reconciler {
    * The container should have SSR-rendered HTML as its content.
    */
   hydrateRoot(container: HTMLElement, virtualNode: HtmlNode): HydrationResult {
-    const result: HydrationResult = { success: true, attachedListeners: 0, warnings: [] };
+    const result: HydrationResult = { success: true, attachedListeners: 0, warnings: [], differences: [] };
 
     // Get the first element child of the container (the SSR root)
     const existingRoot = container.firstElementChild;

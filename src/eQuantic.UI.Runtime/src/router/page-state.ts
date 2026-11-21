@@ -13,6 +13,9 @@ import { addStrings } from '../utils/culture';
 export const NAVIGATION_HEADER = 'X-EQ-Navigate';
 
 export interface PageStatePayload {
+  /** The page the server resolved for the URL, by its module's name (#1778): the browser's router chose
+   * its own, and the two must be one. */
+  page?: string;
   title?: string;
   head?: string;
   /**

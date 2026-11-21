@@ -1,0 +1,16 @@
+{
+  // The harness bundles the DOM the runtime's own tests run in, from the runtime's lockfile: one copy of
+  // happy-dom in the tree, at one version.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "happy-dom": ["../../eQuantic.UI.Runtime/node_modules/happy-dom"]
+    }
+  },
+  "include": ["harness.ts"]
+}
