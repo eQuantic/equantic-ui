@@ -423,6 +423,7 @@ public sealed partial class PhotonHost
         // Costs one length check in a frame with no live region, which is almost every frame.
         _announcer.Observe(_lastFrame, timeMs);
         AdoptAutofocus();
+        KeepModalFocus();
         AdoptFocusRequests();
         AdoptCompositeFocus();
         // A subscribed frame ticker IS motion: frames keep flowing while anyone wants them, and the

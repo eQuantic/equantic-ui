@@ -73,8 +73,9 @@ public class ModalFocusTrapTests
     public void Tab_WrapsInsideTheDialog_AndNeverReachesTheControlBehindIt()
     {
         var host = Page(Dialog(Button("First"), Button("Second")));
+        (host.Focused?.Label).Should().Be("First", "the dialog took the focus when it opened (#1811)");
 
-        Walk(host, 4).Should().Equal(["First", "Second", "First", "Second"]);
+        Walk(host, 4).Should().Equal(["Second", "First", "Second", "First"]);
     }
 
     [Fact]
@@ -98,7 +99,8 @@ public class ModalFocusTrapTests
     {
         var host = Page(Dialog(Button("Under")), Dialog(Button("Top"), Button("Confirm")));
 
-        Walk(host, 3).Should().Equal(["Top", "Confirm", "Top"]);
+        (host.Focused?.Label).Should().Be("Top", "the topmost dialog took the focus last");
+        Walk(host, 3).Should().Equal(["Confirm", "Top", "Confirm"]);
     }
 
     [Fact]
@@ -106,7 +108,7 @@ public class ModalFocusTrapTests
     {
         var host = Page(Dialog(Button("First"), Button("Second")), new Overlay(Controls(Button("Toast"))) { Modal = false });
 
-        Walk(host, 3).Should().Equal(["First", "Second", "First"], "the web's trap holds the dialog's controls alone");
+        Walk(host, 3).Should().Equal(["Second", "First", "Second"], "the web's trap holds the dialog's controls alone");
     }
 
     [Fact]
@@ -117,7 +119,7 @@ public class ModalFocusTrapTests
         var menu = new Anchored(Button("Pick"), Controls(Button("Option"))) { Open = true };
         var host = Page(Dialog(Button("First"), menu));
 
-        Walk(host, 4).Should().Equal(["First", "Pick", "Option", "First"]);
+        Walk(host, 4).Should().Equal(["Pick", "Option", "First", "Pick"]);
     }
 
     [Fact]

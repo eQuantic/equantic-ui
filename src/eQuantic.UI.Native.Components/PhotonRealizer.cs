@@ -249,6 +249,16 @@ public sealed class RealizeResult
         return null;
     }
 
+    /// <summary>Where every modal and open layer of this frame was built, bottom to top: the layers that
+    /// record the focus they give back when they close (#1811).</summary>
+    internal List<Element> ModalLayerRoots()
+    {
+        var roots = new List<Element>();
+        for (var i = 0; i < OverlayLayers.Count; i++)
+            if (OverlayLayers[i] is { Modal: true, Open: true } && OverlayRoots[i].Element is { } root) roots.Add(root);
+        return roots;
+    }
+
     /// <summary>Editable fields, in paint order (topmost last).</summary>
     public IReadOnlyList<TextRegion> TextRegions { get; }
 
