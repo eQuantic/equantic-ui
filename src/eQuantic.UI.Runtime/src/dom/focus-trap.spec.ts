@@ -295,4 +295,53 @@ describe('§10 the focus goes to the control in the invoker place when the invok
 
     expect(document.activeElement?.textContent, 'inside the dialog still open, never the page').toBe('Close');
   });
+
+  it('a row removed after the dialog closed hands the focus to the next row', () => {
+    const list = rows('one', 'two', 'three');
+    const dialog = confirmFrom(deleteOf(list.get('two')!));
+    dialog.remove();
+    commitFocusTraps();
+    expect(document.activeElement?.textContent, 'the row is still there').toBe('Delete two');
+
+    // The server answered: the row goes in a later pass.
+    list.get('two')!.remove();
+    commitFocusTraps();
+
+    expect(document.activeElement?.textContent).toBe('Delete three');
+  });
+
+  it('a row removed later leaves a focus the user moved where it is', () => {
+    const list = rows('one', 'two', 'three');
+    const dialog = confirmFrom(deleteOf(list.get('two')!));
+    dialog.remove();
+    commitFocusTraps();
+    const moved = list.get('three')!.querySelector('button') as HTMLElement;
+    moved.focus();
+    commitFocusTraps();
+
+    list.get('two')!.remove();
+    commitFocusTraps();
+
+    expect(document.activeElement).toBe(moved);
+  });
+
+  it('two dialogs closing together give the focus to the outermost one opener', () => {
+    // A control before the opener: the confirm's opener sat first in its dialog, and the page's first
+    // control is not the settings dialog's opener, so a place taken across scopes shows.
+    document.body.appendChild(button('Before'));
+    const settingsButton = button('Settings');
+    document.body.appendChild(settingsButton);
+    settingsButton.focus();
+    const reset = button('Reset');
+    const settings = layer(reset, button('Close'));
+    document.body.appendChild(settings);
+    commitFocusTraps();
+    const confirm = confirmFrom(reset);
+
+    confirm.remove();
+    settings.remove();
+    commitFocusTraps();
+
+    expect(document.activeElement).toBe(settingsButton);
+  });
 });

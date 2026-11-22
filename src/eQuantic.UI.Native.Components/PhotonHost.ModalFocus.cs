@@ -23,12 +23,20 @@ public sealed partial class PhotonHost
     /// <summary>The modal layers shown, bottom to top, each with the focus it gives back.</summary>
     private readonly List<ModalReturn> _modalReturns = [];
 
+    /// <summary>
+    /// The opener the last close gave the focus back to, while it holds it: when it leaves the tree in a
+    /// later frame (the confirm closed first, and the row went when the server answered), the stop now at
+    /// its place takes the focus, as it would have had the row left in the closing frame.
+    /// </summary>
+    private ModalReturn? _returned;
+
     /// <summary>Records the layers this frame opened and gives the focus back for those it closed:
     /// the outermost's return wins when several close at once, as they close in one pass on the web.
     /// A frame whose modal layers are the ones recorded, nearly every frame, allocates nothing here.</summary>
     private void KeepModalFocus()
     {
         var frame = _lastFrame!;
+        if (_returned is { } returned) FollowReturned(returned, frame);
         if (ShowsTheRecordedLayers(frame)) return;
         var open = frame.ModalLayerRoots();
         ModalReturn? back = null;
@@ -38,7 +46,11 @@ public sealed partial class PhotonHost
             back = _modalReturns[i];
             _modalReturns.RemoveAt(i);
         }
-        if (back is { } closed) GiveFocusBack(closed, frame, open);
+        if (back is { } closed)
+        {
+            _returned = null;
+            GiveFocusBack(closed, frame, open);
+        }
 
         foreach (var layer in open)
         {
@@ -118,8 +130,24 @@ public sealed partial class PhotonHost
             if (closed.Place < 0) return;
             target = beneath[Math.Min(closed.Place, beneath.Count - 1)];
         }
+        else _returned = closed;
         Land(target);
         _focusVisible = closed.Visible;
+    }
+
+    /// <summary>The opener given the focus back, watched until the focus moves: when it left the tree
+    /// with nothing else focused since (#976 dropped the focus with it this frame), the stop at its place
+    /// takes the focus.</summary>
+    private void FollowReturned(ModalReturn returned, RealizeResult frame)
+    {
+        var focused = _textAt ?? _focusedAt;
+        if (ReferenceEquals(focused, returned.At) && returned.At!.IsActive) return;
+        _returned = null;
+        if (focused is not null || returned.At!.IsActive) return;
+        var beneath = StopsBeneath(frame, frame.ModalLayerRoots(), null);
+        if (beneath.Count == 0 || returned.Place < 0) return;
+        Land(beneath[Math.Min(returned.Place, beneath.Count - 1)]);
+        _focusVisible = returned.Visible;
     }
 
     /// <summary>The focus moved into a layer that just opened, unless it is there already.</summary>

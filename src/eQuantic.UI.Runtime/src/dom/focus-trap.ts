@@ -32,6 +32,12 @@ let active: Element[] = [];
 /** Where focus was when each layer opened, and its place among the controls Tab reached then:
  * restored on its close, whatever caused the close. */
 const invokers = new WeakMap<Element, { invoker: Element; place: number }>();
+/**
+ * The invoker the last close gave the focus back to, while it holds it: when it leaves the page in a
+ * later pass (the confirm closed first, and the row went when the server answered), the control now
+ * at its place takes the focus, as it would have had the row left in the closing pass.
+ */
+let returned: { invoker: Element; place: number } | null = null;
 let installed = false;
 
 /** The layer that owns the keyboard right now: the last marked layer in the document. */
@@ -84,13 +90,29 @@ function restore(layer: Element): void {
   if (!recorded) return;
   if (recorded.invoker.isConnected) {
     (recorded.invoker as HTMLElement).focus?.();
+    returned = recorded;
     return;
   }
-  // The invoker is gone (a row that removed itself is what opened the dialog): the control now at
-  // its place takes the focus, the next row's, or the last one when it was the last.
-  if (recorded.place < 0) return;
+  focusPlace(recorded.place);
+}
+
+/** The invoker is gone (a row that removed itself is what opened the dialog): the control now at its
+ * place takes the focus, the next row's, or the last one when it was the last. */
+function focusPlace(place: number): void {
+  if (place < 0) return;
   const beneath = focusablesBeneath(active, []);
-  beneath[Math.min(recorded.place, beneath.length - 1)]?.focus();
+  beneath[Math.min(place, beneath.length - 1)]?.focus();
+}
+
+/** The invoker given the focus back that left in a later pass, with nothing else focused since: the
+ * control at its place takes it. Any other move of the focus ends the watch. */
+function followReturned(): void {
+  if (!returned) return;
+  const focused = document.activeElement;
+  if (focused === returned.invoker && returned.invoker.isConnected) return;
+  const watched = returned;
+  returned = null;
+  if (!watched.invoker.isConnected && (focused === null || focused === document.body)) focusPlace(watched.place);
 }
 
 function onKeyDown(event: KeyboardEvent): void {
@@ -165,8 +187,12 @@ export function commitFocusTraps(): void {
   if (opened.length > 0) install();
 
   // Restore before focusing into anything new: closing one dialog to open another must not leave
-  // focus on the old invoker.
-  for (const layer of closed) restore(layer);
+  // focus on the old invoker. Of layers that closed together, the bottommost's invoker is the one
+  // still standing, as Photon gives back the outermost's: the others are only forgotten.
+  followReturned();
+  if (closed.length > 0) returned = null;
+  for (const layer of closed.slice(1)) invokers.delete(layer);
+  if (closed.length > 0) restore(closed[0]);
   const layer = topmost();
   if (layer && opened.includes(layer)) {
     // After the next frame, for the same reason the mount hook waits: a layer transitioning out of
@@ -184,4 +210,5 @@ export function activeFocusTraps(): readonly Element[] {
 /** Test seam: forget every trap (jsdom re-mounts between specs). */
 export function resetFocusTraps(): void {
   active = [];
+  returned = null;
 }

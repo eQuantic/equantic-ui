@@ -93,3 +93,15 @@ the layer. Beneath a modal layer that stays open, that place SHALL be inside tha
 
 - **WHEN** a control of a dialog opens a second dialog, which removes that control and closes
 - **THEN** the focus is on the control now at its place in the first dialog, never on the page behind
+
+#### Scenario: A row removed after the dialog closed
+
+- **WHEN** the confirm closes first, and the row goes in a later pass, when the server answers, with the
+  focus still on the row's Delete
+- **THEN** the focus is on the next row's Delete; had the user moved the focus meanwhile, it stays where
+  they moved it
+
+#### Scenario: Two dialogs closing together
+
+- **WHEN** a confirm opened from a settings dialog closes both at once
+- **THEN** the focus is on the settings dialog's opener, on the web and on Photon

@@ -44,6 +44,18 @@ public class ModalFocusReturnTests
     {
         private readonly List<string> _rows = [.. rows];
         private string? _asking;
+        private string? _removing;
+
+        /// <summary>Whether the confirm only closes, and the row goes when <see cref="Answer"/> comes, as
+        /// it goes when a server action answers after the dialog closed.</summary>
+        public bool RemovesLater { get; init; }
+
+        /// <summary>The server's answer: the row the confirm asked to remove goes.</summary>
+        public void Answer() => SetState(() =>
+        {
+            if (_removing is { } row) _rows.Remove(row);
+            _removing = null;
+        });
 
         public override VisualNode Build(ComponentContext context)
         {
@@ -62,7 +74,8 @@ public class ModalFocusReturnTests
                 var actions = new Column(gap: 4);
                 actions.Add(Button("Delete", () => SetState(() =>
                 {
-                    _rows.Remove(asking);
+                    if (RemovesLater) _removing = asking;
+                    else _rows.Remove(asking);
                     _asking = null;
                 })));
                 actions.Add(Button("Cancel", () => SetState(() => _asking = null), initialFocus: true));
@@ -73,11 +86,13 @@ public class ModalFocusReturnTests
     }
 
     /// <summary>The host over <paramref name="rows"/>, with the keyboard on <paramref name="label"/>.</summary>
-    private static PhotonHost FocusedOn(string label, params string[] rows)
+    private static PhotonHost FocusedOn(string label, params string[] rows) => FocusedOn(new Rows(rows), label, rows.Length);
+
+    private static PhotonHost FocusedOn(Rows page, string label, int count)
     {
-        var host = Host(new Rows(rows));
+        var host = Host(page);
         Settle(host);
-        for (var i = 0; i < 2 * rows.Length && host.Focused?.Label != label; i++)
+        for (var i = 0; i < 2 * count && host.Focused?.Label != label; i++)
         {
             host.FocusNext();
             Settle(host);
@@ -223,5 +238,95 @@ public class ModalFocusReturnTests
         Press(host);
 
         (host.Focused?.Label).Should().Be("Close", "inside the dialog still open, never the page behind it");
+    }
+
+    [Fact]
+    public void ARowRemovedAfterTheDialogClosed_HandsTheFocusToTheNextRow()
+    {
+        var rows = new Rows("one", "two", "three") { RemovesLater = true };
+        var host = FocusedOn(rows, "Delete two", 3);
+        Press(host);
+        MoveTo(host, "Delete");
+        Press(host);
+        (host.Focused?.Label).Should().Be("Delete two", "the dialog closed, and the row is still there");
+
+        rows.Answer();
+        Settle(host);
+
+        (host.Focused?.Label).Should().Be("Delete three",
+            "the row went when the server answered, and the control at its place takes the focus");
+    }
+
+    [Fact]
+    public void ARowRemovedLater_LeavesAFocusTheUserMovedWhereItIs()
+    {
+        var rows = new Rows("one", "two", "three") { RemovesLater = true };
+        var host = FocusedOn(rows, "Delete two", 3);
+        Press(host);
+        MoveTo(host, "Delete");
+        Press(host);
+        host.KeyDown("Tab");
+        Settle(host);
+        (host.Focused?.Label).Should().Be("Edit three");
+
+        rows.Answer();
+        Settle(host);
+
+        (host.Focused?.Label).Should().Be("Edit three", "the user moved on, and the removal takes nothing from them");
+    }
+
+    /// <summary>A page button that opens a settings dialog, whose Reset opens a confirm that closes both.</summary>
+    private sealed class Stacked : StatefulComponent
+    {
+        private bool _settings;
+        private bool _confirm;
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var page = new Stack();
+            var buttons = new Column(gap: 4);
+            buttons.Add(Button("Before", () => { }));
+            buttons.Add(Button("Settings", () => SetState(() => _settings = true)));
+            buttons.Add(Button("After", () => { }));
+            page.Add(buttons);
+            if (_settings)
+            {
+                var settings = new Column(gap: 4);
+                settings.Add(Button("Reset", () => SetState(() => _confirm = true)));
+                settings.Add(Button("Close", () => SetState(() => _settings = false)));
+                page.Add(new Overlay(settings) { Label = "Settings" });
+            }
+            if (_confirm)
+            {
+                var confirm = new Column(gap: 4);
+                confirm.Add(Button("Reset everything", () => SetState(() =>
+                {
+                    _confirm = false;
+                    _settings = false;
+                })));
+                page.Add(new Overlay(confirm) { Label = "Reset?" });
+            }
+            return page;
+        }
+    }
+
+    [Fact]
+    public void TwoDialogsClosingTogether_GiveTheFocusToTheOutermostsOpener()
+    {
+        var host = Host(new Stacked());
+        Settle(host);
+        for (var i = 0; i < 3 && host.Focused?.Label != "Settings"; i++)
+        {
+            host.FocusNext();
+            Settle(host);
+        }
+        Press(host);
+        (host.Focused?.Label).Should().Be("Reset");
+        Press(host);
+        (host.Focused?.Label).Should().Be("Reset everything");
+
+        Press(host);
+
+        (host.Focused?.Label).Should().Be("Settings", "both closed, and the outermost's opener is the one still standing");
     }
 }
