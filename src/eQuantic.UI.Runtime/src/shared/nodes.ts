@@ -898,6 +898,9 @@ export interface SheetSurfaceModelLike {
   ): boolean;
   /** What the pointer looks like resting at a point: a PointerCursor member name ('crosshair'). */
   cursorAt(position: { x: number; y: number }): string;
+  /** Whether Escape pressed now would be the sheet's (an edit to cancel), asked before a binding of
+   * Escape around the sheet fires (#1181). */
+  claimsEscape(convention: KeyboardConventionValue): boolean;
 }
 
 /** Arrow-key adjustment semantics — one Tab stop wrapping a slider-like control. */
@@ -1090,6 +1093,9 @@ export interface CodeSurfaceModelLike {
   focusChanged(focused: boolean): void;
   /** What the pointer looks like resting at a point: a PointerCursor member name ('text', 'pointer'). */
   cursorAt(position: { x: number; y: number }): string;
+  /** Whether Escape pressed now would be the editor's (a list, a card, a snippet, a second caret to
+   * close), asked before a binding of Escape around the editor fires (#1181). */
+  claimsEscape(convention: KeyboardConventionValue): boolean;
 }
 
 /** A live camera surface — the session id names the MediaStream the runtime attaches. */

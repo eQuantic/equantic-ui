@@ -1,1 +1,2 @@
 #nullable enable
+eQuantic.UI.Code.CodeEditorController.ClaimsEscape(eQuantic.UI.Primitives.KeyboardConvention convention) -> bool

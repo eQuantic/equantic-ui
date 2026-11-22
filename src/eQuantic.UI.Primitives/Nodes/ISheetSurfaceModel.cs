@@ -107,4 +107,13 @@ public interface ISheetSurfaceModel
     /// any target, so no drawn box can say it.
     /// </summary>
     PointerCursor CursorAt(Point position);
+
+    /// <summary>
+    /// Whether Escape pressed now would be the sheet's: <see cref="HandleKey"/> would claim it, because
+    /// a cell is being edited (Escape cancels the edit, as Excel's does) or ranges are being added. A host
+    /// asks before a binding of Escape around the sheet fires, and leaves the key to the sheet when it
+    /// answers true, so a dialog stays open over an edit (#1181). False at rest, where Escape only
+    /// releases the Tab trap: the key is then the dialog's. It answers without doing anything.
+    /// </summary>
+    bool ClaimsEscape(KeyboardConvention convention);
 }

@@ -148,7 +148,7 @@ import type {
   VisualNodeValue,
 } from './nodes';
 import type { KeyboardConventionValue, TextEntryKindValue } from './enums.generated';
-import { declareShortcut, shortcutMark } from '../dom/shortcuts';
+import { declareShortcut, shortcutMark, TAKES_KEY_FIRST } from '../dom/shortcuts';
 import { installScrolledController } from './scrolled-pinned';
 import { declareScrollViewport } from './scroll-viewports';
 import { declareTableViewport, tableCellPlace } from './table-viewports';
@@ -1237,6 +1237,7 @@ interface TextDoorModel {
   cut(): string;
   paste(text: string): boolean;
   focusChanged(focused: boolean): void;
+  claimsEscape(convention: KeyboardConventionValue): boolean;
 }
 
 /**
@@ -1293,6 +1294,16 @@ function openTextDoor(
       event.preventDefault();
       changed();
     }
+  }) as unknown as EventHandler;
+
+  // What a binding of Escape around the surface asks before it fires (#1181; C# twin: PhotonHost.KeyDown,
+  // which asks its code and sheet targets): the door keeps the key while its model would claim it, so a
+  // dialog stays open over an open completion list or a cell being edited, and the keydown above takes it.
+  // Asked of Escape alone: an app's own chord, ⌘K, answers before the door as it always has.
+  input.events[TAKES_KEY_FIRST] = ((asked: CustomEvent<KeyboardEvent>) => {
+    const key = asked.detail;
+    if (key.key !== 'Escape' || key.shiftKey || key.altKey || key.ctrlKey || key.metaKey) return;
+    if (model.claimsEscape(convention)) asked.preventDefault();
   }) as unknown as EventHandler;
 
   input.events['beforeinput'] = ((event: InputEvent) => {
