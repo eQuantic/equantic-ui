@@ -85,6 +85,28 @@ public class HydrationAssertTests(HydrationSiteFactory site) : IClassFixture<Hyd
         report.RoutedPage.Should().Be("CataloguePage");
     }
 
+    /// <summary>
+    /// A page whose module imports a shared chunk for its side effects alone hydrates (#1804). The bundler writes
+    /// that import with no space after <c>import</c>, and the harness left it relative, which bun could not resolve
+    /// among the modules it fetches from the server: the boot failed, and so did 15 of a real site's 18 pages.
+    /// </summary>
+    [Fact]
+    public async Task APageThatImportsAChunkForItsSideEffects_Hydrates()
+    {
+        using (var client = site.CreateClient())
+        {
+            var module = await client.GetStringAsync("/_equantic/ShelfOnePage.js");
+            module.Should().MatchRegex(@"(^|;)import""\./[^""]+\.js"";",
+                "the shelf page imports the ribbon's chunk for its side effects alone, or this case proves nothing");
+        }
+
+        var report = await HydrationAssert.PageAsync(site, "/shelf/one");
+
+        report.Passed.Should().BeTrue(report.ToString());
+        report.Page.Should().Be("ShelfOnePage");
+        report.Hydrated.Should().BeTrue();
+    }
+
     /// <summary>In development the browser itself says it, naming both pages and the docs (#1778).</summary>
     [Fact]
     public async Task InDevelopment_TheBrowserSaysTheRouterChoseAnotherPage()
