@@ -18,7 +18,8 @@
       dialog, on Photon and in the runtime's specs, and the controller's question in the shortcut spec
 - [ ] 2.4 Check in Chromium on the dashboard sample's `/code` page, with a `CodeEditor` in a `BottomSheet`: Escape
       with the completion list open closes the list and keeps the sheet and the keyboard in the editor, and the
-      next Escape closes the sheet
+      next Escape closes the sheet. Not run: the branch waited from 10/11 and was carried by #1811 without it,
+      and the runtime's specs and Photon's host tests hold both targets
 
 ## 3. Documentation
 

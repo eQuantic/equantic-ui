@@ -8,5 +8,5 @@
   (`ClaimsEscape`, answered without doing anything), the web's shortcut controller asks the focus before a
   binding fires (`eq:takes-key-first`, which a text door answers from its model), and Photon's `KeyDown` asks its
   code and sheet targets. An app's own chords still answer before a focused editor, and Android's back still
-  closes the layer over an edit. Proved with tests that failed first on both targets and in Chromium. Proposed
+  closes the layer over an edit. Proved with tests that failed first on both targets. Proposed
   and archived through OpenSpec (`keyboard-shortcuts`).
