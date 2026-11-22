@@ -110,6 +110,34 @@ public static class CodeKeymap
     }
 
     /// <summary>
+    /// Whether <see cref="Handle"/> would claim <paramref name="chord"/> now, without running anything: what a
+    /// host asks before a binding of the same key around the editor fires (#1181). Read as Handle reads a key,
+    /// through the same bindings in the same order, with <see cref="CodeEditorController.CanExecute"/> for what
+    /// each command would answer.
+    /// </summary>
+    internal static bool Claims(CodeEditorController editor, KeyChord chord, KeyboardConvention convention)
+    {
+        if (IsModifierKey(chord.Key)) return false;
+        var bindings = Bindings(editor, convention);
+        // The second half of a chord of two keys is the chord's whatever its commands would do.
+        if (editor.PendingChord is { } waited)
+        {
+            foreach (var binding in bindings)
+                if (binding.First is { } starts && Matches(starts, waited) && Matches(binding.Chord, chord)) return true;
+        }
+        foreach (var binding in bindings)
+        {
+            if (binding.First is { } starts)
+            {
+                if (Matches(starts, chord) && editor.CanExecute(binding.Command)) return true;
+                continue;
+            }
+            if (Matches(binding.Chord, chord) && editor.CanExecute(binding.Command)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>
     /// The bindings a key is looked up in: the app's, then the defaults, without a default the app's
     /// bindings already name the chord of, so a chord the app binds is the app's alone. A key the app binds
     /// on its own takes the defaults' chords of two keys that start on it as well: ⌘K bound to
