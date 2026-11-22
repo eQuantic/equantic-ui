@@ -44,6 +44,9 @@ off. So the node of a mixed check carries the partial state and stays uncheckabl
 UIKit on iOS 17 and later still calls the deprecated `traitCollectionDidChange`. The override returns there
 before reaching its base, so the registration is the only answer. On the iOS 27 simulator a build without the
 registration followed neither the mode nor the contrast, which shows the registration is the live path.
+The handler is static and reaches the screen through the trait environment UIKit hands it: the controller
+keeps its registration, so a handler capturing the controller would keep the controller alive (the secondary
+review's finding). The static handler re-rendered the same as main on the iOS 27 simulator.
 
 ## What was not run on an older system
 

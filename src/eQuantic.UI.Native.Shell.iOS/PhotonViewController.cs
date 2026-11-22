@@ -137,9 +137,12 @@ public sealed class PhotonViewController : UIViewController
         _keyboard = new PhotonKeyboard(view, _host);
 
         // The light or dark mode and the contrast, followed while the screen lives (FollowTraits).
-        // iOS 17 asks for the traits by name; 15 and 16 have only the callback it deprecated.
+        // iOS 17 asks for the traits by name; 15 and 16 have only the callback it deprecated. The
+        // handler is static and reaches the screen through the environment UIKit hands it: the
+        // controller keeps the registration, so a handler holding the controller would keep it alive.
         if (OperatingSystem.IsIOSVersionAtLeast(17))
-            RegisterForTraitChanges<UITraitUserInterfaceStyle, UITraitAccessibilityContrast>((_, _) => FollowTraits());
+            RegisterForTraitChanges<UITraitUserInterfaceStyle, UITraitAccessibilityContrast>(
+                static (environment, _) => (environment as PhotonViewController)?.FollowTraits());
 
         _clock = CADisplayLink.Create(OnFrame);
         _clock.AddToRunLoop(NSRunLoop.Main, NSRunLoopMode.Common);
