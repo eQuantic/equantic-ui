@@ -1,10 +1,9 @@
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using eQuantic.UI.Generators;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Text;
 using Xunit;
 
 namespace eQuantic.UI.Web.Tests;
@@ -12,9 +11,11 @@ namespace eQuantic.UI.Web.Tests;
 /// <summary>
 /// A component of a referenced project is composed like the app's own: <c>Wordmark()</c>, with no setting
 /// and no attribute (#818). The generator sees a referenced project only as metadata, and the SDK names the
-/// assemblies that came from projects (<c>_EqReferencedProjects</c>): a package's components have no source
-/// eqc compiles, so no module a factory could import, and get none. <c>samples/SharedLibrary</c> composes
-/// its library's <c>Wordmark</c> this way.
+/// assemblies that came from projects, one a line, in a file it hands the compiler
+/// (<c>equantic.factory-projects.txt</c>): a package's components have no source eqc compiles, so no module
+/// a factory could import, and get none. <c>samples/SharedLibrary</c> composes its library's <c>Wordmark</c>
+/// this way, and <see cref="ReferencedProjectFactoriesBuildTests"/> builds the same through MSBuild and the
+/// compiler, which is where a list handed in an analyzer config value lost all but its first name (#1803).
 /// </summary>
 public class ReferencedProjectFactoriesTests
 {
@@ -36,20 +37,11 @@ public class ReferencedProjectFactoriesTests
         }
         """;
 
-    private sealed class Options(string? referenced) : AnalyzerConfigOptionsProvider
+    /// <summary>A file the compiler is handed with the additional files, read from memory.</summary>
+    private sealed class Listed(string path, string content) : AdditionalText
     {
-        private sealed class Global(string? referenced) : AnalyzerConfigOptions
-        {
-            public override bool TryGetValue(string key, [NotNullWhen(true)] out string? value)
-            {
-                value = key == "build_property._EqReferencedProjects" ? referenced : null;
-                return value is not null;
-            }
-        }
-
-        public override AnalyzerConfigOptions GlobalOptions { get; } = new Global(referenced);
-        public override AnalyzerConfigOptions GetOptions(SyntaxTree tree) => GlobalOptions;
-        public override AnalyzerConfigOptions GetOptions(AdditionalText textFile) => GlobalOptions;
+        public override string Path { get; } = path;
+        public override SourceText GetText(CancellationToken cancellationToken = default) => SourceText.From(content);
     }
 
     private static IEnumerable<MetadataReference> Framework() =>
@@ -71,14 +63,18 @@ public class ReferencedProjectFactoriesTests
         return MetadataReference.CreateFromImage(image.ToArray());
     }
 
+    /// <summary>
+    /// Runs the generator over the app, with <paramref name="referenced"/> as the lines of the list the SDK writes,
+    /// in a file named <paramref name="listName"/>, or with no list at all when it is null.
+    /// </summary>
     private static (string Source, ImmutableArray<Diagnostic> Diagnostics, IReadOnlyList<Diagnostic> Errors) Run(
-        string app, string? referenced, string assemblyName = "Shop.Web")
+        string app, string? referenced, string assemblyName = "Shop.Web", string listName = "equantic.factory-projects.txt")
     {
         var compilation = CSharpCompilation.Create(assemblyName, [CSharpSyntaxTree.ParseText(app, path: "App.cs")],
             Framework().Append(CompiledLibrary()),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
-        var driver = CSharpGeneratorDriver.Create(
-                [new AppFactorySurfaceGenerator().AsSourceGenerator()], optionsProvider: new Options(referenced))
+        AdditionalText[] lists = referenced is null ? [] : [new Listed($"/obj/Debug/net10.0/{listName}", referenced)];
+        var driver = CSharpGeneratorDriver.Create([new AppFactorySurfaceGenerator().AsSourceGenerator()], additionalTexts: lists)
             .RunGeneratorsAndUpdateCompilation(compilation, out var withSurface, out _);
         var result = driver.GetRunResult().Results.Single();
         var source = result.GeneratedSources.Length > 0 ? result.GeneratedSources[0].SourceText.ToString() : "";
@@ -118,6 +114,26 @@ public class ReferencedProjectFactoriesTests
 
         source.Should().NotContain("Wordmark");
         errors.Should().Contain(error => error.Id == "CS0103", "the page names a factory nobody wrote");
+    }
+
+    [Fact]
+    public void AProjectAfterTheFirstInTheList_GetsItsFactories()
+    {
+        // The list a real site's app wrote: the project with the components is not the first (#1803).
+        var (source, diagnostics, errors) = Run(PageThatComposesTheMark, referenced: "Brand.Application\nBrand.Domain\nBrand.Common\n");
+
+        diagnostics.Should().BeEmpty();
+        errors.Should().BeEmpty(source);
+        source.Should().Contain("Wordmark(string tagline = \"\")");
+    }
+
+    [Fact]
+    public void AFileOfAnotherName_IsNoList()
+    {
+        var (source, _, errors) = Run(PageThatComposesTheMark, referenced: "Brand.Common", listName: "projects.txt");
+
+        source.Should().NotContain("Wordmark");
+        errors.Should().Contain(error => error.Id == "CS0103", "only the SDK's own list names the projects");
     }
 
     [Fact]

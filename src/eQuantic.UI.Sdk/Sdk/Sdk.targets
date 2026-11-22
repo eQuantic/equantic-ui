@@ -399,7 +399,11 @@
         and a package's components must not get factories (eqc compiles a referenced PROJECT from its
         source, #624, and has no source for a package), so it is told which assemblies came from
         projects: the ones eqc compiles from source, without the SDK's own projects and icon packs
-        (_EQuanticCompilerInputs keeps the same set). Set before the compiler's options are written.
+        (_EQuanticCompilerInputs keeps the same set). The names go one a line in a file the compiler
+        is handed with the additional files, which the generator finds by its name, and never in a
+        compiler-visible property: an analyzer config ends a value at ';' or '#', so the list joined
+        with ';' reached the generator as its first name alone (#1803). Written before the compiler's
+        inputs are, a design-time build included, which is where an editor's compilation comes from.
     -->
     <Target Name="_EQuanticFactoryReferences" BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun"
             DependsOnTargets="ResolveReferences;FindReferenceAssembliesForReferences"
@@ -414,8 +418,14 @@
                            And ('$(_EqFactorySdkRoot)' == '' Or !$([System.String]::Copy('%(ReferencePathWithRefAssemblies.MSBuildSourceProjectFile)').StartsWith('$(_EqFactorySdkRoot)')))" />
         </ItemGroup>
         <PropertyGroup>
-            <_EqReferencedProjects>@(_EqFactoryProjectAssembly->'%(Filename)')</_EqReferencedProjects>
+            <_EqFactoryProjectsFile>$(IntermediateOutputPath)equantic.factory-projects.txt</_EqFactoryProjectsFile>
         </PropertyGroup>
+        <WriteLinesToFile Condition="'@(_EqFactoryProjectAssembly)' != ''" File="$(_EqFactoryProjectsFile)"
+                          Lines="@(_EqFactoryProjectAssembly->'%(Filename)')" Overwrite="true" WriteOnlyWhenDifferent="true" />
+        <ItemGroup Condition="'@(_EqFactoryProjectAssembly)' != ''">
+            <AdditionalFiles Include="$(_EqFactoryProjectsFile)" />
+            <FileWrites Include="$(_EqFactoryProjectsFile)" />
+        </ItemGroup>
     </Target>
 
     <Target Name="_EQuanticCompilerInputs"
