@@ -1,0 +1,3 @@
+#nullable enable
+const eQuantic.UI.Compiler.CodeGen.Eq.AddInt = "$eq.num.addInt" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.AddLong = "$eq.num.addLong" -> string!

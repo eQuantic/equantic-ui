@@ -56,7 +56,13 @@ import {
   log2Of64,
 } from './utils/bits';
 import {
+  abs,
+  absLong,
+  addInt,
+  addLong,
   checked,
+  copySign,
+  copySignLong,
   mapGet,
   mapSet,
   divRem,
@@ -447,6 +453,14 @@ export const $eq = {
     intRem,
     longDiv,
     longRem,
+    /** An int and a long added as Enumerable.Sum adds them, checked whatever the context (#1808). */
+    addInt,
+    addLong,
+    /** A signed integer's Abs and CopySign, which throw for its MinValue's magnitude (#1808). */
+    abs,
+    absLong,
+    copySign,
+    copySignLong,
     single,
     double,
     singleFromLong,

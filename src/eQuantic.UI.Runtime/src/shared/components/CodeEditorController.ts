@@ -1544,7 +1544,7 @@ export class CodeEditorController {
         if (!((rows = this.grid.rows) != null)) return Math.min(Math.max(line + steps, 0), last);
         let direction = steps < 0 ? -1 : 1;
         let here = line;
-        let left = Math.abs(steps);
+        let left = $eq.num.abs(steps, 32);
         for (let next = line + direction; left > 0 && next >= 0 && next <= last; next += direction) {
             if (!rows.isVisible(next)) continue;
             here = next;

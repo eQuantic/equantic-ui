@@ -596,7 +596,7 @@ export class CodeGoTo {
         for (let i = 0; i < this._places.length; i++) {
             if (!(this._places[i].document == null)) continue;
             let start = this._places[i].range.start;
-            let away = Math.abs(start.line - at.line) * 100 + Math.abs(start.column - at.column);
+            let away = $eq.num.abs(start.line - at.line, 32) * 100 + $eq.num.abs(start.column - at.column, 32);
             if (best >= 0 && away >= distance) continue;
             best = i;
             distance = away;

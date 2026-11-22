@@ -82,7 +82,7 @@ export class CodeJumpList {
 
     heard(selection: CodeRange) {
         if (this._walking) return;
-        let lines = Math.abs(selection.start.line - this._heard.start.line);
+        let lines = $eq.num.abs(selection.start.line - this._heard.start.line, 32);
         let newPlace = lines >= CodeJumpList.distance || this._jumping && lines > 0;
         this._heard = selection;
         if (newPlace && this._places[this._index].start.line !== selection.start.line) this.add(selection); else $eq.collections.listSet(this._places, this._index, selection);
