@@ -5908,6 +5908,143 @@ record of a release, the wiki's Upgrading page is the distillate.
   [#1788](https://github.com/eQuantic/equantic-ui/issues/1788),
   [#818](https://github.com/eQuantic/equantic-ui/issues/818)). Proposed and archived through OpenSpec
   (`openspec/specs/resource-accessors`, `sdk-version`, `component-factories`).
+- **2026-11-09 · A dialog's Escape waits for the code editor or the spreadsheet in it**: a bug under #419
+  ([#1181](https://github.com/eQuantic/equantic-ui/issues/1181)). Inside a dismissible Dialog, BottomSheet or
+  Drawer, Escape on an open completion list closed the whole layer, and what was typed went with it; measured in
+  Chromium on the dashboard sample, where the same editor on the page closed only the list. Both targets asked
+  the page's bindings first, the web on the window in the capture phase and Photon's host before its code target,
+  so the editor and the sheet never heard an Escape a layer around them binds, though their keymaps claim it
+  while something is open. `ICodeSurfaceModel` and `ISheetSurfaceModel` now say whether Escape is theirs
+  (`ClaimsEscape`, answered without doing anything), the web's shortcut controller asks the focus before a
+  binding fires (`eq:takes-key-first`, which a text door answers from its model), and Photon's `KeyDown` asks its
+  code and sheet targets. An app's own chords still answer before a focused editor, and Android's back still
+  closes the layer over an edit. Proved with tests that failed first on both targets. Proposed
+  and archived through OpenSpec (`keyboard-shortcuts`).
+- **2026-11-09 · A modal layer holds the Tab walk on Photon**: a bug under #849
+  ([#1066](https://github.com/eQuantic/equantic-ui/issues/1066)). On Photon a dialog, a sheet or a drawer did not
+  hold the keyboard: Tab walked every focus stop of the frame in paint order, so from a dialog's last control it
+  landed on the page's button behind the scrim, where the web's focus trap cycles to the dialog's first. The
+  realizer's result now names the root of the topmost modal and open layer, and the host's focus walk visits only
+  the stops built under it and wraps among them: a menu opened in the dialog is part of the walk, a toast is not,
+  and a dialog with no control holds the keyboard with nothing behind it focused. The control that has the focus
+  still answers Tab first, and the `modal-focus` scenarios now run on Photon too. Proved with tests that failed
+  first. Proposed and archived through OpenSpec (`modal-focus`).
+- **2026-11-21 · An app with no Designer keeps its hot reload**: since the SDK writes a catalog's accessors
+  (#1784), every save under `dotnet watch` in an app whose `.resx` has no `Designer.cs` failed with CS0234
+  on the catalog's namespace, so no edit reached the server and the page drew over its markup:
+  `samples`' web "Edit to view" measured a warm median of about 5,050 ms against its 1,500 ms ceiling.
+  MSBuild writes the class inside `PrepareResources`, which `Compile` alone does not run, and dotnet
+  watch loads its compilation from a design-time build of `Compile`, as an editor does. Both SDKs now
+  run `PrepareResources` before `CoreCompile`; a design-time build of a plain project carries the class
+  in both, which it did in neither without the target, and the dashboard's warm median is 253 ms
+  ([#1801](https://github.com/eQuantic/equantic-ui/issues/1801)). Proposed and archived through
+  OpenSpec (`openspec/specs/resource-accessors`).
+- **2026-11-21 · A frame in the runtime's tests comes after the timers already due**: `test-runtime` failed
+  three of six runs that day in a TreeView reload test, waiting thirty frames for a load that had not
+  started. happy-dom runs a frame as an immediate, ahead of every timer, and a component's `Task.Yield`
+  is a 0 ms timer: measured, a 0 ms timer fired after about 3,700 immediates under the embedded bun and
+  about 76 under Node, so thirty frames bounded nothing whenever they held little work. The test
+  environment now draws a frame after a 0 ms timer, as a browser runs the timers due before it updates
+  the rendering, and its own spec fails when a frame outruns one. The wait that failed sees the load
+  within one frame of the reload, 20 runs of 20, where it missed 5 of 20 before
+  ([#1800](https://github.com/eQuantic/equantic-ui/issues/1800)).
+- **2026-11-21 · The shared-library sample's check follows the factory**: `samples` was red on main from
+  #1793 on, and on the tag `v0.2.0-preview.71`, whose run published nothing. The sample composes the
+  Common project's `Wordmark` with its factory since #818, so the page calls `AppUI.wordmark()` and the
+  app's factory module imports the component, and `check-shared-library-sample.sh` still asked the page
+  to import it. The check now asserts each link of that path, and a copy of the build's output with any
+  one of them removed fails, naming it. A pull request's run skips the macOS jobs, `samples` among them,
+  which is how the stale check reached main
+  ([#1798](https://github.com/eQuantic/equantic-ui/issues/1798)).
+- **2026-11-22 · 0.2.0-preview.71 released** from `d58f88d3f`: the SDK writing what an app kept by hand (a
+  catalog's accessors, its version stated once in `global.json`, and factories for a referenced project's
+  components, #1784, #1788, #818), a page carrying only what it shows (#1782, #1783, #797), a page's
+  hydration tested with `HydrationAssert` (#1775, #1778), and the build refusing what broke only in the
+  browser (#1776, #1777). The release folded seven API files, nine ledger entries and two runtime deltas,
+  for a base of 381,658 bytes, and each break is on the Upgrading page. The tag was first pushed on
+  `74d5dc6f8`, whose run published nothing: `samples` failed on a check #1793 had left stale (#1798), and
+  behind that check an app with no Designer had lost its hot reload (#1801), which the templates would
+  have shipped, while `test-runtime` failed half its runs on frames that outran the timers (#1800). #1799
+  fixed the three and the tag moved to its merge, whose run published 54 packages at 00:08Z on its first
+  attempt, and an app restores at 0.2.0-preview.71 from nuget.org
+  ([#1796](https://github.com/eQuantic/equantic-ui/issues/1796),
+  *[v0.2.0-preview.71](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.71)*).
+- **2026-11-22 · A closed dialog gives the focus back, and to the control in its opener's place when
+  the opener is gone**: the web's trap gave the focus back to the control that opened a dialog, and
+  gave up when that control had left the page, such as a row the dialog deleted. The focus then fell to
+  the body. Photon recorded no opener at all, and a modal layer neither took the focus when it opened
+  nor gave it back when it closed. On both targets now, a closed modal layer gives the focus to its
+  opener, or, when the opener is gone, to the control now at its place among those Tab reaches beneath
+  the layer. That is the next row's same control, or the last one, and inside a dialog that stays open,
+  never the page. Photon's layer also takes the focus when it opens, on `InitialFocus` or its first
+  stop, and keeps the ring as it was. A row that leaves only after the dialog closed, when a server
+  action answers, hands the focus to its place then, unless the user moved it, and of two dialogs
+  closing together the outermost's opener takes it, where the web took the top one's. A reader on r/csharp asked for this as a side-by-side demo.
+  `ModalFocusReturnTests` and `focus-trap.spec.ts` run the same rows: every case fails without the
+  change, and the deleted-row cases fail with a give-back that has no fallback. This pull request
+  carries the Tab walk of #1066 and the Escape of #1181, which waited on a branch since 10/11
+  ([#1811](https://github.com/eQuantic/equantic-ui/issues/1811)). Proposed and archived through
+  OpenSpec (`openspec/specs/modal-focus`).
+- **2026-11-22 · A page that imports a chunk for its side effects hydrates in its tests**: `HydrationAssert`
+  failed on 15 of a real site's 18 pages with `Cannot find module`, because its harness rewrote a side-effect
+  import into the path its plugin fetches only when a space followed `import`, and a minified bundle writes
+  `import"./chunk.js"`. The space is optional now. `tests/HydrationSite` gains the graph that makes the bundler
+  write one (a component two pages reach only through another), and its test asserts the import is in the
+  page's module ([#1804](https://github.com/eQuantic/equantic-ui/issues/1804)). Proposed and archived through
+  OpenSpec (`openspec/specs/component-testing`).
+- **2026-11-22 · A sum, an absolute value and a copied sign throw where .NET throws**: `Enumerable.Sum` over an
+  `int` or a `long` adds in a checked context whatever the context of the call, and `Abs` and `CopySign` of a
+  signed integer's `MinValue` throw, since its magnitude is no value of its type. The browser kept counting: a
+  sum answered 2147483648 for an int and a BigInt past 64 bits for a long, and an absolute value answered the
+  magnitude. An int's and a long's sum now add through the runtime's checked addition (`$eq.num.addInt`,
+  `$eq.num.addLong`), in the type the bound overload adds, and a signed integer's `Abs` and `CopySign` go through
+  the runtime, which throws with .NET's message. The cases also found a `long?` and a `decimal?` sum with a null
+  in it throwing a TypeError, now passed over, and `int.CopySign(0, -1)` answering `-0`. A real's sum stays an
+  inline reduce: a runtime loop measured five times slower on a million doubles, and the runtime's `checked`
+  two and a half times on ints and seven on longs, where the additions of their own cost nothing measurable
+  ([#1808](https://github.com/eQuantic/equantic-ui/issues/1808)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-sequences`, `openspec/specs/transpiler-bcl`).
+- **2026-11-22 · An int and a long wrap in the browser where .NET wraps them**: in C#'s default
+  context, which is unchecked, the transpiler wrapped an `int` or a `long` only inside an explicit
+  `unchecked`. `int.MaxValue + 1` on a variable answered 2147483648 in the browser, and a hash written
+  without `unchecked` answered another number than on the server. This was a documented divergence,
+  and a reader on r/csharp named it as the reason they kept integer-heavy C# on WASM. Every width now
+  wraps where C# wraps it: an int sum is `| 0`, a product is `Math.imul`, and a long goes through
+  `BigInt.asIntN`. A `checked` context still throws, and a constant the C# compiler folded is left as
+  written. A postfix step in a void lambda is written as the assignment. Proved by 26 conformance cases
+  on both sides (23 fail without the change; the other three are controls) and by the generated differential fold, which now
+  overflows an int and a long on purpose (8 of 8 batches fail without it). The served runtime grows
+  0.35% in gzip ([#1807](https://github.com/eQuantic/equantic-ui/issues/1807)). Proposed and archived
+  through OpenSpec (`openspec/specs/transpiler-expressions`).
+- **2026-11-22 · Every referenced project gets its components' factories**: only the first project of an
+  app's references got them since #818, and a page composing a component of any other failed with CS0103.
+  The SDK joined the names with `;` in a compiler-visible property, and an analyzer config ends a value
+  at `;` or `#`, so the generator read the first name alone; joined with `,`, a name holding `#` still
+  lost its factories. The names now go one a line in a file the compiler is handed with the additional
+  files, which a design-time build hands it too. A real build of the SDK's shipped target, with the
+  project holding the components second in the list, failed before the fix with the issue's CS0103 and
+  builds after it ([#1803](https://github.com/eQuantic/equantic-ui/issues/1803)). Proposed and archived
+  through OpenSpec (`openspec/specs/component-factories`).
+- **2026-11-22 · Uri's escaping is .NET's in the browser**: `Uri.EscapeDataString` was lowered to
+  `encodeURIComponent`, which keeps `! ' ( ) *`, so a WhatsApp link a real site built in a component changed once
+  its page hydrated. Measured on .NET 10, `EscapeUriString` keeps the `[` and `]` that `encodeURI` escapes, both
+  write a lone surrogate as U+FFFD where the browser threw, and `UnescapeDataString` leaves a malformed escape as
+  written where `decodeURIComponent` threw. The runtime escapes and unescapes as .NET does (`$eq.uri`), 33 cases
+  run on both sides, and the fixture site's share page hydrates with no difference
+  ([#1805](https://github.com/eQuantic/equantic-ui/issues/1805)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
+- **2026-11-22 · The Conformance host resolves each reference once, and fits a CI runner**: the
+  ubuntu Conformance job died mid-suite with every test green, its log saying "The runner has received
+  a shutdown signal", the way a GitHub runner goes when it runs out of memory, and on the release's
+  pull request it hung for 40 minutes. Measured locally, the suite's host reached a 22 GB working set
+  over a 1.2 GB managed heap, capping the heap changed nothing, and the memory fell only when a gen 2
+  collection let finalizers run. Each case's .NET side is a script, and scripting's own resolver read
+  the framework assemblies a compilation finds missing again for every script, into native buffers the
+  GC never saw. The evaluator now resolves through `ReferencesResolvedOnce`, which answers each
+  reference once per process: the whole suite (8,424 cases) runs in one host with a 2.8 GB peak, in 6
+  minutes where its six shards took about 17. `ScriptReferencesTests` holds the resolver to one read per
+  assembly, and fails with scripting's own, which read `System.Security.Claims` three times for three
+  scripts ([#1816](https://github.com/eQuantic/equantic-ui/issues/1816)).
 
 ## Retired documents
 

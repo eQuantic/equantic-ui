@@ -1149,6 +1149,7 @@ eQuantic.UI.Primitives.IClock
 eQuantic.UI.Primitives.IClock.Every(System.TimeSpan interval, System.Action! onTick) -> System.IDisposable!
 eQuantic.UI.Primitives.ICodeSurfaceModel
 eQuantic.UI.Primitives.ICodeSurfaceModel.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Primitives.ICodeSurfaceModel.ClaimsEscape(eQuantic.UI.Primitives.KeyboardConvention convention) -> bool
 eQuantic.UI.Primitives.ICodeSurfaceModel.CopyText() -> string!
 eQuantic.UI.Primitives.ICodeSurfaceModel.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
 eQuantic.UI.Primitives.ICodeSurfaceModel.Cut() -> string!
@@ -1221,6 +1222,7 @@ eQuantic.UI.Primitives.IServerPrefetch
 eQuantic.UI.Primitives.IServerPrefetch.PrefetchAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 eQuantic.UI.Primitives.ISheetSurfaceModel
 eQuantic.UI.Primitives.ISheetSurfaceModel.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Primitives.ISheetSurfaceModel.ClaimsEscape(eQuantic.UI.Primitives.KeyboardConvention convention) -> bool
 eQuantic.UI.Primitives.ISheetSurfaceModel.CopyText() -> string!
 eQuantic.UI.Primitives.ISheetSurfaceModel.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
 eQuantic.UI.Primitives.ISheetSurfaceModel.Cut() -> string!
