@@ -107,6 +107,16 @@ public class HydrationAssertTests(HydrationSiteFactory site) : IClassFixture<Hyd
         report.Hydrated.Should().BeTrue();
     }
 
+    /// <summary>A link escaped in a component with <c>Uri.EscapeDataString</c> is the same on both sides (#1805).</summary>
+    [Fact]
+    public async Task ALinkEscapedInAComponent_IsTheSameOnBothSides()
+    {
+        var report = await HydrationAssert.PageAsync(site, "/share");
+
+        report.Passed.Should().BeTrue(report.ToString());
+        report.Differences.Should().BeEmpty();
+    }
+
     /// <summary>In development the browser itself says it, naming both pages and the docs (#1778).</summary>
     [Fact]
     public async Task InDevelopment_TheBrowserSaysTheRouterChoseAnotherPage()
