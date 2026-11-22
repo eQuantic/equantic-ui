@@ -153,6 +153,7 @@ import { nextTextElementLength, textElementStarts } from './utils/text-elements'
 import { unicodeCategory } from './utils/unicode-category';
 import { hasNonWhiteSpace, isWhiteSpace, trim, trimEnd, trimStart } from './utils/white-space';
 import { toLower, toUpper } from './utils/casing';
+import { escapeData, escapeUri, unescapeData } from './utils/uri-escaping';
 import { split, splitAny } from './utils/string-split';
 import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
@@ -492,6 +493,8 @@ export const $eq = {
     trailingZeroCount64,
     log2Of64,
   },
+  /** `Uri.EscapeDataString`, `EscapeUriString` and `UnescapeDataString` as .NET escapes and unescapes (#1805). */
+  uri: { escapeData, escapeUri, unescapeData },
   /** Text: number/string formatting, StringBuilder, StringInfo's text elements (grapheme clusters,
    * from the platform's segmenter), a character's general category, string's comparisons and
    * ranged join, a string's own searches by a comparison, its split, .NET's white space, and its

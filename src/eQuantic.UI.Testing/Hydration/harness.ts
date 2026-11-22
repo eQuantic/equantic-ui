@@ -161,7 +161,9 @@ for (const script of scripts.filter((script) => script.getAttribute('type') === 
   }
 }
 
-const SPECIFIER = /(\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(["'])([^"']+)\2/g;
+// Every form a bundler writes an import in, the space after a keyword optional: a minified bundle writes
+// `import"./chunk.js"` for a chunk it imports for its side effects alone (#1804).
+const SPECIFIER = /(\bfrom\s*|\bimport\s*\(\s*|\bimport\s*)(["'])([^"']+)\2/g;
 
 /** A module's text with each import a browser would resolve against the page written as the absolute path
  *  it resolves to: the import map applied to a bare name, a relative path resolved against the module. */

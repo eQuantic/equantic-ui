@@ -66,28 +66,38 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
             .Collect();
 
         // A referenced PROJECT's components get factories too (#818). The SDK names the assemblies that came
-        // from projects (_EqReferencedProjects): a package's components have no source eqc compiles, so no
-        // module a factory could import.
-        var referenced = context.CompilationProvider.Combine(context.AnalyzerConfigOptionsProvider)
+        // from projects, one a line, in a file it hands the compiler (ReferencedProjectsFile): a package's
+        // components have no source eqc compiles, so no module a factory could import. A file and not a
+        // compiler-visible property, because an analyzer config ends a value at ';' or '#' and reads the rest
+        // of the line as a comment, so only the first project got its factories (#1803).
+        var projects = context.AdditionalTextsProvider
+            .Where(static file => string.Equals(System.IO.Path.GetFileName(file.Path), ReferencedProjectsFile,
+                System.StringComparison.Ordinal))
+            .Select(static (file, token) => ProjectNames(file, token))
+            .Collect();
+        var referenced = context.CompilationProvider.Combine(projects)
             .Select(static (pair, token) => ReferencedComponents(pair.Left, pair.Right, token));
 
         context.RegisterSourceOutput(components.Combine(referenced).Combine(context.CompilationProvider),
             static (spc, pair) => Emit(spc, pair.Left.Left, pair.Left.Right, pair.Right));
     }
 
-    /// <summary>The build property the SDK writes: the referenced projects' assembly names, ';'-separated.</summary>
-    internal const string ReferencedProjectsProperty = "build_property._EqReferencedProjects";
+    /// <summary>The file the SDK writes and hands the compiler: the referenced projects' assembly names, one a line.</summary>
+    internal const string ReferencedProjectsFile = "equantic.factory-projects.txt";
+
+    /// <summary>The names a list holds: every line that is not blank, as it is written.</summary>
+    private static ImmutableArray<string> ProjectNames(AdditionalText file, System.Threading.CancellationToken token)
+    {
+        if (file.GetText(token) is not { } text) return ImmutableArray<string>.Empty;
+        return text.Lines.Select(line => line.ToString().Trim()).Where(name => name.Length > 0).ToImmutableArray();
+    }
 
     /// <summary>Every component with a factory in the assemblies of the projects the app references.</summary>
     private static ImmutableArray<Component> ReferencedComponents(
-        Compilation compilation, Microsoft.CodeAnalysis.Diagnostics.AnalyzerConfigOptionsProvider options,
-        System.Threading.CancellationToken token)
+        Compilation compilation, ImmutableArray<ImmutableArray<string>> lists, System.Threading.CancellationToken token)
     {
-        if (!options.GlobalOptions.TryGetValue(ReferencedProjectsProperty, out var value) || string.IsNullOrWhiteSpace(value))
-            return ImmutableArray<Component>.Empty;
-        var projects = new HashSet<string>(
-            value.Split(new[] { ';' }, System.StringSplitOptions.RemoveEmptyEntries).Select(name => name.Trim()),
-            System.StringComparer.Ordinal);
+        var projects = new HashSet<string>(lists.SelectMany(names => names), System.StringComparer.Ordinal);
+        if (projects.Count == 0) return ImmutableArray<Component>.Empty;
         var found = ImmutableArray.CreateBuilder<Component>();
         foreach (var assembly in compilation.SourceModule.ReferencedAssemblySymbols)
         {
