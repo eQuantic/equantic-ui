@@ -11,6 +11,12 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// The framework's LocationManager — not Play Services' fused provider, for the same reason the
 /// biometrics use the framework prompt: no dependency an app carries for a capability it may never
 /// use, and one code path that exists on every Android, Google-blessed or not.
+/// <para>
+/// A reading is asked for at fine accuracy. Below Android 12 that is said with a <c>Criteria</c>,
+/// which the framework has answered from its own fused provider since KitKat. Android 11 and 12
+/// deprecated the calls that take one, and from 12 the request is written the way the framework writes
+/// it for them: the fused provider, at high accuracy.
+/// </para>
 /// </summary>
 internal sealed class AndroidLocation : ILocation
 {
@@ -56,8 +62,19 @@ internal sealed class AndroidLocation : ILocation
             return null;
 
         var completion = new TaskCompletionSource<GeoLocation?>();
-        var listener = new OneShot(completion);
-        manager.RequestSingleUpdate(Criteria(), listener, Looper.MainLooper);
+        var listener = new OneShot(manager, completion);
+        if (OperatingSystem.IsAndroidVersionAtLeast(31))
+            manager.RequestLocationUpdates(LocationManager.FusedProvider,
+                new LocationRequest.Builder(0)
+                    .SetQuality((int)LocationRequestQuality.HighAccuracy)
+                    .SetMaxUpdates(1)
+                    .Build(),
+                activity.MainExecutor!, listener);
+        else
+            // A single update is deprecated from 30, and updates through a Criteria are not until 31,
+            // so below 31 this asks for updates and the listener stops them at the first reading.
+            manager.RequestLocationUpdates(0, 0, new Criteria { Accuracy = Accuracy.Fine }, listener,
+                Looper.MainLooper);
 
         var winner = await Task.WhenAny(completion.Task,
             Task.Delay(TimeSpan.FromSeconds(15), cancellationToken));
@@ -71,24 +88,38 @@ internal sealed class AndroidLocation : ILocation
 
     public IDisposable Subscribe(Action<GeoLocation> onChanged)
     {
-        if (Manager is not { } manager || Permission != PermissionState.Granted)
+        if (PhotonActivity.Current is not { } activity || Manager is not { } manager
+            || Permission != PermissionState.Granted)
             return EmptySubscription.Instance;
         var listener = new Stream(onChanged);
         // ~10 s / 10 m: the delivery-tracking cadence, not the navigation one.
-        manager.RequestLocationUpdates(10_000, 10, Criteria(), listener, Looper.MainLooper);
+        if (OperatingSystem.IsAndroidVersionAtLeast(31))
+            manager.RequestLocationUpdates(LocationManager.FusedProvider,
+                new LocationRequest.Builder(10_000)
+                    .SetQuality((int)LocationRequestQuality.HighAccuracy)
+                    .SetMinUpdateIntervalMillis(10_000)
+                    .SetMinUpdateDistanceMeters(10)
+                    .Build(),
+                activity.MainExecutor!, listener);
+        else
+            manager.RequestLocationUpdates(10_000, 10, new Criteria { Accuracy = Accuracy.Fine }, listener,
+                Looper.MainLooper);
         return new Subscription(manager, listener);
     }
-
-    private static Criteria Criteria() => new() { Accuracy = Accuracy.Fine };
 
     private static GeoLocation Read(global::Android.Locations.Location location) =>
         new(location.Latitude, location.Longitude, location.HasAccuracy ? location.Accuracy : 0);
 
-    private sealed class OneShot(TaskCompletionSource<GeoLocation?> completion)
+    private sealed class OneShot(LocationManager manager, TaskCompletionSource<GeoLocation?> completion)
         : Java.Lang.Object, AndroidLocationListener
     {
-        public void OnLocationChanged(global::Android.Locations.Location location) =>
+        /// <summary>The first reading answers, and ends the updates where the request asked for more
+        /// than one.</summary>
+        public void OnLocationChanged(global::Android.Locations.Location location)
+        {
+            manager.RemoveUpdates(this);
             completion.TrySetResult(Read(location));
+        }
 
         public void OnProviderDisabled(string provider) => completion.TrySetResult(null);
         public void OnProviderEnabled(string provider) { }

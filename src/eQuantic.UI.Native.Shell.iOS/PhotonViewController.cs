@@ -136,6 +136,11 @@ public sealed class PhotonViewController : UIViewController
 
         _keyboard = new PhotonKeyboard(view, _host);
 
+        // The light or dark mode and the contrast, followed while the screen lives (FollowTraits).
+        // iOS 17 asks for the traits by name; 15 and 16 have only the callback it deprecated.
+        if (OperatingSystem.IsIOSVersionAtLeast(17))
+            RegisterForTraitChanges<UITraitUserInterfaceStyle, UITraitAccessibilityContrast>((_, _) => FollowTraits());
+
         _clock = CADisplayLink.Create(OnFrame);
         _clock.AddToRunLoop(NSRunLoop.Main, NSRunLoopMode.Common);
     }
@@ -165,11 +170,22 @@ public sealed class PhotonViewController : UIViewController
         _host.Resize((float)bounds.Width, (float)bounds.Height);
     }
 
-    /// <summary>Following the system means re-rendering when it changes, not only at launch: the
-    /// mode, unless the app fixed it, and the contrast, which the app never states.</summary>
+    /// <summary>
+    /// How iOS 15 and 16 tell a screen its traits changed. From 17 the registration in
+    /// <see cref="ViewDidLoad"/> tells it instead, naming the two traits this follows, and this callback
+    /// is the one 17 deprecated: it returns there before reaching its base, so the two never both answer.
+    /// </summary>
     public override void TraitCollectionDidChange(UITraitCollection? previous)
     {
+        if (OperatingSystem.IsIOSVersionAtLeast(17)) return;
         base.TraitCollectionDidChange(previous);
+        FollowTraits();
+    }
+
+    /// <summary>Following the system means re-rendering when it changes, not only at launch: the
+    /// mode, unless the app fixed it, and the contrast, which the app never states.</summary>
+    private void FollowTraits()
+    {
         if (_host is null) return;
         var (mode, contrast) = (Mode(), Contrast());
         if (_host.Mode == mode && _host.Contrast == contrast) return;
