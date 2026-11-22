@@ -62,7 +62,7 @@ internal sealed class AndroidLocation : ILocation
             return null;
 
         var completion = new TaskCompletionSource<GeoLocation?>();
-        var listener = new OneShot(manager, completion);
+        var listener = new OneShot(completion);
         if (OperatingSystem.IsAndroidVersionAtLeast(31))
             manager.RequestLocationUpdates(LocationManager.FusedProvider,
                 new LocationRequest.Builder(0)
@@ -72,18 +72,17 @@ internal sealed class AndroidLocation : ILocation
                 activity.MainExecutor!, listener);
         else
             // A single update is deprecated from 30, and updates through a Criteria are not until 31,
-            // so below 31 this asks for updates and the listener stops them at the first reading.
+            // so below 31 this asks for updates, and the end of the wait below ends them.
             manager.RequestLocationUpdates(0, 0, new Criteria { Accuracy = Accuracy.Fine }, listener,
                 Looper.MainLooper);
 
         var winner = await Task.WhenAny(completion.Task,
             Task.Delay(TimeSpan.FromSeconds(15), cancellationToken));
-        if (winner != completion.Task)
-        {
-            manager.RemoveUpdates(listener);
-            return null;
-        }
-        return completion.Task.Result;
+        // Whatever ended the wait (a reading, the provider switched off, the time, the token), the
+        // request ends with it: a provider switched off answers without a location, and its request
+        // would otherwise stay registered until one arrives.
+        manager.RemoveUpdates(listener);
+        return winner == completion.Task ? completion.Task.Result : null;
     }
 
     public IDisposable Subscribe(Action<GeoLocation> onChanged)
@@ -110,16 +109,11 @@ internal sealed class AndroidLocation : ILocation
     private static GeoLocation Read(global::Android.Locations.Location location) =>
         new(location.Latitude, location.Longitude, location.HasAccuracy ? location.Accuracy : 0);
 
-    private sealed class OneShot(LocationManager manager, TaskCompletionSource<GeoLocation?> completion)
+    private sealed class OneShot(TaskCompletionSource<GeoLocation?> completion)
         : Java.Lang.Object, AndroidLocationListener
     {
-        /// <summary>The first reading answers, and ends the updates where the request asked for more
-        /// than one.</summary>
-        public void OnLocationChanged(global::Android.Locations.Location location)
-        {
-            manager.RemoveUpdates(this);
+        public void OnLocationChanged(global::Android.Locations.Location location) =>
             completion.TrySetResult(Read(location));
-        }
 
         public void OnProviderDisabled(string provider) => completion.TrySetResult(null);
         public void OnProviderEnabled(string provider) { }

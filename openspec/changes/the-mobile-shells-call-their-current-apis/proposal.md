@@ -21,7 +21,7 @@ had come in under it unseen.
   From Android 12 the shell writes that request itself: the fused provider, a `LocationRequest` at high
   accuracy, one update for a reading and a 10 s / 10 m cadence for following. Below 12 the `Criteria`
   calls are still current and stay. A single update is deprecated from Android 11, so below 12 a reading
-  asks for updates and its listener ends them at the first.
+  asks for updates. A reading removes its request when its wait ends, whatever ended it.
 - **Android's accessibility nodes and events use the constructors that arrived in API 30.** The `Obtain`
   factories API 33 deprecated stay below 30. From Android 16 a check carries `CheckedState`, a mixed check
   as `Partial`, and a mixed check stays uncheckable, because TalkBack 16 reads a checkable partial node as

@@ -4,8 +4,8 @@
 
 From Android 12 the Android shell SHALL ask the fused provider for a location at high accuracy: one update for
 `GetCurrentAsync`, and updates at least 10 s and 10 m apart for `Subscribe`. Below Android 12 it SHALL ask
-through a `Criteria` of fine accuracy. A reading SHALL end its updates once it has its first location, or when
-its wait ends without one.
+through a `Criteria` of fine accuracy. A reading SHALL remove its request when its wait ends, whatever ended
+it: its first location, the provider switched off, its 15 s, or its token.
 
 #### Scenario: One reading on Android 16
 
@@ -13,6 +13,11 @@ its wait ends without one.
   set on the emulator
 - **THEN** the answer is that fix, and `dumpsys location` shows one fused registration at high accuracy with one
   update, removed once it delivered
+
+#### Scenario: Location switched off during a reading
+
+- **WHEN** location is switched off on the Android 16 emulator while a reading waits
+- **THEN** the reading answers `null` and `dumpsys location` shows its registration removed at that moment
 
 #### Scenario: Following on Android 16
 

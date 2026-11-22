@@ -19,8 +19,14 @@ The Android 16 sources say what the deprecated `Criteria` calls do: `requestSing
 `requestLocationUpdates(FUSED_PROVIDER, new LocationRequest.Builder(0).setQuality(criteria).setMaxUpdates(1)
 .setDurationMillis(30 s).build(), …)`, and `requestLocationUpdates(long, float, Criteria, …)` builds the same
 request with the interval and the distance. A fine `Criteria` sets `QUALITY_HIGH_ACCURACY`. From Android 12,
-where `FUSED_PROVIDER` is public, the shell writes those requests itself. It leaves out the 30 s duration: the
-reading's own 15 s wait already removes the request sooner, on every path.
+where `FUSED_PROVIDER` is public, the shell writes those requests itself. It leaves out the 30 s duration,
+because the reading removes its request when its wait ends, whatever ended it: a location, the provider
+switched off, the 15 s, or the token.
+
+The review of this change found that the provider switched off had been the one path that did not: the
+listener answered `null` and the request stayed registered. Measured on the Android 16 emulator by switching
+location off during a reading: main's request left after the platform's 30 s duration, the reviewed code's
+stayed (no `-registration` 35 s later), and this change's left at once, as the reading answered.
 
 Measured with `dumpsys location` on the Android 16 emulator, main and this change register the same request:
 `Request[@0 HIGH_ACCURACY, maxUpdates=1]` for a reading (main's adds the 30 s duration), and
