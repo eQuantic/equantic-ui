@@ -1867,7 +1867,8 @@ byte that starts no well-formed UTF-8 character left as written, and a null text
 type, SHALL answer in the browser what they answer in .NET: the magnitude, and for the type's `MinValue`, whose
 magnitude is no value of the type, the `OverflowException` .NET throws, in an unchecked context too.
 `CopySign` of `MinValue` SHALL answer `MinValue` for a negative sign, and SHALL answer 0 for a zero, never `-0`.
-A real's `Abs` and `CopySign` SHALL stay `Math.abs`.
+A real's `Abs` SHALL stay `Math.abs`, and a real's `CopySign` its inline lowering, a signed
+zero's sign included, with nothing checked.
 
 #### Scenario: The magnitude of MinValue
 

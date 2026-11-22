@@ -27,7 +27,8 @@ for a `long?` and a `decimal?`, because the null was added to a BigInt and hande
   overload adds, as `Average` reads it, and no longer the call's answer, which said nothing about a nullable.
   A real's sum is written as it was.
 - A signed integer's `Abs` and `CopySign` go through the runtime (`$eq.num.abs`, `absLong`, `copySign`,
-  `copySignLong`), which throws for `MinValue` with .NET's message. A real's stay `Math.abs`.
+  `copySignLong`), which throws for `MinValue` with .NET's message. A real's `Abs`
+  stays `Math.abs`, and its `CopySign` keeps its inline lowering.
 - `Average`'s path with no model checks a long's total too, through the same addition.
 
 eqc's strategies and the runtime are the parts reached. The developer surface does not move. The compiler's
