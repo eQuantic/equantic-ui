@@ -89,12 +89,12 @@ Design notes:
 ## Coverage matrix (areas → status; filled in as the corpus grows)
 
 - **Operators / expressions**: arithmetic ✅, comparison ✅, logical ✅, ternary ✅, null-coalescing ✅,
-  bitwise ✅, integer division ✅, shift ✅, `checked(expr)`/`unchecked(expr)` ✅ (32-bit: unchecked
-  wraps via `| 0`/`>>> 0`, checked throws `OverflowException`; long/ulong are exact BigInt and pass
-  through; default-context overflow does NOT wrap — JS float64 — a documented divergence).
+  bitwise ✅, integer division ✅, shift ✅, `checked(expr)`/`unchecked(expr)` ✅ (32-bit: the default
+  context and unchecked wrap via `| 0`/`>>> 0`/`Math.imul`, checked throws `OverflowException`;
+  long/ulong are exact BigInt and wrap through `BigInt.asIntN`/`asUintN`, #1807).
 - **Numeric types**: int ✅, double ✅, decimal ✅(exact `Decimal`, wire-as-string + hydration),
-  long/ulong ✅(BigInt, wire-as-string), float ✅, parsing/Convert ✅; explicit `checked`/`unchecked`
-  overflow ✅, default-context overflow = documented divergence (JS float64 doesn't wrap — not a gap).
+  long/ulong ✅(BigInt, wire-as-string), float ✅, parsing/Convert ✅; overflow ✅ in every context
+  (the default one wraps as .NET does since #1807, which the differential fold now reaches).
 - **Strings**: core methods ✅, format specifiers ✅(F/X/N), padding/split/join ✅, interpolation ✅,
   `Trim(char)` ✅, char ops ✅, StringBuilder ✅(compat type), `StringComparison`/IgnoreCase ✅
   (Equals/StartsWith/EndsWith/Contains/IndexOf under Ordinal + IgnoreCase fold both sides; culture-

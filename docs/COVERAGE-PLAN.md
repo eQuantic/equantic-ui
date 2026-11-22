@@ -81,6 +81,7 @@ A plan without a stop condition chases an ideal forever. Three numbers end it:
 
    - `~` and `>>>` put a value at 2^31 from small operands, and the fold reached the
      default-context int overflow this instrument exists not to hunt.
+     Since #1807 that overflow wraps as .NET's does, and the fold reaches it on purpose.
    - A `StringBuilder` named `sb0` shadowed the `sbyte sb0`, so the fold added the builder and the
      program died in the JS engine — which reads exactly like a compiler bug.
    - Widening the statement switch DILUTED every case, and `Math.Round` fell below the noise of a
