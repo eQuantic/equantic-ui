@@ -72,6 +72,8 @@ public class CheckedConformanceTests
     [InlineData("ulong u = 0; u--; return u.ToString();")]                                  // "18446744073709551615"
     [InlineData("uint u = 5; return (-u).ToString();")]                                     // "-5": a uint negates as a long
     [InlineData("return -5;")]                                                              // a constant stays itself
+    [InlineData("return (1u << 31).ToString();")]                                           // "2147483648": a uint's shift, folded
+    [InlineData("const uint k = 3u; return (k << 30).ToString();")]                         // "3221225472"
     [InlineData("const int k = 1 << 30; return k - 1 + k;")]                                // 2147483647, folded in range
     public void DefaultContextOverflow_WrapsLikeDotNet(string statements)
     {

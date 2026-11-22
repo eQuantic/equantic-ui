@@ -136,12 +136,15 @@ public static class IntegerWidth
     /// <paramref name="width"/>, settled as <see cref="Settle"/> settles it. An int product goes through
     /// <c>Math.imul</c>, which wraps exactly where a double past 2^53 would have lost the low bits, and an
     /// int's <c>&lt;&lt;</c> is JavaScript's own, which already answers in signed 32 bits, as C# does.
+    /// A constant C# proved in range is the operator as written, which computes the same number, except a
+    /// uint's <c>&lt;&lt;</c>: JavaScript's answers SIGNED 32 bits, so <c>1u &lt;&lt; 31</c> came back
+    /// -2147483648 where C# folds 2147483648, and it goes back to its width like any other.
     /// </summary>
     public static JsExpr Arithmetic(string op, JsExpr left, JsExpr right, (int Bits, bool Unsigned) width,
         ArithmeticContext arithmetic, ConversionContext context)
     {
         var plain = JsExpr.Binary(left, op, right);
-        if (arithmetic.ProvedInRange) return plain;
+        if (arithmetic.ProvedInRange && !(op == "<<" && width is (32, true))) return plain;
         if (arithmetic.IsChecked) return Checked(plain, width, context);
         if (width.Bits == 32 && op == "*")
         {

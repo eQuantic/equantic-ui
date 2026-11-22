@@ -22,6 +22,8 @@ public class IntegerWrapEmissionTests
     // A constant C#'s compiler folded is in range, or it would not have compiled (CS0220).
     [InlineData("var r = -5;", "let r = -5;")]
     [InlineData("const int k = 1 << 30; var r = k - 1 + k;", "let r = k - 1 + k;")]
+    // A uint's shift is the one constant JavaScript's operator answers otherwise: its `<<` is signed.
+    [InlineData("var r = 1u << 31;", "let r = 1 << 31 >>> 0;")]
     // Inside `unchecked` the compiler folded it wrapped, and so does the browser.
     [InlineData("var r = unchecked(int.MaxValue + 1);", "let r = 2147483647 + 1 | 0;")]
     public void AnIntsArithmetic_WrapsWhereCSharpWraps(string code, string expected)

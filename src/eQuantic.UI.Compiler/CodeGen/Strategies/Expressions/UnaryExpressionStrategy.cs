@@ -233,8 +233,9 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
             : complemented;
     }
 
-    /// <summary>Whether the step's RESULT is read — false in the two places an increment is pure
-    /// effect: its own statement, and a for-loop's incrementor slot.</summary>
+    /// <summary>Whether the step's RESULT is read — false in the three places an increment is pure
+    /// effect: its own statement, a for-loop's incrementor slot, and the expression body of a lambda
+    /// whose delegate returns nothing.</summary>
     private static bool ValueUsed(SyntaxNode node, ConversionContext context) => node.Parent switch
     {
         ExpressionStatementSyntax => false,
