@@ -64,7 +64,7 @@ public class ControlFlowTests
             }";
 
         var result = TestHelper.ConvertExpression(code).Replace("\r\n", "\n");
-        result.Should().StartWith("for (let i = 0; i < 10; i++)");
+        result.Should().StartWith("for (let i = 0; i < 10; i = i + 1 | 0)");
         result.Should().Contain("sum = sum + i;");
     }
 

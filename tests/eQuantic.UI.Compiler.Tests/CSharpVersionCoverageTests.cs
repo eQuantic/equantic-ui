@@ -100,7 +100,7 @@ public class CSharpVersionCoverageTests
         Assert.True(probe.Success, string.Join("\n", probe.Errors.Select(e => e.Message)));
         Assert.Contains("static $total: number = 0;", probe.TypeScript);
         Assert.DoesNotContain("declare static $total", probe.TypeScript);
-        Assert.Contains("static set total(value) {\n        this.$total = value * 2;\n    }", probe.TypeScript);
+        Assert.Contains("static set total(value) {\n        this.$total = Math.imul(value, 2);\n    }", probe.TypeScript);
     }
 
     [Fact]
@@ -452,7 +452,7 @@ public class CSharpVersionCoverageTests
 
         Assert.True(probe.Success, string.Join("\n", probe.Errors.Select(e => e.Message)));
         Assert.Contains("let i = 0;", probe.TypeScript);
-        Assert.Contains("outer: for (; i < 3; i++)", probe.TypeScript);
+        Assert.Contains("outer: for (; i < 3; i = i + 1 | 0)", probe.TypeScript);
         Assert.DoesNotContain("outer: {", probe.TypeScript);
     }
 

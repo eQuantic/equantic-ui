@@ -111,7 +111,7 @@ public class CollectionEqualityLoweringTests
     public void AComparerCreatedFromAComparison_Crosses()
     {
         TestHelper.ConvertExpression("numbers.BinarySearch(0, 1, 5, Comparer<int>.Create((a, b) => a - b))")
-            .Should().Be("$eq.collections.binarySearch(this.numbers, 5, $eq.collections.comparerOrder({ compare: ((a, b) => a - b) }, "
+            .Should().Be("$eq.collections.binarySearch(this.numbers, 5, $eq.collections.comparerOrder({ compare: ((a, b) => a - b | 0) }, "
                 + "$eq.collections.order('value', 'comparable'), 'System.Collections.Generic.ComparisonComparer`1[System.Int32]'), 0, 1)");
     }
 

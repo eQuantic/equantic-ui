@@ -179,7 +179,7 @@ public class ListStrategyTests
     {
         // The comparison's type names it in .NET's message about an inconsistent one.
         var result = TestHelper.ConvertExpression("list.Sort((a, b) => a.Id - b.Id)");
-        result.Should().Be("$eq.collections.listSortBy(this.list, (a, b) => a.id - b.id, 'System.Comparison`1[TestClass]')");
+        result.Should().Be("$eq.collections.listSortBy(this.list, (a, b) => a.id - b.id | 0, 'System.Comparison`1[TestClass]')");
     }
 
     [Fact]

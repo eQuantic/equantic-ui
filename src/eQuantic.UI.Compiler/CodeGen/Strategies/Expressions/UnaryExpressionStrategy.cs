@@ -133,7 +133,7 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
     {
         var type = context.SemanticHelper.GetType(operandSyntax);
         var delta = op == "++" ? "+" : "-";
-        var answerOld = node is PostfixUnaryExpressionSyntax && ValueUsed(node);
+        var answerOld = node is PostfixUnaryExpressionSyntax && ValueUsed(node, context);
         var place = Place.Of(operandSyntax, context);
         JsExpr Stepped(Func<JsExpr, JsExpr> next) => place is not null
             ? place.Modify([], (current, _) => next(current), answerOld)
@@ -200,28 +200,23 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
 
         if (IntegerWidth.Of(type) is not { } width) return null;
         var arithmetic = ArithmeticContext.Of(node, context);
-        if (!(arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width))) return null;
         var one = width.Bits == 64 ? JsExpr.Literal("1n") : JsExpr.Literal("1");
-        return current => IntegerWidth.Settle(JsExpr.Binary(current, delta, one), type,
-            arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
+        return current => IntegerWidth.Arithmetic(delta, current, one, width, arithmetic, context);
     }
 
     /// <summary>
-    /// A negation settled by its result's width in the context it sits in (IntegerWidth): C#'s
-    /// <c>checked(-x)</c> throws for int.MinValue and an explicit <c>unchecked</c> negation of
-    /// long.MinValue wraps back to it, where JavaScript's <c>-</c> answers one more than the type
-    /// holds. The result is an int or a long (a narrower operand promotes, a uint's is a long), and
-    /// neither wraps by default, so a plain negation stays the plain operator.
+    /// A negation settled by its result's width in the context it sits in (IntegerWidth): C# wraps
+    /// <c>-int.MinValue</c> and <c>-long.MinValue</c> back to themselves and <c>checked(-x)</c> throws
+    /// for them, where JavaScript's <c>-</c> answers one more than the type holds. The result is an int
+    /// or a long (a narrower operand promotes, a uint's is a long), and a constant C# proved in range,
+    /// <c>-5</c>, stays the plain operator.
     /// </summary>
     private static JsExpr Negated(JsExpr operand, PrefixUnaryExpressionSyntax prefix, ConversionContext context)
     {
         var negated = JsExpr.Prefix("-", operand);
         var result = context.SemanticHelper.GetType(prefix).UnwrapNullable();
         if (IntegerWidth.Of(result) is null) return negated;
-        var arithmetic = ArithmeticContext.Of(prefix, context);
-        return arithmetic.IsChecked || arithmetic.ExplicitUnchecked
-            ? IntegerWidth.Settle(negated, result, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context)
-            : negated;
+        return IntegerWidth.Settle(negated, result, ArithmeticContext.Of(prefix, context), context);
     }
 
     /// <summary>
@@ -240,10 +235,14 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
 
     /// <summary>Whether the step's RESULT is read — false in the two places an increment is pure
     /// effect: its own statement, and a for-loop's incrementor slot.</summary>
-    private static bool ValueUsed(SyntaxNode node) => node.Parent switch
+    private static bool ValueUsed(SyntaxNode node, ConversionContext context) => node.Parent switch
     {
         ExpressionStatementSyntax => false,
         ForStatementSyntax loop => !loop.Incrementors.Contains(node),
+        // A lambda whose delegate returns nothing discards its expression body's value, so
+        // `SetState(() => _count++)` steps the count and answers nothing.
+        LambdaExpressionSyntax lambda when lambda.ExpressionBody == node =>
+            context.SemanticHelper.GetSymbol(lambda) is not IMethodSymbol { ReturnsVoid: true },
         _ => true,
     };
 
