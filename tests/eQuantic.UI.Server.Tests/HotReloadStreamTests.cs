@@ -188,6 +188,8 @@ public class HotReloadStreamTests
         service.SourceChanged(saved);
         if (!goneFirst) service.SourceChanged(gone);
         service.Rebuild();
+        // Waited for, as the stream's loop writes it after Rebuild returns (#1818).
+        await UntilAsync(page, "event: rebuilt");
         leave.Cancel();
         await listening;
 
