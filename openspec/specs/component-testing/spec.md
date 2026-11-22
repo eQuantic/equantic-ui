@@ -312,3 +312,9 @@ else.
 - **WHEN** the server rewrites `/promo` to the catalogue, and the route table gives `/promo` to `PromoPage`
 - **THEN** the test fails, saying the server drew `CataloguePage` and the browser's router chose `PromoPage` for
   `/promo`
+
+#### Scenario: A page that imports a chunk for its side effects
+
+- **WHEN** a page reaches a component only through another component in a chunk of its own, so its module
+  imports the first component's chunk for its side effects alone, as `import"./CataloguePage-….js"`
+- **THEN** the chunk is fetched from the server like any other import, and the page hydrates and passes
