@@ -68,11 +68,11 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
         // A referenced PROJECT's components get factories too (#818). The SDK names the assemblies that came
         // from projects, one a line, in a file it hands the compiler (ReferencedProjectsFile): a package's
         // components have no source eqc compiles, so no module a factory could import. A file and not a
-        // compiler-visible property, because an analyzer config ends a value at ';' or '#' and read the rest
-        // of the list as a comment, so only the first project got its factories (#1803).
+        // compiler-visible property, because an analyzer config ends a value at ';' or '#' and reads the rest
+        // of the line as a comment, so only the first project got its factories (#1803).
         var projects = context.AdditionalTextsProvider
             .Where(static file => string.Equals(System.IO.Path.GetFileName(file.Path), ReferencedProjectsFile,
-                System.StringComparison.OrdinalIgnoreCase))
+                System.StringComparison.Ordinal))
             .Select(static (file, token) => ProjectNames(file, token))
             .Collect();
         var referenced = context.CompilationProvider.Combine(projects)
