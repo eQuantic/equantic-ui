@@ -37,7 +37,7 @@ export class NavigationRail extends StatelessComponent {
         let slot = theme.navigation;
         let gap = slot?.railGap ?? 8;
         let destinations = new Column(gap, 'start', 'stretch', false, null, null, { width: SizeValue.fill, cross: 'center' });
-        for (let i = 0; i < $eq.collections.count(this.items); i++) {
+        for (let i = 0; i < $eq.collections.count(this.items); i = i + 1 | 0) {
             let item = $eq.collections.item(this.items, i);
             let isActive = i === this.selected;
             let index = i;

@@ -272,7 +272,7 @@ export class TableScroll {
     }
 
     static reveal(offset: number, spans: TableSpans, first: number, count: number, pinned: number, pinnedExtent: number, window: number) {
-        let last = first + Math.max(1, count);
+        let last = first + Math.max(1, count) | 0;
         if (spans.count === 0 || last <= pinned) return offset;
         let start = spans.offsetOf(Math.min(Math.max(Math.max(first, pinned), 0), spans.count));
         let end = spans.offsetOf(Math.min(Math.max(last, 0), spans.count));

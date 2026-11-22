@@ -49,7 +49,7 @@ export class SheetDocument {
     setCell(cell: CellRef, value: string) {
         if (this.getCell(cell) === value) return;
         if (value.length === 0) this._cells.delete(cell.key); else $eq.mapSet(this._cells, cell.key, value);
-        this.version++;
+        this.version = this.version + 1 | 0;
     }
 
     rowHeight(row: number) {
@@ -64,16 +64,16 @@ export class SheetDocument {
 
     setRowHeight(row: number, height: number) {
         if (Math.abs(Math.fround(height - SheetDocument.defaultRowHeight)) < Math.fround(0.01)) this._rowHeights.delete(row); else $eq.mapSet(this._rowHeights, row, Math.max(12, height));
-        this.sizeVersion++;
+        this.sizeVersion = this.sizeVersion + 1 | 0;
     }
 
     setColWidth(col: number, width: number) {
         if (Math.abs(Math.fround(width - SheetDocument.defaultColWidth)) < Math.fround(0.01)) this._colWidths.delete(col); else $eq.mapSet(this._colWidths, col, Math.max(24, width));
-        this.sizeVersion++;
+        this.sizeVersion = this.sizeVersion + 1 | 0;
     }
 
     clamp(cell: CellRef) {
-        return new CellRef(Math.min(Math.max(cell.row, 0), this.rows - 1), Math.min(Math.max(cell.col, 0), this.cols - 1));
+        return new CellRef(Math.min(Math.max(cell.row, 0), this.rows - 1 | 0), Math.min(Math.max(cell.col, 0), this.cols - 1 | 0));
     }
 
     hasValue(cell: CellRef) {
@@ -86,7 +86,7 @@ export class SheetDocument {
         for (const [key, value] of this._cells) {
             let cell = CellRef.fromKey(key);
             if (cell.row < atRow) continue;
-            if (delta < 0 && cell.row < atRow - delta) {
+            if (delta < 0 && cell.row < (atRow - delta | 0)) {
                 $eq.collections.listAdd(removed, new SheetCellSnapshot(cell, value));
                 continue;
             }
@@ -94,11 +94,11 @@ export class SheetDocument {
         }
         for (const snapshot of $eq.collections.listWalk(removed)) this._cells.delete(snapshot.cell.key);
         for (const snapshot of $eq.collections.listWalk(moved)) this._cells.delete(snapshot.cell.key);
-        for (const snapshot of $eq.collections.listWalk(moved)) $eq.mapSet(this._cells, new CellRef(snapshot.cell.row + delta, snapshot.cell.col).key, snapshot.value);
+        for (const snapshot of $eq.collections.listWalk(moved)) $eq.mapSet(this._cells, new CellRef(snapshot.cell.row + delta | 0, snapshot.cell.col).key, snapshot.value);
         SheetDocument.shiftSizes(this._rowHeights, atRow, delta);
-        this.rows = Math.max(1, this.rows + delta);
-        this.sizeVersion++;
-        this.version++;
+        this.rows = Math.max(1, this.rows + delta | 0);
+        this.sizeVersion = this.sizeVersion + 1 | 0;
+        this.version = this.version + 1 | 0;
         return removed;
     }
 
@@ -108,7 +108,7 @@ export class SheetDocument {
         for (const [key, value] of this._cells) {
             let cell = CellRef.fromKey(key);
             if (cell.col < atCol) continue;
-            if (delta < 0 && cell.col < atCol - delta) {
+            if (delta < 0 && cell.col < (atCol - delta | 0)) {
                 $eq.collections.listAdd(removed, new SheetCellSnapshot(cell, value));
                 continue;
             }
@@ -116,11 +116,11 @@ export class SheetDocument {
         }
         for (const snapshot of $eq.collections.listWalk(removed)) this._cells.delete(snapshot.cell.key);
         for (const snapshot of $eq.collections.listWalk(moved)) this._cells.delete(snapshot.cell.key);
-        for (const snapshot of $eq.collections.listWalk(moved)) $eq.mapSet(this._cells, new CellRef(snapshot.cell.row, snapshot.cell.col + delta).key, snapshot.value);
+        for (const snapshot of $eq.collections.listWalk(moved)) $eq.mapSet(this._cells, new CellRef(snapshot.cell.row, snapshot.cell.col + delta | 0).key, snapshot.value);
         SheetDocument.shiftSizes(this._colWidths, atCol, delta);
-        this.cols = Math.max(1, Math.min(this.cols + delta, 16384));
-        this.sizeVersion++;
-        this.version++;
+        this.cols = Math.max(1, Math.min(this.cols + delta | 0, 16384));
+        this.sizeVersion = this.sizeVersion + 1 | 0;
+        this.version = this.version + 1 | 0;
         return removed;
     }
 
@@ -133,8 +133,8 @@ export class SheetDocument {
         }
         for (const entry of $eq.collections.listWalk(entries)) {
             if (entry.key < at) continue;
-            if (delta < 0 && entry.key < at - delta) continue;
-            $eq.mapSet(sizes, entry.key + delta, entry.value);
+            if (delta < 0 && entry.key < (at - delta | 0)) continue;
+            $eq.mapSet(sizes, entry.key + delta | 0, entry.value);
         }
     }
 

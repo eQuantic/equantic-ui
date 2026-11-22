@@ -62,7 +62,7 @@ export class CodeSignatureHelpSession {
     }
 
     dismiss() {
-        this._generation++;
+        this._generation = this._generation + 1 | 0;
         ProviderRequest.cancel(this._request, this.failed);
         this._request = null;
         this._answers = [];
@@ -79,7 +79,7 @@ export class CodeSignatureHelpSession {
         let help: any; 
         if (!((help = this._help) != null) || $eq.collections.count(help.signatures) < 2) return false;
         let count = $eq.collections.count(help.signatures);
-        this._signature = $eq.num.intRem($eq.num.intRem(this._signature + delta, count) + count, count);
+        this._signature = $eq.num.intRem($eq.num.intRem(this._signature + delta | 0, count) + count | 0, count);
         this._chosen = true;
         this.changed?.();
         return true;
@@ -114,7 +114,7 @@ export class CodeSignatureHelpSession {
     }
 
     async ask(context: CodeSignatureContext, wait: boolean) {
-        let generation = ++this._generation;
+        let generation = this._generation = this._generation + 1 | 0;
         ProviderRequest.cancel(this._request, this.failed);
         let request = $eq.cancellation.source();
         this._request = request;
@@ -150,7 +150,7 @@ export class CodeSignatureHelpSession {
         this._answers = [];
         for (const _ of $eq.collections.listWalk(providers)) $eq.collections.listAdd(this._answers, null);
         this._owed = providers.length;
-        for (let slot = 0; slot < providers.length; slot++) this.askOne(slot, providers[slot], document, position, context, generation, cancellation);
+        for (let slot = 0; slot < providers.length; slot = slot + 1 | 0) this.askOne(slot, providers[slot], document, position, context, generation, cancellation);
     }
 
     async askOne(slot: number, provider: any, document: CodeDocument, position: CodePosition, context: CodeSignatureContext, generation: number, cancellation: CancellationToken) {
@@ -168,7 +168,7 @@ export class CodeSignatureHelpSession {
             if (!(failure == null)) this.failed?.(failure);
             if (generation !== this._generation) return;
             $eq.collections.listSet(this._answers, slot, (answer != null && answer.signatures != null && $eq.collections.count(answer.signatures) > 0) ? answer : null);
-            this._owed--;
+            this._owed = this._owed - 1 | 0;
             this.apply();
         });
     }
@@ -194,7 +194,7 @@ export class CodeSignatureHelpSession {
         let shown: any; 
         let keep = this._chosen && (shown = this._help) != null && $eq.collections.count(shown.signatures) === $eq.collections.count(first.signatures);
         if (!keep) {
-            this._signature = Math.max(0, Math.min($eq.collections.count(first.signatures) - 1, first.activeSignature));
+            this._signature = Math.max(0, Math.min($eq.collections.count(first.signatures) - 1 | 0, first.activeSignature));
             this._chosen = false;
         }
         this._help = first;

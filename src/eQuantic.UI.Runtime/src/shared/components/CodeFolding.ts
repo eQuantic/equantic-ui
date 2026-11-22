@@ -44,7 +44,7 @@ export class CodeFolding {
             this.check();
             return;
         }
-        this._generation++;
+        this._generation = this._generation + 1 | 0;
         ProviderRequest.cancel(this._request, this.failed);
         this._request = null;
         this._regions = [];
@@ -144,7 +144,7 @@ export class CodeFolding {
         if (at < 0) return false;
         let outer = this._regions[at];
         let changed = false;
-        for (let i = at; i < this._regions.length && this._regions[i].startLine <= outer.endLine; i++) {
+        for (let i = at; i < this._regions.length && this._regions[i].startLine <= outer.endLine; i = i + 1 | 0) {
             if (this._regions[i].endLine > outer.endLine || this._folded[i] === folded) continue;
             $eq.collections.listSet(this._folded, i, folded);
             changed = true;
@@ -155,7 +155,7 @@ export class CodeFolding {
 
     setAll(folded: boolean) {
         let changed = false;
-        for (let i = 0; i < this._folded.length; i++) {
+        for (let i = 0; i < this._folded.length; i = i + 1 | 0) {
             if (this._folded[i] === folded) continue;
             $eq.collections.listSet(this._folded, i, folded);
             changed = true;
@@ -166,7 +166,7 @@ export class CodeFolding {
 
     innermost(line: number, folded: boolean | null) {
         let found = -1;
-        for (let i = 0; i < this._regions.length && this._regions[i].startLine <= line; i++) {
+        for (let i = 0; i < this._regions.length && this._regions[i].startLine <= line; i = i + 1 | 0) {
             if (line > this._regions[i].endLine) continue;
             let state: any; 
             if ((state = folded) != null && this._folded[i] !== state) continue;
@@ -182,12 +182,12 @@ export class CodeFolding {
 
     indexOf(line: number) {
         let low = 0;
-        let high = this._regions.length - 1;
+        let high = this._regions.length - 1 | 0;
         while (low <= high) {
-            let middle = low + Math.trunc((high - low) / 2);
+            let middle = low + Math.trunc((high - low | 0) / 2) | 0;
             let header = this._regions[middle].startLine;
             if (header === line) return middle;
-            if (header < line) low = middle + 1; else high = middle - 1;
+            if (header < line) low = middle + 1 | 0; else high = middle - 1 | 0;
         }
         return -1;
     }
@@ -196,7 +196,7 @@ export class CodeFolding {
         this.apply();
         let selections: CodeRange[] = $eq.collections.listCopy(this._editor.selections);
         let moved = false;
-        for (let i = 0; i < selections.length; i++) {
+        for (let i = 0; i < selections.length; i = i + 1 | 0) {
             let anchor = this.outOfFolds(selections[i].anchor);
             let focus = this.outOfFolds(selections[i].focus);
             if ($eq.equals(anchor, selections[i].anchor) && $eq.equals(focus, selections[i].focus)) continue;
@@ -212,7 +212,7 @@ export class CodeFolding {
     }
 
     headerHiding(line: number) {
-        for (let i = 0; i < this._regions.length; i++) if (this._folded[i] && this._regions[i].startLine < line && line <= this._regions[i].endLine) return this._regions[i].startLine;
+        for (let i = 0; i < this._regions.length; i = i + 1 | 0) if (this._folded[i] && this._regions[i].startLine < line && line <= this._regions[i].endLine) return this._regions[i].startLine;
         return -1;
     }
 
@@ -225,11 +225,11 @@ export class CodeFolding {
     rebuild() {
         let collapses: CodeCollapse[] = [];
         let hiddenTo = -1;
-        for (let i = 0; i < this._regions.length; i++) {
+        for (let i = 0; i < this._regions.length; i = i + 1 | 0) {
             let region = this._regions[i];
             if (!this._folded[i] || region.startLine < hiddenTo) continue;
-            $eq.collections.listAdd(collapses, new CodeCollapse(region.startLine + 1, region.endLine, false));
-            hiddenTo = region.endLine + 1;
+            $eq.collections.listAdd(collapses, new CodeCollapse(region.startLine + 1 | 0, region.endLine, false));
+            hiddenTo = region.endLine + 1 | 0;
         }
         this._collapses = collapses;
         this._rows = collapses.length === 0 ? null : new CodeRows(this._editor.document.lineCount, [], collapses);
@@ -245,7 +245,7 @@ export class CodeFolding {
         }
         let regions: CodeFold[] = [];
         let folded: boolean[] = [];
-        for (let i = 0; i < this._regions.length; i++) {
+        for (let i = 0; i < this._regions.length; i = i + 1 | 0) {
             let region = this._regions[i];
             let isFolded = this._folded[i];
             let kept = true;
@@ -269,7 +269,7 @@ export class CodeFolding {
         this._folded = folded;
         this.apply();
         if (this._editor.hidesFolds) this.ask(true); else {
-            this._generation++;
+            this._generation = this._generation + 1 | 0;
             ProviderRequest.cancel(this._request, this.failed);
             this._request = null;
         }
@@ -286,7 +286,7 @@ export class CodeFolding {
 
     reveal(line: number) {
         let changed = false;
-        for (let i = 0; i < this._regions.length; i++) {
+        for (let i = 0; i < this._regions.length; i = i + 1 | 0) {
             if (!this._folded[i] || line <= this._regions[i].startLine || line > this._regions[i].endLine) continue;
             $eq.collections.listSet(this._folded, i, false);
             changed = true;
@@ -295,7 +295,7 @@ export class CodeFolding {
     }
 
     async ask(wait: boolean) {
-        let generation = ++this._generation;
+        let generation = this._generation = this._generation + 1 | 0;
         ProviderRequest.cancel(this._request, this.failed);
         this._request = null;
         if (!this._enabled) return;
@@ -365,9 +365,9 @@ export class CodeFolding {
         let folded: boolean[] = [];
         let open: CodeFold[] = [];
         for (const region of $eq.collections.listWalk(all)) {
-            while (open.length > 0 && open[open.length - 1].endLine < region.startLine) $eq.collections.listRemoveAt(open, open.length - 1);
+            while (open.length > 0 && open[open.length - 1 | 0].endLine < region.startLine) $eq.collections.listRemoveAt(open, open.length - 1 | 0);
             if (open.length > 0) {
-                let holding = open[open.length - 1];
+                let holding = open[open.length - 1 | 0];
                 if (region.startLine === holding.startLine || region.endLine > holding.endLine) continue;
             }
             $eq.collections.listAdd(open, region);

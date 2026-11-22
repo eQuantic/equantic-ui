@@ -3,7 +3,8 @@
  *
  * A C# `int` is 32 bits: past 2,147,483,647 it wraps (unchecked, the default) or throws
  * (`checked`). A JavaScript number is a double: it keeps counting. The compiler truncates a
- * wrapped result inline (`| 0`, `& 0xFF`, `BigInt.asIntN(64, …)`) and asks here for the one case
+ * wrapped result inline (`| 0`, `Math.imul`, `& 0xFF`, `BigInt.asIntN(64, …)`) in the default
+ * context and in `unchecked` alike (#1807), and asks here for the one case
  * that needs a decision at run time — the checked context, where going out of range is an
  * OverflowException.
  */

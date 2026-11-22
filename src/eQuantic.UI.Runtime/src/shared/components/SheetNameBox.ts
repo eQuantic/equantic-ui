@@ -55,15 +55,15 @@ export class SheetNameBox {
     }
 
     placed() {
-        return this._placed++;
+        return (($old) => (this._placed = $old + 1 | 0, $old))(this._placed);
     }
 
     removed() {
-        return this._placed = Math.max(0, this._placed - 1);
+        return this._placed = Math.max(0, this._placed - 1 | 0);
     }
 
     requestFocus() {
-        return this._focusVersion++;
+        return (($old) => (this._focusVersion = $old + 1 | 0, $old))(this._focusVersion);
     }
 
     handleKey(key: string, modifiers: number, convention: $KeyboardConventionValue, clipboard: any) {

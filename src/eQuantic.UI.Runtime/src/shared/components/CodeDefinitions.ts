@@ -100,7 +100,7 @@ export class CodeDefinitions {
     }
 
     clearLink() {
-        this._generation++;
+        this._generation = this._generation + 1 | 0;
         ProviderRequest.cancel(this._request, this.failed);
         this._request = null;
         this._asked = null;

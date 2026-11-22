@@ -282,10 +282,10 @@ export class TreeView extends StatefulComponent {
         let editKey: any; 
         if ((editKey = this._editKey) != null && this.indexOfNode(editKey) < 0) {
             this._editKey = null;
-            this._editSerial++;
+            this._editSerial = this._editSerial + 1 | 0;
         }
         let items: VisualNode[] = [];
-        for (let i = 0; i < this._rows.length; i++) $eq.collections.listAdd(items, this.buildRow(context, slot, this._rows[i], i === active && this._keyboard));
+        for (let i = 0; i < this._rows.length; i = i + 1 | 0) $eq.collections.listAdd(items, this.buildRow(context, slot, this._rows[i], i === active && this._keyboard));
         let tree: VisualNode = new Navigable($eq.delegates.bound(this, this.move), items, { role: 'tree', label: this.label, activeCell: active >= 0 ? [active, 0] : null, onTextSearch: $eq.delegates.bound(this, this.search).bind(this), focusVersion: this._focusVersion });
         let editing = !(this._editKey == null);
         if (!(this.onMoved == null)) {
@@ -305,7 +305,7 @@ export class TreeView extends StatefulComponent {
             let target = top < this._offset ? top : bottom > Math.fround(this._offset + this._viewport) ? Math.fround(bottom - this._viewport) : null;
             let offset: any; 
             if ((offset = target) != null) {
-                this._scrollVersion++;
+                this._scrollVersion = this._scrollVersion + 1 | 0;
                 this._scrollRequest = new ScrollRequest(this._scrollVersion, { offset: offset });
             }
         }
@@ -382,7 +382,7 @@ export class TreeView extends StatefulComponent {
         let key = node == null ? `status/${row.key}` : node.key;
         let item: VisualNode = new Pressable(surface, busy || renaming ? null : () => this.press(row, false), { key: key, role: 'treeItem', label: label, selected: node == null ? null : selected, expanded: chevron ? open : null, treePlace: new TreePlace(row.level, row.position, row.count), disabled: busy });
         if (node == null) return item;
-        if (!(this.onMoved == null)) item = new SortableItem(item, node.key, { key: key, enabled: !busy && this._editKey == null, depth: row.level - 1 });
+        if (!(this.onMoved == null)) item = new SortableItem(item, node.key, { key: key, enabled: !busy && this._editKey == null, depth: row.level - 1 | 0 });
         if (!(this.menuBuilder == null)) item = new ContextTarget(item, (request) => this.requestMenu(node, request), { key: key, enabled: !busy && !renaming });
         if (this._menuKey === node.key) {
             item = new Anchored(item, MenuPanel.build(context, this._menuItems, true, this._menuHighlight, $eq.delegates.bound(this, this.chooseMenu)), { key: key, at: this._menuAt, placement: 'bottomStart', open: true, onDismiss: $eq.delegates.bound(this, this.closeMenu).bind(this), panelRole: 'menu', activeIndex: this._menuHighlight });
@@ -410,7 +410,7 @@ export class TreeView extends StatefulComponent {
         let theme = context.theme;
         let padding = slot?.treePaddingX ?? 8;
         let indent = slot?.treeIndent ?? 16;
-        return new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fixed(this._rowHeight), padding: new EdgeInsets(Math.fround(padding + Math.fround(Math.fround(level - 1) * indent)), 0, padding, 0), cornerRadius: new CornerRadii(theme.shape(slot?.treeRowShape ?? 'small')), background: fill, borderWidth: 2, borderColor: marked ?? (ringed ? theme.focusRing : new ColorToken(Color.transparent)), opacity: busy ? theme.disabledOpacity : null, hover: quiet, pressed: quiet }), content);
+        return new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fixed(this._rowHeight), padding: new EdgeInsets(Math.fround(padding + Math.fround(Math.fround(level - 1 | 0) * indent)), 0, padding, 0), cornerRadius: new CornerRadii(theme.shape(slot?.treeRowShape ?? 'small')), background: fill, borderWidth: 2, borderColor: marked ?? (ringed ? theme.focusRing : new ColorToken(Color.transparent)), opacity: busy ? theme.disabledOpacity : null, hover: quiet, pressed: quiet }), content);
     }
 
     field(context: BuildContext) {
@@ -446,23 +446,23 @@ export class TreeView extends StatefulComponent {
         let field = !(parent == null) && this.isCreatingUnder(parent) ? 1 : 0;
         if (field === 1) {
             let $n0: TreeViewRow; 
-            $eq.collections.listAdd(rows, ($n0 = new TreeViewRow(parent, null, parent, level, 1, $eq.collections.count(nodes) + 1), $n0.isField = true, $n0));
+            $eq.collections.listAdd(rows, ($n0 = new TreeViewRow(parent, null, parent, level, 1, $eq.collections.count(nodes) + 1 | 0), $n0.isField = true, $n0));
         }
-        for (let i = 0; i < $eq.collections.count(nodes); i++) {
+        for (let i = 0; i < $eq.collections.count(nodes); i = i + 1 | 0) {
             let node = $eq.collections.item(nodes, i);
-            $eq.collections.listAdd(rows, new TreeViewRow(node.key, node, parent, level, i + 1 + field, $eq.collections.count(nodes) + field));
+            $eq.collections.listAdd(rows, new TreeViewRow(node.key, node, parent, level, (i + 1 | 0) + field | 0, $eq.collections.count(nodes) + field | 0));
             if (!this._open.has(node.key)) continue;
             let children = this.childrenOf(node);
             if (!(children == null)) {
-                this.addLevel(rows, children, node.key, level + 1);
+                this.addLevel(rows, children, node.key, level + 1 | 0);
                 continue;
             }
             if (!this._loading.has(node.key) && !this._failed.has(node.key)) this.startLoad(node);
             if (this.isCreatingUnder(node.key)) {
                 let $n1: TreeViewRow; 
-                $eq.collections.listAdd(rows, ($n1 = new TreeViewRow(node.key, null, node.key, level + 1, 1, 2), $n1.isField = true, $n1));
+                $eq.collections.listAdd(rows, ($n1 = new TreeViewRow(node.key, null, node.key, level + 1 | 0, 1, 2), $n1.isField = true, $n1));
             }
-            $eq.collections.listAdd(rows, new TreeViewRow(node.key, null, node.key, level + 1, 1, 1));
+            $eq.collections.listAdd(rows, new TreeViewRow(node.key, null, node.key, level + 1 | 0, 1, 1));
         }
     }
 
@@ -488,7 +488,7 @@ export class TreeView extends StatefulComponent {
 
     activeIndex() {
         if (this._activeKey == null) return -1;
-        for (let i = 0; i < this._rows.length; i++) if (this._rows[i].key === this._activeKey && this._rows[i].isStatus === this._activeIsStatus) return i;
+        for (let i = 0; i < this._rows.length; i = i + 1 | 0) if (this._rows[i].key === this._activeKey && this._rows[i].isStatus === this._activeIsStatus) return i;
         return -1;
     }
 
@@ -498,13 +498,13 @@ export class TreeView extends StatefulComponent {
     }
 
     indexOfNode(key: string) {
-        for (let i = 0; i < this._rows.length; i++) if (this._rows[i].key === key && !this._rows[i].isStatus) return i;
+        for (let i = 0; i < this._rows.length; i = i + 1 | 0) if (this._rows[i].key === key && !this._rows[i].isStatus) return i;
         return -1;
     }
 
     static samePath(path: string[], other: any) {
         if (other == null || $eq.collections.count(other) !== $eq.collections.count(path)) return false;
-        for (let i = 0; i < $eq.collections.count(path); i++) if ($eq.collections.item(path, i) !== $eq.collections.item(other, i)) return false;
+        for (let i = 0; i < $eq.collections.count(path); i = i + 1 | 0) if ($eq.collections.item(path, i) !== $eq.collections.item(other, i)) return false;
         return true;
     }
 
@@ -550,7 +550,7 @@ export class TreeView extends StatefulComponent {
         let path: any; 
         if (!((path = this._revealing) != null)) return;
         let level = this.roots;
-        for (let i = 0; i < $eq.collections.count(path) - 1; i++) {
+        for (let i = 0; i < ($eq.collections.count(path) - 1 | 0); i = i + 1 | 0) {
             let node: any; 
             if (!((node = this.findIn(level, $eq.collections.item(path, i), false)) != null)) return;
             $eq.collections.setAdd(this._open, node.key);
@@ -561,7 +561,7 @@ export class TreeView extends StatefulComponent {
             }
             level = children;
         }
-        let last = $eq.collections.item(path, $eq.collections.count(path) - 1);
+        let last = $eq.collections.item(path, $eq.collections.count(path) - 1 | 0);
         if (this.findIn(level, last, false) == null) return;
         this._activeKey = last;
         this._activeIsStatus = false;
@@ -625,7 +625,7 @@ export class TreeView extends StatefulComponent {
         this._editCreates = creates;
         this._editIcon = icon;
         this._editText = creates ? '' : node.label;
-        this._editSerial++;
+        this._editSerial = this._editSerial + 1 | 0;
         this._menuKey = null;
         this._activeKey = key;
         this._activeIsStatus = false;
@@ -662,9 +662,9 @@ export class TreeView extends StatefulComponent {
 
     closeEditState(giveBack: boolean) {
         this._editKey = null;
-        this._editSerial++;
+        this._editSerial = this._editSerial + 1 | 0;
         if (!giveBack) return;
-        this._focusVersion++;
+        this._focusVersion = this._focusVersion + 1 | 0;
         this._keyboard = true;
     }
 
@@ -702,7 +702,7 @@ export class TreeView extends StatefulComponent {
     }
 
     dropLine(context: BuildContext, slot: any, level: number, surface: VisualNode, after: boolean) {
-        let start = Math.fround((slot?.treePaddingX ?? 8) + Math.fround(Math.fround(level - 1) * (slot?.treeIndent ?? 16)));
+        let start = Math.fround((slot?.treePaddingX ?? 8) + Math.fround(Math.fround(level - 1 | 0) * (slot?.treeIndent ?? 16)));
         let line = new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fixed(2), background: TreeView.dropColor(context, slot) }));
         let stack = new Stack('topStart', { width: SizeValue.fill, height: SizeValue.fixed(this._rowHeight) });
         stack.add(surface);
@@ -728,7 +728,7 @@ export class TreeView extends StatefulComponent {
 
     parentAtDepth(others: TreeViewRow[], index: number, depth: number) {
         if (depth === 0 || index === 0) return null;
-        let key = others[index - 1].key;
+        let key = others[index - 1 | 0].key;
         while (this.levelOf(key) > depth) {
             let parent: any; 
             if (!((parent = this.parentOf(key)) != null)) return null;
@@ -749,7 +749,7 @@ export class TreeView extends StatefulComponent {
     }
 
     siblingBefore(rows: TreeViewRow[], index: number, parent: any) {
-        for (let i = index - 1; i >= 0; i--) {
+        for (let i = index - 1 | 0; i >= 0; i = i - 1 | 0) {
             let node: any; 
             if (!((node = $eq.collections.item(rows, i).node) != null)) continue;
             if (node.key === parent) return null;
@@ -761,17 +761,17 @@ export class TreeView extends StatefulComponent {
     static placeOf(drop: SortDrop, others: TreeViewRow[]): [number, number, number] {
         let into: any; 
         if ((into = drop.into) != null) {
-            for (let i = 0; i < others.length; i++) if (others[i].key === into) return [TreeView.dropInto, i, others[i].level + 1];
+            for (let i = 0; i < others.length; i = i + 1 | 0) if (others[i].key === into) return [TreeView.dropInto, i, others[i].level + 1 | 0];
             return [0, -1, 0];
         }
         if (drop.index < others.length) {
             let depth: any; 
-            return [TreeView.dropBefore, drop.index, (depth = drop.depth) != null ? depth + 1 : others[drop.index].level];
+            return [TreeView.dropBefore, drop.index, (depth = drop.depth) != null ? depth + 1 | 0 : others[drop.index].level];
         }
         if (others.length === 0) return [0, -1, 0];
-        let last = others.length - 1;
+        let last = others.length - 1 | 0;
         let after: any; 
-        return [TreeView.dropAfter, last, (after = drop.depth) != null ? after + 1 : others[last].level];
+        return [TreeView.dropAfter, last, (after = drop.depth) != null ? after + 1 | 0 : others[last].level];
     }
 
     moveOf(drop: SortDrop) {
@@ -814,7 +814,7 @@ export class TreeView extends StatefulComponent {
         });
         if (pause === this._pauseKey) return;
         this._pauseKey = pause;
-        this._pauseSerial++;
+        this._pauseSerial = this._pauseSerial + 1 | 0;
         if (!(pause == null)) this.openAfterPause(pause, this._pauseSerial);
     }
 
@@ -832,7 +832,7 @@ export class TreeView extends StatefulComponent {
     dropped(drop: SortDrop) {
         let move = this.moveOf(drop);
         this._pauseKey = null;
-        this._pauseSerial++;
+        this._pauseSerial = this._pauseSerial + 1 | 0;
         this.setState(() => {
             this._dropKey = null;
             this._dropKind = 0;
@@ -910,14 +910,14 @@ export class TreeView extends StatefulComponent {
             let closed: any; let opened: any;
             switch (move) {
                 case 'nextRow':
-                    this.activate(Math.min(at + 1, this._rows.length - 1), null, false);
+                    this.activate(Math.min(at + 1 | 0, this._rows.length - 1 | 0), null, false);
                     break;
                 case 'previousRow':
-                    this.activate(Math.max(at - 1, 0), null, false);
+                    this.activate(Math.max(at - 1 | 0, 0), null, false);
                     break;
                 case 'nextItem':
                     if ((closed = row.node) != null && this.hasChevron(closed)) {
-                        if (!this._open.has(closed.key)) this.activate(at, closed, true); else if (at + 1 < this._rows.length && this._rows[at + 1].parentKey === closed.key) this.activate(at + 1, null, false);
+                        if (!this._open.has(closed.key)) this.activate(at, closed, true); else if ((at + 1 | 0) < this._rows.length && this._rows[at + 1 | 0].parentKey === closed.key) this.activate(at + 1 | 0, null, false);
                     }
                     break;
                 case 'previousItem':
@@ -927,15 +927,15 @@ export class TreeView extends StatefulComponent {
                     this.activate(0, null, false);
                     break;
                 case 'rowEnd':
-                    this.activate(this._rows.length - 1, null, false);
+                    this.activate(this._rows.length - 1 | 0, null, false);
                     break;
                 case 'nextPage':
                 case 'nextSection':
-                    this.activate(Math.min(at + this.rowsPerPage(), this._rows.length - 1), null, false);
+                    this.activate(Math.min(at + this.rowsPerPage() | 0, this._rows.length - 1 | 0), null, false);
                     break;
                 case 'previousPage':
                 case 'previousSection':
-                    this.activate(Math.max(at - this.rowsPerPage(), 0), null, false);
+                    this.activate(Math.max(at - this.rowsPerPage() | 0, 0), null, false);
                     break;
             }
         }
@@ -965,12 +965,12 @@ export class TreeView extends StatefulComponent {
         this._searchAt = now;
         let prefix = this._search;
         let repeated = true;
-        for (let i = 1; i < prefix.length; i++) if ($eq.text.toLower(prefix[i], true) !== $eq.text.toLower(prefix[0], true)) repeated = false;
+        for (let i = 1; i < prefix.length; i = i + 1 | 0) if ($eq.text.toLower(prefix[i], true) !== $eq.text.toLower(prefix[0], true)) repeated = false;
         if (repeated) prefix = $eq.text.substring(prefix, 0, 1);
         let at = this.activeIndex();
-        let start = prefix.length > 1 ? Math.max(at, 0) : at + 1;
-        for (let step = 0; step < this._rows.length; step++) {
-            let index = $eq.num.intRem(start + step, this._rows.length);
+        let start = prefix.length > 1 ? Math.max(at, 0) : at + 1 | 0;
+        for (let step = 0; step < this._rows.length; step = step + 1 | 0) {
+            let index = $eq.num.intRem(start + step | 0, this._rows.length);
             let node: any; 
             if ((node = this._rows[index].node) != null && $eq.text.startsWith(node.label, prefix, 'ordinalIgnoreCase')) {
                 this.activate(index, null, false);

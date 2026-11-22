@@ -152,7 +152,7 @@ export class BuildOwner {
     }
 
     countMark() {
-        return this.marks++;
+        return (($old) => (this.marks = $old + 1 | 0, $old))(this.marks);
     }
 
     hold(key: GlobalKey, element: Element) {
@@ -216,7 +216,7 @@ export class BuildOwner {
                 this._settlingParked = false;
             }
         }
-        for (let i = 0; i < this._forgetful.length; i++) {
+        for (let i = 0; i < this._forgetful.length; i = i + 1 | 0) {
             if (this._forgetful[i].isActive) this._forgetful[i].fillForgotten();
         }
         $eq.collections.listClear(this._forgetful);
@@ -227,7 +227,7 @@ export class BuildOwner {
         let previous = this._context;
         this._context = context;
         this.windowWidth = windowWidth;
-        this.frame++;
+        this.frame = this.frame + 1 | 0;
         this._drewOnly = null;
         this.rebuildingAll = rebuildAll;
         this.enterBuild();
@@ -267,10 +267,10 @@ export class BuildOwner {
     forgetFrameReader(reader: ComponentElement) {
         let index = reader.frameReaderIndex;
         if (index < 0) return;
-        let last = this._frameReaders[this._frameReaders.length - 1];
+        let last = this._frameReaders[this._frameReaders.length - 1 | 0];
         $eq.collections.listSet(this._frameReaders, index, last);
         last.frameReaderIndex = index;
-        $eq.collections.listRemoveAt(this._frameReaders, this._frameReaders.length - 1);
+        $eq.collections.listRemoveAt(this._frameReaders, this._frameReaders.length - 1 | 0);
         reader.frameReaderIndex = -1;
     }
 
@@ -287,10 +287,10 @@ export class BuildOwner {
     forgetRouteReader(reader: ComponentElement) {
         let index = reader.routeReaderIndex;
         if (index < 0) return;
-        let last = this._routeReaders[this._routeReaders.length - 1];
+        let last = this._routeReaders[this._routeReaders.length - 1 | 0];
         $eq.collections.listSet(this._routeReaders, index, last);
         last.routeReaderIndex = index;
-        $eq.collections.listRemoveAt(this._routeReaders, this._routeReaders.length - 1);
+        $eq.collections.listRemoveAt(this._routeReaders, this._routeReaders.length - 1 | 0);
         reader.routeReaderIndex = -1;
     }
 
@@ -305,7 +305,7 @@ export class BuildOwner {
     endFrame() {
         let parts = this._drewOnly;
         this._drewOnly = null;
-        for (let i = this._deferred.length - 1; i >= 0; i--) {
+        for (let i = this._deferred.length - 1 | 0; i >= 0; i = i - 1 | 0) {
             let holder = this._deferred[i];
             if (!holder.isActive) {
                 $eq.collections.listRemoveAt(this._deferred, i);
@@ -351,11 +351,11 @@ export class BuildOwner {
     }
 
     enterBuild() {
-        return this._building++;
+        return (($old) => (this._building = $old + 1 | 0, $old))(this._building);
     }
 
     exitBuild() {
-        return this._building--;
+        return (($old) => (this._building = $old - 1 | 0, $old))(this._building);
     }
 
     enterLayer(holder: NodeElement) {
@@ -369,7 +369,7 @@ export class BuildOwner {
     }
 
     nextStamp() {
-        return ++this._stamp;
+        return this._stamp = this._stamp + 1 | 0;
     }
 
     nextId() {
@@ -410,7 +410,7 @@ export class BuildOwner {
 
     static insertBehind(list: ComponentElement[], cursor: number, element: ComponentElement) {
         let at = list.length;
-        while (at > cursor + 1 && list[at - 1].depth > element.depth) at--;
+        while (at > (cursor + 1 | 0) && list[at - 1 | 0].depth > element.depth) at = at - 1 | 0;
         $eq.collections.listInsert(list, at, element);
     }
 
@@ -426,7 +426,7 @@ export class BuildOwner {
     buildDirty() {
         if (this._dirty.length === 0) return;
         $eq.collections.listSortBy(this._dirty, BuildOwner.byDepth, 'System.Comparison`1[eQuantic.UI.Primitives.ComponentElement]');
-        for (let i = 0; i < this._dirty.length; i++) {
+        for (let i = 0; i < this._dirty.length; i = i + 1 | 0) {
             this._dirtyCursor = i;
             let element = this._dirty[i];
             if (!this.waitsToBuild(element)) continue;
@@ -444,7 +444,7 @@ export class BuildOwner {
         if (this._dirtyDeferred.length === 0) return;
         let mine = this._deferredScratch;
         $eq.collections.listClear(mine);
-        for (let i = this._dirtyDeferred.length - 1; i >= 0; i--) {
+        for (let i = this._dirtyDeferred.length - 1 | 0; i >= 0; i = i - 1 | 0) {
             let element = this._dirtyDeferred[i];
             if (element.isActive && !(BuildOwner.deferredHolderOf(element) === holder)) continue;
             $eq.collections.listRemoveAt(this._dirtyDeferred, i);
@@ -452,7 +452,7 @@ export class BuildOwner {
         }
         $eq.collections.listSortBy(mine, BuildOwner.byDepth, 'System.Comparison`1[eQuantic.UI.Primitives.ComponentElement]');
         try {
-            for (let i = 0; i < mine.length; i++) {
+            for (let i = 0; i < mine.length; i = i + 1 | 0) {
                 this._deferredCursor = i;
                 if (this.waitsToBuild(mine[i])) mine[i].rebuild(false);
             }

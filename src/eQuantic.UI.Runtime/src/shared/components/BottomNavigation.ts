@@ -33,7 +33,7 @@ export class BottomNavigation extends StatelessComponent {
         let primary = theme.colors('primary');
         let slot = theme.navigation;
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
-        for (let i = 0; i < $eq.collections.count(this.items); i++) {
+        for (let i = 0; i < $eq.collections.count(this.items); i = i + 1 | 0) {
             let item = $eq.collections.item(this.items, i);
             let isActive = i === this.selected;
             let index = i;

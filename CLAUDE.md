@@ -648,9 +648,10 @@ translation change must execute identically on both sides.
 
 **Supported C# Features:**
 - Expressions: Arithmetic, Logical, Ternary, Null-coalescing (`??`)
-- Fixed-width integers settle by RESULT type (`IntegerWidth`): byte/sbyte/short/ushort/uint always
-  wrap, int/long wrap only under explicit `unchecked`, a `checked` context throws (read from the
-  bound tree's `IsChecked` — the first IOperation use). A `float` is a single wherever it is
+- Fixed-width integers settle by RESULT type (`IntegerWidth`): every width wraps where C# wraps,
+  int and long in the default context included (#1807), a `checked` context throws (read from the
+  bound tree's `IsChecked` — the first IOperation use), and a constant C#'s compiler folded is left
+  as written (`ArithmeticContext.ProvedInRange`). A `float` is a single wherever it is
   PRODUCED (`SinglePrecision`) — every `+ - * /`, increment and compound, an int past 2^24 on its
   way in, every float answer of the numeric table, a float constant, a hydrated value — because
   RyuJIT rounds each operation; it prints via `$eq.num.single`. What the BROWSER produces enters

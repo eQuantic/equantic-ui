@@ -14,7 +14,7 @@ export class CodeGoToView {
         } });
         let panel = listed ? CodeGoToView.list(theme, metrics, goTo, width, top, pick) : CodeGoToView.said(theme, metrics, CodeGoToView.saying(editor));
         let coated = new Box(new BoxStyle({ width: SizeValue.fill, background: theme.surface, borderWidth: 1, borderColor: theme.border, cornerRadius: new CornerRadii(theme.shape('medium')), padding: EdgeInsets.symmetric(8, 4), shadow: theme.elevation(2) }), field);
-        return new Box(new BoxStyle({ width: width }), new Anchored(coated, panel, { open: true, panelRole: listed ? 'listbox' : 'none', activeIndex: listed ? goTo.selected - top : -1, matchAnchorWidth: true }));
+        return new Box(new BoxStyle({ width: width }), new Anchored(coated, panel, { open: true, panelRole: listed ? 'listbox' : 'none', activeIndex: listed ? goTo.selected - top | 0 : -1, matchAnchorWidth: true }));
     }
 
     static saying(editor: CodeEditorController) {
@@ -60,7 +60,7 @@ export class CodeGoToView {
         let page = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         let heading = CodeGoToView.lists(goTo.mode) ? CodeGoToView.title(goTo, $eq.collections.count(entries)) : SdkStrings.symbolsCount($eq.collections.count(entries));
         page.add(new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(8, 4) }), new Text(heading, 'labelSmall', theme.textMuted, 1)));
-        for (let i = top; i < top + CodeGoToView.pageRows && i < $eq.collections.count(entries); i++) {
+        for (let i = top; i < (top + CodeGoToView.pageRows | 0) && i < $eq.collections.count(entries); i = i + 1 | 0) {
             let index = i;
             page.add(CodeGoToView.entry(theme, metrics, $eq.collections.item(entries, i), i === goTo.selected, columns, () => pick(index)));
         }
@@ -79,7 +79,7 @@ export class CodeGoToView {
         let kind: any; 
         if ((kind = entry.kind) != null) row.add(CodeCompletionView.glyph(theme, metrics, CodeGoToView.kindOf(kind)));
         row.add(new Text(name, 'labelSmall', ink, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(name, entry.matches, ink, accent) }));
-        let room = columns - CodeLineCells.widthOf(name, 4) - 2;
+        let room = (columns - CodeLineCells.widthOf(name, 4) | 0) - 2 | 0;
         let held: any; 
         if ((($0) => (($0 != null && $0.length > 0) && (held = $0, true)))(entry.container) && room >= 2) {
             let container = CodeCompletionView.fit(held, room);

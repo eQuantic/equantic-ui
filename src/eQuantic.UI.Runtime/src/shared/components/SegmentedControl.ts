@@ -32,7 +32,7 @@ export class SegmentedControl extends StatelessComponent {
         let inset = slot?.inset ?? 3;
         let trackRadius = ControlMetrics.radius(context, this.size, ladder);
         let row = new Row(0, 'start', 'center', false, null, null, { width: this.stretch ? SizeValue.fill : SizeValue.hug, height: SizeValue.fill, cross: 'stretch' });
-        for (let i = 0; i < $eq.collections.count(this.segments); i++) {
+        for (let i = 0; i < $eq.collections.count(this.segments); i = i + 1 | 0) {
             let index = i;
             let selected = index === this.selectedIndex;
             let label = new Row(0, 'start', 'center', false, null, null, { width: this.stretch ? SizeValue.fill : SizeValue.hug, height: SizeValue.fill, main: 'center', cross: 'center' });
@@ -44,7 +44,7 @@ export class SegmentedControl extends StatelessComponent {
         let track = new Box(new BoxStyle({ width: this.stretch ? SizeValue.fill : SizeValue.hug, height: height, padding: EdgeInsets.all(inset), background: slot?.trackFill ?? theme.surfaceSubtle, cornerRadius: new CornerRadii(trackRadius), borderWidth: slot?.trackBorderWidth ?? 0, borderColor: slot?.trackBorderColor ?? theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : 1 }), row);
         if (this.disabled || this.onChanged == null || $eq.collections.count(this.segments) === 0) return track;
         let count = $eq.collections.count(this.segments);
-        return new Adjustable(track, (direction: number) => this.onChanged!($eq.num.intRem(this.selectedIndex + direction + count, count)), { role: 'radiogroup' });
+        return new Adjustable(track, (direction: number) => this.onChanged!($eq.num.intRem((this.selectedIndex + direction | 0) + count | 0, count)), { role: 'radiogroup' });
     }
 }
 

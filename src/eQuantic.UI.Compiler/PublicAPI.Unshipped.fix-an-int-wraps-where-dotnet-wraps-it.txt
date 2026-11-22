@@ -1,0 +1,14 @@
+#nullable enable
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.Strategies.IntegerWidth.Settle(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! value, Microsoft.CodeAnalysis.ITypeSymbol? resultType, bool isChecked, bool explicitUnchecked, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.Strategies.IntegerWidth.WrapsByDefault((int Bits, bool Unsigned) width) -> bool
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext.ArithmeticContext(bool IsChecked, bool ExplicitUnchecked) -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext.Deconstruct(out bool IsChecked, out bool ExplicitUnchecked) -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext.ExplicitUnchecked.get -> bool
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext.ExplicitUnchecked.init -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext.ArithmeticContext(bool IsChecked, bool ProvedInRange) -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext.Deconstruct(out bool IsChecked, out bool ProvedInRange) -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext.ProvedInRange.get -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext.ProvedInRange.init -> void
+static eQuantic.UI.Compiler.CodeGen.Strategies.IntegerWidth.Settle(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! value, Microsoft.CodeAnalysis.ITypeSymbol? resultType, eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext arithmetic, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+static eQuantic.UI.Compiler.CodeGen.Strategies.IntegerWidth.Arithmetic(string! op, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! left, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! right, (int Bits, bool Unsigned) width, eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext arithmetic, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+static eQuantic.UI.Compiler.CodeGen.Strategies.IntegerWidth.Quotient(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! value, Microsoft.CodeAnalysis.ITypeSymbol? resultType, eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext arithmetic, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!

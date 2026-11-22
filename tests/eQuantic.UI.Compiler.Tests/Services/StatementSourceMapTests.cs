@@ -511,7 +511,7 @@ public class StatementSourceMapTests
     [InlineData("let total = 0;", "var total = 0;")]
     [InlineData("for (const value of values)", "foreach (var value in values)")]
     [InlineData("if (value > 0)", "if (value > 0)")]
-    [InlineData("total += value;", "total += value;")]
+    [InlineData("total = total + value | 0;", "total += value;")]
     [InlineData("return total;", "return total;")]
     public void AStatement_MapsToItsOwnCSharpLine(string emitted, string written) =>
         AssertMapped(Compile(), emitted, written, Source);
@@ -528,31 +528,31 @@ public class StatementSourceMapTests
     }
 
     [Theory]
-    [InlineData("return this.measure(2) + 1;", "public int Size => Measure(2) + 1;")]
+    [InlineData("return this.measure(2) + 1 | 0;", "public int Size => Measure(2) + 1;")]
     [InlineData("this._level = this.clamp(value);", "set => _level = Clamp(value);")]
     [InlineData("while (this.check(n));", "while (Check(n));")]
     [InlineData("number > 0", "case int number when number > 0:")]
     [InlineData("typeof $s === 'string'", "case string text:")]
     [InlineData("const $s = value;", "switch (value)")]
     [InlineData("resource.dispose();", "using var resource = new Resource();")]
-    [InlineData("sum.total = a.total + b.total;", "sum.Total = a.Total + b.Total;")]
-    [InlineData("let doubled = x * 2;", "var doubled = x * 2;")]
-    [InlineData("return x + 1;", "int Next(int x) => x + 1;")]
+    [InlineData("sum.total = a.total + b.total | 0;", "sum.Total = a.Total + b.Total;")]
+    [InlineData("let doubled = Math.imul(x, 2);", "var doubled = x * 2;")]
+    [InlineData("return x + 1 | 0;", "int Next(int x) => x + 1;")]
     public void ALineNoStatementWritesByItself_MapsToTheCSharpThatProducedIt(string emitted, string written) =>
         AssertMapped(Compile(LoweredSource, "Lowered.cs"), emitted, written, LoweredSource);
 
     [Theory]
     [InlineData("let twice = this.twice(value);", "var twice = Twice(value);")]
-    [InlineData("total += twice;", "total += twice;")]
-    [InlineData("let half = value + 7;", "var half = value + 7;")]
+    [InlineData("total = total + twice | 0;", "total += twice;")]
+    [InlineData("let half = value + 7 | 0;", "var half = value + 7;")]
     [InlineData("return half > 9;", "return half > 9;")]
-    [InlineData("let next = seed + delta;", "var next = seed + delta;")]
-    [InlineData("return next * 3;", "return next * 3;")]
-    [InlineData("seed = shown - 1;", "seed = shown - 1;")]
-    [InlineData("sum += outer * inner;", "sum += outer * inner;")]
+    [InlineData("let next = seed + delta | 0;", "var next = seed + delta;")]
+    [InlineData("return Math.imul(next, 3);", "return next * 3;")]
+    [InlineData("seed = shown - 1 | 0;", "seed = shown - 1;")]
+    [InlineData("sum = sum + Math.imul(outer, inner) | 0;", "sum += outer * inner;")]
     [InlineData("count = values.length;", "count = values.Count;")]
-    [InlineData("let bumped = value + 5;", "var bumped = value + 5;")]
-    [InlineData("let twiceOver = value * 2;", "var twiceOver = value * 2;")]
+    [InlineData("let bumped = value + 5 | 0;", "var bumped = value + 5;")]
+    [InlineData("let twiceOver = Math.imul(value, 2);", "var twiceOver = value * 2;")]
     [InlineData("let number: any;", "int.TryParse(candidate, out var number) ? number : 0;")]
     [InlineData("return ((number = $eq.num.intTryParse(candidate", "int.TryParse(candidate, out var number) ? number : 0;")]
     public void AStatementInALambdasBlock_MapsToItsOwnCSharpLine(string emitted, string written) =>
@@ -564,17 +564,17 @@ public class StatementSourceMapTests
     /// writes without braces keeps its own line when a declaration it hoists braces it, where the
     /// braces handed both lines to the `if` around them.</summary>
     [Theory]
-    [InlineData("this.twice(values.length);", "var kept = values.FindAll(value =>")]
-    [InlineData("total += ((parsed", "total += int.TryParse(text, out var parsed) ? parsed : 0;")]
+    [InlineData("this.twice(values.length) | 0;", "var kept = values.FindAll(value =>")]
+    [InlineData("total = total + (((parsed", "total += int.TryParse(text, out var parsed) ? parsed : 0;")]
     public void AStatementsRestAndABracedBody_MapToTheirOwnStatement(string emitted, string written) =>
         AssertMapped(Compile(LambdaSource, "Lambdas.cs"), emitted, written, LambdaSource);
 
     [Theory]
-    [InlineData("let doubled = value * 2;", "var doubled = value * 2;")]
+    [InlineData("let doubled = Math.imul(value, 2);", "var doubled = value * 2;")]
     [InlineData("half = ", "half = doubled / 4;")]
     [InlineData("return value % 2 === 0;", "return value % 2 == 0;")]
     [InlineData("let before = seed;", "var before = seed;")]
-    [InlineData("seed = before + 3;", "seed = before + 3;")]
+    [InlineData("seed = before + 3 | 0;", "seed = before + 3;")]
     [InlineData("return before;", "return before;")]
     [InlineData("let trimmed = ", "var trimmed = candidate.Trim();")]
     [InlineData("length = trimmed.length;", "length = trimmed.Length;")]
@@ -592,7 +592,7 @@ public class StatementSourceMapTests
     [InlineData("return { $: $r, half };", "public bool TryHalf(int value, out int half)", "Halves.cs")]
     [InlineData("const _seq = [];", "public IEnumerable<int> Evens(int limit)", "Sequences.cs")]
     [InlineData("return _seq;", "public IEnumerable<int> Evens(int limit)", "Sequences.cs")]
-    [InlineData("let doubled = i * 2;", "var doubled = i * 2;", "Sequences.cs")]
+    [InlineData("let doubled = Math.imul(i, 2);", "var doubled = i * 2;", "Sequences.cs")]
     public void ALineAWrapperAdds_MapsToTheDeclarationWhoseBodyItWraps(string emitted, string written, string file)
     {
         var source = file == "Halves.cs" ? ByReferenceSource : IteratorSource;
@@ -600,21 +600,21 @@ public class StatementSourceMapTests
     }
 
     [Theory]
-    [InlineData("let widened = raw * 10;", "var widened = raw * 10;")]
-    [InlineData("scaled = widened + 1;", "scaled = widened + 1;")]
+    [InlineData("let widened = Math.imul(raw, 10);", "var widened = raw * 10;")]
+    [InlineData("scaled = widened + 1 | 0;", "scaled = widened + 1;")]
     [InlineData("return scaled > 0;", "return scaled > 0;")]
     public void AStatementOfAComponentsMethodWithAnOutParameter_MapsToItsOwnCSharpLine(string emitted, string written) =>
         AssertMapped(Compile(ComponentByReferenceSource, "Gauge.cs"), emitted, written, ComponentByReferenceSource);
 
     [Theory]
-    [InlineData("let squared = item * item;", "var squared = item * item;")]
-    [InlineData("this._seen += squared;", "_seen += squared;")]
-    [InlineData("let doubled = value * 2;", "var doubled = value * 2;")]
-    [InlineData("this._seen += doubled;", "_seen += doubled;")]
-    [InlineData("let bumped = start + 1;", "var bumped = start + 1;")]
+    [InlineData("let squared = Math.imul(item, item);", "var squared = item * item;")]
+    [InlineData("this._seen = this._seen + squared | 0;", "_seen += squared;")]
+    [InlineData("let doubled = Math.imul(value, 2);", "var doubled = value * 2;")]
+    [InlineData("this._seen = this._seen + doubled | 0;", "_seen += doubled;")]
+    [InlineData("let bumped = start + 1 | 0;", "var bumped = start + 1;")]
     [InlineData("return bumped;", "return bumped;")]
     [InlineData("let clamped = ", "var clamped = next < 0 ? 0 : next;")]
-    [InlineData("this._seen = clamped + value;", "_seen = clamped + value;")]
+    [InlineData("this._seen = clamped + value | 0;", "_seen = clamped + value;")]
     [InlineData("let length = text.length;", "var length = text.Length;")]
     [InlineData("return length > 2;", "return length > 2;")]
     [InlineData("let flag = ", "var flag = changed ? 1 : 0;")]
@@ -628,9 +628,9 @@ public class StatementSourceMapTests
         AssertMapped(Compile(CarriedSource, "Carried.cs"), emitted, written, CarriedSource);
 
     [Theory]
-    [InlineData("let initial = start * 2;", "var initial = start * 2;")]
+    [InlineData("let initial = Math.imul(start, 2);", "var initial = start * 2;")]
     [InlineData("this._count = initial;", "_count = initial;")]
-    [InlineData("let next = this._count + 1;", "var next = _count + 1;")]
+    [InlineData("let next = this._count + 1 | 0;", "var next = _count + 1;")]
     public void AStatementInALambdaThatAComponentsExpressionBodyHolds_MapsToItsOwnCSharpLine(string emitted, string written) =>
         AssertMapped(Compile(ComponentCarriedSource, "Clicker.cs"), emitted, written, ComponentCarriedSource);
 
