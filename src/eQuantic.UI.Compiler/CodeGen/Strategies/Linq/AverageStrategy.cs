@@ -52,7 +52,7 @@ public class AverageStrategy : IExpressionIrStrategy
 
         if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method)
         {
-            if (MeanOf(method) is not var (mean, nullable))
+            if (LinqAccumulation.ValuesOf(method) is not var (mean, nullable))
                 return JsExpr.Opaque(context.Unhandled(invocation, $"LINQ Average over {method.ReturnType.ToDisplayString()}"));
             return LinqArguments.Call(Eq.LinqAverage, source, ["selector"], invocation,
                     argument => context.Converter.ConvertIr(argument.Expression), context,
@@ -65,14 +65,16 @@ public class AverageStrategy : IExpressionIrStrategy
         // wrong, which is the only mercy in it. LONG elements sum exactly as BigInt (a number
         // seed would throw) and divide as the double C# declares Average(long) to return.
         var exact = context.SemanticHelper.GetType(invocation).IsDecimal();
-        if (exact) context.UsedHelpers.Add(Eq.Import);
         var longElements = !exact && (args.Count > 0 && args[0].Expression is SimpleLambdaExpressionSyntax selectorLambda
             ? context.SemanticHelper.GetType((SyntaxNode?)selectorLambda.ExpressionBody ?? selectorLambda.Body)
             : context.SemanticHelper.GetType(memberAccess.Expression).GetEnumerableElementType()).IsLong();
+        // A long's total is checked, as the runtime's mean checks it (LinqAccumulation).
+        var accumulation = exact ? "decimal" : longElements ? "long" : "number";
+        if (LinqAccumulation.ReadsTheRuntime(accumulation)) context.UsedHelpers.Add(Eq.Import);
 
         // The accumulator starts as the Decimal seed and each element IS a Decimal (typed world).
         // The COUNT is a plain number, so the divisor converts — that one dec() is a conversion.
-        var seed = exact ? $"{Eq.Dec}(0)" : longElements ? "0n" : "0";
+        var seed = LinqAccumulation.Zero(accumulation);
         // A FLOAT average is .NET's: the sum and the division in DOUBLE, converted once at the end
         // (`(float)Average<float, double, double>(source)`) — SinglePrecision.
         var single = SinglePrecision.Is(context.SemanticHelper.GetType(invocation));
@@ -91,45 +93,19 @@ public class AverageStrategy : IExpressionIrStrategy
         {
             var param = lambda.Parameter.Identifier.ValueText.ToJsIdentifier();
             var body = context.Converter.ConvertIr(expression);
-            var callback = JsExpr.Arrow($"$sum, {param}", LinqAccumulation.Add(JsExpr.Identifier("$sum"), body, exact));
+            var callback = JsExpr.Arrow($"$sum, {param}", LinqAccumulation.Add(JsExpr.Identifier("$sum"), body, accumulation, false));
             return JsExpr.Template(Divide($"{{0}}.reduce({{1}}, {seed})"), [source, callback]);
         }
 
         // Any other selector is evaluated once, before the reduce runs, as C# evaluates an argument.
         if (args.Count > 0)
             return JsExpr.Template(
-                Divide($"{{0}}.reduce(($sum, $x) => {LinqAccumulation.Add("$sum", "{1}($x)", exact)}, {seed})"),
+                Divide($"{{0}}.reduce(($sum, $x) => {LinqAccumulation.Add("$sum", "{1}($x)", accumulation, false)}, {seed})"),
                 [source, context.Converter.ConvertIr(args[0].Expression)]);
 
         // Average() without selector
-        return JsExpr.Template(Divide($"{{0}}.reduce(($a, $b) => {LinqAccumulation.Add("$a", "$b", exact)}, {seed})"),
+        return JsExpr.Template(Divide($"{{0}}.reduce(($a, $b) => {LinqAccumulation.Add("$a", "$b", accumulation, false)}, {seed})"),
             [source]);
-    }
-
-    /// <summary>
-    /// How the runtime adds the values an overload means (<c>Mean</c> in <c>utils/linq.ts</c>), and whether
-    /// they are nullable: the selector's result type where the overload takes one, and the source's element
-    /// type otherwise, which every overload without a selector names outright. Null for any other type,
-    /// which no overload of .NET 10 means.
-    /// </summary>
-    private static (string Mean, bool Nullable)? MeanOf(IMethodSymbol method)
-    {
-        var values = method.Parameters.FirstOrDefault(parameter => parameter.Name == "selector")?.Type is INamedTypeSymbol
-        {
-            TypeArguments: [_, var result],
-        }
-            ? result
-            : ((method.ReducedFrom ?? method).Parameters.FirstOrDefault()?.Type).GetEnumerableElementType();
-        var mean = values.UnwrapNullable()?.SpecialType switch
-        {
-            SpecialType.System_Int32 => "int",
-            SpecialType.System_Double => "number",
-            SpecialType.System_Int64 => "long",
-            SpecialType.System_Single => "single",
-            SpecialType.System_Decimal => "decimal",
-            _ => null,
-        };
-        return mean is null ? null : (mean, values.IsNullableValue());
     }
 
     public int Priority => 10;

@@ -13,8 +13,8 @@ export class BoundReceivers extends StatelessComponent {
     build(_context: BuildContext) {
         let average = $eq.linq.average(this.items(), undefined, 'int', false);
         let doubled = $eq.linq.average(this.items(), BoundReceivers.twice, 'int', false);
-        let sum = this.items().reduce(($a, $b) => $a + $b, 0);
-        let total = this.pairs().reduce(($sum, pair) => $sum + pair[0], 0);
+        let sum = this.items().reduce(($a, $b) => $eq.num.addInt($a, $b), 0);
+        let total = this.pairs().reduce(($sum, pair) => $eq.num.addInt($sum, pair[0]), 0);
         let first = $eq.query.first((($0, $1) => $eq.query.defer(($src) => [...$src].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = $1; const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }), $0))(this.pairs(), BoundReceivers.keyOf))[1];
         let distinct = $eq.linq.seq($eq.query.defer(($src) => [...$eq.collections.hashSet(true, $src)], this.pairs())).length;
         (($0) => ($0._seen = $eq.logic.or($0._seen, distinct > 1)))(this.self());
@@ -24,10 +24,10 @@ export class BoundReceivers extends StatelessComponent {
         let lookup = (($0, $1) => $0.reduce(($groups: any[], $item) => { const $key = ($1)($item); let $g = $groups.find(($x) => $x.key === $key); if (!$g) { $g = []; $g.key = $key; $groups.push($g); } $g.push($item); return $groups; }, []))(this.pairs(), BoundReceivers.keyOf);
         let named = this.pairs().reduce(($groups: any[], $item) => { const $key = ((pair) => pair[0])($item); let $g = $groups.find(($x) => $x.key === $key); if (!$g) { $g = []; $g.key = $key; $groups.push($g); } $g.push(((pair) => pair[1])($item)); return $groups; }, []);
         let found = $eq.linq.seq((lookup.find(($g) => $g.key === 1) ?? [])).length + $eq.linq.seq((named.find(($g) => $g.key === 2) ?? [])).length | 0;
-        let zipped = $eq.linq.seq((($0, $1) => $eq.query.defer(($src) => $eq.linq.zipTuples($src, $1, undefined), $0, 'first'))(this.items(), this.items())).reduce(($sum, pair) => $sum + Math.imul(pair[0], pair[1]), 0);
-        let triples = $eq.linq.seq((($0, $1, $2) => $eq.query.defer(($src) => $eq.linq.zipTuples($src, $1, $2), $0, 'first'))(this.items(), this.items(), this.pairs())).reduce(($sum, triple) => $sum + triple[2][0], 0);
+        let zipped = $eq.linq.seq((($0, $1) => $eq.query.defer(($src) => $eq.linq.zipTuples($src, $1, undefined), $0, 'first'))(this.items(), this.items())).reduce(($sum, pair) => $eq.num.addInt($sum, Math.imul(pair[0], pair[1])), 0);
+        let triples = $eq.linq.seq((($0, $1, $2) => $eq.query.defer(($src) => $eq.linq.zipTuples($src, $1, $2), $0, 'first'))(this.items(), this.items(), this.pairs())).reduce(($sum, triple) => $eq.num.addInt($sum, triple[2][0]), 0);
         let same = $eq.linq.sequenceEqual(this.items(), this.items());
-        let ticks = $eq.linq.seq($eq.query.select(this._ticks, (tick: bigint) => BigInt.asIntN(64, tick * 2n))).reduce(($a, $b) => $a + $b, 0n);
+        let ticks = $eq.linq.seq($eq.query.select(this._ticks, (tick: bigint) => BigInt.asIntN(64, tick * 2n))).reduce(($a, $b) => $eq.num.addLong($a, $b), 0n);
         let price = $eq.linq.average(this._prices, (each: Decimal) => each, 'decimal', false);
         let fallback = ($eq.linq.firstOrDefault(this.items(), undefined, 9) + $eq.linq.lastOrDefault(this.items(), (item: number) => item > 1, 9) | 0) + $eq.linq.singleOrDefault(this.items(), (item: number) => item > 2, 9) | 0;
         let discarded = ((void (-1), true)) && ((void (!this._seen), true)) && ((void (this._level + 1 | 0), true)) && ((void this.items().length, true));

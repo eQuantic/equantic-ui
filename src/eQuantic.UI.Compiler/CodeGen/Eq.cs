@@ -25,6 +25,10 @@ public static class Eq
     public const string Str = "$eq.str";
 
     public const string Dec = "$eq.num.dec";
+    /// <summary>An int added to <c>Enumerable.Sum</c>'s total, checked whatever the context of the call.</summary>
+    public const string AddInt = "$eq.num.addInt";
+    /// <summary>A long added to <c>Enumerable.Sum</c>'s total, checked whatever the context of the call.</summary>
+    public const string AddLong = "$eq.num.addLong";
     /// <summary><c>decimal.Parse</c>: the text read by .NET's grammar, under the NumberStyles the
     /// call names, and rounded as .NET's parser rounds it.</summary>
     public const string DecParse = "$eq.num.decParse";

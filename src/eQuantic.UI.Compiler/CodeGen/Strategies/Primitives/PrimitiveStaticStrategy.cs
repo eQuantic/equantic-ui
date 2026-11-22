@@ -375,6 +375,19 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
 
         if (IsSmallInteger(home))
         {
+            // A signed width's MinValue has no magnitude in its type, so Abs and CopySign throw for it,
+            // in an unchecked context too, where Math.abs answered 2147483648 for an int (#1808).
+            if (SignedBits(home) is { } bits)
+            {
+                var signed = name switch
+                {
+                    "Abs" => $"$eq.num.abs({{0}}, {bits})",
+                    "CopySign" when argCount == 2 => $"$eq.num.copySign({{0}}, {{1}}, {bits})",
+                    _ => null,
+                };
+                if (signed is not null) return signed;
+            }
+
             var shared = SharedNumeric(name, argCount);
             if (shared is not null) return shared;
 
@@ -408,7 +421,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 "IsNegative" => "({0} < 0)",
                 "IsEvenInteger" => "({0} % 2 === 0)",
                 "IsOddInteger" => "(Math.abs({0} % 2) === 1)",
-                // Width-agnostic: the magnitude fits every small width without wrapping.
+                // An unsigned width's magnitude is itself (the signed widths are settled above).
                 "CopySign" when argCount == 2 => "({1} < 0 ? -Math.abs({0}) : Math.abs({0}))",
                 // A tuple crosses as an array, and the division throws where .NET's does (DivRem).
                 "DivRem" when argCount == 2 => DivRem(home),
@@ -432,8 +445,13 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
             // answers it as it answers a long but the rotations, which hand back a signed long.
             if (home is SpecialType.System_UInt64 or SpecialType.System_UIntPtr && name is "RotateLeft" or "RotateRight")
                 return null;
+            // A long's and an nint's MinValue has no magnitude in its type, so Abs and CopySign throw for it,
+            // where the BigInt answered 2^63 (#1808).
+            var unsigned64 = home is SpecialType.System_UInt64 or SpecialType.System_UIntPtr;
             return name switch
             {
+                "Abs" when !unsigned64 => "$eq.num.absLong({0})",
+                "CopySign" when argCount == 2 && !unsigned64 => "$eq.num.copySignLong({0}, {1})",
                 "Abs" => "({0} < 0n ? -{0} : {0})",
                 "Max" when argCount == 2 => "({0} > {1} ? {0} : {1})",
                 "Min" when argCount == 2 => "({0} < {1} ? {0} : {1})",
@@ -514,6 +532,15 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
 
         return null;
     }
+
+    /// <summary>The width of a signed integer a plain number carries, or null for any other type.</summary>
+    private static int? SignedBits(SpecialType home) => home switch
+    {
+        SpecialType.System_SByte => 8,
+        SpecialType.System_Int16 => 16,
+        SpecialType.System_Int32 => 32,
+        _ => null,
+    };
 
     /// <summary>Numeric members whose emission is identical for floats and small ints.</summary>
     private static string? SharedNumeric(string name, int argCount) => name switch
