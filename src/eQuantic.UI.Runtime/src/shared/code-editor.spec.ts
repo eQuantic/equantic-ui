@@ -1634,7 +1634,6 @@ describe('a code editor in a dialog, with its completion list open', () => {
     const photonData = (await import('./theme-bridge.photon.json')).default;
     const { CodeEditor } = await import('./components/CodeEditor');
     const { CodeWordCompletionProvider } = await import('./components/CodeWordCompletionProvider');
-    const { ComponentInstanceStore, enterPass, exitPass } = await import('./instance-store');
     const theme = materializeTheme(photonData as never);
     setPhotonTheme(theme);
     const context = {
@@ -1649,10 +1648,11 @@ describe('a code editor in a dialog, with its completion list open', () => {
     component.completions = [new CodeWordCompletionProvider()];
     const editor = component.editor;
     let dialogClosed = 0;
-    // One pass, as a page renders the dialog around the editor.
-    const render = () => {
-      enterPass(new ComponentInstanceStore(), null);
-      try {
+    // One page, rendered pass after pass as a page renders the dialog around the editor, so the
+    // editor's input stands where it stood and keeps the keyboard across the renders (#1454).
+    const page = rendersOfOnePage();
+    const render = () =>
+      page(() => {
         const dialog = {
           nodeKind: 'shortcut',
           child: component.build(context as never),
@@ -1660,10 +1660,7 @@ describe('a code editor in a dialog, with its completion list open', () => {
           onPressed: () => dialogClosed++,
         };
         return lowerVisualNode(dialog as never, context as never);
-      } finally {
-        exitPass();
-      }
-    };
+      });
     const parent = document.createElement('div');
     document.body.appendChild(parent);
     const reconciler = new Reconciler();
