@@ -51,8 +51,8 @@ export abstract class Element {
         this.parent = parent;
         this.slot = slot;
         this.id = owner.nextId();
-        this.depth = parent == null ? 0 : parent.depth + 1;
-        this.componentDepth = parent == null ? 0 : parent.componentDepth + (parent instanceof ComponentElement ? 1 : 0);
+        this.depth = parent == null ? 0 : parent.depth + 1 | 0;
+        this.componentDepth = parent == null ? 0 : parent.componentDepth + (parent instanceof ComponentElement ? 1 : 0) | 0;
         this.underInFlow = !(parent == null) && (parent.underInFlow || parent.configuration instanceof InFlow);
         this.nearestInherited = (($as: any) => $as instanceof InheritedElement ? $as : null)(parent) ?? (parent?.nearestInherited ?? null);
         this.isActive = true;
@@ -101,8 +101,8 @@ export abstract class Element {
 
     rebase() {
         let parent = this.parent;
-        this.depth = parent == null ? 0 : parent.depth + 1;
-        this.componentDepth = parent == null ? 0 : parent.componentDepth + (parent instanceof ComponentElement ? 1 : 0);
+        this.depth = parent == null ? 0 : parent.depth + 1 | 0;
+        this.componentDepth = parent == null ? 0 : parent.componentDepth + (parent instanceof ComponentElement ? 1 : 0) | 0;
         this.underInFlow = !(parent == null) && (parent.underInFlow || parent.configuration instanceof InFlow);
         this.nearestInherited = (($as: any) => $as instanceof InheritedElement ? $as : null)(parent) ?? (parent?.nearestInherited ?? null);
         this.onRebased();

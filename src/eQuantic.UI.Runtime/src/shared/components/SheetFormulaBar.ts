@@ -37,7 +37,7 @@ export class SheetFormulaBar {
     }
 
     requestFocus() {
-        return this._focusVersion++;
+        return (($old) => (this._focusVersion = $old + 1 | 0, $old))(this._focusVersion);
     }
 
     take() {

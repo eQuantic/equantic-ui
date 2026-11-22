@@ -149,7 +149,7 @@ export class CodeEditorController {
         this.history.clear();
         this.diagnostics.reset();
         this.goTo.reset();
-        this._revealVersion++;
+        this._revealVersion = this._revealVersion + 1 | 0;
         this.raise(new CodeChange([], true), false);
         this.jumpList.reset();
     }
@@ -165,7 +165,7 @@ export class CodeEditorController {
     }
 
     get selections(): CodeRange[] {
-        let all = ($eq.collections.listCapacity(this._others.length + 1), [this._selection]);
+        let all = ($eq.collections.listCapacity(this._others.length + 1 | 0), [this._selection]);
         for (const other of $eq.collections.listWalk(this._others)) $eq.collections.listAdd(all, other.selection);
         return all;
     }
@@ -173,7 +173,7 @@ export class CodeEditorController {
     set selections(value: CodeRange[]) {
         if ($eq.collections.count(value) === 0) return;
         $eq.collections.listClear(this._others);
-        for (let i = 1; i < $eq.collections.count(value); i++) $eq.collections.listAdd(this._others, new CodeCaret(this.onElementEdges($eq.collections.item(value, i)), -1));
+        for (let i = 1; i < $eq.collections.count(value); i = i + 1 | 0) $eq.collections.listAdd(this._others, new CodeCaret(this.onElementEdges($eq.collections.item(value, i)), -1));
         this._occurrence = null;
         this.placed(new CodeCaret($eq.collections.item(value, 0), -1));
     }
@@ -209,7 +209,7 @@ export class CodeEditorController {
         let tabSize = this.rules.indentWidth;
         if (this._widths == null || this._widthsTabs !== tabSize) {
             this._widths = ($eq.collections.listCapacity(this._document.lineCount), []);
-            for (let line = 0; line < this._document.lineCount; line++) $eq.collections.listAdd(this._widths, CodeLineCells.widthOf(this._document.line(line), tabSize));
+            for (let line = 0; line < this._document.lineCount; line = line + 1 | 0) $eq.collections.listAdd(this._widths, CodeLineCells.widthOf(this._document.line(line), tabSize));
             this._widthsTabs = tabSize;
             this._widest = CodeEditorController.widest(this._widths);
         }
@@ -233,7 +233,7 @@ export class CodeEditorController {
     }
 
     get carets(): Rect[] {
-        let carets = ($eq.collections.listCapacity(this._others.length + 1), [this.caretRect(this.caret)]);
+        let carets = ($eq.collections.listCapacity(this._others.length + 1 | 0), [this.caretRect(this.caret)]);
         for (const other of $eq.collections.listWalk(this._others)) $eq.collections.listAdd(carets, this.caretRect(other.selection.focus));
         return carets;
     }
@@ -251,15 +251,15 @@ export class CodeEditorController {
             if (position.line < first) return 0;
             if (position.line > last) return text.length;
             let offset = position.column;
-            for (let line = first; line < position.line; line++) offset += lines[line - first].length + 1;
+            for (let line = first; line < position.line; line = line + 1 | 0) offset = offset + (lines[line - first | 0].length + 1 | 0) | 0;
             return offset;
         };
         let anchor = this._document.clamp(this._selection.anchor);
         let focus = this._document.clamp(this._selection.focus);
-        let first = Math.max(0, focus.line - CodeEditorController.readingLines);
-        let last = Math.min(this._document.lineCount - 1, focus.line + CodeEditorController.readingLines);
-        let lines: string[] = ($eq.collections.listCapacity(last - first + 1), []);
-        for (let line = first; line <= last; line++) $eq.collections.listAdd(lines, this._document.line(line));
+        let first = Math.max(0, focus.line - CodeEditorController.readingLines | 0);
+        let last = Math.min(this._document.lineCount - 1 | 0, focus.line + CodeEditorController.readingLines | 0);
+        let lines: string[] = ($eq.collections.listCapacity((last - first | 0) + 1 | 0), []);
+        for (let line = first; line <= last; line = line + 1 | 0) $eq.collections.listAdd(lines, this._document.line(line));
         let text = $eq.text.join('\n', lines);
         return new TextReading(text, offsetOf(anchor), offsetOf(focus));
     }
@@ -282,7 +282,7 @@ export class CodeEditorController {
         if ($eq.equals(next, this._selection) && !moved) return;
         this._occurrence = null;
         this._selection = next;
-        this._revealVersion++;
+        this._revealVersion = this._revealVersion + 1 | 0;
         if (!(this._step == null)) {
             this._stepMoved = true;
             return;
@@ -294,9 +294,9 @@ export class CodeEditorController {
     merge() {
         if (this._others.length === 0) return;
         let carets = [...$eq.collections.listCopy(this._others), new CodeCaret(this._selection, this._desiredAdvance)];
-        let primary = carets.length - 1;
+        let primary = carets.length - 1 | 0;
         let order: number[] = [];
-        for (let i = 0; i < carets.length; i++) $eq.collections.listAdd(order, i);
+        for (let i = 0; i < carets.length; i = i + 1 | 0) $eq.collections.listAdd(order, i);
         $eq.collections.listSortBy(order, (a: number, b: number) => carets[a].selection.start.compareTo(carets[b].selection.start), 'System.Comparison`1[System.Int32]');
         let merged: CodeCaret[] = [];
         let primaryAt = -1;
@@ -308,11 +308,11 @@ export class CodeEditorController {
                 let meets = last.isEmpty || next.isEmpty ? CodePosition.opLessOrEqual(next.start, last.end) : CodePosition.opLessThan(next.start, last.end);
                 if (meets) {
                     let end = CodePosition.opGreaterThan(next.end, last.end) ? next.end : last.end;
-                    let keeps = i === primary ? next : merged.length - 1 === primaryAt ? last : next;
+                    let keeps = i === primary ? next : (merged.length - 1 | 0) === primaryAt ? last : next;
                     let backwards = CodePosition.opLessThan(keeps.focus, keeps.anchor);
                     let range = backwards ? new CodeRange(end, last.start) : new CodeRange(last.start, end);
                     $eq.collections.listSet(merged, merged.length - 1, new CodeCaret(range, i === primary ? caret.advance : merged[merged.length - 1].advance));
-                    if (i === primary) primaryAt = merged.length - 1;
+                    if (i === primary) primaryAt = merged.length - 1 | 0;
                     continue;
                 }
             }
@@ -320,7 +320,7 @@ export class CodeEditorController {
             $eq.collections.listAdd(merged, caret);
         }
         $eq.collections.listClear(this._others);
-        for (let i = 0; i < merged.length; i++) {
+        for (let i = 0; i < merged.length; i = i + 1 | 0) {
             if (i === primaryAt) {
                 this._selection = merged[i].selection;
                 this._desiredAdvance = merged[i].advance;
@@ -382,7 +382,7 @@ export class CodeEditorController {
 
     scroll(top: number | null, left: number | null) {
         if (top == null && left == null) return;
-        this._scrollVersion++;
+        this._scrollVersion = this._scrollVersion + 1 | 0;
         let down: any; 
         if ((down = top) != null) this.verticalScroll = new ScrollRequest(this._scrollVersion, { offset: down });
         let across: any; 
@@ -397,12 +397,12 @@ export class CodeEditorController {
     widthsChanged(line: number, linesInserted: number, linesRemoved: number) {
         if (this._widths == null) return;
         let old = this._widths;
-        let gone = Math.min(linesRemoved + 1, old.length - line);
+        let gone = Math.min(linesRemoved + 1 | 0, old.length - line | 0);
         let lostTheWidest = false;
-        for (let i = line; i < line + gone; i++) if (old[i] >= this._widest) lostTheWidest = true;
-        if (linesInserted === linesRemoved && gone === linesRemoved + 1) {
+        for (let i = line; i < (line + gone | 0); i = i + 1 | 0) if (old[i] >= this._widest) lostTheWidest = true;
+        if (linesInserted === linesRemoved && gone === (linesRemoved + 1 | 0)) {
             let widestHere = 0;
-            for (let i = line; i <= line + linesInserted; i++) {
+            for (let i = line; i <= (line + linesInserted | 0); i = i + 1 | 0) {
                 let width = CodeLineCells.widthOf(this._document.line(i), this._widthsTabs);
                 $eq.collections.listSet(old, i, width);
                 if (width > widestHere) widestHere = width;
@@ -410,15 +410,15 @@ export class CodeEditorController {
             if (lostTheWidest && widestHere < this._widest) this._widest = CodeEditorController.widest(old); else if (widestHere > this._widest) this._widest = widestHere;
             return;
         }
-        let next: number[] = ($eq.collections.listCapacity(old.length - gone + linesInserted + 1), []);
-        for (let i = 0; i < line; i++) $eq.collections.listAdd(next, old[i]);
+        let next: number[] = ($eq.collections.listCapacity(((old.length - gone | 0) + linesInserted | 0) + 1 | 0), []);
+        for (let i = 0; i < line; i = i + 1 | 0) $eq.collections.listAdd(next, old[i]);
         let measuredWidest = 0;
-        for (let i = line; i <= line + linesInserted; i++) {
+        for (let i = line; i <= (line + linesInserted | 0); i = i + 1 | 0) {
             let width = CodeLineCells.widthOf(this._document.line(i), this._widthsTabs);
             if (width > measuredWidest) measuredWidest = width;
             $eq.collections.listAdd(next, width);
         }
-        for (let i = line + gone; i < old.length; i++) $eq.collections.listAdd(next, old[i]);
+        for (let i = line + gone | 0; i < old.length; i = i + 1 | 0) $eq.collections.listAdd(next, old[i]);
         this._widths = next;
         if (lostTheWidest) this._widest = CodeEditorController.widest(next); else if (measuredWidest > this._widest) this._widest = measuredWidest;
     }
@@ -478,7 +478,7 @@ export class CodeEditorController {
         let here = this._document.clamp(position);
         if (here.column > 0) return $eq.withPatch(here, { column: this.cellsOf(here.line).previous(here.column) });
         if (here.line === 0) return CodePosition.start;
-        return new CodePosition(here.line - 1, this._document.line(here.line - 1).length);
+        return new CodePosition(here.line - 1 | 0, this._document.line(here.line - 1 | 0).length);
     }
 
     boundary(position: CodePosition, after: boolean) {
@@ -492,8 +492,8 @@ export class CodeEditorController {
     after(position: CodePosition) {
         let here = this._document.clamp(position);
         if (here.column < this._document.line(here.line).length) return $eq.withPatch(here, { column: this.cellsOf(here.line).next(here.column) });
-        if (here.line === this._document.lineCount - 1) return here;
-        return new CodePosition(here.line + 1, 0);
+        if (here.line === (this._document.lineCount - 1 | 0)) return here;
+        return new CodePosition(here.line + 1 | 0, 0);
     }
 
     foldsChanged() {
@@ -510,7 +510,7 @@ export class CodeEditorController {
         if (lineHeight <= 0) return;
         let topRow = $eq.num.saturate(Math.floor(Math.fround(Math.max(0, Math.fround(this._view.y - origin)) / lineHeight)));
         let within = Math.fround(Math.fround(this._view.y - origin) - Math.fround(Math.fround(topRow) * lineHeight));
-        let line = before?.lineAtRow(topRow) ?? Math.min(topRow, this._document.lineCount - 1);
+        let line = before?.lineAtRow(topRow) ?? Math.min(topRow, this._document.lineCount - 1 | 0);
         let row = this._grid.rows?.rowOf(line) ?? line;
         let top = Math.max(0, Math.fround(Math.fround(origin + Math.fround(Math.fround(row) * lineHeight)) + within));
         if (Math.abs(Math.fround(top - this._view.y)) < 0.5) return;
@@ -555,12 +555,12 @@ export class CodeEditorController {
         if (selection.isEmpty) return;
         let start = selection.start;
         let end = selection.end;
-        for (let line = Math.max(start.line, first); line <= Math.min(end.line, last); line++) {
+        for (let line = Math.max(start.line, first); line <= Math.min(end.line, last); line = line + 1 | 0) {
             let from = line === start.line ? start.column : 0;
             let rows: any; 
             if ((rows = this.grid.rows) != null && !rows.isVisible(line)) continue;
             let fromAdvance = this.advanceOf(line, from);
-            let toAdvance = line === end.line ? this.advanceOf(line, end.column) : this.grid.measure == null ? Math.fround(this.cellsOf(line).width + 1) : Math.fround(this.advanceOf(line, this._document.line(line).length) + this.grid.cell.width);
+            let toAdvance = line === end.line ? this.advanceOf(line, end.column) : this.grid.measure == null ? Math.fround(this.cellsOf(line).width + 1 | 0) : Math.fround(this.advanceOf(line, this._document.line(line).length) + this.grid.cell.width);
             if (toAdvance <= fromAdvance) continue;
             let width = this.grid.measure == null ? Math.fround(Math.fround(toAdvance - fromAdvance) * this.grid.cell.width) : Math.fround(toAdvance - fromAdvance);
             $eq.collections.listAdd(bands, new Rect(this.xAtAdvance(fromAdvance), this.topOf(line), width, this.grid.cell.height));
@@ -568,7 +568,7 @@ export class CodeEditorController {
     }
 
     requestFocus() {
-        return this._focusVersion++;
+        return (($old) => (this._focusVersion = $old + 1 | 0, $old))(this._focusVersion);
     }
 
     caretRect(position: CodePosition) {
@@ -814,7 +814,7 @@ export class CodeEditorController {
     }
 
     canExecute(command: $CodeCommandValue) {
-        return (() => {let help: any;  const $s = command; if (($s === 'none' || $s === 'releaseKeyboard')) return false; if ((($s === 'newLine' || $s === 'cut') || $s === 'paste')) return !this.readOnly; if ((($s === 'deleteLeft' || $s === 'deleteWordLeft') || $s === 'deleteToLineStart')) return !this.readOnly && (this._others.length > 0 || !this._selection.isEmpty || !$eq.equals(this.caret, CodePosition.start)); if (($s === 'deleteRight' || $s === 'deleteWordRight')) return !this.readOnly && (this._others.length > 0 || !this._selection.isEmpty || !$eq.equals(this.caret, this._document.end)); if ($s === 'toggleLineComment') return !this.readOnly && !(this.rules.lineComment == null); if (($s === 'indent' || $s === 'outdent')) return !this.readOnly && !this.tabMovesFocus; if ($s === 'undo') return !this.readOnly && this.history.canUndo; if ($s === 'redo') return !this.readOnly && this.history.canRedo; if ($s === 'completionShow') return !this.readOnly && $eq.collections.count(this.completion.providers) > 0; if (((($s === 'completionNext' || $s === 'completionPrevious') || $s === 'completionNextPage') || $s === 'completionPreviousPage')) return this.completion.isOpen && $eq.collections.count(this.completion.items) > 1; if (($s === 'completionAccept' || $s === 'completionHide')) return this.completion.isOpen; if ($s === 'completionAcceptChangingText') return this.completion.isOpen && this.completion.acceptChangesText; if ($s === 'signatureHelpShow') return $eq.collections.count(this.signatureHelp.providers) > 0; if (($s === 'signatureHelpNext' || $s === 'signatureHelpPrevious')) return !this.hover.isOpen && (help = this.signatureHelp.help) != null && $eq.collections.count(help.signatures) > 1; if ($s === 'signatureHelpHide') return this.signatureHelp.isOpen; if ($s === 'hoverShow') return this.hover.canShowAt(this.caret); if ($s === 'hoverHide') return this.hover.isOpen; if (($s === 'problemNext' || $s === 'problemPrevious')) return $eq.collections.count(this.diagnostics.items) > 0; if ($s === 'moveLinesUp') return !this.readOnly && (this._others.length > 0 || this.selectedLines()[0] > 0); if ($s === 'moveLinesDown') return !this.readOnly && (this._others.length > 0 || this._selection.end.line < this._document.lineCount - 1); if (((($s === 'copyLinesUp' || $s === 'copyLinesDown') || $s === 'insertLineAbove') || $s === 'insertLineBelow')) return !this.readOnly; if ($s === 'deleteLines') return !this.readOnly && (this._document.lineCount > 1 || this._document.line(0).length > 0); if ($s === 'joinLines') return !this.readOnly && (this._others.length > 0 || this.canJoin()); if ($s === 'removeSecondaryCursors') return this._others.length > 0; if ($s === 'nextTabStop') return !this.readOnly && !this.tabMovesFocus && this.snippet.isActive; if ($s === 'previousTabStop') return !this.readOnly && !this.tabMovesFocus && this.snippet.hasPrevious; if ($s === 'leaveSnippet') return this.snippet.isActive; if ($s === 'navigateBack') return this.jumpList.canGoBack; if ($s === 'navigateForward') return this.jumpList.canGoForward; if (((($s === 'goToDefinition' || $s === 'goToDeclaration') || $s === 'goToTypeDefinition') || $s === 'goToImplementation')) return $eq.collections.count(this.definitions.providers) > 0; if ($s === 'findReferences') return $eq.collections.count(this.references.providers) > 0; if (($s === 'nextReference' || $s === 'previousReference')) return $eq.collections.count(this.goTo.places) > 0; if ($s === 'fold') return this.hidesFolds && this.folding.canFold(this._selection.focus.line); if ($s === 'unfold') return this.hidesFolds && this.folding.canUnfold(this._selection.focus.line); if ((($s === 'foldRecursively' || $s === 'unfoldRecursively') || $s === 'toggleFold')) return this.hidesFolds && this.folding.canToggle(this._selection.focus.line); if ($s === 'foldAll') return this.hidesFolds && this.folding.any(false); if ($s === 'unfoldAll') return this.hidesFolds && this.folding.any(true); if ($s === 'sortLinesAscending') return !this.readOnly && (this._others.length > 0 || this.unsorted(false)); if ($s === 'sortLinesDescending') return !this.readOnly && (this._others.length > 0 || this.unsorted(true)); return true; })();
+        return (() => {let help: any;  const $s = command; if (($s === 'none' || $s === 'releaseKeyboard')) return false; if ((($s === 'newLine' || $s === 'cut') || $s === 'paste')) return !this.readOnly; if ((($s === 'deleteLeft' || $s === 'deleteWordLeft') || $s === 'deleteToLineStart')) return !this.readOnly && (this._others.length > 0 || !this._selection.isEmpty || !$eq.equals(this.caret, CodePosition.start)); if (($s === 'deleteRight' || $s === 'deleteWordRight')) return !this.readOnly && (this._others.length > 0 || !this._selection.isEmpty || !$eq.equals(this.caret, this._document.end)); if ($s === 'toggleLineComment') return !this.readOnly && !(this.rules.lineComment == null); if (($s === 'indent' || $s === 'outdent')) return !this.readOnly && !this.tabMovesFocus; if ($s === 'undo') return !this.readOnly && this.history.canUndo; if ($s === 'redo') return !this.readOnly && this.history.canRedo; if ($s === 'completionShow') return !this.readOnly && $eq.collections.count(this.completion.providers) > 0; if (((($s === 'completionNext' || $s === 'completionPrevious') || $s === 'completionNextPage') || $s === 'completionPreviousPage')) return this.completion.isOpen && $eq.collections.count(this.completion.items) > 1; if (($s === 'completionAccept' || $s === 'completionHide')) return this.completion.isOpen; if ($s === 'completionAcceptChangingText') return this.completion.isOpen && this.completion.acceptChangesText; if ($s === 'signatureHelpShow') return $eq.collections.count(this.signatureHelp.providers) > 0; if (($s === 'signatureHelpNext' || $s === 'signatureHelpPrevious')) return !this.hover.isOpen && (help = this.signatureHelp.help) != null && $eq.collections.count(help.signatures) > 1; if ($s === 'signatureHelpHide') return this.signatureHelp.isOpen; if ($s === 'hoverShow') return this.hover.canShowAt(this.caret); if ($s === 'hoverHide') return this.hover.isOpen; if (($s === 'problemNext' || $s === 'problemPrevious')) return $eq.collections.count(this.diagnostics.items) > 0; if ($s === 'moveLinesUp') return !this.readOnly && (this._others.length > 0 || this.selectedLines()[0] > 0); if ($s === 'moveLinesDown') return !this.readOnly && (this._others.length > 0 || this._selection.end.line < (this._document.lineCount - 1 | 0)); if (((($s === 'copyLinesUp' || $s === 'copyLinesDown') || $s === 'insertLineAbove') || $s === 'insertLineBelow')) return !this.readOnly; if ($s === 'deleteLines') return !this.readOnly && (this._document.lineCount > 1 || this._document.line(0).length > 0); if ($s === 'joinLines') return !this.readOnly && (this._others.length > 0 || this.canJoin()); if ($s === 'removeSecondaryCursors') return this._others.length > 0; if ($s === 'nextTabStop') return !this.readOnly && !this.tabMovesFocus && this.snippet.isActive; if ($s === 'previousTabStop') return !this.readOnly && !this.tabMovesFocus && this.snippet.hasPrevious; if ($s === 'leaveSnippet') return this.snippet.isActive; if ($s === 'navigateBack') return this.jumpList.canGoBack; if ($s === 'navigateForward') return this.jumpList.canGoForward; if (((($s === 'goToDefinition' || $s === 'goToDeclaration') || $s === 'goToTypeDefinition') || $s === 'goToImplementation')) return $eq.collections.count(this.definitions.providers) > 0; if ($s === 'findReferences') return $eq.collections.count(this.references.providers) > 0; if (($s === 'nextReference' || $s === 'previousReference')) return $eq.collections.count(this.goTo.places) > 0; if ($s === 'fold') return this.hidesFolds && this.folding.canFold(this._selection.focus.line); if ($s === 'unfold') return this.hidesFolds && this.folding.canUnfold(this._selection.focus.line); if ((($s === 'foldRecursively' || $s === 'unfoldRecursively') || $s === 'toggleFold')) return this.hidesFolds && this.folding.canToggle(this._selection.focus.line); if ($s === 'foldAll') return this.hidesFolds && this.folding.any(false); if ($s === 'unfoldAll') return this.hidesFolds && this.folding.any(true); if ($s === 'sortLinesAscending') return !this.readOnly && (this._others.length > 0 || this.unsorted(false)); if ($s === 'sortLinesDescending') return !this.readOnly && (this._others.length > 0 || this.unsorted(true)); return true; })();
     }
 
     unsorted(descending: boolean) {
@@ -824,7 +824,7 @@ export class CodeEditorController {
 
     canJoin() {
         let [first, last] = this.joinedLines();
-        return last > first || first < this._document.lineCount - 1;
+        return last > first || first < (this._document.lineCount - 1 | 0);
     }
 
     joinedLines(): [number, number] {
@@ -849,15 +849,15 @@ export class CodeEditorController {
         if (text.length === 1 && this.completion.acceptsOn(text[0])) this.completion.accept();
         let typed = false;
         let starts = $eq.text.textElementStarts(text);
-        for (let i = 0; i < starts.length; i++) {
-            let end = i + 1 < starts.length ? starts[i + 1] : text.length;
-            let element = $eq.text.substring(text, starts[i], end - starts[i]);
+        for (let i = 0; i < starts.length; i = i + 1 | 0) {
+            let end = (i + 1 | 0) < starts.length ? starts[i + 1 | 0] : text.length;
+            let element = $eq.text.substring(text, starts[i], end - starts[i] | 0);
             typed = $eq.logic.or(typed, element.length === 1 ? this.type(element[0]) : this.atEveryCaret(() => this.edit(this._selection, element, true)));
         }
         if (committing) this.history.break();
         if (typed) {
-            this.completion.typed(text[text.length - 1]);
-            this.signatureHelp.typed(text[text.length - 1]);
+            this.completion.typed(text[text.length - 1 | 0]);
+            this.signatureHelp.typed(text[text.length - 1 | 0]);
         }
         return typed;
     }
@@ -879,7 +879,7 @@ export class CodeEditorController {
             this.replaceUnrecorded(current, this._compositionReplaced);
             this._composition = null;
             this._selection = new CodeRange(this._document.clamp(this._compositionSelection.anchor), this._document.clamp(this._compositionSelection.focus));
-            this._revealVersion++;
+            this._revealVersion = this._revealVersion + 1 | 0;
             this.selectionChanged?.(this._selection);
             return true;
         }
@@ -903,7 +903,7 @@ export class CodeEditorController {
         let next = ($o => (caret = $o.caret, $o.$))(this._document.replace(ordered, text));
         this._document = next;
         this._selection = new CodeRange(caret);
-        this._revealVersion++;
+        this._revealVersion = this._revealVersion + 1 | 0;
         this._desiredAdvance = -1;
         let edit = new CodeEdit(ordered, removed, next.textIn(new CodeRange(ordered.start, caret)), before, this._selection, false);
         this.took(edit);
@@ -1030,7 +1030,7 @@ export class CodeEditorController {
         this._document = next;
         let left: any; 
         this._selection = (left = after) != null ? this.onElementEdges(left) : new CodeRange(caret);
-        this._revealVersion++;
+        this._revealVersion = this._revealVersion + 1 | 0;
         let edit = new CodeEdit(ordered, removed, next.textIn(new CodeRange(ordered.start, caret)), before, this._selection, typed);
         this.took(edit);
         this._desiredAdvance = -1;
@@ -1044,7 +1044,7 @@ export class CodeEditorController {
     }
 
     carryOthers(edit: CodeEdit) {
-        for (let i = 0; i < this._others.length; i++) $eq.collections.listSet(this._others, i, $eq.withPatch(this._others[i], { selection: edit.carry(this._others[i].selection) }));
+        for (let i = 0; i < this._others.length; i = i + 1 | 0) $eq.collections.listSet(this._others, i, $eq.withPatch(this._others[i], { selection: edit.carry(this._others[i].selection) }));
         this.merge();
     }
 
@@ -1086,13 +1086,13 @@ export class CodeEditorController {
         let last = -1;
         let primaryUnit = 0;
         let primaryIndex = 0;
-        for (let i = 0; i < carets.length; i++) {
+        for (let i = 0; i < carets.length; i = i + 1 | 0) {
             let taken = lines(carets[i].selection);
-            if (units.length > 0 && taken[0] <= last + (touching ? 1 : 0)) $eq.collections.listAdd(units[units.length - 1], carets[i]); else $eq.collections.listAdd(units, [carets[i]]);
+            if (units.length > 0 && taken[0] <= (last + (touching ? 1 : 0) | 0)) $eq.collections.listAdd(units[units.length - 1], carets[i]); else $eq.collections.listAdd(units, [carets[i]]);
             if (taken[1] > last) last = taken[1];
             if (i === primary) {
-                primaryUnit = units.length - 1;
-                primaryIndex = units[units.length - 1].length - 1;
+                primaryUnit = units.length - 1 | 0;
+                primaryIndex = units[units.length - 1].length - 1 | 0;
             }
         }
         return this.atEvery(units, primaryUnit, primaryIndex, (unit: number) => {
@@ -1117,7 +1117,7 @@ export class CodeEditorController {
         const $r = (() => {
             let carets: CodeCaret[] = $eq.collections.listCopy(this._others);
             primary = 0;
-            while (primary < carets.length && CodePosition.opLessThan(carets[primary].selection.start, this._selection.start)) primary++;
+            while (primary < carets.length && CodePosition.opLessThan(carets[primary].selection.start, this._selection.start)) primary = primary + 1 | 0;
             $eq.collections.listInsert(carets, primary, new CodeCaret(this._selection, this._desiredAdvance));
             return carets;
         })();
@@ -1132,7 +1132,7 @@ export class CodeEditorController {
             let left: CodeCaret[][] = [];
             let from: number[] = [];
             let to: number[] = [];
-            for (let unit = 0; unit < count; unit++) {
+            for (let unit = 0; unit < count; unit = unit + 1 | 0) {
                 $eq.collections.listAdd(left, units[unit]);
                 $eq.collections.listAdd(from, 0);
                 $eq.collections.listAdd(to, 0);
@@ -1141,7 +1141,7 @@ export class CodeEditorController {
             let reached = false;
             let earliest = CodePosition.start;
             try {
-                for (let unit = count - 1; unit >= 0; unit--) {
+                for (let unit = count - 1 | 0; unit >= 0; unit = unit - 1 | 0) {
                     $eq.collections.listSet(from, unit, step.length);
                     $eq.collections.listSet(to, unit, step.length);
                     let carets = units[unit];
@@ -1155,12 +1155,12 @@ export class CodeEditorController {
                         $eq.collections.listSet(left, unit, carried);
                         continue;
                     }
-                    this._ahead = unit + 1 < count ? left[unit + 1][0].selection.start : null;
+                    this._ahead = (unit + 1 | 0) < count ? left[unit + 1 | 0][0].selection.start : null;
                     let [made, placed] = run(unit);
                     any = any || made;
                     $eq.collections.listSet(left, unit, placed);
                     $eq.collections.listSet(to, unit, step.length);
-                    for (let i = from[unit]; i < to[unit]; i++) {
+                    for (let i = from[unit]; i < to[unit]; i = i + 1 | 0) {
                         if (reached && CodePosition.opGreaterOrEqual(step[i].range.start, earliest)) continue;
                         earliest = step[i].range.start;
                         reached = true;
@@ -1181,20 +1181,20 @@ export class CodeEditorController {
         let shifted = -1;
         let lines = 0;
         let columns = 0;
-        for (let unit = 0; unit < left.length; unit++) {
+        for (let unit = 0; unit < left.length; unit = unit + 1 | 0) {
             let carets = left[unit];
-            for (let i = 0; i < carets.length; i++) {
+            for (let i = 0; i < carets.length; i = i + 1 | 0) {
                 let anchor = carets[i].selection.anchor;
                 let focus = carets[i].selection.focus;
-                let caret = $eq.withPatch(carets[i], { selection: new CodeRange(new CodePosition(anchor.line + lines, anchor.column + (anchor.line === shifted ? columns : 0)), new CodePosition(focus.line + lines, focus.column + (focus.line === shifted ? columns : 0))) });
+                let caret = $eq.withPatch(carets[i], { selection: new CodeRange(new CodePosition(anchor.line + lines | 0, anchor.column + (anchor.line === shifted ? columns : 0) | 0), new CodePosition(focus.line + lines | 0, focus.column + (focus.line === shifted ? columns : 0) | 0)) });
                 if (unit === primaryUnit && i === (primaryIndex < carets.length ? primaryIndex : 0)) primary = caret; else $eq.collections.listAdd(placed, caret);
             }
-            if (unit + 1 === left.length) break;
-            let probe = left[unit + 1][0].selection.start;
+            if ((unit + 1 | 0) === left.length) break;
+            let probe = left[unit + 1 | 0][0].selection.start;
             let image = probe;
-            for (let i = from[unit]; i < to[unit]; i++) image = step[i].carry(new CodeRange(image)).start;
-            columns = image.column - probe.column + (image.line === shifted ? columns : 0);
-            lines += image.line - probe.line;
+            for (let i = from[unit]; i < to[unit]; i = i + 1 | 0) image = step[i].carry(new CodeRange(image)).start;
+            columns = (image.column - probe.column | 0) + (image.line === shifted ? columns : 0) | 0;
+            lines = lines + (image.line - probe.line | 0) | 0;
             shifted = probe.line;
         }
         this._selection = this.onElementEdges(primary.selection);
@@ -1210,7 +1210,7 @@ export class CodeEditorController {
         if (this._raising) return;
         this._raising = true;
         try {
-            for (let i = 0; i < this._unheard.length; i++) this.changed?.(this._unheard[i]);
+            for (let i = 0; i < this._unheard.length; i = i + 1 | 0) this.changed?.(this._unheard[i]);
         } finally {
             $eq.collections.listClear(this._unheard);
             this._raising = false;
@@ -1253,13 +1253,13 @@ export class CodeEditorController {
         let after = this.caret.column < line.length ? line[this.caret.column] : '\u0000';
         for (const [, close] of $eq.collections.sequenceWalk(rules.brackets)) {
             if (c === close && after === close) {
-                this.select(new CodeRange($eq.withPatch(this.caret, { column: this.caret.column + 1 })), false);
+                this.select(new CodeRange($eq.withPatch(this.caret, { column: this.caret.column + 1 | 0 })), false);
                 return true;
             }
         }
         for (const quote of $eq.collections.sequenceWalk(rules.quotes)) {
             if (c === quote && after === quote) {
-                this.select(new CodeRange($eq.withPatch(this.caret, { column: this.caret.column + 1 })), false);
+                this.select(new CodeRange($eq.withPatch(this.caret, { column: this.caret.column + 1 | 0 })), false);
                 return true;
             }
         }
@@ -1267,17 +1267,17 @@ export class CodeEditorController {
             if (c !== open) continue;
             if (after === '\u0000' || $eq.text.isWhiteSpace(after) || $eq.query.any(rules.brackets, (p) => p[1] === after)) {
                 if (!this.edit(this._selection, `${open}${close}`, true)) return false;
-                this.select(new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 })), false);
+                this.select(new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 | 0 })), false);
                 return true;
             }
         }
         for (const quote of $eq.collections.sequenceWalk(rules.quotes)) {
             if (c !== quote) continue;
-            let before = this.caret.column > 0 ? line[this.caret.column - 1] : '\u0000';
+            let before = this.caret.column > 0 ? line[this.caret.column - 1 | 0] : '\u0000';
             if (CodeDocument.isWordChar(before) || CodeDocument.isWordChar(after)) break;
             if (after === '\u0000' || $eq.text.isWhiteSpace(after)) {
                 if (!this.edit(this._selection, `${quote}${quote}`, true)) return false;
-                this.select(new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 })), false);
+                this.select(new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 | 0 })), false);
                 return true;
             }
         }
@@ -1306,7 +1306,7 @@ export class CodeEditorController {
         let closesNext = afterCaret.length > 0 && rules.outdentOn.includes(afterCaret[0]);
         if (opens && closesNext) {
             if (!this.edit(this._selection, `\n${indent}${step}\n${indent}`, false)) return false;
-            this.select(new CodeRange(new CodePosition(this.caret.line - 1, indent.length + step.length)), false);
+            this.select(new CodeRange(new CodePosition(this.caret.line - 1 | 0, indent.length + step.length | 0)), false);
             return true;
         }
         return this.edit(this._selection, '\n' + indent + (opens ? step : ''), false);
@@ -1335,15 +1335,15 @@ export class CodeEditorController {
             let width = this.rules.indentWidth;
             let cells = this.cellsOf(this.caret.line);
             let cell = cells.cellOf(this.caret.column);
-            let stop = $eq.num.intRem(cell, width) === 0 ? cell - width : cell - $eq.num.intRem(cell, width);
+            let stop = $eq.num.intRem(cell, width) === 0 ? cell - width | 0 : cell - $eq.num.intRem(cell, width) | 0;
             return this.edit(new CodeRange($eq.withPatch(this.caret, { column: cells.columnAt(Math.fround(stop)) }), this.caret), '', false);
         }
         if (this.caret.column > 0 && this.caret.column < line.length) {
-            let before = line[this.caret.column - 1];
+            let before = line[this.caret.column - 1 | 0];
             let after = line[this.caret.column];
             let paired = $eq.query.any(this.rules.brackets, (p) => p[0] === before && p[1] === after) || this.rules.quotes.includes(before) && before === after;
             if (paired) {
-                return this.edit(new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 }), $eq.withPatch(this.caret, { column: this.caret.column + 1 })), '', false);
+                return this.edit(new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 | 0 }), $eq.withPatch(this.caret, { column: this.caret.column + 1 | 0 })), '', false);
             }
         }
         let previous = this.before(this.caret);
@@ -1374,7 +1374,7 @@ export class CodeEditorController {
         if (!this.rules.insertSpaces) return this.edit(this._selection, '\t', false);
         let width = this.rules.indentWidth;
         let cell = this.cellsOf(this.caret.line).cellOf(this.caret.column);
-        return this.edit(this._selection, ' '.repeat(width - $eq.num.intRem(cell, width)), false);
+        return this.edit(this._selection, ' '.repeat(width - $eq.num.intRem(cell, width) | 0), false);
     }
 
     outdent() {
@@ -1391,15 +1391,15 @@ export class CodeEditorController {
         let step = this.indentStep;
         let changes: number[] = [];
         let changed = false;
-        for (let line = first; line <= last; line++) {
+        for (let line = first; line <= last; line = line + 1 | 0) {
             let text = this._document.line(line);
             let change = add ? text.length === 0 ? 0 : step.length : this.stepOff(text);
             $eq.collections.listAdd(changes, change);
             changed = changed || change > 0;
         }
         if (!changed) return null;
-        for (let line = last; line >= first; line--) {
-            let change = changes[line - first];
+        for (let line = last; line >= first; line = line - 1 | 0) {
+            let change = changes[line - first | 0];
             if (change === 0) continue;
             let start = new CodePosition(line, 0);
             if (add) this.edit(new CodeRange(start), step, false); else this.edit(new CodeRange(start, new CodePosition(line, change)), '', false);
@@ -1413,18 +1413,18 @@ export class CodeEditorController {
 
     static shiftedBy(position: CodePosition, first: number, last: number, changes: number[], add: boolean) {
         if (position.line < first || position.line > last) return position;
-        let change = changes[position.line - first];
+        let change = changes[position.line - first | 0];
         return new CodePosition(position.line, add ? CodeEditorController.shifted(position.column, 0, 0, change) : CodeEditorController.shifted(position.column, 0, change, 0));
     }
 
     static shifted(column: number, at: number, removed: number, inserted: number) {
-        return column <= at ? column : column < at + removed ? at : column - removed + inserted;
+        return column <= at ? column : column < (at + removed | 0) ? at : (column - removed | 0) + inserted | 0;
     }
 
     stepOff(text: string) {
         if (text.length > 0 && text[0] === '\t') return 1;
         let off = 0;
-        while (off < text.length && off < this.rules.indentWidth && text[off] === ' ') off++;
+        while (off < text.length && off < this.rules.indentWidth && text[off] === ' ') off = off + 1 | 0;
         return off;
     }
 
@@ -1438,7 +1438,7 @@ export class CodeEditorController {
     commentBlock(carets: CodeCaret[], marker: string) {
         let [first, last] = CodeEditorController.blockLines(carets);
         let allCommented = true;
-        for (let line = first; line <= last; line++) {
+        for (let line = first; line <= last; line = line + 1 | 0) {
             let text = $eq.text.trimStart(this._document.line(line));
             if (text.length === 0) continue;
             if (!$eq.text.startsWith(text, marker, 'ordinal')) {
@@ -1449,7 +1449,7 @@ export class CodeEditorController {
         let ats: number[] = [];
         let removals: number[] = [];
         let insertions: number[] = [];
-        for (let line = first; line <= last; line++) {
+        for (let line = first; line <= last; line = line + 1 | 0) {
             let text = this._document.line(line);
             if (allCommented) {
                 let at = $eq.text.indexOf(text, marker, 'ordinal');
@@ -1459,24 +1459,24 @@ export class CodeEditorController {
                     $eq.collections.listAdd(insertions, 0);
                     continue;
                 }
-                let after = at + marker.length;
-                if (after < text.length && text[after] === ' ') after++;
+                let after = at + marker.length | 0;
+                if (after < text.length && text[after] === ' ') after = after + 1 | 0;
                 $eq.collections.listAdd(ats, at);
-                $eq.collections.listAdd(removals, after - at);
+                $eq.collections.listAdd(removals, after - at | 0);
                 $eq.collections.listAdd(insertions, 0);
             } else {
                 $eq.collections.listAdd(ats, text.length === 0 ? 0 : this._document.indentOf(line).length);
                 $eq.collections.listAdd(removals, 0);
-                $eq.collections.listAdd(insertions, marker.length + 1);
+                $eq.collections.listAdd(insertions, marker.length + 1 | 0);
             }
         }
         let changed = false;
-        for (let line = last; line >= first; line--) {
-            let index = line - first;
+        for (let line = last; line >= first; line = line - 1 | 0) {
+            let index = line - first | 0;
             if (removals[index] === 0 && insertions[index] === 0) continue;
             changed = true;
             let at = new CodePosition(line, ats[index]);
-            this.edit(new CodeRange(at, $eq.withPatch(at, { column: ats[index] + removals[index] })), insertions[index] > 0 ? marker + ' ' : '', false);
+            this.edit(new CodeRange(at, $eq.withPatch(at, { column: ats[index] + removals[index] | 0 })), insertions[index] > 0 ? marker + ' ' : '', false);
         }
         if (!changed) return null;
         let left: CodeCaret[] = [];
@@ -1488,7 +1488,7 @@ export class CodeEditorController {
 
     static commented(position: CodePosition, first: number, last: number, ats: number[], removals: number[], insertions: number[]) {
         if (position.line < first || position.line > last) return position;
-        let index = position.line - first;
+        let index = position.line - first | 0;
         return new CodePosition(position.line, CodeEditorController.shifted(position.column, ats[index], removals[index], insertions[index]));
     }
 
@@ -1526,7 +1526,7 @@ export class CodeEditorController {
             case 'page':
                 {
                     if (this._desiredAdvance < 0) this._desiredAdvance = this.advanceOf(from.line, from.column);
-                    let line = this.visibleLineFrom(from.line, forward ? pageLines : -pageLines);
+                    let line = this.visibleLineFrom(from.line, forward ? pageLines : -pageLines | 0);
                     return new CodePosition(line, this.columnAtAdvance(line, this._desiredAdvance));
                 }
             case 'lineBoundary':
@@ -1539,16 +1539,16 @@ export class CodeEditorController {
     }
 
     visibleLineFrom(line: number, steps: number) {
-        let last = this._document.lineCount - 1;
+        let last = this._document.lineCount - 1 | 0;
         let rows: any; 
-        if (!((rows = this.grid.rows) != null)) return Math.min(Math.max(line + steps, 0), last);
+        if (!((rows = this.grid.rows) != null)) return Math.min(Math.max(line + steps | 0, 0), last);
         let direction = steps < 0 ? -1 : 1;
         let here = line;
         let left = Math.abs(steps);
-        for (let next = line + direction; left > 0 && next >= 0 && next <= last; next += direction) {
+        for (let next = line + direction | 0; left > 0 && next >= 0 && next <= last; next = next + direction | 0) {
             if (!rows.isVisible(next)) continue;
             here = next;
-            left--;
+            left = left - 1 | 0;
         }
         return here;
     }
@@ -1583,12 +1583,12 @@ export class CodeEditorController {
         let word = this._document.wordAt(at);
         if (word.isEmpty) return word;
         let cells = this.cellsOf(word.start.line);
-        return new CodeRange($eq.withPatch(word.start, { column: cells.elementAt(cells.indexOf(word.start.column)).start }), $eq.withPatch(word.end, { column: cells.next(word.end.column - 1) }));
+        return new CodeRange($eq.withPatch(word.start, { column: cells.elementAt(cells.indexOf(word.start.column)).start }), $eq.withPatch(word.end, { column: cells.next(word.end.column - 1 | 0) }));
     }
 
     selectLine(line: number) {
-        let last = Math.min(Math.max(line, 0), this._document.lineCount - 1);
-        this.selection = new CodeRange(new CodePosition(last, 0), last + 1 < this._document.lineCount ? new CodePosition(last + 1, 0) : new CodePosition(last, this._document.line(last).length));
+        let last = Math.min(Math.max(line, 0), this._document.lineCount - 1 | 0);
+        this.selection = new CodeRange(new CodePosition(last, 0), (last + 1 | 0) < this._document.lineCount ? new CodePosition(last + 1 | 0, 0) : new CodePosition(last, this._document.line(last).length));
     }
 
     copyText() {
@@ -1649,7 +1649,7 @@ export class CodeEditorController {
             let caret = this.caret;
             let lineStart = new CodePosition(caret.line, 0);
             if (!this.apply(new CodeRange(lineStart), normalized)) return false;
-            this.selection = new CodeRange(new CodePosition(caret.line + 1, caret.column));
+            this.selection = new CodeRange(new CodePosition(caret.line + 1 | 0, caret.column));
             return true;
         }
         return this.insert(text);
@@ -1672,7 +1672,7 @@ export class CodeEditorController {
         let whole: any; 
         if (!(pieces == null) && (whole = this._wholeLineCopy) != null && normalized === whole) {
             let piece: any = $eq.collections.dictionary(null, true);
-            for (let i = 0; i < carets.length; i++) $eq.mapSet(piece, carets[i].selection, pieces[i]);
+            for (let i = 0; i < carets.length; i = i + 1 | 0) $eq.mapSet(piece, carets[i].selection, pieces[i]);
             return this.atEveryBlock(CodeEditorController.selectedLinesOf, false, (block) => {
                 let first = CodeEditorController.blockLines(block)[0];
                 let text = $eq.text.stringBuilder();
@@ -1710,7 +1710,7 @@ export class CodeEditorController {
 
     aroundCaret(caret: CodePosition, before: number, after: number) {
         let line = this._document.line(caret.line);
-        return new CodeRange($eq.withPatch(caret, { column: Math.max(0, caret.column - before) }), $eq.withPatch(caret, { column: Math.min(line.length, caret.column + after) }));
+        return new CodeRange($eq.withPatch(caret, { column: Math.max(0, caret.column - before | 0) }), $eq.withPatch(caret, { column: Math.min(line.length, caret.column + after | 0) }));
     }
 
     insertCopies(snippet: CodeSnippet, at: (value: CodeRange) => CodeRange) {
@@ -1752,7 +1752,7 @@ export class CodeEditorController {
 
     static stopsOf(copies: CodeSnippetExpansion[], carets: CodeCaret[], primary: number) {
         let byIndex: any = $eq.collections.dictionary();
-        for (let k = 0; k < copies.length; k++) {
+        for (let k = 0; k < copies.length; k = k + 1 | 0) {
             let start = carets[k].selection.start;
             for (const place of $eq.collections.sequenceWalk(copies[k].places)) {
                 let stop: any; 
@@ -1773,7 +1773,7 @@ export class CodeEditorController {
         let final: any; 
         if ((byIndex.has(0) ? ((final = byIndex.get(0)), true) : ((final = null), false))) $eq.collections.listAdd(stops, final); else {
             let end = new CodeSnippetStop(0, true);
-            for (let k = 0; k < copies.length; k++) end.add(new CodeRange(CodeSnippetPlace.at(carets[k].selection.start, copies[k].end)), [], k === primary);
+            for (let k = 0; k < copies.length; k = k + 1 | 0) end.add(new CodeRange(CodeSnippetPlace.at(carets[k].selection.start, copies[k].end)), [], k === primary);
             $eq.collections.listAdd(stops, end);
         }
         return stops;
@@ -1781,13 +1781,13 @@ export class CodeEditorController {
 
     placeSelections(ranges: CodeRange[]) {
         $eq.collections.listClear(this._others);
-        for (let i = 1; i < $eq.collections.count(ranges); i++) $eq.collections.listAdd(this._others, new CodeCaret(this.onElementEdges($eq.collections.item(ranges, i)), -1));
+        for (let i = 1; i < $eq.collections.count(ranges); i = i + 1 | 0) $eq.collections.listAdd(this._others, new CodeCaret(this.onElementEdges($eq.collections.item(ranges, i)), -1));
         this.select($eq.collections.item(ranges, 0), false, true);
         this.merge();
     }
 
     snippetVariable(name: string, selection: CodeRange) {
-        return (() => { const $s = name; if ($s === 'TM_SELECTED_TEXT') return this._document.textIn(selection); if ($s === 'TM_CURRENT_LINE') return this._document.line(selection.focus.line); if ($s === 'TM_CURRENT_WORD') return this._document.textIn(this.wordRange(selection.start)); if ($s === 'TM_LINE_INDEX') return $eq.text.format(selection.focus.line, null, undefined, undefined, 'int32'); if ($s === 'TM_LINE_NUMBER') return $eq.text.format((selection.focus.line + 1), null, undefined, undefined, 'int32'); return null; })();
+        return (() => { const $s = name; if ($s === 'TM_SELECTED_TEXT') return this._document.textIn(selection); if ($s === 'TM_CURRENT_LINE') return this._document.line(selection.focus.line); if ($s === 'TM_CURRENT_WORD') return this._document.textIn(this.wordRange(selection.start)); if ($s === 'TM_LINE_INDEX') return $eq.text.format(selection.focus.line, null, undefined, undefined, 'int32'); if ($s === 'TM_LINE_NUMBER') return $eq.text.format((selection.focus.line + 1 | 0), null, undefined, undefined, 'int32'); return null; })();
     }
 
     replaceEvery(ranges: CodeRange[], text: string) {
@@ -1827,7 +1827,7 @@ export class CodeEditorController {
             let primary = words[at];
             if (primary.selection.isEmpty) return false;
             $eq.collections.listClear(this._others);
-            for (let i = 0; i < words.length; i++) if (i !== at) $eq.collections.listAdd(this._others, words[i]);
+            for (let i = 0; i < words.length; i = i + 1 | 0) if (i !== at) $eq.collections.listAdd(this._others, words[i]);
             this.placed(primary);
             this._occurrence = this._document.textIn(primary.selection);
             return true;
@@ -1866,13 +1866,13 @@ export class CodeEditorController {
         let matches = this.occurrences(needle, whole);
         if (matches.length === 0) return false;
         let primary = 0;
-        for (let i = 0; i < matches.length; i++) {
+        for (let i = 0; i < matches.length; i = i + 1 | 0) {
             if (!$eq.equals(matches[i], target)) continue;
             primary = i;
             break;
         }
         $eq.collections.listClear(this._others);
-        for (let i = 0; i < matches.length; i++) if (i !== primary) $eq.collections.listAdd(this._others, new CodeCaret(matches[i], -1));
+        for (let i = 0; i < matches.length; i = i + 1 | 0) if (i !== primary) $eq.collections.listAdd(this._others, new CodeCaret(matches[i], -1));
         this.placed(new CodeCaret(matches[primary], -1));
         this._occurrence = whole ? needle : null;
         return true;
@@ -1888,8 +1888,8 @@ export class CodeEditorController {
         let line = this._document.line(match.start.line);
         let start = match.start.column;
         let end = match.end.column;
-        let cutsStart = start > 0 && start < line.length && CodeDocument.isWordChar(line[start - 1]) && CodeDocument.isWordChar(line[start]);
-        let cutsEnd = end > 0 && end < line.length && CodeDocument.isWordChar(line[end - 1]) && CodeDocument.isWordChar(line[end]);
+        let cutsStart = start > 0 && start < line.length && CodeDocument.isWordChar(line[start - 1 | 0]) && CodeDocument.isWordChar(line[start]);
+        let cutsEnd = end > 0 && end < line.length && CodeDocument.isWordChar(line[end - 1 | 0]) && CodeDocument.isWordChar(line[end]);
         return !cutsStart && !cutsEnd;
     }
 
@@ -1897,7 +1897,7 @@ export class CodeEditorController {
         if (this._others.length === 0) return false;
         $eq.collections.listClear(this._others);
         this.history.break();
-        this._revealVersion++;
+        this._revealVersion = this._revealVersion + 1 | 0;
         this.selectionChanged?.(this._selection);
         return true;
     }
@@ -1907,7 +1907,7 @@ export class CodeEditorController {
         this._desiredAdvance = primary.advance;
         this.merge();
         this.history.break();
-        this._revealVersion++;
+        this._revealVersion = this._revealVersion + 1 | 0;
         this.selectionChanged?.(this._selection);
     }
 
@@ -1915,13 +1915,13 @@ export class CodeEditorController {
         let primary: any; 
         let carets = ($o => (primary = $o.primary, $o.$))(this.caretsInOrder());
         if (carets.length > 1) {
-            for (let i = 0; i < carets.length; i++) {
+            for (let i = 0; i < carets.length; i = i + 1 | 0) {
                 let selection = carets[i].selection;
                 if (CodePosition.opLessThan(at, selection.start) || CodePosition.opLessThan(selection.end, at)) continue;
                 $eq.collections.listRemoveAt(carets, i);
-                let next = i === primary ? i > 0 ? i - 1 : 0 : primary > i ? primary - 1 : primary;
+                let next = i === primary ? i > 0 ? i - 1 | 0 : 0 : primary > i ? primary - 1 | 0 : primary;
                 $eq.collections.listClear(this._others);
-                for (let k = 0; k < carets.length; k++) if (k !== next) $eq.collections.listAdd(this._others, carets[k]);
+                for (let k = 0; k < carets.length; k = k + 1 | 0) if (k !== next) $eq.collections.listAdd(this._others, carets[k]);
                 this.placed(carets[next]);
                 return;
             }
@@ -1940,10 +1940,10 @@ export class CodeEditorController {
         let last = Math.max(anchorLine, line);
         let left = Math.min(anchor, focus);
         let reached = false;
-        for (let at = first; at <= last; at++) { let rows: any; if ((!((rows = this.grid.rows) != null) || rows.isVisible(at)) && this.widthOf(at) >= left) reached = true; }
+        for (let at = first; at <= last; at = at + 1 | 0) { let rows: any; if ((!((rows = this.grid.rows) != null) || rows.isVisible(at)) && this.widthOf(at) >= left) reached = true; }
         let column: CodeCaret[] = [];
         let primary = -1;
-        for (let at = first; at <= last; at++) {
+        for (let at = first; at <= last; at = at + 1 | 0) {
             let rows: any; 
             if ((rows = this.grid.rows) != null && !rows.isVisible(at)) continue;
             if (reached && this.widthOf(at) < left) continue;
@@ -1951,9 +1951,9 @@ export class CodeEditorController {
             $eq.collections.listAdd(column, new CodeCaret(new CodeRange(new CodePosition(at, this.columnAtAdvance(at, anchor)), new CodePosition(at, this.columnAtAdvance(at, focus))), focus));
         }
         if (column.length === 0) return;
-        if (primary < 0) primary = line >= anchorLine ? column.length - 1 : 0;
+        if (primary < 0) primary = line >= anchorLine ? column.length - 1 | 0 : 0;
         $eq.collections.listClear(this._others);
-        for (let i = 0; i < column.length; i++) if (i !== primary) $eq.collections.listAdd(this._others, column[i]);
+        for (let i = 0; i < column.length; i = i + 1 | 0) if (i !== primary) $eq.collections.listAdd(this._others, column[i]);
         this.placed(column[primary]);
     }
 
@@ -1964,7 +1964,7 @@ export class CodeEditorController {
     static selectedLinesOf(range: CodeRange): [number, number] {
         let first = range.start.line;
         let last = range.end.line;
-        if (last > first && range.end.column === 0) last--;
+        if (last > first && range.end.column === 0) last = last - 1 | 0;
         return [first, last];
     }
 
@@ -1974,12 +1974,12 @@ export class CodeEditorController {
 
     linesOf(first: number, last: number) {
         let lines: string[] = [];
-        for (let line = first; line <= last; line++) $eq.collections.listAdd(lines, this._document.line(line));
+        for (let line = first; line <= last; line = line + 1 | 0) $eq.collections.listAdd(lines, this._document.line(line));
         return lines;
     }
 
     selectionMovedBy(lines: number) {
-        return new CodeRange($eq.withPatch(this._selection.anchor, { line: this._selection.anchor.line + lines }), $eq.withPatch(this._selection.focus, { line: this._selection.focus.line + lines }));
+        return new CodeRange($eq.withPatch(this._selection.anchor, { line: this._selection.anchor.line + lines | 0 }), $eq.withPatch(this._selection.focus, { line: this._selection.focus.line + lines | 0 }));
     }
 
     moveLines(direction: $CodeDirectionValue) {
@@ -1991,17 +1991,17 @@ export class CodeEditorController {
 
     moveBlock(carets: CodeCaret[], up: boolean) {
         let [first, last] = CodeEditorController.blockLines(carets);
-        if (up ? first === 0 : carets[carets.length - 1].selection.end.line === this._document.lineCount - 1) return null;
+        if (up ? first === 0 : carets[carets.length - 1].selection.end.line === (this._document.lineCount - 1 | 0)) return null;
         if (up) {
-            let passed = this._document.line(first - 1);
-            let atEnd = last + 1 === this._document.lineCount;
-            let at = atEnd ? new CodePosition(last, this._document.line(last).length) : new CodePosition(last + 1, 0);
+            let passed = this._document.line(first - 1 | 0);
+            let atEnd = (last + 1 | 0) === this._document.lineCount;
+            let at = atEnd ? new CodePosition(last, this._document.line(last).length) : new CodePosition(last + 1 | 0, 0);
             let written = atEnd ? '\n' + passed : passed + '\n';
             this.edit(new CodeRange(at), written, false);
-            this.edit(new CodeRange(new CodePosition(first - 1, 0), new CodePosition(first, 0)), '', false);
+            this.edit(new CodeRange(new CodePosition(first - 1 | 0, 0), new CodePosition(first, 0)), '', false);
         } else {
-            let below = this._document.line(last + 1);
-            let taken = last + 2 === this._document.lineCount ? new CodeRange(new CodePosition(last, this._document.line(last).length), new CodePosition(last + 1, below.length)) : new CodeRange(new CodePosition(last + 1, 0), new CodePosition(last + 2, 0));
+            let below = this._document.line(last + 1 | 0);
+            let taken = (last + 2 | 0) === this._document.lineCount ? new CodeRange(new CodePosition(last, this._document.line(last).length), new CodePosition(last + 1 | 0, below.length)) : new CodeRange(new CodePosition(last + 1 | 0, 0), new CodePosition(last + 2 | 0, 0));
             this.edit(taken, '', false);
             this.edit(new CodeRange(new CodePosition(first, 0)), below + '\n', false);
         }
@@ -2012,7 +2012,7 @@ export class CodeEditorController {
         let moved: CodeCaret[] = [];
         for (const caret of $eq.collections.listWalk(carets)) {
             let selection = caret.selection;
-            $eq.collections.listAdd(moved, $eq.withPatch(caret, { selection: new CodeRange($eq.withPatch(selection.anchor, { line: selection.anchor.line + lines }), $eq.withPatch(selection.focus, { line: selection.focus.line + lines })) }));
+            $eq.collections.listAdd(moved, $eq.withPatch(caret, { selection: new CodeRange($eq.withPatch(selection.anchor, { line: selection.anchor.line + lines | 0 }), $eq.withPatch(selection.focus, { line: selection.focus.line + lines | 0 })) }));
         }
         return moved;
     }
@@ -2029,7 +2029,7 @@ export class CodeEditorController {
                 return carets;
             }
             this.edit(new CodeRange(new CodePosition(last, this._document.line(last).length)), '\n' + block, false);
-            return CodeEditorController.movedBy(carets, last - first + 1);
+            return CodeEditorController.movedBy(carets, (last - first | 0) + 1 | 0);
         });
     }
 
@@ -2040,14 +2040,14 @@ export class CodeEditorController {
             let [first, last] = CodeEditorController.blockLines(carets);
             let column = carets[0].selection.focus.column;
             let left = null;
-            if (last < this._document.lineCount - 1) {
-                let next = this._document.line(last + 1);
-                if (!this.edit(new CodeRange(new CodePosition(first, 0), new CodePosition(last + 1, 0)), '', false)) return null;
+            if (last < (this._document.lineCount - 1 | 0)) {
+                let next = this._document.line(last + 1 | 0);
+                if (!this.edit(new CodeRange(new CodePosition(first, 0), new CodePosition(last + 1 | 0, 0)), '', false)) return null;
                 left = new CodeRange(new CodePosition(first, Math.min(column, next.length)));
             } else if (first > 0) {
-                let before = this._document.line(first - 1);
-                if (!this.edit(new CodeRange(new CodePosition(first - 1, before.length), new CodePosition(last, this._document.line(last).length)), '', false)) return null;
-                left = new CodeRange(new CodePosition(first - 1, Math.min(column, before.length)));
+                let before = this._document.line(first - 1 | 0);
+                if (!this.edit(new CodeRange(new CodePosition(first - 1 | 0, before.length), new CodePosition(last, this._document.line(last).length)), '', false)) return null;
+                left = new CodeRange(new CodePosition(first - 1 | 0, Math.min(column, before.length)));
             } else {
                 if (!this.edit(this.wholeLines(first, last), '', false)) return null;
                 left = new CodeRange(CodePosition.start);
@@ -2066,14 +2066,14 @@ export class CodeEditorController {
     }
 
     static joinedLinesOf(range: CodeRange): [number, number] {
-        return [range.start.line, range.end.line > range.start.line ? range.end.line : range.start.line + 1];
+        return [range.start.line, range.end.line > range.start.line ? range.end.line : range.start.line + 1 | 0];
     }
 
     joinSelected() {
         let [first, last] = this.joinedLines();
         if (last === first) {
-            if (first === this._document.lineCount - 1) return false;
-            last = first + 1;
+            if (first === (this._document.lineCount - 1 | 0)) return false;
+            last = first + 1 | 0;
         }
         let parts = [this._document.line(first)];
         let length = parts[0].length;
@@ -2081,7 +2081,7 @@ export class CodeEditorController {
         let end = -1;
         let cut = -1;
         let appended = false;
-        for (let line = first + 1; line <= last; line++) {
+        for (let line = first + 1 | 0; line <= last; line = line + 1 | 0) {
             let text = this._document.line(line);
             let rest = $eq.text.trimStart(text, [' ', '\t']);
             if (rest.length === 0) {
@@ -2089,30 +2089,30 @@ export class CodeEditorController {
                 continue;
             }
             let space = length > 0;
-            let tail = parts[parts.length - 1];
+            let tail = parts[parts.length - 1 | 0];
             if (space && (($0) => ($0 === ' ' || $0 === '\t'))(tail[tail.length - 1])) {
                 space = false;
                 let kept = $eq.text.trimEnd(tail, [' ', '\t']);
-                $eq.collections.listSet(parts, parts.length - 1, kept);
-                length -= tail.length - kept.length;
+                $eq.collections.listSet(parts, parts.length - 1 | 0, kept);
+                length = length - (tail.length - kept.length | 0) | 0;
                 $eq.collections.listAdd(parts, ' ');
-                length++;
-                if (!appended) cut = length - 1;
+                length = length + 1 | 0;
+                if (!appended) cut = length - 1 | 0;
             }
             if (space) {
                 $eq.collections.listAdd(parts, ' ');
-                length++;
+                length = length + 1 | 0;
             }
             $eq.collections.listAdd(parts, rest);
-            length += rest.length;
+            length = length + rest.length | 0;
             appended = true;
-            met = rest.length + (space ? 1 : 0);
-            if (line === this._selection.end.line) end = length - rest.length + Math.max(0, this._selection.end.column - (text.length - rest.length));
+            met = rest.length + (space ? 1 : 0) | 0;
+            if (line === this._selection.end.line) end = (length - rest.length | 0) + Math.max(0, this._selection.end.column - (text.length - rest.length | 0) | 0) | 0;
         }
         let joined = [...parts].join('');
         let after = null;
         if (this._selection.isEmpty) {
-            after = new CodeRange(new CodePosition(first, joined.length - met));
+            after = new CodeRange(new CodePosition(first, joined.length - met | 0));
         } else if (this._selection.start.line === this._selection.end.line) {
             after = new CodeRange(new CodePosition(first, CodeEditorController.collapsed(this._selection.anchor.column, cut)), new CodePosition(first, CodeEditorController.collapsed(this._selection.focus.column, cut)));
         } else {
@@ -2124,7 +2124,7 @@ export class CodeEditorController {
     }
 
     static collapsed(column: number, cut: number) {
-        return cut >= 0 && column > cut ? Math.min(column, cut + 1) : column;
+        return cut >= 0 && column > cut ? Math.min(column, cut + 1 | 0) : column;
     }
 
     sortLines(descending: boolean) {
@@ -2140,8 +2140,8 @@ export class CodeEditorController {
     }
 
     linesInOrder(first: number, last: number, descending: boolean) {
-        for (let line = first; line < last; line++) {
-            let order = CodeEditorController.compareLines(this._document.line(line), this._document.line(line + 1));
+        for (let line = first; line < last; line = line + 1 | 0) {
+            let order = CodeEditorController.compareLines(this._document.line(line), this._document.line(line + 1 | 0));
             if (descending ? order < 0 : order > 0) return false;
         }
         return true;
@@ -2164,7 +2164,7 @@ export class CodeEditorController {
         if (direction === 'backward') return this.edit(new CodeRange(new CodePosition(line, 0)), indent + '\n', false, new CodeRange(new CodePosition(line, indent.length)));
         let text = this._document.line(line);
         let opened = indent + (this.opensBlock(text) ? this.indentStep : '');
-        return this.edit(new CodeRange(new CodePosition(line, text.length)), '\n' + opened, false, new CodeRange(new CodePosition(line + 1, opened.length)));
+        return this.edit(new CodeRange(new CodePosition(line, text.length)), '\n' + opened, false, new CodeRange(new CodePosition(line + 1 | 0, opened.length)));
     }
 
     undo() {
@@ -2195,17 +2195,17 @@ export class CodeEditorController {
         }
         this._selection = this.onElementEdges($eq.collections.item(selections, 0));
         $eq.collections.listClear(this._others);
-        for (let i = 1; i < $eq.collections.count(selections); i++) $eq.collections.listAdd(this._others, new CodeCaret(this.onElementEdges($eq.collections.item(selections, i)), -1));
+        for (let i = 1; i < $eq.collections.count(selections); i = i + 1 | 0) $eq.collections.listAdd(this._others, new CodeCaret(this.onElementEdges($eq.collections.item(selections, i)), -1));
         this.merge();
-        this._revealVersion++;
+        this._revealVersion = this._revealVersion + 1 | 0;
         this._desiredAdvance = -1;
         this.raise(new CodeChange(this.heard(made, before)));
     }
 
     took(edit: CodeEdit) {
         let line = edit.range.start.line;
-        let linesInserted = edit.insertedRange.end.line - line;
-        let linesRemoved = edit.range.end.line - line;
+        let linesInserted = edit.insertedRange.end.line - line | 0;
+        let linesRemoved = edit.range.end.line - line | 0;
         this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
         this.widthsChanged(line, linesInserted, linesRemoved);
         this.diagnostics.carry(edit);
@@ -2215,13 +2215,13 @@ export class CodeEditorController {
         let matches: CodeRange[] = [];
         if (needle.length === 0) return matches;
         let pin = matchCase ? needle : $eq.text.toLower(needle, true);
-        for (let line = 0; line < this._document.lineCount; line++) {
+        for (let line = 0; line < this._document.lineCount; line = line + 1 | 0) {
             let raw = this._document.line(line);
             let text = matchCase ? raw : $eq.text.toLower(raw, true);
             let at = $eq.text.indexOf(text, pin, 'ordinal');
             while (at >= 0) {
-                $eq.collections.listAdd(matches, new CodeRange(new CodePosition(line, at), new CodePosition(line, at + needle.length)));
-                at = at + pin.length <= text.length ? $eq.text.indexOf(text, pin, at + pin.length, 'ordinal') : -1;
+                $eq.collections.listAdd(matches, new CodeRange(new CodePosition(line, at), new CodePosition(line, at + needle.length | 0)));
+                at = (at + pin.length | 0) <= text.length ? $eq.text.indexOf(text, pin, at + pin.length | 0, 'ordinal') : -1;
             }
         }
         return matches;
@@ -2237,14 +2237,14 @@ export class CodeEditorController {
         let high = $eq.collections.count(matches);
         if (backward) {
             while (low < high) {
-                let middle = Math.trunc((low + high) / 2);
-                if (CodePosition.opLessOrEqual($eq.collections.item(matches, middle).end, this._selection.start)) low = middle + 1; else high = middle;
+                let middle = Math.trunc((low + high | 0) / 2);
+                if (CodePosition.opLessOrEqual($eq.collections.item(matches, middle).end, this._selection.start)) low = middle + 1 | 0; else high = middle;
             }
-            return low > 0 ? $eq.collections.item(matches, low - 1) : $eq.collections.item(matches, $eq.collections.count(matches) - 1);
+            return low > 0 ? $eq.collections.item(matches, low - 1 | 0) : $eq.collections.item(matches, $eq.collections.count(matches) - 1 | 0);
         }
         while (low < high) {
-            let middle = Math.trunc((low + high) / 2);
-            if (CodePosition.opLessThan($eq.collections.item(matches, middle).start, this._selection.end)) low = middle + 1; else high = middle;
+            let middle = Math.trunc((low + high | 0) / 2);
+            if (CodePosition.opLessThan($eq.collections.item(matches, middle).start, this._selection.end)) low = middle + 1 | 0; else high = middle;
         }
         return low < $eq.collections.count(matches) ? $eq.collections.item(matches, low) : $eq.collections.item(matches, 0);
     }
@@ -2252,7 +2252,7 @@ export class CodeEditorController {
     bracketAtCaret(): [CodePosition, CodePosition] | null {
         let caret = this.caret;
         if (caret.column > 0) {
-            let behind = $eq.withPatch(caret, { column: caret.column - 1 });
+            let behind = $eq.withPatch(caret, { column: caret.column - 1 | 0 });
             let match: any; 
             if ((match = this.matchingBracket(behind)) != null) return [behind, match];
         }
@@ -2281,16 +2281,16 @@ export class CodeEditorController {
             while (forward ? column < text.length : column >= 0) {
                 if (column < text.length) {
                     let c = text[column];
-                    if (c === same) depth++; else if (c === other) {
-                        depth--;
+                    if (c === same) depth = depth + 1 | 0; else if (c === other) {
+                        depth = depth - 1 | 0;
                         if (depth === 0) return new CodePosition(line, column);
                     }
                 }
-                column += forward ? 1 : -1;
+                column = column + (forward ? 1 : -1) | 0;
             }
-            line += forward ? 1 : -1;
+            line = line + (forward ? 1 : -1) | 0;
             if (line < 0 || line >= this._document.lineCount) return null;
-            column = forward ? 0 : this._document.line(line).length - 1;
+            column = forward ? 0 : this._document.line(line).length - 1 | 0;
         }
     }
 

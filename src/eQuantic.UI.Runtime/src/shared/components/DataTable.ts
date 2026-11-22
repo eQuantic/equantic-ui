@@ -57,7 +57,7 @@ export class DataTable extends StatefulComponent {
             return table;
         }
         for (const row of $eq.collections.sequenceWalk(this._config.rows)) table.add(this.body(theme, tracks, order, row));
-        for (let i = 0; i < this._config.pendingRows; i++) table.add(this.pending(theme, tracks, order, i));
+        for (let i = 0; i < this._config.pendingRows; i = i + 1 | 0) table.add(this.pending(theme, tracks, order, i));
         return table;
     }
 
@@ -74,17 +74,17 @@ export class DataTable extends StatefulComponent {
                 if (position >= 0 && position < $eq.collections.count(this._config.columns) && !order.includes(position)) $eq.collections.listAdd(order, position);
             }
         }
-        for (let i = 0; i < $eq.collections.count(this._config.columns); i++) {
+        for (let i = 0; i < $eq.collections.count(this._config.columns); i = i + 1 | 0) {
             if (!order.includes(i)) $eq.collections.listAdd(order, i);
         }
         return order;
     }
 
     tracks(slot: any, order: number[]) {
-        let tracks = new Array(order.length + (this.selectable ? 1 : 0)).fill(undefined);
+        let tracks = new Array(order.length + (this.selectable ? 1 : 0) | 0).fill(undefined);
         let offset = 0;
-        if (this.selectable) tracks[offset++] = GridTrack.fixed(slot?.selectionColumnWidth ?? 44);
-        for (let i = 0; i < order.length; i++) tracks[offset + i] = $eq.collections.item(this._config.columns, order[i]).track;
+        if (this.selectable) tracks[(($old) => (offset = $old + 1 | 0, $old))(offset)] = GridTrack.fixed(slot?.selectionColumnWidth ?? 44);
+        for (let i = 0; i < order.length; i = i + 1 | 0) tracks[offset + i | 0] = $eq.collections.item(this._config.columns, order[i]).track;
         return tracks;
     }
 
@@ -96,11 +96,11 @@ export class DataTable extends StatefulComponent {
             grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(anySelected, this._config.onToggleAll, null, { indeterminate: anySelected && $eq.collections.count(this._config.selection) < $eq.collections.count(this._config.rows) })), 'center', slot));
         }
         let others = this._carried >= 0 ? DataTable.without(order, this._carried) : order;
-        for (let i = 0; i < order.length; i++) {
+        for (let i = 0; i < order.length; i = i + 1 | 0) {
             let index = order[i];
             let heading = this.heading(theme, slot, index);
             let lineAtStart = this._landing >= 0 && this._landing < others.length && others[this._landing] === index;
-            let lineAtEnd = this._landing >= 0 && this._landing === others.length && others.length > 0 && others[others.length - 1] === index;
+            let lineAtEnd = this._landing >= 0 && this._landing === others.length && others.length > 0 && others[others.length - 1 | 0] === index;
             let resizes = this.resizes($eq.collections.item(this._config.columns, index));
             if (!lineAtStart && !lineAtEnd && !resizes) {
                 grid.add(heading);
@@ -159,7 +159,7 @@ export class DataTable extends StatefulComponent {
     }
 
     columnOf(id: string) {
-        for (let i = 0; i < $eq.collections.count(this._config.columns); i++) {
+        for (let i = 0; i < $eq.collections.count(this._config.columns); i = i + 1 | 0) {
             if (DataTable.columnId(i) === id) return i;
         }
         return -1;
@@ -181,7 +181,7 @@ export class DataTable extends StatefulComponent {
 
     static sameOrder(a: number[], b: number[]) {
         if (a.length !== b.length) return false;
-        for (let i = 0; i < a.length; i++) {
+        for (let i = 0; i < a.length; i = i + 1 | 0) {
             if (a[i] !== b[i]) return false;
         }
         return true;
@@ -192,7 +192,7 @@ export class DataTable extends StatefulComponent {
         let landing = -1;
         if (!(drop == null) && carried >= 0) {
             let order = this.drawnOrder();
-            if (!DataTable.sameOrder(DataTable.reordered(order, carried, drop.index), order)) landing = Math.min(order.length - 1, Math.max(0, drop.index));
+            if (!DataTable.sameOrder(DataTable.reordered(order, carried, drop.index), order)) landing = Math.min(order.length - 1 | 0, Math.max(0, drop.index));
         }
         if (carried === this._carried && landing === this._landing) return;
         this.setState(() => {
@@ -230,7 +230,7 @@ export class DataTable extends StatefulComponent {
         let slot = theme.table;
         let grid = new Grid(tracks, 0, null, { width: SizeValue.fill });
         if (this.selectable) grid.add(DataTable.cell(new Box(new BoxStyle(), new Skeleton('block', 16, 16)), 'center', slot));
-        for (let i = 0; i < order.length; i++) {
+        for (let i = 0; i < order.length; i = i + 1 | 0) {
             grid.add(DataTable.cell(new Box(new BoxStyle(), new Skeleton('line', i % 2 === 0 ? 96 : 64)), $eq.collections.item(this._config.columns, order[i]).align, slot));
         }
         return new Box(new BoxStyle({ width: SizeValue.fill, minHeight: slot?.dataRowHeight ?? 52, borderWidth: slot?.borderWidth ?? 1, borderColor: slot?.borderColor ?? theme.border }), grid, { key: `pending-${$eq.text.format(index, null, undefined, undefined, 'int32')}` });

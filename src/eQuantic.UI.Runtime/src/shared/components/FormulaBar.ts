@@ -72,7 +72,7 @@ export class FormulaBar extends StatefulComponent {
 
     static lines(document: CodeDocument) {
         let lines: string[] = ($eq.collections.listCapacity(document.lineCount), []);
-        for (let line = 0; line < document.lineCount; line++) $eq.collections.listAdd(lines, document.line(line));
+        for (let line = 0; line < document.lineCount; line = line + 1 | 0) $eq.collections.listAdd(lines, document.line(line));
         return lines;
     }
 

@@ -140,7 +140,7 @@ export class CodeGoTo {
 
     select(index: number) {
         if (!this._open || this._entries.length === 0) return false;
-        let next = Math.min(Math.max(index, 0), this._entries.length - 1);
+        let next = Math.min(Math.max(index, 0), this._entries.length - 1 | 0);
         if (next === this._selected) return false;
         this._selected = next;
         this.previewed();
@@ -149,19 +149,19 @@ export class CodeGoTo {
     }
 
     selectNext() {
-        return this._entries.length > 1 && this.select($eq.num.intRem(this._selected + 1, this._entries.length));
+        return this._entries.length > 1 && this.select($eq.num.intRem(this._selected + 1 | 0, this._entries.length));
     }
 
     selectPrevious() {
-        return this._entries.length > 1 && this.select($eq.num.intRem(this._selected - 1 + this._entries.length, this._entries.length));
+        return this._entries.length > 1 && this.select($eq.num.intRem((this._selected - 1 | 0) + this._entries.length | 0, this._entries.length));
     }
 
     selectNextPage() {
-        return this.select(this._selected + Math.max(1, this.pageSize));
+        return this.select(this._selected + Math.max(1, this.pageSize) | 0);
     }
 
     selectPreviousPage() {
-        return this.select(this._selected - Math.max(1, this.pageSize));
+        return this.select(this._selected - Math.max(1, this.pageSize) | 0);
     }
 
     accept() {
@@ -223,7 +223,7 @@ export class CodeGoTo {
                 this.selectPreviousPage();
                 return true;
             case 'Backspace':
-                if (this._query.length > 0) this.query = $eq.text.substring(this._query, 0, this._query.length - 1);
+                if (this._query.length > 0) this.query = $eq.text.substring(this._query, 0, this._query.length - 1 | 0);
                 return true;
             default:
                 return false;
@@ -271,7 +271,7 @@ export class CodeGoTo {
     }
 
     stopSymbols() {
-        this._generation++;
+        this._generation = this._generation + 1 | 0;
         ProviderRequest.cancel(this._request, null);
         this._request = null;
         this._asking = false;
@@ -314,27 +314,27 @@ export class CodeGoTo {
         let text = $eq.text.substring($eq.text.trim(this._query), 1);
         let parts: string[] = [];
         let start = 0;
-        for (let i = 0; i < text.length; i++) {
+        for (let i = 0; i < text.length; i = i + 1 | 0) {
             if (text[i] !== ',' && text[i] !== ':' && text[i] !== '#') continue;
-            $eq.collections.listAdd(parts, $eq.text.substring(text, start, i - start));
-            start = i + 1;
+            $eq.collections.listAdd(parts, $eq.text.substring(text, start, i - start | 0));
+            start = i + 1 | 0;
         }
         $eq.collections.listAdd(parts, $eq.text.substring(text, start));
         let typed: any; 
         if (!((typed = CodeGoTo.parseInt($eq.text.trim(parts[0]))) != null)) return;
         let count = this._editor.document.lineCount;
-        let line = $eq.num.saturate(Math.min(Math.max(1, typed >= 0 ? typed : count + 1 + typed), count));
-        let cells = this._editor.cellsOf(line - 1);
-        let columns = cells.width + 1;
+        let line = $eq.num.saturate(Math.min(Math.max(1, typed >= 0 ? typed : (count + 1 | 0) + typed), count));
+        let cells = this._editor.cellsOf(line - 1 | 0);
+        let columns = cells.width + 1 | 0;
         let column: any; 
         if (parts.length < 2 || !((column = CodeGoTo.parseInt($eq.text.trim(parts[1]))) != null)) {
             this._line = new CodeGoToLine(line, null, parts.length >= 2, columns);
-            this._lineTarget = new CodePosition(line - 1, 0);
+            this._lineTarget = new CodePosition(line - 1 | 0, 0);
             return;
         }
         let visible = $eq.num.saturate(Math.min(Math.max(1, column >= 0 ? column : columns + column), columns));
         this._line = new CodeGoToLine(line, visible, true, columns);
-        this._lineTarget = new CodePosition(line - 1, cells.columnAt(Math.fround(visible - 1)));
+        this._lineTarget = new CodePosition(line - 1 | 0, cells.columnAt(Math.fround(visible - 1 | 0)));
     }
 
     static parseInt(text: string) {
@@ -342,20 +342,20 @@ export class CodeGoTo {
         let negative = false;
         if (i < text.length && (text[i] === '+' || text[i] === '-')) {
             negative = text[i] === '-';
-            i++;
+            i = i + 1 | 0;
         }
         let first = i;
         let value = 0;
         while (i < text.length && text[i] >= '0' && text[i] <= '9') {
-            value = value * 10 + (text[i].charCodeAt(0) - 48);
-            i++;
+            value = value * 10 + (text[i].charCodeAt(0) - 48 | 0);
+            i = i + 1 | 0;
         }
         if (i === first) return null;
         return negative ? -value : value;
     }
 
     ask() {
-        let generation = ++this._generation;
+        let generation = this._generation = this._generation + 1 | 0;
         ProviderRequest.cancel(this._request, null);
         $eq.collections.listClear(this._symbols);
         $eq.collections.listClear(this._containers);
@@ -389,7 +389,7 @@ export class CodeGoTo {
         let containers: (string | null)[] = [];
         CodeGoTo.walk(answer, null, symbols, containers);
         let order: number[] = [];
-        for (let i = 0; i < symbols.length; i++) $eq.collections.listAdd(order, i);
+        for (let i = 0; i < symbols.length; i = i + 1 | 0) $eq.collections.listAdd(order, i);
         $eq.collections.listSortBy(order, (a: number, b: number) => {
             let start = symbols[a].range.start.compareTo(symbols[b].range.start);
             if (start !== 0) return start;
@@ -419,7 +419,7 @@ export class CodeGoTo {
         for (const word of $eq.text.split(query, ' ')) if (word.length > 0) $eq.collections.listAdd(words, word);
         let found: CodeGoToEntry[] = [];
         let scores: number[] = [];
-        for (let index = 0; index < this._symbols.length; index++) {
+        for (let index = 0; index < this._symbols.length; index = index + 1 | 0) {
             let symbol = this._symbols[index];
             let name = $eq.text.trim(symbol.name);
             let container = this._containers[index];
@@ -440,10 +440,10 @@ export class CodeGoTo {
                         if (container == null) continue;
                         let held: number[] = [];
                         let all = true;
-                        for (let w = 1; w < words.length && all; w++) {
+                        for (let w = 1; w < words.length && all; w = w + 1 | 0) {
                             let part: any; 
                             if ((part = CodeFuzzyMatch.of(words[w], container, true)) != null) {
-                                score += part.score;
+                                score = score + part.score | 0;
                                 for (const at of $eq.collections.sequenceWalk(part.positions)) if (!held.includes(at)) $eq.collections.listAdd(held, at);
                             } else all = false;
                         }
@@ -458,14 +458,14 @@ export class CodeGoTo {
             $eq.collections.listAdd(scores, score);
         }
         let order: number[] = [];
-        for (let i = 0; i < found.length; i++) $eq.collections.listAdd(order, i);
+        for (let i = 0; i < found.length; i = i + 1 | 0) $eq.collections.listAdd(order, i);
         if (words.length > 0) $eq.collections.listSortBy(order, (a: number, b: number) => scores[a] !== scores[b] ? Math.sign(scores[b] - scores[a]) : Math.sign(a - b), 'System.Comparison`1[System.Int32]');
         for (const i of $eq.collections.listWalk(order)) $eq.collections.listAdd(this._entries, found[i]);
         if (this._entries.length === 0) return;
         this._selected = 0;
         if (!this._enclose || words.length > 0) return;
         let caret = this._editor.selection.focus;
-        for (let i = this._entries.length - 1; i >= 0; i--) {
+        for (let i = this._entries.length - 1 | 0; i >= 0; i = i - 1 | 0) {
             let range = this._entries[i].range;
             if (range.start.compareTo(caret) <= 0 && caret.compareTo(range.end) <= 0) {
                 this._selected = i;
@@ -517,7 +517,7 @@ export class CodeGoTo {
         }
         if (this._places.length === 0) return false;
         let count = this._places.length;
-        this._placeAt = this._placeAt < 0 ? step > 0 ? 0 : count - 1 : $eq.num.intRem($eq.num.intRem(this._placeAt + step, count) + count, count);
+        this._placeAt = this._placeAt < 0 ? step > 0 ? 0 : count - 1 | 0 : $eq.num.intRem($eq.num.intRem(this._placeAt + step | 0, count) + count | 0, count);
         this.goToPlace(this._places[this._placeAt], null);
         this.changed?.();
         return true;
@@ -555,7 +555,7 @@ export class CodeGoTo {
     answered(mode: $CodeGoToModeValue, kind: $CodeDefinitionKindValue, at: CodePosition, muted: boolean, places: CodeLocation[]) {
         if ($eq.collections.count(places) === 0) {
             if (muted) return;
-            let word = this._editor.definitions.wordUnder(at) ?? (at.column > 0 ? this._editor.definitions.wordUnder($eq.withPatch(at, { column: at.column - 1 })) : null);
+            let word = this._editor.definitions.wordUnder(at) ?? (at.column > 0 ? this._editor.definitions.wordUnder($eq.withPatch(at, { column: at.column - 1 | 0 })) : null);
             let found: any; 
             this._notFound = new CodeGoToNotFound(mode, kind, at, (found = word) != null ? this._editor.document.textIn(found) : '');
             this.changed?.();
@@ -593,10 +593,10 @@ export class CodeGoTo {
     nearest(at: CodePosition) {
         let best = -1;
         let distance = 0;
-        for (let i = 0; i < this._places.length; i++) {
+        for (let i = 0; i < this._places.length; i = i + 1 | 0) {
             if (!(this._places[i].document == null)) continue;
             let start = this._places[i].range.start;
-            let away = Math.abs(start.line - at.line) * 100 + Math.abs(start.column - at.column);
+            let away = Math.imul(Math.abs(start.line - at.line | 0), 100) + Math.abs(start.column - at.column | 0) | 0;
             if (best >= 0 && away >= distance) continue;
             best = i;
             distance = away;
@@ -607,7 +607,7 @@ export class CodeGoTo {
     filterPlaces() {
         let query = $eq.text.trim(this._query);
         let document = this._editor.document;
-        for (let i = 0; i < this._places.length; i++) {
+        for (let i = 0; i < this._places.length; i = i + 1 | 0) {
             let entry = CodeGoTo.placeEntry(this._places[i], document);
             if (query.length > 0) {
                 let match: any; 
@@ -631,7 +631,7 @@ export class CodeGoTo {
 
     static placeEntry(place: CodeLocation, document: CodeDocument) {
         let start = place.range.start;
-        let where = $eq.text.format(start.line + 1, null, undefined, undefined, 'int32') + ':' + $eq.text.format(start.column + 1, null, undefined, undefined, 'int32');
+        let where = $eq.text.format(start.line + 1 | 0, null, undefined, undefined, 'int32') + ':' + $eq.text.format(start.column + 1 | 0, null, undefined, undefined, 'int32');
         let other: any; 
         if ((other = place.document) != null) {
             let $n12: CodeGoToEntry; 
@@ -640,19 +640,19 @@ export class CodeGoTo {
         let at = document.clamp(start);
         let text = document.line(at.line);
         let lead = 0;
-        while (lead < text.length && $eq.text.isWhiteSpace(text[lead])) lead++;
+        while (lead < text.length && $eq.text.isWhiteSpace(text[lead])) lead = lead + 1 | 0;
         let name = $eq.text.trimEnd($eq.text.substring(text, lead));
         let end = place.range.end;
-        let to = (end.line === at.line ? end.column : text.length) - lead;
+        let to = (end.line === at.line ? end.column : text.length) - lead | 0;
         let marked: number[] = [];
-        for (let column = Math.max(at.column, lead) - lead; column < to && column < name.length; column++) $eq.collections.listAdd(marked, column);
+        for (let column = Math.max(at.column, lead) - lead | 0; column < to && column < name.length; column = column + 1 | 0) $eq.collections.listAdd(marked, column);
         let $n13: CodeGoToEntry; 
         return ($n13 = new CodeGoToEntry(name, null, place.range, start), $n13.container = where, $n13.matches = marked, $n13);
     }
 
     static nameOf(document: string) {
         let cut = Math.max(document.lastIndexOf('/'), document.lastIndexOf('\\'));
-        return cut >= 0 && cut < document.length - 1 ? $eq.text.substring(document, cut + 1) : document;
+        return cut >= 0 && cut < (document.length - 1 | 0) ? $eq.text.substring(document, cut + 1 | 0) : document;
     }
 
     goToPlace(place: CodeLocation, giveBack: Rect | null) {
@@ -672,7 +672,7 @@ export class CodeGoTo {
         this.stopAsking();
         this.unsay();
         if (this._places.length === 0) return;
-        for (const edit of $eq.collections.sequenceWalk(change.edits)) for (let i = 0; i < this._places.length; i++) if (this._places[i].document == null) $eq.collections.listSet(this._places, i, $eq.withPatch(this._places[i], { range: edit.carry(this._places[i].range) }));
+        for (const edit of $eq.collections.sequenceWalk(change.edits)) for (let i = 0; i < this._places.length; i = i + 1 | 0) if (this._places[i].document == null) $eq.collections.listSet(this._places, i, $eq.withPatch(this._places[i], { range: edit.carry(this._places[i].range) }));
         if (!this._open || !CodeGoTo.lists(this._mode)) return;
         this._keepPlace = this._selected >= 0 ? this._entryPlaces[this._selected] : -1;
         this.refresh();
@@ -685,7 +685,7 @@ export class CodeGoTo {
     }
 
     stopAsking() {
-        this._placesGeneration++;
+        this._placesGeneration = this._placesGeneration + 1 | 0;
         ProviderRequest.cancel(this._placesRequest, null);
         this._placesRequest = null;
     }

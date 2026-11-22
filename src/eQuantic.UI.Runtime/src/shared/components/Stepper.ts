@@ -35,14 +35,14 @@ export class Stepper extends StatelessComponent {
         let ladder = (slot?.controls ?? null);
         let height = ControlMetrics.height(context, this.size, ladder);
         let iconSize = slot?.iconSize ?? 20;
-        let canDecrement = !this.disabled && this.value - this.step >= this.min;
-        let canIncrement = !this.disabled && this.value + this.step <= this.max;
+        let canDecrement = !this.disabled && (this.value - this.step | 0) >= this.min;
+        let canIncrement = !this.disabled && (this.value + this.step | 0) <= this.max;
         let row = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
-        row.add(Stepper.arm(theme, 'minus', height, iconSize, canDecrement, () => this.onChanged?.(this.value - this.step), this.action('Decrease')));
+        row.add(Stepper.arm(theme, 'minus', height, iconSize, canDecrement, () => this.onChanged?.(this.value - this.step | 0), this.action('Decrease')));
         let reading = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, main: 'center', cross: 'center' });
         reading.add(new Text(`${$eq.text.format(this.value, null, undefined, undefined, 'int32')}${this.suffix}`, 'label', this.disabled ? theme.textMuted : theme.textPrimary, 1, 'start', false, false, null, 0, { align: 'center', tabular: true, styleOverride: theme.type('label').withSize(ControlMetrics.labelSize(context, this.size, ladder)) }));
         row.add(new Box(new BoxStyle({ minWidth: height, height: SizeValue.fill }), reading));
-        row.add(Stepper.arm(theme, 'plus', height, iconSize, canIncrement, () => this.onChanged?.(this.value + this.step), this.action('Increase')));
+        row.add(Stepper.arm(theme, 'plus', height, iconSize, canIncrement, () => this.onChanged?.(this.value + this.step | 0), this.action('Increase')));
         return new Box(new BoxStyle({ width: SizeValue.hug, height: height, background: this.disabled ? theme.surfaceSubtle : theme.surface, cornerRadius: new CornerRadii(ControlMetrics.radius(context, this.size, ladder)), borderWidth: slot?.borderWidth ?? 1, borderColor: slot?.borderColor ?? theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : 1 }), row);
     }
 

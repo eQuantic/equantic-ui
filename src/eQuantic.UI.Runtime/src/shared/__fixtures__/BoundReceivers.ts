@@ -23,14 +23,14 @@ export class BoundReceivers extends StatelessComponent {
         let groups = $eq.linq.seq((($0, $1) => $eq.query.defer(($src) => $src.reduce(($groups: any[], $item) => { const $key = ($1)($item); let $g = $groups.find(($x) => $x.key === $key); if (!$g) { $g = []; $g.key = $key; $groups.push($g); } $g.push($item); return $groups; }, []), $0))(this.items(), BoundReceivers.twice)).length;
         let lookup = (($0, $1) => $0.reduce(($groups: any[], $item) => { const $key = ($1)($item); let $g = $groups.find(($x) => $x.key === $key); if (!$g) { $g = []; $g.key = $key; $groups.push($g); } $g.push($item); return $groups; }, []))(this.pairs(), BoundReceivers.keyOf);
         let named = this.pairs().reduce(($groups: any[], $item) => { const $key = ((pair) => pair[0])($item); let $g = $groups.find(($x) => $x.key === $key); if (!$g) { $g = []; $g.key = $key; $groups.push($g); } $g.push(((pair) => pair[1])($item)); return $groups; }, []);
-        let found = $eq.linq.seq((lookup.find(($g) => $g.key === 1) ?? [])).length + $eq.linq.seq((named.find(($g) => $g.key === 2) ?? [])).length;
-        let zipped = $eq.linq.seq((($0, $1) => $eq.query.defer(($src) => $eq.linq.zipTuples($src, $1, undefined), $0, 'first'))(this.items(), this.items())).reduce(($sum, pair) => $sum + pair[0] * pair[1], 0);
+        let found = $eq.linq.seq((lookup.find(($g) => $g.key === 1) ?? [])).length + $eq.linq.seq((named.find(($g) => $g.key === 2) ?? [])).length | 0;
+        let zipped = $eq.linq.seq((($0, $1) => $eq.query.defer(($src) => $eq.linq.zipTuples($src, $1, undefined), $0, 'first'))(this.items(), this.items())).reduce(($sum, pair) => $sum + Math.imul(pair[0], pair[1]), 0);
         let triples = $eq.linq.seq((($0, $1, $2) => $eq.query.defer(($src) => $eq.linq.zipTuples($src, $1, $2), $0, 'first'))(this.items(), this.items(), this.pairs())).reduce(($sum, triple) => $sum + triple[2][0], 0);
         let same = $eq.linq.sequenceEqual(this.items(), this.items());
-        let ticks = $eq.linq.seq($eq.query.select(this._ticks, (tick: bigint) => tick * 2n)).reduce(($a, $b) => $a + $b, 0n);
+        let ticks = $eq.linq.seq($eq.query.select(this._ticks, (tick: bigint) => BigInt.asIntN(64, tick * 2n))).reduce(($a, $b) => $a + $b, 0n);
         let price = $eq.linq.average(this._prices, (each: Decimal) => each, 'decimal', false);
-        let fallback = $eq.linq.firstOrDefault(this.items(), undefined, 9) + $eq.linq.lastOrDefault(this.items(), (item: number) => item > 1, 9) + $eq.linq.singleOrDefault(this.items(), (item: number) => item > 2, 9);
-        let discarded = ((void (-1), true)) && ((void (!this._seen), true)) && ((void (this._level + 1), true)) && ((void this.items().length, true));
+        let fallback = ($eq.linq.firstOrDefault(this.items(), undefined, 9) + $eq.linq.lastOrDefault(this.items(), (item: number) => item > 1, 9) | 0) + $eq.linq.singleOrDefault(this.items(), (item: number) => item > 2, 9) | 0;
+        let discarded = ((void (-1), true)) && ((void (!this._seen), true)) && ((void (this._level + 1 | 0), true)) && ((void this.items().length, true));
         return new Text(`${$eq.text.format(average, null)} ${$eq.text.format(doubled, null)} ${$eq.text.format(sum, null, undefined, undefined, 'int32')} ${$eq.text.format(total, null, undefined, undefined, 'int32')} ${first} ${$eq.text.format(distinct, null, undefined, undefined, 'int32')} ${$eq.text.format(this._seen, null)} ${$eq.text.format(count, null, undefined, undefined, 'int32')} ` + `${$eq.text.format(groups, null, undefined, undefined, 'int32')} ${$eq.text.format(found, null, undefined, undefined, 'int32')} ${$eq.text.format(zipped, null, undefined, undefined, 'int32')} ${$eq.text.format(triples, null, undefined, undefined, 'int32')} ${$eq.text.format(same, null)} ${$eq.text.format(fallback, null, undefined, undefined, 'int32')} ${$eq.text.format(ticks, null)} ${$eq.text.format(price, null)} ${$eq.text.format(discarded, null)}`, 'caption');
     }
 
@@ -47,7 +47,7 @@ export class BoundReceivers extends StatelessComponent {
     }
 
     static twice(value: number) {
-        return value * 2;
+        return Math.imul(value, 2);
     }
 
     static keyOf(pair: any) {

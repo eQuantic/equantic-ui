@@ -18,9 +18,9 @@ export class Rules {
             if (value.length === 0) return true;
             let at = value.indexOf('@');
             if (at <= 0 || at !== value.lastIndexOf('@')) return false;
-            let domain = value.slice(at + 1);
+            let domain = value.slice(at + 1 | 0);
             let dot = domain.indexOf('.');
-            return dot > 0 && dot < domain.length - 1 && !domain.includes(' ') && !value.slice(0, at).includes(' ');
+            return dot > 0 && dot < (domain.length - 1 | 0) && !domain.includes(' ') && !value.slice(0, at).includes(' ');
         });
     }
 

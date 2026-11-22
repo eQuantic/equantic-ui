@@ -27,9 +27,9 @@ export class EntryLines extends StatelessComponent {
         layers.add(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill })));
         if (this._active) this._entry.grid = this._grid;
         if (this._active) {
-            for (const band of $eq.collections.sequenceWalk(this._entry.selectionBandsIn(0, document.lineCount - 1))) layers.add(this.rectangle(band, this._palette.entrySelection));
+            for (const band of $eq.collections.sequenceWalk(this._entry.selectionBandsIn(0, document.lineCount - 1 | 0))) layers.add(this.rectangle(band, this._palette.entrySelection));
         }
-        for (let line = 0; line < document.lineCount; line++) {
+        for (let line = 0; line < document.lineCount; line = line + 1 | 0) {
             let text = document.line(line);
             if (text.length === 0) continue;
             let measure: any; 

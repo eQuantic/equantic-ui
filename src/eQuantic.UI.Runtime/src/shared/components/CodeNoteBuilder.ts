@@ -60,7 +60,7 @@ export class CodeNoteBuilder {
     add(part: VisualNode, tall: number) {
         this.fitted();
         this._stack.add(part);
-        this._height = Math.fround(this._height + Math.fround((this._parts++ === 0 ? 0 : CodeNoteBuilder.gap) + tall));
+        this._height = Math.fround(this._height + Math.fround(((($old) => (this._parts = $old + 1 | 0, $old))(this._parts) === 0 ? 0 : CodeNoteBuilder.gap) + tall));
     }
 
     build(announced: boolean): [VisualNode, number, number] {
@@ -80,7 +80,7 @@ export class CodeNoteBuilder {
     linesOf(text: string, style: TypeStyle, room: number) {
         let lines = 0;
         for (const paragraph of $eq.text.split(text, '\n')) {
-            lines += this.wrappedLines(paragraph, style, Math.max(1, room));
+            lines = lines + this.wrappedLines(paragraph, style, Math.max(1, room)) | 0;
             if (lines >= CodeNoteBuilder.maxLinesEach) return CodeNoteBuilder.maxLinesEach;
         }
         return lines;
@@ -126,10 +126,10 @@ export class CodeNoteBuilder {
                 line = longer;
                 continue;
             }
-            if (line.length > 0) lines++;
+            if (line.length > 0) lines = lines + 1 | 0;
             line = word;
             let wide = this._context.measureText(word, style);
-            if (wide > room) lines += $eq.num.saturate(Math.ceil(Math.fround(wide / room))) - 1;
+            if (wide > room) lines = lines + ($eq.num.saturate(Math.ceil(Math.fround(wide / room))) - 1 | 0) | 0;
         }
         return lines;
     }

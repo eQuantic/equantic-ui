@@ -22,7 +22,7 @@ export class CultureSwitcher extends StatelessComponent {
         let controller = context.getService('ICultureController');
         let current = controller?.uICulture ?? '';
         let selected = 0;
-        for (let i = 0; i < $eq.collections.count(this.options); i++) {
+        for (let i = 0; i < $eq.collections.count(this.options); i = i + 1 | 0) {
             if ($eq.collections.item(this.options, i).name === current) {
                 selected = i;
                 break;

@@ -25,18 +25,18 @@ export class PageIndicator extends StatelessComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let active = theme.colors(this.variant).base;
-        let label = `Page ${$eq.text.format(this.currentIndex + 1, null, undefined, undefined, 'int32')} of ${$eq.text.format(this.count, null, undefined, undefined, 'int32')}`;
+        let label = `Page ${$eq.text.format(this.currentIndex + 1 | 0, null, undefined, undefined, 'int32')} of ${$eq.text.format(this.count, null, undefined, undefined, 'int32')}`;
         let slot = theme.navigation;
         if (this.count > PageIndicator.maxDots) {
             return new Text(label, 'caption', slot?.pageColor ?? theme.textSecondary, 1, 'start', false, false, null, 0, { tabular: true });
         }
         let dotSize = slot?.dotSize ?? 6;
         let row = new Row(slot?.dotGap ?? 4, 'start', 'center', false, null, null, { cross: 'center' });
-        for (let i = 0; i < this.count; i++) {
+        for (let i = 0; i < this.count; i = i + 1 | 0) {
             let index = i;
             let current = index === this.currentIndex;
             let dot = new Box(new BoxStyle({ width: current ? slot?.currentDotWidth ?? 18 : dotSize, height: dotSize, background: current ? active : slot?.dotColor ?? theme.borderStrong, cornerRadius: new CornerRadii(slot?.dotRadius ?? theme.shape('full')), transition: TransitionSpec.of(1 | 32, Motion.state) }));
-            row.add(this.onSelected == null ? dot : new Pressable(PageIndicator.hitPadded(dot), () => this.onSelected!(index), { label: `Page ${$eq.text.format(index + 1, null, undefined, undefined, 'int32')}`, selected: current }));
+            row.add(this.onSelected == null ? dot : new Pressable(PageIndicator.hitPadded(dot), () => this.onSelected!(index), { label: `Page ${$eq.text.format(index + 1 | 0, null, undefined, undefined, 'int32')}`, selected: current }));
         }
         return row;
     }

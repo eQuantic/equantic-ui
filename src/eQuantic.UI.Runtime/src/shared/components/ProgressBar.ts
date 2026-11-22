@@ -63,7 +63,7 @@ export class ProgressBar extends StatefulComponent {
                 track.add(new Flexible(new Box(new BoxStyle({ height: height, background: theme.colors(this.variant).base, cornerRadius: ends })), filledWeight, 0, 1, { animateChanges: animate }));
             }
             if (filledWeight < 1000) {
-                track.add(new Spacer(1000 - filledWeight, { animateChanges: animate }));
+                track.add(new Spacer(1000 - filledWeight | 0, { animateChanges: animate }));
             }
             return new Progress(track, { label: this.label, value: new RangeValue(Math.fround(Math.fround(filledWeight) / 1000), 0, 1), valueText: this.valueText });
         }

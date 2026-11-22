@@ -100,7 +100,7 @@ export class FileUpload extends StatefulComponent {
         let config = this._config;
         let count = config.multiple ? $eq.collections.count(files) : 1;
         this.setState(() => {
-            for (let i = 0; i < count; i++) {
+            for (let i = 0; i < count; i = i + 1 | 0) {
                 let upload = uploads.start($eq.collections.item(files, i), config.policy);
                 $eq.collections.listAdd(this._uploads, upload);
                 $eq.collections.listAdd(this._subscriptions, upload.subscribe($eq.delegates.bound(this, this.changed)));

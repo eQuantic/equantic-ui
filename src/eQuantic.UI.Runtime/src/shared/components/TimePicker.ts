@@ -60,7 +60,7 @@ export class TimePicker extends StatefulComponent {
         let rowHeight = input?.panelRowHeight ?? height;
         let open = this._open && !this.disabled;
         let times = open ? this.slots() : [];
-        let highlight = $eq.collections.count(times) > 0 ? Math.min(this._highlight, $eq.collections.count(times) - 1) : -1;
+        let highlight = $eq.collections.count(times) > 0 ? Math.min(this._highlight, $eq.collections.count(times) - 1 | 0) : -1;
         let field = new Row(gap, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
         field.add(new Icon(IconGlyph.fromIcons('clock'), input?.iconSize ?? 20, theme.textMuted));
         let value: any; 
@@ -69,7 +69,7 @@ export class TimePicker extends StatefulComponent {
         field.add(new Icon(IconGlyph.fromIcons('chevronDown'), 16, theme.textSecondary));
         let box = new Box(new BoxStyle({ height: height, width: SizeValue.fill, padding: EdgeInsets.symmetric(paddingX, 0), background: input?.fill ?? theme.surface, cornerRadius: new CornerRadii(radius), borderWidth: borderWidth, borderColor: input?.borderColor ?? theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : null, hover: this.disabled ? null : new StyleDiff({ borderColor: theme.colors('primary').base }) }), field);
         let list = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        for (let i = 0; i < $eq.collections.count(times); i++) {
+        for (let i = 0; i < $eq.collections.count(times); i = i + 1 | 0) {
             let slot = $eq.collections.item(times, i);
             let picked = $eq.equals(this.selected, slot);
             let highlighted = i === highlight;
@@ -81,8 +81,8 @@ export class TimePicker extends StatefulComponent {
         let picker: VisualNode = new Anchored(new Pressable(box, this.disabled ? null : $eq.delegates.bound(this, this.toggle), { disabled: this.disabled, label: this.label.length > 0 ? this.label : SdkStrings.chooseTime, expanded: this._open && !this.disabled }), panel, { open: open, onDismiss: $eq.delegates.bound(this, this.close).bind(this), matchAnchorWidth: true, panelRole: 'listbox', activeIndex: open ? highlight : -1 });
         let moving = open && highlight >= 0;
         picker = new Shortcut(picker, KeyChord.escape, $eq.delegates.bound(this, this.close), { enabled: open });
-        picker = new Shortcut(picker, KeyChord.arrowDown, () => this.setState(() => this._highlight = Math.min($eq.collections.count(times) - 1, highlight + 1)), { enabled: moving });
-        picker = new Shortcut(picker, KeyChord.arrowUp, () => this.setState(() => this._highlight = Math.max(0, highlight - 1)), { enabled: moving });
+        picker = new Shortcut(picker, KeyChord.arrowDown, () => this.setState(() => this._highlight = Math.min($eq.collections.count(times) - 1 | 0, highlight + 1 | 0)), { enabled: moving });
+        picker = new Shortcut(picker, KeyChord.arrowUp, () => this.setState(() => this._highlight = Math.max(0, highlight - 1 | 0)), { enabled: moving });
         picker = new Shortcut(picker, KeyChord.enter, () => this.pick($eq.collections.item(times, highlight)), { enabled: moving });
         return picker;
     }
@@ -136,7 +136,7 @@ export class TimePicker extends StatefulComponent {
 
     slotOf(value: TimeOnly) {
         let times = this.slots();
-        for (let i = 0; i < $eq.collections.count(times); i++) {
+        for (let i = 0; i < $eq.collections.count(times); i = i + 1 | 0) {
             if ($eq.collections.item(times, i).equals(value)) return i;
         }
         return 0;

@@ -79,7 +79,7 @@ export class Markdown extends StatelessComponent {
         let headerY = style.tableHeaderPaddingY ?? 10;
         let cellY = style.tableCellPaddingY ?? 11;
         let tracks: GridTrack[] = [];
-        for (let i = 0; i < block.head.length; i++) $eq.collections.listAdd(tracks, GridTrack.flex(1));
+        for (let i = 0; i < block.head.length; i = i + 1 | 0) $eq.collections.listAdd(tracks, GridTrack.flex(1));
         let rows = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         let head = new Grid(tracks, 0, null, { width: SizeValue.fill });
         for (const cell of $eq.collections.listWalk(block.head)) head.add(new Box(new BoxStyle({ padding: new EdgeInsets(paddingX, headerY, paddingX, headerY) }), Markdown.paragraph(cell.runs, theme, style)));
