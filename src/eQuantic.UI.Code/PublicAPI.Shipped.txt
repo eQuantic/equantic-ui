@@ -417,6 +417,7 @@ eQuantic.UI.Code.CodeEditorController.Carets.get -> System.Collections.Generic.I
 eQuantic.UI.Code.CodeEditorController.CellsOf(int line) -> eQuantic.UI.Code.CodeLineCells!
 eQuantic.UI.Code.CodeEditorController.Changed -> System.Action<eQuantic.UI.Code.CodeChange!>?
 eQuantic.UI.Code.CodeEditorController.CharacterAt(eQuantic.UI.Primitives.Point point) -> eQuantic.UI.Code.CodePosition?
+eQuantic.UI.Code.CodeEditorController.ClaimsEscape(eQuantic.UI.Primitives.KeyboardConvention convention) -> bool
 eQuantic.UI.Code.CodeEditorController.CodeEditorController(string! text = "", eQuantic.UI.Code.ICodeLanguage? language = null) -> void
 eQuantic.UI.Code.CodeEditorController.Completion.get -> eQuantic.UI.Code.CodeCompletion!
 eQuantic.UI.Code.CodeEditorController.Composition.get -> eQuantic.UI.Code.CodeRange?

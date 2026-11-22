@@ -40,6 +40,7 @@ eQuantic.UI.Sheet.SheetController.CellAt(eQuantic.UI.Primitives.Point point) -> 
 eQuantic.UI.Sheet.SheetController.CellEditorGrid.get -> eQuantic.UI.Code.CodeGrid
 eQuantic.UI.Sheet.SheetController.Changed.get -> System.Action<eQuantic.UI.Sheet.SheetEdit!>?
 eQuantic.UI.Sheet.SheetController.Changed.set -> void
+eQuantic.UI.Sheet.SheetController.ClaimsEscape(eQuantic.UI.Primitives.KeyboardConvention convention) -> bool
 eQuantic.UI.Sheet.SheetController.ClearSelection() -> bool
 eQuantic.UI.Sheet.SheetController.CommitEdit() -> bool
 eQuantic.UI.Sheet.SheetController.CommitFill() -> bool
@@ -176,6 +177,7 @@ eQuantic.UI.Sheet.SheetEntryView.Cell = 0 -> eQuantic.UI.Sheet.SheetEntryView
 eQuantic.UI.Sheet.SheetEntryView.FormulaBar = 1 -> eQuantic.UI.Sheet.SheetEntryView
 eQuantic.UI.Sheet.SheetFormulaBar
 eQuantic.UI.Sheet.SheetFormulaBar.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Sheet.SheetFormulaBar.ClaimsEscape(eQuantic.UI.Primitives.KeyboardConvention convention) -> bool
 eQuantic.UI.Sheet.SheetFormulaBar.CopyText() -> string!
 eQuantic.UI.Sheet.SheetFormulaBar.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
 eQuantic.UI.Sheet.SheetFormulaBar.Cut() -> string!
@@ -231,6 +233,7 @@ eQuantic.UI.Sheet.SheetMove.ActiveCell = 0 -> eQuantic.UI.Sheet.SheetMove
 eQuantic.UI.Sheet.SheetMove.ActiveRange = 1 -> eQuantic.UI.Sheet.SheetMove
 eQuantic.UI.Sheet.SheetNameBox
 eQuantic.UI.Sheet.SheetNameBox.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Sheet.SheetNameBox.ClaimsEscape(eQuantic.UI.Primitives.KeyboardConvention convention) -> bool
 eQuantic.UI.Sheet.SheetNameBox.CopyText() -> string!
 eQuantic.UI.Sheet.SheetNameBox.CursorAt(eQuantic.UI.Primitives.Point position) -> eQuantic.UI.Primitives.PointerCursor
 eQuantic.UI.Sheet.SheetNameBox.Cut() -> string!
