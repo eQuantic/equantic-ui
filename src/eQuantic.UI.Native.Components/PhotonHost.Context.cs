@@ -12,8 +12,9 @@ namespace eQuantic.UI.Native.Components;
 public sealed partial class PhotonHost
 {
     /// <summary>A finger pressing a target that may become a long press: where, the frame time its press was first
-    /// seen at (a press carries no time of its own), and its region's index in the frame it was found in.</summary>
-    private (Point At, float? PressedAtMs)? _contextHold;
+    /// seen at (a press carries no time of its own), and the target's position, by which it takes its place in the
+    /// pointer's arena (#1563).</summary>
+    private (Point At, float? PressedAtMs, Element Target)? _contextHold;
 
     /// <summary>
     /// A shell's secondary click at (<paramref name="x"/>, <paramref name="y"/>): the right button, a Control-click on
@@ -31,6 +32,8 @@ public sealed partial class PhotonHost
         y += _lift;
         _contextHold = null;
         var point = new Point(x, y);
+        // A press already held keeps its own arena: this click is a second button of the same pointer.
+        var pressHeld = _held;
         var answered = RequestAt(point);
         // The listeners under the click hear it as the button the shell saw, its down and its up at once (#1562). A
         // Control-click nothing answered presses as it always did, and the listeners hear that press instead. A click
@@ -42,6 +45,8 @@ public sealed partial class PhotonHost
             HearDown(point, kind, buttons, modifiers, time);
             // One click: the up holds the keys its down held, at the time its down was seen.
             HearUp(point, modifiers, time);
+            // The recognizers under it are offered the click as every pointer, each by what it allows (#1563).
+            if (!pressHeld) OfferClick(point, kind, buttons, modifiers, time);
         }
         // An answered Control-click keeps its button down for the menu, and the shell ends it with PointerCancel rather
         // than a press's up: until then the pointer is held, and its moves hover nothing.
@@ -145,7 +150,7 @@ public sealed partial class PhotonHost
         {
             if (!Covers(regions, i, regions[i].Visible, point)) continue;
             if (!regions[i].Node.Enabled) return;
-            _contextHold = (point, null);
+            _contextHold = (point, null, regions[i].Element);
             NeedsRender = true;
             return;
         }
@@ -187,6 +192,8 @@ public sealed partial class PhotonHost
         _pan = null;
         _drag = null;
         _pressSwallowed = true;
+        // The menu was asked for: the hold takes the pointer, from a recognizer waiting under it too (#1563).
+        AskFor(BuiltInGestureKind.ContextHold);
     }
 
     /// <summary>When a finger's hold is due, for a frame then even if nothing else asks for one.</summary>

@@ -131,8 +131,8 @@ the host's frame clock, and the host SHALL ask for a frame when the next deadlin
 #### Scenario: A swipe at once scrolls, on Photon
 
 - **WHEN** the same finger moves 80 px up within 100 ms of its press
-- **THEN** the scroll view's offset moves by the travel past the slop, `HoldThenDrag` hears `RejectGesture`,
-  and its hold is never reported
+- **THEN** the scroll view's offset moves by the whole 80 px, as Photon's pan has always moved, `HoldThenDrag`
+  hears `RejectGesture`, and its hold is never reported
 
 #### Scenario: An idle shell wakes for the deadline
 
