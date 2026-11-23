@@ -18,4 +18,7 @@ namespace eQuantic.UI.Native.Components;
 /// <param name="InScrolledHeader">Whether the layer was found inside a scrolled pinned header: its
 /// boxes show their <c>Scrolled</c> diff, as the web's do, whose layer is an element inside the
 /// header's (#1769).</param>
-internal readonly record struct QueuedLayer(Overlay Layer, NodeElement? Holder, bool InScrolledHeader);
+/// <param name="Combo">What the layer's listbox says, when a text field it hangs from makes it an editable
+/// combobox's, or null: the option the keyboard is on is said from that field as it changes (#1088).</param>
+internal readonly record struct QueuedLayer(Overlay Layer, NodeElement? Holder, bool InScrolledHeader,
+    ComboAnnouncement? Combo = null);

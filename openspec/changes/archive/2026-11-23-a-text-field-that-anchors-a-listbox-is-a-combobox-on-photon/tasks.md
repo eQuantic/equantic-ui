@@ -1,0 +1,19 @@
+# Tasks
+
+## 1. The role
+
+- [x] 1.1 Append `SemanticRole.EditableComboBox` to the enum, with its line in the per-change API file and in the enum ABI baseline
+- [x] 1.2 The semantics walk: a `TextEntry` a listbox hangs from is the editable combobox, named, valued and expanded like the web's
+- [x] 1.3 The native role table: `AXComboBox`, `android.widget.EditText`, no UIKit trait, activatable
+- [x] 1.4 The testing reader: an input or a textarea with `role="combobox"` is the editable combobox, valued by its text
+- [x] 1.5 Check: the semantics parity fixture compares the field open and closed on both targets, and fails without either half; AppKit reads back `AXComboBox`, "combo box", the field's text and its expanded state
+
+## 2. The active option
+
+- [x] 2.1 The anchored node keeps what its list last said (the field's position keeps its text), and the mark is said from the field's position
+- [x] 2.2 The option is the row `ActiveIndex` counts to over the item rows in tree order, read from the layer's layout; a closed list or no active row says nothing
+- [x] 2.3 Check: the announcement comes from the field as the keyboard moves, again when the list opens or the keyboard comes back, never from the option marked selected; the tests fail without the change and with the selected option in place of the active row
+
+## 3. Documentation
+
+- [x] 3.1 One entry under `docs/ledger/`

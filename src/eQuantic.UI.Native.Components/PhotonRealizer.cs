@@ -443,7 +443,11 @@ public static class PhotonRealizer
             // keeps its focus, its press state and its presence snapshots. When layers were named
             // `ov{i}` by their place in this queue, the index had to stay for that (#976).
             var queued = overlays[i];
-            if (queued.Layer is { Motion: not null, Open: false }) continue;
+            if (queued.Layer is { Motion: not null, Open: false })
+            {
+                if (queued.Combo is { } hidden) input.Add(hidden.Mark(null));
+                continue;
+            }
             // Shown, so its deferred slot builds now, just before the layer is laid out against it.
             // Every node the layout measured has a position, so a layer without one is the engine
             // gone wrong: built here it would be a tree of fresh instances every frame, silently.
@@ -458,6 +462,8 @@ public static class PhotonRealizer
             // page happens to be scrolling.
             EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { HoveredPart = hoveredPart, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView, InScrolledHeader = queued.InScrolledHeader },
                 theme, mode, contrast, builder, motion, overlays));
+            // What an editable combobox's list says, ONE mark a frame, read from the layer's layout (#1088).
+            if (queued.Combo is { } combo) input.Add(combo.Mark(overlayLayout));
         }
 
         // The frame's end, for the tree: what a layer did not show this frame leaves it, and what
