@@ -1,16 +1,16 @@
 ## 1. The vocabulary
 
-- [ ] 1.1 `GestureDisposition` (Accepted, Rejected; append-only, `EnumValueAbiTests`), `IGestureArenaMember`, and `GestureRecognizer` in `src/eQuantic.UI.Primitives/Gestures/`, with `IsPointerAllowed`, `AddAllowedPointer`, `HandleEvent`, `AcceptGesture`, `RejectGesture`, `Resolve`, `ResolvePointer`, `StopTrackingPointer`, `StartDeadline`, `DidExceedDeadline`, and the tracked pointers
-- [ ] 1.2 `GestureRecognizerFactory` and the sealed `GestureRecognizerFactory<T>(Func<T> create, Action<T> initialize)`
-- [ ] 1.3 `RawGestureDetector(VisualNode child, IReadOnlyList<GestureRecognizerFactory> gestures)` with `Behavior`, every registration a node has (visitor member, node kind, coverage suites), and `UI.RawGestureDetector`
-- [ ] 1.4 Each new type in `primitives-types.fixture.json` and `PublicAPI.Unshipped.txt`; read the diff
-- [ ] 1.6 `PointerEvent.TimeMs` (design 6b): the record widens, its unshipped entries move; the web reads the DOM event's `timeStamp`, Photon the shell's time or its own `Stopwatch`, the host's pointer entry points take an optional `timeMs`, the macOS shell passes `NSEvent.timestamp`; the value twin and its fixture carry it, and `Listener`'s tests on both targets assert it rises monotonically
+- [x] 1.1 `GestureDisposition` (Accepted, Rejected; append-only, `EnumValueAbiTests`), `IGestureArenaMember`, and `GestureRecognizer` in `src/eQuantic.UI.Primitives/Gestures/`, with `IsPointerAllowed`, `AddAllowedPointer`, `HandleEvent`, `AcceptGesture`, `RejectGesture`, `Resolve`, `ResolvePointer`, `StopTrackingPointer`, `StartDeadline`, `DidExceedDeadline`, and the tracked pointers
+- [x] 1.2 `GestureRecognizerFactory` and the sealed `GestureRecognizerFactory<T>(Func<T> create, Action<T> initialize)`
+- [x] 1.3 `RawGestureDetector(VisualNode child, IReadOnlyList<GestureRecognizerFactory> gestures)` with `Behavior`, every registration a node has (visitor member, node kind, coverage suites), and `UI.RawGestureDetector`
+- [x] 1.4 Each new type in `primitives-types.fixture.json` and `PublicAPI.Unshipped.txt`; read the diff
+- [x] 1.6 `PointerEvent.TimeMs` (design 6b): the record widens, its unshipped entries move; the web reads the DOM event's `timeStamp`, Photon the shell's time or its own `Stopwatch`, the host's pointer entry points take an optional `timeMs`, the macOS shell passes `NSEvent.timestamp`; the value twin and its fixture carry it, and `Listener`'s tests on both targets assert it rises monotonically
 - [ ] 1.5 Check against the real thing: a recognizer subclass written as an app writes it (fields, a nullable `Action<Point>`, `StartDeadline`, `Resolve`, an override of every virtual) transpiled by eqc in a compiler test, and its twin executed against the runtime's `GestureRecognizer` in vitest; a construct eqc refuses is filed and fixed in eqc, never written around (PRINCIPLES 14)
 
 ## 2. The arena, written once
 
-- [ ] 2.1 `GestureArena` in Primitives, Flutter's `GestureArenaManager`, its entry's state one value (open, closed, swept) that a later HOLD adds to: `Add(pointer, member)` returning the entry that resolves it, `Close`, `Sweep`, the eager winner, a lone member winning at the close, the last member left winning, the first member winning at the sweep (no hold: design, Open Questions)
-- [ ] 2.2 `GestureRouter` in Primitives: the per-host object a realizer drives (`Down` with the members in hit order, innermost first, then the arena closed; `Route` for move, up and cancel; an up sweeps, a cancel rejects every member; `Tick(nowMs)` and `NextDeadlineMs` for the recognizers' deadlines; the recognizer sets kept by position and initialized from the latest factories)
+- [x] 2.1 `GestureArena` in Primitives, Flutter's `GestureArenaManager`, its entry's state one value (open, closed, swept) that a later HOLD adds to: `Add(pointer, member)` returning the entry that resolves it, `Close`, `Sweep`, the eager winner, a lone member winning at the close, the last member left winning, the first member winning at the sweep (no hold: design, Open Questions)
+- [x] 2.2 `GestureRouter` in Primitives: the per-host object a realizer drives (`Down` with the members in hit order, innermost first, then the arena closed; `Route` for move, up and cancel; an up sweeps, a cancel rejects every member; `Tick(nowMs)` and `NextDeadlineMs` for the recognizers' deadlines; the recognizer sets kept by position and initialized from the latest factories)
 - [ ] 2.3 `gesture-arena.fixture.json` under `src/eQuantic.UI.Runtime/src/shared/`: sequences of downs, resolutions, ups, cancels and ticks with the outcome each member hears, which the C# suite runs against `GestureRouter` and vitest runs against its transpiled twin
 - [ ] 2.4 Check against the real thing: the fixture green on both sides, and each case failing when the arena gives the sweep to the LAST member instead of the first (the plausible wrong rule)
 
@@ -32,7 +32,7 @@
 
 ## 5. The sample and its proof
 
-- [ ] 5.1 `samples/DefaultUIDashboard/Gestures/HoldThenDrag.cs`, the sample's own recognizer: accepts when its pointer held still for `ContextTarget.HoldMs`, rejects when it travels past `Touch.PressCancelSlop` first, then reports each move and the release
+- [x] 5.1 `samples/DefaultUIDashboard/Gestures/HoldThenDrag.cs`, the sample's own recognizer: accepts when its pointer held still for `ContextTarget.HoldMs`, rejects when it travels past `Touch.PressCancelSlop` first, then reports each move and the release
 - [ ] 5.2 The dashboard's gestures screen (`/gestures`): a `ScrollView` of cards, each wrapped in a `RawGestureDetector` with `HoldThenDrag` that moves the card sideways, each card holding a `Button`; its navigation entry; if `assets/readme/captures.json` names a file this touches, the picture is taken again as CLAUDE.md says
 - [ ] 5.3 Check against the real thing: the dashboard built and run, the screen used by hand in Chromium with touch emulation and with a mouse, and the e2e of 3.6 and the host test of 4.4 green
 

@@ -53,7 +53,8 @@ public sealed class HoldThenDrag : GestureRecognizer
         _heldLongEnough = false;
         _won = false;
         _dragging = false;
-        StartDeadline(ContextTarget.HoldMs);
+        // Named in full: in an app the SDK puts the `ContextTarget` factory in scope, which hides the type by its simple name.
+        StartDeadline(eQuantic.UI.Primitives.ContextTarget.HoldMs);
     }
 
     protected override void HandleEvent(PointerEvent ev)

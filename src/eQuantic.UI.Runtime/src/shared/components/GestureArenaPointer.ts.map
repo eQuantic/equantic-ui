@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "GestureArenaPointer.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Primitives/Gestures/GestureArenaPointer.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAMA;QAQI;QAGA;QAGA;QAGA;QAbI;;;IAIJ;IAGA;IAGA;IAGA;;IAjBJ"
+}

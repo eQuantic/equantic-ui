@@ -10,7 +10,7 @@ namespace eQuantic.UI.Primitives;
 /// </code>
 /// </summary>
 /// <typeparam name="T">The recognizer it makes. A place whose recognizer is of another type makes a new one.</typeparam>
-public sealed class GestureRecognizerFactoryWithHandlers<T> : GestureRecognizerFactory
+public sealed class GestureRecognizerFactory<T> : GestureRecognizerFactory
     where T : GestureRecognizer
 {
     private readonly Func<T> _create;
@@ -18,7 +18,7 @@ public sealed class GestureRecognizerFactoryWithHandlers<T> : GestureRecognizerF
 
     /// <param name="create">Makes the recognizer, once for the detector's place.</param>
     /// <param name="initialize">Hands the kept recognizer what the latest build wrote, at every build.</param>
-    public GestureRecognizerFactoryWithHandlers(Func<T> create, Action<T> initialize)
+    public GestureRecognizerFactory(Func<T> create, Action<T> initialize)
     {
         _create = create;
         _initialize = initialize;

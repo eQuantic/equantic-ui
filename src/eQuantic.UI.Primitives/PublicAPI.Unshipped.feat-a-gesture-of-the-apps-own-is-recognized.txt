@@ -26,8 +26,8 @@ eQuantic.UI.Primitives.GestureRecognizer.Resolve(eQuantic.UI.Primitives.GestureD
 eQuantic.UI.Primitives.GestureRecognizer.ResolvePointer(int pointer, eQuantic.UI.Primitives.GestureDisposition disposition) -> void
 eQuantic.UI.Primitives.GestureRecognizer.StopTrackingPointer(int pointer) -> void
 eQuantic.UI.Primitives.GestureRecognizerFactory
-eQuantic.UI.Primitives.GestureRecognizerFactoryWithHandlers<T>
-eQuantic.UI.Primitives.GestureRecognizerFactoryWithHandlers<T>.GestureRecognizerFactoryWithHandlers(System.Func<T!>! create, System.Action<T!>! initialize) -> void
+eQuantic.UI.Primitives.GestureRecognizerFactory<T>
+eQuantic.UI.Primitives.GestureRecognizerFactory<T>.GestureRecognizerFactory(System.Func<T!>! create, System.Action<T!>! initialize) -> void
 eQuantic.UI.Primitives.GestureRouter.Route(eQuantic.UI.Primitives.PointerEvent! ev, System.Func<object!, eQuantic.UI.Primitives.PointerEvent!>? inBoxOf = null) -> void
 eQuantic.UI.Primitives.GestureRouter.Tick(double nowMs) -> void
 eQuantic.UI.Primitives.GestureRouter.NextDeadlineMs.get -> double?

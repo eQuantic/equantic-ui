@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "GestureRecognizer.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Primitives/Gestures/GestureRecognizer.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAsBA;;IAAA;QAIwD;QAGzB;QAGJ;QAGV;QAGb;QAGA;;;IAfoD;IAGzB;IAGJ;IAGV;IAGb;IAGA;;IAGA;QAAgD;;;IAIhD;QAA2D;;;IAI3D;;IAMA;;IAGA;;IAKA;;IAMA;;IAMA;QAEI;QACA,uDAA+B;;;IAInC;QAEI;QAAA,8GAAkD;;;IAKtD;QAEI;QACA;;;IASJ;QAEI;QAAA,0EAAsD;;;IAK1D;QAEI;QACA;QACA,2CAAsC;QACtC;QACA;;;IAIJ;QAAqC;;;IAGrC;QAAuC;;;IAGvC;QAEI,0BAAqB;;;IAIzB;QAEI;QACA,mBAAc;;;IAIlB;QAEI;QACA;QACA,mBAAc;;;IAIlB;QAAoC;;;IAIpC;QAEI;QACA;QACA,yFAAiD;;;IAtIzD"
+}

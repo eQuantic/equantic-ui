@@ -27,7 +27,7 @@ public class AGestureRecognizerOfTheAppsOwnTests
 
             public override VisualNode Build(ComponentContext context) =>
                 RawGestureDetector(Text($"{_offset.X}", TypeRole.BodyM),
-                    [new GestureRecognizerFactoryWithHandlers<HoldThenDrag>(() => new(), drag => drag.OnMoved = Move)],
+                    [new GestureRecognizerFactory<HoldThenDrag>(() => new(), drag => drag.OnMoved = Move)],
                     behavior: HitTestBehavior.Opaque);
         }
         """;
@@ -49,7 +49,12 @@ public class AGestureRecognizerOfTheAppsOwnTests
                 || line.Contains(": warning ", StringComparison.Ordinal))
             .Should().BeEmpty("a recognizer is ordinary client C#, and eqc translates every construct it uses");
         var recognizer = built.Module("HoldThenDrag");
-        System.Console.WriteLine(recognizer);
-        System.Console.WriteLine(built.Module("Cards"));
+        recognizer.Should().Contain("class HoldThenDrag extends GestureRecognizer", "the app's recognizer derives from the runtime's");
+        recognizer.Should().MatchRegex(@"import \{[^}]*\bGestureRecognizer\b[^}]*\} from ""@equantic/runtime""",
+            "the base it extends is the runtime's twin");
+        recognizer.Should().Contain("startDeadline(500)", "the platforms' long press is a constant the C# names, which crosses as its value");
+        foreach (var member in new[] { "isPointerAllowed(", "addAllowedPointer(", "handleEvent(", "didExceedDeadline(", "acceptGesture(", "rejectGesture(" })
+            recognizer.Should().Contain(member, "every override the recognizer writes crosses");
+        built.Module("Cards").Should().Contain("new GestureRecognizerFactory(", "a component hosts the recognizer through its factory");
     }
 }

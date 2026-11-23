@@ -8,15 +8,20 @@
 import { describe, expect, it } from 'vitest';
 import fixture from './gesture-arena.fixture.json';
 import { GestureRouter } from './components/GestureRouter';
-import { GestureRecognizerFactoryWithHandlers as GestureRecognizerFactory } from './components/GestureRecognizerFactoryWithHandlers';
+// The twin of the C# `GestureRecognizerFactory<T>`: eqc writes it today under the same module name as the non-generic
+// base it derives from, so this import waits for that gap to close (see the change's tasks, 1.5).
+import { GestureRecognizerFactory } from './components/GestureRecognizerFactory';
 import type { GestureArenaEntry } from './components/GestureArenaEntry';
-import type { IGestureArenaMember } from './components/IGestureArenaMember';
+import type { GestureRecognizer } from './components/GestureRecognizer';
 import { ArenaProbe } from './__fixtures__/ArenaProbe';
 import { ArenaMember } from './__fixtures__/ArenaMember';
 import { Point, PointerEvent } from './value-types';
 import type { PointerPhaseValue } from './enums.generated';
 
 type Disposition = 'accepted' | 'rejected';
+
+/** A member of the arena: the C# interface `IGestureArenaMember` has no twin, an interface being erased. */
+type IGestureArenaMember = ArenaMember | GestureRecognizer;
 
 interface MemberSpec {
   name: string;
