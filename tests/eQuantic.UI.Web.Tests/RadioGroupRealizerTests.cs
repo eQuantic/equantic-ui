@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using eQuantic.UI.Components;
 using eQuantic.UI.Web;
 using eQuantic.UI.Primitives;
@@ -117,7 +118,8 @@ public class RadioGroupRealizerTests
             texts.Should().Contain(shown, "the builder draws what each option shows");
             texts.Should().NotContain(["Standard", "Express"], "the names are not drawn beside the builder's content");
 
-            sink.Css.Should().Contain($"color:{TokenCss.Value(colour)}",
+            // The atomizer writes a theme's colour as its variable with the value as the fallback.
+            sink.Css.Should().MatchRegex($@"\{{color:(var\(--eq-color-[a-z-]+, )?{Regex.Escape(TokenCss.Value(colour))}",
                 $"the builder's text takes the option's {(disabled ? "muted" : "primary")} colour from the box around it");
         }
     }

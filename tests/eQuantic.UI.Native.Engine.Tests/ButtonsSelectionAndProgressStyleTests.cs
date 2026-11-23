@@ -59,9 +59,11 @@ public class ButtonsSelectionAndProgressStyleTests
             Width, 29, 33),
         new Case("RadioGroup", () => new RadioGroup(["Card", "Cash"], 0, _ => { }),
             () => new RadioGroup(["Card", "Cash"], 0, _ => { },
-                style: new SelectionControlsTheme { RadioSize = new DensityPair { Comfortable = 33 } }),
+                style: new SelectionControlsTheme { RadioSize = new DensityPair { Comfortable = 39 } }),
             Photon.With(selectionControls: new SelectionControlsTheme { RadioSize = new DensityPair { Comfortable = 29 } }),
-            Width, 29, 33),
+            // Not 33: the selected ring's inner area, where its dot is centred, is the ring less its two
+            // 2dp borders, and a 33 ring's would measure the slot's 29.
+            Width, 29, 39),
         new Case("Switch", () => new Switch(true, () => { }),
             () => new Switch(true, () => { },
                 style: new SelectionControlsTheme { SwitchWidth = new DensityPair { Comfortable = 67 } }),

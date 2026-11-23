@@ -846,8 +846,9 @@ public class SharedComponentTranspilationTests
         button.Should().Contain("minWidth: slot?.minWidth ?? 64");
 
         // Each rung read on its own, through the theme's slots in the plan's order (#1241): the
-        // button's own ladder, then the theme's Controls, then Sizing, at the context's density.
-        button.Should().Contain("let slot = theme.button");
+        // button's own ladder, then the theme's Controls, then Sizing, at the context's density. The
+        // instance's own style comes ahead of the theme's slot (#1606).
+        button.Should().Contain("let slot = ButtonTheme.merge(theme.button, this.style)");
         button.Should().Contain("let height = ControlMetrics.height(context, this.size, ladder)");
         button.Should().Contain("let labelSize = ControlMetrics.labelSize(context, this.size, ladder)");
         button.Should().Contain("let gap = ControlMetrics.gap(context, this.size, ladder)");

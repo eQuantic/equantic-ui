@@ -20,8 +20,8 @@ public class RadioGroupOptionBuilderTests
     private static readonly string[] Names = ["Standard", "Express"];
     private static readonly string[] Shown = ["Standard, in five days", "Express, tomorrow"];
 
-    private static RadioGroup Group(bool disabled = false) =>
-        new(Names, 1, _ => { }, "Shipping", optionBuilder: index => new Text(Shown[index]))
+    private static RadioGroup Group(bool disabled = false, string? label = "Shipping") =>
+        new(Names, 1, _ => { }, label, optionBuilder: index => new Text(Shown[index]))
         {
             Disabled = disabled,
         };
@@ -44,10 +44,18 @@ public class RadioGroupOptionBuilderTests
     [Fact]
     public void TheBuildersText_TakesTheOptionsColour()
     {
-        foreach (var (disabled, colour) in new[] { (false, Theme.TextPrimary), (true, Theme.TextMuted) })
+        // No group label: its caption draws in the muted text whatever the options do, and would answer for
+        // the disabled option's colour.
+        foreach (var (disabled, colour, other) in new[]
+                 {
+                     (false, Theme.TextPrimary, Theme.TextMuted),
+                     (true, Theme.TextMuted, Theme.TextPrimary),
+                 })
         {
-            Paints(Draw(Group(disabled)), colour).Should().BeTrue(
+            var list = Draw(Group(disabled, label: null));
+            Paints(list, colour).Should().BeTrue(
                 $"a text the builder gives no colour draws in the option's {(disabled ? "muted" : "primary")} text");
+            Paints(list, other).Should().BeFalse("and in no other text colour");
         }
     }
 
