@@ -26,17 +26,33 @@ namespace eQuantic.UI.Native.Components;
 /// <param name="active">The anchored node's <see cref="Anchored.ActiveIndex"/>: -1 for no row.</param>
 internal sealed class ComboAnnouncement(Element keeps, Element field, LayoutNode anchored, int active)
 {
+    /// <summary>
+    /// The text field of the anchored node <paramref name="anchored"/>: the first <see cref="TextEntry"/> of its
+    /// anchor in tree order, wherever it sits, as the web keys the first text control the anchor holds
+    /// (<c>TextControlIn</c>). Null when the anchor holds none. The semantics walk and the emit walk both ask
+    /// this, so the field a reader hears as the combobox is the one its list is said from.
+    /// </summary>
+    public static LayoutNode? FieldOf(LayoutNode anchored)
+    {
+        foreach (var child in anchored.Children)
+        {
+            if (child.Source is TextEntry) return child;
+            if (FieldOf(child) is { } field) return field;
+        }
+        return null;
+    }
+
     /// <summary>The mark of a combobox whose list is not shown: it says nothing, so the option the list
     /// shows when it opens again is news.</summary>
     public static LiveRegionMark Silent(Element keeps, Element field, LayoutNode anchored) =>
         new(keeps, "", LiveRegionUrgency.Polite, anchored, "", field);
 
     /// <summary>The list's mark for this frame: the row of <paramref name="layer"/> the keyboard is on, or
-    /// nothing when the list is not shown (null) or no row is active.</summary>
-    public LiveRegionMark Mark(LayoutNode? layer)
+    /// nothing when no row is active.</summary>
+    public LiveRegionMark Mark(LayoutNode layer)
     {
         var seen = 0;
-        return layer is not null && active >= 0 && Row(layer, ref seen) is { } row
+        return active >= 0 && Row(layer, ref seen) is { } row
             ? new(keeps, "", LiveRegionUrgency.Polite, row, ((Pressable)row.Source).Label, field)
             : Silent(keeps, field, anchored);
     }

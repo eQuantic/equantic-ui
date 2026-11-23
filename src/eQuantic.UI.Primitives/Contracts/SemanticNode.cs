@@ -191,8 +191,9 @@ public enum SemanticRole : byte
     /// the list: the web's <c>&lt;input role="combobox"&gt;</c>, Core-AAM's editable combobox
     /// (<c>AXComboBox</c>, <c>android.widget.EditText</c>). Its name is its label, or its placeholder
     /// without one, its value the text it holds, and whether its list is open rides
-    /// <see cref="SemanticNode.Expanded"/>. The option the arrows reach is announced as it changes, as
-    /// the web's reader follows <c>aria-activedescendant</c>. A <see cref="ComboBox"/> is the select-only
+    /// <see cref="SemanticNode.Expanded"/>. The host announces the option the arrows reach from it as it
+    /// changes, as the web's reader follows <c>aria-activedescendant</c>; the Apple shells speak it, and
+    /// Android does not yet. A <see cref="ComboBox"/> is the select-only
     /// one, a field that only opens the list. Appended (#1088), by the rule above.
     /// </summary>
     EditableComboBox,

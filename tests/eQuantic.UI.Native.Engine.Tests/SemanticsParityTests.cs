@@ -140,6 +140,19 @@ public class SemanticsParityTests(ITestOutputHelper output)
         yield return new("case text-input", () => new TextInput("ana@example.com", _ => { }, label: "Email"));
         yield return new("case editable combobox", () => EditableComboBox(open: true));
         yield return new("case editable combobox closed", () => EditableComboBox(open: false));
+        yield return new("case editable combobox beside a word", () =>
+        {
+            var anchor = new Row(gap: 8);
+            anchor.Add(new Text("Find", TypeRole.BodyM));
+            anchor.Add(new TextEntry("al", _ => { }) { Label = "Place" });
+            anchor.Add(new TextEntry("", _ => { }) { Label = "Note" });
+            return new Anchored(anchor, new Pressable(new Text("Alpha", TypeRole.BodyM), () => { }) { Role = PressableRole.Option })
+            {
+                Open = true,
+                PanelRole = AnchorPanelRole.Listbox,
+                ActiveIndex = 0,
+            };
+        });
         yield return new("case merge a label and an editable combobox",
             () => new MergeSemantics(Line(new Text("Destination", TypeRole.BodyM), EditableComboBox(open: false))));
         yield return new("case image", () => new Image("https://example.com/a.png", 120, 80, ImageFit.Cover, "A harbour at dawn"));

@@ -160,4 +160,44 @@ public class EditableComboBoxTests
         host.TakeAnnouncements().Select(said => said.Text).Should().Equal(["Gamma"],
             "the web's field names the row its active index counts to, whichever one is picked");
     }
+
+    /// <summary>A field with a word beside it in its anchor, and a second field after it: the first text entry of
+    /// the anchor is the combobox, wherever it sits, as the web keys the first text control the anchor holds.</summary>
+    private sealed class Search : StatefulComponent
+    {
+        private int _active;
+
+        public void Move(int to) => SetState(() => _active = to);
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var list = new Column(gap: 0);
+            foreach (var place in new[] { "Alpha", "Beta" })
+                list.Add(new Pressable(new Text(place, TypeRole.BodyM), () => { }) { Role = PressableRole.Option });
+            var anchor = new Row(gap: 8);
+            anchor.Add(new Text("Find", TypeRole.BodyM));
+            anchor.Add(new TextEntry("al", _ => { }) { Label = "Place" });
+            anchor.Add(new TextEntry("", _ => { }) { Label = "Note" });
+            return new Anchored(anchor, list) { Open = true, PanelRole = AnchorPanelRole.Listbox, ActiveIndex = _active };
+        }
+    }
+
+    [Fact]
+    public void TheFirstFieldOfTheAnchor_IsTheComboBox_WhateverSitsBesideIt()
+    {
+        var search = new Search();
+        var host = Host(search);
+        host.RenderFrame(new DisplayListBuilder(), 0);
+
+        var said = host.Semantics();
+        said.Single(node => node.Label == "Place").Role.Should().Be(SemanticRole.EditableComboBox);
+        said.Single(node => node.Label == "Note").Role.Should().Be(SemanticRole.TextField,
+            "the web keys one text control per anchor, the first");
+        var field = said.Single(node => node.Label == "Place").Id;
+
+        search.Move(1);
+        host.RenderFrame(new DisplayListBuilder(), 2000);
+        host.TakeAnnouncements().Should().ContainSingle().Which.Should().BeEquivalentTo(
+            new LiveAnnouncement(field, "", "Beta", LiveRegionUrgency.Polite));
+    }
 }

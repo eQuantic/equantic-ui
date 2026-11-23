@@ -231,8 +231,8 @@ Android added in API 30, and with the `Obtain` factories only below API 30.
 
 ### Requirement: A text field a listbox hangs from is an editable combobox
 
-A `TextEntry` that is an `Anchored` node's anchor, through wrappers that hold only it, when the panel is a
-`Listbox`, SHALL reach the native tree as an `EditableComboBox`, named by its label or by its placeholder without
+The first `TextEntry` in tree order of an `Anchored` node's anchor, wherever it sits in the anchor, when the
+panel is a `Listbox`, SHALL reach the native tree as an `EditableComboBox`, named by its label or by its placeholder without
 one, whose value is the text it holds and whose `Expanded` says whether its list is open, as the web's text control
 under that anchor carries `role="combobox"`. A field under a menu, or with no anchored panel, SHALL stay a
 `TextField`. The field SHALL be one of the controls a merge's stop becomes, as a text field is. The option the
@@ -246,6 +246,13 @@ the keyboard comes back to it. On the host's first frame nothing SHALL be announ
 - **WHEN** a `TextEntry` holding "al", labelled "Go to", anchors an open listbox of three options
 - **THEN** it is an `EditableComboBox` named "Go to" whose value is "al" and whose `Expanded` is true, followed by
   the three `Option`s, and with the list closed its `Expanded` is false
+
+#### Scenario: A field beside a word, and a second field
+
+- **WHEN** an open listbox hangs from a row holding a text "Find", a field labelled "Place" and a field labelled
+  "Note"
+- **THEN** "Place" is the `EditableComboBox`, the option the keyboard is on is announced from it, and "Note" is a
+  `TextField`, on the web and on Photon
 
 #### Scenario: A field under a menu, and a field alone
 

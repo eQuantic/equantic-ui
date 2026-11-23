@@ -443,11 +443,7 @@ public static class PhotonRealizer
             // keeps its focus, its press state and its presence snapshots. When layers were named
             // `ov{i}` by their place in this queue, the index had to stay for that (#976).
             var queued = overlays[i];
-            if (queued.Layer is { Motion: not null, Open: false })
-            {
-                if (queued.Combo is { } hidden) input.Add(hidden.Mark(null));
-                continue;
-            }
+            if (queued.Layer is { Motion: not null, Open: false }) continue;
             // Shown, so its deferred slot builds now, just before the layer is laid out against it.
             // Every node the layout measured has a position, so a layer without one is the engine
             // gone wrong: built here it would be a tree of fresh instances every frame, silently.

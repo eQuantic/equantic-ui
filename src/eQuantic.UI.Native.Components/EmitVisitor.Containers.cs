@@ -115,7 +115,7 @@ internal sealed partial class EmitVisitor
         }
         // A text field a listbox hangs from is an editable combobox, whose list says the option the keyboard is
         // on from the field (#1088); a closed list says nothing, so its option is news when it opens.
-        var comboField = anchored.PanelRole == AnchorPanelRole.Listbox ? TextFieldOf(s.Node) : null;
+        var comboField = anchored.PanelRole == AnchorPanelRole.Listbox ? ComboAnnouncement.FieldOf(s.Node)?.Element : null;
         if (!anchored.Open && !hoverOpen)
         {
             if (comboField is not null)
@@ -181,20 +181,6 @@ internal sealed partial class EmitVisitor
             comboField is null ? null : new ComboAnnouncement(PositionOf(s.Node), comboField, s.Node, anchored.ActiveIndex)));
     }
 
-    /// <summary>
-    /// The text field an anchor IS, an editable combobox's (#1088): the anchor's own node, through the
-    /// wrappers that hold only it, as the semantics walk finds a combobox's field. Null when the anchor is
-    /// something else, or holds more than the field.
-    /// </summary>
-    private static Element? TextFieldOf(LayoutNode anchored)
-    {
-        if (anchored.Children.Count != 1) return null;
-        for (var node = anchored.Children[0]; ; node = node.Children[0])
-        {
-            if (node.Source is TextEntry) return node.Element;
-            if (node.Children.Count != 1) return null;
-        }
-    }
 
     // Loop motion: translate the subtree by the frame-clock offset (spec §06 transform-only).
     // Offsets are fractions of the node's OWN laid-out width — parity with CSS translateX(%).

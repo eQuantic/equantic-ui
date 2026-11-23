@@ -52,10 +52,25 @@ internal sealed partial class SemanticsVisitor
     /// </summary>
     public bool Visit(TextEntry node, LayoutNode laidOut)
     {
-        var listbox = ListboxAnchoredBy(laidOut);
+        var listbox = ListboxFieldOf(laidOut);
         return Announce(new(listbox is null ? SemanticRole.TextField : SemanticRole.EditableComboBox,
             IdOf(laidOut), laidOut.Bounds, node.Label ?? node.Placeholder ?? "", FieldText.Of(laidOut.Element, node),
             node.Disabled, Expanded: listbox?.Open));
+    }
+
+    /// <summary>The <see cref="Anchored"/> whose listbox this text entry is the field of, or null: the nearest
+    /// anchored node above it with a panel role, when that role is a listbox and this is the first text entry of
+    /// its anchor (<see cref="ComboAnnouncement.FieldOf"/>), as the web keys one text control per anchor.</summary>
+    private static Anchored? ListboxFieldOf(LayoutNode laidOut)
+    {
+        for (var node = laidOut; node.Parent is { } parent; node = parent)
+        {
+            if (parent.Source is Anchored { PanelRole: not AnchorPanelRole.None } anchored)
+                return anchored.PanelRole == AnchorPanelRole.Listbox && ReferenceEquals(ComboAnnouncement.FieldOf(parent), laidOut)
+                    ? anchored
+                    : null;
+        }
+        return null;
     }
 
     /// <summary>
