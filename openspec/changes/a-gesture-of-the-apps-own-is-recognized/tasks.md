@@ -25,10 +25,10 @@
 
 ## 4. Photon
 
-- [ ] 4.1 The paint walk records a `RawGestureDetector` as a pointer target, with its behaviour, as it records a `Listener` (#1562), and the host keeps each detector's recognizers by its `Element`, initialized at every walk and dropped when the position leaves the frame
-- [ ] 4.2 `PhotonHost` drives one `GestureRouter`: `PressDown` hands it the detectors `ListenerHits` returns and the built-in members before any branch returns (the canvas's included); `PointerMove`, `PressUp`, `PointerCancel` route; the frame's tick runs `Tick`; `IsFrameDue` includes `NextDeadlineMs`
-- [ ] 4.3 The host's candidates become members: the press (wins only at the sweep), the drag and the sort (accept when they arm), the pan and the table pan (accept past the slop), the context hold (accepts when its menu is asked); a member rejected drops its candidate as a pan already drops a press, and a press that lost presses nothing on release
-- [ ] 4.4 Check against the real thing: `RawGestureDetectorHostTests` in `tests/eQuantic.UI.Native.Engine.Tests`, a laid-out tree driven through `PhotonHost` with touch and with a mouse, compiling the dashboard's recognizer from its own file (`Compile Include` with a `Link`): a hold then a drag inside a `ScrollView` moves the card and leaves the offset where it was; a swipe at once scrolls and the recognizer hears its rejection; a tap presses the button; a `Draggable` armed first wins; and the whole suite with `--blame-hang`
+- [x] 4.1 The paint walk records a `RawGestureDetector` as a pointer target, with its behaviour, as it records a `Listener` (#1562), and the host keeps each detector's recognizers by its `Element`, initialized at every walk and dropped when the position leaves the frame
+- [x] 4.2 `PhotonHost` drives one `GestureRouter`: `PressDown` hands it the detectors `ListenerHits` returns and the built-in members before any branch returns (the canvas's included); `PointerMove`, `PressUp`, `PointerCancel` route; the frame's tick runs `Tick`; `IsFrameDue` includes `NextDeadlineMs`
+- [x] 4.3 The host's candidates become members: the press (wins only at the sweep), the drag and the sort (accept when they arm), the pan and the table pan (accept past the slop), the context hold (accepts when its menu is asked); a member rejected drops its candidate as a pan already drops a press, and a press that lost presses nothing on release
+- [x] 4.4 Check against the real thing: `RawGestureDetectorHostTests` in `tests/eQuantic.UI.Native.Engine.Tests`, a laid-out tree driven through `PhotonHost` with touch and with a mouse, compiling the dashboard's recognizer from its own file (`Compile Include` with a `Link`): a hold then a drag inside a `ScrollView` moves the card and leaves the offset where it was; a swipe at once scrolls and the recognizer hears its rejection; a tap presses the button; a `Draggable` armed first wins; and the whole suite with `--blame-hang`
 
 ## 5. The sample and its proof
 

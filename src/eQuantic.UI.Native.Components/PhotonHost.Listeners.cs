@@ -41,6 +41,8 @@ public sealed partial class PhotonHost
         _listening = null;
         if (_lastFrame is not { PointerTargets: { Count: > 0 } targets }) return;
         var heard = HeardAt(targets, point);
+        // A detector under the press is hit by the same rule and offers it to its recognizers instead (#1563).
+        heard.RemoveAll(index => targets[index].Listener is null);
         if (heard.Count == 0) return;
         _listening = new List<Element>(heard.Count);
         _listenedButtons = buttons;
@@ -96,8 +98,9 @@ public sealed partial class PhotonHost
                 new Point(across, down), timeMs);
     }
 
-    /// <summary>The listeners of <paramref name="targets"/> that hear a pointer at <paramref name="point"/>, as
-    /// indices, the latest painted first.</summary>
+    /// <summary>The listeners and the gesture detectors of <paramref name="targets"/> that hear a pointer at
+    /// <paramref name="point"/>, as indices, the latest painted first: one hit test for both, as Flutter's is one
+    /// for every render object, so an opaque detector hides a listener behind it and the other way round.</summary>
     private static List<int> HeardAt(IReadOnlyList<PointerTarget> targets, Point point)
     {
         var under = new List<ListenerHits.Under>();
@@ -105,7 +108,7 @@ public sealed partial class PhotonHost
         for (var i = 0; i < targets.Count; i++)
         {
             if (!targets[i].Visible.Contains(point)) continue;
-            under.Add(new ListenerHits.Under(i, targets[i].End, targets[i].Solid, targets[i].Listener?.Behavior));
+            under.Add(new ListenerHits.Under(i, targets[i].End, targets[i].Solid, targets[i].Behavior));
             indices.Add(i);
         }
         var heard = ListenerHits.Hear(under);
