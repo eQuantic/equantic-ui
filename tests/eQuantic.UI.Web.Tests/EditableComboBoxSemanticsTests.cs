@@ -12,12 +12,12 @@ namespace eQuantic.UI.Web.Tests;
 /// </summary>
 public class EditableComboBoxSemanticsTests
 {
-    private static VisualNode GoTo(bool open)
+    private static VisualNode GoTo(bool open, Action<string>? typed = null)
     {
         var list = new Column(gap: 0);
         list.Add(new Pressable(new Text("Alpha", TypeRole.BodyM), () => { }) { Role = PressableRole.Option });
         list.Add(new Pressable(new Text("Beta", TypeRole.BodyM), () => { }) { Role = PressableRole.Option });
-        return new Anchored(new TextEntry("al", _ => { }) { Label = "Go to" }, list)
+        return new Anchored(new TextEntry("al", typed ?? (_ => { })) { Label = "Go to" }, list)
         {
             Open = open,
             PanelRole = AnchorPanelRole.Listbox,
@@ -48,5 +48,17 @@ public class EditableComboBoxSemanticsTests
         tester.Pump(new eQuantic.UI.Components.Select(["Lisbon", "Porto"], 0, _ => { }));
         tester.Semantics.Should().ContainSingle(stop => stop.Role == SemanticRole.ComboBox,
             "a select's trigger is a button the combobox role is written on, and nobody types into it");
+    }
+
+    [Fact]
+    public void AnEditableComboBox_IsTypedInto_AsATextFieldIs()
+    {
+        using var tester = new ComponentTester();
+        var typed = new List<string>();
+        tester.Pump(GoTo(open: true, typed.Add));
+
+        tester.EnterText("Go to", "be");
+
+        typed.Should().Equal(["be"], "a reader types into the field its list hangs from");
     }
 }

@@ -23,7 +23,9 @@ anchors an `Anchored` whose panel is a `Listbox`. On the web its text control is
   heard again when the list opens or the keyboard comes back to it.
 - **The testing reader hears the web's field as the same role.** `ComponentTester` read an input with
   `role="combobox"` as a select-only combobox; it now reads it as the editable one, so the semantics parity
-  fixture compares the two targets for this field.
+  fixture compares the two targets for this field, and `EnterText` types into it as into a text field.
+- **A merge takes the field as its control**, as the web's merged reading takes a `combobox`, so a label merged
+  with the field is announced as one editable combobox on both targets.
 
 A developer writes nothing different. The public surface gains one enum member,
 `SemanticRole.EditableComboBox = 30`; no member goes, and the developer surface does not move.
@@ -31,9 +33,9 @@ A developer writes nothing different. The public surface gains one enum member,
 ## Impact
 
 - `eQuantic.UI.Primitives`: the enum member.
-- `eQuantic.UI.Native.Components`: the semantics walk, the native role table, the realizer's overlay pass and the
-  live region announcer (a mark can be said from a position other than the one that keeps it).
-- `eQuantic.UI.Testing`: the announced tree.
+- `eQuantic.UI.Native.Components`: the semantics walk and its merge, the native role table, the realizer's overlay
+  pass and the live region announcer (a mark can be said from a position other than the one that keeps it).
+- `eQuantic.UI.Testing`: the announced tree and `EnterText`.
 - The shells: none changed. macOS and iOS post the announcement as they post every live region's. Android finds
   the field's node and reports a change from it, but TalkBack reads a change only from a live region's node, and
   the field's node carries its own text, so on Android the option is not heard yet: a follow-up, which needs a

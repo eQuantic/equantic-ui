@@ -140,6 +140,8 @@ public class SemanticsParityTests(ITestOutputHelper output)
         yield return new("case text-input", () => new TextInput("ana@example.com", _ => { }, label: "Email"));
         yield return new("case editable combobox", () => EditableComboBox(open: true));
         yield return new("case editable combobox closed", () => EditableComboBox(open: false));
+        yield return new("case merge a label and an editable combobox",
+            () => new MergeSemantics(Line(new Text("Destination", TypeRole.BodyM), EditableComboBox(open: false))));
         yield return new("case image", () => new Image("https://example.com/a.png", 120, 80, ImageFit.Cover, "A harbour at dawn"));
         yield return new("case heading", () => new Text("Cards", TypeRole.Title, headingLevel: 2));
         yield return new("case list", () => new eQuantic.UI.Components.List(

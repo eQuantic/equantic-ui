@@ -5,8 +5,9 @@
 - [x] 1.1 Append `SemanticRole.EditableComboBox` to the enum, with its line in the per-change API file and in the enum ABI baseline
 - [x] 1.2 The semantics walk: a `TextEntry` a listbox hangs from is the editable combobox, named, valued and expanded like the web's
 - [x] 1.3 The native role table: `AXComboBox`, `android.widget.EditText`, no UIKit trait, activatable
-- [x] 1.4 The testing reader: an input or a textarea with `role="combobox"` is the editable combobox, valued by its text
-- [x] 1.5 Check: the semantics parity fixture compares the field open and closed on both targets, and fails without either half; AppKit reads back `AXComboBox`, "combo box", the field's text and its expanded state
+- [x] 1.4 The testing reader: an input or a textarea with `role="combobox"` is the editable combobox, valued by its text, and `EnterText` types into it
+- [x] 1.5 A merge takes the editable combobox as its control, as the web's merged reading takes a `combobox`
+- [x] 1.6 Check: a label merged with the field reads alike on both targets, and fails without the merge's role; `EnterText` reaches the field's callback, and fails without its role; the semantics parity fixture compares the field open and closed on both targets, and fails without either half; AppKit reads back `AXComboBox`, "combo box", the field's text and its expanded state
 
 ## 2. The active option
 

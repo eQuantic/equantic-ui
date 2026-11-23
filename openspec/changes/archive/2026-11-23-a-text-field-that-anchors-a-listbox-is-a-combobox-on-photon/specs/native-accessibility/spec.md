@@ -6,7 +6,8 @@ A `TextEntry` that is an `Anchored` node's anchor, through wrappers that hold on
 `Listbox`, SHALL reach the native tree as an `EditableComboBox`, named by its label or by its placeholder without
 one, whose value is the text it holds and whose `Expanded` says whether its list is open, as the web's text control
 under that anchor carries `role="combobox"`. A field under a menu, or with no anchored panel, SHALL stay a
-`TextField`. The option the keyboard is on, the item row `Anchored.ActiveIndex` counts to in tree order, SHALL be
+`TextField`. The field SHALL be one of the controls a merge's stop becomes, as a text field is. The option the
+keyboard is on, the item row `Anchored.ActiveIndex` counts to in tree order, SHALL be
 announced politely from the field each time it changes, the option marked selected having no part in it. A list
 that is closed or has no active row SHALL say nothing, so the option it shows is announced again when it opens or
 the keyboard comes back to it. On the host's first frame nothing SHALL be announced.
@@ -21,6 +22,11 @@ the keyboard comes back to it. On the host's first frame nothing SHALL be announ
 
 - **WHEN** the same field anchors a menu, or anchors nothing
 - **THEN** it is a `TextField`
+
+#### Scenario: A label merged with the field
+
+- **WHEN** a `MergeSemantics` holds a text "Destination" and the field, its list closed
+- **THEN** one `EditableComboBox` named "Destination Go to" is announced, on the web and on Photon
 
 #### Scenario: The keyboard walks the list
 
