@@ -82,10 +82,20 @@ fi
 for type in Palette Cursor Wordmark Receipt Money Imprint Typeface; do
     [ -f "$modules/$type.ts" ] || fail "no module was written for $type, a type of a referenced project the page uses"
 done
-for type in Palette Cursor Wordmark Receipt Imprint Typeface; do
+for type in Palette Cursor Receipt Imprint Typeface; do
     grep -q "^import { $type } from \"./$type\";" "$modules/HomePage.ts" \
         || fail "HomePage.ts does not import $type, which it names"
 done
+# Wordmark, the Common project's component, is composed through its FACTORY, as a component of the
+# app's own is (#818): the page calls AppUI.wordmark(), and the app's factory module is the one that
+# imports the component. Each link is asserted, so a page that named Wordmark without its module, or a
+# factory module that built it without importing it, fails here rather than in a browser (#1798).
+grep -q "^import { AppUI } from \"./AppUI\";" "$modules/HomePage.ts" \
+    || fail "HomePage.ts does not import AppUI, the app's factory module, which it calls for Wordmark"
+grep -q "AppUI\.wordmark()" "$modules/HomePage.ts" \
+    || fail "HomePage.ts does not compose Wordmark through its factory, AppUI.wordmark()"
+grep -q "^import { Wordmark } from \"./Wordmark\";" "$modules/AppUI.ts" 2>/dev/null \
+    || fail "AppUI.ts does not import Wordmark, the referenced project's component its factory builds"
 grep -q "^import { Money } from \"./Money\";" "$modules/Receipt.ts" 2>/dev/null \
     || fail "Receipt.ts does not import Money, the record of the project it references"
 

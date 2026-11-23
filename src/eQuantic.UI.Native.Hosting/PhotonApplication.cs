@@ -163,11 +163,32 @@ public sealed class PhotonApplication
             log?.CreateLogger("eQuantic.UI.Photon").LogDebug("{Message}", message);
         };
 
+        ArmDevelopmentNotices();
+
         // A RUN starts here, so the faces it could not find start empty here. What it contains is its
         // window's host's own tally (#1452), which starts empty with the host.
         eQuantic.UI.Primitives.FaceResolution.Clear();
 
         FindRunner().Run(this);
+    }
+
+    /// <summary>
+    /// What a component tells the developer (a picker drawn again without the value it reported, #1780)
+    /// goes to the app's logger as a warning, in Development only: the browser's development runtime
+    /// writes the same notices to its console, and an app run in any other environment arms no channel,
+    /// so a notice is dropped where it is said. A sink the app set itself is kept.
+    /// </summary>
+    internal void ArmDevelopmentNotices()
+    {
+        if (Services.GetService(typeof(IHostEnvironment)) is not IHostEnvironment environment
+            || !environment.IsDevelopment())
+            return;
+        eQuantic.UI.Primitives.DevelopmentNotices.Sink ??= notice =>
+        {
+            var log = Services.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+            if (log is not null) log.CreateLogger("eQuantic.UI.Photon").LogWarning("{Notice}", notice);
+            else Console.Error.WriteLine($"[eQuantic] {notice}");
+        };
     }
 
     /// <summary>

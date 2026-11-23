@@ -55,6 +55,14 @@ namespace eQuantic.UI.Primitives;
 /// </code>
 /// </example>
 /// <para>
+/// A STATEFUL SECTION IS DRAWN WITH WHAT ITS PAGE LOADED. The example's <c>HeroSection</c> may be a
+/// <see cref="StatefulComponent"/>: the page is built before its prefetch runs and again after it, and
+/// while the server loads a page's data a position keeps only a component that loads data itself
+/// (<see cref="BuildOwner.KeepsInstance"/>), so the section is built again with <c>_stats</c> as loaded,
+/// the instance the browser builds from the same data. It kept the first one, with
+/// <c>PackageStats.Empty</c>, and the served page showed that (#1776).
+/// </para>
+/// <para>
 /// EVERY FIELD IS PUBLIC. The payload is written into the served HTML, so a value a prefetch stores
 /// is readable by anyone who views the page source — it is not "server data" once it lands in a
 /// field. Load what the page DISPLAYS, and nothing else: an access token used to fetch, the

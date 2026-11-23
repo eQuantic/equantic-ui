@@ -17,9 +17,9 @@ export class List extends StatelessComponent {
 
     build(context: BuildContext) {
         let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        for (let i = 0; i < $eq.collections.count(this.items); i++) {
+        for (let i = 0; i < $eq.collections.count(this.items); i = i + 1 | 0) {
             column.add($eq.collections.item(this.items, i));
-            if (this.dividers && i < $eq.collections.count(this.items) - 1) column.add(new Divider('leading', 'horizontal', { leadingInset: $eq.collections.item(this.items, i).contentInset(context.theme) }));
+            if (this.dividers && i < ($eq.collections.count(this.items) - 1 | 0)) column.add(new Divider('leading', 'horizontal', { leadingInset: $eq.collections.item(this.items, i).contentInset(context.theme) }));
         }
         return column;
     }

@@ -1,5 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { checked, intDiv, intRem, longDiv, longRem, mapGet, mapSet, saturate, saturateLong, saturateUnsigned } from './overflow';
+import {
+  abs,
+  absLong,
+  addInt,
+  addLong,
+  checked,
+  copySign,
+  copySignLong,
+  intDiv,
+  intRem,
+  longDiv,
+  longRem,
+  mapGet,
+  mapSet,
+  saturate,
+  saturateLong,
+  saturateUnsigned,
+} from './overflow';
 import { single } from './real-text';
 import { sortedDictionary } from './sorted';
 import { dictionary } from './dictionary';
@@ -133,5 +150,46 @@ describe('an explicit cast of a double, which saturates as .NET 9 and later do (
     expect(saturateLong(1e20, true)).toBe(18446744073709551615n);
     expect(saturateLong(-1, true)).toBe(0n);
     expect(saturateLong(Number.NaN)).toBe(0n);
+  });
+});
+
+describe('the members that check whatever the context (#1808)', () => {
+  const overflow = /Arithmetic operation resulted in an overflow/;
+  const negating = /Negating the minimum value of a twos complement number is invalid/;
+
+  it("adds Sum's ints and longs, and throws at the addition that leaves the range", () => {
+    expect([1, 2, 3].reduce((total, value) => addInt(total, value), 0)).toBe(6);
+    expect(addInt(2_147_483_646, 1)).toBe(2_147_483_647);
+    expect(() => addInt(2_147_483_647, 1)).toThrow(overflow);
+    expect(() => addInt(-2_147_483_648, -1)).toThrow(overflow);
+    // The running total, not the last: a later element bringing it back does not undo the throw.
+    expect(() => [2_147_483_647, 1, -1].reduce((total, value) => addInt(total, value), 0)).toThrow(overflow);
+    expect(addLong(9_223_372_036_854_775_806n, 1n)).toBe(9_223_372_036_854_775_807n);
+    expect(() => addLong(9_223_372_036_854_775_807n, 1n)).toThrow(overflow);
+    expect(() => addLong(-9_223_372_036_854_775_808n, -1n)).toThrow(overflow);
+  });
+
+  it("refuses the magnitude of a signed width's MinValue, with .NET's message", () => {
+    expect(abs(-5, 32)).toBe(5);
+    expect(abs(-2_147_483_647, 32)).toBe(2_147_483_647);
+    expect(() => abs(-2_147_483_648, 32)).toThrow(negating);
+    expect(() => abs(-32_768, 16)).toThrow(negating);
+    expect(abs(-32_768, 32)).toBe(32_768);
+    expect(() => abs(-128, 8)).toThrow(negating);
+    expect(absLong(-5n)).toBe(5n);
+    expect(() => absLong(-9_223_372_036_854_775_808n)).toThrow(negating);
+  });
+
+  it('copies a sign onto the magnitude, which MinValue has none of unless the sign is negative', () => {
+    expect(copySign(-5, 1, 32)).toBe(5);
+    expect(copySign(5, -1, 32)).toBe(-5);
+    expect(copySign(-2_147_483_648, -1, 32)).toBe(-2_147_483_648);
+    expect(() => copySign(-2_147_483_648, 0, 32)).toThrow(negating);
+    expect(() => copySign(-128, 1, 8)).toThrow(negating);
+    // An integer's one zero: -0 is the double's other one.
+    expect(Object.is(copySign(0, -1, 32), 0)).toBe(true);
+    expect(copySignLong(-9_223_372_036_854_775_808n, -1n)).toBe(-9_223_372_036_854_775_808n);
+    expect(() => copySignLong(-9_223_372_036_854_775_808n, 1n)).toThrow(negating);
+    expect(copySignLong(5n, -2n)).toBe(-5n);
   });
 });

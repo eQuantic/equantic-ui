@@ -1,8 +1,8 @@
-import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, IconsValue, LiveRegion, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, Text, TypeStyle, VariantValue } from "../runtime-exports";
+import { $IconsValue, $VariantValue, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, LiveRegion, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class Banner extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Banner';
-    declare status: VariantValue;
+    declare status: $VariantValue;
     declare title: string;
     declare body: any;
     declare primaryAction: any;
@@ -26,7 +26,7 @@ export class Banner extends StatelessComponent {
         let slot = context.theme.notice;
         let textSize = slot?.bannerTextSize ?? 13;
         let lineHeight = slot?.bannerLineHeight ?? 18;
-        let glyph: IconsValue = (() => { const $s = this.status; if ($s === 'success') return 'checkCircle'; if ($s === 'warning') return 'warning'; if ($s === 'destructive') return 'error'; return 'info'; })();
+        let glyph: $IconsValue = (() => { const $s = this.status; if ($s === 'success') return 'checkCircle'; if ($s === 'warning') return 'warning'; if ($s === 'destructive') return 'error'; return 'info'; })();
         let column = new Column(slot?.bannerGap ?? 4);
         column.add(new Text(this.title, 'caption', tint.onSubtle, 2, 'start', false, false, null, 0, { styleOverride: new TypeStyle(textSize, lineHeight, slot?.bannerTitleWeight ?? 'semiBold', 0, Math.fround(1.3)) }));
         if (this.body != null) {

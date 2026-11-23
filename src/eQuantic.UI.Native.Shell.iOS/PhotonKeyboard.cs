@@ -81,16 +81,24 @@ internal sealed class PhotonKeyboard : IDisposable
 
     /// <summary>
     /// Describes what is being edited to the keyboard: prose for a field, with autocorrection and
-    /// suggestions; nothing of the kind for a field that hides what is typed, or for code. A
-    /// keyboard already open takes the new description; one that has to become a secure keyboard
-    /// is closed and opened again, which is when iOS reads that.
+    /// suggestions; nothing of the kind for a field that hides what is typed, for a value (an e-mail
+    /// address, a number: the field's kind), or for code. The kind picks the keyboard and the autofill
+    /// offered. A keyboard already open takes the new description; one that has to become a secure
+    /// keyboard, or another kind's, is closed and opened again, which is when iOS reads those.
     /// </summary>
     private void Configure()
     {
         var field = _session.Target == TextInputTarget.Text;
-        var prose = field && !_session.Obscure;
-        if (_proxy.IsFirstResponder && _proxy.SecureTextEntry != _session.Obscure) Resign();
+        var kind = field ? _session.Kind : TextEntryKind.Text;
+        var prose = field && !_session.Obscure && kind == TextEntryKind.Text;
+        var keyboard = Keyboard(kind);
+        if (_proxy.IsFirstResponder && (_proxy.SecureTextEntry != _session.Obscure || _proxy.KeyboardType != keyboard))
+            Resign();
         _proxy.SecureTextEntry = _session.Obscure;
+        _proxy.KeyboardType = keyboard;
+        // UIKit's property is nullable and nil is its default, the system's own guess; the binding declares
+        // it non-null, so the forgiveness is the binding's gap, not a value.
+        _proxy.TextContentType = (_session.Obscure ? null : ContentType(kind))!;
         _proxy.AutocorrectionType = prose ? UITextAutocorrectionType.Default : UITextAutocorrectionType.No;
         _proxy.SpellCheckingType = prose ? UITextSpellCheckingType.Default : UITextSpellCheckingType.No;
         _proxy.SmartQuotesType = prose ? UITextSmartQuotesType.Default : UITextSmartQuotesType.No;
@@ -102,6 +110,26 @@ internal sealed class PhotonKeyboard : IDisposable
         Show(field ? _session.Value : TextEditingValue.Collapsed("", 0));
         if (_proxy.IsFirstResponder) _proxy.ReloadInputViews();
     }
+
+    /// <summary>The keyboard each kind opens.</summary>
+    private static UIKeyboardType Keyboard(TextEntryKind kind) => kind switch
+    {
+        TextEntryKind.Email => UIKeyboardType.EmailAddress,
+        TextEntryKind.Phone => UIKeyboardType.PhonePad,
+        TextEntryKind.Url => UIKeyboardType.Url,
+        TextEntryKind.Number => UIKeyboardType.NumberPad,
+        TextEntryKind.Decimal => UIKeyboardType.DecimalPad,
+        _ => UIKeyboardType.Default,
+    };
+
+    /// <summary>The autofill each kind asks for, or none.</summary>
+    private static NSString? ContentType(TextEntryKind kind) => kind switch
+    {
+        TextEntryKind.Email => UITextContentType.EmailAddress,
+        TextEntryKind.Phone => UITextContentType.TelephoneNumber,
+        TextEntryKind.Url => UITextContentType.Url,
+        _ => null,
+    };
 
     /// <summary>Puts a state into the proxy. Its notifications are then the shell's, not the
     /// keyboard's, and go nowhere.</summary>

@@ -36,6 +36,10 @@ public sealed class SortableItem : SingleChildNode
     /// hears its press.</summary>
     public string Name { get; init; } = "";
 
+    /// <summary>The item's depth in a list whose items have depths (<see cref="Sortable.Indent"/> above 0, #1594): 0 at
+    /// the top, one more for each level it is nested, as a tree's rows are. Read nowhere else.</summary>
+    public int Depth { get; init; }
+
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

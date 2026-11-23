@@ -1,4 +1,4 @@
-import { CellRef, SheetCellSnapshot, SheetEditKindValue, SheetRange, SheetSelection } from "../runtime-exports";
+import { $SheetEditKindValue, CellRef, SheetCellSnapshot, SheetRange, SheetSelection } from "../runtime-exports";
 
 export class SheetEdit {
     constructor() {
@@ -14,7 +14,7 @@ export class SheetEdit {
         this.selectionAfter = new SheetSelection(new SheetRange(new CellRef(0, 0)));
     }
 
-    kind!: SheetEditKindValue;
+    kind!: $SheetEditKindValue;
     before!: SheetCellSnapshot[];
     after!: SheetCellSnapshot[];
     at!: number;

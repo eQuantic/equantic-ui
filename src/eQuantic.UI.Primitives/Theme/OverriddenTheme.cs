@@ -10,7 +10,7 @@ internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, 
     IconButtonTheme? iconButton, InputTheme? input, SelectionControlsTheme? selectionControls, SegmentedTheme? segmented,
     ChipTheme? chip, ModalTheme? modal, MenuTheme? menu, NoticeTheme? notice, ProgressTheme? progress, CardTheme? card,
     NavigationTheme? navigation, ListTheme? list, TableTheme? table, BadgeTheme? badge, CalendarTheme? calendar,
-    MarkdownTheme? markdown) : IAppTheme
+    MarkdownTheme? markdown, SortableTheme? sortable) : IAppTheme
 {
     public ColorToken Background => inner.Background;
     public ColorToken Surface => inner.Surface;
@@ -58,5 +58,6 @@ internal sealed class OverriddenTheme(IAppTheme inner, ControlsTheme? controls, 
     public BadgeTheme? Badge => field ??= BadgeTheme.Merge(inner.Badge, badge);
     public CalendarTheme? Calendar => field ??= CalendarTheme.Merge(inner.Calendar, calendar);
     public MarkdownTheme? Markdown => field ??= MarkdownTheme.Merge(inner.Markdown, markdown);
+    public SortableTheme? Sortable => field ??= SortableTheme.Merge(inner.Sortable, sortable);
     public ColorToken Code(CodeTokenKind kind) => inner.Code(kind);
 }

@@ -1,4 +1,4 @@
-import { $eq, CodeCommandValue, CodeEditorController, CodeKeyBinding, KeyboardConventionValue, KeyChord } from "../runtime-exports";
+import { $CodeCommandValue, $eq, $KeyboardConventionValue, CodeEditorController, CodeKeyBinding, KeyChord } from "../runtime-exports";
 
 export class CodeKeymap {
     static $slots: any = null;
@@ -37,15 +37,15 @@ export class CodeKeymap {
         CodeKeymap.$init().standardBindings = value;
     }
 
-    static defaults(convention: KeyboardConventionValue) {
+    static defaults(convention: $KeyboardConventionValue) {
         return [...CodeKeymap.table(convention)];
     }
 
-    static table(convention: KeyboardConventionValue) {
+    static table(convention: $KeyboardConventionValue) {
         return convention === 'apple' ? CodeKeymap.appleBindings : CodeKeymap.standardBindings;
     }
 
-    static handle(editor: CodeEditorController, key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any = null) {
+    static handle(editor: CodeEditorController, key: string, modifiers: number, convention: $KeyboardConventionValue, clipboard: any = null) {
         if (key !== 'Tab' && key !== 'Escape' && !CodeKeymap.isModifierKey(key)) editor.tabMovesFocus = false;
         if (CodeKeymap.isModifierKey(key)) return false;
         let first = editor.pendingChord;
@@ -75,7 +75,25 @@ export class CodeKeymap {
         return false;
     }
 
-    static bindings(editor: CodeEditorController, convention: KeyboardConventionValue) {
+    static claims(editor: CodeEditorController, chord: KeyChord, convention: $KeyboardConventionValue) {
+        if (CodeKeymap.isModifierKey(chord.key)) return false;
+        let bindings = CodeKeymap.bindings(editor, convention);
+        let waited: any; 
+        if ((waited = editor.pendingChord) != null) {
+            for (const binding of $eq.collections.sequenceWalk(bindings)) { let starts: any; if ((starts = binding.first) != null && CodeKeymap.matches(starts, waited) && CodeKeymap.matches(binding.chord, chord)) return true; }
+        }
+        for (const binding of $eq.collections.sequenceWalk(bindings)) {
+            let starts: any; 
+            if ((starts = binding.first) != null) {
+                if (CodeKeymap.matches(starts, chord) && editor.canExecute(binding.command)) return true;
+                continue;
+            }
+            if (CodeKeymap.matches(binding.chord, chord) && editor.canExecute(binding.command)) return true;
+        }
+        return false;
+    }
+
+    static bindings(editor: CodeEditorController, convention: $KeyboardConventionValue) {
         let defaults = CodeKeymap.table(convention);
         let own = editor.keyBindings;
         if ($eq.collections.count(own) === 0) return defaults;
@@ -112,7 +130,7 @@ export class CodeKeymap {
         return (((((((key === 'Shift' || key === 'Control') || key === 'Alt') || key === 'Meta') || key === 'AltGraph') || key === 'CapsLock') || key === 'Fn') || key === 'OS');
     }
 
-    static bind(key: string, modifiers: number, command: CodeCommandValue) {
+    static bind(key: string, modifiers: number, command: $CodeCommandValue) {
         return new CodeKeyBinding(new KeyChord(key, modifiers), command);
     }
 

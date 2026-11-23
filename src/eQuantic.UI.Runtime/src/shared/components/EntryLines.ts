@@ -1,11 +1,11 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeEditorController, CodeGrid, ColorToken, Directionality, Point, Positioned, Rect, SheetPalette, SizeValue, Stack, StatelessComponent, Text, TypeRoleValue } from "../runtime-exports";
+import { $eq, $TypeRoleValue, Box, BoxStyle, BuildContext, CodeEditorController, CodeGrid, ColorToken, Directionality, Point, Positioned, Rect, SheetPalette, SizeValue, Stack, StatelessComponent, Text } from "../runtime-exports";
 
 export class EntryLines extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.EntryLines';
     _entry: CodeEditorController;
     _grid: CodeGrid = CodeGrid.$zero();
     _corner: Point = new Point();
-    _role: TypeRoleValue = 'display';
+    _role: $TypeRoleValue = 'display';
     _palette: SheetPalette = SheetPalette.$zero();
     _active: boolean = false;
 
@@ -27,9 +27,9 @@ export class EntryLines extends StatelessComponent {
         layers.add(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill })));
         if (this._active) this._entry.grid = this._grid;
         if (this._active) {
-            for (const band of $eq.collections.sequenceWalk(this._entry.selectionBandsIn(0, document.lineCount - 1))) layers.add(this.rectangle(band, this._palette.entrySelection));
+            for (const band of $eq.collections.sequenceWalk(this._entry.selectionBandsIn(0, document.lineCount - 1 | 0))) layers.add(this.rectangle(band, this._palette.entrySelection));
         }
-        for (let line = 0; line < document.lineCount; line++) {
+        for (let line = 0; line < document.lineCount; line = line + 1 | 0) {
             let text = document.line(line);
             if (text.length === 0) continue;
             let measure: any; 

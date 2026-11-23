@@ -14,10 +14,10 @@ export class BarChartLayout {
         if ((axis.min != null) && (axis.max != null)) return ValueScale.fixed($eq.nullable.value(axis.min), $eq.nullable.value(axis.max), axis.ticks);
         let low = 0;
         let high = 0;
-        for (let c = 0; c < categoryCount; c++) {
+        for (let c = 0; c < categoryCount; c = c + 1 | 0) {
             let positive = 0;
             let negative = 0;
-            for (let s = 0; s < $eq.collections.count(series); s++) {
+            for (let s = 0; s < $eq.collections.count(series); s = s + 1 | 0) {
                 if (!$eq.collections.item(visible, s)) continue;
                 let v = $eq.collections.item(series, s).at(c);
                 if (layout === 'stacked') {
@@ -45,21 +45,21 @@ export class BarChartLayout {
         let baseValue = ticks.min > 0 ? ticks.min : ticks.max < 0 ? ticks.max : 0;
         let baseline = BarChartLayout.offset(ticks, baseValue, across);
         let shown: number[] = [];
-        for (let s = 0; s < $eq.collections.count(series); s++) {
+        for (let s = 0; s < $eq.collections.count(series); s = s + 1 | 0) {
             if ($eq.collections.item(visible, s)) $eq.collections.listAdd(shown, s);
         }
         let slot = categoryCount === 0 ? along : Math.fround(along / Math.fround(categoryCount));
         let bars: BarRect[] = [];
-        for (let c = 0; c < categoryCount; c++) {
+        for (let c = 0; c < categoryCount; c = c + 1 | 0) {
             let categoryStart = Math.fround(Math.fround(c) * slot);
             if (layout === 'grouped') {
                 let n = shown.length;
                 if (n === 0) continue;
-                let thickness = Math.min(BarChartLayout.maxThickness, Math.fround(Math.fround(slot - Math.fround(BarChartLayout.gap * Math.fround(n + 1))) / Math.fround(n)));
+                let thickness = Math.min(BarChartLayout.maxThickness, Math.fround(Math.fround(slot - Math.fround(BarChartLayout.gap * Math.fround(n + 1 | 0))) / Math.fround(n)));
                 if (thickness < 1) thickness = 1;
-                let group = Math.fround(Math.fround(Math.fround(n) * thickness) + Math.fround(Math.fround(n - 1) * BarChartLayout.gap));
+                let group = Math.fround(Math.fround(Math.fround(n) * thickness) + Math.fround(Math.fround(n - 1 | 0) * BarChartLayout.gap));
                 let start = Math.fround(categoryStart + Math.fround(Math.fround(slot - group) / 2));
-                for (let k = 0; k < n; k++) {
+                for (let k = 0; k < n; k = k + 1 | 0) {
                     let s = shown[k];
                     let v = $eq.collections.item(series, s).at(c);
                     let from = BarChartLayout.offset(ticks, baseValue, across);
@@ -108,7 +108,7 @@ export class BarChartLayout {
 
     static hitTest(geometry: BarChartGeometry, x: number, y: number) {
         let bars = geometry.bars;
-        for (let i = 0; i < $eq.collections.count(bars); i++) {
+        for (let i = 0; i < $eq.collections.count(bars); i = i + 1 | 0) {
             let box = $eq.collections.item(bars, i).box;
             if (x >= Math.fround(box.left - BarChartLayout.hitSlack) && x <= Math.fround(box.right + BarChartLayout.hitSlack) && y >= Math.fround(box.top - BarChartLayout.hitSlack) && y <= Math.fround(box.bottom + BarChartLayout.hitSlack)) return i;
         }

@@ -128,7 +128,7 @@ public sealed class ConsoleLayout(VisualNode body) : StatefulComponent
     /// What the breadcrumb calls the page at <paramref name="location"/>, and the destination it
     /// lights. A destination of the sidebar is its own. The screens the sidebar does not list are
     /// reached from another one, and the passkeys and the recovery codes light the identity they
-    /// belong to. A path no screen declares is the not-found page's, so a screen added to the app is
+    /// belong to; the scrolled header is the browser suite's page, which no destination leads to. A path no screen declares is the not-found page's, so a screen added to the app is
     /// added to the sidebar or here.
     /// </summary>
     private static (string Title, string Lit) Destination(string location)
@@ -143,6 +143,7 @@ public sealed class ConsoleLayout(VisualNode body) : StatefulComponent
             "/map" => ("Map", ""),
             "/passkeys" => ("Passkeys", "/identity"),
             "/recovery-codes" => ("Recovery codes", "/identity"),
+            "/header" => ("Scrolled header", ""),
             _ => ("Not found", ""),
         };
     }

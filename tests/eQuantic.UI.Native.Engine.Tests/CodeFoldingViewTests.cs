@@ -31,6 +31,7 @@ public class CodeFoldingViewTests : IDisposable
         Anchored anchored => [anchored.Anchor, anchored.Panel],
         CodeSurface surface => [surface.Child],
         SingleChildNode single => [single.Child],
+        InheritedComponent inherited => [inherited.Child],
         _ => [],
     };
 
@@ -157,14 +158,15 @@ public class CodeFoldingViewTests : IDisposable
         var context = new ComponentContext(PhotonTheme.Instance, measureText: (shown, _) => shown.Length * 8f);
         const string placeholder = "{ every member of the class, folded }";
         const string text = "class A\n{\n    x();\n}";
-        float Width(bool folded) => ((Box)new CodeBlock(text, "csharp")
+        // A code block reads left to right in every culture, so its box is the child of the Directionality it builds.
+        float Width(bool folded) => ((Box)((Directionality)new CodeBlock(text, "csharp")
         {
             Standalone = false,
             ViewportWidth = 40,
             Folds = [new CodeFold(1, 2) { Placeholder = placeholder }],
             FoldedLines = folded ? [1] : [],
             Rows = folded ? new CodeRows(4, [], [new CodeCollapse(2, 2, Placeholder: false)]) : null,
-        }.Build(context)).Style.Width.Value;
+        }.Build(context)).Child).Style.Width.Value;
         var column = CodeBlock.MetricsFor(context, SizeVariant.Small, true, 4).ColumnWidth;
         column.Should().BeGreaterThan(0);
         var reach = (1 + placeholder.Length) * column + 3 * Space.S1;

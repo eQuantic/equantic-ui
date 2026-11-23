@@ -85,8 +85,8 @@ public class ConversionConformanceTests
         "string s = \"a\"; int? q = null; s += q; return s;",                         // "a"
         "string s = \"a\"; s += 'b'; return s;",                                      // "ab"
         "string s = \"a\"; s += 1.5; return s;",                                      // "a1.5"
-        // The author's word decides for int and long: `unchecked` wraps, `checked` throws, and the
-        // default keeps the double's count (a documented limit — see IntegerWidth).
+        // int and long wrap as C# wraps them, in `unchecked` and in the default context alike
+        // (CheckedConformanceTests holds the default's cases), and `checked` throws.
         "return unchecked(int.MaxValue + 1);",                                      // -2147483648
         "int big = int.MaxValue; unchecked { big++; } return big;",                 // -2147483648
         "int a = 65536; return unchecked(a * a);",                                  // 0 — Math.imul

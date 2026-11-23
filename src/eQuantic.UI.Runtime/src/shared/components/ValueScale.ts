@@ -9,7 +9,7 @@ export class ValueScale {
             high = swap;
         }
         if (high === low) high = low + 1;
-        let rough = (high - low) / (target - 1);
+        let rough = (high - low) / (target - 1 | 0);
         let magnitude = 1.0;
         while (rough >= magnitude * 10) magnitude *= 10;
         while (rough < magnitude) magnitude /= 10;
@@ -24,7 +24,7 @@ export class ValueScale {
     static fixed(min: number, max: number, ticks: number) {
         if (ticks < 2) ticks = 2;
         if (max <= min) max = min + 1;
-        return new ValueTicks(min, max, (max - min) / (ticks - 1));
+        return new ValueTicks(min, max, (max - min) / (ticks - 1 | 0));
     }
 }
 

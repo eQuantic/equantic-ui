@@ -49,5 +49,10 @@
         <Compile Include="../Shared/CapabilityRule.cs" Link="Shared/CapabilityRule.cs" />
         <Compile Include="../Shared/TwinName.cs" Link="Shared/TwinName.cs" />
         <Compile Include="../Shared/JsNames.cs" Link="Shared/JsNames.cs" />
+        <!-- The analyzers both SDKs hand an app (EQ3106, EQ3107): an Icon refuses a size on Photon as on the
+             web, and a static keeps its first language on both. One file each, linked here and there. -->
+        <Compile Include="../Shared/AllowedValueAnalyzer.cs" Link="Shared/AllowedValueAnalyzer.cs" />
+        <Compile Include="../Shared/CultureFrozenResourceAnalyzer.cs" Link="Shared/CultureFrozenResourceAnalyzer.cs" />
+        <Compile Include="../Shared/ResourceShape.cs" Link="Shared/ResourceShape.cs" />
     </ItemGroup>
 </Project>

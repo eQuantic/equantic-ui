@@ -52,7 +52,7 @@ public class AuthoringCoverageTests
     {
         var ts = Ts("public class C : StatelessComponent { public int N { get; set; } public int Double => N * 2; " +
                     "public override IComponent Build(RenderContext c) => new Text(Double.ToString()); }");
-        ts.Should().Contain("get double() {\n        return this.n * 2;\n    }");
+        ts.Should().Contain("get double() {\n        return Math.imul(this.n, 2);\n    }");
     }
 
     [Fact]

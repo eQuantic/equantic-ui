@@ -8,7 +8,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { StatefulComponent } from '../core/component';
 import type { HtmlNode } from '../core/types';
-import { BuildOwner } from './components/BuildOwner';
 import { TableView } from './components/TableView';
 import { photonTheme } from './design-system.generated';
 import type { TextDirectionValue } from './enums.generated';
@@ -19,8 +18,14 @@ import { effectiveStyle } from './style-atomizer';
 import { EdgeInsets } from './value-types';
 import { UniformTableSpans } from './components/UniformTableSpans';
 import { Box, BoxStyle, Column, Directionality, Positioned, Stack, Text } from './vocabulary';
-import type { VisualNode } from './vocabulary';
-import { activeTextDirection, installCulture, setCulture, setCultureFormatLoader, INVARIANT_FORMAT } from '../utils/culture';
+import {
+  activeTextDirection,
+  installCulture,
+  setCulture,
+  setCultureCatalogLoader,
+  setCultureFormatLoader,
+  INVARIANT_FORMAT,
+} from '../utils/culture';
 
 const lower = (node: unknown): HtmlNode => lowerVisualNode(node as VisualNodeValue, ambientLoweringContext()) as HtmlNode;
 
@@ -45,9 +50,58 @@ class Reader extends StatefulComponent {
   }
 }
 
+const nextFrame = () =>
+  new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+/** Reads nothing. */
+class Bystander extends StatefulComponent {
+  build(): VisualNodeValue {
+    log.push('bystander');
+    return new Text('bystander', 'label') as unknown as VisualNodeValue;
+  }
+}
+
+/** Holds a direction over a subtree its parent handed it, as the C# twin's Holder does. */
+class DirectionHolder extends StatefulComponent {
+  private direction: TextDirectionValue = 'leftToRight';
+
+  constructor(private slot: unknown) {
+    super();
+    directionHolder ??= this;
+  }
+
+  adoptConfig(next: DirectionHolder): void {
+    this.slot = next.slot;
+  }
+
+  set(direction: TextDirectionValue): void {
+    this.setState(() => (this.direction = direction));
+  }
+
+  build(): VisualNodeValue {
+    return new Directionality(this.direction, this.slot as never) as unknown as VisualNodeValue;
+  }
+}
+let directionHolder: DirectionHolder | null = null;
+
+/** A reader and a bystander under the holder, and a reader beside it that reads the culture. */
+class DirectionPage extends StatefulComponent {
+  build(): VisualNodeValue {
+    const code = new Column(0);
+    code.add(new Reader('code') as never);
+    code.add(new Bystander() as never);
+    const page = new Column(0);
+    page.add(new DirectionHolder(code) as never);
+    page.add(new Reader('page') as never);
+    return page as unknown as VisualNodeValue;
+  }
+}
+
 describe('the direction a component reads', () => {
   beforeEach(() => {
     log = [];
+    directionHolder = null;
+    document.body.innerHTML = '';
     installCulture('', '', {});
   });
   afterEach(() => installCulture('', '', {}));
@@ -61,25 +115,20 @@ describe('the direction a component reads', () => {
     expect(new ComponentContext(photonTheme).textDirection).toBe('leftToRight');
   });
 
-  it('is the nearest Directionality above its position, and a change builds what read it', () => {
+  it('is the nearest Directionality above its position, and a change builds what read it', async () => {
     installCulture('ar', 'ar', {}, INVARIANT_FORMAT, undefined, true);
-    const owner = new BuildOwner((component, context) => component.build(context) as unknown as VisualNode);
-    const frame = () => new ComponentContext(photonTheme);
-    const tree = (direction: TextDirectionValue) => {
-      const column = new Column(0);
-      column.add(new Directionality(direction, new Reader('code') as never) as never);
-      column.add(new Reader('page') as never);
-      return column as unknown as VisualNode;
-    };
-
-    owner.build(tree('leftToRight'), frame() as never, 400, true);
-    owner.endFrame();
-    expect(log).toEqual(['code leftToRight', 'page rightToLeft']);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    new DirectionPage().mount(container);
+    expect(log).toEqual(['code leftToRight', 'bystander', 'page rightToLeft']);
 
     log = [];
-    owner.build(tree('rightToLeft'), frame() as never, 400, false);
-    owner.endFrame();
-    expect(log, 'the reader under the Directionality that changed, and not the page').toEqual(['code rightToLeft']);
+    directionHolder!.set('rightToLeft');
+    await nextFrame();
+
+    expect(log, 'the reader under the Directionality that changed, and not a bystander or the page').toEqual([
+      'code rightToLeft',
+    ]);
   });
 });
 
@@ -132,8 +181,9 @@ describe('the web under a direction', () => {
     const table = new TableView(new UniformTableSpans(2, 28), new UniformTableSpans(2, 96), (row: number, column: number) =>
       new Text(`${row}:${column}`, 'caption'),
     );
+    // A table is a group to a reader by default, and its viewport is the first node that says so.
     const find = (node: HtmlNode): HtmlNode | null =>
-      node.attributes?.['aria-rowcount'] !== undefined
+      node.attributes?.['role'] === 'group'
         ? node
         : (node.children ?? []).map((child) => find(child as HtmlNode)).find((found) => found !== null) ?? null;
 
@@ -144,9 +194,14 @@ describe('the web under a direction', () => {
 });
 
 describe('a culture switch', () => {
-  beforeEach(() => installCulture('en', 'en', {}, INVARIANT_FORMAT, undefined, false));
+  beforeEach(() => {
+    installCulture('en', 'en', {}, INVARIANT_FORMAT, undefined, false);
+    // No server behind the test: a catalog answers empty rather than through a fetch that is refused.
+    setCultureCatalogLoader(async () => ({}));
+  });
   afterEach(() => {
     setCultureFormatLoader();
+    setCultureCatalogLoader();
     installCulture('', '', {});
   });
 

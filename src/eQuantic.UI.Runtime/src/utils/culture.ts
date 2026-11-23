@@ -66,6 +66,8 @@ export interface DateTimeFormatData {
   dateSeparator: string;
   timeSeparator: string;
   eraName: string;
+  /** The era's abbreviation, which .NET reads beside a date as it reads its name (ar-SA's `هـ`). */
+  abbreviatedEraName: string;
   /** The day a week starts on, as `System.DayOfWeek` counts: 0 is Sunday. */
   firstDayOfWeek: number;
   /** Sunday first, as `System.DayOfWeek` counts. */
@@ -79,6 +81,48 @@ export interface DateTimeFormatData {
   abbreviatedMonthGenitiveNames: string[];
   amDesignator: string;
   pmDesignator: string;
+  /** The calendar every number of a date above is counted in (#1191). */
+  calendar: CalendarData;
+}
+
+/**
+ * A culture's calendar, as the server measures .NET's own (`CalendarBridge`): the Gregorian months under
+ * another count of years (`yearOffset`, 543 for th-TH's Thai Buddhist calendar, 0 for the Gregorian one),
+ * or months of its own (`months`, fa-IR's Persian calendar and ar-SA's Um Al Qura one). `utils/calendar.ts`
+ * reads it.
+ */
+export interface CalendarData {
+  /** The calendar's type, which .NET names when it refuses a clock: `System.Globalization.GregorianCalendar`. */
+  name: string;
+  /** The last year a year of two digits reads as: 2049 in the Gregorian calendar, 2572 in the Thai Buddhist. */
+  twoDigitYearMax: number;
+  /** The years its count is ahead of the Gregorian one, for a calendar of the Gregorian months. */
+  yearOffset?: number;
+  /** The months of a calendar of its own. */
+  months?: CalendarMonths;
+  /** The first and the last day it writes, as days since 0001-01-01, where they are not a DateTime's. */
+  firstDay?: number;
+  lastDay?: number;
+  /** .NET's refusal of a day outside them, the sentence before the parameter's name. */
+  outOfRange?: string;
+  /** Whether a DateTime of the first day writes its text with no format in the invariant sortable form,
+   * as .NET does where its calendar cannot write the year 1. */
+  timeOfDayInvariant?: boolean;
+}
+
+/** Twelve months of a calendar's own, year by year from `firstYear`, which starts on day `start`. */
+export interface CalendarMonths {
+  firstYear: number;
+  /** The day the first year starts on, as days since 0001-01-01. */
+  start: number;
+  /** How many years it counts. */
+  years: number;
+  /** Each month's shorter length, the first month first. */
+  lengths: number[];
+  /** The months, 1 to 12, whose length varies from one year to another. */
+  varying: number[];
+  /** For every year, a bit for each month in `varying`, set where that month is a day longer: base64. */
+  longer: string;
 }
 
 /**
@@ -154,6 +198,7 @@ export const INVARIANT_FORMAT: CultureFormat = Object.freeze({
     dateSeparator: '/',
     timeSeparator: ':',
     eraName: 'A.D.',
+    abbreviatedEraName: 'AD',
     firstDayOfWeek: 0,
     dayNames: INVARIANT_DAYS,
     abbreviatedDayNames: INVARIANT_DAYS.map((day) => day.slice(0, 3)),
@@ -163,6 +208,7 @@ export const INVARIANT_FORMAT: CultureFormat = Object.freeze({
     abbreviatedMonthGenitiveNames: INVARIANT_MONTHS.map((month) => month.slice(0, 3)),
     amDesignator: 'AM',
     pmDesignator: 'PM',
+    calendar: Object.freeze({ name: 'System.Globalization.GregorianCalendar', twoDigitYearMax: 2049, yearOffset: 0 }),
   }),
 });
 
@@ -192,6 +238,13 @@ const warned = new Set<string>();
 /** Catalogs already in memory, by culture name — the one the shell inlined, plus any `setCulture`
  * fetched. A second switch back is instant and silent. */
 const catalogs = new Map<string, Record<string, string>>();
+
+/** The cultures whose WHOLE catalog is in memory (#1782). The shell inlines only the strings its page
+ * reads and a navigation adds the next page's, so a key read beyond them asks for the rest once. */
+const whole = new Set<string>();
+
+/** The cultures whose whole catalog is being asked for, so a burst of misses asks once. */
+const completing = new Set<string>();
 
 /** The catalogs the build wrote, as the server listed them for the page (`neutral` among them), or
  * null where no server said. A culture with no catalog of its own was asked for one and answered
@@ -285,6 +338,8 @@ export function installCulture(
   if (typeof rightToLeft === 'boolean') directions.set(ui, rightToLeft ? 'rightToLeft' : 'leftToRight');
   activeDirection = directions.get(ui) ?? (ui.length === 0 ? 'leftToRight' : activeDirection);
   activeStrings = strings;
+  // What was installed is what a page was handed, until a switch says it fetched the whole (#1782).
+  whole.delete(ui);
   activeFormat = formatData ?? (format.length === 0 ? INVARIANT_FORMAT : null);
   warned.clear();
   if (ui.length > 0) catalogs.set(ui, strings);
@@ -306,6 +361,46 @@ export function installCulture(
   if (typeof document !== 'undefined' && document.documentElement) {
     document.documentElement.dir = activeDirection === 'rightToLeft' ? 'rtl' : 'ltr';
   }
+}
+
+/**
+ * Adds a page's strings to the active culture's catalog (#1782): what a navigation's payload brings of
+ * the page it opens, which the document it started from was not handed.
+ */
+export function addStrings(strings: Record<string, string>): void {
+  activeStrings = { ...activeStrings, ...strings };
+  if (active.ui.length > 0) catalogs.set(active.ui, activeStrings);
+}
+
+/**
+ * Asks once for the active culture's whole catalog, after a key it was not handed was read (#1782), and
+ * draws again with it. A page is handed the strings its modules read; one read some other way (a key a
+ * build could not see) still arrives, a moment later, rather than as its key for good.
+ */
+function completeActiveCatalog(): void {
+  const ui = active.ui;
+  if (whole.has(ui) || completing.has(ui)) return;
+  completing.add(ui);
+  void (async () => {
+    try {
+      for (const candidate of [...parentChain(ui), 'neutral']) {
+        const name = catalogToAskFor(candidate);
+        if (name === null) continue;
+        const loaded = await loadCatalog(name);
+        if (loaded === null) continue;
+        whole.add(ui);
+        if (active.ui === ui) {
+          addStrings(loaded);
+          warned.clear();
+          invalidate?.();
+        }
+        return;
+      }
+      whole.add(ui);
+    } finally {
+      completing.delete(ui);
+    }
+  })();
 }
 
 /** Registers the re-render (boot) and the catalog loader (a host with its own transport). */
@@ -345,10 +440,11 @@ export async function setCulture(ui: string, format?: string): Promise<void> {
   const formatName = format ?? ui;
   if (ui === active.ui && formatName === active.format) return;
 
-  const [strings, data] = await Promise.all([catalogFor(ui), formatFor(formatName)]);
+  const [found, data] = await Promise.all([catalogFor(ui), formatFor(formatName)]);
   // The UI culture's direction, which the format culture's document said when the two are one.
   const rightToLeft = await rightToLeftOf(ui);
-  installCulture(ui, formatName, strings ?? activeStrings, data, undefined, rightToLeft);
+  installCulture(ui, formatName, found?.strings ?? activeStrings, data, undefined, rightToLeft);
+  if (found?.whole) whole.add(ui);
   invalidate?.();
 }
 
@@ -369,15 +465,16 @@ function rememberDirection(culture: string, answer: CultureFormatDocument | null
   }
 }
 
-/** The UI culture's catalog, from memory or by the server's walk, or undefined when none answers. */
-async function catalogFor(ui: string): Promise<Record<string, string> | undefined> {
+/** The UI culture's catalog, from memory or by the server's walk, and whether it is the whole one, or
+ * undefined when none answers. */
+async function catalogFor(ui: string): Promise<{ strings: Record<string, string>; whole: boolean } | undefined> {
   const known = catalogs.get(ui);
-  if (known !== undefined) return known;
+  if (known !== undefined) return { strings: known, whole: whole.has(ui) };
   for (const candidate of [...parentChain(ui), 'neutral']) {
     const name = catalogToAskFor(candidate);
     if (name === null) continue;
     const loaded = await loadCatalog(name);
-    if (loaded !== null) return loaded;
+    if (loaded !== null) return { strings: loaded, whole: true };
   }
   return undefined;
 }
@@ -461,6 +558,13 @@ export function str(id: string, key: string): string {
     const builtIn = sdkNeutralStrings[key];
     // Only when the catalog is silent: an app translating the SDK's chrome keeps its translation.
     if (builtIn !== undefined) return builtIn;
+  }
+
+  // Not handed with the page (#1782): the rest of the catalog is asked for, and the tree drawn again
+  // with it. Only a key the whole catalog lacks is warned about.
+  if (active.ui.length > 0 && !whole.has(active.ui)) {
+    completeActiveCatalog();
+    return key;
   }
 
   if (!warned.has(flat)) {

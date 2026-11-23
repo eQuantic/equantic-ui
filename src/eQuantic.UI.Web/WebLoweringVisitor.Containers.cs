@@ -423,6 +423,8 @@ internal sealed partial class WebLoweringVisitor
         FlexNode flex => string.Concat(flex.Children.Select(TextContentOf)),
         Pressable pressable => TextContentOf(pressable.Child),
         Group group => TextContentOf(group.Child),
+        MergeSemantics merge => TextContentOf(merge.Child),
+        ExcludeSemantics exclude => TextContentOf(exclude.Child),
         _ => "",
     };
 
@@ -965,6 +967,22 @@ internal sealed partial class WebLoweringVisitor
             if (simulated.HasFlag(SimulatedState.Pressed)) ApplyDiff(element.Style, pressed, box.Style);
             else AppendDiff(element, StyleSink.ControlPressed, pressed, box.Style);
         }
+        // The HEADER's scroll (#1769): the nearest pinned header around the box decides, whoever
+        // lowers it, so it is a rule on the header's attribute and never a flag of this walk, which a
+        // component boundary would hide. Its weight puts it under the three above.
+        if (box.Style.Scrolled is { IsEmpty: false } headerScrolled)
+        {
+            // A SIMULATED state was written into the resting declarations above, which the scrolled
+            // rule outweighs, so the state it pictures is laid over the scroll here, in the order a
+            // real one wins, as Photon lays it.
+            if (simulated.HasFlag(SimulatedState.Hovered) && box.Style.Hover is { IsEmpty: false } shownHover)
+                headerScrolled = LaidOver(headerScrolled, shownHover);
+            if (!_inDisabledControl && simulated.HasFlag(SimulatedState.Focused) && box.Style.Focus is { IsEmpty: false } shownFocus)
+                headerScrolled = LaidOver(headerScrolled, shownFocus);
+            if (!_inDisabledControl && simulated.HasFlag(SimulatedState.Pressed) && box.Style.Pressed is { IsEmpty: false } shownPress)
+                headerScrolled = LaidOver(headerScrolled, shownPress);
+            AppendDiff(element, StyleSink.HeaderScrolled, headerScrolled, box.Style);
+        }
 
         if (box.Child is not null && Lower(box.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
         {
@@ -1166,6 +1184,25 @@ internal sealed partial class WebLoweringVisitor
         }
     }
 
+    /// <summary>
+    /// <paramref name="over"/>'s members laid over <paramref name="under"/>'s, each one it sets replacing
+    /// the other's: what a box shows with both states active, the later one winning (#1769). Photon's
+    /// twin is its effective style, which lays one diff after the other over the base.
+    /// </summary>
+    private static StyleDiff LaidOver(StyleDiff under, StyleDiff over) => under with
+    {
+        Background = over.Background ?? under.Background,
+        Foreground = over.Foreground ?? under.Foreground,
+        BorderColor = over.BorderColor ?? under.BorderColor,
+        BorderWidth = over.BorderWidth ?? under.BorderWidth,
+        Elevation = over.Elevation ?? under.Elevation,
+        Opacity = over.Opacity ?? under.Opacity,
+        Gradient = over.Gradient ?? under.Gradient,
+        BackdropBlur = over.BackdropBlur ?? under.BackdropBlur,
+        Transform = over.Transform ?? under.Transform,
+        Shadows = over.Shadows ?? under.Shadows,
+    };
+
     /// <summary>Spec S5: a StyleDiff's set members as pseudo-state declarations (base values keep).</summary>
     private void AppendDiff(RealizedElement element, string pseudo, StyleDiff diff, in BoxStyle style)
     {
@@ -1301,7 +1338,9 @@ internal sealed partial class WebLoweringVisitor
         void AddVariant(VisualNode variant, string gate, int index)
         {
             if (Arm(variant, place, index) is not { } lowered) return;
-            var gated = new RealizedElement("div") { AdaptiveGate = gate };
+            // Keyed by the arm's index, as the browser keys it: once a page has hydrated the browser holds
+            // the one arm its window resolves (#1783), and the key is how its render keeps that arm's box.
+            var gated = new RealizedElement("div") { AdaptiveGate = gate, Key = $"arm{index}" };
             gated.Children.Add(lowered);
             wrapper.Children.Add(gated);
         }

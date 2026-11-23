@@ -17,18 +17,20 @@ namespace eQuantic.UI.Primitives;
 public sealed class Navigator
 {
     private readonly Action<string>? _go;
+    private readonly IUrlLauncher? _launcher;
 
-    private Navigator(Action<string>? go, string location)
+    private Navigator(Action<string>? go, string location, IUrlLauncher? launcher)
     {
         _go = go;
         Location = location;
+        _launcher = launcher;
     }
 
     /// <summary>The navigator of the tree <paramref name="context"/>'s component is in.</summary>
     public static Navigator Of(ComponentContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return new Navigator(context.Navigation, context.Route.Path);
+        return new Navigator(context.Navigation, context.Route.Path, context.GetService<IUrlLauncher>());
     }
 
     /// <summary>
@@ -54,5 +56,53 @@ public sealed class Navigator
     {
         if (string.IsNullOrEmpty(destination)) return;
         _go?.Invoke(destination);
+    }
+
+    /// <summary>
+    /// Opens <paramref name="address"/> BESIDE the app, rather than navigating it there: an address an
+    /// action answered with (a document a server prepared, a payment provider's page) opened from the
+    /// handler that awaited it, without a second press on a link (#1787).
+    /// <para>
+    /// The browser opens it in a new tab, inside the time the press that started the handler still
+    /// allows (browsers let a page open one for a few seconds after a person's press), and resolves an
+    /// address relative to the page. A Photon shell hands it to the system (<see cref="IUrlLauncher"/>),
+    /// under the same <see cref="OpenUrlPolicy"/>, so the address must be absolute there. Only
+    /// <c>http</c> and <c>https</c> open in the browser: an address that runs script is never opened.
+    /// </para>
+    /// </summary>
+    /// <returns>Whether it opened: false where the target opens nothing (a server's render), where the
+    /// browser blocked the tab because the press was too long ago, or where the scheme is refused.</returns>
+    /// <exception cref="ArgumentException">The address is empty, or relative where nothing can resolve it.</exception>
+    public ValueTask<bool> OpenAsync(string address)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(address);
+        if (_launcher is null) return ValueTask.FromResult(false);
+        // A path from the root is relative to a page, though .NET on macOS and Linux reads `/print/1` as an
+        // absolute file URI.
+        if (address.StartsWith('/') || !Uri.TryCreate(address, UriKind.Absolute, out var url))
+            throw new ArgumentException(
+                $"'{address}' is relative, and an app outside a browser has no page to resolve it against. Hand it an absolute address.",
+                nameof(address));
+        return _launcher.OpenUrlAsync(url);
+    }
+
+    /// <summary>
+    /// Hands the file at <paramref name="address"/> to the person as a download named
+    /// <paramref name="fileName"/>, from the handler that awaited the address (#1787).
+    /// <para>
+    /// The browser downloads it under that name when the address is the page's own origin, and opens
+    /// it in a new tab otherwise, since a browser ignores the name of another origin's file and would
+    /// navigate the page away instead. A Photon shell hands the address to the system, whose browser
+    /// downloads it as the server names it. A file the app holds in memory is
+    /// <see cref="IFileSaver"/>'s.
+    /// </para>
+    /// </summary>
+    /// <returns>Whether the target took it, as <see cref="OpenAsync"/> answers.</returns>
+    /// <exception cref="ArgumentException">The address or the name is empty, or the address is relative
+    /// where nothing can resolve it.</exception>
+    public ValueTask<bool> DownloadAsync(string address, string fileName)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(fileName);
+        return OpenAsync(address);
     }
 }

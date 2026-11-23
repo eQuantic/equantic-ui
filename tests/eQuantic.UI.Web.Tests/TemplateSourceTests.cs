@@ -219,14 +219,15 @@ public class TemplateSourceTests
         var files = Directory.GetFiles(Path.Combine(root, ".shells", shell), "*.cs",
                 SearchOption.AllDirectories)
             .Concat(Directory.GetFiles(Path.Combine(root, "Components"), "*.cs"))
-            .Concat(Directory.GetFiles(Path.Combine(root, "Resources"), "*.cs"))
             .ToList();
 
         files.Should().NotBeEmpty($"--shell {shell} must actually have sources");
 
+        // The template ships its .resx and no Designer: the SDK's build writes the accessors (#1784).
         var trees = files
             .Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path))
             .Append(CSharpSyntaxTree.ParseText(SdkUsings))
+            .Append(CSharpSyntaxTree.ParseText(ResxAccessors.Source(Path.Combine(root, "Resources", "Strings.resx"), "EQuanticApp.Resources")))
             .ToList();
 
         var compilation = CSharpCompilation.Create($"WebShell_{shell}", trees, PlatformReferences(),

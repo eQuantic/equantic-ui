@@ -18,6 +18,7 @@ import { NameBox } from './components/NameBox';
 import { SizeValue } from './value-types';
 import { Reconciler } from '../dom/reconciler';
 import { commitFocusTraps, resetFocusTraps } from '../dom/focus-trap';
+import { commitShortcuts, resetShortcuts } from '../dom/shortcuts';
 import type { HtmlNode } from '../core/types';
 
 type Handler = (event: Event) => void;
@@ -198,6 +199,60 @@ describe('a sheet at either end of a dialog', () => {
     press(first.textarea, 'Tab', true);
     expect(document.activeElement, 'Shift+Tab from the first control wraps to the last').toBe(first.button);
     expect(first.sheet.activeCell).toEqual(B2);
+  });
+});
+
+/**
+ * A dialog's Escape waits for the sheet the keyboard is in (#1181; C# twin: LayerEscapeTests, on Photon):
+ * Escape cancels the cell's edit, as Excel's does, and the dialog stays open. The page's bindings heard
+ * Escape first, so the dialog closed over the edit.
+ */
+describe('a sheet in a dialog, with a cell being edited', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+    resetShortcuts();
+  });
+
+  it('cancels the edit on Escape and keeps the dialog, which the next Escape closes', () => {
+    resetShortcuts();
+    const sheet = new SheetController(50, 8);
+    sheet.selection = new SheetRange(B2);
+    let dialogClosed = 0;
+    const render = () => {
+      const dialog = {
+        nodeKind: 'shortcut',
+        child: { nodeKind: 'sheetSurface', child: { nodeKind: 'column', children: [] }, model: sheet, onChanged: () => {} },
+        chord: { key: 'Escape' },
+        onPressed: () => dialogClosed++,
+      };
+      const lowered = lowerVisualNode(dialog as never, { textPrimary: photonTheme.textPrimary } as LoweringContext);
+      commitShortcuts();
+      return lowered;
+    };
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+    const reconciler = new Reconciler();
+    const first = render();
+    reconciler.reconcile(parent, null, first);
+    const textarea = parent.querySelector('textarea')!;
+    textarea.focus();
+    textarea.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: '4', bubbles: true, cancelable: true }));
+    expect(sheet.editing, 'a character typed at rest begins an entry').toBe(true);
+    reconciler.reconcile(parent, first, render());
+    const escape = () => {
+      const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+      textarea.dispatchEvent(event);
+      return event;
+    };
+
+    expect(escape().defaultPrevented, 'the sheet claimed it').toBe(true);
+
+    expect(dialogClosed, 'the edit is nearer the keyboard than the dialog').toBe(0);
+    expect(sheet.editing, 'Escape cancels the edit').toBe(false);
+    expect(sheet.document.getCell(B2), 'a cancelled edit writes nothing').toBe('');
+
+    escape();
+    expect(dialogClosed, "with nothing being edited, Escape is the dialog's").toBe(1);
   });
 });
 

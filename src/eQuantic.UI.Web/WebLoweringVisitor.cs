@@ -250,6 +250,10 @@ internal sealed partial class WebLoweringVisitor(
 
     public HtmlElement? Visit(Group group, bool? horizontalAxis) => LowerGroup(group);
 
+    public HtmlElement? Visit(MergeSemantics merge, bool? horizontalAxis) => LowerMergeSemantics(merge);
+
+    public HtmlElement? Visit(ExcludeSemantics exclude, bool? horizontalAxis) => LowerExcludeSemantics(exclude);
+
     public HtmlElement? Visit(Navigable navigable, bool? horizontalAxis) => LowerNavigable(navigable);
 
     public HtmlElement? Visit(Shortcut shortcut, bool? horizontalAxis) =>

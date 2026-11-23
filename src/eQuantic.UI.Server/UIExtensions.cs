@@ -798,6 +798,10 @@ public static class UIExtensions
     /// link would cost more than the round trip it saves.
     /// </para>
     /// </summary>
+    /// <summary>The modules a page is drawn from: its own, and the app's layout's (#1782).</summary>
+    private static IReadOnlyCollection<string>? ModulesOf(Type? page, UIOptions options) =>
+        page is null ? null : options.Layout is { } layout ? [page.Name, layout.Name] : [page.Name];
+
     private static async Task ServePageState(HttpContext context, Type? page, DeclaredPage? declared)
     {
         context.Response.ContentType = "application/json; charset=utf-8";
@@ -825,10 +829,18 @@ public static class UIExtensions
         LocalizeCanonical(context, options, metadata);
 
         var payload = new StringBuilder("{");
+        // The page this server resolved for the URL, by its module's name, as the document names it: the
+        // browser's router chose its own, and says so when the two differ (#1778).
+        if (page is not null) payload.Append("\"page\":").Append(JsonSerializer.Serialize(TwinName.OfType(page))).Append(',');
         payload.Append("\"title\":").Append(JsonSerializer.Serialize(metadata.Title));
         payload.Append(",\"head\":").Append(JsonSerializer.Serialize(metadata.RenderTags()));
         if (prepared?.SerializedState is { Length: > 0 } state)
             payload.Append(",\"state\":").Append(state);
+        // The strings the page reads, which the document navigated from was not handed (#1782). The
+        // layout's are already in the browser.
+        if (page is not null
+            && CultureBridge.PageStrings(context, System.Globalization.CultureInfo.CurrentUICulture, [page.Name]) is { } strings)
+            payload.Append(",\"strings\":").Append(strings);
         payload.Append('}');
         await context.Response.WriteAsync(payload.ToString());
     }
@@ -970,7 +982,6 @@ public static class UIExtensions
         // Which way the page reads, beside its language and from the same culture (#1568): every start
         // and end the realizer writes is logical CSS, so this one attribute mirrors the page.
         var htmlDir = uiCulture.TextInfo.IsRightToLeft ? "rtl" : "ltr";
-        var cultureDataJson = CultureBridge.BuildCultureData(context, uiCulture, formatCulture);
 
         // The app icon the SDK generated, linked without the app saying so. Stating it once — in
         // Assets/ — and having it appear in the tab, on a pinned home screen and in the install
@@ -1220,7 +1231,7 @@ public static class UIExtensions
                .Set("IsDevelopmentBool", isDevelopment ? "true" : "false")
                .SetOrEmpty("InitialState", serializedState != null ? $"window.__INITIAL_STATE__ = {serializedState};" : null)
                .SetOrEmpty("ThemeData", themeDataJson != null ? $"window.__EQ_THEME__ = {themeDataJson};" : null)
-               .SetOrEmpty("CultureData", $"window.__EQ_CULTURE__ = {cultureDataJson};");
+               .SetOrEmpty("CultureData", $"window.__EQ_CULTURE__ = {CultureBridge.BuildCultureData(context, uiCulture, formatCulture, ModulesOf(page, options))};");
 
             // Conditions
             ctx.When("IsDevelopment", isDevelopment)

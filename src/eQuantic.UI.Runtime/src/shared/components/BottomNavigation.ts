@@ -1,4 +1,4 @@
-import { $eq, Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, IconGlyph, IconsValue, NavItem, Pressable, Row, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, $IconsValue, Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, IconGlyph, NavItem, Pressable, Row, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
 
 export class BottomNavigation extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.BottomNavigation';
@@ -33,12 +33,12 @@ export class BottomNavigation extends StatelessComponent {
         let primary = theme.colors('primary');
         let slot = theme.navigation;
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
-        for (let i = 0; i < $eq.collections.count(this.items); i++) {
+        for (let i = 0; i < $eq.collections.count(this.items); i = i + 1 | 0) {
             let item = $eq.collections.item(this.items, i);
             let isActive = i === this.selected;
             let index = i;
             let filled: any; 
-            let glyph: IconsValue = isActive && (filled = item.selectedIcon) != null ? filled : item.icon;
+            let glyph: $IconsValue = isActive && (filled = item.selectedIcon) != null ? filled : item.icon;
             let tint = isActive ? primary.onSubtle : slot?.inactiveColor ?? theme.textMuted;
             let icon = new Icon(IconGlyph.fromIcons(glyph), slot?.barIconSize ?? 24, tint);
             let iconNode = item.badgeCount > 0 ? Badge.over(icon, item.badgeCount) : icon;

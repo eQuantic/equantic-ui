@@ -973,6 +973,43 @@
       ]
     }
   ],
+  "header-scrolled-boxes": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1xlbso6 eq-1yhij0h eq-2jl817",
+        "data-eq-pinned": "1"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-179up68 eq-1a36kfj eq-1awcttm eq-1bl8m2b eq-1eb13m5 eq-1yxcnfo eq-bo3n4y eq-kngwsg"
+              },
+              "events": [],
+              "children": []
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-12ve49g eq-1eb13m5 eq-1eoeorz eq-1su9m49 eq-bo3n4y eq-g7fowl eq-gvrheo eq-va9mrb"
+              },
+              "events": [],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "box-hover-border-edge": [
     {
       "tag": "div",
@@ -1037,6 +1074,7 @@
               "children": [
                 {
                   "tag": "div",
+                  "key": "arm0",
                   "attrs": {
                     "class": "eq-vc600"
                   },
@@ -1054,6 +1092,7 @@
                 },
                 {
                   "tag": "div",
+                  "key": "arm1",
                   "attrs": {
                     "class": "eq-vm600"
                   },
@@ -3116,6 +3155,470 @@
               },
               "events": [],
               "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "text-input-kind": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-11yg588 eq-1eb13m5 eq-1pyii92 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp eq-v9un6z"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-115fhry eq-16x7aca eq-type-label"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "E-mail",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-12kbhu0 eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-5hocaj eq-akjizx eq-bo3n4y eq-g7fowl eq-hebsiu"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-bodyl"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "to",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-168ghzj eq-5ew4ww"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-field"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "input",
+                              "attrs": {
+                                "aria-describedby": "eq-desc-b31o63",
+                                "aria-label": "E-mail (to @work)",
+                                "autocapitalize": "none",
+                                "autocomplete": "email",
+                                "class": "eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-entry eq-g7fowl eq-type-bodyl",
+                                "inputmode": "email",
+                                "spellcheck": "false",
+                                "type": "text",
+                                "value": "a@b"
+                              },
+                              "events": [],
+                              "children": []
+                            },
+                            {
+                              "tag": "span",
+                              "attrs": {
+                                "class": "eq-desc",
+                                "hidden": "",
+                                "id": "eq-desc-b31o63"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "#text",
+                                  "text": "Where the receipt goes",
+                                  "attrs": {},
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-bodyl"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "@work",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "aria-atomic": "true",
+            "aria-live": "polite",
+            "class": "eq-1jixn86",
+            "role": "status"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-caption"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Where the receipt goes",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "money-input": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-11yg588 eq-1eb13m5 eq-1pyii92 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp eq-v9un6z"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-115fhry eq-16x7aca eq-type-label"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Price",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-12kbhu0 eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-5hocaj eq-akjizx eq-bo3n4y eq-g7fowl eq-hebsiu"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-bodyl"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "\u20AC",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-168ghzj eq-5ew4ww"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-field"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "input",
+                              "attrs": {
+                                "aria-describedby": "eq-desc-69d8s",
+                                "aria-label": "Price (\u20AC)",
+                                "autocapitalize": "none",
+                                "class": "eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-entry eq-g7fowl eq-type-bodyl",
+                                "inputmode": "decimal",
+                                "spellcheck": "false",
+                                "type": "text",
+                                "value": "1,234.50"
+                              },
+                              "events": [],
+                              "children": []
+                            },
+                            {
+                              "tag": "span",
+                              "attrs": {
+                                "class": "eq-desc",
+                                "hidden": "",
+                                "id": "eq-desc-69d8s"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "#text",
+                                  "text": "VAT included",
+                                  "attrs": {},
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "aria-atomic": "true",
+            "aria-live": "polite",
+            "class": "eq-1jixn86",
+            "role": "status"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-caption"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "VAT included",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "number-input": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-11yg588 eq-1eb13m5 eq-1pyii92 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp eq-v9un6z"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-115fhry eq-16x7aca eq-type-label"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Lead time",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-12kbhu0 eq-15qobfw eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-5hocaj eq-akjizx eq-bo3n4y eq-g7fowl eq-hebsiu"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-196dx6e eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-168ghzj eq-5ew4ww"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-field"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "input",
+                              "attrs": {
+                                "aria-describedby": "eq-desc-2orxab",
+                                "aria-label": "Lead time (days)",
+                                "autocapitalize": "none",
+                                "class": "eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-entry eq-g7fowl eq-type-bodyl",
+                                "inputmode": "numeric",
+                                "spellcheck": "false",
+                                "type": "text",
+                                "value": "3"
+                              },
+                              "events": [],
+                              "children": []
+                            },
+                            {
+                              "tag": "span",
+                              "attrs": {
+                                "class": "eq-desc",
+                                "hidden": "",
+                                "id": "eq-desc-2orxab"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "#text",
+                                  "text": "Working days",
+                                  "attrs": {},
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-bodyl"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "days",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "aria-atomic": "true",
+            "aria-live": "polite",
+            "class": "eq-1jixn86",
+            "role": "status"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-1566de eq-16x7aca eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-type-caption"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Working days",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
             }
           ]
         }
@@ -47522,6 +48025,285 @@
       ]
     }
   ],
+  "merge-a-checkbox-and-its-description": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1jixn86"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "button",
+              "attrs": {
+                "aria-checked": "true",
+                "aria-label": "Agree",
+                "aria-labelledby": "eq-merge-ztntfp-c eq-merge-ztntfp-0",
+                "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
+                "id": "eq-merge-ztntfp-c",
+                "role": "checkbox"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1iu691c eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1k117pa eq-bo3n4y eq-g7fowl eq-iuiqgs eq-s01o67 eq-z2pkxm"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu"
+                          },
+                          "events": [],
+                          "children": [
+                            {
+                              "tag": "svg",
+                              "attrs": {
+                                "aria-hidden": "true",
+                                "class": "eq-16x7aca eq-19vml7g eq-1dakdsg eq-1or4gpz",
+                                "fill": "currentColor",
+                                "viewBox": "0 0 24 24"
+                              },
+                              "events": [],
+                              "children": [
+                                {
+                                  "tag": "path",
+                                  "attrs": {
+                                    "d": "M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                                  },
+                                  "events": [],
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "span",
+                      "attrs": {
+                        "class": "eq-12qw9lh eq-7gvrt4 eq-h7owsy eq-mbtjfn eq-type-bodym eq-xkrzsg"
+                      },
+                      "events": [],
+                      "children": [
+                        {
+                          "tag": "#text",
+                          "text": "Agree",
+                          "attrs": {},
+                          "events": [],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "span",
+              "attrs": {
+                "aria-hidden": "true",
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym",
+                "id": "eq-merge-ztntfp-0"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "to the terms",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "merge-read-content": [
+    {
+      "tag": "div",
+      "attrs": {
+        "aria-labelledby": "eq-merge-ztntfp-0 eq-merge-ztntfp-1",
+        "class": "eq-1jixn86",
+        "role": "group"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "aria-hidden": "true",
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym",
+                "id": "eq-merge-ztntfp-0"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Total",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "aria-hidden": "true",
+                "class": "eq-1jixn86"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "span",
+                  "attrs": {
+                    "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "#text",
+                      "text": "JD",
+                      "attrs": {},
+                      "events": [],
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "span",
+              "attrs": {
+                "aria-hidden": "true",
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym",
+                "id": "eq-merge-ztntfp-1"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "42 EUR",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclude-a-subtree": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "aria-hidden": "true",
+            "class": "eq-1jixn86"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Decoration",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "span",
+          "attrs": {
+            "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "#text",
+              "text": "Shown",
+              "attrs": {},
+              "events": [],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclude-not-excluding": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1jixn86"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "span",
+          "attrs": {
+            "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "#text",
+              "text": "Read",
+              "attrs": {},
+              "events": [],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "sortable-column": [
     {
       "tag": "div",
@@ -47574,6 +48356,43 @@
             {
               "tag": "#text",
               "text": "b",
+              "attrs": {},
+              "events": [],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sortable-styled": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-11yg588 eq-1eb13m5 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp",
+        "data-eq-sort": "",
+        "data-eq-sort-axis": "y",
+        "data-eq-sort-id": "todo",
+        "data-eq-sort-look-copy-elevation": "5",
+        "data-eq-sort-look-lean": "0",
+        "data-eq-sort-look-lifted": "0.25"
+      },
+      "events": [
+        "eq-sort-dropped"
+      ],
+      "children": [
+        {
+          "tag": "span",
+          "attrs": {
+            "class": "eq-16x7aca eq-7gvrt4 eq-g7fowl eq-type-bodym",
+            "data-eq-sort-item": "a",
+            "tabindex": "0"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "#text",
+              "text": "a",
               "attrs": {},
               "events": [],
               "children": []
@@ -48878,6 +49697,7 @@
             "data-eq-sort": "",
             "data-eq-sort-axis": "y",
             "data-eq-sort-id": "tree",
+            "data-eq-sort-indent": "16",
             "data-eq-sort-label": "Files",
             "data-eq-sort-nests": "1",
             "data-eq-sort-say-dropped": "Dropped {0} at position {1} of {2} in {3}.",
@@ -49003,6 +49823,7 @@
                 "aria-selected": "false",
                 "aria-setsize": "1",
                 "class": "eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable",
+                "data-eq-sort-depth": "1",
                 "data-eq-sort-item": "src/App.cs",
                 "id": "eq-cell-2auxxe-1-0",
                 "role": "treeitem",
@@ -58230,6 +59051,7 @@
           "children": [
             {
               "tag": "div",
+              "key": "arm0",
               "attrs": {
                 "class": "eq-vc703_7037"
               },
@@ -58255,6 +59077,7 @@
             },
             {
               "tag": "div",
+              "key": "arm1",
               "attrs": {
                 "class": "eq-vm703_7037-1066_6667"
               },
@@ -58280,6 +59103,7 @@
             },
             {
               "tag": "div",
+              "key": "arm2",
               "attrs": {
                 "class": "eq-vx1066_6667"
               },
@@ -58341,6 +59165,7 @@
           "children": [
             {
               "tag": "div",
+              "key": "arm0",
               "attrs": {
                 "class": "eq-vc980"
               },
@@ -58359,6 +59184,7 @@
             },
             {
               "tag": "div",
+              "key": "arm2",
               "attrs": {
                 "class": "eq-vx980"
               },
@@ -58430,6 +59256,7 @@
           "children": [
             {
               "tag": "div",
+              "key": "arm0",
               "attrs": {
                 "class": "eq-vc980"
               },
@@ -58456,6 +59283,7 @@
             },
             {
               "tag": "div",
+              "key": "arm2",
               "attrs": {
                 "class": "eq-vx980"
               },

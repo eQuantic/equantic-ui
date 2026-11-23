@@ -3,7 +3,8 @@
  *
  * A C# `int` is 32 bits: past 2,147,483,647 it wraps (unchecked, the default) or throws
  * (`checked`). A JavaScript number is a double: it keeps counting. The compiler truncates a
- * wrapped result inline (`| 0`, `& 0xFF`, `BigInt.asIntN(64, …)`) and asks here for the one case
+ * wrapped result inline (`| 0`, `Math.imul`, `& 0xFF`, `BigInt.asIntN(64, …)`) in the default
+ * context and in `unchecked` alike (#1807), and asks here for the one case
  * that needs a decision at run time — the checked context, where going out of range is an
  * OverflowException.
  */
@@ -167,6 +168,70 @@ export function longRem(left: bigint, right: bigint): bigint {
   if (right === 0n) throw exception('System.DivideByZeroException', DIVIDE_BY_ZERO);
   if (right === -1n && left === LONG_MIN) throw exception('System.OverflowException', OVERFLOW);
   return left % right;
+}
+
+const LONG_MAX = 9_223_372_036_854_775_807n;
+
+/**
+ * An `int` added to `Enumerable.Sum`'s total as .NET adds it, in a checked context whatever the context of
+ * the call (#1808): past the type's range it throws OverflowException, where the reduce kept counting and
+ * answered 2147483648. Each addition is checked, in order, so a total that leaves the range throws even when
+ * a later element would bring it back, as .NET's does for any sequence it adds one element at a time. (.NET
+ * adds a long enough array or list in vector lanes instead, whose grouping is the machine's vector width,
+ * so its own answer to such a sequence is the machine's.)
+ *
+ * Its own function rather than {@link checked}: inside the reduce, one comparison of the width it knows
+ * costs nothing a sum of a million ints measures, where `checked` reads the width and the value's type at
+ * every element and took two and a half times as long, and seven times for a long, whose bounds it builds
+ * as BigInts at each call.
+ */
+export function addInt(total: number, value: number): number {
+  const next = total + value;
+  if (next > 2_147_483_647 || next < INT_MIN) throw exception('System.OverflowException', OVERFLOW);
+  return next;
+}
+
+/** {@link addInt} for a `long`, a BigInt here. */
+export function addLong(total: bigint, value: bigint): bigint {
+  const next = total + value;
+  if (next > LONG_MAX || next < LONG_MIN) throw exception('System.OverflowException', OVERFLOW);
+  return next;
+}
+
+const NEGATING_THE_MINIMUM = 'Negating the minimum value of a twos complement number is invalid.';
+
+/**
+ * `Math.Abs` of a signed integer a plain number carries, an `sbyte`, a `short` or an `int`, and the type's
+ * own `Abs`, as .NET answers it (#1808). The magnitude of the type's MinValue is one past its largest
+ * value, so .NET throws, in an unchecked context too, where `Math.abs` answered a value outside the type:
+ * 2147483648 for an int.
+ */
+export function abs(value: number, bits: 8 | 16 | 32): number {
+  if (value === -(2 ** (bits - 1))) throw exception('System.OverflowException', NEGATING_THE_MINIMUM);
+  return Math.abs(value);
+}
+
+/** {@link abs} for a `long` or an `nint`, a BigInt here, whose MinValue's magnitude is 2^63. */
+export function absLong(value: bigint): bigint {
+  if (value === LONG_MIN) throw exception('System.OverflowException', NEGATING_THE_MINIMUM);
+  return value < 0n ? -value : value;
+}
+
+/**
+ * A signed integer's `CopySign`, as .NET answers it (#1808): the value's magnitude, with the sign's sign. It
+ * takes the magnitude first, so the type's MinValue throws wherever the sign is not negative, and answers
+ * itself where it is. A zero with a negative sign is 0, which an integer has only one of: `-0` was the
+ * double's other zero, which `1 / x` tells apart.
+ */
+export function copySign(value: number, sign: number, bits: 8 | 16 | 32): number {
+  if (sign < 0) return value < 0 ? value : 0 - value;
+  return abs(value, bits);
+}
+
+/** {@link copySign} for a `long` or an `nint`, a BigInt here. */
+export function copySignLong(value: bigint, sign: bigint): bigint {
+  if (sign < 0n) return value < 0n ? value : -value;
+  return absLong(value);
 }
 
 /**

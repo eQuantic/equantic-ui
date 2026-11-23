@@ -38,6 +38,14 @@ import {
   warmPageState,
 } from '../../eQuantic.UI.Runtime/src/router/page-state';
 import { Component } from '../../eQuantic.UI.Runtime/src/core/types';
+import type { HydrationDifference, HydrationResult } from '../../eQuantic.UI.Runtime/src/dom/reconciler';
+import { routerDisagrees } from '../../eQuantic.UI.Runtime/src/router/page-agreement';
+import {
+  anyThresholdNoted,
+  documentHoldsEveryArm,
+  holdOneArm,
+  setAdaptiveInvalidator,
+} from '../../eQuantic.UI.Runtime/src/shared/adaptive-window';
 
 // --- Constants ---
 const APP_ROOT_ID = 'app';
@@ -48,13 +56,36 @@ interface MountableComponent {
   mount?(root: HTMLElement): void;
   getVirtualNode?(): HtmlNode;
   /** Hydrate SSR markup and take ownership of the tree (so SPA-nav diffs can use getCurrentTree). */
-  hydrate?(root: HTMLElement): void;
+  hydrate?(root: HTMLElement): HydrationResult | void;
   /** SPA-nav mount that reconciles against the outgoing page's tree (preserves a shared shell). */
   mountReconcile?(root: HTMLElement, previousNode: HtmlNode | null): HtmlNode;
   /** The tree currently reflected in the DOM — the diff baseline when navigating away. */
   getCurrentTree?(): HtmlNode | null;
   /** Release lifecycle ownership on nav-away without touching the (now-reconciled) DOM. */
   disposeQuietly?(): void;
+}
+
+/**
+ * What the first load did with the server's markup, written on `window.__EQ_HYDRATION__` once the page
+ * is on screen (#1775): the page the server drew and the one the router chose for the URL, whether the
+ * markup was adopted, and what the client's tree said differently. A page's test reads it to fail on a
+ * page that breaks only once it hydrates; nothing in the runtime reads it back.
+ */
+interface HydrationRecord {
+  page: string;
+  routed: string | null;
+  hydrated: boolean;
+  /** Why the markup was drawn over rather than adopted, when it was. */
+  drewOver: string[];
+  warnings: string[];
+  differences: HydrationDifference[];
+}
+
+/** The page the router chose for the URL the document was served at, for the record. */
+let routedAtLoad: string | null = null;
+
+function recordHydration(record: Omit<HydrationRecord, 'routed'>): void {
+  (window as unknown as { __EQ_HYDRATION__?: HydrationRecord }).__EQ_HYDRATION__ = { ...record, routed: routedAtLoad };
 }
 
 // --- Helpers ---
@@ -236,6 +267,7 @@ export async function boot(): Promise<void> {
     const pageName = resolvePageName(config);
 
     if (!pageName) {
+      recordHydration({ page: '', hydrated: false, drewOver: ['the document names no page'], warnings: [], differences: [] });
       renderNoPage(root);
       return;
     }
@@ -304,6 +336,10 @@ export async function boot(): Promise<void> {
       const initialUrl = new URL(window.location.href);
       const initialMatch = matchRoute(config.routes, initialUrl.pathname);
       if (initialMatch) setCurrentRouteFrom(initialMatch, initialUrl);
+      // The router answers every navigation to this URL from here on: a page it chooses that the
+      // server did not draw shows the server's data for another page (#1778).
+      routedAtLoad = initialMatch?.page ?? null;
+      routerDisagrees(initialUrl.pathname, pageName, routedAtLoad, isDev());
     }
 
     // HYDRATION lowers at the density the server rendered at, so it adopts the served markup as it
@@ -313,10 +349,21 @@ export async function boot(): Promise<void> {
     const hydrating = servedContent && config.ssr !== false && servedMarkupAgrees;
     const atHydration = densityForHydration(config.density, hydrating, ownDensity);
     if (atHydration) setPhotonDensity(atHydration);
+    // A page drawn here rather than adopted holds one arm of each adaptive node from its first render.
+    if (!hydrating) holdOneArm();
     await loadAndMountPage(root, pageName, config);
-    settleDensity(ownDensity, () =>
-      (currentComponent as unknown as { _scheduleRender?: () => void } | null)?._scheduleRender?.(),
-    );
+    const renderPage = () =>
+      (currentComponent as unknown as { _scheduleRender?: () => void } | null)?._scheduleRender?.();
+    settleDensity(ownDensity, renderPage);
+    // A served page hydrates with every arm of its adaptive nodes, as the server wrote them behind their
+    // gates; then the document holds the one arm each window resolves, as Photon does, so the arms it
+    // hides stop running, and renders again when the window crosses a threshold (#1783).
+    setAdaptiveInvalidator(renderPage);
+    if (documentHoldsEveryArm()) {
+      holdOneArm();
+      // A page with no adaptive node of more than one arm holds the same tree either way.
+      if (anyThresholdNoted()) renderPage();
+    }
 
     // Phase 2: when the server provided a route table, enable client-side (SPA) navigation —
     // internal link clicks swap the page bundle in place instead of triggering a full reload.
@@ -346,6 +393,11 @@ export async function boot(): Promise<void> {
       (window as unknown as { __eqRouter?: Router }).__eqRouter = router;
     }
   } catch (error) {
+    // A page's test is told now rather than after it waited for a record that never comes (#1775).
+    const hydration = (window as unknown as { __EQ_HYDRATION__?: HydrationRecord }).__EQ_HYDRATION__;
+    if (!hydration) {
+      recordHydration({ page: window.__EQ_CONFIG?.page ?? '', hydrated: false, drewOver: [`the boot failed: ${String(error)}`], warnings: [], differences: [] });
+    }
     // Same rule as loadAndMountPage: what the server rendered stays. By the time boot throws, the
     // reader is already looking at the page, and swapping it for a 500 is the client making the
     // page worse than it found it.
@@ -452,6 +504,7 @@ async function loadAndMountPage(
     // In DEV the loud page stays, because there it is the feature: a developer whose page silently
     // renders without behaving would hunt for hours. isDev() is the same seam the error overlay
     // and the boot logs already use.
+    recordHydration({ page: pageName, hydrated: false, drewOver: [`'${missing}' did not load`], warnings: [], differences: [] });
     if (hasSSRContent && !isDev()) {
       console.error(
         `eQuantic.UI: '${missing}' did not load. Serving the server-rendered page without ` +
@@ -468,15 +521,15 @@ async function loadAndMountPage(
     hasSSRContent && config.ssr !== false && !!component.getVirtualNode && servedMarkupAgrees;
   // In Development the boot says why it draws over what the server sent, as it says that it hydrates:
   // a save that drew over could not be told apart from one whose server lacked the edit (#1373).
-  if (!hydrates && isDev()) {
-    const why = [
-      !hasSSRContent && 'the server sent no markup',
-      config.ssr === false && 'the server did not render the page',
-      !component.getVirtualNode && 'the page has no tree to hydrate',
-      !servedMarkupAgrees && "the rebuild said the server's markup lacks the edit",
-    ].filter(Boolean);
-    console.log(`Drawing over: ${pageName} (${why.join('; ')})`);
-  }
+  const why = hydrates
+    ? []
+    : ([
+        !hasSSRContent && 'the server sent no markup',
+        config.ssr === false && 'the server did not render the page',
+        !component.getVirtualNode && 'the page has no tree to hydrate',
+        !servedMarkupAgrees && "the rebuild said the server's markup lacks the edit",
+      ].filter(Boolean) as string[]);
+  if (!hydrates && isDev()) console.log(`Drawing over: ${pageName} (${why.join('; ')})`);
 
   // A hot reload's replay hands the page the fields it held before the refresh. The server-data door
   // above takes only what the hydration manifest lists, and a write-once page's own state is in none
@@ -515,20 +568,29 @@ async function loadAndMountPage(
     if (isDev()) {
       console.log(`Hydrating: ${pageName}`);
     }
+    let result: HydrationResult | void;
     if (typeof component.hydrate === 'function') {
-      component.hydrate(root);
+      result = component.hydrate(root);
     } else {
-      const result = getReconciler().hydrateRoot(root, component.getVirtualNode());
+      result = getReconciler().hydrateRoot(root, component.getVirtualNode());
       if (!result.success && isDev()) {
         console.warn('Hydration warnings:', result.warnings);
       }
     }
+    recordHydration({
+      page: pageName,
+      hydrated: result?.success ?? true,
+      drewOver: result && !result.success ? ["the client's tree did not match the server's markup"] : [],
+      warnings: result?.warnings ?? [],
+      differences: result?.differences ?? [],
+    });
     currentComponent = component;
     replay?.();
     return;
   }
 
   mountComponent(root, component, pageName);
+  recordHydration({ page: pageName, hydrated: false, drewOver: why, warnings: [], differences: [] });
   currentComponent = component;
   replay?.();
 }
@@ -563,6 +625,9 @@ async function navigateToPage(
     const payload = await fetchPageState(url);
     // A newer navigation started while this was loading — don't clobber it.
     if (isCurrent && !isCurrent()) return;
+    // The page the server resolves for this URL, which the router did not choose, sent its own data
+    // (#1778): said in development, where it can still be fixed.
+    if (url !== undefined) routerDisagrees(url.split(/[?#]/)[0], payload?.page, pageName, isDev());
     // The server REFUSED this route (#673): the page requires an authorization the visitor does not
     // have, and it is loaded in full instead of rendered (leaveForRefusal says how), fragment and all.
     if (leaveForRefusal(payload, url === undefined ? undefined : url + (fragment ?? ''))) return;

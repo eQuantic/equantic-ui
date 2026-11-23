@@ -129,46 +129,28 @@ internal sealed partial class WebLoweringVisitor
     /// </summary>
     private HtmlElement LowerAdjustable(Adjustable adjustable)
     {
-        var adjustableFills = Fills(adjustable.Child);
-        var adjustableCap = CapsAt(adjustable.Child);
         // ARIA pairs the role with the value, so BOTH halves are derived here rather than copied:
         // the value is a SLIDER's or a SEPARATOR's and no other role's, and one that has none is not
         // either.
         var adjustableValue = adjustable.Role is AdjustableRole.Slider or AdjustableRole.Separator
             ? adjustable.Value
             : null;
-        var element = new RealizedElement("div")
+        var attributes = new Dictionary<string, string>
         {
-            Style = new HtmlStyle
-            {
-                // Same rule as LowerProgress, and it bites harder here: this host is a TAB STOP, so
-                // a block div stretched to the container draws the focus ring around empty space
-                // beside the control.
-                Width = adjustableFills.Width ? "100%" : "fit-content",
-                MaxWidth = Size(adjustableCap),
-                PointerEvents = "auto",
-                // BOTH axes, like every other wrapper and like the twin already did. Taking the
-                // width and leaving the height is the same half-contract that made the Link
-                // diverge, mirrored: there the twin was short, here this side was.
-                Height = adjustableFills.Height ? "100%" : null,
-            },
-            RawAttributes = new Dictionary<string, string>
-            {
-                ["role"] = AriaRole(adjustable.Role, adjustableValue),
-                ["tabindex"] = "0",
-            },
+            ["role"] = AriaRole(adjustable.Role, adjustableValue),
+            ["tabindex"] = "0",
         };
-        if (adjustable.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
+        var element = SemanticsHost(adjustable.Child, attributes, adjustable.Label, takesPointer: true);
         if (AriaOrientation(adjustable, adjustableValue) is { } orientation)
-            element.RawAttributes["aria-orientation"] = orientation;
+            attributes["aria-orientation"] = orientation;
         // The VALUE, for a role that has one (spec C7). role="slider" REQUIRES aria-valuenow, so the
         // host emitted invalid ARIA until this existed — a name and no number. The bounds go with it
         // or the number is read against ARIA's own 0-100 default, which no slider here uses.
         if (adjustableValue is { } value)
         {
-            element.RawAttributes["aria-valuenow"] = TokenCss.Number(value.Now);
-            element.RawAttributes["aria-valuemin"] = TokenCss.Number(value.Min);
-            element.RawAttributes["aria-valuemax"] = TokenCss.Number(value.Max);
+            attributes["aria-valuenow"] = TokenCss.Number(value.Now);
+            attributes["aria-valuemin"] = TokenCss.Number(value.Min);
+            attributes["aria-valuemax"] = TokenCss.Number(value.Max);
             // INSIDE the gate, unlike the Progress arm below, and the asymmetry is the point.
             // aria-valuetext REPLACES the number for a reader — on a bar that legitimately has no
             // number (indeterminate) the words are all there is, but an Adjustable with no value is
@@ -177,7 +159,7 @@ internal sealed partial class WebLoweringVisitor
             // Words there would describe a value the host never claims to have, and the native
             // visitor agrees: it announces neither unless the role is Slider.
             if (adjustable.ValueText is { Length: > 0 } spoken)
-                element.RawAttributes["aria-valuetext"] = spoken;
+                attributes["aria-valuetext"] = spoken;
         }
         // The arrows the twin answers (lowerAdjustable): a slider's or a separator's vertical axis is
         // VALUE (up increases), a radio group's or tab list's is READING ORDER (down is next).
@@ -214,37 +196,20 @@ internal sealed partial class WebLoweringVisitor
     /// </summary>
     private HtmlElement LowerProgress(Progress progress)
     {
-        var progressFills = Fills(progress.Child);
-        var progressCap = CapsAt(progress.Child);
-        var element = new RealizedElement("div")
-        {
-            Style = new HtmlStyle
-            {
-                // FIT-CONTENT, not nothing: this host CARRIES THE ROLE, so its box is the bounds a
-                // reader announces and a focus highlight draws. A bare block div stretches to the
-                // container while the bar stays its own width, and the two stop describing the same
-                // thing — on Photon `MeasureWrapper` gives the wrapper exactly the child's bounds.
-                Width = progressFills.Width ? "100%" : "fit-content",
-                // The child's cap comes THROUGH: a wrapper that took the width and dropped the
-                // maximum is the half-contract that made the Link diverge once already.
-                MaxWidth = Size(progressCap),
-                Height = progressFills.Height ? "100%" : null,
-            },
-            RawAttributes = new Dictionary<string, string> { ["role"] = "progressbar" },
-        };
-        if (progress.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
+        var attributes = new Dictionary<string, string> { ["role"] = "progressbar" };
+        var element = SemanticsHost(progress.Child, attributes, progress.Label, takesPointer: false);
         if (progress.Value is { } value)
         {
-            element.RawAttributes["aria-valuenow"] = TokenCss.Number(value.Now);
-            element.RawAttributes["aria-valuemin"] = TokenCss.Number(value.Min);
-            element.RawAttributes["aria-valuemax"] = TokenCss.Number(value.Max);
+            attributes["aria-valuenow"] = TokenCss.Number(value.Now);
+            attributes["aria-valuemin"] = TokenCss.Number(value.Min);
+            attributes["aria-valuemax"] = TokenCss.Number(value.Max);
         }
         // An INDETERMINATE bar has no aria-valuenow and may still have words — and that is the case
         // where they matter most, because there is no number for a reader to fall back on. They used
         // to be read from inside the value, so "Estimating time remaining" was dropped exactly when
         // it was the only thing the bar could say (#243).
         if (progress.ValueText is { Length: > 0 } spoken)
-            element.RawAttributes["aria-valuetext"] = spoken;
+            attributes["aria-valuetext"] = spoken;
         if (Lower(progress.Child, null, LoweringPath.Child) is { } child) element.Children.Add(child);
         return element;
     }
@@ -259,27 +224,13 @@ internal sealed partial class WebLoweringVisitor
     /// whether an alert added to the DOM after load is announced at all, and the pairing is what
     /// every practical guide recommends — so this states both rather than relying on the implication.
     /// </para>
-    /// <para>
-    /// LAYOUT-TRANSPARENT, and the whole width contract passes through: this is the fifth wrapper
-    /// that puts an element between parent and child and gives it a width, so it takes `fit-content`
-    /// off the fill branch for the reason the other four do — the box a reader outlines is the box
-    /// it announces.
-    /// </para>
     /// </summary>
     private HtmlElement LowerLiveRegion(LiveRegion live)
     {
-        var fills = Fills(live.Child);
-        var cap = CapsAt(live.Child);
         var assertive = live.Urgency == LiveRegionUrgency.Assertive;
-        var element = new RealizedElement("div")
-        {
-            Style = new HtmlStyle
-            {
-                Width = fills.Width ? "100%" : "fit-content",
-                MaxWidth = Size(cap),
-                Height = fills.Height ? "100%" : null,
-            },
-            RawAttributes = new Dictionary<string, string>
+        var element = SemanticsHost(
+            live.Child,
+            new Dictionary<string, string>
             {
                 ["role"] = assertive ? "alert" : "status",
                 ["aria-live"] = assertive ? "assertive" : "polite",
@@ -288,8 +239,8 @@ internal sealed partial class WebLoweringVisitor
                 // is announced as a fragment of itself.
                 ["aria-atomic"] = "true",
             },
-        };
-        if (live.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
+            live.Label,
+            takesPointer: false);
         if (Lower(live.Child, null, LoweringPath.Child) is { } child) element.Children.Add(child);
         return element;
     }
@@ -297,25 +248,13 @@ internal sealed partial class WebLoweringVisitor
     /// <summary>
     /// A LABELLED GROUP (TS twin: lowerGroup): one <c>role="group"</c> host a reader names by its
     /// <c>aria-label</c> and then walks into — inside a listbox, the APG's grouped options. No label,
-    /// no <c>aria-label</c>, the <see cref="LowerLiveRegion"/> rule. The host takes the child's fill
-    /// and cap with it, as every role-bearing wrapper's does: the box a reader outlines is the box it
-    /// names.
+    /// no <c>aria-label</c>, the <see cref="LowerLiveRegion"/> rule. The host is
+    /// <see cref="SemanticsHost"/>'s, like every role-bearing wrapper's.
     /// </summary>
     private HtmlElement LowerGroup(Group group)
     {
-        var fills = Fills(group.Child);
-        var cap = CapsAt(group.Child);
-        var element = new RealizedElement("div")
-        {
-            Style = new HtmlStyle
-            {
-                Width = fills.Width ? "100%" : "fit-content",
-                MaxWidth = Size(cap),
-                Height = fills.Height ? "100%" : null,
-            },
-            RawAttributes = new Dictionary<string, string> { ["role"] = "group" },
-        };
-        if (group.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
+        var element = SemanticsHost(
+            group.Child, new Dictionary<string, string> { ["role"] = "group" }, group.Label, takesPointer: false);
         if (Lower(group.Child, null, LoweringPath.Child) is { } child) element.Children.Add(child);
         return element;
     }
@@ -523,6 +462,8 @@ internal sealed partial class WebLoweringVisitor
         Progress progress => CapsAt(progress.Child),
         LiveRegion live => CapsAt(live.Child),
         Group group => CapsAt(group.Child),
+        MergeSemantics merge => CapsAt(merge.Child),
+        ExcludeSemantics exclude => CapsAt(exclude.Child),
         Flexible flexible => CapsAt(flexible.Child),
         LoopMotion motion => CapsAt(motion.Child),
         Link link => CapsAt(link.Child),
@@ -856,6 +797,14 @@ internal sealed partial class WebLoweringVisitor
         // The page you are ON. Only the current link carries it — aria-current="false" on the other
         // nine is legal, useless, and read out loud.
         if (link.Current) element.AriaCurrent = "page";
+        // Beside the page (#941): a new tab, cut from this one, which the router leaves to the browser.
+        // Written in this order on both sides, so the attributes the server sends are the ones the
+        // browser's lowering would write.
+        if (link.OpensBeside)
+        {
+            element.RawAttributes["target"] = "_blank";
+            element.RawAttributes["rel"] = "noopener noreferrer";
+        }
         if (Lower(link.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
             element.Children.Add(child);
         return element;
@@ -1128,6 +1077,9 @@ internal sealed partial class WebLoweringVisitor
             }
         }
         if (sortable.Nests) child.RawAttributes["data-eq-sort-nests"] = "1";
+        // A list whose items have depths (#1594): how far across the axis one depth is indented, which the controller
+        // divides the pointer's travel across by. A list without depths writes none.
+        if (SortPlacement.HasDepths(sortable.Indent)) child.RawAttributes["data-eq-sort-indent"] = TokenCss.Number(sortable.Indent);
         if (!sortable.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
         // The words a reader hears while the keyboard sorts (#1564), which the controller reads from the list the
         // item was picked up from. A list with none says nothing.
@@ -1141,6 +1093,17 @@ internal sealed partial class WebLoweringVisitor
             child.RawAttributes["data-eq-sort-say-dropped"] = words.Dropped;
             child.RawAttributes["data-eq-sort-say-dropped-into"] = words.DroppedInto;
             child.RawAttributes["data-eq-sort-say-put-back"] = words.PutBack;
+        }
+        // The list's own look of a carried item (#1602), each member it sets, which the controller lays over the
+        // browser's theme when it lifts an item from this list (SortPlacement.Look, the arithmetic both targets
+        // run). A list with no style of its own writes none, and takes the theme's.
+        if (sortable.Style is { } own)
+        {
+            if (own.LiftedOpacity is { } lifted) child.RawAttributes["data-eq-sort-look-lifted"] = TokenCss.Number(lifted);
+            if (own.CopyOpacity is { } copy) child.RawAttributes["data-eq-sort-look-copy-opacity"] = TokenCss.Number(copy);
+            if (own.CopyElevation is { } level)
+                child.RawAttributes["data-eq-sort-look-copy-elevation"] = level.ToString(CultureInfo.InvariantCulture);
+            if (own.MaxLean is { } lean) child.RawAttributes["data-eq-sort-look-lean"] = TokenCss.Number(lean);
         }
         child.CustomEvents["eq-sort-dropped"] = ClientDispatches;
         if (sortable.OnHovered is not null) child.CustomEvents["eq-sort-hovered"] = ClientDispatches;
@@ -1163,6 +1126,8 @@ internal sealed partial class WebLoweringVisitor
         // The name the keyboard's steps say, when the item has one of its own (#1538); the controller reads it
         // before what the item's subtree says.
         if (item.Name is { Length: > 0 } name) child.RawAttributes["data-eq-sort-name"] = name;
+        // The item's depth in a list whose items have depths (#1594); 0, the top, is written as nothing.
+        if (item.Depth > 0) child.RawAttributes["data-eq-sort-depth"] = item.Depth.ToString(CultureInfo.InvariantCulture);
         if (!item.Enabled) child.RawAttributes["data-eq-sort-off"] = "1";
         // The keyboard sorts an item from its focus (#1536): one that takes none of its own (a box, not a
         // button or a link) becomes a Tab stop. The TS twin decides by the same tags.

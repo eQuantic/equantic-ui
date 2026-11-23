@@ -4,6 +4,8 @@
  * the client half of the contract runs under test as the server half does (ClientNavigationStateTests).
  */
 
+import { addStrings } from '../utils/culture';
+
 /**
  * The header a client navigation sends, and the server's answer carries back: the route answers JSON
  * for the page's state instead of a document, and marks it as that answer whatever its status.
@@ -11,6 +13,9 @@
 export const NAVIGATION_HEADER = 'X-EQ-Navigate';
 
 export interface PageStatePayload {
+  /** The page the server resolved for the URL, by its module's name (#1778): the browser's router chose
+   * its own, and the two must be one. */
+  page?: string;
   title?: string;
   head?: string;
   /**
@@ -20,6 +25,9 @@ export interface PageStatePayload {
    * two components holding a field of the same name keep their own values.
    */
   state?: Record<string, Record<string, unknown>>;
+  /** The page's catalogue strings in the active UI culture (#1782): a document carries only its own
+   * page's and its layout's, so a navigation brings the next page's. */
+  strings?: Record<string, string>;
   /**
    * Set when the server REFUSED the navigation (#673): 401 when the visitor is not signed in, 403 when
    * they lack the page's policy. The page is never rendered from it: the router loads the route in
@@ -126,6 +134,7 @@ export function applyPageState(payload: PageStatePayload | null): void {
   }
 
   if (!payload) return;
+  if (payload.strings && typeof payload.strings === 'object') addStrings(payload.strings);
   if (typeof payload.title === 'string' && payload.title.length > 0) {
     document.title = payload.title;
   }

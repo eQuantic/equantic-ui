@@ -46,8 +46,8 @@ public class EmittedTypeSurfaceTests
             }
             """);
 
-        ts.Should().Contain("(['vertical', 'horizontal'] as ScrollAxisValue[])");
-        ts.Should().MatchRegex(@"import (type )?\{[^}]*ScrollAxisValue[^}]*\} from ""@equantic/runtime""");
+        ts.Should().Contain("(['vertical', 'horizontal'] as $ScrollAxisValue[])");
+        ts.Should().MatchRegex(@"import (type )?\{[^}]*\$ScrollAxisValue[^}]*\} from ""@equantic/runtime""");
     }
 
     [Fact]

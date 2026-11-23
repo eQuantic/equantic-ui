@@ -180,6 +180,10 @@ public class RecordTypeEmitter
         // rest, kept only where the emitted text names it (TypeScriptEmitter.Annotate is the class
         // path's twin).
         runtimeProvided.Add(TypeScriptEmitter.Decimal);
+        // The .NET-compat value types the runtime exports by .NET's names, as the class path takes them:
+        // the scan above routes by namespace and never buckets one, and a record's method that takes a
+        // culture's NumberFormatInfo annotated a name it never imported (#1765).
+        runtimeProvided.UnionWith(TypeScriptEmitter.RuntimeValueTypes);
         // A vocabulary enum member is annotated with its UNION, a name that exists only in the
         // emitted TypeScript — the scanner above walks C# syntax and could never have seen it.
         TypeScriptEmitter.SeedEnumUnions(body, ModelFor(type)?.Compilation, runtimeProvided);

@@ -28,7 +28,7 @@ public class LambdaAndLocalFunctionEmissionTests
     [Fact]
     public void AnExpressionBody_ThatIsNotALiteral_StaysBare()
     {
-        TestHelper.ConvertCodeBlock("var m = list1.Select(s => s.Length + 1);").Should().Contain("(s) => s.length + 1");
+        TestHelper.ConvertCodeBlock("var m = list1.Select(s => s.Length + 1);").Should().Contain("(s) => s.length + 1 | 0");
     }
 
     [Fact]
@@ -36,8 +36,8 @@ public class LambdaAndLocalFunctionEmissionTests
     {
         var js = TestHelper.ConvertCodeBlock(
             "int Twice(int x) => x * 2; int Thrice(int x) { return x * 3; } var r = Twice(1) + Thrice(1);");
-        Flat(js).Should().Contain("consttwice=(x)=>{returnx*2;};");
-        Flat(js).Should().Contain("constthrice=(x)=>{returnx*3;};");
+        Flat(js).Should().Contain("consttwice=(x)=>{returnMath.imul(x,2);};");
+        Flat(js).Should().Contain("constthrice=(x)=>{returnMath.imul(x,3);};");
         js.Should().NotContain("{ return");
         js.Should().Contain("=> {\n");
     }
