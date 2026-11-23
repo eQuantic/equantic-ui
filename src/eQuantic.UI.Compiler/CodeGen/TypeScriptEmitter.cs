@@ -554,10 +554,13 @@ public class TypeScriptEmitter
 
                     // The C# constructor's parameters, each with its default (ConstructorParameter), or the
                     // generic props a parameterless one takes, applied after its body. An interface among
-                    // them stays a parameter: a construction site passes it as written (#1837).
+                    // them stays a parameter: a construction site passes it as written (#1837). The props are
+                    // named as the component branch names its config (ConfigParameter): `props`, unless the
+                    // body binds that name, which beside the parameter would not parse.
+                    var props = ConfigParameter([], (SyntaxNode?)ctor?.BodyNode ?? ctor?.ExpressionBodyNode);
                     var jsParams = hasExplicitParams
                         ? string.Join(", ", parameters.Select(ConstructorParameter))
-                        : OptionalParam("props", "any");
+                        : OptionalParam(props, "any");
 
                     var ctorStatements = new List<JsStatement>
                     {
@@ -593,7 +596,7 @@ public class TypeScriptEmitter
                     // component branch applies its config: handed to super() first, a body that sets a member
                     // overwrote what the props carried, once the body ran at all (#1837).
                     if (!hasExplicitParams)
-                        ctorStatements.Add(JsStatement.Raw("if (props && typeof props === 'object') Object.assign(this, props);"));
+                        ctorStatements.Add(JsStatement.Raw($"if ({props} && typeof {props} === 'object') Object.assign(this, {props});"));
                     c.Member(JsClassMember.Constructor(jsParams, JsStatement.Block(ctorStatements)),
                         bodySource: (SyntaxNode?)ctor?.BodyNode ?? ctor?.ExpressionBodyNode, bodyLine: ctorBodyLine);
 

@@ -54,6 +54,13 @@ public class HtmlElementConstructorConformanceTests
             public Captioned(string caption, int count = 4) { Caption = caption.ToUpper(); Count = count; }
             public override HtmlNode Render() { return new HtmlNode { Tag = "em", TextContent = Caption + Count }; }
         }
+        public sealed class Propped : HtmlElement
+        {
+            private readonly string _text;
+            public Propped() { var props = "own"; _text = props; }
+            public string Says() => _text;
+            public override HtmlNode Render() { return new HtmlNode { Tag = "s", TextContent = _text }; }
+        }
         public sealed class Plain : HtmlElement
         {
             public string Caption { get; set; } = "none";
@@ -71,6 +78,7 @@ public class HtmlElementConstructorConformanceTests
         ("an arrow constructor", "var n = new Blocky(\"g\").Render(); return n.Tag + \"|\" + n.TextContent;"),
         ("an interface parameter first, passed as written", "return new Clocked(null, \"h\").Says();"),
         ("a constructor that writes properties, one of them read-only", "var n = new Captioned(\"i\").Render(); return n.TextContent + \"|\" + new Captioned(\"j\", 6).Count;"),
+        ("a parameterless constructor whose body declares props", "return new Propped().Says();"),
         ("no constructor, a property's default and an initializer", "return new Plain().Render().TextContent + \"|\" + new Plain { Caption = \"set\" }.Render().TextContent;"),
     ];
 
