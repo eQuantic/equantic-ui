@@ -76,5 +76,5 @@ Rules of `docs/PRINCIPLES.md` followed:
 
 `tests/eQuantic.UI.Web.Tests` gains `VocabularyConfigShapeTests` and its baseline. It also gains emission shapes in
 `SharedComponentTranspilationTests`, written to `src/eQuantic.UI.Runtime/src/shared/__fixtures__/EmittedConfigs.ts`
-and run by `vocabulary-config.spec.ts`. On main's mirror the shape test fails with 183 offenders, and the runtime's
+and run by `emitted-configs.spec.ts`. On main's mirror the shape test fails with 183 offenders, and the runtime's
 `tsc` refuses the fixture eight times with TS2353.
