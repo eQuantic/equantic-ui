@@ -225,9 +225,8 @@ describe('§10 preferred initial focus', () => {
 });
 
 /**
- * #1811: the invoker gone is no reason to drop the focus. The control now at its place among the
- * controls Tab reaches takes it, which is the same control of the next row when a dialog deleted the
- * row that opened it. Photon's twin is ModalFocusReturnTests, over the same rows.
+ * Two layers kept mounted for their exit lose their markers in one pass: the focus is in the inner one, so
+ * it is given back from the outer one's opener rather than left where a removed layer's focus would go.
  */
 describe('§10 two layers that stop being traps together, kept mounted for their exit', () => {
   beforeEach(() => {
@@ -259,6 +258,11 @@ describe('§10 two layers that stop being traps together, kept mounted for their
   });
 });
 
+/**
+ * #1811: the invoker gone is no reason to drop the focus. The control now at its place among the
+ * controls Tab reaches takes it, which is the same control of the next row when a dialog deleted the
+ * row that opened it. Photon's twin is ModalFocusReturnTests, over the same rows.
+ */
 describe('§10 the focus goes to the control in the invoker place when the invoker is gone', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
