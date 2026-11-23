@@ -16,10 +16,13 @@ namespace eQuantic.UI.Web.Tests;
 /// A config is a named interface (<c>BoxStyleConfig</c>), or a literal the constructor writes in place, alone or
 /// intersected with interfaces (<c>VisualNodeConfig &amp; { … }</c>). <c>EqConfig</c>, a record of anything, takes
 /// every member and so can lack none: a class that takes it is not read. Each config is read both ways: the C#
-/// class's public settable members (set or init, inherited ones included), less the ones its public constructors
-/// take by position, against the config's members, those it extends or intersects included. A member absent on
-/// purpose is named in <c>vocabulary-config.baseline.txt</c> with its reason, by its config or by the C# type that
-/// declares it, and the list may only shrink: an entry that no longer differs fails until it is removed.
+/// class's public settable members (set or init, inherited ones included) against the config's members, those it
+/// extends or intersects included. A member the constructor also takes as a parameter is no exception: eqc writes
+/// what an initializer sets into the config, wherever else the constructor could have taken it
+/// (<c>new Image(src, 1, 2) { Label = "x" }</c> is <c>new Image(src, 1, 2, 'cover', '', { label: 'x' })</c>). A
+/// member absent on purpose is named in <c>vocabulary-config.baseline.txt</c> with its reason, by its config or by
+/// the C# type that declares it, and the list may only shrink: an entry that no longer differs fails until it is
+/// removed.
 /// </para>
 /// </summary>
 public class VocabularyConfigShapeTests
@@ -156,12 +159,8 @@ public class VocabularyConfigShapeTests
                 .Where(property => property.SetMethod is { IsPublic: true })
                 .GroupBy(property => Camel(property.Name))
                 .ToDictionary(group => group.Key, group => group.First().DeclaringType!.Name, StringComparer.Ordinal);
-            var positional = type.GetConstructors()
-                .SelectMany(constructor => constructor.GetParameters())
-                .Select(parameter => Camel(parameter.Name!))
-                .ToHashSet(StringComparer.Ordinal);
 
-            foreach (var (member, declaredBy) in settable.Where(pair => !members.Contains(pair.Key) && !positional.Contains(pair.Key)))
+            foreach (var (member, declaredBy) in settable.Where(pair => !members.Contains(pair.Key)))
             {
                 var byConfig = $"{name}.{member}";
                 var byType = $"{declaredBy}.{member}";
@@ -169,11 +168,11 @@ public class VocabularyConfigShapeTests
                 else if (baseline.ContainsKey(byType)) used.Add(byType);
                 else offenders.Add($"{byConfig}: {taker} lets an initializer set {declaredBy}.{member}, and the config lacks it");
             }
-            foreach (var member in members.Where(member => !settable.ContainsKey(member) && !positional.Contains(member)))
+            foreach (var member in members.Where(member => !settable.ContainsKey(member)))
             {
                 var byConfig = $"{name}.{member}";
                 if (baseline.ContainsKey(byConfig)) used.Add(byConfig);
-                else offenders.Add($"{byConfig}: the config declares it, and {taker} has no settable {member} nor a parameter of that name");
+                else offenders.Add($"{byConfig}: the config declares it, and {taker} has no settable {member}");
             }
         }
 

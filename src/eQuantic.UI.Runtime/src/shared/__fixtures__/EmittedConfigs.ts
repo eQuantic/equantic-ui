@@ -1,4 +1,4 @@
-import { BoxStyle, Color, ColorToken, Group, Spacer, VisualNode } from "@equantic/runtime";
+import { BoxStyle, Color, ColorToken, Group, Image, LinearGradient, SafeArea, Spacer, Text, VisualNode } from "@equantic/runtime";
 
 export class EmittedConfigs {
     static inked() {
@@ -11,6 +11,26 @@ export class EmittedConfigs {
 
     static rigid() {
         return new Spacer(1, { fixedLength: 8 });
+    }
+
+    static labelled() {
+        return new Image('a.png', 1, 2, 'cover', '', { label: 'Chart' });
+    }
+
+    static titled() {
+        return new Text('Totals', 'bodyL', null, 0, 'start', false, false, null, 0, { role: 'title', maxLines: 2 });
+    }
+
+    static reparented(first: VisualNode, second: VisualNode) {
+        return new Group(first, { child: second });
+    }
+
+    static inset(child: VisualNode) {
+        return new SafeArea(child, 15, { edges: 3 });
+    }
+
+    static downward() {
+        return new LinearGradient(new ColorToken(Color.black), new ColorToken(Color.white), 'toRight', { direction: 'toBottom' });
     }
 }
 

@@ -179,8 +179,9 @@ public class SharedComponentTranspilationTests
     /// supplies, a lambda stored in a static field, and a field's collection initializer beside a base
     /// constructor call. And initializers of hand-written vocabulary twins setting a member their config
     /// lacked (#1823): a box style's foreground, a node's bookmark, cross alignment and grid span on a config
-    /// written in place, a spacer's fixed length. Written to <c>__fixtures__</c>, where the runtime's
-    /// <c>tsc</c> reads every line.
+    /// written in place, a spacer's fixed length, and members the constructor takes as parameters too (an image's
+    /// label, a text's role, a group's child, a safe area's edges, a gradient's direction). Written to
+    /// <c>__fixtures__</c>, where the runtime's <c>tsc</c> reads every line.
     /// </summary>
     private const string EmissionShapesSource = """
         using System;
@@ -303,6 +304,18 @@ public class SharedComponentTranspilationTests
                 new Group(child) { Label = "Totals", Bookmark = "totals", AlignSelf = CrossAlign.Center, GridSpan = 2 };
 
             public static Spacer Rigid() => new Spacer { FixedLength = 8 };
+
+            // Members the constructor takes as parameters too, which an initializer sets through the config.
+            public static Image Labelled() => new Image("a.png", 1, 2) { Label = "Chart" };
+
+            public static Text Titled() => new Text("Totals") { Role = TypeRole.Title, MaxLines = 2 };
+
+            public static Group Reparented(VisualNode first, VisualNode second) => new Group(first) { Child = second };
+
+            public static SafeArea Inset(VisualNode child) => new SafeArea(child) { Edges = 3 };
+
+            public static LinearGradient Downward() =>
+                new LinearGradient(new ColorToken(Color.Black), new ColorToken(Color.White)) { Direction = GradientDirection.ToBottom };
         }
         """;
 
