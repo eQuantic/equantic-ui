@@ -2,7 +2,7 @@
 
 ### Requirement: A day is counted in the culture's calendar on both sides
 
-`CultureCalendar` SHALL answer a `DateOnly`'s year, month and day, its month's first day, and a move by
+`CultureCalendar` SHALL answer a `DateOnly`'s year, month and day, its month's first day and length, and a move by
 months or by years in the active format culture's calendar, as .NET's
 `CultureInfo.CurrentCulture.DateTimeFormat.Calendar` answers them, in the browser as in .NET. A move SHALL
 keep the day of the month and cut it to the last day the target month has.
@@ -46,3 +46,9 @@ go a month and a year of that calendar. In a Gregorian culture the grid SHALL be
 
 - **WHEN** the next-month chevron is pressed on `دی 1402` in fa-IR
 - **THEN** the grid shows `بهمن 1402`, from the 21st of January to the 19th of February 2024
+
+#### Scenario: A bounded calendar's last month
+
+- **WHEN** a `Calendar` showing November 2077 is built in ar-SA, whose Um Al Qura calendar writes up to
+  the 16th of November 2077, its last month's last day
+- **THEN** it draws that month's 30 days, and its trailing week, past the calendar's range, is holes

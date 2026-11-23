@@ -23,8 +23,8 @@ Gregorian only, and titles through `MaterialLocalizations.formatMonthYear`. `doc
 no row for the picker. The count therefore follows .NET, whose `DateTimeFormatInfo.Calendar` is each
 culture's answer.
 
-**A vocabulary type beside `CalendarNames`, not a BCL twin.** The component needs six questions (a day's
-year, month and day, its month's first day, and a move by months or years). `CalendarNames` already is
+**A vocabulary type beside `CalendarNames`, not a BCL twin.** The component needs seven questions (a day's
+year, month and day, its month's first day and length, and a move by months or years). `CalendarNames` already is
 the vocabulary's door to the culture's date data, with a hand-written twin that reads what the server
 sent. `CultureCalendar` is its sibling with the same rule. On .NET it delegates to
 `DateTimeFormatInfo.Calendar`, so Photon and the server count with .NET itself. A twin of
@@ -54,5 +54,8 @@ calendar shares.
   layout does not change.
 - A culture whose data did not travel counts Gregorian in the browser while .NET would count its own
   calendar. That path already has no server to agree with, and its names now say Gregorian too.
-- At a calendar's last month (Um Al Qura's Dhu al-Hijjah 1500, in November 2077) a move past it is refused
-  on both sides in other words, and the grid's trailing days are refused on both sides: #1849.
+- A calendar of a bounded range (Um Al Qura's, from April 1900 to November 2077) refuses the month of a
+  day past it, and the grid's leading and trailing weeks reach such days in its first and last month. The
+  grid therefore counts its month by `CultureCalendar.DaysInMonth` from the month's first day, and asks
+  nothing of a day outside it. A move past the range is still refused on both sides in other words, and
+  the chevrons and arrows are not yet bounded by it: #1849.
