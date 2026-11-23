@@ -71,6 +71,11 @@ public static class Eq
     public const string IntegerFromDouble = "$eq.num.integerFromDouble";
     /// <summary><c>Convert.To&lt;integer&gt;</c> of a decimal: <c>decimal.Round</c>, then the range.</summary>
     public const string IntegerFromDecimal = "$eq.num.integerFromDecimal";
+    /// <summary>A decimal cast to an integer or a char, and <c>decimal.ToInt32</c> and its siblings: toward zero
+    /// from its own digits, then the range, in .NET's words (#1766).</summary>
+    public const string TruncatedFromDecimal = "$eq.num.truncatedFromDecimal";
+    /// <summary><c>Math.Clamp</c> and <c>decimal.Clamp</c> over a decimal, a minimum above the maximum refused (#1767).</summary>
+    public const string DecClamp = "$eq.num.decClamp";
     /// <summary><c>Convert.To&lt;integer&gt;</c> of an <c>object</c>, by what it holds when the call runs.</summary>
     public const string IntegerFromObject = "$eq.num.integerFromObject";
     /// <summary><c>Convert.ToDouble</c> and <c>ToSingle</c> of an <c>object</c>, by what it holds when the call runs.</summary>
