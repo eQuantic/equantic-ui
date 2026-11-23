@@ -552,7 +552,8 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// </summary>
     private static void FillToArity(List<JsExpr> parts, IMethodSymbol ctor, ConversionContext context)
     {
-        var kept = ctor.Parameters.Where(parameter => !LeavesOut(ctor, parameter)).ToList();
+        var declares = DeclaresDependency(ctor);
+        var kept = ctor.Parameters.Where(parameter => !LeavesOut(parameter, declares)).ToList();
         for (var i = parts.Count; i < kept.Count; i++) parts.Add(DefaultOf(kept[i], context));
     }
 
@@ -715,7 +716,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // A dependency slot is not filled with a default — it is REMOVED, because the parameter
         // it stood in front of is gone from the emitted signature too.
         var keep = Enumerable.Range(0, places.Length)
-            .Where(i => !LeavesOut(ctor, ctor.Parameters[i]))
+            .Where(i => !LeavesOut(ctor.Parameters[i], dropping))
             .ToList();
 
         var lastSet = keep.FindLastIndex(i => places[i] != null);
@@ -732,12 +733,13 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         IsComponent(ctor.ContainingType) && ctor.Parameters.Any(p => CapabilityRule.IsDependency(p.Type));
 
     /// <summary>
-    /// Whether the twin's constructor leaves this parameter out of its signature: a dependency of a component that
-    /// declares one, which the twin resolves in its body from the container. The one rule both the arguments a call
-    /// passes and the defaults before its config are counted by.
+    /// Whether the twin's constructor leaves this parameter out of its signature: a dependency, when its constructor
+    /// is a component's that declares one (<see cref="DeclaresDependency"/>, asked once per construction), which the
+    /// twin resolves in its body from the container. The one rule both the arguments a call passes and the defaults
+    /// before its config are counted by.
     /// </summary>
-    private static bool LeavesOut(IMethodSymbol ctor, IParameterSymbol parameter) =>
-        DeclaresDependency(ctor) && CapabilityRule.IsDependency(parameter.Type);
+    private static bool LeavesOut(IParameterSymbol parameter, bool declaresDependency) =>
+        declaresDependency && CapabilityRule.IsDependency(parameter.Type);
 
     private static bool IsComponent(INamedTypeSymbol? symbol)
     {
