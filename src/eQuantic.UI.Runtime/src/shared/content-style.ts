@@ -1,4 +1,5 @@
 import type { TextAlignmentValue, TypeRoleValue } from './enums.generated';
+import { hashesByValue } from '../utils/hash';
 import type { ContentStyleValue, TypeStyleValue } from './nodes';
 
 /**
@@ -50,3 +51,6 @@ export class ContentStyle implements ContentStyleValue {
     });
   }
 }
+
+/** The twin of a record: it hashes by its members, as `equals` compares it (`ValueTwinHashTests`). */
+hashesByValue(ContentStyle);
