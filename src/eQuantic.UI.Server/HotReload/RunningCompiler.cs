@@ -292,10 +292,25 @@ internal sealed class RunningCompiler : IModuleCompiler
     /// SDK's target, so an app pays nothing for it. An answer that does not come is read as yes, and the
     /// refusal is reported as MSBuild gave it.
     /// </summary>
-    private bool BuiltWithTheSdk(string contentRoot) =>
-        Run(Started("dotnet", contentRoot, ["msbuild", "-getProperty:EqcCliPath", "-nologo", "-v:q"]), DiscoveryLimit,
-            "say whether this project is built with eQuantic.UI.Sdk") is not { ExitCode: 0 } answer
-        || answer.Output.Trim().Length > 0;
+    private bool BuiltWithTheSdk(string contentRoot)
+    {
+        // Two properties, so MSBuild answers in JSON and the property is read itself: one alone is printed bare,
+        // where a warning on the same stream would read as a path.
+        if (Run(Started("dotnet", contentRoot,
+                ["msbuild", "-getProperty:EqcCliPath", "-getProperty:MSBuildProjectDirectory", "-nologo", "-v:q"]),
+                DiscoveryLimit, "say whether this project is built with eQuantic.UI.Sdk") is not { ExitCode: 0 } answer)
+            return true;
+        try
+        {
+            var json = answer.Output;
+            var properties = JsonDocument.Parse(json[json.IndexOf('{')..]).RootElement.GetProperty("Properties");
+            return !string.IsNullOrEmpty(properties.GetProperty("EqcCliPath").GetString());
+        }
+        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or ArgumentException)
+        {
+            return true;
+        }
+    }
 
     /// <summary>What an MSBuild said, and how it ended.</summary>
     private sealed record MsBuildAnswer(int ExitCode, string Output, string Errors);
