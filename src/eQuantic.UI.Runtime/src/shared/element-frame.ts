@@ -32,18 +32,68 @@ export interface ComponentPosition {
   readonly kept: UiComponent;
   /** What the kept instance built in this frame, or null when it built nothing. */
   readonly built: VisualNode | null;
+  /** The position itself, which what it built is lowered inside (`within`). */
+  readonly position: Element;
 }
 
 export class ElementFrame {
   private readonly positions = new Map<object, Element>();
 
+  /**
+   * Every component's position, by the component position whose build it stands in (null at the
+   * tree's root) and then by the instance it holds, because an instance can hold more than one
+   * position, nested: a component whose build answers itself, or a box around itself, stands at every
+   * position of the chain the engine built until its boundary contained it. Found by the instance
+   * alone, each lookup answered the outermost one again, whose build is that instance again, and the
+   * lowering walked back into it for ever (the C# frame's `_components`, #1544).
+   */
+  private readonly components = new Map<Element | null, Map<object, Element>>();
+
+  /** The component position whose build is being lowered: where `at` looks for a component first. */
+  private lowering: Element | null = null;
+
   constructor(root: Element) {
-    this.index(root);
+    this.index(root, null);
   }
 
-  /** The position `node` stands at in this frame, or null when the frame holds no position for it. */
+  /**
+   * The position `node` stands at in this frame, or null when the frame holds no position for it. A
+   * component is looked for first inside the position whose build is being lowered (`within`).
+   */
   elementAt(node: object): Element | null {
-    return this.positions.get(node) ?? null;
+    return this.components.get(this.lowering)?.get(node) ?? this.positions.get(node) ?? null;
+  }
+
+  /**
+   * Runs `lower` inside `position`, for the lowering of what it built: until it returns, `at` and
+   * `elementAt` find a component among the positions that build stands in, so a lowering descends the
+   * positions the engine built, as Photon's layout walks them (the C# frame's `Enter`). Null enters
+   * nothing.
+   */
+  within<T>(position: Element | null, lower: () => T): T {
+    if (!position) return lower();
+    const outer = this.lowering;
+    this.lowering = position;
+    try {
+      return lower();
+    } finally {
+      this.lowering = outer;
+    }
+  }
+
+  /**
+   * Runs `lower` inside the component position above `element`, the one whose build `element` stands
+   * in: where a lowering that starts at `element` by itself (a render its owner asked for) would have
+   * entered on its way down from the root.
+   */
+  withinParentOf<T>(element: Element, lower: () => T): T {
+    const outer = this.lowering;
+    this.lowering = componentAbove(element);
+    try {
+      return lower();
+    } finally {
+      this.lowering = outer;
+    }
   }
 
   /**
@@ -54,9 +104,9 @@ export class ElementFrame {
    * the fresh instance instead would draw its defaults in silence (the C# frame refuses alike).
    */
   at(component: object): ComponentPosition {
-    const element = this.positions.get(component);
+    const element = this.elementAt(component);
     if (element instanceof elementEngine().ComponentElement) {
-      return { kept: element.component, built: element.childAt(0)?.configuration ?? null };
+      return { kept: element.component, built: element.childAt(0)?.configuration ?? null, position: element };
     }
     throw new Error(
       `A ${nameOf(component)} was lowered that this frame did not build: the element tree and the ` +
@@ -77,7 +127,7 @@ export class ElementFrame {
     if (!(element instanceof elementEngine().NodeElement)) {
       throw new Error(`A ${nameOf(holder)}'s layer was lowered that this frame has no position for.`);
     }
-    this.index((element as unknown as DeferredHolder).showDeferred(layer));
+    this.index((element as unknown as DeferredHolder).showDeferred(layer), componentAbove(element));
     return layer;
   }
 
@@ -88,22 +138,38 @@ export class ElementFrame {
    * `holdArm`), so every component in it still has a position the lowering can ask about.
    */
   include(root: Element): void {
-    this.index(root);
+    this.index(root, this.lowering);
   }
 
   /**
-   * Every position under `root`, by the node it holds. A node placed at two positions keeps the one
-   * indexed first: a stateful instance placed twice builds the same tree at both. The same walk as
+   * Every position under `root`, by the node it holds, and every component's also by the component
+   * position whose build it stands in, `within` for the root. A node placed at two positions keeps the
+   * one indexed first: a stateful instance placed twice builds the same tree at both. The same walk as
    * the C# frame's, a stack, so the two keep the same one.
    */
-  private index(root: Element): void {
-    const pending: Element[] = [root];
+  private index(root: Element, within: Element | null): void {
+    const ComponentElement = elementEngine().ComponentElement;
+    const pending: [Element, Element | null][] = [[root, within]];
     while (pending.length > 0) {
-      const element = pending.pop()!;
+      const [element, around] = pending.pop()!;
       if (!this.positions.has(element.configuration)) this.positions.set(element.configuration, element);
-      element.visitChildren((child) => pending.push(child));
+      let below = around;
+      if (element instanceof ComponentElement) {
+        let placed = this.components.get(around);
+        if (!placed) this.components.set(around, (placed = new Map<object, Element>()));
+        if (!placed.has(element.configuration)) placed.set(element.configuration, element);
+        below = element;
+      }
+      element.visitChildren((child) => pending.push([child, below]));
     }
   }
+}
+
+/** The nearest component position above `element`, or null at the root. */
+function componentAbove(element: Element): Element | null {
+  const ComponentElement = elementEngine().ComponentElement;
+  for (let at = element.parent; at; at = at.parent) if (at instanceof ComponentElement) return at;
+  return null;
 }
 
 /**
