@@ -227,6 +227,36 @@ describe('§10 preferred initial focus', () => {
  * controls Tab reaches takes it, which is the same control of the next row when a dialog deleted the
  * row that opened it. Photon's twin is ModalFocusReturnTests, over the same rows.
  */
+describe('§10 two layers that stop being traps together, kept mounted for their exit', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    resetFocusTraps();
+  });
+
+  it('give the focus to the outermost one opener, from inside the inner one', () => {
+    const settingsButton = button('Settings');
+    document.body.appendChild(settingsButton);
+    settingsButton.focus();
+    const reset = button('Reset');
+    const settings = layer(reset, button('Close'));
+    document.body.appendChild(settings);
+    commitFocusTraps();
+    reset.focus();
+    const keep = button('Keep');
+    const confirm = layer(keep, button('Discard'));
+    document.body.appendChild(confirm);
+    commitFocusTraps();
+    keep.focus();
+
+    // Both close with motion: they stay in the document, sibling layers, and only lose their markers.
+    confirm.removeAttribute('data-eq-trap');
+    settings.removeAttribute('data-eq-trap');
+    commitFocusTraps();
+
+    expect(document.activeElement, 'the focus left the closing confirm for the settings dialog opener').toBe(settingsButton);
+  });
+});
+
 describe('§10 the focus goes to the control in the invoker place when the invoker is gone', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
@@ -436,10 +466,15 @@ describe('§10 a layer in a hidden adaptive arm', () => {
     document.body.appendChild(page);
     page.focus();
     arm(gateCompactUntil(840), layer(button('Accept'), button('Decline')));
+    // The initial focus waits a frame; run it now, so a focus scheduled into the hidden layer shows.
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0);
+      return 0;
+    });
     commitFocusTraps();
 
+    expect(document.activeElement, 'a hidden layer takes no initial focus').toBe(page);
     expect(tab().defaultPrevented, 'Tab walks the page').toBe(false);
-    expect(document.activeElement).toBe(page);
   });
 
   it('a hidden drawer that closes leaves the focus where the user moved it', () => {

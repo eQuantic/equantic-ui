@@ -107,15 +107,16 @@ function focusablesBeneath(marked: Element[], above: readonly Element[]): HTMLEl
   );
 }
 
-function restore(layer: Element): void {
+function restore(layer: Element, closing: readonly Element[]): void {
   const recorded = invokers.get(layer);
   invokers.delete(layer);
   if (!recorded) return;
   // A layer that closed while its arm was hidden let the page have the keyboard, and the focus may be on
-  // a control the user chose since: it stays there. The focus is given back only from the layer itself,
-  // or from nowhere, which is where a removed layer's focus goes (#1185).
+  // a control the user chose since: it stays there. The focus is given back only from a layer closing in
+  // this pass, a confirm closing over its settings dialog included, or from nowhere, which is where a
+  // removed layer's focus goes (#1185).
   const focused = document.activeElement;
-  if (focused && focused !== document.body && !layer.contains(focused)) return;
+  if (focused && focused !== document.body && !closing.some((closed) => closed.contains(focused))) return;
   // An invoker in an arm the window hides is as gone as a removed one: its place takes the focus.
   if (recorded.invoker.isConnected && onScreen(recorded.invoker)) {
     (recorded.invoker as HTMLElement).focus?.();
@@ -221,7 +222,7 @@ export function commitFocusTraps(): void {
   followReturned();
   if (closed.length > 0) returned = null;
   for (const layer of closed.slice(1)) invokers.delete(layer);
-  if (closed.length > 0) restore(closed[0]);
+  if (closed.length > 0) restore(closed[0], closed);
   const layer = topmost();
   if (layer && opened.includes(layer)) {
     // After the next frame, for the same reason the mount hook waits: a layer transitioning out of
