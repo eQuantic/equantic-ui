@@ -8,7 +8,11 @@
  * microtask after the write, the moment the in-view observers attach at.
  *
  * A task queued twice before the flush runs once: what the end of a pass queues is a reconciliation of the whole
- * document, and running it again finds nothing new.
+ * document, and running it again finds nothing new. A task that throws costs itself alone: the others still run,
+ * and what it threw is reported as an uncaught error is.
+ *
+ * The other commits that wait for the write (the in-view observers, the scroll and table viewports, the canvases,
+ * the anchor offset, the scrolled headers) still schedule their own; they can join this moment one by one.
  */
 
 const queued = new Set<() => void>();
@@ -33,5 +37,18 @@ function flush(): void {
   flushing = false;
   const tasks = [...queued];
   queued.clear();
-  for (const task of tasks) task();
+  for (const task of tasks) {
+    try {
+      task();
+    } catch (error) {
+      report(error);
+    }
+  }
+}
+
+/** What a task threw, where an uncaught error goes: the window's own report, or the console without one. */
+function report(error: unknown): void {
+  const reporter = (globalThis as { reportError?: (error: unknown) => void }).reportError;
+  if (typeof reporter === 'function') reporter(error);
+  else console.error(error);
 }

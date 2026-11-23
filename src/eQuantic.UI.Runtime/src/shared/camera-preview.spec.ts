@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StatefulComponent } from '../core/component';
 import { WebCamera, type CameraSessionValue } from './devices/camera';
+import { afterWrite } from './after-write';
 import { CameraPreview } from './vocabulary';
 import type { VisualNodeValue } from './nodes';
 import { lowerVisualNode } from './lowering';
@@ -66,6 +67,7 @@ describe('a camera preview a render shows', () => {
 
   // jsdom checks a srcObject against a MediaStream it does not implement: the property is a plain slot here.
   const srcObject = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'srcObject');
+  const hadOwn = srcObject !== undefined;
   const slots = new WeakMap<HTMLMediaElement, unknown>();
 
   beforeEach(() => {
@@ -83,7 +85,8 @@ describe('a camera preview a render shows', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
-    if (srcObject) Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', srcObject);
+    if (hadOwn) Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', srcObject!);
+    else delete (HTMLMediaElement.prototype as unknown as { srcObject?: unknown }).srcObject;
   });
 
   it('plays its stream with no later pass', async () => {
@@ -104,5 +107,23 @@ describe('a camera preview a render shows', () => {
     expect(video, 'the render wrote the preview').not.toBeNull();
     expect(video!.srcObject, 'the stream attached to the video the render wrote').toBe(stream);
     session!.dispose();
+  });
+});
+
+describe('the moment after the write', () => {
+  it('runs every task queued, though one throws', async () => {
+    const reported: unknown[] = [];
+    vi.stubGlobal('reportError', (error: unknown) => reported.push(error));
+    const ran: string[] = [];
+    afterWrite(() => {
+      ran.push('first');
+      throw new Error('a task failed');
+    });
+    afterWrite(() => ran.push('second'));
+    await Promise.resolve();
+    vi.unstubAllGlobals();
+
+    expect(ran).toEqual(['first', 'second']);
+    expect(reported).toHaveLength(1);
   });
 });
