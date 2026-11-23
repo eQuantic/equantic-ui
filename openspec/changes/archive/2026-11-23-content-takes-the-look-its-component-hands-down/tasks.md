@@ -11,5 +11,5 @@
 
 ## 3. Proof, docs
 
-- [ ] 3.1 Tests on every producer: a box's role, lines, alignment and icon size taken; a text's own role kept whole; nested merge; nothing stated draws as before; a string as a node; a component lowered again alone. The conformance suite executed on both sides; the transpiled pins and the served runtime's budget recorded again
+- [x] 3.1 Tests on every producer: a box's role, lines, alignment and icon size taken; a text's own role kept whole; nested merge; nothing stated draws as before; a string as a node; a component lowered again alone. The conformance suite executed on both sides; the transpiled pins recorded again, and the served runtime measured inside its budget (it grew less than the 1% a change may add, so it records no delta)
 - [x] 3.2 The wiki's page for the vocabulary in every language, a ledger entry; validate and archive
