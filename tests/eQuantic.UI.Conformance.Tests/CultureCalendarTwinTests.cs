@@ -11,14 +11,15 @@ namespace eQuantic.UI.Conformance.Tests;
 /// </summary>
 public class CultureCalendarTwinTests
 {
-    /// <summary>Each day's year, month and day, and its month's first day, written as numbers both sides
-    /// write alike.</summary>
+    /// <summary>Each day's year, month and day, its month's first day and its month's length, written as
+    /// numbers both sides write alike, Um Al Qura's first and last days among them.</summary>
     private const string Counted =
         "string Count(DateOnly d) => CultureCalendar.YearOf(d) + \"-\" + CultureCalendar.MonthOf(d) + \"-\" "
-        + "+ CultureCalendar.DayOf(d) + \" first \" + CultureCalendar.FirstOfMonth(d).DayNumber; "
+        + "+ CultureCalendar.DayOf(d) + \" first \" + CultureCalendar.FirstOfMonth(d).DayNumber + \" days \" + CultureCalendar.DaysInMonth(d); "
         + "var s = \"\"; foreach (var d in new[] { new DateOnly(2024, 1, 17), new DateOnly(2023, 12, 22), "
         + "new DateOnly(2024, 1, 20), new DateOnly(2024, 1, 21), new DateOnly(2024, 3, 19), new DateOnly(2024, 3, 20), "
-        + "new DateOnly(2024, 2, 29), new DateOnly(2025, 3, 20), new DateOnly(2024, 12, 31) }) s += Count(d) + \"|\"; return s;";
+        + "new DateOnly(2024, 2, 29), new DateOnly(2025, 3, 20), new DateOnly(2024, 12, 31), new DateOnly(1900, 4, 30), "
+        + "new DateOnly(2077, 11, 16) }) s += Count(d) + \"|\"; return s;";
 
     /// <summary>Moves by months and years from days a shorter target month cuts, both ways: the 30th of
     /// Esfand 1403, the 31st of January, the 29th of February, and the 30th of Ramadan 1445 (April 9th

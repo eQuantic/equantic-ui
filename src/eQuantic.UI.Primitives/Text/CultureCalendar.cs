@@ -31,6 +31,17 @@ public static class CultureCalendar
     /// fa-IR.</summary>
     public static DateOnly FirstOfMonth(DateOnly day) => day.AddDays(1 - DayOf(day));
 
+    /// <summary>How many days the month a day falls in has, as <see cref="Calendar.GetDaysInMonth(int, int)"/>
+    /// answers it: 30 for Dey 1402 in fa-IR. A grid counts its month's days with it, never by asking the
+    /// month of a day past the month, which a calendar of a bounded range refuses beyond its first and its
+    /// last month (Um Al Qura's run from April 30th 1900 to November 16th 2077).</summary>
+    public static int DaysInMonth(DateOnly day)
+    {
+        var at = At(day);
+        var calendar = Current;
+        return calendar.GetDaysInMonth(calendar.GetYear(at), calendar.GetMonth(at));
+    }
+
     /// <summary>The day a number of the calendar's months away, as <see cref="Calendar.AddMonths"/> moves
     /// it: the day of the month is kept, and cut to the last day the target month has.</summary>
     public static DateOnly AddMonths(DateOnly day, int months) =>

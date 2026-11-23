@@ -34,6 +34,17 @@ export class CultureCalendar {
     return new DateOnly(day.dayNumber + 1 - CultureCalendar.dayOf(day));
   }
 
+  /** How many days the month a day falls in has, as `Calendar.GetDaysInMonth` answers it: the last day
+   * the calendar names in that month, which its data says and which a bounded calendar names in its
+   * first and its last month too. */
+  static daysInMonth(day: DateOnly): number {
+    const calendar = current();
+    const { year, month } = dateOf(calendar, day.dayNumber);
+    let length = 31;
+    while (length > 1 && calendar.dayOf({ year, month, day: length }) === null) length--;
+    return length;
+  }
+
   /** The day `months` of the calendar's months away, as `Calendar.AddMonths` moves it: the day of the
    * month kept, and cut to the last day the target month has. */
   static addMonths(day: DateOnly, months: number): DateOnly {

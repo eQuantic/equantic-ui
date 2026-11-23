@@ -3,6 +3,7 @@ eQuantic.UI.Primitives.CultureCalendar
 static eQuantic.UI.Primitives.CultureCalendar.AddMonths(System.DateOnly day, int months) -> System.DateOnly
 static eQuantic.UI.Primitives.CultureCalendar.AddYears(System.DateOnly day, int years) -> System.DateOnly
 static eQuantic.UI.Primitives.CultureCalendar.DayOf(System.DateOnly day) -> int
+static eQuantic.UI.Primitives.CultureCalendar.DaysInMonth(System.DateOnly day) -> int
 static eQuantic.UI.Primitives.CultureCalendar.FirstOfMonth(System.DateOnly day) -> System.DateOnly
 static eQuantic.UI.Primitives.CultureCalendar.MonthOf(System.DateOnly day) -> int
 static eQuantic.UI.Primitives.CultureCalendar.YearOf(System.DateOnly day) -> int

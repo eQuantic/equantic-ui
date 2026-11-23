@@ -104,7 +104,9 @@ export class Calendar extends StatefulComponent {
     }
 
     inMonth(day: DateOnly) {
-        return CultureCalendar.monthOf(day) === CultureCalendar.monthOf(this._month);
+        let first = Calendar.firstOfMonth(this._month);
+        let past = day.dayNumber - first.dayNumber | 0;
+        return past >= 0 && past < CultureCalendar.daysInMonth(first);
     }
 
     static sundayIndex(day: DateOnly) {
@@ -158,9 +160,9 @@ export class Calendar extends StatefulComponent {
 
     hasReachableDay(month: DateOnly) {
         let first = Calendar.firstOfMonth(month);
-        let next = CultureCalendar.addMonths(first, 1);
+        let last = first.addDays(CultureCalendar.daysInMonth(first) - 1 | 0);
         let min: any; 
-        return this.inRange(first) || this.inRange(next.addDays(-1)) || (min = this.min) != null && (min.compareTo(first) >= 0) && (min.compareTo(next) < 0);
+        return this.inRange(first) || this.inRange(last) || (min = this.min) != null && (min.compareTo(first) >= 0) && (min.compareTo(last) <= 0);
     }
 
     choose(day: DateOnly) {

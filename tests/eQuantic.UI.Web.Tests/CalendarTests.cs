@@ -351,6 +351,22 @@ public class CalendarTests
         cells[0].Attributes["aria-label"].Should().EndWith(", 1 دی 1402");
     }
 
+    [Theory]
+    [InlineData(1900, 5, 15)]
+    [InlineData(2077, 11, 1)]
+    public void ABoundedCalendarsFirstAndLastMonth_Draw(int year, int month, int day)
+    {
+        // ar-SA's Um Al Qura calendar writes from April 30th 1900 to November 16th 2077, its first month's
+        // first day and its last month's last: the grid's leading and trailing weeks reach days it does not
+        // write, and the grid draws without asking them their month. (Linux's ar-SA counts Gregorian, and
+        // the same month then has the Gregorian length.)
+        var shown = new DateOnly(year, month, day);
+        var length = 0;
+        InCulture("ar-SA", () => length = CultureCalendar.DaysInMonth(shown));
+
+        Cells(Render(new Calendar(shown), "ar-SA")).Should().HaveCount(length);
+    }
+
     [Fact]
     public void NothingIsFocusedUntilTheGridIsEntered()
     {

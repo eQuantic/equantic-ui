@@ -210,9 +210,16 @@ public sealed class Calendar : StatefulComponent
         $"{CalendarNames.DayNamesLong[SundayIndex(day)]}, {CultureCalendar.DayOf(day)} "
         + $"{CalendarNames.MonthNames[CultureCalendar.MonthOf(day) - 1]} {CultureCalendar.YearOf(day)}";
 
-    /// <summary>Whether a day is in the month on screen, by the culture calendar's months. Six weeks
-    /// never reach the same month of another year, so the month's number tells.</summary>
-    private bool InMonth(DateOnly day) => CultureCalendar.MonthOf(day) == CultureCalendar.MonthOf(_month);
+    /// <summary>Whether a day is in the month on screen, by the culture calendar's months: counted from
+    /// the month's first day by its length, so no day outside the month is asked its month. A calendar of
+    /// a bounded range refuses that question past its first and last month (Um Al Qura's, in April 1900
+    /// and November 2077), where the grid's leading and trailing weeks reach.</summary>
+    private bool InMonth(DateOnly day)
+    {
+        var first = FirstOfMonth(_month);
+        var past = day.DayNumber - first.DayNumber;
+        return past >= 0 && past < CultureCalendar.DaysInMonth(first);
+    }
 
     /// <summary>Which day of the week, Sunday-first — the index CalendarNames is ordered by.
     /// Computed from the day NUMBER rather than the DayOfWeek enum: 0001-01-01 is a Monday, so the
@@ -306,9 +313,9 @@ public sealed class Calendar : StatefulComponent
     private bool HasReachableDay(DateOnly month)
     {
         var first = FirstOfMonth(month);
-        var next = CultureCalendar.AddMonths(first, 1);
-        return InRange(first) || InRange(next.AddDays(-1))
-            || (Min is { } min && min >= first && min < next);
+        var last = first.AddDays(CultureCalendar.DaysInMonth(first) - 1);
+        return InRange(first) || InRange(last)
+            || (Min is { } min && min >= first && min <= last);
     }
 
     private void Choose(DateOnly day)
