@@ -24,34 +24,35 @@ public sealed class SpecimenSymbols : ICodeSymbolProvider
         for (var line = 0; line < document.LineCount; line++)
         {
             var text = document.Line(line);
-            if (Built(text) is { } built)
-                symbols.Add(Symbol(document, built, CodeSymbolKind.Class, line, EndOfStatement(document, line)));
-            foreach (var metric in Quoted(text))
+            if (Built(text) is (var built, var at))
+                symbols.Add(Symbol(document, built, at, CodeSymbolKind.Class, line, EndOfStatement(document, line)));
+            foreach (var (metric, column) in Quoted(text))
             {
                 if (metrics.Exists(known => known.Name == metric)) continue;
-                metrics.Add(Symbol(document, metric, CodeSymbolKind.Property, line, line));
+                metrics.Add(Symbol(document, metric, column, CodeSymbolKind.Property, line, line));
                 metricsFrom ??= line;
                 metricsTo = line;
             }
         }
         if (metricsFrom is { } from && metricsTo is { } to)
-            symbols.Add(Symbol(document, Metrics, CodeSymbolKind.Class, from, to) with { Children = metrics });
+            symbols.Add(Symbol(document, Metrics, document.Line(from).IndexOf(Metrics + ".", StringComparison.Ordinal),
+                CodeSymbolKind.Class, from, to) with { Children = metrics });
         return Task.FromResult<IReadOnlyList<CodeSymbol>>(symbols);
     }
 
-    /// <summary>The type a <c>new X(</c> on the line builds, or null.</summary>
-    private static string? Built(string line)
+    /// <summary>The type a <c>new X(</c> on the line builds, and the column its name starts at, or null.</summary>
+    private static (string Name, int Column)? Built(string line)
     {
         var at = line.IndexOf("new ", StringComparison.Ordinal);
         if (at < 0) return null;
         var start = at + "new ".Length;
         var end = start;
         while (end < line.Length && char.IsLetterOrDigit(line[end])) end++;
-        return end > start && end < line.Length && line[end] == '(' ? line.Substring(start, end - start) : null;
+        return end > start && end < line.Length && line[end] == '(' ? (line.Substring(start, end - start), start) : null;
     }
 
-    /// <summary>Each <c>Sizing.X</c> the line quotes, by its member's name.</summary>
-    private static IEnumerable<string> Quoted(string line)
+    /// <summary>Each <c>Sizing.X</c> the line quotes, by its member's name and the column that name starts at.</summary>
+    private static IEnumerable<(string Name, int Column)> Quoted(string line)
     {
         var prefix = Metrics + ".";
         for (var at = line.IndexOf(prefix, StringComparison.Ordinal); at >= 0;
@@ -60,7 +61,7 @@ public sealed class SpecimenSymbols : ICodeSymbolProvider
             var start = at + prefix.Length;
             var end = start;
             while (end < line.Length && char.IsLetterOrDigit(line[end])) end++;
-            if (end > start) yield return line.Substring(start, end - start);
+            if (end > start) yield return (line.Substring(start, end - start), start);
         }
     }
 
@@ -72,12 +73,10 @@ public sealed class SpecimenSymbols : ICodeSymbolProvider
         return from;
     }
 
-    /// <summary>A symbol over lines <paramref name="from"/> to <paramref name="to"/>, named where its name is
-    /// first written on its first line.</summary>
-    private static CodeSymbol Symbol(CodeDocument document, string name, CodeSymbolKind kind, int from, int to)
+    /// <summary>A symbol over lines <paramref name="from"/> to <paramref name="to"/>, named at column
+    /// <paramref name="at"/> of its first line, where the reading found its name.</summary>
+    private static CodeSymbol Symbol(CodeDocument document, string name, int at, CodeSymbolKind kind, int from, int to)
     {
-        var first = document.Line(from);
-        var at = Math.Max(0, first.IndexOf(name, StringComparison.Ordinal));
         var named = new CodeRange(new CodePosition(from, at), new CodePosition(from, at + name.Length));
         return new CodeSymbol(name, kind,
             new CodeRange(new CodePosition(from, 0), new CodePosition(to, document.Line(to).Length)), named);
