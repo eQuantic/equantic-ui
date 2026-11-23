@@ -154,15 +154,15 @@ describe('component boundary, for a component that never stops building', () => 
   });
 
   class OuroborosCard extends StatelessComponent {
-    build(): unknown {
-      return this;
+    build(): VisualNodeValue {
+      return this as unknown as VisualNodeValue;
     }
   }
 
   /** The same instance again, one node down: what it builds is a box around itself. */
   class MirrorCard extends StatelessComponent {
-    build(): unknown {
-      return { nodeKind: 'box', style: {}, child: this };
+    build(): VisualNodeValue {
+      return { nodeKind: 'box', style: {}, child: this } as unknown as VisualNodeValue;
     }
   }
 
