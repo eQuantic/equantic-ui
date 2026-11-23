@@ -360,9 +360,10 @@ public static class ConformanceRunner
     /// that names no vocabulary: an <c>ArgumentOutOfRangeException</c>'s message writes its actual value
     /// after <c>Environment.NewLine</c>, which is <c>\r\n</c> on Windows.
     /// </summary>
-    public static void AssertVocabularyStatementsSameAsDotNetExceptTheHostsNewline(string csharpStatements, string why)
+    public static void AssertVocabularyStatementsSameAsDotNetExceptTheHostsNewline(string csharpStatements, string why,
+        string? culture = null)
     {
-        var (jsBlock, actual, expected) = RunVocabularyStatements(csharpStatements);
+        var (jsBlock, actual, expected) = RunVocabularyStatements(csharpStatements, culture);
         if (actual == expected) return;
 
         Folded(actual).Should().Be(Folded(expected),

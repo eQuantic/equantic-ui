@@ -51,4 +51,17 @@ public class CultureCalendarTwinTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(Moved, culture);
     }
+
+    /// <summary>A day the calendar does not write is refused in its words: ar-SA's Um Al Qura calendar
+    /// writes from 1900 to 2077 (and Linux's ar-SA, whose ICU counts it Gregorian, answers the year on both
+    /// sides).</summary>
+    [SkippableFact]
+    public void ADayTheCalendarDoesNotWrite_IsRefusedInItsWords()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertVocabularyStatementsSameAsDotNetExceptTheHostsNewline(
+            "var s = \"\"; foreach (var d in new[] { new DateOnly(2080, 1, 1), new DateOnly(1899, 1, 1) }) "
+            + "{ try { s += CultureCalendar.YearOf(d) + \"|\"; } catch (ArgumentOutOfRangeException e) { s += e.Message + \"|\"; } } return s;",
+            "an ArgumentOutOfRangeException writes its actual value after the host's newline", "ar-SA");
+    }
 }

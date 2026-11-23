@@ -54,3 +54,5 @@ calendar shares.
   layout does not change.
 - A culture whose data did not travel counts Gregorian in the browser while .NET would count its own
   calendar. That path already has no server to agree with, and its names now say Gregorian too.
+- At a calendar's last month (Um Al Qura's Dhu al-Hijjah 1500, in November 2077) a move past it is refused
+  on both sides in other words, and the grid's trailing days are refused on both sides: #1849.
