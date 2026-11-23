@@ -203,6 +203,8 @@ interface BoxStyleConfig {
   maxHeight?: SizeValue | number;
   padding?: EdgeInsetsValue;
   background?: ColorTokenValue | null;
+  /** What the text and icons inside that name no colour inherit (C# `BoxStyle.Foreground`, #614). */
+  foreground?: ColorTokenValue | null;
   cornerRadius?: CornerRadii;
   borderWidth?: number;
   borderColor?: ColorTokenValue;

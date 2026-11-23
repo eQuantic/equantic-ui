@@ -81,7 +81,7 @@ export class ButtonTheme {
   }
 
   /** C# `ButtonTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
-  static merge(under: ButtonTheme | null, over: ButtonTheme | null): ButtonTheme | null {
+  static merge(under: ButtonTheme | null | undefined, over: ButtonTheme | null | undefined): ButtonTheme | null {
     return mergeSlot(under, over);
   }
 }
@@ -144,7 +144,7 @@ export class IconButtonTheme {
   }
 
   /** C# `IconButtonTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
-  static merge(under: IconButtonTheme | null, over: IconButtonTheme | null): IconButtonTheme | null {
+  static merge(under: IconButtonTheme | null | undefined, over: IconButtonTheme | null | undefined): IconButtonTheme | null {
     return mergeSlot(under, over);
   }
 }
@@ -213,7 +213,7 @@ export class SelectionControlsTheme {
   }
 
   /** C# `SelectionControlsTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
-  static merge(under: SelectionControlsTheme | null, over: SelectionControlsTheme | null): SelectionControlsTheme | null {
+  static merge(under: SelectionControlsTheme | null | undefined, over: SelectionControlsTheme | null | undefined): SelectionControlsTheme | null {
     return mergeSlot(under, over);
   }
 }
@@ -264,7 +264,7 @@ export class ChipTheme {
   }
 
   /** C# `ChipTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
-  static merge(under: ChipTheme | null, over: ChipTheme | null): ChipTheme | null {
+  static merge(under: ChipTheme | null | undefined, over: ChipTheme | null | undefined): ChipTheme | null {
     return mergeSlot(under, over);
   }
 }
@@ -393,7 +393,7 @@ export class ProgressTheme {
   }
 
   /** C# `ProgressTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
-  static merge(under: ProgressTheme | null, over: ProgressTheme | null): ProgressTheme | null {
+  static merge(under: ProgressTheme | null | undefined, over: ProgressTheme | null | undefined): ProgressTheme | null {
     return mergeSlot(under, over);
   }
 }
