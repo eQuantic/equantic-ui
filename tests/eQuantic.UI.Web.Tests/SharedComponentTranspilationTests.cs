@@ -177,7 +177,10 @@ public class SharedComponentTranspilationTests
     /// (#1303 to #1307): a downcast reaching a member of the derived type, abstract members of every
     /// accessibility called through the base, a constructor chained to one with an argument the first
     /// supplies, a lambda stored in a static field, and a field's collection initializer beside a base
-    /// constructor call. Written to <c>__fixtures__</c>, where the runtime's <c>tsc</c> reads every line.
+    /// constructor call. And initializers of hand-written vocabulary twins setting a member their config
+    /// lacked (#1823): a box style's foreground, a node's bookmark, cross alignment and grid span on a config
+    /// written in place, a spacer's fixed length. Written to <c>__fixtures__</c>, where the runtime's
+    /// <c>tsc</c> reads every line.
     /// </summary>
     private const string EmissionShapesSource = """
         using System;
@@ -290,6 +293,16 @@ public class SharedComponentTranspilationTests
             private List<string?> _items = new();
             public EmittedBag(string name) : base(name) { }
             public int Count => _items.Count;
+        }
+
+        public static class EmittedConfigs
+        {
+            public static BoxStyle Inked() => new BoxStyle { Foreground = new ColorToken(Color.Black) };
+
+            public static VisualNode Grouped(VisualNode child) =>
+                new Group(child) { Label = "Totals", Bookmark = "totals", AlignSelf = CrossAlign.Center, GridSpan = 2 };
+
+            public static Spacer Rigid() => new Spacer { FixedLength = 8 };
         }
         """;
 
@@ -472,7 +485,7 @@ public class SharedComponentTranspilationTests
     [
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
-        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain",
+        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs",
     ];
 
     /// <summary>The source this asks about, kept HERE rather than pointed at a production class.
