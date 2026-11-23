@@ -5,7 +5,7 @@
 An object initializer on a vocabulary type whose twin the runtime writes by hand SHALL pass the runtime's strict
 `tsc` for every member the C# class lets it set, and the twin SHALL hold each value it sets. The config each such
 twin's constructor takes, a named interface or a literal written in place, SHALL hold the C# class's public
-settable members, less those its public constructors take as parameters, and nothing C# does not have, but for
+settable members, those its constructor also takes as parameters included, and nothing C# does not have, but for
 the members `vocabulary-config.baseline.txt` names with a reason, a list that may only shrink. A config typed as a
 record of anything (`EqConfig`) takes every member.
 
@@ -24,6 +24,13 @@ record of anything (`EqConfig`) takes every member.
 
 - **WHEN** a module eqc writes builds `new Spacer { FixedLength = 8 }`
 - **THEN** the runtime's `tsc` takes it, and the twin's `fixedLength` is `8`
+
+#### Scenario: A member the constructor also takes
+
+- **WHEN** a module eqc writes builds `new Image("a.png", 1, 2) { Label = "Chart" }` and
+  `new Group(first) { Child = second }`
+- **THEN** the runtime's `tsc` takes both, the image's `label` is `Chart` and the group's `child` is `second`, as
+  in .NET, where the initializer runs after the constructor
 
 #### Scenario: Every config of the mirror
 
