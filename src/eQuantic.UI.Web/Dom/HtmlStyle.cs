@@ -195,6 +195,9 @@ public class HtmlStyle
     public string? Transition { get; set; }
     public string? Transform { get; set; }
 
+    /// <summary>The CSS <c>transform-origin</c>: the point a <see cref="Transform"/> scales and turns around.</summary>
+    public string? TransformOrigin { get; set; }
+
     /// <summary>
     /// The individual <c>translate</c> property, which CSS applies TOGETHER with
     /// <see cref="Transform"/> rather than in its place. A draggable's offset rides it, so the box it
@@ -324,6 +327,7 @@ public class HtmlStyle
         AddProperty(properties, "overflow-y", OverflowY);
         AddProperty(properties, "transition", Transition);
         AddProperty(properties, "transform", Transform);
+        AddProperty(properties, "transform-origin", TransformOrigin);
         AddProperty(properties, "translate", Translate);
         AddProperty(properties, "animation", Animation);
         AddProperty(properties, "animation-delay", AnimationDelay);

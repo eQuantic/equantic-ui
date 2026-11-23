@@ -22,7 +22,7 @@
 [EQX0001]eQuantic.UI.Native.Shell.Windows.PhotonWindow.OnCopyData.set -> void
 [EQX0001]eQuantic.UI.Native.Shell.Windows.PhotonWindow.PhotonWindow(string! className, string! title, float width = 800, float height = 600, eQuantic.UI.Primitives.WindowChrome chrome = eQuantic.UI.Primitives.WindowChrome.Standard, bool resizable = true, float minWidth = 0, float minHeight = 0, bool smoothScroll = true) -> void
 [EQX0001]eQuantic.UI.Native.Shell.Windows.PhotonWindow.PresenterName.get -> string!
-[EQX0001]eQuantic.UI.Native.Shell.Windows.PhotonWindow.Run(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode mode, int maxFrames = 0, eQuantic.UI.Native.Hosting.PhotonThemeController? themeController = null, eQuantic.UI.Native.Hosting.PhotonCultureController? cultureController = null, bool followSystemTheme = false) -> void
+[EQX0001]eQuantic.UI.Native.Shell.Windows.PhotonWindow.Run(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode mode, int maxFrames = 0, eQuantic.UI.Native.Hosting.PhotonThemeController? themeController = null, eQuantic.UI.Native.Hosting.PhotonCultureController? cultureController = null, bool followSystemTheme = false, eQuantic.UI.Primitives.ComponentBoundary? boundary = null) -> void
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsAppStorage
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsAppStorage.Get(string! key) -> string?
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsAppStorage.Remove(string! key) -> void
@@ -33,7 +33,7 @@
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsCapabilities.Register(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsCapabilities.WindowsCapabilities() -> void
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsClipboard
-[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsClipboard.Read() -> string?
+[EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsClipboard.ReadAsync() -> System.Threading.Tasks.Task<string?>!
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsClipboard.WindowsClipboard() -> void
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsClipboard.Write(string! text) -> void
 [EQX0001]eQuantic.UI.Native.Shell.Windows.WindowsDeepLinks

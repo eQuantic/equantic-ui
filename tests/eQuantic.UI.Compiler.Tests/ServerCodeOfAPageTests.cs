@@ -273,9 +273,10 @@ public sealed class ServerCodeOfAPageTests
     [MemberData(nameof(BareServerOnly))]
     public void ABareMemberThatStaysOnTheServer_IsRefusedAsItsThisSpellingIs(string what, string file, string declaration, string member)
     {
+        // The page holds a Reader, so its module is client code (#1779).
         using var solution = App(
             (file, $"using eQuantic.UI.Primitives;\n\nnamespace App.Model;\n\n{declaration}\n"),
-            ("Screens/Home.cs", Page("StatelessComponent")));
+            ("Screens/Home.cs", Page("StatelessComponent", members: "    private readonly App.Model.Reader _reader = new();")));
         var built = solution.Build();
 
         built.Failed.Should().BeTrue($"{what} names a member no twin holds");
@@ -380,19 +381,75 @@ public sealed class ServerCodeOfAPageTests
     /// <summary>A class, a static class and a record of the app are modules a page imports, so what they
     /// run is client code too: the same code as on a page, where it was an untranslated call (EQ2004).</summary>
     [Theory]
+    [InlineData("Disk", "public sealed class Disk\n{\n    public bool Has(string path) => File.Exists(path);\n}",
+        "new App.Model.Disk().Has(\"x\") ? \"kept\" : \"gone\"")]
+    [InlineData("Disk", "public static class Disk\n{\n    public static bool Has(string path) => File.Exists(path);\n}",
+        "App.Model.Disk.Has(\"x\") ? \"kept\" : \"gone\"")]
+    [InlineData("Note", "public sealed record Note(string Path)\n{\n    public bool Kept() => File.Exists(Path);\n}",
+        "new App.Model.Note(\"x\").Kept() ? \"kept\" : \"gone\"")]
+    public void AModuleOfTheApp_ThatReadsAFile_IsRefusedAsAPageIs(string type, string declaration, string shown)
+    {
+        using var solution = App(
+            ($"Model/{type}.cs", $"namespace App.Model;\n\n{declaration}\n"),
+            ("Screens/Home.cs", Page("StatelessComponent", shown: shown)));
+        var built = solution.Build();
+
+        built.Failed.Should().BeTrue();
+        Lines(built).Should().ContainSingle()
+            .Which.Should().StartWith(solution.FileOf("App", $"Model/{type}.cs") + "(").And.Contain("error EQ2112");
+    }
+
+    /// <summary>
+    /// The same class, record or static class, named by no component: it runs on the server alone, so
+    /// nothing in it is client code and the build says nothing of it (#1779). A middleware, an endpoint or
+    /// a configuration reader had to be marked <c>[ServerOnly]</c> one by one, or it failed here.
+    /// </summary>
+    [Theory]
     [InlineData("Disk", "public sealed class Disk\n{\n    public bool Has(string path) => File.Exists(path);\n}")]
     [InlineData("Disk", "public static class Disk\n{\n    public static bool Has(string path) => File.Exists(path);\n}")]
     [InlineData("Note", "public sealed record Note(string Path)\n{\n    public bool Kept() => File.Exists(Path);\n}")]
-    public void AModuleOfTheApp_ThatReadsAFile_IsRefusedAsAPageIs(string type, string declaration)
+    public void AModuleOfTheAppNoComponentNames_IsServerCode_AndNoModule(string type, string declaration)
     {
         using var solution = App(
             ($"Model/{type}.cs", $"namespace App.Model;\n\n{declaration}\n"),
             ("Screens/Home.cs", Page("StatelessComponent")));
         var built = solution.Build();
 
-        built.Failed.Should().BeTrue();
-        Lines(built).Should().ContainSingle()
-            .Which.Should().StartWith(solution.FileOf("App", $"Model/{type}.cs") + "(").And.Contain("error EQ2112");
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Errors.Should().BeEmpty();
+        built.Module(type).Should().BeNull("the browser never loads it");
+        built.Module("Home").Should().NotBeNull("the page is still written");
+    }
+
+    /// <summary>
+    /// A generator's own file the app never names, as the regex generator writes for a
+    /// <c>[GeneratedRegex]</c>: runners and helpers built on what no browser has. It reached eqc as client
+    /// code and failed the build from inside a file the app never wrote (#1779).
+    /// </summary>
+    [Fact]
+    public void AGeneratedFileNoComponentNames_IsServerCode_AndNoModule()
+    {
+        // Under the project's obj, where the build writes what a generator emitted and eqc reads it.
+        using var solution = App(("Screens/Home.cs", Page("StatelessComponent")),
+            ("obj/Debug/generated/Regex/RegexGenerator.g.cs", """
+                namespace System.Text.RegularExpressions.Generated
+                {
+                    file static class Utilities
+                    {
+                        public static bool Kept(string path) => global::System.IO.File.Exists(path);
+                    }
+
+                    internal sealed class Runner
+                    {
+                        public string Read(string path) => global::System.IO.File.ReadAllText(path);
+                    }
+                }
+                """));
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse(built.Errors);
+        built.Errors.Should().BeEmpty();
+        built.Module("Runner").Should().BeNull("nothing the browser runs names it");
     }
 
     /// <summary>The namespace is the test, never a prefix of a type's name: <c>System.IObservable</c>

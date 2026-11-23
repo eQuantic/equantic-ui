@@ -1,10 +1,10 @@
-import { $eq, Anchored, AnchorPlacementValue, BuildContext, MenuItem, MenuPanel, Pressable, StatefulComponent, UiComponent, VisualNode } from "../runtime-exports";
+import { $AnchorPlacementValue, $eq, Anchored, BuildContext, MenuItem, MenuPanel, Pressable, StatefulComponent, UiComponent, VisualNode } from "../runtime-exports";
 
 export class Menu extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Menu';
     _open: boolean = false;
     _highlight: number = 0;
-    _placement: AnchorPlacementValue = 'bottomStart';
+    _placement: $AnchorPlacementValue = 'bottomStart';
     declare trigger: VisualNode;
     declare items: MenuItem[];
     declare onSelect: ((int: number) => void) | null;

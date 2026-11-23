@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, DensityValue, Draggable, Positioned, Pressable, Sizing, Stack, StatelessComponent } from "../runtime-exports";
+import { $DensityValue, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Draggable, Positioned, Pressable, Sizing, Stack, StatelessComponent } from "../runtime-exports";
 
 export class Switch extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Switch';
@@ -23,7 +23,7 @@ export class Switch extends StatelessComponent {
         let slot = theme.selectionControls;
         let trackFill = this.on ? theme.colors('primary').base : slot?.switchOffTrack ?? theme.borderStrong;
         if (this.disabled) trackFill = trackFill.withOpacity(theme.disabledOpacity);
-        let density: DensityValue = context.density;
+        let density: $DensityValue = context.density;
         let width = ControlMetrics.atDensity((slot?.switchWidth ?? null), density) ?? Sizing.switchWidth(density);
         let height = ControlMetrics.atDensity((slot?.switchHeight ?? null), density) ?? Sizing.switchHeight(density);
         let knob = ControlMetrics.atDensity((slot?.switchThumb ?? null), density) ?? Sizing.switchThumb(density);

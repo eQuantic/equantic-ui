@@ -286,6 +286,25 @@ public class WikiClaimsCompile
         _ = Primitives.Pinned.ScrolledThreshold;
         _ = Primitives.Pinned.ScrolledBase;
 
+        // Styling, "What is inside a header that scrolls" (preview.70): a large badge that gives way to
+        // a small mark with the name once the page scrolls, both inside the one link.
+        var badge = Text("F", TypeRole.Display);
+        var markAndName = Text("Francine", TypeRole.Label);
+        var glide = new TransitionSpec(StyleChannels.Opacity | StyleChannels.Transform, Motion.BaseMs);
+        _ = Pinned(Link("/", Stack(Alignment.CenterStart, children: [
+            Box(new BoxStyle
+            {
+                Transition = glide,
+                Scrolled = new StyleDiff { Opacity = 0, Transform = Transform2D.Scale(0.6f) },
+            }, badge),
+            Box(new BoxStyle
+            {
+                Opacity = 0,
+                Transition = glide,
+                Scrolled = new StyleDiff { Opacity = 1 },
+            }, markAndName),
+        ]), label: "Home"));
+
         // WriteOnceComponents, "A weight of zero takes no share" (preview.61, #680): a picture that
         // starts at 540 and never grows, beside text that takes the rest.
         var story = new Row(gap: Space.S6) { Wrap = true, Width = SizeValue.Fill };
@@ -305,6 +324,21 @@ public class WikiClaimsCompile
         public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public override VisualNode Build(ComponentContext context) => Text("queue", TypeRole.BodyM);
+    }
+
+    /// <summary>Components, "A subtree is heard as one, or not at all" (preview.69, #1567): a switch heard as
+    /// its row, and the initials an avatar draws, which a reader passes over.</summary>
+    private sealed class SubtreeReadingPage : Primitives.StatefulComponent
+    {
+        private bool _on;
+
+        private void Toggle() => SetState(() => _on = !_on);
+
+        public override VisualNode Build(ComponentContext context) => Column(children:
+        [
+            MergeSemantics(Row(children: [Text("Wi-Fi"), Switch(_on, Toggle)])),
+            Row(children: [ExcludeSemantics(Avatar("JD")), Text("Jane Doe")]),
+        ]);
     }
 
     /// <summary>Components, "ContextTarget and ContextMenu: a menu asked for anywhere" (preview.69, #1531): a
@@ -395,6 +429,46 @@ public class WikiClaimsCompile
                 OnColumnResized = (column, width) => SetState(() =>
                     _columns[column] = _columns[column] with { Track = GridTrack.Fixed(width) }),
             };
+    }
+
+    /// <summary>Components, "Sortable", the look is the theme's (#1602): a theme's look of a carried card, and a
+    /// column's own laid over it.</summary>
+    private sealed class StyledColumnPage : Primitives.StatefulComponent
+    {
+        private readonly List<(string Id, string Title)> _cards = [("c1", "Draw the tree")];
+
+        private void Move(string item, string to, int index) { }
+
+        internal static eQuantic.UI.Server.UIOptions Configure(eQuantic.UI.Server.UIOptions ui) =>
+            ui.UseTheme(PhotonTheme.Instance.With(sortable: new SortableTheme { CopyElevation = 5, MaxLean = 6 }));
+
+        public override VisualNode Build(ComponentContext context) =>
+            Sortable(
+                Column(gap: Space.S2, children: [.. _cards.Select(card => SortableItem(Text(card.Title, TypeRole.BodyM), card.Id))]),
+                id: "done",
+                onDropped: drop => SetState(() => Move(drop.Item, drop.To, drop.Index)),
+                style: new SortableTheme { LiftedOpacity = 0.25f, MaxLean = 0 });
+    }
+
+    /// <summary>Components, "Sortable", depths (#1594): an outline whose rows have depths, and the depth a drop lands
+    /// at.</summary>
+    private sealed class OutlinePage : Primitives.StatefulComponent
+    {
+        private sealed record OutlineRow(string Id, string Title, int Depth);
+
+        private readonly List<OutlineRow> rows = [new("intro", "Introduction", 0), new("why", "Why", 1)];
+
+        private static VisualNode Line(OutlineRow row) => Text(row.Title, TypeRole.BodyM);
+
+        private void Move(string item, int index, int? depth) { }
+
+        public override VisualNode Build(ComponentContext context) =>
+            Sortable(
+                Column(children: [.. rows.Select(row => SortableItem(Line(row), row.Id, depth: row.Depth))]),
+                id: "outline",
+                onDropped: drop => SetState(() => Move(drop.Item, drop.Index, drop.Depth)),
+                nests: true,
+                indent: 24);
     }
 
     /// <summary>Components, "TreeView: a tree the keyboard walks" (preview.69, #1530): a repository's

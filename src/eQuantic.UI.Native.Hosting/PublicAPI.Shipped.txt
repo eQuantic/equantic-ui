@@ -37,13 +37,17 @@
 [EQX0001]eQuantic.UI.Native.Hosting.IPhotonRunner.Run(eQuantic.UI.Native.Hosting.PhotonApplication! app) -> void
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.Args.get -> string![]!
+[EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.ArmBoundary(eQuantic.UI.Primitives.ComponentBoundary! boundary) -> void
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.Configuration.get -> Microsoft.Extensions.Configuration.IConfiguration!
+[EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.ContainedReport.get -> System.Action<eQuantic.UI.Primitives.UiComponent!, System.Exception!>?
+[EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.ContainedReport.set -> void
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.Options.get -> eQuantic.UI.Native.Hosting.PhotonOptions!
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.Root.get -> System.Func<eQuantic.UI.Primitives.VisualNode!>!
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.Run() -> void
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.Run(System.Func<eQuantic.UI.Primitives.VisualNode!>! root) -> void
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.Run<TRoot>() -> void
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.Services.get -> System.IServiceProvider!
+[EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.Theme.get -> eQuantic.UI.Primitives.IAppTheme!
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.UseRoot(System.Func<eQuantic.UI.Primitives.VisualNode!>! root) -> eQuantic.UI.Native.Hosting.PhotonApplication!
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonApplication.UseRoot<TRoot>() -> eQuantic.UI.Native.Hosting.PhotonApplication!
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonApplicationBuilder
@@ -150,8 +154,6 @@
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions.SmoothScroll.set -> void
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions.StrictRender.get -> bool
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions.StrictRender.set -> void
-[EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions.Theme.get -> eQuantic.UI.Primitives.IAppTheme!
-[EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions.Theme.set -> void
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions.Title.get -> string!
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions.Title.set -> void
 [EQX0001]eQuantic.UI.Native.Hosting.PhotonOptions.Width.get -> float

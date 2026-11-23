@@ -126,6 +126,60 @@ describe('text entry primitive (C# cross-pin)', () => {
     expect(disabled.attributes['disabled']).toBe('');
     expect(Object.keys(disabled.events)).toHaveLength(0);
   });
+
+  // C# twin: TextEntryKindRealizerTests — each kind's keyboard, autofill and that a value is no prose (#1761).
+  it.each([
+    ['email', 'text', 'email', 'email'],
+    ['phone', 'tel', 'tel', 'tel'],
+    ['url', 'text', 'url', 'url'],
+    ['number', 'text', 'numeric', undefined],
+    ['decimal', 'text', 'decimal', undefined],
+  ] as const)('a %s entry opens its keyboard and offers its autofill', (kind, type, mode, autofill) => {
+    const { input } = entryParts(lower(new TextEntry('', null, { kind })) as HtmlNode);
+    expect(input.attributes['type']).toBe(type);
+    expect(input.attributes['inputmode']).toBe(mode);
+    expect(input.attributes['autocomplete']).toBe(autofill);
+    expect(input.attributes['spellcheck']).toBe('false');
+    expect(input.attributes['autocapitalize']).toBe('none');
+  });
+
+  it('a text entry says nothing of a kind, an obscured number keeps the digits, and a multi-line one is prose', () => {
+    const { input: text } = entryParts(lower(new TextEntry('hello')) as HtmlNode);
+    expect(Object.keys(text.attributes)).not.toContain('inputmode');
+    expect(Object.keys(text.attributes)).not.toContain('spellcheck');
+
+    const { input: pin } = entryParts(lower(new TextEntry('', null, { kind: 'number', obscure: true })) as HtmlNode);
+    expect(pin.attributes['type']).toBe('password');
+    expect(pin.attributes['inputmode']).toBe('numeric');
+    const { input: phone } = entryParts(lower(new TextEntry('', null, { kind: 'phone', obscure: true })) as HtmlNode);
+    expect(phone.attributes['autocomplete']).toBeUndefined();
+
+    const { input: area } = entryParts(lower(new TextEntry('', null, { kind: 'email', lines: 3 })) as HtmlNode);
+    expect(area.tag).toBe('textarea');
+    expect(Object.keys(area.attributes)).not.toContain('inputmode');
+  });
+});
+
+describe('an autofocused entry of a kind (#1761)', () => {
+  // The reason the kind is the keyboard's and never the type's: `type="email"` refuses the selection API the
+  // client places an autofocused entry's caret with. Measured here on the element the browser makes.
+  it('puts its caret at the end without throwing', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    class Host extends StatefulComponent {
+      override build(): never {
+        return new TextEntry('a@b', () => {}, { kind: 'email', autofocus: true }) as never;
+      }
+    }
+    new Host().mount(container);
+    await nextFrame();
+    const input = container.querySelector('input')!;
+    expect(input.selectionStart).toBe(3);
+    const email = document.createElement('input');
+    email.type = 'email';
+    expect(() => email.setSelectionRange(0, 0)).toThrow();
+    container.remove();
+  });
 });
 
 /** The controlled-form host: app state echoes what the field reports. */

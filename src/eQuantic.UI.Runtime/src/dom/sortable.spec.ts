@@ -14,6 +14,8 @@ import { SortAnnouncements, type SortDrop } from '../shared/value-types';
 import { SdkStrings } from '../shared/components/SdkStrings';
 import { SortPlacement } from '../shared/components/SortPlacement';
 import { SortWords } from '../shared/components/SortWords';
+import { AppThemeExtensions, SortableTheme } from '../shared/theme-slots';
+import { num, tokenValue } from '../shared/css-values';
 import { resetSortableController } from './sortable';
 
 setPhotonTheme(photonTheme);
@@ -34,6 +36,8 @@ class Board extends StatefulComponent {
     private readonly words: SortAnnouncements | null = SdkStrings.sorting,
     // The done column's own words, when a test gives it words of its own.
     private readonly doneWords: SortAnnouncements | null | undefined = undefined,
+    // The todo column's own look of a carried card (#1602).
+    private readonly style: SortableTheme | null = null,
   ) {
     super();
   }
@@ -47,7 +51,7 @@ class Board extends StatefulComponent {
         list.add(item as never);
       }
       const words = id === 'done' && this.doneWords !== undefined ? this.doneWords : this.words;
-      return new Sortable(list as never, id, (drop: SortDrop) => dropped.push(drop), words, {
+      return new Sortable(list as never, id, (drop: SortDrop) => dropped.push(drop), words, id === 'todo' ? this.style : null, {
         group: this.group,
         nests: this.nests,
         label: id === 'todo' ? 'To do' : 'Done',
@@ -58,7 +62,7 @@ class Board extends StatefulComponent {
     row.add(column('todo', ['a', 'b', 'c', 'locked-1']) as never);
     row.add(column('done', this.doneCards) as never);
     row.add(
-      new Sortable(new Column(0) as never, 'other', (drop: SortDrop) => dropped.push(drop), this.words, {
+      new Sortable(new Column(0) as never, 'other', (drop: SortDrop) => dropped.push(drop), this.words, null, {
         group: 'else',
       }) as never,
     );
@@ -77,7 +81,7 @@ function give(element: Element, box: Box): void {
     ({ ...box, right: box.left + box.width, bottom: box.top + box.height, x: box.left, y: box.top, toJSON: () => box }) as DOMRect;
 }
 
-function mount(board: Board): HTMLElement {
+function mount(board: StatefulComponent): HTMLElement {
   const container = document.createElement('div');
   document.body.appendChild(container);
   board.mount(container);
@@ -148,6 +152,26 @@ describe('lists a pointer sorts', () => {
     pressed = [];
   });
 
+  it('leaves no selection after a drag of an item made of text (#1598)', () => {
+    const container = mount(new Board());
+    const from = item(container, 'a');
+    const box = boxes.get(from)!;
+    pointer(from, 'pointerdown', box.left + 10, box.top + 20);
+    // The selection a mouse press on the item's words starts, which jsdom does not make itself.
+    document.getSelection()!.selectAllChildren(from);
+    const path: [number, number][] = [
+      [20, 30],
+      [20, 70],
+      [20, 90],
+    ];
+    for (const [x, y] of path) pointer(document, 'pointermove', x, y);
+    expect(document.getSelection()!.toString()).toBe('');
+    pointer(document, 'pointerup', 20, 90);
+    expect(dropped).toHaveLength(1);
+    expect(document.getSelection()!.toString()).toBe('');
+    expect(document.documentElement.style.userSelect).toBe('');
+  });
+
   it('moves an item down its own list, counting the list without it', () => {
     const container = mount(new Board());
     // From a (0..40) to below b's middle (60) and above c's (100).
@@ -181,6 +205,71 @@ describe('lists a pointer sorts', () => {
     pointer(document, 'pointerup', 20, 10);
     expect(last(hovered)).toBeNull();
     expect(dropped[0].index).toBe(0);
+  });
+
+  describe('the look of a carried card (#1602)', () => {
+    afterEach(() => setPhotonTheme(photonTheme));
+
+    /** The theme's shadow for a level, in the spelling the controller writes. */
+    const shadowFor = (level: number): string => {
+      const spec = photonTheme.elevation(level);
+      return `0 ${num(spec.offsetY)}px ${num(spec.blur)}px ${num(spec.spread)}px ${tokenValue(spec.color)}`;
+    };
+
+    /** Carries card a fast to the right, leaving the pointer down, and answers the copy. */
+    const carryFast = (container: HTMLElement): HTMLElement => {
+      pointer(item(container, 'a'), 'pointerdown', 10, 20);
+      pointer(document, 'pointermove', 20, 20);
+      pointer(document, 'pointermove', 120, 20);
+      return document.body.lastElementChild as HTMLElement;
+    };
+
+    it("takes the defaults where neither the theme nor the list says, the theme's level 4 shadow included", () => {
+      const container = mount(new Board());
+      const copy = carryFast(container);
+      expect(item(container, 'a').style.opacity).toBe('0.4');
+      expect(copy.style.opacity).toBe('0.92');
+      expect(copy.getAttribute('style')).toContain(`box-shadow: ${shadowFor(4)}`);
+      pointer(document, 'pointerup', 120, 20);
+    });
+
+    it("is the theme's, with the list's own laid over it member by member", () => {
+      setPhotonTheme(
+        // Every slot before the sortable one left as the theme has it.
+        AppThemeExtensions.with(photonTheme, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, new SortableTheme({
+          liftedOpacity: 0.25,
+          copyOpacity: 0.7,
+          copyElevation: 5,
+          maxLean: 6,
+        })),
+      );
+      const container = mount(new Board(false, null, 'board', [], null, SdkStrings.sorting, undefined,
+        new SortableTheme({ copyOpacity: 0.5 })));
+      const copy = carryFast(container);
+      expect(item(container, 'a').style.opacity).toBe('0.25');
+      expect(copy.style.opacity).toBe('0.5');
+      expect(copy.getAttribute('style')).toContain(`box-shadow: ${shadowFor(5)}`);
+      // Fast to the right leans the copy back, no further than the theme's most.
+      expect(copy.style.getPropertyValue('rotate')).toBe('-6deg');
+      pointer(document, 'pointerup', 120, 20);
+    });
+
+    it("takes the theme's member where a list's element says no number", () => {
+      const container = mount(new Board(false, null, 'board', [], null, SdkStrings.sorting, undefined,
+        new SortableTheme({ liftedOpacity: 0.25 })));
+      container.querySelector('[data-eq-sort-id="todo"]')!.setAttribute('data-eq-sort-look-lifted', ' ');
+      carryFast(container);
+      expect(item(container, 'a').style.opacity).toBe('0.4');
+      pointer(document, 'pointerup', 120, 20);
+    });
+
+    it("keeps the copy upright where the list's look leans no further", () => {
+      const container = mount(new Board(false, null, 'board', [], null, SdkStrings.sorting, undefined,
+        new SortableTheme({ maxLean: 0 })));
+      const copy = carryFast(container);
+      expect(copy.style.getPropertyValue('rotate')).toBe('0deg');
+      pointer(document, 'pointerup', 120, 20);
+    });
   });
 
   it('asks the guard, and drops nothing on a refused place', () => {
@@ -260,10 +349,10 @@ describe('lists a pointer sorts', () => {
   });
 
   it("leans the copy against the pointer's speed across, up to 12 degrees, as the Space's board does", () => {
-    expect(SortPlacement.tilt(10, 10)).toBe(-8);
-    expect(SortPlacement.tilt(-40, 10)).toBe(12);
-    expect(SortPlacement.tilt(0, 16)).toBe(0);
-    expect(SortPlacement.tilt(5, 0)).toBeNull();
+    expect(SortPlacement.tilt(10, 10, SortPlacement.tiltMax)).toBe(-8);
+    expect(SortPlacement.tilt(-40, 10, SortPlacement.tiltMax)).toBe(12);
+    expect(SortPlacement.tilt(0, 16, SortPlacement.tiltMax)).toBe(0);
+    expect(SortPlacement.tilt(5, 0, SortPlacement.tiltMax)).toBeNull();
 
     let now = 1000;
     const clock = vi.spyOn(performance, 'now').mockImplementation(() => now);
@@ -459,5 +548,181 @@ describe('SortWords.fill (#1564)', () => {
     ['{}{0}{10}', ['a'], '{}a{10}'],
   ])('fills %j', (text, holes, expected) => {
     expect(SortWords.fill(text, holes)).toBe(expected);
+  });
+});
+
+/**
+ * A list whose items have depths (#1594), an outline of one group with a second list beside it: src (0), App.cs (1),
+ * Program.cs (1), docs (0) and README.md (0), 40 tall from y 0, one depth 16 across; and `next`, holding z. The C# twin
+ * of the arithmetic is `SortPlacementDepthTests`, and Photon carries the same outline in `SortableHostTests`.
+ */
+class Outline extends StatefulComponent {
+  constructor(private readonly guard: ((drop: SortDrop) => boolean) | null = null) {
+    super();
+  }
+
+  build(): Row {
+    const row = new Row(0);
+    const list = new Column(0);
+    for (const [name, depth] of [['src', 0], ['App.cs', 1], ['Program.cs', 1], ['docs', 0], ['README.md', 0]] as const)
+      list.add(new SortableItem(new Text(name) as never, name, { depth }) as never);
+    row.add(
+      new Sortable(list as never, 'files', (drop: SortDrop) => dropped.push(drop), SdkStrings.sorting, null, {
+        group: 'outline',
+        nests: true,
+        indent: 16,
+        label: 'Files',
+        onHovered: (drop: SortDrop | null) => hovered.push(drop),
+        accepts: this.guard,
+      }) as never,
+    );
+    const next = new Column(0);
+    next.add(new SortableItem(new Text('z') as never, 'z') as never);
+    row.add(
+      new Sortable(next as never, 'next', (drop: SortDrop) => dropped.push(drop), SdkStrings.sorting, null, {
+        group: 'outline',
+        label: 'Next',
+        onHovered: (drop: SortDrop | null) => hovered.push(drop),
+      }) as never,
+    );
+    return row as never;
+  }
+}
+
+describe('a list whose items have depths (#1594)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('requestAnimationFrame', () => 0);
+    vi.stubGlobal('cancelAnimationFrame', () => undefined);
+  });
+
+  afterEach(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    resetSortableController();
+    vi.unstubAllGlobals();
+    document.body.innerHTML = '';
+    boxes.clear();
+    dropped.length = 0;
+    hovered.length = 0;
+  });
+
+  const place = (drop: SortDrop | undefined) => [drop?.index, drop?.into, drop?.depth];
+
+  it('writes the indent on the list and each depth on its item, nothing for the top', () => {
+    const container = mount(new Outline());
+    expect(container.querySelector('[data-eq-sort-id="files"]')?.getAttribute('data-eq-sort-indent')).toBe('16');
+    expect(item(container, 'App.cs').getAttribute('data-eq-sort-depth')).toBe('1');
+    expect(item(container, 'docs').hasAttribute('data-eq-sort-depth')).toBe(false);
+    expect(container.querySelector('[data-eq-sort-id="next"]')?.hasAttribute('data-eq-sort-indent')).toBe(false);
+  });
+
+  it("keeps the item's own depth until the pointer travels an indent across, then takes it deeper", () => {
+    const container = mount(new Outline());
+    // README.md (160..200, pressed at x 10) to docs' top quarter, before docs: after Program.cs (1), before docs (0).
+    drag(container, 'README.md', [[10, 170], [10, 125]], false);
+    expect(place(last(hovered)!)).toEqual([3, null, 0]);
+    pointer(document, 'pointermove', 26, 125);
+    expect(place(last(hovered)!)).toEqual([3, null, 1]);
+    pointer(document, 'pointermove', 42, 125);
+    expect(place(last(hovered)!)).toEqual([3, null, 2]);
+    // As deep as one past Program.cs, no further.
+    pointer(document, 'pointermove', 90, 125);
+    expect(place(last(hovered)!)).toEqual([3, null, 2]);
+    pointer(document, 'pointermove', 26, 125);
+    pointer(document, 'pointerup', 26, 125);
+    expect(place(dropped[0])).toEqual([3, null, 1]);
+  });
+
+  it('gives a refused depth way to the nearest the place allows, shallower first', () => {
+    const container = mount(new Outline((drop) => drop.depth !== 1));
+    drag(container, 'README.md', [[10, 170], [26, 125]]);
+    expect(place(dropped[0])).toEqual([3, null, 0]);
+  });
+
+  it('carries the subtree with the item: no place among its own children', () => {
+    const container = mount(new Outline());
+    // src (0..40) over Program.cs (80..120): its children are no places, so this is src's own place, before docs.
+    drag(container, 'src', [[10, 30], [10, 90]]);
+    expect(hovered.filter(Boolean).every((drop) => drop!.index === 0)).toBe(true);
+    expect(place(dropped[0])).toEqual([0, null, 0]);
+  });
+
+  it('reports no depth for a place inside an item', () => {
+    const container = mount(new Outline());
+    drag(container, 'README.md', [[10, 170], [26, 140]]);
+    expect(place(dropped[0])).toEqual([3, 'docs', null]);
+  });
+
+  describe('by the keyboard', () => {
+    const press = (key: string): void => {
+      (document.activeElement ?? document.body).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    };
+    const said = (): string => document.querySelector('[data-eq-sort-announcer]')?.textContent ?? '';
+
+    it('steps the depth with the cross arrows and says the level, among its siblings under their holder', () => {
+      const container = mount(new Outline());
+      item(container, 'README.md').focus();
+      press(' ');
+      expect(said()).toBe('Picked up README.md, position 3 of 3 in Files.');
+      // After docs, inside docs, before docs.
+      press('ArrowUp');
+      press('ArrowUp');
+      expect(said()).toBe('README.md is at position 2 of 3 in Files.');
+      press('ArrowRight');
+      expect(said()).toBe('README.md is at position 3 of 3 in src.');
+      expect(place(last(hovered)!)).toEqual([3, null, 1]);
+      press('ArrowRight');
+      expect(said()).toBe('README.md is at position 1 of 1 in Program.cs.');
+      expect(place(last(hovered)!)).toEqual([3, null, 2]);
+      press('ArrowLeft');
+      press('Enter');
+      expect(place(dropped[0])).toEqual([3, null, 1]);
+      expect(said()).toBe('Dropped README.md at position 3 of 3 in src.');
+    });
+
+    it('keeps the depth it chose as the item moves along, within each place', () => {
+      const container = mount(new Outline());
+      item(container, 'README.md').focus();
+      press(' ');
+      press('ArrowUp');
+      press('ArrowUp');
+      press('ArrowRight');
+      press('ArrowRight');
+      // Up into Program.cs, then before it, where the place allows depths 1 and 2: the 2 it chose, not its own 0 kept
+      // in range, which would be 1.
+      press('ArrowUp');
+      press('ArrowUp');
+      expect(place(last(hovered)!)).toEqual([2, null, 2]);
+    });
+
+    it('passes over a refused depth, and says so when none is left that way', () => {
+      const container = mount(new Outline((drop) => drop.depth !== 1));
+      item(container, 'README.md').focus();
+      press(' ');
+      press('ArrowUp');
+      press('ArrowUp');
+      press('ArrowRight');
+      expect(place(last(hovered)!)).toEqual([3, null, 2]);
+      press('ArrowLeft');
+      expect(place(last(hovered)!)).toEqual([3, null, 0]);
+      press('Escape');
+
+      const refusing = mount(new Outline((drop) => drop.depth !== 2));
+      item(refusing, 'README.md').focus();
+      press(' ');
+      press('ArrowUp');
+      press('ArrowUp');
+      press('ArrowRight');
+      press('ArrowRight');
+      expect(said()).toBe('README.md cannot go there.');
+    });
+
+    it('moves to the next list of its group once the place offers no other depth', () => {
+      const container = mount(new Outline());
+      item(container, 'src').focus();
+      press(' ');
+      // src's own place, first: before docs, at the top only.
+      press('ArrowRight');
+      expect(last(hovered)?.to).toBe('next');
+    });
   });
 });

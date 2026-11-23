@@ -25,6 +25,16 @@
     <ProjectReference Include="..\..\src\eQuantic.UI.Testing\eQuantic.UI.Testing.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Material\eQuantic.UI.Material.csproj" />
+    <!-- The app HydrationAssert serves, as an app's test project references the app it tests (#1775). -->
+    <ProjectReference Include="..\HydrationSite\HydrationSite.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
+  </ItemGroup>
+
+  <!-- What the package's buildTransitive folder brings an app's test project: the bun the app was built with,
+       written beside the test assembly. A project reference brings no package targets, so it is imported. -->
+  <Import Project="..\..\src\eQuantic.UI.Testing\buildTransitive\eQuantic.UI.Testing.targets" />
 
 </Project>

@@ -22,6 +22,7 @@
 import type { HtmlNode, RenderContext } from './types';
 import type { VisualNodeValue } from '../shared/nodes';
 import { RenderManager } from '../dom/renderer';
+import type { HydrationResult } from '../dom/reconciler';
 import { ElementRoots, enterPass, exitPass, lowerRoot } from '../shared/element-roots';
 import { renderComponentFailure } from '../shared/component-boundary';
 import { StatelessComponent, UiComponent } from './component';
@@ -122,9 +123,10 @@ export class LayoutHost {
   }
 
   /** Adopts the server's markup of the layout and the page, in the order the server wrote it. */
-  hydrate(container: HTMLElement): void {
-    this.renderManager.hydrate(this.render(), container);
+  hydrate(container: HTMLElement): HydrationResult {
+    const result = this.renderManager.hydrate(this.render(), container);
     this.mounted = true;
+    return result;
   }
 
   /** Takes over a root another document drew (a page written as DOM, shown without the layout). */

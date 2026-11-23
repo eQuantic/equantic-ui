@@ -48,17 +48,29 @@ public sealed class AdaptiveNode : VisualNode
     /// <summary>Where <see cref="Expanded"/> takes over (dp). See <see cref="MediumFrom"/>.</summary>
     public float ExpandedFrom { get; init; } = WindowSizeClasses.ExpandedMinDp;
 
+    /// <summary>
+    /// Which arm a window <paramref name="widthDp"/> wide shows, as its slot: 0 for <see cref="Compact"/>, 1
+    /// for <see cref="Medium"/>, 2 for <see cref="Expanded"/>. The arm stands at that slot on every target,
+    /// held alone or beside the others, so a position in it is named the same wherever it is built (#1783).
+    /// </summary>
+    public int ResolveIndex(float widthDp)
+    {
+        if (Expanded is not null && widthDp >= ExpandedFrom) return 2;
+        if (Medium is not null && widthDp >= MediumFrom) return 1;
+        return 0;
+    }
+
     /// <summary>The variant for a window <paramref name="widthDp"/> wide, at this node's thresholds: the one
     /// every target holds and draws (the web's gates show it at the same widths). Missing variants fall back
     /// toward Compact.</summary>
-    public VisualNode ResolveWidth(float widthDp)
+    public VisualNode ResolveWidth(float widthDp) => ResolveIndex(widthDp) switch
     {
-        if (Expanded is { } expanded && widthDp >= ExpandedFrom) return expanded;
-        // This arm is also the fallback the third branch used to repeat: a width past the Expanded
-        // threshold with no Expanded variant is past the Medium one too, so it lands here.
-        if (Medium is { } medium && widthDp >= MediumFrom) return medium;
-        return Compact;
-    }
+        // A width past the Expanded threshold with no Expanded variant is past the Medium one too, so
+        // the Medium arm is also that width's fallback (ResolveIndex).
+        2 => Expanded!,
+        1 => Medium!,
+        _ => Compact,
+    };
 
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);

@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Generators;
@@ -64,12 +65,68 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
             .Where(static component => component is not null)
             .Collect();
 
-        context.RegisterSourceOutput(components, static (spc, all) => Emit(spc, all));
+        // A referenced PROJECT's components get factories too (#818). The SDK names the assemblies that came
+        // from projects, one a line, in a file it hands the compiler (ReferencedProjectsFile): a package's
+        // components have no source eqc compiles, so no module a factory could import. A file and not a
+        // compiler-visible property, because an analyzer config ends a value at ';' or '#' and reads the rest
+        // of the line as a comment, so only the first project got its factories (#1803).
+        var projects = context.AdditionalTextsProvider
+            .Where(static file => string.Equals(System.IO.Path.GetFileName(file.Path), ReferencedProjectsFile,
+                System.StringComparison.Ordinal))
+            .Select(static (file, token) => ProjectNames(file, token))
+            .Collect();
+        var referenced = context.CompilationProvider.Combine(projects)
+            .Select(static (pair, token) => ReferencedComponents(pair.Left, pair.Right, token));
+
+        context.RegisterSourceOutput(components.Combine(referenced).Combine(context.CompilationProvider),
+            static (spc, pair) => Emit(spc, pair.Left.Left, pair.Left.Right, pair.Right));
     }
 
-    private static void Emit(SourceProductionContext spc, ImmutableArray<Component?> all)
+    /// <summary>The file the SDK writes and hands the compiler: the referenced projects' assembly names, one a line.</summary>
+    internal const string ReferencedProjectsFile = "equantic.factory-projects.txt";
+
+    /// <summary>The names a list holds: every line that is not blank, as it is written.</summary>
+    private static ImmutableArray<string> ProjectNames(AdditionalText file, System.Threading.CancellationToken token)
     {
-        var found = all.Where(c => c is not null).Select(c => c!).ToList();
+        if (file.GetText(token) is not { } text) return ImmutableArray<string>.Empty;
+        return text.Lines.Select(line => line.ToString().Trim()).Where(name => name.Length > 0).ToImmutableArray();
+    }
+
+    /// <summary>Every component with a factory in the assemblies of the projects the app references.</summary>
+    private static ImmutableArray<Component> ReferencedComponents(
+        Compilation compilation, ImmutableArray<ImmutableArray<string>> lists, System.Threading.CancellationToken token)
+    {
+        var projects = new HashSet<string>(lists.SelectMany(names => names), System.StringComparer.Ordinal);
+        if (projects.Count == 0) return ImmutableArray<Component>.Empty;
+        var found = ImmutableArray.CreateBuilder<Component>();
+        foreach (var assembly in compilation.SourceModule.ReferencedAssemblySymbols)
+        {
+            if (!projects.Contains(assembly.Name)) continue;
+            Collect(assembly.GlobalNamespace, found, token);
+        }
+        return found.ToImmutable();
+    }
+
+    private static void Collect(INamespaceOrTypeSymbol container, ImmutableArray<Component>.Builder found,
+        System.Threading.CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (container is INamespaceSymbol ns)
+            foreach (var inner in ns.GetNamespaceMembers()) Collect(inner, found, token);
+        foreach (var type in container.GetTypeMembers())
+        {
+            if (Describe(type) is { } component) found.Add(component);
+            Collect(type, found, token);
+        }
+    }
+
+    private static void Emit(SourceProductionContext spc, ImmutableArray<Component?> all,
+        ImmutableArray<Component> referenced, Compilation compilation)
+    {
+        var own = all.Where(c => c is not null).Select(c => c!).ToList();
+        // The app's own first: a referenced component named like one of the app's loses the factory to it,
+        // with the same warning two of the app's own get (EQ3102).
+        var found = own.Concat(referenced).ToList();
         foreach (var component in found.Where(c => c.ElectedCount > 1))
             spc.ReportDiagnostic(Diagnostic.Create(AmbiguousElection, component.Location,
                 component.Name, component.ElectedCount));
@@ -81,7 +138,7 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
         // compile, and which the developer would read as the generator being broken rather than as
         // a name they own. Report it and keep the first, so the rest of the surface still exists.
         var byName = new Dictionary<string, Component>();
-        foreach (var component in usable.OrderBy(c => c.FullName, System.StringComparer.Ordinal))
+        foreach (var component in usable.OrderBy(c => c.IsReferenced).ThenBy(c => c.FullName, System.StringComparer.Ordinal))
         {
             if (byName.TryGetValue(component.Name, out var winner))
             {
@@ -93,8 +150,11 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
         }
 
         // The surface lives in the namespace the app's components share — the shortest common one,
-        // so a project that grew subfolders still gets ONE surface rather than several.
-        var surfaceNamespace = CommonNamespace(byName.Values.Select(c => c.Namespace));
+        // so a project that grew subfolders still gets ONE surface rather than several. A referenced
+        // project's namespace is its own and does not narrow it; an app whose only components are a
+        // library's has its surface in the namespace its assembly is named by.
+        var ownNamespaces = byName.Values.Where(c => !c.IsReferenced).Select(c => c.Namespace).ToList();
+        var surfaceNamespace = ownNamespaces.Count > 0 ? CommonNamespace(ownNamespaces) : NamespaceOf(compilation.AssemblyName);
         if (surfaceNamespace.Length == 0) return;
 
         var source = new StringBuilder();
@@ -103,6 +163,12 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
         // The global using is what makes the factories reachable with no import in any file — the
         // same way the SDK puts its own surface in scope.
         source.AppendLine($"global using static {surfaceNamespace}.AppUI;");
+        // A component's statics stay reachable as `ProductEditor.Toggled(…)` (#1781). The factory brought in
+        // by the line above and the type a file brings in with `using` stand at one level, and C# took the
+        // method, so the call did not compile where the component's namespace is not the caller's. An
+        // alias outranks both there, and a call of the name still finds the factory.
+        foreach (var name in ComponentAliases.Of(byName.Values.Where(c => c.HasStatics).Select(c => (c.Name, c.Namespace)), compilation))
+            source.AppendLine($"global using {name} = {byName[name].FullName};");
         source.AppendLine();
         source.AppendLine($"namespace {surfaceNamespace};");
         source.AppendLine();
@@ -114,9 +180,11 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
             // A CAPABILITY never reaches the signature: a caller composing a component has no
             // container to reach into, and eqc already resolves it on the other side. The factory
             // asks the same scope the SSR pipeline arms, so both targets construct alike.
+            // The values a parameter allows travel with it (EQ3106): a screen calls the factory, and the
+            // analyzer reads the parameter the CALL binds.
             var parameters = string.Join(", ", component.Parameters
                 .Where(p => !p.IsDependency)
-                .Select(p => p.Default is null ? $"{p.Type} {p.Name}" : $"{p.Type} {p.Name} = {p.Default}"));
+                .Select(p => p.Allowed + (p.Default is null ? $"{p.Type} {p.Name}" : $"{p.Type} {p.Name} = {p.Default}")));
             // A capability the component declared it CANNOT work without is required by name: a
             // target that does not have it gets a sentence saying which one and where, instead of a
             // null that travels into the component and fails somewhere inside it. One the component
@@ -138,6 +206,13 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
         spc.AddSource("AppUI.g.cs", source.ToString());
     }
 
+    /// <summary>The assembly's name as a namespace, or empty when a part of it is no identifier.</summary>
+    private static string NamespaceOf(string? assemblyName) =>
+        assemblyName is { Length: > 0 }
+        && assemblyName.Split('.').All(part => SyntaxFacts.IsValidIdentifier(part))
+            ? assemblyName
+            : "";
+
     /// <summary>The longest namespace prefix every component shares, on dot boundaries.</summary>
     private static string CommonNamespace(IEnumerable<string> namespaces)
     {
@@ -157,24 +232,36 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
     private sealed class Component
     {
         public Component(string ns, string name, string fullName, int electedCount,
-            List<(string Type, string Name, string? Default, bool IsDependency, bool IsRequired)> parameters, Location location)
+            List<(string Type, string Name, string? Default, bool IsDependency, bool IsRequired, string Allowed)> parameters, Location location,
+            bool hasStatics, bool isReferenced)
         {
             Namespace = ns; Name = name; FullName = fullName;
-            ElectedCount = electedCount; Parameters = parameters; Location = location;
+            ElectedCount = electedCount; Parameters = parameters; Location = location; HasStatics = hasStatics;
+            IsReferenced = isReferenced;
         }
+
+        /// <summary>Whether it is declared in a referenced project rather than in the app (#818).</summary>
+        public bool IsReferenced { get; }
+
+        /// <summary>Whether it declares a static member the rest of the app may read: a helper, a constant.</summary>
+        public bool HasStatics { get; }
 
         public string Namespace { get; }
         public string Name { get; }
         /// <summary>Globally qualified, so the factory body is never ambiguous.</summary>
         public string FullName { get; }
         public int ElectedCount { get; }
-        public List<(string Type, string Name, string? Default, bool IsDependency, bool IsRequired)> Parameters { get; }
+        public List<(string Type, string Name, string? Default, bool IsDependency, bool IsRequired, string Allowed)> Parameters { get; }
         public Location Location { get; }
     }
 
-    private static Component? Describe(GeneratorSyntaxContext ctx, System.Threading.CancellationToken token)
+    private static Component? Describe(GeneratorSyntaxContext ctx, System.Threading.CancellationToken token) =>
+        ctx.SemanticModel.GetDeclaredSymbol(ctx.Node, token) is INamedTypeSymbol symbol ? Describe(symbol) : null;
+
+    /// <summary>A component with a factory, from its symbol: the app's own, or one a referenced project
+    /// declares, read as metadata.</summary>
+    private static Component? Describe(INamedTypeSymbol symbol)
     {
-        if (ctx.SemanticModel.GetDeclaredSymbol(ctx.Node, token) is not INamedTypeSymbol symbol) return null;
         if (!FactorySurface.HasFactory(symbol)) return null;
 
         // WIDEST by default — the rule the emitter already applies to overloads — or the elected one.
@@ -186,7 +273,8 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
                 Name: p.Name,
                 Default: DefaultLiteral(p),
                 IsDependency: CapabilityRule.IsDependency(p.Type),
-                IsRequired: CapabilityRule.IsRequired(p)))
+                IsRequired: CapabilityRule.IsRequired(p),
+                Allowed: AllowedValues(p)))
             .ToList();
 
         return new Component(
@@ -195,8 +283,50 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
             symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
             elected,
             parameters,
-            symbol.Locations.FirstOrDefault() ?? Location.None);
+            symbol.Locations.FirstOrDefault() ?? Location.None,
+            symbol.TypeParameters.Length == 0 && symbol.GetMembers().Any(member =>
+                (member.IsStatic || member is INamedTypeSymbol) && !member.IsImplicitlyDeclared
+                && member is not IMethodSymbol { MethodKind: not MethodKind.Ordinary }
+                && member.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal),
+            symbol.Locations.All(location => !location.IsInSource));
     }
+
+    /// <summary>
+    /// The parameter's <c>[AllowedValues]</c>, written again for the factory's parameter with its values
+    /// and its words, each a literal: the mark's own spelling may name a constant the generated file
+    /// cannot see. Empty for a parameter with no mark.
+    /// </summary>
+    private static string AllowedValues(IParameterSymbol parameter)
+    {
+        foreach (var attribute in parameter.GetAttributes())
+        {
+            if (attribute.AttributeClass?.ToDisplayString() != "System.ComponentModel.DataAnnotations.AllowedValuesAttribute"
+                || attribute.ConstructorArguments.Length != 1
+                || attribute.ConstructorArguments[0].Kind != TypedConstantKind.Array)
+                continue;
+            var values = attribute.ConstructorArguments[0].Values.Select(Literal).ToList();
+            // A value with no literal this file can write (an array, a type) leaves the mark off: the
+            // factory then builds as it always did, and the constructor's own check still runs.
+            if (values.Any(value => value is null)) return "";
+            var arguments = values
+                .Concat(attribute.NamedArguments
+                    .Where(named => named.Key == "ErrorMessage" && named.Value.Value is string)
+                    .Select(named => "ErrorMessage = " + named.Value.ToCSharpString()));
+            return $"[global::System.ComponentModel.DataAnnotations.AllowedValues({string.Join(", ", arguments)})] ";
+        }
+
+        return "";
+    }
+
+    /// <summary>One value of the mark as a literal the generated file can write wherever it stands: a
+    /// constant as C# spells it, an enum's value cast to its globally qualified type. Null otherwise.</summary>
+    private static string? Literal(TypedConstant value) => value.Kind switch
+    {
+        TypedConstantKind.Primitive => value.ToCSharpString(),
+        TypedConstantKind.Enum when value.Type is { } type =>
+            $"({type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})({value.Value})",
+        _ => null,
+    };
 
     /// <summary>
     /// A parameter's default, spelled so the factory MIRRORS the constructor — an omitted argument

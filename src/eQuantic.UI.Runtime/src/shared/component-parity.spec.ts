@@ -20,6 +20,7 @@ import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { measurePhotonText, setPhotonTheme } from './photon-context';
 import type { HtmlNode } from '../core/types';
+import { TAKES_KEY_FIRST } from '../dom/shortcuts';
 import {
   AdaptiveNode,
   Anchored,
@@ -42,6 +43,8 @@ import {
   InView,
   LinearGradient,
   Link,
+  MergeSemantics,
+  ExcludeSemantics,
   Pinned,
   Positioned,
   Pressable,
@@ -80,6 +83,9 @@ import { Tooltip } from './components/Tooltip';
 import { Tabs } from './components/Tabs';
 import { SearchField } from './components/SearchField';
 import { TextInput } from './components/TextInput';
+import { Currency } from './components/Currency';
+import { MoneyInput } from './components/MoneyInput';
+import { NumberInput } from './components/NumberInput';
 import { RadioGroup } from './components/RadioGroup';
 import { EmptyState } from './components/EmptyState';
 import { Menu } from './components/Menu';
@@ -117,6 +123,7 @@ import { dateOnly } from '../utils/datetime';
 import { installCulture } from '../utils/culture';
 import { calendarFormat } from './__fixtures__/calendar-format';
 import calendarNames from './calendar-names.fixture.json';
+import { SortableTheme } from './theme-slots';
 
 setPhotonTheme(photonTheme);
 
@@ -382,6 +389,30 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         transition: new TransitionSpec(StyleChannels.colors),
       }),
     ),
+    'header-scrolled-boxes': still(
+      new Pinned(
+        column(
+          0,
+          new Box(
+            new BoxStyle({
+              width: 96,
+              height: 96,
+              transition: new TransitionSpec(StyleChannels.opacity | StyleChannels.transform),
+              scrolled: new StyleDiff({ opacity: 0, transform: Transform2D.scale(0.6) }),
+            }),
+          ),
+          new Box(
+            new BoxStyle({
+              width: 80,
+              height: 32,
+              background: photonTheme.surfaceSubtle,
+              scrolled: new StyleDiff({ background: photonTheme.surface }),
+              hover: new StyleDiff({ background: photonTheme.surfaceHighlight }),
+            }),
+          ),
+        ),
+      ),
+    ),
     'box-hover-border-edge': still(
       new Box(
         new BoxStyle({
@@ -429,6 +460,11 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     tabs: still(new Tabs(['One', 'Two', 'Three'], 1)),
     'search-field': still(new SearchField('term')),
     'text-input': still(new TextInput('value', null, 'Label')),
+    'text-input-kind': still(
+      new TextInput('a@b', null, 'E-mail', null, 'Where the receipt goes', null, null, 'large', null, 'email', 'to', '@work'),
+    ),
+    'money-input': still(new MoneyInput(123450n, null, 'Price', Currency.euro, null, null, null, 'VAT included')),
+    'number-input': still(new NumberInput(3, null, 'Lead time', 'days', 1, 30, null, 'Working days')),
     'radio-group': still(new RadioGroup(['a', 'b'], 0)),
     'empty-state': still(new EmptyState(new Icon(IconGlyph.fromIcons('search')), 'Nothing here', 'Try another term')),
     'menu-closed': still(new Menu(new Button('Open'), [new MenuItem('One'), new MenuItem('Two')])),
@@ -550,6 +586,31 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
       node: new Select(['Lisboa'], 0, null, null, [new OptionGroup('A seguir', ['Braga', 'Faro'])]),
       presses: [0],
     },
+    'merge-a-checkbox-and-its-description': still(
+      new MergeSemantics(
+        line(false, new Checkbox(true, null, 'Agree'), new Text('to the terms', 'bodyM', photonTheme.textPrimary)),
+      ),
+    ),
+    'merge-read-content': still(
+      new MergeSemantics(
+        line(
+          false,
+          new Text('Total', 'bodyM', photonTheme.textPrimary),
+          new ExcludeSemantics(new Text('JD', 'bodyM', photonTheme.textPrimary)),
+          new Text('42 EUR', 'bodyM', photonTheme.textPrimary),
+        ),
+      ),
+    ),
+    'exclude-a-subtree': still(
+      line(
+        false,
+        new ExcludeSemantics(new Text('Decoration', 'bodyM', photonTheme.textPrimary)),
+        new Text('Shown', 'bodyM', photonTheme.textPrimary),
+      ),
+    ),
+    'exclude-not-excluding': still(
+      new ExcludeSemantics(new Text('Read', 'bodyM', photonTheme.textPrimary), { excluding: false }),
+    ),
     'sortable-column': still(
       new Sortable(
         column(
@@ -569,7 +630,18 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
           'Left {0} in {1}.',
           'Back <{0}>.',
         ),
+        null,
         { group: 'board', onHovered: () => undefined },
+      ),
+    ),
+    // A list with a look of its own (#1602): each member it sets on its element, for the controller.
+    'sortable-styled': still(
+      new Sortable(
+        column(0, new SortableItem(new Text('a', 'bodyM', photonTheme.textPrimary), 'a')),
+        'todo',
+        () => undefined,
+        null,
+        new SortableTheme({ liftedOpacity: 0.25, copyElevation: 5, maxLean: 0 }),
       ),
     ),
     'tree-opens': {
@@ -848,9 +920,10 @@ function frames(node: unknown, presses: number[]): unknown[] {
  * Scoped to the entry's own tag on purpose. Other components attach the same NAMES for their own
  * reasons — a table viewport listens for keydown — and filtering globally would hide a real
  * regression the day one of those joins the fixture. The spreadsheet's door is a textarea, an entry
- * of this kind: its keydown, clipboard trio and focus are the client's alone too.
+ * of this kind: its keydown, clipboard trio and focus are the client's alone too, and so is its answer to
+ * the question the client's shortcut controller asks before a binding fires (TAKES_KEY_FIRST, #1181).
  */
-const CLIENT_ONLY_EVENTS = new Set(['focus', 'blur', 'input', 'keydown', 'paste', 'cut', 'copy']);
+const CLIENT_ONLY_EVENTS = new Set(['focus', 'blur', 'input', 'keydown', 'paste', 'cut', 'copy', TAKES_KEY_FIRST]);
 const ENTRY_TAGS = new Set(['input', 'textarea']);
 
 function canonical(node: HtmlNode): unknown {

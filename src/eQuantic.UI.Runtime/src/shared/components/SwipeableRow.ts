@@ -1,12 +1,12 @@
-import { Box, BoxStyle, BuildContext, Column, Draggable, Icon, IconGlyph, IconsValue, Positioned, Pressable, SizeValue, Stack, StatelessComponent, Text, VariantValue, VisualNode } from "../runtime-exports";
+import { $IconsValue, $VariantValue, Box, BoxStyle, BuildContext, Column, Draggable, Icon, IconGlyph, Positioned, Pressable, SizeValue, Stack, StatelessComponent, Text, VisualNode } from "../runtime-exports";
 
 export class SwipeableRow extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.SwipeableRow';
     declare child: VisualNode;
     declare actionLabel: string;
-    declare actionIcon: IconsValue;
+    declare actionIcon: $IconsValue;
     declare onAction: (() => void) | null;
-    declare actionVariant: VariantValue;
+    declare actionVariant: $VariantValue;
     declare open: boolean;
     declare onOpenChanged: ((bool: boolean) => void) | null;
 

@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CalendarNames, Column, CornerRadii, DateOnly, Flexible, Icon, IconButton, IconGlyph, Navigable, NavigableMoveValue, Pressable, Row, SdkStrings, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, $NavigableMoveValue, Box, BoxStyle, BuildContext, CalendarNames, Column, CornerRadii, DateOnly, Flexible, Icon, IconButton, IconGlyph, Navigable, Pressable, Row, SdkStrings, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNodeExtensions } from "../runtime-exports";
 
 export class Calendar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Calendar';
@@ -37,7 +37,7 @@ export class Calendar extends StatefulComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let first = CalendarNames.firstDayOfWeek;
-        let monthTitle = `${$eq.collections.item(CalendarNames.monthNames, this._month.month - 1)} ${$eq.text.format(this._month.year, null, undefined, undefined, 'int32')}`;
+        let monthTitle = `${$eq.collections.item(CalendarNames.monthNames, this._month.month - 1 | 0)} ${$eq.text.format(this._month.year, null, undefined, undefined, 'int32')}`;
         let slot = theme.calendar;
         let cellSize = slot?.cellSize ?? Calendar.cellSize;
         let header = new Row(slot?.headerGap ?? 4, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill });
@@ -47,14 +47,14 @@ export class Calendar extends StatefulComponent {
         header.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronRight')), SdkStrings.nextMonth, 'standard', 'small', () => this.page(1)));
         let names = CalendarNames.dayNamesShort;
         let dayRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill });
-        for (let column = 0; column < 7; column++) {
-            dayRow.add(new Box(new BoxStyle({ width: SizeValue.fixed(cellSize), height: SizeValue.fixed(slot?.weekdayHeight ?? Calendar.headerHeight) }), VisualNodeExtensions.centered(new Text($eq.collections.item(names, (first + column) % 7), slot?.weekdayRole ?? 'caption', slot?.weekdayColor ?? theme.textMuted, 1))));
+        for (let column = 0; column < 7; column = column + 1 | 0) {
+            dayRow.add(new Box(new BoxStyle({ width: SizeValue.fixed(cellSize), height: SizeValue.fixed(slot?.weekdayHeight ?? Calendar.headerHeight) }), VisualNodeExtensions.centered(new Text($eq.collections.item(names, (first + column | 0) % 7), slot?.weekdayRole ?? 'caption', slot?.weekdayColor ?? theme.textMuted, 1))));
         }
         let rows = [dayRow];
         let start = Calendar.gridStart(this._month, first);
-        for (let week = 0; week < 6; week++) {
+        for (let week = 0; week < 6; week = week + 1 | 0) {
             let weekRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill });
-            for (let column = 0; column < 7; column++) weekRow.add(this.cell(start.addDays(week * 7 + column), context));
+            for (let column = 0; column < 7; column = column + 1 | 0) weekRow.add(this.cell(start.addDays(Math.imul(week, 7) + column | 0), context));
             $eq.collections.listAdd(rows, weekRow);
         }
         let month = new Column(slot?.gap ?? 8);
@@ -100,31 +100,31 @@ export class Calendar extends StatefulComponent {
     }
 
     static spoken(day: DateOnly) {
-        return `${$eq.collections.item(CalendarNames.dayNamesLong, Calendar.sundayIndex(day))}, ${$eq.text.format(day.day, null, undefined, undefined, 'int32')} ${$eq.collections.item(CalendarNames.monthNames, day.month - 1)} ${$eq.text.format(day.year, null, undefined, undefined, 'int32')}`;
+        return `${$eq.collections.item(CalendarNames.dayNamesLong, Calendar.sundayIndex(day))}, ${$eq.text.format(day.day, null, undefined, undefined, 'int32')} ${$eq.collections.item(CalendarNames.monthNames, day.month - 1 | 0)} ${$eq.text.format(day.year, null, undefined, undefined, 'int32')}`;
     }
 
     static sundayIndex(day: DateOnly) {
-        return (day.dayNumber + 1) % 7;
+        return (day.dayNumber + 1 | 0) % 7;
     }
 
     cursorCell(start: DateOnly): [number, number] | null {
         let cursor: any; 
         if (!((cursor = this._cursor) != null)) return null;
-        let offset = cursor.dayNumber - start.dayNumber;
+        let offset = cursor.dayNumber - start.dayNumber | 0;
         if (offset < 0 || offset >= 42) return null;
         if (cursor.month !== this._month.month || !this.inRange(cursor)) return null;
         let row = Math.trunc(offset / 7);
         let item = 0;
-        for (let column = 0; column < offset % 7; column++) {
-            let day = start.addDays(row * 7 + column);
-            if (day.month === this._month.month && this.inRange(day)) item++;
+        for (let column = 0; column < offset % 7; column = column + 1 | 0) {
+            let day = start.addDays(Math.imul(row, 7) + column | 0);
+            if (day.month === this._month.month && this.inRange(day)) item = item + 1 | 0;
         }
-        return [row + 1, item];
+        return [row + 1 | 0, item];
     }
 
-    move(move: NavigableMoveValue) {
+    move(move: $NavigableMoveValue) {
         let from = this._cursor ?? (this.selected ?? this.clampToRange(Calendar.today()));
-        let to = (() => { const $s = move; if ($s === 'previousItem') return from.addDays(-1); if ($s === 'nextItem') return from.addDays(1); if ($s === 'previousRow') return from.addDays(-7); if ($s === 'nextRow') return from.addDays(7); if ($s === 'previousPage') return from.addMonths(-1); if ($s === 'nextPage') return from.addMonths(1); if ($s === 'previousSection') return from.addYears(-1); if ($s === 'nextSection') return from.addYears(1); if ($s === 'rowStart') return from.addDays(-Calendar.dayInWeek(from)); if ($s === 'rowEnd') return from.addDays(6 - Calendar.dayInWeek(from)); return from; })();
+        let to = (() => { const $s = move; if ($s === 'previousItem') return from.addDays(-1); if ($s === 'nextItem') return from.addDays(1); if ($s === 'previousRow') return from.addDays(-7); if ($s === 'nextRow') return from.addDays(7); if ($s === 'previousPage') return from.addMonths(-1); if ($s === 'nextPage') return from.addMonths(1); if ($s === 'previousSection') return from.addYears(-1); if ($s === 'nextSection') return from.addYears(1); if ($s === 'rowStart') return from.addDays(-Calendar.dayInWeek(from) | 0); if ($s === 'rowEnd') return from.addDays(6 - Calendar.dayInWeek(from) | 0); return from; })();
         this.setState(() => {
             this._cursor = this.clampToRange(to);
             this._month = Calendar.firstOfMonth($eq.nullable.value(this._cursor));
@@ -132,11 +132,11 @@ export class Calendar extends StatefulComponent {
     }
 
     static dayInWeek(day: DateOnly) {
-        return (Calendar.sundayIndex(day) - CalendarNames.firstDayOfWeek + 7) % 7;
+        return ((Calendar.sundayIndex(day) - CalendarNames.firstDayOfWeek | 0) + 7 | 0) % 7;
     }
 
     static gridStart(month: DateOnly, firstDayOfWeek: number) {
-        return month.addDays(-((Calendar.sundayIndex(month) - firstDayOfWeek + 7) % 7));
+        return month.addDays(-(((Calendar.sundayIndex(month) - firstDayOfWeek | 0) + 7 | 0) % 7) | 0);
     }
 
     page(months: number) {

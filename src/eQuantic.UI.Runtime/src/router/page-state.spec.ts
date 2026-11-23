@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyPageState, fetchPageState, leaveForRefusal, NAVIGATION_HEADER } from './page-state';
+import { installCulture, str } from '../utils/culture';
 
 /**
  * The client half of a navigation's page state, the half ClientNavigationStateTests cannot reach: what
@@ -123,5 +124,13 @@ describe("a navigation replaces the head's metadata as a set", () => {
 
     applyPageState({ head: '' });
     expect(w.__INITIAL_STATE__).toBeUndefined();
+  });
+
+  it("adds the next page's strings to the active catalog (#1782)", () => {
+    installCulture('pt-BR', 'pt-BR', { 'Strings/Menu.Title': 'Menu' });
+    applyPageState({ head: '', strings: { 'Strings/Shop.Title': 'Nossos bolos' } });
+    expect(str('Strings', 'Shop.Title')).toBe('Nossos bolos');
+    expect(str('Strings', 'Menu.Title')).toBe('Menu');
+    installCulture('', '', {});
   });
 });

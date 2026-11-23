@@ -1,8 +1,8 @@
-import { $eq, Box, BoxStyle, BuildContext, Decimal, EdgeInsets, Row, SdkStrings, SheetController, SheetPalette, SizeValue, Spacer, StatefulComponent, Text, TypeRoleValue, UiComponent } from "../runtime-exports";
+import { $eq, $TypeRoleValue, Box, BoxStyle, BuildContext, Decimal, EdgeInsets, Row, SdkStrings, SheetController, SheetPalette, SizeValue, Spacer, StatefulComponent, Text, UiComponent } from "../runtime-exports";
 
 export class StatusBar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.StatusBar';
-    static barType: TypeRoleValue = 'caption';
+    static barType: $TypeRoleValue = 'caption';
     _config: StatusBar;
     _rebuild: () => void;
     _listening: any = null;
@@ -70,9 +70,9 @@ export class StatusBar extends StatefulComponent {
         let negative = (value.compareTo($eq.num.dec(0)) < 0);
         let scientific = negative ? '0.####E+00' : '0.#####E+00';
         let whole = $eq.text.format((negative ? value.neg() : value), '0', undefined, true).length;
-        let room = 11 - (negative ? 1 : 0) - whole;
+        let room = (11 - (negative ? 1 : 0) | 0) - whole | 0;
         if (room < 0) return $eq.text.format(value, scientific);
-        let places = Math.max(0, room - 1);
+        let places = Math.max(0, room - 1 | 0);
         let fixedText = $eq.text.format(value, places === 0 ? '0' : '0.' + '#'.repeat(places));
         if (value.equals($eq.num.dec(0))) return fixedText;
         let scientificText = $eq.text.format(value, scientific);

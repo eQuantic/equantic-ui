@@ -64,8 +64,12 @@ Components.Menu: no SizeVariant  its items are the Menu's own rows, not the cont
 Components.Menu: no Variant  a surface: it is drawn in the theme's roles, and no variant chooses its colours
 Components.Mermaid: no SizeVariant  it fills the width it is given and grows with what it holds, so the control ladder has no rung for it
 Components.Mermaid: no Variant  a diagram in the theme's roles, never a variant
+Components.MoneyInput · Small: refused (ArgumentOutOfRangeException)  a text field has no small size: its text and padding cannot fit 32dp (spec B9)
+Components.MoneyInput: no Variant  a field: its colours follow its state (primary while focused, destructive on an error), never a variant
 Components.NavigationRail: no SizeVariant  a navigation is sized by its own specification and the Navigation slot, not by the control ladder
 Components.NavigationRail: no Variant  a navigation: the selection takes the primary colours and nothing else, so there is no variant to choose
+Components.NumberInput · Small: refused (ArgumentOutOfRangeException)  a text field has no small size: its text and padding cannot fit 32dp (spec B9)
+Components.NumberInput: no Variant  a field: its colours follow its state (primary while focused, destructive on an error), never a variant
 Components.PageIndicator: no SizeVariant  dots at the Navigation slot's size, not the control ladder
 Components.Pagination: no SizeVariant  a navigation is sized by its own specification and the Navigation slot, not by the control ladder; its steps are small buttons
 Components.Pagination: no Variant  a navigation: the selection takes the primary colours and nothing else, so there is no variant to choose

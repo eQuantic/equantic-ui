@@ -141,6 +141,7 @@ public sealed class NodeElement : Element
 
         var count = slots.Count;
         while (_children.Count < count) _children.Add(null);
+        if (!Owner.HoldsEveryArm && Configuration is AdaptiveNode) CarryTheArmAcross(slots);
         for (var slot = 0; slot < count; slot++)
         {
             // Left as it is: the realizer builds it when it shows it (see ShowDeferred).
@@ -152,6 +153,34 @@ public sealed class NodeElement : Element
         {
             if (_children[slot] is { } gone) Owner.Deactivate(gone);
             _children.RemoveAt(slot);
+        }
+    }
+
+    /// <summary>
+    /// The arm a window crossing a threshold shows, where the realizer holds one: the position of the arm
+    /// it showed moves to the new arm's slot when it can take the new arm's node (the same type and key),
+    /// as Photon kept it when it held every arm at one slot, and what that arm keeps comes with it. An arm
+    /// of another type starts again, unless what it holds carries a <see cref="GlobalKey"/> (#797).
+    /// </summary>
+    private void CarryTheArmAcross(NodeSlots slots)
+    {
+        var shown = -1;
+        for (var slot = 0; slot < slots.Count; slot++)
+            if (slots[slot] is not null) shown = slot;
+        if (shown < 0 || _children[shown] is not null) return;
+
+        var from = -1;
+        for (var slot = 0; slot < _children.Count; slot++)
+        {
+            if (_children[slot] is null) continue;
+            if (from >= 0) return;
+            from = slot;
+        }
+
+        if (from >= 0 && CanUpdate(_children[from]!.Configuration, slots[shown]!))
+        {
+            _children[shown] = _children[from];
+            _children[from] = null;
         }
     }
 
@@ -256,6 +285,23 @@ public sealed class NodeElement : Element
         var state = State;
         State = null;
         (state as IDisposable)?.Dispose();
+    }
+
+    internal override void ForgetChild(Element child)
+    {
+        for (var slot = 0; slot < _children.Count; slot++)
+        {
+            if (ReferenceEquals(_children[slot], child)) _children[slot] = null;
+        }
+    }
+
+    internal override void FillForgotten()
+    {
+        var slots = ChildSlots.Of(Configuration, Owner.WindowWidth, Owner.HoldsEveryArm);
+        for (var slot = 0; slot < slots.Count && slot < _children.Count; slot++)
+        {
+            if (slot != _deferred && _children[slot] is null && slots[slot] is { } node) _children[slot] = Inflate(node, slot);
+        }
     }
 
     private protected override void DeactivateChildren()

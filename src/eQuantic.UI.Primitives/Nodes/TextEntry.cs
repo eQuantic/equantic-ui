@@ -52,6 +52,15 @@ public sealed class TextEntry : VisualNode
     /// <summary>Password entry: glyphs render obscured (web <c>type=password</c>).</summary>
     public bool Obscure { get; init; }
 
+    /// <summary>
+    /// What the field takes: an e-mail address, a telephone number, a web address, a whole number or
+    /// a number with a fraction, or prose (the default). A phone opens that kind's keyboard, the
+    /// browser and the platform offer its autofill, and a value is not spell-checked or
+    /// autocorrected. Independent of <see cref="Obscure"/>: a PIN is a <see cref="TextEntryKind.Number"/>
+    /// that hides what is typed. A multi-line field is prose whatever its kind.
+    /// </summary>
+    public TextEntryKind Kind { get; init; }
+
     /// <summary>Type role of the entry text (spec: TextInput rides BodyL, SearchField BodyM).</summary>
     public TypeRole Role { get; init; } = TypeRole.BodyL;
 

@@ -35,6 +35,8 @@ namespace eQuantic.UI.Compiler.Services;
 internal sealed class NamedSourceTypes
 {
     private readonly Dictionary<string, HashSet<ReferencedType>> _declarations = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, INamedTypeSymbol> _written = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, INamedTypeSymbol> _runtime = new(StringComparer.Ordinal);
     private ServiceRegistrations _services = ServiceRegistrations.None;
     private readonly HashSet<INamedTypeSymbol> _built = new(SymbolEqualityComparer.Default);
 
@@ -43,6 +45,17 @@ internal sealed class NamedSourceTypes
     /// of it names such a type.</summary>
     public IReadOnlyCollection<ReferencedType> Declarations(string name) =>
         _declarations.TryGetValue(name, out var declarations) ? declarations : [];
+
+    /// <summary>
+    /// Each name under which the declarations name a type of the source whose twin eqc writes AND a type
+    /// the runtime carries: the app's own <c>Text</c> beside the vocabulary's. A module imports a name
+    /// once, so one of the two is the other in the browser (#1777). Two types of the source under one
+    /// name are the bundle's to refuse, since their twins are one file (<see cref="EmittedTwins"/>).
+    /// </summary>
+    public IEnumerable<(string Name, INamedTypeSymbol Source, INamedTypeSymbol Runtime)> SharedWithTheRuntime() =>
+        _written.Where(entry => _runtime.ContainsKey(entry.Key))
+            .OrderBy(entry => entry.Key, StringComparer.Ordinal)
+            .Select(entry => (entry.Key, entry.Value, _runtime[entry.Key]));
 
     /// <summary>The files that declare a type whose twin is <paramref name="name"/>.</summary>
     public IEnumerable<string> DeclaredIn(string name) =>
@@ -188,6 +201,7 @@ internal sealed class NamedSourceTypes
                 Type(named.ContainingType);
                 var definition = named.OriginalDefinition;
                 if (definition.Name.Length == 0) return;
+                Twin(definition);
                 foreach (var reference in definition.ReadDeclarations())
                 {
                     if (string.IsNullOrEmpty(reference.SyntaxTree.FilePath)) continue;
@@ -197,6 +211,23 @@ internal sealed class NamedSourceTypes
                     declarations.Add(new ReferencedType(twin, ClrName(definition), reference.SyntaxTree.FilePath));
                 }
                 return;
+        }
+    }
+
+    /// <summary>Where the module takes <paramref name="definition"/> from, when it is a class or a struct
+    /// that crosses as a class: a twin eqc writes from the source, or one the runtime carries.</summary>
+    private void Twin(INamedTypeSymbol definition)
+    {
+        if (definition.TypeKind is not (TypeKind.Class or TypeKind.Struct) || !definition.HasTwin()) return;
+        var inSource = definition.Locations.Any(location => location.IsInSource);
+        if (inSource && ObjectCreationStrategy.TwinIsWritten(definition))
+            _written.TryAdd(definition.TwinReference(), definition);
+        else if (!inSource && definition.IsRuntimeProvided())
+        {
+            // Under every name the module may import it by: the context a component builds with is
+            // `ComponentContext` as a value and `BuildContext` as an annotation (ExportedName).
+            _runtime.TryAdd(RuntimeProvidedTypeScanner.ExportedName(definition, asValue: true), definition);
+            _runtime.TryAdd(RuntimeProvidedTypeScanner.ExportedName(definition, asValue: false), definition);
         }
     }
 

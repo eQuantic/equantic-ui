@@ -282,12 +282,15 @@ public class TypeScriptEmitter
     /// reaches a user as a blank page, never as an error, which is why both import paths consult
     /// this and not just the one that happened to hit it first.
     /// </summary>
-    private static readonly HashSet<string> RuntimeValueTypes = new(StringComparer.Ordinal)
+    internal static readonly IReadOnlySet<string> RuntimeValueTypes = new HashSet<string>(StringComparer.Ordinal)
     {
         "DateTime", "DateOnly", "TimeOnly", "TimeSpan", "DateTimeOffset", "Decimal",
         // The cancellation trio (utils/cancellation.ts): built through `$eq.cancellation`, named by
         // the parameter a provider takes its token in.
         "CancellationToken", "CancellationTokenSource", "CancellationTokenRegistration",
+        // A culture's number format, read through `$eq.text.numberFormat` and named by the parameter a
+        // method takes it in: the culture's data under .NET's names (utils/culture.ts, #1765).
+        "NumberFormatInfo",
     };
 
     /// <summary>
@@ -2627,8 +2630,17 @@ public class TypeScriptEmitter
     /// </summary>
     internal static string? VocabularyUnionFor(ITypeSymbol type) =>
         RuntimeProvidedTypeScanner.IsVocabularyNamespace(type.ContainingNamespace?.ToDisplayString() ?? "")
-            ? $"{type.Name}Value"
+            ? UnionName(type.Name)
             : null;
+
+    /// <summary>
+    /// The name a module imports a vocabulary enum's union by: <c>$DensityValue</c> for <c>Density</c>.
+    /// The <c>$</c> is a character C# cannot spell, so no type an app or the vocabulary declares ever
+    /// meets it. Named <c>DensityValue</c>, an app's own <c>record DensityValue</c> was taken for the union
+    /// and imported from the runtime, which has no such value, and the page did not load (#1427). The
+    /// runtime's own code keeps the plain name; <c>enums.generated.ts</c> exports each union under both.
+    /// </summary>
+    internal static string UnionName(string enumName) => $"${enumName}Value";
 
     /// <summary>
     /// The union names the emitted TEXT mentions, verified against the vocabulary. They exist only
@@ -2638,12 +2650,13 @@ public class TypeScriptEmitter
     internal static void SeedEnumUnions(string emitted, Compilation? compilation, HashSet<string> runtimeProvided)
     {
         if (compilation is null) return;
+        // Only the `$` name: a name C# can spell is a type of the app's or the vocabulary's own (#1427).
         foreach (System.Text.RegularExpressions.Match match in
-                 System.Text.RegularExpressions.Regex.Matches(emitted, @"(?<![\w$])([A-Z][A-Za-z0-9]*)Value(?![\w$])"))
+                 System.Text.RegularExpressions.Regex.Matches(emitted, @"(?<![\w$])\$([A-Z][A-Za-z0-9]*)Value(?![\w$])"))
         {
             var name = match.Groups[1].Value;
             if (VocabularyEnum(compilation, name) is not null)
-                runtimeProvided.Add($"{name}Value");
+                runtimeProvided.Add(UnionName(name));
         }
     }
 
@@ -2664,8 +2677,8 @@ public class TypeScriptEmitter
     /// something the file never imported is a broken type, not a missing one.</summary>
     private string Union(string enumName)
     {
-        _converter.UsedRuntimeTypes.Add($"{enumName}Value");
-        return $"{enumName}Value";
+        _converter.UsedRuntimeTypes.Add(UnionName(enumName));
+        return UnionName(enumName);
     }
 
     /// <summary>The vocabulary enum called <paramref name="name"/>, looked for in every namespace whose
