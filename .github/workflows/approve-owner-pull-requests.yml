@@ -1,0 +1,40 @@
+name: Approve the owner's pull requests
+
+# The main ruleset (21198869) requires one approving review, so that a contributor's pull request waits
+# for the owner (#1847). The owner's own pull requests, every session's included (they work as the
+# owner's account), cannot be approved by their author, so this workflow approves them.
+#
+# It runs on pull_request_target, which runs THIS file as main holds it and never a branch's copy, so no
+# branch can change what approves it. It checks out no code from the pull request and runs nothing of
+# it: the one step is a review through the API. A pull request is approved only when its author AND the
+# actor of the event (the opening, the push, the move out of draft) are the owner's account and its head
+# is a branch of this repository. A push a contributor makes to the owner's branch is not approved, and
+# the ruleset dismisses the earlier approval when new commits arrive.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+concurrency:
+  group: approve-owner-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  approve:
+    if: >-
+      github.event.pull_request.user.login == 'edgarmesquita' &&
+      github.event.sender.login == 'edgarmesquita' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Approve the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: >-
+          gh pr review "$NUMBER" --repo "$GITHUB_REPOSITORY" --approve
+          --body "Approved for the owner: the author and the actor of this event are the owner's account (#1847)."
