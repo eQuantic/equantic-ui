@@ -25,12 +25,6 @@ case date-picker opened: StaticText "Sun" is announced on Photon only  waits on 
 case date-picker opened: StaticText "Thu" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 case date-picker opened: StaticText "Tue" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 case date-picker opened: StaticText "Wed" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
-case disabled select: ComboBox "" is announced on the web only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
-case disabled select: ComboBox "Lisbon" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
-case select opened: ComboBox "" is announced on the web only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
-case select opened: ComboBox "Lisbon" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
-case select: ComboBox "" is announced on the web only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
-case select: ComboBox "Lisbon" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
 eQuantic.UI.Components.Calendar: ColumnHeader "Fri" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 eQuantic.UI.Components.Calendar: ColumnHeader "Mon" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 eQuantic.UI.Components.Calendar: ColumnHeader "Sat" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
@@ -47,8 +41,6 @@ eQuantic.UI.Components.Calendar: StaticText "Sun" is announced on Photon only  w
 eQuantic.UI.Components.Calendar: StaticText "Thu" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 eQuantic.UI.Components.Calendar: StaticText "Tue" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 eQuantic.UI.Components.Calendar: StaticText "Wed" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
-eQuantic.UI.Components.Select: ComboBox "" is announced on the web only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
-eQuantic.UI.Components.Select: ComboBox "Select…" is announced on Photon only  waits on #1328: Photon names a combobox by its chosen option, the web by its label with the option as value
 eQuantic.UI.Spreadsheets.Spreadsheet: Group "" is announced on the web only  waits on #1444: a spreadsheet's moves are announced by a status region of their own on the web and by the field itself on Photon
 eQuantic.UI.Spreadsheets.Spreadsheet: StaticText "A1, blank" is announced on the web only  waits on #1444: a spreadsheet's moves are announced by a status region of their own on the web and by the field itself on Photon
 eQuantic.UI.Spreadsheets.Spreadsheet: TextField "Spreadsheet" is announced on Photon only  waits on #1444: a spreadsheet's moves are announced by a status region of their own on the web and by the field itself on Photon
