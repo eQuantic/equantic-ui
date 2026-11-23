@@ -2946,6 +2946,7 @@ public class TypeScriptEmitter
                     c.Member(JsClassMember.Method("", "toString", "", "", TypeAnnotations ? ": string" : "",
                         JsStatement.Block([JsStatement.Return(JsExpr.Literal(JsStringLiteral.Quote(fullName)))])), cls);
             },
+            typeParameters: cls.TwinTypeParameters(),
             isAbstract: cls.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword));
         var emitted = builder.ToString();
         // This module used a LOCAL builder, so the mappings it recorded never reached
