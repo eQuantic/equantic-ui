@@ -27,6 +27,9 @@ public class IsoRefusalConformanceTests
         // unfinished: the plain refusal.
         "2024-02T10:00", "2024-13T10:00", "1/15/2024T10:00", "1/15/2024 T10:00", "Jan 15 2024T10:00",
         "2024-01-15T", "2024-01-15T1", "2024-01-15T10:00x",
+        // An offset past fourteen hours is checked last: after the rest of the text, the date and the clock.
+        "2024-02-30T10:00+25:00", "2024-02-30T10:00-14:01", "2024-01-15T25:00+15", "2024-01-15T10:00+25:00 junk",
+        "2024-01-15T10:00+15",
         // And one that exists, which reads.
         "2024-02-29T10:00",
     ];

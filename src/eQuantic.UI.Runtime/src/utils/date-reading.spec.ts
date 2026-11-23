@@ -306,4 +306,11 @@ describe('readMoment: an ISO date that does not exist (#1616)', () => {
     expect(read('2024-01-15Tx', 'invariant')).toBe('word at 10');
     expect(read('2024-02-30Tx', 'invariant')).toBe('format');
   });
+
+  it('refuses an offset past fourteen hours last, after the rest of the text, the date and the clock', () => {
+    expect(read('2024-02-30T10:00+25:00', 'invariant')).toBe('clock');
+    expect(read('2024-01-15T25:00+15', 'invariant')).toBe('clock');
+    expect(read('2024-01-15T10:00+25:00 junk', 'invariant')).toBe('format');
+    expect(read('2024-01-15T10:00+15', 'invariant')).toBe('zone');
+  });
 });

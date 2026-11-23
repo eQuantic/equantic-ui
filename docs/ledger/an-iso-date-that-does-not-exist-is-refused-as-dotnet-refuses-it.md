@@ -5,5 +5,6 @@
   reader now carries year-first numbers that name no date to the ISO clock and refuses them there, and keeps the plain
   refusal for a malformed clock and for a day that does not exist outside the ISO form. A `T` before a clock is the
   ISO form's only after three numbers with the year first, so `2024-02T10:00`, which the browser read as a date, is
-  refused as .NET refuses it, and a `T` a letter follows names an unknown word. Measured on both sides by
+  refused as .NET refuses it, and a `T` a letter follows names an unknown word. An offset past fourteen hours
+  is checked last, after the date and the clock, as .NET checks it. Measured on both sides by
   `IsoRefusalConformanceTests` in four cultures. Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).

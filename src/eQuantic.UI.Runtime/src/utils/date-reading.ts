@@ -333,7 +333,7 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
       // A `T` before a clock is the ISO form's only after its date, three numbers with the year first:
       // after any other date .NET refuses the text plainly (`2024-02T10:00`, `1/15/2024T10:00`). In another
       // calendar, a date the Gregorian one does not count is no ISO date either.
-      if (!leading.yearFirst || shapes.calendar !== GREGORIAN) return FORMAT;
+      if (!leading.isoDate || shapes.calendar !== GREGORIAN) return FORMAT;
       cursor.at++;
       return readIso(cursor, leading.date);
     }
@@ -414,7 +414,7 @@ function readIsoFirst(text: string, shapes: Shapes): Moment | Refusal | null {
   const cursor = new Cursor(text);
   cursor.space();
   const leading = readDate(cursor, shapes);
-  if (typeof leading === 'string' || !leading.yearFirst) return null;
+  if (typeof leading === 'string' || !leading.isoDate) return null;
   cursor.space();
   if (isoMarker(text, cursor.at) !== 'clock') return null;
   cursor.at++;
@@ -473,12 +473,15 @@ function readIso(cursor: Cursor, date: ReadDate | null): Moment | Refusal {
   }
   cursor.space();
   const zone = readZone(cursor);
-  if (zone !== null && typeof zone === 'object') return zone;
+  // A zone that is no zone is the plain refusal where it stands; one past fourteen hours is .NET's last
+  // check, after the rest of the text, the date and the clock (`2024-02-30T10:00+25:00` names the calendar).
+  if (zone !== null && typeof zone === 'object' && zone.refused !== 'zone') return zone;
   cursor.space();
   if (!cursor.done) return FORMAT;
   // The date and the clock are checked together once the text is read, as .NET's `ParseISO8601` checks them:
   // a day that does not exist is refused as a clock that does not exist is, in the calendar's words (#1616).
   if (date === null || hour > 23 || minute > 59 || second > 59) return { refused: 'clock' };
+  if (zone !== null && typeof zone === 'object') return zone;
   return { date, clock: { hour, minute, second, fraction }, zone };
 }
 
@@ -519,7 +522,7 @@ function readDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
 
 /** A date as a reader of one answers it: its date, or null for year-first numbers that name none, which only
  * the ISO form reads on (#1616), and whether it is the ISO form's date, three numbers with the year first. */
-type ReadingOfADate = { date: ReadDate | null; yearFirst: boolean } | 'none' | 'invalid' | 'weekday';
+type ReadingOfADate = { date: ReadDate | null; isoDate: boolean } | 'none' | 'invalid' | 'weekday';
 
 /** The day of the week of a date, as `System.DayOfWeek` counts. */
 function weekdayOf({ year, month, day }: ReadDate): number {
@@ -581,7 +584,7 @@ function readNamedDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
   endOfDate(cursor, shapes);
   if (numbers.some((number) => number.length > 8)) return 'invalid';
   const date = namedDateOf(month, numbers, numberFirst, shapes);
-  return date === null ? 'invalid' : { date, yearFirst: false };
+  return date === null ? 'invalid' : { date, isoDate: false };
 }
 
 /**
@@ -679,8 +682,8 @@ function readNumericDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
   // The ISO form's date is three numbers, the year first. Ones that name no date (`2024-02-30`) are kept as
   // such: before a `T` they are the ISO form, which .NET reads through before it refuses the day (#1616).
   const iso = parts.length === 3 && looksLikeYear(parts[0]);
-  if (date === null) return iso ? { date: null, yearFirst: true } : 'invalid';
-  return { date, yearFirst: iso };
+  if (date === null) return iso ? { date: null, isoDate: true } : 'invalid';
+  return { date, isoDate: iso };
 }
 
 /** Two numbers, as .NET's `GetDayOfNN` and `GetDayOfYN` read them. */
