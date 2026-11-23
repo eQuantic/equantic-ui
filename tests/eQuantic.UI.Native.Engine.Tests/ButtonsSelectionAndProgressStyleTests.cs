@@ -1,5 +1,6 @@
 using eQuantic.UI.Components;
 using eQuantic.UI.Native.Engine;
+using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Xunit;

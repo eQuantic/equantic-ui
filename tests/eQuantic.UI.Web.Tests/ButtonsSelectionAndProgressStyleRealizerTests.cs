@@ -123,7 +123,7 @@ public class ButtonsSelectionAndProgressStyleRealizerTests
 
     private static void Collect(HtmlNode node, List<string> styles)
     {
-        if (node.Attributes.TryGetValue("style", out var style)) styles.Add(style);
+        if (node.Attributes.TryGetValue("style", out var style) && style is not null) styles.Add(style);
         foreach (var child in node.Children) Collect(child, styles);
     }
 }
