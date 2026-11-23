@@ -226,6 +226,69 @@ public class TypeScriptEmitter
             .FirstOrDefault();
     }
 
+    /// <summary>
+    /// A constructor parameter as the twin's signature binds it: under the name the constructor BODY reads it by, the
+    /// one IdentifierStrategy gives a parameter, as written and made a legal JS identifier, with its C# default as a
+    /// JS default (<c>variant: any = 'primary'</c>), so <c>new Button("x")</c> runs the body with what C# guarantees.
+    /// Camel-cased instead, <c>string Label</c> was <c>constructor(label…)</c> beside a body reading <c>Label</c>, and
+    /// <c>@default</c> bound <c>default</c>. Through the signature writers, which leave the annotation out in plain
+    /// JavaScript (#1574). A component's twin and an <c>HtmlElement</c>'s write their parameters through this one
+    /// writer (#1837).
+    /// </summary>
+    private string ConstructorParameter(ParameterDefinition parameter) => parameter.DefaultValueNode != null
+        ? Lowering.ParamWithDefault(parameter.Name.ToJsIdentifier(), "any", _converter.ConvertExpression(parameter.DefaultValueNode, parameter.Type))
+        : OptionalParam(parameter.Name.ToJsIdentifier(), "any");
+
+    /// <summary>
+    /// What a constructor's parameters store before its body runs. A PRIMARY constructor's parameters are implicit
+    /// fields, always stored. An explicit constructor with a body stores only a parameter that names a real,
+    /// assignable auto-property, and leaves the rest to the body the author wrote. Shared by a component's twin and
+    /// an <c>HtmlElement</c>'s, whose own rule stored every parameter under its name, a member nothing read
+    /// (<c>this.label</c> beside a body writing <c>_label</c>, #1837).
+    /// </summary>
+    private IEnumerable<JsStatement> ParameterStores(ComponentDefinition component, IEnumerable<ParameterDefinition> passed, bool hasCtorBody)
+    {
+        var statements = new List<JsStatement>();
+        foreach (var param in passed)
+        {
+            var camelName = param.Name.ToCamelCase();
+            var local = param.Name.ToJsIdentifier();
+            var target = component.Properties
+                .FirstOrDefault(pr => !pr.IsStatic && pr.Node?.ExplicitInterfaceSpecifier is null
+                    && pr.Name.ToCamelCase() == camelName);
+            // PRIMARY-constructor params are implicit fields — always assign. With an
+            // EXPLICIT ctor body, only params that map onto a real auto-property assign
+            // here; one that merely feeds a private/state field (`NestedChild(label)` →
+            // `_label`) has no `this.<name>` to write — the C# ctor body does the wiring.
+            if (hasCtorBody && target == null) continue;
+            // Nor does one whose twin is a GETTER: `Series => _series;` beside a `series`
+            // parameter emitted `get series()` and `this.series = series` into one class,
+            // which tsc rejects and which throws at `new` in the browser. The value still
+            // arrives, through the constructor body the author wrote — writing the field
+            // themselves is what a read-only property is FOR. Only the explicit-ctor path
+            // skips: a primary constructor has no body to do that wiring, so dropping the
+            // assignment there would lose the value instead of relocating it.
+            if (hasCtorBody && target != null && !IsAssignableSlot(target)) continue;
+            statements.Add(JsStatement.If(
+                JsExpr.Binary(JsExpr.Identifier(local), "!==", JsExpr.Identifier("undefined")),
+                Assign(JsExpr.ThisMember(camelName), JsExpr.Identifier(local)), null));
+        }
+        return statements;
+    }
+
+    /// <summary>
+    /// A constructor's C# body as statements: its block, or the arrow a one-line constructor is written with, whose
+    /// expression is a statement and returns nothing. Only the block was read once, so
+    /// <c>public Chart(x) => _x = x;</c> assigned nothing. Shared by a component's twin and an
+    /// <c>HtmlElement</c>'s, which ran neither (#1837).
+    /// </summary>
+    private IEnumerable<JsStatement> ConstructorBody(MethodDefinition? constructor)
+    {
+        if (constructor?.BodyNode is { } block) return [Contents(block)];
+        if (constructor?.ExpressionBodyNode is { } expression) return Lowering.ExpressionBody(expression, returns: false).Statements;
+        return [];
+    }
+
     /// <summary>A Build method's body as IR: its block, its expression as a return, or the
     /// fallback — and the node its first line maps to.</summary>
     private (JsStatement Body, SyntaxNode? Source) BuildBody(MethodDeclarationSyntax? build, JsStatement fallback)
@@ -483,35 +546,28 @@ public class TypeScriptEmitter
                     // ALWAYS accept props and pass to super, even if C# constructor has no params
                     // This is critical for Object.assign pattern in Component base class
                     
-                    var ctor = component.IsPrimitive ? component.Constructors.OrderByDescending(ctr => ctr.Parameters.Count).FirstOrDefault() : null;
-                    var hasExplicitParams = ctor?.Parameters.Count > 0;
+                    var ctor = component.Constructors.OrderByDescending(ctr => ctr.Parameters.Count).FirstOrDefault();
+                    var parameters = ctor?.Parameters ?? new List<ParameterDefinition>();
+                    var hasExplicitParams = parameters.Count > 0;
+                    var hasCtorBody = ctor?.BodyNode != null || ctor?.ExpressionBodyNode != null;
+                    _converter.SetCurrentClass(component.Name);
 
-                    string jsParams;
-                    if (hasExplicitParams)
-                    {
-                        // Constructor has explicit params (e.g., Heading(content, level))
-                        var paramList = string.Join(", ", ctor!.Parameters.Select(p => Lowering.Param(p.Name.ToJsIdentifier(), "any")));
-                        jsParams = paramList;
-                    }
-                    else
-                    {
-                        // Constructor has no params - accept generic props for Object.assign
-                        jsParams = OptionalParam("props", "any");
-                    }
+                    // The C# constructor's parameters, each with its default (ConstructorParameter), or the
+                    // generic props a parameterless one hands its base for Object.assign. An interface among
+                    // them stays a parameter: a construction site passes it as written (#1837).
+                    var jsParams = hasExplicitParams
+                        ? string.Join(", ", parameters.Select(ConstructorParameter))
+                        : OptionalParam("props", "any");
 
-                    // Pass props to super
                     var ctorStatements = new List<JsStatement>
                     {
                         JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("super"),
                             hasExplicitParams ? Array.Empty<JsExpr>() : new[] { JsExpr.Identifier("props") })),
                     };
 
-                    // Assign explicit parameters as properties
-                    if (hasExplicitParams)
-                    {
-                        foreach (var param in ctor!.Parameters)
-                            ctorStatements.Add(Assign(JsExpr.ThisMember(param.Name.ToCamelCase()), JsExpr.Identifier(param.Name.ToJsIdentifier())));
-                    }
+                    // Each parameter is stored as a component's is (ParameterStores): a primary constructor's
+                    // always, an explicit one's only where it names a property its body leaves to it.
+                    ctorStatements.AddRange(ParameterStores(component, parameters, hasCtorBody));
 
                     // Apply defaults for properties not provided in props (only if still undefined)
                     // A STATIC property's is on the class (StaticInitial): written here, it became
@@ -531,15 +587,11 @@ public class TypeScriptEmitter
                         ctorStatements.Add(DefaultIfUndefined(camelName, tsDefault));
                     }
 
-                    // Execute C# constructor body (e.g., Direction = FlexDirection.Column)
+                    // The C# constructor's body, a block's or an arrow's (ConstructorBody).
                     var ctorBodyLine = ctorStatements.Count + 1;
-                    if (ctor?.SyntaxNode?.Body != null)
-                    {
-                        _converter.SetCurrentClass(component.Name);
-                        ctorStatements.Add(Contents(ctor.SyntaxNode.Body));
-                    }
+                    ctorStatements.AddRange(ConstructorBody(ctor));
                     c.Member(JsClassMember.Constructor(jsParams, JsStatement.Block(ctorStatements)),
-                        bodySource: ctor?.SyntaxNode?.Body, bodyLine: ctorBodyLine);
+                        bodySource: (SyntaxNode?)ctor?.BodyNode ?? ctor?.ExpressionBodyNode, bodyLine: ctorBodyLine);
 
                     // Emit Render method for primitive - ONLY if defined or it's the base primitive
                     if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
@@ -657,9 +709,7 @@ public class TypeScriptEmitter
                         // Through the signature writers, which leave the annotation out in plain JavaScript:
                         // spelled here by hand, `tag?: any` and `size: any = 2` reached the `.js` and bun
                         // refused the module (#1574).
-                        var paramList = string.Join(", ", passed.Select(p => p.DefaultValueNode != null
-                            ? Lowering.ParamWithDefault(p.Name.ToJsIdentifier(), "any", _converter.ConvertExpression(p.DefaultValueNode, p.Type))
-                            : OptionalParam(p.Name.ToJsIdentifier(), "any")));
+                        var paramList = string.Join(", ", passed.Select(ConstructorParameter));
                         // The trailing config object is `props`, unless the C# constructor already binds
                         // that name: then `constructor(props, props)`, or a body's `let props` beside the
                         // parameter, did not parse. A `$` in front is a name no C# binding and no renamed
@@ -719,30 +769,7 @@ public class TypeScriptEmitter
                                         + $"or declare the parameter as {service.ServiceKey}? if the component can work without it.');"));
                                 }
                             }
-                            foreach (var param in passed)
-                            {
-                                var camelName = param.Name.ToCamelCase();
-                                var local = param.Name.ToJsIdentifier();
-                                var target = component.Properties
-                                    .FirstOrDefault(pr => !pr.IsStatic && pr.Node?.ExplicitInterfaceSpecifier is null
-                                        && pr.Name.ToCamelCase() == camelName);
-                                // PRIMARY-constructor params are implicit fields — always assign. With an
-                                // EXPLICIT ctor body, only params that map onto a real auto-property assign
-                                // here; one that merely feeds a private/state field (`NestedChild(label)` →
-                                // `_label`) has no `this.<name>` to write — the C# ctor body does the wiring.
-                                if (hasCtorBody && target == null) continue;
-                                // Nor does one whose twin is a GETTER: `Series => _series;` beside a `series`
-                                // parameter emitted `get series()` and `this.series = series` into one class,
-                                // which tsc rejects and which throws at `new` in the browser. The value still
-                                // arrives, through the constructor body the author wrote — writing the field
-                                // themselves is what a read-only property is FOR. Only the explicit-ctor path
-                                // skips: a primary constructor has no body to do that wiring, so dropping the
-                                // assignment there would lose the value instead of relocating it.
-                                if (hasCtorBody && target != null && !IsAssignableSlot(target)) continue;
-                                statements.Add(JsStatement.If(
-                                    JsExpr.Binary(JsExpr.Identifier(local), "!==", JsExpr.Identifier("undefined")),
-                                    Assign(JsExpr.ThisMember(camelName), JsExpr.Identifier(local)), null));
-                            }
+                            statements.AddRange(ParameterStores(component, passed, hasCtorBody));
                             _converter.SetCurrentClass(component.Name);
                             foreach (var p in autoDefaults)
                             {
@@ -757,9 +784,7 @@ public class TypeScriptEmitter
                             foreach (var (slot, value) in guardedStores)
                                 statements.Add(Assign(JsExpr.ThisMember(slot), JsExpr.Opaque(value!)));
                             var bodyLine = statements.Count + 1;
-                            if (ctorDef?.BodyNode is { } ctorBlock) statements.Add(Contents(ctorBlock));
-                            else if (ctorDef?.ExpressionBodyNode is { } ctorExpression)
-                                statements.AddRange(Lowering.ExpressionBody(ctorExpression, returns: false).Statements);
+                            statements.AddRange(ConstructorBody(ctorDef));
                             // …and the initializer last, which is where C# runs it.
                             statements.Add(JsStatement.Raw($"if ({config} && typeof {config} === 'object') Object.assign(this, {config});"));
                             c.Member(JsClassMember.Constructor(signature, JsStatement.Block(statements)),
