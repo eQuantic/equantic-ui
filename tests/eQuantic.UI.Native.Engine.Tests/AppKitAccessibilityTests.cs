@@ -369,12 +369,20 @@ public class AppKitAccessibilityTests
         {
             var view = Send(Send(AppKit.Class("NSView"), Sel("alloc")), Sel("init"));
             var element = ElementsOf(PhotonAccessibility.BuildChildren(view))["1"];
+            FromNSString(Send(element, Sel("accessibilityValue"))).Should().Be("1 of 2", "the first read told it all three");
+            SendBool(element, Sel("isAccessibilitySelected")).Should().BeTrue();
+            SendBool(element, Sel("isAccessibilityExpanded")).Should().BeTrue();
             tree[0] = new(SemanticRole.Tab, 1, new Rect(0, 0, 120, 24), "Overview", null, false, Selected: false, Expanded: false);
             ElementsOf(PhotonAccessibility.BuildChildren(view))["1"].Should().Be(element);
 
             Send(element, Sel("accessibilityValue")).Should().Be(IntPtr.Zero, "the value it no longer has is gone");
             SendBool(element, Sel("isAccessibilitySelected")).Should().BeFalse("the tab is no longer picked");
             SendBool(element, Sel("isAccessibilityExpanded")).Should().BeFalse("and nothing under it is open");
+
+            // A node that stops having an open-or-closed state at all is a new element, since AppKit keeps the
+            // state it was told: the old one would read "collapsed".
+            tree[0] = new(SemanticRole.Tab, 1, new Rect(0, 0, 120, 24), "Overview", null, false, Selected: false);
+            ElementsOf(PhotonAccessibility.BuildChildren(view))["1"].Should().NotBe(element);
         }
         finally
         {
@@ -413,6 +421,13 @@ public class AppKitAccessibilityTests
             focused = 2;
             Send(view, Sel("accessibilityFocusedUIElement")).Should().Be(elements["2"],
                 "the field with the keyboard is the focused element, the same one the group lists");
+
+            // Asked again after the field's text changed and before anything read the group, the focused element
+            // says what the field holds now.
+            tree = [tree[0], new(SemanticRole.TextField, 2, new Rect(0, 30, 120, 24), "Name", "Ana Lima", false)];
+            var focusedNow = Send(view, Sel("accessibilityFocusedUIElement"));
+            focusedNow.Should().Be(elements["2"]);
+            FromNSString(Send(focusedNow, Sel("accessibilityValue"))).Should().Be("Ana Lima");
         }
         finally
         {

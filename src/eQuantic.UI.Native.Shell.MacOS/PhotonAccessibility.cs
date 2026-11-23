@@ -176,7 +176,9 @@ internal static class PhotonAccessibility
     internal static IntPtr FocusedElement(IntPtr view)
     {
         if (FocusedId?.Invoke() is not { } id) return view;
-        if (!Elements.ContainsKey(id) || view != _view) BuildChildren(view);
+        // Read the tree first, every time: the element kept from an earlier read may say what its node said
+        // then, or stand for a kind of node the position no longer holds.
+        BuildChildren(view);
         return Elements.TryGetValue(id, out var kept) ? kept.Element : view;
     }
 
@@ -190,8 +192,11 @@ internal static class PhotonAccessibility
         if (_view == IntPtr.Zero || view != _view) return;
         var id = FocusedId?.Invoke();
         if (id == _reportedFocus) return;
-        _reportedFocus = id;
-        AppKitNotifications.Post(FocusedElement(view), "NSAccessibilityFocusedUIElementChangedNotification");
+        var target = FocusedElement(view);
+        // Reported only once the node has an element: a keyboard on a node the tree does not hold yet is told
+        // again when the node arrives, rather than taken as said.
+        _reportedFocus = id is not null && target == view ? null : id;
+        AppKitNotifications.Post(target, "NSAccessibilityFocusedUIElementChangedNotification");
     }
 
     /// <summary>A node's element, made with its role: a role AppKit names with two words gets its subrole.</summary>
@@ -208,10 +213,20 @@ internal static class PhotonAccessibility
         return element;
     }
 
-    /// <summary>Whether a node is the same kind of node an element was made for: its role, and whether it
-    /// is a heading, which is a role of its own on the Mac.</summary>
+    /// <summary>
+    /// Whether a node is the same kind of node an element was made for: its role, whether it is a heading,
+    /// which is a role of its own on the Mac, and whether it has the attributes an element cannot drop once
+    /// told (an open-or-closed state, a cell's place, a grid's size, an outline row's level). Told NO, AppKit
+    /// keeps an expanded state, and VoiceOver would read "collapsed" on a button that no longer opens
+    /// anything, so a node that gains or loses one is a new element.
+    /// </summary>
     private static bool SameKind(SemanticNode before, SemanticNode now) =>
-        before.Role == now.Role && before.HeadingLevel > 0 == now.HeadingLevel > 0;
+        before.Role == now.Role
+        && before.HeadingLevel > 0 == now.HeadingLevel > 0
+        && before.Expanded is not null == now.Expanded is not null
+        && before.Place is not null == now.Place is not null
+        && before.Extent is not null == now.Extent is not null
+        && before.TreePlace is not null == now.TreePlace is not null;
 
     /// <summary>Tells <paramref name="element"/> what <paramref name="node"/> says now, and takes away what it
     /// said before (<paramref name="said"/>) and no longer does.</summary>
@@ -262,11 +277,10 @@ internal static class PhotonAccessibility
             SendVoid(element, Sel("setAccessibilityValue:"),
                 Send(number, Sel("numberWithLong:"), (long)check));
         // Disclosure state — VoiceOver reads "expanded"/"collapsed" after the name. Told only to a node
-        // that has one, or had one: a button that never expands must not read "collapsed".
+        // that has one: a button that never expands must not read "collapsed", and a node that stops having
+        // one is a new element (SameKind).
         if (node.Expanded is { } isOpen)
             SendVoid(element, Sel("setAccessibilityExpanded:"), isOpen);
-        else if (said?.Expanded is not null)
-            SendVoid(element, Sel("setAccessibilityExpanded:"), false);
         // The destination the user is ON, or the one of a set that is PICKED — AppKit has one
         // word for both, read after the name.
         if (node.Current || node.Selected == true)
@@ -321,6 +335,8 @@ internal static class PhotonAccessibility
     {
         Elements.Remove(id);
         Ids.Remove(kept.Element);
+        // A focused node's new element is news, though the keyboard did not move.
+        if (_reportedFocus == id) _reportedFocus = null;
         SendVoid(kept.Element, Sel("release"));
     }
 
