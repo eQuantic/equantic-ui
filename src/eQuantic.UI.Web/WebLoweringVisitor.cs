@@ -296,12 +296,15 @@ internal sealed partial class WebLoweringVisitor(
         // the KEPT instance, the one whose fields the next frame reads. Whether its build asked for a
         // width is the host's measurer's to say, since the owner built every component of the frame
         // before this lowering began.
+        // What it built is lowered INSIDE its position, so a component found there is the one the
+        // engine placed below this one, even when it is this same instance again (#1544).
         if (_frame is { } frame)
         {
             var (kept, built, position) = frame.At(component);
             _channels?.Expansion?.Name(kept, frame.KeyOf(position));
             if (built is null) return null;
-            var lowered = Lower(built, horizontalAxis, LoweringPath.Built);
+            HtmlElement? lowered;
+            using (frame.Enter(position)) lowered = Lower(built, horizontalAxis, LoweringPath.Built);
             if (lowered is not null && _measurer.BuiltUnmeasured(kept)) MarkUnmeasured(lowered);
             return lowered;
         }

@@ -37,7 +37,7 @@ import {
   setFailureRenderer,
 } from './component-boundary';
 import { getActivePass, setRootLowering, setRootRelowering, type Relowered, type SubtreePatch } from './element-roots';
-import { ElementFrame } from './element-frame';
+import { ElementFrame, type ComponentPosition } from './element-frame';
 // The engine's types through the barrel its own modules import from, for the reason
 // `element-frame.ts` gives; its classes through the seam the barrel registers them in.
 import type { BuildOwner, Element as Position } from './runtime-exports';
@@ -428,11 +428,15 @@ function relowerRecord(record: LoweredRecord, frame: ElementFrame): HtmlNode | n
   setWalkAmbients(inputs.ambients);
   try {
     const context: LoweringContext = { ...inputs.context, frame };
-    const fresh = lowerRecorded(
-      record.position,
-      inputs,
-      () => decorate(node, lowerNodeKind(node, context, inputs.horizontalAxis, inputs.path)),
-      record.parent,
+    // From the component position above the record's, where a lowering from the root stands when it
+    // reaches it, so the record's own position is the one found (#1544).
+    const fresh = frame.withinParentOf(record.position, () =>
+      lowerRecorded(
+        record.position,
+        inputs,
+        () => decorate(node, lowerNodeKind(node, context, inputs.horizontalAxis, inputs.path)),
+        record.parent,
+      ),
     );
     return replay(drawn, fresh);
   } finally {
@@ -844,8 +848,14 @@ function lowerNodeKind(
       // data in front of it, with the instance its position keeps (C# `Visit(UiComponent)` with a
       // frame). What it built is lowered as it stands, one step down (path/~), a step the scope of a
       // grid's ids reads past (pathScope).
-      const { built } = frameOf(context).at(node);
-      return built ? lowerNode(built as unknown as VisualNodeValue, context, horizontalAxis, path + '/~') : null;
+      // Inside its position, so a component found there is the one the engine placed below this
+      // one, even when it is this same instance again (C# twin, #1544).
+      const frame = frameOf(context);
+      const { built, position } = frame.at(node);
+      if (!built) return null;
+      return frame.within(position, () =>
+        lowerNode(built as unknown as VisualNodeValue, context, horizontalAxis, path + '/~'),
+      );
     }
     // THE DOOR CLOSED. `nodeKind` is the generated NodeKind union, so this arm is unreachable for
     // every kind the vocabulary declares — and the day it declares one more, this line stops
@@ -3474,8 +3484,24 @@ function lowerLayer(
   // Through the COMPONENT to what it builds, exactly as the C# realizer does — `Positioned` is a
   // contract with the parent, and one returned by a component was not recognised. Read from the
   // frame, so what lowers here is what the instance its position keeps built.
-  const child = resolveStackChild(raw, context);
-  if (!child) return null;
+  const resolved = resolveStackChild(raw, context);
+  if (!resolved) return null;
+  // What the component built is lowered inside its position, as its own lowering lowers it.
+  return frameOf(context).within(resolved.position, () =>
+    lowerResolvedLayer(raw, resolved.node, depth, context, path, cellJustify, cellAlign),
+  );
+}
+
+/** A stack layer once its component, if it is one, is read through to what its position built. */
+function lowerResolvedLayer(
+  raw: VisualNodeValue,
+  child: VisualNodeValue,
+  depth: number,
+  context: LoweringContext,
+  path: string,
+  cellJustify: string,
+  cellAlign: string,
+): HtmlNode | null {
   // A component the stack expanded is decorated as the funnel decorates one, on the element of what
   // it built, after that node's own (C# twin, #940).
   const asComponent = (lowered: HtmlNode | null): HtmlNode | null =>
@@ -5505,14 +5531,24 @@ function buildsItsOwnNode(node: unknown): boolean {
  * every component already, through the owner's boundary and its bound, so the walk ends wherever
  * the chain of components does.
  */
-function resolveStackChild(child: VisualNodeValue, context: LoweringContext): VisualNodeValue | null {
+function resolveStackChild(
+  child: VisualNodeValue,
+  context: LoweringContext,
+): { node: VisualNodeValue; position: Position | null } | null {
+  // Each step of a chain of components is read inside the position the step before it found, as a
+  // component's own lowering reads it, so the chain descends to where its engine stopped it, and what
+  // the last one built is lowered inside that last position (C# twin, #1544).
+  const frame = frameOf(context);
   let node = child;
+  let position: Position | null = null;
   while (buildsItsOwnNode(node)) {
-    const { built } = frameOf(context).at(node);
-    if (!built) return null;
-    node = built as unknown as VisualNodeValue;
+    const at: VisualNodeValue = node;
+    const step: ComponentPosition = frame.within(position, () => frame.at(at));
+    if (!step.built) return null;
+    node = step.built as unknown as VisualNodeValue;
+    position = step.position;
   }
-  return node;
+  return { node, position };
 }
 
 /**

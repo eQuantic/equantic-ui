@@ -93,11 +93,20 @@ internal sealed class RunningCompiler : IModuleCompiler
         }
     }
 
+    // Set once the project is known not to be built with eQuantic.UI.Sdk: no eqc exists for it, and MSBuild is
+    // asked no more (#1757).
+    private volatile bool _off;
+
+    /// <inheritdoc/>
+    public bool Available => !_off;
+
     public CompileOutcome Compile(TimeSpan limit)
     {
         var clock = Stopwatch.StartNew();
+        if (_off) return CompileOutcome.Off;
         if (Ready() is not { } eqc)
-            return CompileOutcome.NotRun("eqc could not be started: the project's MSBuild did not say where it is");
+            return _off ? CompileOutcome.Off
+                : CompileOutcome.NotRun("eqc could not be started: the project's MSBuild did not say where it is");
 
         TaskCompletionSource<CompileOutcome> answer;
         lock (_gate)
@@ -165,6 +174,7 @@ internal sealed class RunningCompiler : IModuleCompiler
         }
 
         // Found outside the gate, since asking MSBuild takes seconds and Dispose must be able to stop it.
+        if (_off) return null;
         var start = _start ??= _discover(this);
         if (start is null) return null;
 
@@ -233,11 +243,93 @@ internal sealed class RunningCompiler : IModuleCompiler
         Started("dotnet", contentRoot,
             ["msbuild", "-t:_EQuanticCompilerArguments", "-getProperty:EqcCliPath",
              "-getProperty:_EqcArgumentsPath", "-getProperty:MSBuildProjectDirectory", "-nologo", "-v:q"]),
-        contentRoot, DiscoveryLimit);
+        contentRoot, DiscoveryLimit, () => BuiltWithTheSdk(contentRoot));
 
     /// <summary>What <paramref name="info"/>, an MSBuild asked how to start eqc, answered within
-    /// <paramref name="limit"/>, which a test sets; null when it did not say.</summary>
-    internal ProcessStartInfo? Asked(ProcessStartInfo info, string contentRoot, TimeSpan limit)
+    /// <paramref name="limit"/>, which a test sets; null when it did not say. When it refuses, <paramref name="isApp"/>,
+    /// when given, says whether the project is built with eQuantic.UI.Sdk at all.</summary>
+    internal ProcessStartInfo? Asked(ProcessStartInfo info, string contentRoot, TimeSpan limit, Func<bool>? isApp = null)
+    {
+        if (Run(info, limit, "say how to start eqc") is not { } answer) return null;
+        try
+        {
+            if (answer.ExitCode != 0)
+            {
+                // A host that serves eQuantic.UI pages from a library it references, without being an
+                // eQuantic.UI app itself, has no eqc and none of the SDK's targets: MSBuild's MSB4057 and
+                // "Build failed" opened its log, and every save asked again (#1757). Said once, in these words.
+                if (isApp is not null && !isApp())
+                {
+                    _off = true;
+                    Console.WriteLine("[eQuantic.HotReload] hot reload is off for this host: its project is not built with "
+                        + "eQuantic.UI.Sdk, so there is no eqc to rebuild the pages it serves");
+                    return null;
+                }
+                // A stop during the question above answers it with nothing, which reads as an app: that is the
+                // app stopping, no failure to report.
+                lock (_gate)
+                {
+                    if (_disposed) return null;
+                }
+                Console.WriteLine($"[eQuantic.HotReload] MSBuild could not say how to start eqc:\n{answer.Output}{answer.Errors}");
+                return null;
+            }
+            var json = answer.Output;
+            // Disposed: a JsonDocument rents its buffer from the shared pool and has no finalizer to give it back.
+            using var document = JsonDocument.Parse(json[json.IndexOf('{')..]);
+            var properties = document.RootElement.GetProperty("Properties");
+            var eqc = properties.GetProperty("EqcCliPath").GetString();
+            var arguments = properties.GetProperty("_EqcArgumentsPath").GetString();
+            var project = properties.GetProperty("MSBuildProjectDirectory").GetString() ?? contentRoot;
+            if (string.IsNullOrEmpty(eqc) || string.IsNullOrEmpty(arguments)) return null;
+            var file = Path.GetFullPath(arguments, project);
+            var start = Started("dotnet", project, [eqc, "@" + file, "--serve"]);
+            start.RedirectStandardInput = true;
+            return start;
+        }
+        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or ArgumentException)
+        {
+            Console.WriteLine($"[eQuantic.HotReload] MSBuild's answer did not say how to start eqc: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Whether the project in <paramref name="contentRoot"/> is built with eQuantic.UI.Sdk: an evaluation, no
+    /// target, reading the eqc the SDK names for every project it builds. Asked only when MSBuild refused the
+    /// SDK's target, so an app pays nothing for it. An answer that does not come is read as yes, and the
+    /// refusal is reported as MSBuild gave it.
+    /// </summary>
+    private bool BuiltWithTheSdk(string contentRoot)
+    {
+        // Two properties, so MSBuild answers in JSON and the property is read itself: one alone is printed bare,
+        // where a warning on the same stream would read as a path.
+        if (Run(Started("dotnet", contentRoot,
+                ["msbuild", "-getProperty:EqcCliPath", "-getProperty:MSBuildProjectDirectory", "-nologo", "-v:q"]),
+                DiscoveryLimit, "say whether this project is built with eQuantic.UI.Sdk") is not { ExitCode: 0 } answer)
+            return true;
+        try
+        {
+            var json = answer.Output;
+            // Disposed: a JsonDocument rents its buffer from the shared pool and has no finalizer to give it back.
+            using var document = JsonDocument.Parse(json[json.IndexOf('{')..]);
+            var properties = document.RootElement.GetProperty("Properties");
+            return !string.IsNullOrEmpty(properties.GetProperty("EqcCliPath").GetString());
+        }
+        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or ArgumentException)
+        {
+            return true;
+        }
+    }
+
+    /// <summary>What an MSBuild said, and how it ended.</summary>
+    private sealed record MsBuildAnswer(int ExitCode, string Output, string Errors);
+
+    /// <summary>
+    /// Runs <paramref name="info"/>, an MSBuild, within <paramref name="limit"/>, where Dispose can stop it; null
+    /// when it did not answer, its output stayed held, or the app stopped, each said in its own words.
+    /// </summary>
+    private MsBuildAnswer? Run(ProcessStartInfo info, TimeSpan limit, string asked)
     {
         using var msbuild = new Process { StartInfo = info };
         lock (_gate)
@@ -254,7 +346,7 @@ internal sealed class RunningCompiler : IModuleCompiler
             if (!msbuild.WaitForExit(limit))
             {
                 Stop(msbuild);
-                Console.WriteLine($"[eQuantic.HotReload] MSBuild did not say how to start eqc in {limit.TotalMinutes:F0} minutes, and was stopped");
+                Console.WriteLine($"[eQuantic.HotReload] MSBuild did not {asked} in {limit.TotalMinutes:F0} minutes, and was stopped");
                 return null;
             }
             // What it wrote, within what is left of its time: a stream ends when the last process holding
@@ -271,25 +363,11 @@ internal sealed class RunningCompiler : IModuleCompiler
             {
                 if (_disposed) return null;
             }
-            if (msbuild.ExitCode != 0)
-            {
-                Console.WriteLine($"[eQuantic.HotReload] MSBuild could not say how to start eqc:\n{output.Result}{errors.Result}");
-                return null;
-            }
-            var json = output.Result;
-            var properties = JsonDocument.Parse(json[json.IndexOf('{')..]).RootElement.GetProperty("Properties");
-            var eqc = properties.GetProperty("EqcCliPath").GetString();
-            var arguments = properties.GetProperty("_EqcArgumentsPath").GetString();
-            var project = properties.GetProperty("MSBuildProjectDirectory").GetString() ?? contentRoot;
-            if (string.IsNullOrEmpty(eqc) || string.IsNullOrEmpty(arguments)) return null;
-            var file = Path.GetFullPath(arguments, project);
-            var start = Started("dotnet", project, [eqc, "@" + file, "--serve"]);
-            start.RedirectStandardInput = true;
-            return start;
+            return new MsBuildAnswer(msbuild.ExitCode, output.Result, errors.Result);
         }
-        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or ArgumentException)
+        catch (InvalidOperationException ex)
         {
-            Console.WriteLine($"[eQuantic.HotReload] MSBuild's answer did not say how to start eqc: {ex.Message}");
+            Console.WriteLine($"[eQuantic.HotReload] MSBuild could not {asked}: {ex.Message}");
             return null;
         }
         finally
