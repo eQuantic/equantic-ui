@@ -28,7 +28,10 @@ namespace eQuantic.UI.Components;
 public sealed class Calendar : StatefulComponent
 {
     /// <summary>The month on screen, as its first day. Separate from the SELECTION: arrowing into
-    /// the next month pages the view without choosing anything, exactly as the platforms do.</summary>
+    /// the next month pages the view without choosing anything, exactly as the platforms do. The month is
+    /// the culture calendar's (<see cref="CultureCalendar"/>): in fa-IR, January 17th 2024 is on the grid
+    /// of Dey 1402, from December 22nd to January 20th (#1617). Any day of it names it, since a culture
+    /// switched after it was stored counts another first day: <see cref="Build"/> counts it.</summary>
     private DateOnly _month;
 
     /// <summary>The day the keyboard is on — where Enter lands. Null until the grid is entered,
@@ -93,7 +96,7 @@ public sealed class Calendar : StatefulComponent
     {
         var theme = context.Theme;
         var first = CalendarNames.FirstDayOfWeek;
-        var monthTitle = $"{CalendarNames.MonthNames[_month.Month - 1]} {_month.Year}";
+        var monthTitle = $"{CalendarNames.MonthNames[CultureCalendar.MonthOf(_month) - 1]} {CultureCalendar.YearOf(_month)}";
         // The theme's Calendar slot, then the component's own (§3.10).
         var slot = theme.Calendar;
         var cellSize = slot?.CellSize ?? CellSize;
@@ -125,7 +128,9 @@ public sealed class Calendar : StatefulComponent
         // Six weeks, always: a month that needs five would otherwise change the grid's height as
         // the user pages, which moves everything under it.
         var rows = new List<VisualNode> { dayRow };
-        var start = GridStart(_month, first);
+        // Its first day counted in the culture's calendar NOW: a culture switched since the month was
+        // stored redraws this instance, and the month's first day is that calendar's.
+        var start = GridStart(FirstOfMonth(_month), first);
         for (var week = 0; week < 6; week++)
         {
             var weekRow = new Row(gap: 0) { Width = SizeValue.Fill };
@@ -154,14 +159,14 @@ public sealed class Calendar : StatefulComponent
         var slot = theme.Calendar;
         var cellSize = slot?.CellSize ?? CellSize;
         var size = SizeValue.Fixed(cellSize);
-        if (day.Month != _month.Month) return new Box(new BoxStyle { Width = size, Height = size });
+        if (!InMonth(day)) return new Box(new BoxStyle { Width = size, Height = size });
 
         var selected = Selected == day;
         var isToday = day == Today();
         var reachable = InRange(day);
         var primary = theme.Colors(Variant.Primary);
 
-        var numeral = new Text(day.Day.ToString(), slot?.DayRole ?? TypeRole.BodyM,
+        var numeral = new Text(CultureCalendar.DayOf(day).ToString(), slot?.DayRole ?? TypeRole.BodyM,
             selected ? primary.OnBase : isToday ? primary.Base : slot?.DayColor ?? theme.TextPrimary, maxLines: 1);
 
         var cell = new Box(new BoxStyle
@@ -202,7 +207,19 @@ public sealed class Calendar : StatefulComponent
     /// and the day is spoken in full rather than as an abbreviation it would spell out.
     /// </para></summary>
     private static string Spoken(DateOnly day) =>
-        $"{CalendarNames.DayNamesLong[SundayIndex(day)]}, {day.Day} {CalendarNames.MonthNames[day.Month - 1]} {day.Year}";
+        $"{CalendarNames.DayNamesLong[SundayIndex(day)]}, {CultureCalendar.DayOf(day)} "
+        + $"{CalendarNames.MonthNames[CultureCalendar.MonthOf(day) - 1]} {CultureCalendar.YearOf(day)}";
+
+    /// <summary>Whether a day is in the month on screen, by the culture calendar's months: counted from
+    /// the month's first day by its length, so no day outside the month is asked its month. A calendar of
+    /// a bounded range refuses that question past its first and last month (Um Al Qura's, in April 1900
+    /// and November 2077), where the grid's leading and trailing weeks reach.</summary>
+    private bool InMonth(DateOnly day)
+    {
+        var first = FirstOfMonth(_month);
+        var past = day.DayNumber - first.DayNumber;
+        return past >= 0 && past < CultureCalendar.DaysInMonth(first);
+    }
 
     /// <summary>Which day of the week, Sunday-first — the index CalendarNames is ordered by.
     /// Computed from the day NUMBER rather than the DayOfWeek enum: 0001-01-01 is a Monday, so the
@@ -218,7 +235,7 @@ public sealed class Calendar : StatefulComponent
         var offset = cursor.DayNumber - start.DayNumber;
         if (offset < 0 || offset >= 42) return null;
         // The cursor's own day has to BE a cell, or there is nothing to point at.
-        if (cursor.Month != _month.Month || !InRange(cursor)) return null;
+        if (!InMonth(cursor) || !InRange(cursor)) return null;
 
         // COUNTED, not the column. The realizers number cells by walking the row and numbering
         // what carries role=gridcell, and this grid is full of things that do not: the days of the
@@ -231,7 +248,7 @@ public sealed class Calendar : StatefulComponent
         for (var column = 0; column < offset % 7; column++)
         {
             var day = start.AddDays(row * 7 + column);
-            if (day.Month == _month.Month && InRange(day)) item++;
+            if (InMonth(day) && InRange(day)) item++;
         }
         return (row + 1, item);
     }
@@ -247,10 +264,10 @@ public sealed class Calendar : StatefulComponent
             NavigableMove.NextItem => from.AddDays(1),
             NavigableMove.PreviousRow => from.AddDays(-7),
             NavigableMove.NextRow => from.AddDays(7),
-            NavigableMove.PreviousPage => from.AddMonths(-1),
-            NavigableMove.NextPage => from.AddMonths(1),
-            NavigableMove.PreviousSection => from.AddYears(-1),
-            NavigableMove.NextSection => from.AddYears(1),
+            NavigableMove.PreviousPage => CultureCalendar.AddMonths(from, -1),
+            NavigableMove.NextPage => CultureCalendar.AddMonths(from, 1),
+            NavigableMove.PreviousSection => CultureCalendar.AddYears(from, -1),
+            NavigableMove.NextSection => CultureCalendar.AddYears(from, 1),
             NavigableMove.RowStart => from.AddDays(-DayInWeek(from)),
             NavigableMove.RowEnd => from.AddDays(6 - DayInWeek(from)),
             _ => from,
@@ -275,7 +292,7 @@ public sealed class Calendar : StatefulComponent
 
     private void Page(int months) => SetState(() =>
     {
-        var target = _month.AddMonths(months);
+        var target = CultureCalendar.AddMonths(_month, months);
         // A month with no reachable day in it is not somewhere to go: min/max bound the chevrons
         // exactly as they bound the arrows, and paging into an empty grid would leave the reader
         // looking at a month they cannot use with no way to tell why.
@@ -287,7 +304,7 @@ public sealed class Calendar : StatefulComponent
         // which is the rule the arrows already obey, so the two never disagree.
         if (_cursor is { } cursor)
         {
-            _cursor = ClampToRange(cursor.AddMonths(months));
+            _cursor = ClampToRange(CultureCalendar.AddMonths(cursor, months));
             _month = FirstOfMonth(_cursor.Value);
         }
     });
@@ -296,9 +313,9 @@ public sealed class Calendar : StatefulComponent
     private bool HasReachableDay(DateOnly month)
     {
         var first = FirstOfMonth(month);
-        var next = first.AddMonths(1);
-        return InRange(first) || InRange(next.AddDays(-1))
-            || (Min is { } min && min >= first && min < next);
+        var last = first.AddDays(CultureCalendar.DaysInMonth(first) - 1);
+        return InRange(first) || InRange(last)
+            || (Min is { } min && min >= first && min <= last);
     }
 
     private void Choose(DateOnly day)
@@ -324,7 +341,7 @@ public sealed class Calendar : StatefulComponent
         return day;
     }
 
-    private static DateOnly FirstOfMonth(DateOnly day) => new(day.Year, day.Month, 1);
+    private static DateOnly FirstOfMonth(DateOnly day) => CultureCalendar.FirstOfMonth(day);
 
     private static DateOnly Today() => DateOnly.FromDateTime(DateTime.Now);
 
