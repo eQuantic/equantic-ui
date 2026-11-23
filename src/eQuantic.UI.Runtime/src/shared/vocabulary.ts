@@ -402,7 +402,7 @@ export class Anchored extends VisualNode {
   constructor(
     anchor: VisualChild,
     panel: VisualChild,
-    config?: {
+    config?: VisualNodeConfig & {
       placement?: AnchorPlacementValue | string;
       at?: Point | null;
       gap?: number;
@@ -415,7 +415,6 @@ export class Anchored extends VisualNode {
       activeIndex?: number;
       scrimStyle?: BoxStyleValue | null;
       motion?: TransitionSpec | null;
-      key?: string | null;
     },
   ) {
     super();
@@ -443,7 +442,7 @@ export class Draggable extends VisualNode {
   constructor(
     readonly child: VisualChild,
     onReleased: ((offset: number) => void) | null = null,
-    config?: {
+    config?: VisualNodeConfig & {
       axis?: string;
       min?: number;
       max?: number;
@@ -454,7 +453,6 @@ export class Draggable extends VisualNode {
       // Also a constructor parameter — C# lets an initializer set it instead, and the transpiled
       // call then carries it in the config object.
       onReleased?: ((offset: number) => void) | null;
-      key?: string | null;
     },
   ) {
     super();
@@ -471,7 +469,7 @@ export class SafeArea extends VisualNode {
   constructor(
     readonly child: VisualChild,
     readonly edges = 15,
-    config?: { extra?: EdgeInsets | null; key?: string | null },
+    config?: VisualNodeConfig & { extra?: EdgeInsets | null },
   ) {
     super();
     if (config) Object.assign(this, config);
@@ -493,11 +491,10 @@ export class Pinned extends VisualNode {
   constructor(
     readonly child: VisualChild,
     readonly offset = 0,
-    config?: {
+    config?: VisualNodeConfig & {
       float?: boolean;
       scrolledStyle?: StyleDiff | null;
       transition?: TransitionSpec | null;
-      key?: string | null;
     },
   ) {
     super();
@@ -1208,13 +1205,12 @@ export class Overlay extends VisualNode {
 
   constructor(
     child: VisualChild,
-    config?: {
+    config?: VisualNodeConfig & {
       modal?: boolean;
       label?: string | null;
       alert?: boolean;
       open?: boolean;
       motion?: TransitionSpec | null;
-      key?: string | null;
     },
   ) {
     super();
@@ -1254,7 +1250,7 @@ export class Link extends VisualNode {
   constructor(
     destination: string,
     child: VisualChild,
-    config?: { label?: string | null; keepsPosition?: boolean; current?: boolean; opensBeside?: boolean },
+    config?: VisualNodeConfig & { label?: string | null; keepsPosition?: boolean; current?: boolean; opensBeside?: boolean },
   ) {
     super();
     this.destination = destination;
@@ -1562,7 +1558,7 @@ export class ScrollView extends VisualNode {
   constructor(
     child: VisualChild,
     axis = 'vertical',
-    config?: {
+    config?: VisualNodeConfig & {
       width?: SizeValue | number;
       height?: SizeValue | number;
       offset?: number;
@@ -1602,7 +1598,7 @@ export class Image extends VisualNode {
     height: number,
     fit = 'cover',
     label = '',
-    config?: {
+    config?: VisualNodeConfig & {
       cornerRadius?: CornerRadii;
       darkSource?: string | null;
       focalPoint?: { x: number; y: number };
@@ -1701,7 +1697,7 @@ export class Progress extends VisualNode {
 
   constructor(
     child: VisualNode,
-    config?: { label?: string; value?: RangeValue | null; valueText?: string | null },
+    config?: VisualNodeConfig & { label?: string; value?: RangeValue | null; valueText?: string | null },
   ) {
     super();
     this.child = child;
@@ -1722,7 +1718,7 @@ export class LiveRegion extends VisualNode {
   urgency: LiveRegionUrgencyValue = 'polite';
   label = '';
 
-  constructor(child: VisualNode, config?: { urgency?: LiveRegionUrgencyValue; label?: string }) {
+  constructor(child: VisualNode, config?: VisualNodeConfig & { urgency?: LiveRegionUrgencyValue; label?: string }) {
     super();
     this.child = child;
     if (config) Object.assign(this, config);
@@ -1738,7 +1734,7 @@ export class Group extends VisualNode {
   child: VisualNode;
   label = '';
 
-  constructor(child: VisualNode, config?: { label?: string }) {
+  constructor(child: VisualNode, config?: VisualNodeConfig & { label?: string }) {
     super();
     this.child = child;
     if (config) Object.assign(this, config);
@@ -1769,7 +1765,7 @@ export class ExcludeSemantics extends VisualNode {
   child: VisualNode;
   excluding = true;
 
-  constructor(child: VisualNode, config?: { excluding?: boolean }) {
+  constructor(child: VisualNode, config?: VisualNodeConfig & { excluding?: boolean }) {
     super();
     this.child = child;
     if (config) Object.assign(this, config);
@@ -1801,7 +1797,7 @@ export class Adjustable extends VisualNode {
   constructor(
     child: VisualNode,
     onAdjust: (direction: number) => void,
-    config?: {
+    config?: VisualNodeConfig & {
       label?: string;
       role?: 'slider' | 'tablist' | 'radiogroup' | 'separator';
       axis?: 'vertical' | 'horizontal';
@@ -1841,7 +1837,7 @@ export class Navigable extends VisualNode {
   constructor(
     onMove: (move: NavigableMoveValue) => void,
     rows: VisualNode[],
-    config?: {
+    config?: VisualNodeConfig & {
       onTextSearch?: ((text: string) => void) | null;
       label?: string;
       role?: 'grid' | 'tree';
@@ -1873,7 +1869,7 @@ export class CameraPreview extends VisualNode {
     session: { id: string } | null,
     width: number,
     height: number,
-    config?: { cornerRadius?: CornerRadii; label?: string },
+    config?: VisualNodeConfig & { cornerRadius?: CornerRadii; label?: string },
   ) {
     super();
     this.session = session;
@@ -1902,7 +1898,7 @@ export class WebFrame extends VisualNode {
   constructor(
     content: WebContent,
     title: string,
-    config?: {
+    config?: VisualNodeConfig & {
       sandbox?: number;
       width?: SizeValue | number;
       height?: SizeValue | number;
@@ -2297,7 +2293,7 @@ export class Stack extends VisualNode {
 
   constructor(
     align = 'topStart',
-    config?: { width?: SizeValue | number; height?: SizeValue | number; key?: string | null },
+    config?: VisualNodeConfig & { width?: SizeValue | number; height?: SizeValue | number },
   ) {
     super();
     this.align = align;
@@ -2342,7 +2338,7 @@ export class Positioned extends VisualNode {
     end: number | null = null,
     bottom: number | null = null,
     start: number | null = null,
-    config?: {
+    config?: VisualNodeConfig & {
       top?: number | null;
       end?: number | null;
       bottom?: number | null;
@@ -2354,7 +2350,6 @@ export class Positioned extends VisualNode {
       shiftX?: number;
       shiftY?: number;
       layer?: number;
-      key?: string | null;
     },
   ) {
     super();
@@ -2441,7 +2436,7 @@ export class Spacer extends VisualNode {
 
   constructor(
     flex = 1,
-    config?: { flex?: number; animateChanges?: boolean; key?: string | null },
+    config?: VisualNodeConfig & { flex?: number; fixedLength?: number; animateChanges?: boolean },
   ) {
     super();
     this.flex = flex;
