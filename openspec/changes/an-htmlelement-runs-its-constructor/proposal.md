@@ -34,6 +34,9 @@ For a developer using the SDK: an `HtmlElement` subclass behaves in the browser 
   - `ConstructorBody`, the block or the arrow.
 - **An interface parameter stays a parameter.** A construction site passes it as written, so the twin takes it as
   written.
+- **Props after the body.** A parameterless subclass takes the props a caller hands it after its body, where C# runs
+  an object initializer and where the component branch applies its config. Handed to `super()` first, a body that
+  sets a member would overwrite them once the body ran at all.
 
 Parts reached: eqc only (`ComponentParser`, `TypeScriptEmitter`). No public surface and no developer surface moves;
 the shared components the runtime ships are unchanged byte for byte.

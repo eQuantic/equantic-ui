@@ -3,6 +3,7 @@
 - [x] 1.1 `HtmlElementConstructorConformanceTests`: nine shapes read on both sides in both modes, eight of which diverge on main; every `Render()` a block and no field initialized where declared, clear of #1540 and #1541
 - [x] 1.2 `ParsePrimitiveClass` reads constructors through `ParseConstructors`, and its own reader is gone
 - [x] 1.3 `ConstructorParameter`, `ParameterStores` and `ConstructorBody`, written once and read by the primitive and the component branches
+- [x] 1.4 A parameterless subclass's props applied after its body, pinned in `ComponentClassificationMatrixTests`
 
 ## 2. Documentation and the suites
 
