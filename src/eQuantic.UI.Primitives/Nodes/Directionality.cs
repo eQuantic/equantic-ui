@@ -8,7 +8,7 @@ namespace eQuantic.UI.Primitives;
 /// The vocabulary's values are directional already (<see cref="EdgeInsets"/> has a start and an end,
 /// <see cref="Positioned"/> a start and an end, <see cref="TextAlignment"/> a start and an end), so a
 /// tree written for one direction reads in the other under this node. The web writes the subtree's
-/// direction on a host that draws no box, so a start and an end mirror there; Photon reads the
+/// direction on its child's own element, so a start and an end mirror there; Photon reads the
 /// direction and lays out left to right until it mirrors too.
 /// </para>
 /// <para>

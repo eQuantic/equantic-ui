@@ -128,14 +128,33 @@ public class TextDirectionTests
     [Theory]
     [InlineData(TextDirection.RightToLeft, "rtl")]
     [InlineData(TextDirection.LeftToRight, "ltr")]
-    public void ADirectionality_LowersToAHostThatDrawsNoBox_AndSaysItsDirection(TextDirection direction, string dir)
+    public void ADirectionality_SaysItsDirectionOnItsChildsOwnElement(TextDirection direction, string dir)
     {
-        var host = Render(new Directionality(direction, new Text("x", TypeRole.BodyM)));
+        var child = Render(new Directionality(direction, new Text("x", TypeRole.BodyM)));
 
-        host.Tag.Should().Be("div");
-        host.Attributes["dir"].Should().Be(dir);
-        StyleOf(host).Should().Be("display: contents", "it adds no box to its parent's layout");
-        host.Children.Should().ContainSingle().Which.Tag.Should().Be("span");
+        child.Tag.Should().Be("span", "it adds no element of its own");
+        child.Attributes["dir"].Should().Be(dir);
+    }
+
+    [Fact]
+    public void TheNearestDirectionality_Wins_OnTheElementBothReach()
+    {
+        var child = Render(new Directionality(TextDirection.RightToLeft,
+            new Directionality(TextDirection.LeftToRight, new Text("x", TypeRole.BodyM))));
+
+        child.Attributes["dir"].Should().Be("ltr");
+    }
+
+    [Fact]
+    public void WhatAParentWritesOnACodeBlock_ReachesTheElementThatDraws()
+    {
+        // A code block builds inside a Directionality: a host of its own would take the row's alignment,
+        // and a host that draws no box ignores it.
+        var row = Render(new Row { new CodeBlock("var x = 1;", "csharp") { AlignSelf = CrossAlign.Center } });
+
+        var block = row.Children.Should().ContainSingle().Subject;
+        StyleOf(block).Should().Contain("align-self: center");
+        block.Attributes["dir"].Should().Be("ltr");
     }
 
     [Fact]

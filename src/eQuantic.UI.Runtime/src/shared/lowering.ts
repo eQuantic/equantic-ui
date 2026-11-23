@@ -5570,9 +5570,10 @@ function resolveStackChild(child: VisualNodeValue, context: LoweringContext): Vi
 
 /**
  * A value for a subtree, lowered as its child one step down (C# `Visit(InheritedComponent)`). A
- * `Directionality` is the one the page itself hears (#1568): its child stands in a host that draws no box
- * (`display: contents`, as an InView's) and carries `dir`, so every start and end the subtree writes as
- * logical CSS mirrors under it, and a direction that changes rewrites one attribute.
+ * `Directionality` is the one the page itself hears (#1568): it writes `dir` on its child's own element,
+ * so every start and end the subtree writes as logical CSS mirrors under it, and a direction that changes
+ * rewrites one attribute. It adds no element, which would take what a parent writes on its child; an
+ * element that already says its direction keeps it, so the nearest `Directionality` wins.
  */
 function lowerInherited(
   node: InheritedNode,
@@ -5582,10 +5583,10 @@ function lowerInherited(
 ): HtmlNode | null {
   const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
   const direction = directionSetBy(node);
-  if (direction === null || !child) return child;
-  const host = element('div', { display: 'contents' }, [child]);
-  host.attributes['dir'] = direction === 'rightToLeft' ? 'rtl' : 'ltr';
-  return host;
+  if (direction !== null && child && child.tag !== '#text' && child.attributes['dir'] === undefined) {
+    child.attributes['dir'] = direction === 'rightToLeft' ? 'rtl' : 'ltr';
+  }
+  return child;
 }
 
 /**

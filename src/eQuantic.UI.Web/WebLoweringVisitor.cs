@@ -277,23 +277,20 @@ internal sealed partial class WebLoweringVisitor(
     /// <summary>
     /// A value for a subtree lowers as its child, one step down, as the browser's lowering steps
     /// (<c>path + '/0'</c>): who reads the value is the element engine's to track. A
-    /// <see cref="Directionality"/> is the one the page itself has to hear (#1568): its child stands in a
-    /// host that draws no box (<c>display: contents</c>, as an <see cref="InView"/>'s) and carries
-    /// <c>dir</c>, so every start and end the subtree writes as logical CSS mirrors under it, and a
-    /// direction that changes rewrites one attribute rather than the subtree's classes (TS twin:
-    /// <c>case 'inherited'</c>).
+    /// <see cref="Directionality"/> is the one the page itself has to hear (#1568): it writes <c>dir</c> on
+    /// its child's own element, so every start and end the subtree writes as logical CSS mirrors under
+    /// it, and a direction that changes rewrites one attribute rather than the subtree's classes. It adds
+    /// no element: a host would take what a parent writes on its child (an <c>align-self</c>, a grid span,
+    /// a stretched height, a drag), and a host that draws no box ignores all of it. An element that already
+    /// says its direction keeps it, so the nearest <see cref="Directionality"/> wins, and so does a surface
+    /// that lays out left to right (TS twin: <c>lowerInherited</c>).
     /// </summary>
     public HtmlElement? Visit(InheritedComponent inherited, bool? horizontalAxis)
     {
         var child = Lower(inherited.Child, horizontalAxis, LoweringPath.Child);
-        if (inherited is not Directionality directionality || child is null) return child;
-        var host = new RealizedElement("div")
-        {
-            Style = new HtmlStyle { Display = Display.Contents },
-            Dir = directionality.Direction == TextDirection.RightToLeft ? "rtl" : "ltr",
-        };
-        host.Children.Add(child);
-        return host;
+        if (inherited is Directionality directionality && child is { Dir: null })
+            child.Dir = directionality.Direction == TextDirection.RightToLeft ? "rtl" : "ltr";
+        return child;
     }
 
     public HtmlElement? Visit(Simulated simulated, bool? horizontalAxis) =>

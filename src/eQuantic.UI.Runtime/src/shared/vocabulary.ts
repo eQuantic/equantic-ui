@@ -1027,8 +1027,8 @@ registerThemeNode(Theme);
 /**
  * The direction a subtree reads in (the C# `Directionality`, after Flutter's `Directionality`): a
  * component below it reads `context.textDirection` as this node's `direction`, and builds again when a
- * new one replaces it; one with none above it reads its UI culture's. The lowering writes it on a host
- * that draws no box, with `dir`, so a start and an end mirror under it.
+ * new one replaces it; one with none above it reads its UI culture's. The lowering writes it as `dir`
+ * on its child's own element, so a start and an end mirror under it.
  */
 export class Directionality extends InheritedComponent {
   readonly direction: TextDirectionValue;

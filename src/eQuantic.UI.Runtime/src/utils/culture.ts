@@ -440,9 +440,11 @@ export async function setCulture(ui: string, format?: string): Promise<void> {
   const formatName = format ?? ui;
   if (ui === active.ui && formatName === active.format) return;
 
-  const [found, data] = await Promise.all([catalogFor(ui), formatFor(formatName)]);
-  // The UI culture's direction, which the format culture's document said when the two are one.
-  const rightToLeft = await rightToLeftOf(ui);
+  const formatting = formatFor(formatName);
+  // The UI culture's direction, beside the rest: the format culture's document says it when the two are
+  // one, so it is read after that document arrives rather than asked for twice.
+  const direction = ui === formatName ? formatting.then(() => rightToLeftOf(ui)) : rightToLeftOf(ui);
+  const [found, data, rightToLeft] = await Promise.all([catalogFor(ui), formatting, direction]);
   installCulture(ui, formatName, found?.strings ?? activeStrings, data, undefined, rightToLeft);
   if (found?.whole) whole.add(ui);
   invalidate?.();

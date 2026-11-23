@@ -1,7 +1,6 @@
 ## Small · Comfortable
 ### web
-<div data-eq-unmeasured="" dir="ltr" class="eq-1y88iiz">
-<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div data-eq-unmeasured="" dir="ltr" class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
@@ -31,7 +30,6 @@
 </div>
 </div>
 </div>
-</div>
 ### css
 .eq-11yg588{align-items:stretch}
 .eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
@@ -50,7 +48,6 @@
 .eq-1uhnwvg{flex-direction:row}
 .eq-1w1wt6p{align-items:flex-start}
 .eq-1x60j26{line-height:16px}
-.eq-1y88iiz{display:contents}
 .eq-2l5nkt{width:0}
 .eq-372o7v{overflow-x:auto}
 .eq-5augbd{font-variant-numeric:tabular-nums}
@@ -102,8 +99,7 @@ CodeBlock 0 0 480x42
 
 ## Small · Compact
 ### web
-<div data-eq-unmeasured="" dir="ltr" class="eq-1y88iiz">
-<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div data-eq-unmeasured="" dir="ltr" class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
@@ -133,7 +129,6 @@ CodeBlock 0 0 480x42
 </div>
 </div>
 </div>
-</div>
 ### css
 .eq-11yg588{align-items:stretch}
 .eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
@@ -150,7 +145,6 @@ CodeBlock 0 0 480x42
 .eq-1tab6xc{width:12px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1w1wt6p{align-items:flex-start}
-.eq-1y88iiz{display:contents}
 .eq-2l5nkt{width:0}
 .eq-372o7v{overflow-x:auto}
 .eq-5augbd{font-variant-numeric:tabular-nums}
@@ -204,8 +198,7 @@ CodeBlock 0 0 480x41
 
 ## Medium · Comfortable
 ### web
-<div data-eq-unmeasured="" dir="ltr" class="eq-1y88iiz">
-<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div data-eq-unmeasured="" dir="ltr" class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
@@ -235,7 +228,6 @@ CodeBlock 0 0 480x41
 </div>
 </div>
 </div>
-</div>
 ### css
 .eq-11yg588{align-items:stretch}
 .eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
@@ -253,7 +245,6 @@ CodeBlock 0 0 480x41
 .eq-1tab6xc{width:12px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1w1wt6p{align-items:flex-start}
-.eq-1y88iiz{display:contents}
 .eq-2l5nkt{width:0}
 .eq-372o7v{overflow-x:auto}
 .eq-5augbd{font-variant-numeric:tabular-nums}
@@ -306,8 +297,7 @@ CodeBlock 0 0 480x46
 
 ## Medium · Compact
 ### web
-<div data-eq-unmeasured="" dir="ltr" class="eq-1y88iiz">
-<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div data-eq-unmeasured="" dir="ltr" class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
@@ -337,7 +327,6 @@ CodeBlock 0 0 480x46
 </div>
 </div>
 </div>
-</div>
 ### css
 .eq-11yg588{align-items:stretch}
 .eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
@@ -356,7 +345,6 @@ CodeBlock 0 0 480x46
 .eq-1uhnwvg{flex-direction:row}
 .eq-1w1wt6p{align-items:flex-start}
 .eq-1x60j26{line-height:16px}
-.eq-1y88iiz{display:contents}
 .eq-2l5nkt{width:0}
 .eq-372o7v{overflow-x:auto}
 .eq-5augbd{font-variant-numeric:tabular-nums}
@@ -408,8 +396,7 @@ CodeBlock 0 0 480x42
 
 ## Large · Comfortable
 ### web
-<div data-eq-unmeasured="" dir="ltr" class="eq-1y88iiz">
-<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div data-eq-unmeasured="" dir="ltr" class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
@@ -439,7 +426,6 @@ CodeBlock 0 0 480x42
 </div>
 </div>
 </div>
-</div>
 ### css
 .eq-11yg588{align-items:stretch}
 .eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
@@ -458,7 +444,6 @@ CodeBlock 0 0 480x42
 .eq-1tab6xc{width:12px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1w1wt6p{align-items:flex-start}
-.eq-1y88iiz{display:contents}
 .eq-2l5nkt{width:0}
 .eq-372o7v{overflow-x:auto}
 .eq-5augbd{font-variant-numeric:tabular-nums}
@@ -510,8 +495,7 @@ CodeBlock 0 0 480x47
 
 ## Large · Compact
 ### web
-<div data-eq-unmeasured="" dir="ltr" class="eq-1y88iiz">
-<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div data-eq-unmeasured="" dir="ltr" class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
@@ -541,7 +525,6 @@ CodeBlock 0 0 480x47
 </div>
 </div>
 </div>
-</div>
 ### css
 .eq-11yg588{align-items:stretch}
 .eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
@@ -560,7 +543,6 @@ CodeBlock 0 0 480x47
 .eq-1tab6xc{width:12px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1w1wt6p{align-items:flex-start}
-.eq-1y88iiz{display:contents}
 .eq-2l5nkt{width:0}
 .eq-372o7v{overflow-x:auto}
 .eq-5augbd{font-variant-numeric:tabular-nums}
@@ -612,8 +594,7 @@ CodeBlock 0 0 480x45
 
 ## XLarge · Comfortable
 ### web
-<div data-eq-unmeasured="" dir="ltr" class="eq-1y88iiz">
-<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div data-eq-unmeasured="" dir="ltr" class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
@@ -643,7 +624,6 @@ CodeBlock 0 0 480x45
 </div>
 </div>
 </div>
-</div>
 ### css
 .eq-11yg588{align-items:stretch}
 .eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
@@ -661,7 +641,6 @@ CodeBlock 0 0 480x45
 .eq-1tab6xc{width:12px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1w1wt6p{align-items:flex-start}
-.eq-1y88iiz{display:contents}
 .eq-2l5nkt{width:0}
 .eq-372o7v{overflow-x:auto}
 .eq-5augbd{font-variant-numeric:tabular-nums}
@@ -714,8 +693,7 @@ CodeBlock 0 0 480x48
 
 ## XLarge · Compact
 ### web
-<div data-eq-unmeasured="" dir="ltr" class="eq-1y88iiz">
-<div class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div data-eq-unmeasured="" dir="ltr" class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-1w1wt6p eq-5ew4ww eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
@@ -745,7 +723,6 @@ CodeBlock 0 0 480x48
 </div>
 </div>
 </div>
-</div>
 ### css
 .eq-11yg588{align-items:stretch}
 .eq-12ve49g{background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
@@ -763,7 +740,6 @@ CodeBlock 0 0 480x48
 .eq-1uhnwvg{flex-direction:row}
 .eq-1w14u2f{font-size:15.5px}
 .eq-1w1wt6p{align-items:flex-start}
-.eq-1y88iiz{display:contents}
 .eq-2l5nkt{width:0}
 .eq-372o7v{overflow-x:auto}
 .eq-5augbd{font-variant-numeric:tabular-nums}

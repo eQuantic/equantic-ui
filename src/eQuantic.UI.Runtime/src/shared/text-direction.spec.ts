@@ -1,7 +1,7 @@
 /**
  * Text that runs right to left in the browser (#1568), the twin of the C# `TextDirectionTests`: a
  * component reads its direction from the nearest `Directionality` above it, or from its UI culture as the
- * server said it; the lowering writes every start and end as logical CSS under a `dir` host; and a
+ * server said it; the lowering writes every start and end as logical CSS under a `dir` its child's element carries; and a
  * culture switch writes the document's `dir` from the culture's data, with no list of languages here.
  */
 
@@ -133,12 +133,16 @@ describe('the direction a component reads', () => {
 });
 
 describe('the web under a direction', () => {
-  it('lowers a Directionality to a host that draws no box and says dir (C# twin)', () => {
+  it("says a Directionality's direction on its child's own element, adding none (C# twin)", () => {
     const rtl = lower(new Directionality('rightToLeft', new Text('x', 'bodyM')));
-    expect(rtl.tag).toBe('div');
+    expect(rtl.tag).toBe('span');
     expect(rtl.attributes['dir']).toBe('rtl');
-    expect(declarations(rtl)).toEqual(['display: contents']);
     expect(lower(new Directionality('leftToRight', new Text('x', 'bodyM'))).attributes['dir']).toBe('ltr');
+  });
+
+  it('lets the nearest Directionality win on the element both reach', () => {
+    const nested = lower(new Directionality('rightToLeft', new Directionality('leftToRight', new Text('x', 'bodyM'))));
+    expect(nested.attributes['dir']).toBe('ltr');
   });
 
   it('writes a padding larger at its start as logical padding, and a symmetric one as before', () => {
