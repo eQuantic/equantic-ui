@@ -55,7 +55,8 @@ public class AllowedValueAnalyzerTests
         error.Severity.Should().Be(DiagnosticSeverity.Error);
         var message = error.GetMessage();
         message.Should().StartWith(written + " is not a value 'size' of ");
-        message.Should().Contain("it takes 16, 20, 24 or 32", "the message names what the parameter takes");
+        message.Should().Contain("it takes null, 16, 20, 24 or 32",
+            "the message names what the parameter takes, null for the size the box around the icon states included");
         message.Should().Contain("Vector", "and where a glyph of another size goes, from the mark's own words");
     }
 
@@ -65,6 +66,7 @@ public class AllowedValueAnalyzerTests
     [InlineData("Icon(Icons.Search, (float)32d)")]
     [InlineData("Icon(Icons.Search, IconSize.Lg)")]
     [InlineData("Icon(Icons.Search)")]
+    [InlineData("Icon(Icons.Search, size: null)")]
     [InlineData("new Icon(Icons.Search, runtimeSize)")]
     public async Task AnIconOnTheScale_OrOfASizeOnlyTheRunKnows_IsLeftAlone(string construction)
     {
