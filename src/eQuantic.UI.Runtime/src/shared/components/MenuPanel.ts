@@ -13,7 +13,7 @@ export class MenuPanel {
             if ((glyph = item.icon) != null) row.add(new Icon(IconGlyph.fromIcons(glyph), 20, item.destructive ? theme.colors('destructive').base : theme.textSecondary));
             row.add(new Text(item.label, 'bodyM', item.destructive ? theme.colors('destructive').base : theme.textPrimary, 1));
             let surface = new Box(new BoxStyle({ height: ControlMetrics.height(context, 'medium'), padding: slot?.itemPadding ?? EdgeInsets.symmetric(12, 0), width: SizeValue.fill, opacity: item.disabled ? theme.disabledOpacity : null, background: open && index === highlight && !item.disabled ? theme.surfaceSubtle : null, hover: item.disabled ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row);
-            list.add(new Pressable(surface, item.disabled ? null : () => choose(index), { disabled: item.disabled, role: 'menuItem' }));
+            list.add(new Pressable(surface, item.disabled ? null : () => choose(index), { disabled: item.disabled, role: 'menuItem', canRequestFocus: false }));
         }
         return new Box(new BoxStyle({ minWidth: slot?.menuMinWidth ?? 180, background: theme.surface, cornerRadius: new CornerRadii(theme.shape(slot?.panelShape ?? 'medium')), borderWidth: slot?.panelBorderWidth ?? 1, borderColor: theme.border, elevation: slot?.panelElevation ?? 2, padding: slot?.menuPadding ?? EdgeInsets.symmetric(0, 4), clip: true }), list);
     }

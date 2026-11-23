@@ -285,3 +285,32 @@ describe('readMoment: the era beside a date (#1191)', () => {
     expect(read('م 15/1/2024', 'ar-SA (Linux)')).toBe('2024-01-15 12:00:00');
   });
 });
+
+describe('readMoment: an ISO date that does not exist (#1616)', () => {
+  it('reads the ISO form through and refuses the day as a clock that does not exist is refused', () => {
+    expect(read('2024-02-30T10:00', 'invariant')).toBe('clock');
+    expect(read('2024-13-01T10:00:00.5Z', 'invariant')).toBe('clock');
+    expect(read('2024-02-30 T10:00', 'invariant')).toBe('clock');
+  });
+
+  it('refuses a malformed clock after the T, and a day that does not exist outside the ISO form, plainly', () => {
+    expect(read('2024-02-30Tjunk', 'invariant')).toBe('format');
+    expect(read('2024-02-30T10', 'invariant')).toBe('format');
+    expect(read('2024-02-30', 'invariant')).toBe('format');
+    expect(read('2024-02-30 10:00', 'invariant')).toBe('format');
+  });
+
+  it('reads a T before a clock only after the ISO form\'s date, and a T that starts a word as the word', () => {
+    expect(read('2024-02T10:00', 'invariant')).toBe('format');
+    expect(read('1/15/2024T10:00', 'invariant')).toBe('format');
+    expect(read('2024-01-15Tx', 'invariant')).toBe('word at 10');
+    expect(read('2024-02-30Tx', 'invariant')).toBe('format');
+  });
+
+  it('refuses an offset past fourteen hours last, after the rest of the text, the date and the clock', () => {
+    expect(read('2024-02-30T10:00+25:00', 'invariant')).toBe('clock');
+    expect(read('2024-01-15T25:00+15', 'invariant')).toBe('clock');
+    expect(read('2024-01-15T10:00+25:00 junk', 'invariant')).toBe('format');
+    expect(read('2024-01-15T10:00+15', 'invariant')).toBe('zone');
+  });
+});

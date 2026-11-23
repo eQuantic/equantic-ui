@@ -333,15 +333,9 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             // site supplied fewer positional arguments than the resolved constructor's arity, the
             // skipped parameters fill from their C# defaults first (`new Stack { Width = … }` must
             // emit `new Stack('topStart', {…})`, never the config in the align slot).
-            // Fill from the slots actually EMITTED, not the syntactic argument count: named
-            // arguments that skip earlier parameters (`new Positioned(x, bottom: 0, start: 0)`)
-            // already emitted the skipped defaults, and counting the call site again would append
-            // them twice — pushing the config past the constructor's arity, where it is silently
-            // dropped.
             if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol ctor)
             {
-                if (emittedSlots < ctor.Parameters.Length)
-                    arguments.AddRange(ctor.Parameters.Skip(emittedSlots).Select(parameter => DefaultOf(parameter, context)));
+                FillToArity(arguments, ctor, context);
                 arguments.Add(initializer);
             }
             else if (emittedSlots > 0)
@@ -540,6 +534,20 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// </summary>
     private static JsExpr Spliced(IReadOnlyList<JsExpr> values) =>
         values.Count == 1 ? values[0] : JsExpr.Opaque(string.Join(", ", values.Select(JsExprWriter.Write)));
+
+    /// <summary>
+    /// The defaults of the parameters <paramref name="parts"/> does not reach yet, so the config object that
+    /// follows lands in the twin's trailing slot. Counted from the arguments EMITTED, never from the ones the
+    /// syntax wrote: a named argument fills the parameter it names, wherever it is written, and a count of
+    /// the written ones put the defaults in twice and the config past the constructor's arity, where nothing
+    /// reads it. `new Positioned(x, bottom: 0, start: 0) { … }` met it first, and `new TextRun(code,
+    /// Mono: true) { … }` lost its initializer to it on the vocabulary's own path (#1756). The one rule for
+    /// every construction that hands an initializer to the twin as its config.
+    /// </summary>
+    private static void FillToArity(List<JsExpr> parts, IMethodSymbol ctor, ConversionContext context)
+    {
+        for (var i = parts.Count; i < ctor.Parameters.Length; i++) parts.Add(DefaultOf(ctor.Parameters[i], context));
+    }
 
     /// <summary>A parameter's C# default as the literal a skipped argument is filled with
     /// (<see cref="DefaultLiteralFor"/>).</summary>
@@ -790,9 +798,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 // emits the config in the `delayMs` slot and the easing silently reverts to default.
                 if (ctor is not null)
                 {
-                    var supplied = creation.ArgumentList?.Arguments.Count ?? 0;
-                    for (var i = supplied; i < ctor.Parameters.Length; i++)
-                        parts.Add(DefaultOf(ctor.Parameters[i], context));
+                    FillToArity(parts, ctor, context);
                     parts.AddRange(specs);
                     parts.Add(context.Converter.ConvertIr(creation.Initializer));
                     return JsExpr.New(constructed, parts);
@@ -1006,8 +1012,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 // text, a lambda among its arguments lost every line of its block from the map.
                 if (TwinIsWritten(target) && !ObjectInitializer.OnlyAssigns(creation.Initializer))
                     return ObjectInitializer.Apply(JsExpr.New(JsExpr.Identifier(TwinOf(target, context)), ctorArgs), creation.Initializer, context);
-                if (ms != null && ctorArgs.Count < ms.Parameters.Length)
-                    ctorArgs.AddRange(ms.Parameters.Skip(ctorArgs.Count).Select(parameter => DefaultOf(parameter, context)));
+                if (ms != null) FillToArity(ctorArgs, ms, context);
                 ctorArgs.Add(context.Converter.ConvertIr(creation.Initializer));
                 return JsExpr.New(JsExpr.Identifier(TwinOf(target, context)), ctorArgs);
             }

@@ -111,6 +111,19 @@ public sealed class HotReloadService : IDisposable
             try
             {
                 _compiler.Prepare();
+                // A host that is not an eQuantic.UI app has no eqc, which the compiler has just said: a save of
+                // its C# has nothing to rebuild, so its sources are watched no more (#1757).
+                if (!_disposed && !_compiler.Available && _watcher is { } watcher)
+                {
+                    try
+                    {
+                        watcher.EnableRaisingEvents = false;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // The app stopped while the compiler got ready: the watcher is gone with it.
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -222,13 +235,14 @@ public sealed class HotReloadService : IDisposable
         var burst = new DateTime(ticks, DateTimeKind.Utc);
         try
         {
-            if (_disposed) return;
+            // A host with no eqc rebuilds nothing and tells the page nothing; the compiler said so once (#1757).
+            if (_disposed || !_compiler.Available) return;
             // Said when it starts as well as when it ends: the person sees the save was taken, and the
             // edit-to-view measurement (#900) reads the wait after a save off this line.
             Console.WriteLine("[eQuantic.HotReload] a source changed, rebuilding");
             var started = Stopwatch.StartNew();
             var outcome = _compiler.Compile(_limit);
-            if (_disposed) return;
+            if (_disposed || outcome.Unavailable) return;
             if (outcome.Compiled)
             {
                 Console.WriteLine($"[eQuantic.HotReload] rebuilt in {started.Elapsed.TotalSeconds:F1}s — reloading browsers");

@@ -23,7 +23,7 @@ import type { BuildOwner } from './components/BuildOwner';
 import type { HtmlNode } from '../core/types';
 import type { VisualNodeValue } from './nodes';
 import { commitShortcuts, type ShortcutDeclarer } from '../dom/shortcuts';
-import { commitFocusTraps } from '../dom/focus-trap';
+import { scheduleFocusTrapCommit } from '../dom/focus-trap';
 import { installHoverRevealSuppression } from '../dom/hover-reveal';
 import { attachCameraStreams } from './devices/camera';
 import { scheduleScrollViewportCommit } from './scroll-viewports';
@@ -183,9 +183,9 @@ export function exitPass(shortcutsDeclaredBy?: ShortcutDeclarer): void {
   // re-lowered drop out, which is how unmounting unsubscribes. A pass that lowered some components
   // alone replaces only the bindings they declared (#1455).
   commitShortcuts(shortcutsDeclaredBy);
-  // §10: the same moment reconciles the modal focus traps against the DOM the pass just produced —
+  // §10: the modal focus traps are reconciled against the DOM the pass produced once it is written —
   // a layer that appeared takes focus (recording its invoker), one that vanished gives it back.
-  commitFocusTraps();
+  scheduleFocusTrapCommit();
   installHoverRevealSuppression();
   // A CameraPreview lowered this pass has a fresh <video>; the stream re-attaches here, the same
   // after-the-pass moment the shortcut set commits.
