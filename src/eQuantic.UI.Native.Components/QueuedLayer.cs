@@ -18,7 +18,6 @@ namespace eQuantic.UI.Native.Components;
 /// <param name="InScrolledHeader">Whether the layer was found inside a scrolled pinned header: its
 /// boxes show their <c>Scrolled</c> diff, as the web's do, whose layer is an element inside the
 /// header's (#1769).</param>
-
 /// <param name="Content">The look in effect where the node that queued the layer stands
 /// (<see cref="EmitState.Content"/>, #1577): the layer is laid out and painted under it, so a panel
 /// shown in a layer of its own looks as it would in place, where the web lowers it.</param>

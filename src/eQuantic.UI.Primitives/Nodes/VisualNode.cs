@@ -27,8 +27,13 @@ public abstract class VisualNode
     /// A <c>string</c> is a node: the <see cref="Text"/> of it, naming nothing, so it is drawn in the look the box
     /// around it states (<see cref="BoxStyle.Content"/>, #1577) and <c>Button("Save")</c> reads as it always did
     /// once a component takes its content as a node. It crosses to the runtime twin's <c>VisualNode.fromString</c>.
+    /// <para>
+    /// A null string is no node, never a <see cref="Text"/> of nothing: an optional slot fed from a <c>string?</c>
+    /// (<c>subtitle: item.Description</c>) stays empty when the string is, as it would with <c>null</c> written.
+    /// </para>
     /// </summary>
-    public static implicit operator VisualNode(string text) => new Text(text);
+    [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull(nameof(text))]
+    public static implicit operator VisualNode?(string? text) => text is null ? null : new Text(text);
 
     /// <summary>
     /// Hands this node to a visitor's method for its own type — the vocabulary's dispatch, and the

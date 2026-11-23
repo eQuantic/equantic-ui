@@ -53,6 +53,6 @@ static eQuantic.UI.Primitives.ContentStyle.operator ==(eQuantic.UI.Primitives.Co
 static eQuantic.UI.Primitives.EffectiveTypeStyle.Resolve(this eQuantic.UI.Primitives.Text! text, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ContentStyle? around) -> eQuantic.UI.Primitives.TypeStyle
 static eQuantic.UI.Primitives.TextLook.operator !=(eQuantic.UI.Primitives.TextLook left, eQuantic.UI.Primitives.TextLook right) -> bool
 static eQuantic.UI.Primitives.TextLook.operator ==(eQuantic.UI.Primitives.TextLook left, eQuantic.UI.Primitives.TextLook right) -> bool
-static eQuantic.UI.Primitives.VisualNode.implicit operator eQuantic.UI.Primitives.VisualNode!(string! text) -> eQuantic.UI.Primitives.VisualNode!
 ~override eQuantic.UI.Primitives.TextLook.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.TextLook.ToString() -> string
+static eQuantic.UI.Primitives.VisualNode.implicit operator eQuantic.UI.Primitives.VisualNode?(string? text) -> eQuantic.UI.Primitives.VisualNode?

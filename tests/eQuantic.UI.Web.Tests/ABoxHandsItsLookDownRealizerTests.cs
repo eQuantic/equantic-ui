@@ -120,4 +120,13 @@ public class ABoxHandsItsLookDownRealizerTests
         text.ClassName.Should().Be("eq-type-label");
         text.InnerHtml.Should().Be("Title");
     }
+
+    [Fact]
+    public void ANullString_IsNoNode_NeverATextOfNothing()
+    {
+        string? description = null;
+        VisualNode? subtitle = description;
+
+        subtitle.Should().BeNull("an optional slot fed from a string? stays empty when the string is, as with null written");
+    }
 }

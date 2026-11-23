@@ -46,6 +46,7 @@ public class AllowedValueAnalyzerTests
     [InlineData("Icon(Icons.Search, 22)", "22")]
     [InlineData("Icon(Icons.Search, size: 18f)", "18")]
     [InlineData("new Icon(Icons.Search, 22.5f)", "22.5")]
+    [InlineData("Icon(Icons.Search, (float?)22)", "22")]
     public async Task AnIconOfASizeOffTheScale_IsABuildError(string construction, string written)
     {
         var diagnostics = await AnalyzeAsync(Page(construction));

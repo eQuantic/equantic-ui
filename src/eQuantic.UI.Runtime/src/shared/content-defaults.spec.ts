@@ -147,6 +147,11 @@ describe('a string is a node', () => {
     expect(node.align).toBeNull();
   });
 
+  it('a null string is no node, never a Text of nothing', () => {
+    expect(VisualNode.fromString(null)).toBeNull();
+    expect(VisualNode.fromString(undefined)).toBeNull();
+  });
+
   it('inside a box that states a role it is drawn in that role', () => {
     const text = textNode(lower(boxOf(new ContentStyle({ role: 'label' }), VisualNode.fromString('Title'))));
     expect(classOf(text)).toContain('eq-type-label');

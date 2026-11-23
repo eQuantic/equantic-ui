@@ -52,7 +52,7 @@ public sealed class AllowedValueAnalyzer : DiagnosticAnalyzer
         var argument = (IArgumentOperation)context.Operation;
         // A default the parameter writes for itself is its author's, and a params array has no single value.
         if (argument.ArgumentKind != ArgumentKind.Explicit || argument.Parameter is not { } parameter) return;
-        var written = Unwrapped(argument.Value);
+        var written = Unwrapped(argument.Value, context.Compilation);
         if (!written.ConstantValue.HasValue) return;
 
         foreach (var attribute in parameter.GetAttributes())
@@ -78,13 +78,19 @@ public sealed class AllowedValueAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// The value the call wrote, out of the implicit conversion to <c>Nullable&lt;T&gt;</c> a nullable parameter wraps
-    /// it in: C# never makes that conversion a constant, so <c>Icon(glyph, 22)</c> handed to a <c>float?</c> size
-    /// would read as a value only the run knows and pass (#1577). Any other conversion is left as it is.
+    /// The value the call wrote, out of the conversion to <c>Nullable&lt;T&gt;</c> a nullable parameter wraps it in:
+    /// C# never makes that conversion a constant, so <c>Icon(glyph, 22)</c> handed to a <c>float?</c> size would read
+    /// as a value only the run knows and pass (#1577). Written or not, <c>(float?)22</c> included, the constant inside
+    /// is read when it reaches <c>T</c> without losing anything (an implicit conversion), so the value compared is the
+    /// value the parameter receives. Any other conversion is left as it is.
     /// </summary>
-    private static IOperation Unwrapped(IOperation value) =>
-        value is IConversionOperation { IsImplicit: true, Operand: var operand, Type: INamedTypeSymbol target }
-            && target.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
+    private static IOperation Unwrapped(IOperation value, Compilation compilation) =>
+        value is IConversionOperation
+        {
+            Operand: { ConstantValue.HasValue: true, Type: { } from } operand,
+            Type: INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } target,
+        }
+        && compilation.ClassifyCommonConversion(from, target.TypeArguments[0]).IsImplicit
             ? operand
             : value;
 

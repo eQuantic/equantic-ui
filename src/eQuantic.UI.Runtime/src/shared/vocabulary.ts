@@ -102,8 +102,11 @@ export abstract class VisualNode {
    * naming nothing, so it is drawn in the look the box around it states. eqc calls this wherever the
    * conversion applies, as it calls `IconGlyph.fromIcons`.
    */
-  static fromString(text: string): VisualNode {
-    return new Text(text);
+  static fromString(text: string): VisualNode;
+  /** A null string is no node, never a Text of nothing, as on the C# side. */
+  static fromString(text: string | null | undefined): VisualNode | null;
+  static fromString(text: string | null | undefined): VisualNode | null {
+    return text == null ? null : new Text(text);
   }
 
   /** Spec S1 `align-self` — overrides the parent flex container's cross alignment for this child. */
