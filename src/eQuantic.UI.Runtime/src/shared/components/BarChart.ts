@@ -69,7 +69,7 @@ export class BarChart extends StatefulComponent {
         $eq.collections.listAdd(columns, new DataColumn(categories.title ?? '', GridTrack.flex(2)));
         for (const s of $eq.collections.sequenceWalk(series)) $eq.collections.listAdd(columns, new DataColumn(s.name, GridTrack.flex(1), 'end'));
         let rows: DataRow[] = [];
-        for (let c = 0; c < $eq.collections.count(categories.categories); c++) {
+        for (let c = 0; c < $eq.collections.count(categories.categories); c = c + 1 | 0) {
             let cells: VisualNode[] = [];
             $eq.collections.listAdd(cells, new Text($eq.collections.item(categories.categories, c), 'bodyM', theme.textPrimary, 1));
             for (const s of $eq.collections.sequenceWalk(series)) {
@@ -82,13 +82,13 @@ export class BarChart extends StatefulComponent {
 
     static hidden(count: number) {
         let hidden: boolean[] = [];
-        for (let i = 0; i < count; i++) $eq.collections.listAdd(hidden, false);
+        for (let i = 0; i < count; i = i + 1 | 0) $eq.collections.listAdd(hidden, false);
         return hidden;
     }
 
     visible() {
         let visible: boolean[] = [];
-        for (let i = 0; i < this._hidden.length; i++) $eq.collections.listAdd(visible, !this._hidden[i]);
+        for (let i = 0; i < this._hidden.length; i = i + 1 | 0) $eq.collections.listAdd(visible, !this._hidden[i]);
         return visible;
     }
 
@@ -98,7 +98,7 @@ export class BarChart extends StatefulComponent {
 
     legend(theme: any) {
         let row = new Row(12, 'start', 'center', true, 4);
-        for (let i = 0; i < $eq.collections.count(this._series); i++) {
+        for (let i = 0; i < $eq.collections.count(this._series); i = i + 1 | 0) {
             let index = i;
             let hidden = this._hidden[i];
             let swatch = new Box(new BoxStyle({ width: SizeValue.fixed(12), height: SizeValue.fixed(12), background: hidden ? theme.border : this.seriesColor(theme, i), cornerRadius: new CornerRadii(2) }));
@@ -112,16 +112,16 @@ export class BarChart extends StatefulComponent {
 
     isolate(index: number) {
         let isolated = !this._hidden[index];
-        for (let i = 0; i < this._hidden.length; i++) {
+        for (let i = 0; i < this._hidden.length; i = i + 1 | 0) {
             if (i !== index && !this._hidden[i]) isolated = false;
         }
-        for (let i = 0; i < this._hidden.length; i++) $eq.collections.listSet(this._hidden, i, !isolated && i !== index);
+        for (let i = 0; i < this._hidden.length; i = i + 1 | 0) $eq.collections.listSet(this._hidden, i, !isolated && i !== index);
         this._hover = -1;
     }
 
     static valueBandWidth(axis: ValueAxis, ticks: ValueTicks) {
         let longest = 0;
-        for (let i = 0; i < ticks.count; i++) {
+        for (let i = 0; i < ticks.count; i = i + 1 | 0) {
             let length = axis.label(ticks.at(i)).length;
             if (length > longest) longest = length;
         }
@@ -164,7 +164,7 @@ export class BarChart extends StatefulComponent {
         let theme = context.theme;
         let lineHeight = Math.fround(theme.type('caption').lineHeight * context.typeScale);
         let stack = new Stack('topStart', { width: SizeValue.fixed(band), height: SizeValue.fixed(this._plotHeight) });
-        for (let i = 0; i < ticks.count; i++) {
+        for (let i = 0; i < ticks.count; i = i + 1 | 0) {
             let y = Math.fround(this._plotHeight - BarChartLayout.tickOffset(ticks, i, this._plotHeight));
             let label = new Box(new BoxStyle({ width: SizeValue.fixed(Math.fround(band - 4)) }), new Text(this._values.label(ticks.at(i)), 'caption', theme.textMuted, 1, 'end', false, true));
             stack.add(new Positioned(label, Math.fround(y - Math.fround(lineHeight / 2)), null, null, 0));
@@ -186,7 +186,7 @@ export class BarChart extends StatefulComponent {
         let slot = count === 0 ? this._plotHeight : Math.fround(this._plotHeight / Math.fround(count));
         let lineHeight = Math.fround(theme.type('caption').lineHeight * context.typeScale);
         let stack = new Stack('topStart', { width: SizeValue.fixed(BarChart.categoryAxisWidth), height: SizeValue.fixed(this._plotHeight) });
-        for (let c = 0; c < count; c++) {
+        for (let c = 0; c < count; c = c + 1 | 0) {
             let label = new Box(new BoxStyle({ width: SizeValue.fixed(Math.fround(BarChart.categoryAxisWidth - 8)) }), new Text($eq.collections.item(this._categories.categories, c), 'caption', theme.textMuted, 1, 'end'));
             stack.add(new Positioned(label, Math.fround(Math.fround(Math.fround(Math.fround(c) * slot) + Math.fround(slot / 2)) - Math.fround(lineHeight / 2)), null, null, 0));
         }
@@ -196,8 +196,8 @@ export class BarChart extends StatefulComponent {
     valueLabelsBelow(theme: any) {
         let ticks = BarChartLayout.ticks(this._series, this.visible(), $eq.collections.count(this._categories.categories), this._layout, this._values);
         let row = new Row(0, 'spaceBetween');
-        for (let i = 0; i < ticks.count; i++) {
-            row.add(new Text(this._values.label(ticks.at(i)), 'caption', theme.textMuted, 1, null, false, true));
+        for (let i = 0; i < ticks.count; i = i + 1 | 0) {
+            row.add(new Text(this._values.label(ticks.at(i)), 'caption', theme.textMuted, 1, 'start', false, true));
         }
         return row;
     }
@@ -217,12 +217,12 @@ export class BarChart extends StatefulComponent {
         let vertical = this._orientation === 'vertical';
         let geometry = BarChartLayout.solve(this._series, this.visible(), $eq.collections.count(this._categories.categories), this._layout, this._orientation, this._values, p.size.width, p.size.height);
         this._geometry = geometry;
-        for (let i = 0; i < geometry.ticks.count; i++) {
+        for (let i = 0; i < geometry.ticks.count; i = i + 1 | 0) {
             let at = geometry.tickPosition(i);
             if (vertical) p.line(new Point(0, at), new Point(p.size.width, at), theme.border, 1); else p.line(new Point(at, 0), new Point(at, p.size.height), theme.border, 1);
         }
         if (vertical) p.line(new Point(0, geometry.baseline), new Point(p.size.width, geometry.baseline), theme.borderStrong, 1); else p.line(new Point(geometry.baseline, 0), new Point(geometry.baseline, p.size.height), theme.borderStrong, 1);
-        for (let i = 0; i < $eq.collections.count(geometry.bars); i++) {
+        for (let i = 0; i < $eq.collections.count(geometry.bars); i = i + 1 | 0) {
             let b = $eq.collections.item(geometry.bars, i);
             if (b.box.isEmpty) continue;
             let color = this.seriesColor(theme, b.series);
@@ -264,7 +264,7 @@ export class BarChart extends StatefulComponent {
         card.add(new Text($eq.collections.item(this._categories.categories, bar.category), 'caption', theme.textMuted, 1));
         let line = new Row(8, 'start', 'center');
         line.add(new Box(new BoxStyle({ width: SizeValue.fixed(8), height: SizeValue.fixed(8), background: this.seriesColor(theme, bar.series), cornerRadius: new CornerRadii(2) })));
-        line.add(new Text(this._values.label(series.at(bar.category)), 'label', theme.textPrimary, 1, null, false, true));
+        line.add(new Text(this._values.label(series.at(bar.category)), 'label', theme.textPrimary, 1, 'start', false, true));
         line.add(new Text(series.name, 'caption', theme.textSecondary, 1));
         card.add(line);
         let box = new Box(new BoxStyle({ background: theme.surface, borderWidth: 1, borderColor: theme.border, cornerRadius: new CornerRadii(theme.shape('small')), padding: EdgeInsets.symmetric(8, 4) }), card);

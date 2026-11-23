@@ -1,12 +1,12 @@
-import { BuildContext, Button, FormController, SizeVariantValue, StatelessComponent, VariantValue } from "../runtime-exports";
+import { $SizeVariantValue, $VariantValue, BuildContext, Button, FormController, StatelessComponent } from "../runtime-exports";
 
 export class FormSubmit extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.FormSubmit';
     declare form: FormController;
     declare label: string;
     declare onSubmit: () => void;
-    declare variant: VariantValue;
-    declare size: SizeVariantValue;
+    declare variant: $VariantValue;
+    declare size: $SizeVariantValue;
     declare wide: boolean;
 
     constructor(form?: any, label?: any, onSubmit?: any, variant: any = 'primary', size: any = 'medium', props?: any) {

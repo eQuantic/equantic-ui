@@ -192,6 +192,19 @@ public readonly record struct BoxStyle
     /// </summary>
     public StyleDiff? Pressed { get; init; }
 
+    /// <summary>
+    /// Style DIFF applied while the HEADER this box is inside is scrolled: the nearest
+    /// <see cref="Pinned"/> around it, from the moment its own <see cref="Pinned.ScrolledStyle"/>
+    /// would apply (its surface past <see cref="Pinned.ScrolledThreshold"/>). A header that swaps
+    /// what it shows as the page scrolls (a large badge giving way to a small mark) draws both
+    /// layers and gives each one, and <see cref="Transition"/> glides the swap; nothing is rebuilt.
+    /// Inside no header it never applies. A control's states are laid over it: the box's own
+    /// style, then this, then <see cref="Hover"/>, <see cref="Focus"/> and <see cref="Pressed"/>,
+    /// member by member. On the web a rule selecting on the header's <c>data-eq-scrolled</c>; on
+    /// Photon the header's state, carried to its subtree. <c>null</c> = none (#1769).
+    /// </summary>
+    public StyleDiff? Scrolled { get; init; }
+
     /// <summary>What the mouse pointer looks like over this box — the CSS <c>cursor</c> mirror.
     /// Web emits the declaration; Photon registers a cursor region the host answers from.
     /// <see cref="PointerCursor.Default"/> = inherit whatever the surface underneath says.</summary>

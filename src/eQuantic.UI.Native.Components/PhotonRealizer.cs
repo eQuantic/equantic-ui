@@ -78,7 +78,7 @@ public readonly record struct DragRegion(Rect Bounds, Element Element, VisualNod
 /// one region per line under ONE id: the pointer needs both rectangles, the keyboard needs one stop.
 /// </para>
 /// </summary>
-public readonly record struct LinkRegion(Rect Bounds, string Destination, int Id);
+public readonly record struct LinkRegion(Rect Bounds, string Destination, int Id, bool OpensBeside = false);
 
 /// <summary>Spec S8: a keyboard binding that is live because its subtree is on screen — the host
 /// dispatches a key press to the LAST registered match (the dialog on top wins the chord). A
@@ -239,6 +239,30 @@ public sealed class RealizeResult
 
     /// <summary>Everything Tab visits, in tree order: buttons and fields in one sequence.</summary>
     public IReadOnlyList<FocusStop> FocusStops { get; }
+
+    /// <summary>
+    /// Where the topmost modal and open layer of this frame was built, or null when none is shown: the
+    /// focus a modal layer holds (#1066), which the web's focus trap finds as the last layer marked
+    /// <c>data-eq-trap</c>. A layer opened from inside it, a menu in a dialog, is built under it, so its
+    /// stops are the trap's too; a toast queued by the page is not. Gated on modal and open exactly as
+    /// the semantics walk announces a dialog.
+    /// </summary>
+    internal Element? ModalLayerRoot()
+    {
+        for (var i = OverlayLayers.Count - 1; i >= 0; i--)
+            if (OverlayLayers[i] is { Modal: true, Open: true }) return OverlayRoots[i].Element;
+        return null;
+    }
+
+    /// <summary>Where every modal and open layer of this frame was built, bottom to top: the layers that
+    /// record the focus they give back when they close (#1811).</summary>
+    internal List<Element> ModalLayerRoots()
+    {
+        var roots = new List<Element>();
+        for (var i = 0; i < OverlayLayers.Count; i++)
+            if (OverlayLayers[i] is { Modal: true, Open: true } && OverlayRoots[i].Element is { } root) roots.Add(root);
+        return roots;
+    }
 
     /// <summary>Editable fields, in paint order (topmost last).</summary>
     public IReadOnlyList<TextRegion> TextRegions { get; }
@@ -440,7 +464,7 @@ public static class PhotonRealizer
             layerLooks.Add(queued.Content);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
-            EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { HoveredPart = hoveredPart, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView },
+            EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { HoveredPart = hoveredPart, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView, InScrolledHeader = queued.InScrolledHeader },
                 theme, mode, contrast, builder, motion, overlays) { Content = queued.Content });
         }
 

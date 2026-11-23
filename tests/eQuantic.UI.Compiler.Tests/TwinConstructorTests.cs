@@ -114,7 +114,7 @@ public class TwinConstructorTests
         // The alternate's own parameters live in a block of their own, and the chain's arguments cross it
         // in temporaries: no function holds the C#.
         result.TypeScript.Should().Contain(
-            "if (arguments.length === 1) {let $c0: any, $c1: any;{let at: any = arguments[0];$c0 = at;$c1 = at + 1;}start = $c0;end = $c1;}");
+            "if (arguments.length === 1) {let $c0: any, $c1: any;{let at: any = arguments[0];$c0 = at;$c1 = at + 1 | 0;}start = $c0;end = $c1;}");
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class TwinConstructorTests
         var result = Compile("public record Doubled { public int A { get; init; } public Doubled(int a) { A = a * 2; } }", "Doubled");
 
         result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(error => error.Message)));
-        result.TypeScript.Should().Contain("constructor(a: any) {this.a = 0;this.a = a * 2;}");
+        result.TypeScript.Should().Contain("constructor(a: any) {this.a = 0;this.a = Math.imul(a, 2);}");
     }
 
     public static TheoryData<string, string> Collisions => new()

@@ -22,11 +22,14 @@ namespace eQuantic.UI.Conformance.Tests;
 /// </summary>
 public class ReferencedProjectConformanceTests
 {
-    /// <summary>The cases, in the app's ROOT, which makes the file an entry point of the bundle.</summary>
+    /// <summary>The cases, in the app's ROOT, which makes the file an entry point of the bundle once a
+    /// component reaches it: a static class no component names is server code (#1779), so a page shows
+    /// one of them.</summary>
     private const string Cases =
         """
         using Common;
         using Domain;
+        using eQuantic.UI.Primitives;
 
         namespace App;
 
@@ -60,6 +63,11 @@ public class ReferencedProjectConformanceTests
                 return (receipt.Number + 1) + "|" + receipt.IssuedAt.Year + "|" + receipt.IssuedAt.Offset.Hours + "|"
                     + receipt.Total.Currency + "|" + copy.Title + "|" + (copy.Total == receipt.Total) + "|" + (copy.Id == id);
             }
+        }
+
+        public sealed class CasesShown : StatelessComponent
+        {
+            public override VisualNode Build(ComponentContext context) => new Text(Cases.StaticMemberRead(), TypeRole.BodyM);
         }
         """;
 

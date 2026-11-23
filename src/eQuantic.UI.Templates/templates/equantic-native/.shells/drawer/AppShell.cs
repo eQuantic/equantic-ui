@@ -26,15 +26,20 @@ public sealed class AppShell : StatefulComponent
     private int _destination;
     private bool _open;
 
+    // The screen is built in both variants, and the key is what makes it ONE screen: when the window
+    // crosses 840dp (a phone turning to landscape, a window resized) its position moves into the other
+    // tree, and what it holds comes with it.
+    private readonly GlobalKey _screen = new("screen");
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
 
         VisualNode Screen() => _destination switch
         {
-            1 => new SearchScreen(),
-            2 => new ProfileScreen(),
-            _ => new ActivityScreen(),
+            1 => new SearchScreen { GlobalKey = _screen },
+            2 => new ProfileScreen { GlobalKey = _screen },
+            _ => new ActivityScreen { GlobalKey = _screen },
         };
 
         // Built fresh for each variant: the modal panel and the docked one are two trees, and a

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
@@ -131,9 +133,18 @@ public sealed class Icon : VisualNode
     /// here. There were two constructors differing only in that first parameter, which is the shape
     /// the no-overloads rule removes, and the TypeScript twin already had one.
     /// </summary>
-    public Icon(IconGlyph glyph, float? size = null, ColorToken? color = null, string? label = null)
+    /// <param name="glyph">The glyph to draw.</param>
+    /// <param name="size">One of the §07 steps (<see cref="IconSize"/>), or null for the size the box around it
+    /// states (<see cref="ContentStyle.IconSize"/>, #1577), and <see cref="IconSize.Md"/> where none does. A constant outside them is a build
+    /// error (EQ3106), read from the <c>[AllowedValues]</c> below; a size known only when the code runs is
+    /// refused here.</param>
+    /// <param name="color">The tint, or null for the inherited ink.</param>
+    /// <param name="label">What assistive technology announces, or null for a decorative glyph.</param>
+    public Icon(IconGlyph glyph,
+        [AllowedValues(null, IconSize.Sm, IconSize.Dense, IconSize.Md, IconSize.Lg, ErrorMessage = AllowedSizes)] float? size = null,
+        ColorToken? color = null, string? label = null)
     {
-        if (size is not (null or 16 or 20 or 24 or 32))
+        if (size is not (null or IconSize.Sm or IconSize.Dense or IconSize.Md or IconSize.Lg))
             throw new ArgumentOutOfRangeException(nameof(size),
                 $"Icon size {size} is not on the §07 whitelist (16/20/24/32 — IconSize.Sm/Dense/Md/Lg). "
                 + "The scale is for CONTENT. Window chrome is sized by the platform, not by it — a title "
@@ -145,6 +156,11 @@ public sealed class Icon : VisualNode
         Color = color;
         Label = label;
     }
+
+    /// <summary>What the build says beside a constant size the constructor would refuse (EQ3106).</summary>
+    internal const string AllowedSizes =
+        "An icon of any other size throws when it is built, on the server and in the browser alike: the scale is "
+        + "for content, and a glyph in a box of another size is a Vector.";
 
     /// <summary>The RESOLVED target-neutral glyph data (curated or from any pack).</summary>
     public IconGlyph Glyph { get; }

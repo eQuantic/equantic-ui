@@ -2,6 +2,7 @@ using Android.Text;
 using Android.Views;
 using Android.Views.InputMethods;
 using eQuantic.UI.Native.Components;
+using eQuantic.UI.Primitives;
 using Java.Lang;
 
 namespace eQuantic.UI.Native.Shell.Android;
@@ -78,15 +79,23 @@ internal sealed class PhotonInputConnection : BaseInputConnection
         }
 
         var multiline = _host.TextTarget?.Lines > 1;
-        var type = InputTypes.ClassText;
-        if (multiline) type |= InputTypes.TextFlagMultiLine;
+        // The field's kind picks the keyboard: the session says Text for a multi-line field.
+        var type = Kind(_session.Kind);
+        // A value (an address, a number) is not prose: the keyboard suggests and corrects nothing.
+        if (_session.Kind != TextEntryKind.Text && (type & InputTypes.MaskClass) == InputTypes.ClassText)
+            type |= InputTypes.TextFlagNoSuggestions;
         // A field that hides what is typed hides it from the keyboard too: no suggestions, nothing
-        // shown in the strip above the keys, nothing learned.
+        // shown in the strip above the keys, nothing learned. A hidden number stays on the digits.
         if (_session.Obscure)
         {
-            type |= InputTypes.TextVariationPassword;
+            // A variation belongs to its class, so a hidden field is a password of the text class, or of
+            // the number class for a PIN; it replaces whatever the kind described.
+            type = (type & InputTypes.MaskClass) == InputTypes.ClassNumber
+                ? InputTypes.ClassNumber | InputTypes.NumberVariationPassword
+                : InputTypes.ClassText | InputTypes.TextVariationPassword;
             info.ImeOptions |= ImeFlags.NoPersonalizedLearning;
         }
+        if (multiline) type |= InputTypes.TextFlagMultiLine;
         info.InputType = type;
         // A single line ends on the keyboard's own key, which submits it; a multi-line field's Enter
         // is a line break.
@@ -97,6 +106,17 @@ internal sealed class PhotonInputConnection : BaseInputConnection
             info.SetInitialSurroundingText(_mirror);
         if (_trace) PhotonInputTrace.Write($"describe type={info.InputType} options={info.ImeOptions}");
     }
+
+    /// <summary>The input type each kind is described as: its class, and its variation within the class.</summary>
+    private static InputTypes Kind(TextEntryKind kind) => kind switch
+    {
+        TextEntryKind.Email => InputTypes.ClassText | InputTypes.TextVariationEmailAddress,
+        TextEntryKind.Phone => InputTypes.ClassPhone,
+        TextEntryKind.Url => InputTypes.ClassText | InputTypes.TextVariationUri,
+        TextEntryKind.Number => InputTypes.ClassNumber,
+        TextEntryKind.Decimal => InputTypes.ClassNumber | InputTypes.NumberFlagDecimal,
+        _ => InputTypes.ClassText,
+    };
 
     // ---- The host changed the field ------------------------------------------------------------
 

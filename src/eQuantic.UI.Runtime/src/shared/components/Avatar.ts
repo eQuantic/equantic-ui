@@ -1,10 +1,10 @@
-import { $eq, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, IconGlyph, Image, Positioned, SizeVariantValue, Sizing, Stack, StatelessComponent, Text, TypeStyle, VariantValue, VisualNode, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, $SizeVariantValue, $VariantValue, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, IconGlyph, Image, Positioned, Sizing, Stack, StatelessComponent, Text, TypeStyle, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Avatar extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Avatar';
     declare initials: string;
     declare imageSource: any;
-    declare size: SizeVariantValue;
+    declare size: $SizeVariantValue;
     declare name: any;
     declare status: string;
     static $slots: any = null;
@@ -25,11 +25,11 @@ export class Avatar extends StatelessComponent {
         return Avatar.$slots;
     }
 
-    static get tintPalette(): VariantValue[] {
+    static get tintPalette(): $VariantValue[] {
         return Avatar.$init().tintPalette;
     }
 
-    static set tintPalette(value: VariantValue[]) {
+    static set tintPalette(value: $VariantValue[]) {
         Avatar.$init().tintPalette = value;
     }
 
@@ -67,7 +67,7 @@ export class Avatar extends StatelessComponent {
         return this.status === 'none' ? circle : this.withStatusDot(circle, side, theme);
     }
 
-    static sideOf(theme: any, size: SizeVariantValue) {
+    static sideOf(theme: any, size: $SizeVariantValue) {
         return ControlMetrics.atSize((theme.badge?.avatarSize ?? null), size) ?? Sizing.avatar(size);
     }
 

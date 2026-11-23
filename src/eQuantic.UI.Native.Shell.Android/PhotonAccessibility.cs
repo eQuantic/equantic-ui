@@ -88,10 +88,7 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         for (var i = 0; i < _tree.Count; i++)
             if (_tree[i].Id == announcement.Id) index = i;
         if (index < 0 || _view.Parent is not { } parent) return;
-        var changed = OperatingSystem.IsAndroidVersionAtLeast(30)
-            ? new AccessibilityEvent { EventType = EventTypes.WindowContentChanged }
-            : AccessibilityEvent.Obtain(EventTypes.WindowContentChanged);
-        if (changed is null) return;
+        if (Event(EventTypes.WindowContentChanged) is not { } changed) return;
         changed.ContentChangeTypes = ContentChangeTypes.Text;
         changed.PackageName = _view.Context?.PackageName;
         changed.SetSource(_view, index);
@@ -102,7 +99,9 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
     {
         if (virtualViewId == Host)
         {
-            var host = AccessibilityNodeInfo.Obtain(_view);
+            var host = OperatingSystem.IsAndroidVersionAtLeast(30)
+                ? new AccessibilityNodeInfo(_view)
+                : AccessibilityNodeInfo.Obtain(_view);
             if (host is null) return null;
             _view.OnInitializeAccessibilityNodeInfo(host);
             // The children are declared even before a frame filled the snapshot: an empty screen
@@ -114,7 +113,10 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         var tree = Tree();
         if (virtualViewId < 0 || virtualViewId >= tree.Count) return null;
         var node = tree[virtualViewId];
-        var info = AccessibilityNodeInfo.Obtain(_view, virtualViewId);
+        // The constructors arrived in API 30, and 33 obsoleted the Obtain factories older systems still need.
+        var info = OperatingSystem.IsAndroidVersionAtLeast(30)
+            ? new AccessibilityNodeInfo(_view, virtualViewId)
+            : AccessibilityNodeInfo.Obtain(_view, virtualViewId);
         if (info is null) return null;
 
         var native = NativeRole.Of(node.Role);
@@ -170,18 +172,27 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
             // `SetRangeInfo` is a METHOD, not a property: `RangeInfo` names the nested TYPE, so
             // `info.RangeInfo = …` is a type reference through an expression (CS0572/CS0118). And
             // the type comes from the `RangeType` enum rather than the obsolete
-            // `RangeInfo.RangeTypeFloat` constant. Both read off the binding rather than guessed:
-            //   AccessibilityNodeInfo.RangeInfo.Obtain(RangeType, Single, Single, Single) -> RangeInfo
-            //   AccessibilityNodeInfo.SetRangeInfo(RangeInfo) -> Void
-            info.SetRangeInfo(AccessibilityNodeInfo.RangeInfo.Obtain(
-                RangeType.Float, range.Min, range.Max, range.Now));
+            // `RangeInfo.RangeTypeFloat` constant.
+            info.SetRangeInfo(OperatingSystem.IsAndroidVersionAtLeast(30)
+                ? new AccessibilityNodeInfo.RangeInfo((int)RangeType.Float, range.Min, range.Max, range.Now)
+                : AccessibilityNodeInfo.RangeInfo.Obtain(RangeType.Float, range.Min, range.Max, range.Now));
         }
 
         // The check's state, in the platform's own words — announced in the USER's language, which
-        // is the whole reason this framework ships neither "checked" nor "on". Android has no third
-        // state: a mixed check is announced without one rather than claiming to be off.
+        // is the whole reason this framework ships neither "checked" nor "on". A mixed check is
+        // announced without a state rather than claiming to be off: Android 16 named a third state,
+        // and the node carries it there, but TalkBack 16 reads a CHECKABLE partial node as "not
+        // checked" (measured on its 16.0), so the node stays uncheckable while the check is mixed.
         info.Checkable = node.Checked is SemanticCheck.On or SemanticCheck.Off;
-        info.Checked = node.Checked == SemanticCheck.On;
+        if (OperatingSystem.IsAndroidVersionAtLeast(36))
+            info.CheckedState = node.Checked switch
+            {
+                SemanticCheck.On => CheckedState.True,
+                SemanticCheck.Mixed => CheckedState.Partial,
+                _ => CheckedState.False,
+            };
+        else
+            info.Checked = node.Checked == SemanticCheck.On;
 
         // The destination the user is ON, or the one of a set that is PICKED (a tab, an option, a
         // calendar day). TalkBack reads both as "selected" after the name — the platform has one
@@ -341,13 +352,18 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         if (virtualViewId < 0 || virtualViewId >= tree.Count) return;
         var node = tree[virtualViewId];
 
-        var accessibilityEvent = AccessibilityEvent.Obtain(type);
-        if (accessibilityEvent is null) return;
+        if (Event(type) is not { } accessibilityEvent) return;
         accessibilityEvent.PackageName = _view.Context?.PackageName;
         accessibilityEvent.ClassName = NativeRole.Of(node.Role).Android;
         accessibilityEvent.SetSource(_view, virtualViewId);
         parent.RequestSendAccessibilityEvent(_view, accessibilityEvent);
     }
+
+    /// <summary>An event of the given type: the constructor arrived in API 30, and 33 obsoleted the
+    /// factory older systems still need.</summary>
+    private static AccessibilityEvent? Event(EventTypes type) => OperatingSystem.IsAndroidVersionAtLeast(30)
+        ? new AccessibilityEvent { EventType = type }
+        : AccessibilityEvent.Obtain(type);
 
     /// <summary>The snapshot the queries answer from, filled on first use when no frame has yet.</summary>
     private IReadOnlyList<SemanticNode> Tree() => _tree.Count > 0 ? _tree : _tree = _semantics();

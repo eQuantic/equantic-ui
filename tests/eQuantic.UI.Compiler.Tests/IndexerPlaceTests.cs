@@ -88,7 +88,7 @@ public class IndexerPlaceTests
             """, "Wide");
 
         result.Errors.Should().BeEmpty();
-        result.TypeScript.Should().Contain("this.setItem(1, 2, 3, 4, 5, 6, 7, 8, this.item(1, 2, 3, 4, 5, 6, 7, 8) + 1)");
+        result.TypeScript.Should().Contain("this.setItem(1, 2, 3, 4, 5, 6, 7, 8, this.item(1, 2, 3, 4, 5, 6, 7, 8) + 1 | 0)");
     }
 
     /// <summary>

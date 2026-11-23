@@ -10,10 +10,11 @@
 
 import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { NodeKind } from './node-kinds.generated';
-import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue } from './enums.generated';
+import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue, TextEntryKindValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
 import type { AppTheme, ContextRequest, PointerEvent } from './value-types';
 import { iconPaths } from './icons.generated';
+import { exception } from '../utils/exceptions';
 import type {
   BoxStyleValue,
   ColorTokenValue,
@@ -51,6 +52,7 @@ import { Curve, Motion } from './design-system.generated';
 import type { ContentStyle } from './content-style';
 import type { MotionSpec } from './primitive-values';
 import { hashesByValue } from '../utils/hash';
+import type { SortableTheme } from './theme-slots';
 
 export { StyleChannels } from './value-types';
 
@@ -63,9 +65,30 @@ export { StyleChannels } from './value-types';
  */
 export type EqConfig = Record<string, unknown>;
 
+/**
+ * Mirror of the C# `GlobalKey` (#797): an identity a node keeps wherever it is placed. A node that carries
+ * one, moved under another parent in one build, takes its position along, and the stateful components below
+ * it keep their instances. The identity is the instance: an app makes one and keeps it in a field of the
+ * component that builds the tree. The label is for a reader, never compared.
+ */
+export class GlobalKey {
+  readonly label: string | null;
+
+  constructor(label: string | null = null, config?: EqConfig) {
+    this.label = label;
+    if (config) Object.assign(this, config);
+  }
+
+  toString(): string {
+    return this.label ? `GlobalKey(${this.label})` : 'GlobalKey';
+  }
+}
+
 export abstract class VisualNode {
   abstract readonly nodeKind: NodeKind;
   key?: string | null;
+  /** The identity this node keeps wherever it is placed (the C# `VisualNode.GlobalKey`, #797). */
+  globalKey?: GlobalKey | null;
   /**
    * A named place a link can reach (the C# `VisualNode.Bookmark`), which becomes this element's
    * `id`. Distinct from `key`: a key is reconciler identity and need only be unique among siblings,
@@ -214,6 +237,8 @@ interface BoxStyleConfig {
   hover?: StyleDiff | null;
   focus?: StyleDiff | null;
   pressed?: StyleDiff | null;
+  /** While the nearest pinned header around the box is scrolled (C# `BoxStyle.Scrolled`, #1769). */
+  scrolled?: StyleDiff | null;
   /** CSS cursor mirror — the C# PointerCursor member name in camelCase ('crosshair', 'colResize'). */
   cursor?: string;
 }
@@ -266,6 +291,8 @@ export class BoxStyle {
   hover?: StyleDiff | null;
   focus?: StyleDiff | null;
   pressed?: StyleDiff | null;
+  /** The nearest pinned header's scroll (C# `BoxStyle.Scrolled`, #1769). */
+  scrolled?: StyleDiff | null;
   cursor?: string;
 
   constructor(config?: BoxStyleConfig) {
@@ -296,6 +323,7 @@ export class Box extends VisualNode {
 
 interface FlexConfig {
   key?: string | null;
+  globalKey?: GlobalKey | null;
   main?: MainAlignValue;
   cross?: CrossAlignValue;
   wrap?: boolean;
@@ -482,6 +510,7 @@ interface AdaptiveConfig {
   mediumFrom?: number;
   expandedFrom?: number;
   key?: string | null;
+  globalKey?: GlobalKey | null;
 }
 
 /** Mirror of the C# `AdaptiveNode` (spec S6): up to three variants, switched at the node's own thresholds. */
@@ -503,9 +532,16 @@ export class AdaptiveNode extends VisualNode {
   /** The variant for a window `widthDp` wide, at this node's thresholds: the one every target holds and
    * draws, the gates showing it at the same widths (C# twin: `ResolveWidth`, #1465). */
   resolveWidth(widthDp: number): VisualNode {
-    if (this.expanded && widthDp >= this.expandedFrom) return this.expanded;
-    if (this.medium && widthDp >= this.mediumFrom) return this.medium;
-    return this.compact;
+    const index = this.resolveIndex(widthDp);
+    return index === 2 ? this.expanded! : index === 1 ? this.medium! : this.compact;
+  }
+
+  /** Which arm a window `widthDp` wide shows, as its slot: 0 compact, 1 medium, 2 expanded. The arm stands
+   * at that slot on every target, held alone or beside the others (C# twin: `ResolveIndex`, #1783). */
+  resolveIndex(widthDp: number): number {
+    if (this.expanded && widthDp >= this.expandedFrom) return 2;
+    if (this.medium && widthDp >= this.mediumFrom) return 1;
+    return 0;
   }
 }
 
@@ -1113,9 +1149,13 @@ export class Sortable extends VisualNode {
   id: string;
   onDropped: (drop: SortDrop) => void;
   announcements: SortAnnouncementsValue | null;
+  /** The look of an item carried from this list, over the theme's (C# `Sortable.Style`, #1602). */
+  style: SortableTheme | null;
   group = '';
   axis = 'vertical';
   nests = false;
+  /** How far across the axis one depth of the items is indented; above 0 the items have depths (C# `Sortable.Indent`, #1594). */
+  indent = 0;
   label = '';
   onHovered: ((drop: SortDrop | null) => void) | null = null;
   accepts: ((drop: SortDrop) => boolean) | null = null;
@@ -1126,6 +1166,7 @@ export class Sortable extends VisualNode {
     id: string,
     onDropped: (drop: SortDrop) => void,
     announcements: SortAnnouncementsValue | null = null,
+    style: SortableTheme | null = null,
     config?: EqConfig,
   ) {
     super();
@@ -1133,6 +1174,7 @@ export class Sortable extends VisualNode {
     this.id = id;
     this.onDropped = onDropped;
     this.announcements = announcements;
+    this.style = style;
     if (config) Object.assign(this, config);
   }
 }
@@ -1145,6 +1187,8 @@ export class SortableItem extends VisualNode {
   enabled = true;
   /** The name the keyboard's steps say. C# twin: `SortableItem.Name`. */
   name = '';
+  /** The item's depth in a list whose items have depths. C# twin: `SortableItem.Depth` (#1594). */
+  depth = 0;
 
   constructor(child: VisualChild, id: string, config?: EqConfig) {
     super();
@@ -1211,11 +1255,13 @@ export class Link extends VisualNode {
   keepsPosition = false;
   /** This link points at the page the reader is ON — aria-current="page" (C# twin). */
   current = false;
+  /** Opens the destination beside the page, in a new tab (C# twin, #941). */
+  opensBeside = false;
 
   constructor(
     destination: string,
     child: VisualChild,
-    config?: { label?: string | null; keepsPosition?: boolean; current?: boolean },
+    config?: { label?: string | null; keepsPosition?: boolean; current?: boolean; opensBeside?: boolean },
   ) {
     super();
     this.destination = destination;
@@ -1252,6 +1298,8 @@ interface TextEntryConfig {
   onFocusChanged?: ((focused: boolean) => void) | null;
   disabled?: boolean;
   obscure?: boolean;
+  /** What the field takes (C# `Kind`). */
+  kind?: TextEntryKindValue;
   role?: string;
   /** Takes focus on mount (the command-palette contract). */
   autofocus?: boolean;
@@ -1277,6 +1325,8 @@ export class TextEntry extends VisualNode {
   onFocusChanged: ((focused: boolean) => void) | null = null;
   disabled = false;
   obscure = false;
+  /** What the field takes: its keyboard, its autofill, and that a value is no prose. */
+  kind: TextEntryKindValue = 'text';
   role = 'bodyL';
   autofocus = false;
   selectOnFocus = false;
@@ -1547,6 +1597,11 @@ export class Image extends VisualNode {
   fit: string;
   label: string;
   cornerRadius?: CornerRadii;
+  darkSource?: string | null;
+  /** C# `Image.FocalPoint` (#1785): fractions of the picture, 0..1 on each axis; the centre by default. */
+  focalPoint: { x: number; y: number } = { x: 0.5, y: 0.5 };
+  /** C# `Image.Zoom` (#1785): 1, the fit, or closer. */
+  zoom = 1;
 
   constructor(
     source: string,
@@ -1554,7 +1609,12 @@ export class Image extends VisualNode {
     height: number,
     fit = 'cover',
     label = '',
-    config?: { cornerRadius?: CornerRadii },
+    config?: {
+      cornerRadius?: CornerRadii;
+      darkSource?: string | null;
+      focalPoint?: { x: number; y: number };
+      zoom?: number;
+    },
   ) {
     super();
     this.source = source;
@@ -1563,6 +1623,14 @@ export class Image extends VisualNode {
     this.fit = fit;
     this.label = label;
     if (config) Object.assign(this, config);
+    // The C# init accessors' rules, so a page refuses in the browser what it refuses on the server.
+    const { x, y } = this.focalPoint;
+    if (!(x >= 0 && x <= 1) || !(y >= 0 && y <= 1)) {
+      throw exception('System.ArgumentOutOfRangeException', 'A focal point is a fraction of the picture on each axis, from 0 to 1. (Parameter \'FocalPoint\')');
+    }
+    if (!(this.zoom >= 1) || !Number.isFinite(this.zoom)) {
+      throw exception('System.ArgumentOutOfRangeException', 'A zoom draws the picture at its fit (1) or closer, never farther. (Parameter \'Zoom\')');
+    }
   }
 }
 
@@ -1678,6 +1746,37 @@ export class Group extends VisualNode {
   label = '';
 
   constructor(child: VisualNode, config?: { label?: string }) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `MergeSemantics` node: a subtree a reader hears as one stop. It draws nothing and adds
+ * no geometry.
+ */
+export class MergeSemantics extends VisualNode {
+  readonly nodeKind = 'mergeSemantics';
+  child: VisualNode;
+
+  constructor(child: VisualNode, config?: EqConfig) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `ExcludeSemantics` node: a subtree a reader passes over while it excludes. It draws
+ * nothing and adds no geometry.
+ */
+export class ExcludeSemantics extends VisualNode {
+  readonly nodeKind = 'excludeSemantics';
+  child: VisualNode;
+  excluding = true;
+
+  constructor(child: VisualNode, config?: { excluding?: boolean }) {
     super();
     this.child = child;
     if (config) Object.assign(this, config);

@@ -70,6 +70,8 @@ public static class CultureFormatBridge
                 timeSeparator = date.TimeSeparator,
                 // The era `g` writes, of the calendar's current era.
                 eraName = date.GetEraName(date.Calendar.Eras[0]),
+                // Its abbreviation, which .NET reads beside a date as it reads the era's name (#1191).
+                abbreviatedEraName = date.GetAbbreviatedEraName(date.Calendar.Eras[0]),
                 // The day a calendar starts its week on, as System.DayOfWeek counts.
                 firstDayOfWeek = (int)date.FirstDayOfWeek,
                 // The names `dddd`, `ddd`, `MMMM`, `MMM` and `tt` write, Sunday and January first;
@@ -84,6 +86,9 @@ public static class CultureFormatBridge
                 abbreviatedMonthGenitiveNames = Months(date.AbbreviatedMonthGenitiveNames),
                 amDesignator = date.AMDesignator,
                 pmDesignator = date.PMDesignator,
+                // The calendar the numbers of a date are counted in, which every name above belongs to:
+                // th-TH writes the Thai Buddhist year 2567 where the Gregorian one is 2024 (#1191).
+                calendar = CalendarBridge.Describe(culture),
             },
         });
     }

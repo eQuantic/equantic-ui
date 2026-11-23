@@ -6,13 +6,15 @@ using Microsoft.CodeAnalysis.Operations;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 
 /// <summary>
-/// Whether an arithmetic sits in a <c>checked</c> context — the bound tree's answer
-/// (<see cref="IBinaryOperation.IsChecked"/> and its siblings), which folds the project-wide
-/// setting, <c>checked</c> blocks and <c>checked(…)</c> expressions into one bit the syntax never
-/// shows — and whether the author wrote an explicit <c>unchecked</c>, which is what makes an
-/// <c>int</c> wrap on this side (see <see cref="IntegerWidth"/>).
+/// How an arithmetic on a fixed-width integer settles (<see cref="IntegerWidth"/>), from the bound tree:
+/// whether it sits in a <c>checked</c> context (<see cref="IBinaryOperation.IsChecked"/> and its
+/// siblings, which fold the project-wide setting, <c>checked</c> blocks and <c>checked(…)</c>
+/// expressions into one bit the syntax never shows), and whether C#'s compiler folded it into a constant
+/// it proved in range. Outside an explicit <c>unchecked</c>, a constant that overflows is a compile error
+/// (CS0220), so its value needs no settling and <c>-5</c> stays <c>-5</c>; inside one, the compiler
+/// wrapped it, and the browser wraps it too.
 /// </summary>
-public readonly record struct ArithmeticContext(bool IsChecked, bool ExplicitUnchecked)
+public readonly record struct ArithmeticContext(bool IsChecked, bool ProvedInRange)
 {
     public static ArithmeticContext Of(SyntaxNode node, ConversionContext context)
     {
@@ -24,7 +26,8 @@ public readonly record struct ArithmeticContext(bool IsChecked, bool ExplicitUnc
             ICompoundAssignmentOperation compound => compound.IsChecked,
             _ => false,
         };
-        return new ArithmeticContext(isChecked, ExplicitlyUnchecked(node));
+        var proved = context.SemanticHelper.TryGetConstantValue(node, out _) && !ExplicitlyUnchecked(node);
+        return new ArithmeticContext(isChecked, proved);
     }
 
     /// <summary>

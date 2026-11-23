@@ -18,6 +18,7 @@ import { Boxed } from './box';
 import { text as enumText } from './enums';
 import { double, single } from './real-text';
 import { exception } from './exceptions';
+import { calendarOf, type Calendar, type CalendarDate } from './calendar';
 import {
   activeFormatData,
   formatLocale,
@@ -516,6 +517,43 @@ function symbols(): PictureSymbols {
     };
     symbolsByLocale.set(key, found);
   }
+  return found;
+}
+
+/** What `NumberFormatInfo` reads for a culture whose data did not travel, by locale. */
+const numberFormatsByLocale = new Map<string, NumberFormatData>();
+
+/**
+ * `NumberFormatInfo.CurrentInfo` and `CultureInfo.CurrentCulture.NumberFormat` (`invariant` false), and
+ * the invariant culture's (`invariant` true): the object the culture travels as, whose members are .NET's
+ * own under their own names (#1765). For a culture whose data did not travel, the separators and signs
+ * `Intl` writes in its locale and the invariant culture's patterns, which is how `C` is laid out then.
+ */
+export function numberFormatInfo(invariant: boolean): NumberFormatData {
+  if (invariant) return INVARIANT_FORMAT.numberFormat;
+  const data = cultureFormat();
+  if (data !== null) return data.numberFormat;
+  const locale = activeFormatLocale();
+  const known = numberFormatsByLocale.get(locale);
+  if (known !== undefined) return known;
+  const { decimal, group, groupSizes, minus, plus, percent, perMille } = symbols();
+  const found: NumberFormatData = {
+    ...INVARIANT_FORMAT.numberFormat,
+    numberDecimalSeparator: decimal,
+    numberGroupSeparator: group,
+    numberGroupSizes: [...groupSizes],
+    negativeSign: minus,
+    positiveSign: plus,
+    currencyDecimalSeparator: decimal,
+    currencyGroupSeparator: group,
+    currencyGroupSizes: [...groupSizes],
+    percentSymbol: percent,
+    percentDecimalSeparator: decimal,
+    percentGroupSeparator: group,
+    percentGroupSizes: [...groupSizes],
+    perMilleSymbol: perMille,
+  };
+  numberFormatsByLocale.set(locale, found);
   return found;
 }
 
@@ -1137,12 +1175,18 @@ function renderPattern(moment: Moment, pattern: string): string {
   const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
   // The culture's names, when its data travelled; `Intl`'s otherwise.
   const names = dateTimeFormat();
+  // The year, the month and the day as the culture's calendar counts them, asked only by a part that
+  // writes one, as .NET asks its calendar: a time of day alone is written in every calendar (#1191).
+  let counted: CalendarDate | null = null;
+  const date = (): CalendarDate => (counted ??= calendarDate(moment, calendarOf(names?.calendar)));
   let out = '';
 
   /** Writes the token a run of `ch` that long, starting at `at`, stands for. */
   const token = (ch: string, run: number, at: number): void => {
     switch (ch) {
       case 'g':
+        // The era is the calendar's, which refuses a day it does not write as its year does.
+        date();
         out += dateSymbol('eraName');
         return;
       case 'h':
@@ -1184,7 +1228,7 @@ function renderPattern(moment: Moment, pattern: string): string {
       }
       case 'd': {
         if (run <= 2) {
-          out += digits(value.getUTCDate(), run);
+          out += digits(date().day, run);
           return;
         }
         const day = value.getUTCDay();
@@ -1195,7 +1239,7 @@ function renderPattern(moment: Moment, pattern: string): string {
         return;
       }
       case 'M': {
-        const month = value.getUTCMonth();
+        const month = date().month - 1;
         if (run <= 2) {
           out += digits(month + 1, run);
           return;
@@ -1219,7 +1263,7 @@ function renderPattern(moment: Moment, pattern: string): string {
         return;
       }
       case 'y': {
-        const year = value.getUTCFullYear();
+        const year = date().year;
         out += run <= 2 ? digits(year % 100, run) : digits(year, run, true);
         return;
       }
@@ -1284,6 +1328,22 @@ function renderPattern(moment: Moment, pattern: string): string {
     i += run;
   }
   return out;
+}
+
+/**
+ * The date a moment's day is in `calendar`, or .NET's refusal of a day the calendar does not write, an
+ * `ArgumentOutOfRangeException` that names its ticks: ar-SA's Um Al Qura calendar writes from 1900 to
+ * 2077, and `DateTime.MinValue.ToString("d")` is refused there.
+ */
+function calendarDate(moment: Moment, calendar: Calendar): CalendarDate {
+  const sinceFirst = moment.date.getTime() - FIRST_WALL;
+  const counted = calendar.dateOf(Math.floor(sinceFirst / 86_400_000));
+  if (counted !== null) return counted;
+  const ticks = BigInt(sinceFirst - moment.date.getUTCMilliseconds()) * 10_000n + BigInt(moment.fraction());
+  throw exception('System.ArgumentOutOfRangeException', calendar.outOfRange ?? '', {
+    paramName: 'time',
+    actualValue: ticks,
+  });
 }
 
 /**
@@ -1357,6 +1417,17 @@ function universal(moment: Moment): Moment {
  */
 function formatDate(moment: Moment, format: string | null): string {
   if (!format) {
+    // A clock time on the first day, in a culture whose calendar cannot write the year 1 (fa-IR's,
+    // ar-SA's), is written in the invariant sortable form, and a DateTimeOffset's with its offset after
+    // it, as .NET writes a time of day held in a DateTime there (#1191).
+    if (
+      (moment.type === 'dateTime' || moment.type === 'dateTimeOffset') &&
+      moment.date.getTime() - FIRST_WALL < 86_400_000 &&
+      calendarOf(dateTimeFormat()?.calendar).timeOfDayInvariant
+    ) {
+      const { date, time } = sortableParts(moment.date);
+      return moment.type === 'dateTime' ? `${date}T${time}` : `${date}T${time} ${offsetText(moment.offset(), 3)}`;
+    }
     switch (moment.type) {
       case 'dateOnly':
         return standardDate(moment, 'd');

@@ -21,11 +21,10 @@ eQuantic.UI.Web.ChangeEventArgs.Value.get -> string!
 eQuantic.UI.Web.ChangeEventArgs.Value.init -> void
 eQuantic.UI.Web.ComponentExpansionScope
 eQuantic.UI.Web.ComponentExpansionScope.ComponentExpansionScope() -> void
-eQuantic.UI.Web.ComponentExpansionScope.Enter(eQuantic.UI.Primitives.UiComponent! component) -> string!
 eQuantic.UI.Web.ComponentExpansionScope.Expanded.get -> System.Collections.Generic.IReadOnlyDictionary<string!, eQuantic.UI.Primitives.UiComponent!>!
+eQuantic.UI.Web.ComponentExpansionScope.Name(eQuantic.UI.Primitives.UiComponent! component, string! key) -> void
+eQuantic.UI.Web.ComponentExpansionScope.PutBack(eQuantic.UI.Primitives.UiComponent! component, string! key) -> void
 eQuantic.UI.Web.ComponentExpansionScope.Replaced.get -> System.Collections.Generic.IReadOnlySet<string!>!
-eQuantic.UI.Web.ComponentExpansionScope.Reserved.get -> string?
-eQuantic.UI.Web.ComponentExpansionScope.Reserved.init -> void
 eQuantic.UI.Web.ComponentExpansionScope.Restore.get -> System.Collections.Generic.IReadOnlyDictionary<string!, eQuantic.UI.Web.LoadedComponentState!>!
 eQuantic.UI.Web.ComponentExpansionScope.Restore.init -> void
 eQuantic.UI.Web.ComponentIdentity
@@ -587,6 +586,8 @@ eQuantic.UI.Web.HtmlStyle.TouchAction.get -> string?
 eQuantic.UI.Web.HtmlStyle.TouchAction.set -> void
 eQuantic.UI.Web.HtmlStyle.Transform.get -> string?
 eQuantic.UI.Web.HtmlStyle.Transform.set -> void
+eQuantic.UI.Web.HtmlStyle.TransformOrigin.get -> string?
+eQuantic.UI.Web.HtmlStyle.TransformOrigin.set -> void
 eQuantic.UI.Web.HtmlStyle.Transition.get -> string?
 eQuantic.UI.Web.HtmlStyle.Transition.set -> void
 eQuantic.UI.Web.HtmlStyle.Translate.get -> string?
@@ -665,6 +666,14 @@ eQuantic.UI.Web.LoadedComponentState.Fields.init -> void
 eQuantic.UI.Web.LoadedComponentState.Loaded.get -> eQuantic.UI.Primitives.UiComponent!
 eQuantic.UI.Web.LoadedComponentState.Loaded.init -> void
 eQuantic.UI.Web.LoadedComponentState.LoadedComponentState(eQuantic.UI.Primitives.UiComponent! Loaded, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! AsBuilt, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! Fields) -> void
+eQuantic.UI.Web.MarkupHost
+eQuantic.UI.Web.MarkupHost.Boundary.get -> eQuantic.UI.Primitives.ComponentBoundary!
+eQuantic.UI.Web.MarkupHost.Build(eQuantic.UI.Primitives.VisualNode! root, bool rebuildAll = false) -> eQuantic.UI.Primitives.Element!
+eQuantic.UI.Web.MarkupHost.EndFrame() -> void
+eQuantic.UI.Web.MarkupHost.Lower(eQuantic.UI.Web.RenderChannels? channels = null) -> eQuantic.UI.Web.HtmlElement!
+eQuantic.UI.Web.MarkupHost.MarkupHost(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, eQuantic.UI.Primitives.RouteValues? route = null, eQuantic.UI.Primitives.ComponentBoundary? boundary = null) -> void
+eQuantic.UI.Web.MarkupHost.Owner.get -> eQuantic.UI.Primitives.BuildOwner!
+eQuantic.UI.Web.MarkupHost.Theme.get -> eQuantic.UI.Primitives.IAppTheme!
 eQuantic.UI.Web.MouseEventArgs
 eQuantic.UI.Web.MouseEventArgs.AltKey.get -> bool
 eQuantic.UI.Web.MouseEventArgs.AltKey.init -> void
@@ -691,10 +700,28 @@ eQuantic.UI.Web.Position.Fixed = 3 -> eQuantic.UI.Web.Position
 eQuantic.UI.Web.Position.Relative = 1 -> eQuantic.UI.Web.Position
 eQuantic.UI.Web.Position.Static = 0 -> eQuantic.UI.Web.Position
 eQuantic.UI.Web.Position.Sticky = 4 -> eQuantic.UI.Web.Position
+eQuantic.UI.Web.RenderChannels
+eQuantic.UI.Web.RenderChannels.Boundary.get -> eQuantic.UI.Primitives.ComponentBoundary!
+eQuantic.UI.Web.RenderChannels.Density.get -> eQuantic.UI.Primitives.Density
+eQuantic.UI.Web.RenderChannels.Expansion.get -> eQuantic.UI.Web.ComponentExpansionScope?
+eQuantic.UI.Web.RenderChannels.Faces.get -> eQuantic.UI.Web.FaceSink!
+eQuantic.UI.Web.RenderChannels.Gradients.get -> eQuantic.UI.Web.GradientSink!
+eQuantic.UI.Web.RenderChannels.LinkPolicy.get -> System.Func<string!, string!>?
+eQuantic.UI.Web.RenderChannels.RenderChannels(eQuantic.UI.Web.ComponentExpansionScope? expansion = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, System.Func<string!, string!>? linkPolicy = null, eQuantic.UI.Primitives.RouteValues? route = null, eQuantic.UI.Primitives.ComponentBoundary? boundary = null) -> void
+eQuantic.UI.Web.RenderChannels.ResolveDestination(string! destination) -> string?
+eQuantic.UI.Web.RenderChannels.Route.get -> eQuantic.UI.Primitives.RouteValues!
+eQuantic.UI.Web.RenderChannels.Styles.get -> eQuantic.UI.Web.StyleSink!
 eQuantic.UI.Web.RenderContext
 eQuantic.UI.Web.RenderContext.GetService<T>() -> T?
-eQuantic.UI.Web.RenderContext.RenderContext() -> void
+eQuantic.UI.Web.RenderContext.RenderContext(eQuantic.UI.Primitives.RouteValues? route = null) -> void
 eQuantic.UI.Web.RenderContext.Route.get -> eQuantic.UI.Primitives.RouteValues!
+eQuantic.UI.Web.ServerDataRounds
+eQuantic.UI.Web.ServerDataRounds.Loaded(eQuantic.UI.Primitives.IServerPrefetch! component) -> void
+eQuantic.UI.Web.ServerDataRounds.Next(eQuantic.UI.Web.ComponentExpansionScope! scope) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.IServerPrefetch!>!
+eQuantic.UI.Web.ServerDataRounds.Pending.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.IServerPrefetch!>!
+eQuantic.UI.Web.ServerDataRounds.ReachedNew.get -> bool
+eQuantic.UI.Web.ServerDataRounds.RunAsync(System.Func<eQuantic.UI.Web.ComponentExpansionScope!>! frame, System.Func<eQuantic.UI.Primitives.IServerPrefetch!, System.Threading.Tasks.Task!>! load, int maxRounds) -> System.Threading.Tasks.Task<bool>!
+eQuantic.UI.Web.ServerDataRounds.ServerDataRounds(eQuantic.UI.Web.MarkupHost! host) -> void
 eQuantic.UI.Web.StyleAtomizer
 eQuantic.UI.Web.StyleSink
 eQuantic.UI.Web.StyleSink.AddAdaptiveGate(string! gate) -> void
@@ -761,21 +788,15 @@ static eQuantic.UI.Web.AdaptiveGates.CompactUntil(float until) -> string!
 static eQuantic.UI.Web.AdaptiveGates.Css(string! gate) -> string!
 static eQuantic.UI.Web.AdaptiveGates.ExpandedFrom(float from) -> string!
 static eQuantic.UI.Web.AdaptiveGates.MediumFrom(float from, float until) -> string!
-static eQuantic.UI.Web.ComponentExpansionScope.Ambient.get -> eQuantic.UI.Web.ComponentExpansionScope?
-static eQuantic.UI.Web.ComponentExpansionScope.Ambient.set -> void
 static eQuantic.UI.Web.ComponentExpansionScope.Capture(eQuantic.UI.Primitives.UiComponent! component) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
 static eQuantic.UI.Web.ComponentExpansionScope.FieldsOf(System.Type! type) -> System.Collections.Generic.IEnumerable<System.Reflection.FieldInfo!>!
 static eQuantic.UI.Web.ComponentExpansionScope.WhatLoaded(eQuantic.UI.Primitives.UiComponent! component, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! asBuilt) -> eQuantic.UI.Web.LoadedComponentState!
 static eQuantic.UI.Web.ComponentIdentity.Key(System.Type! type, int ordinal) -> string!
 static eQuantic.UI.Web.ComponentIdentity.Of(System.Type! type) -> string!
 static eQuantic.UI.Web.CultureFormatBridge.SerializeJson(System.Globalization.CultureInfo! culture) -> string!
-static eQuantic.UI.Web.FaceSink.Ambient.get -> eQuantic.UI.Web.FaceSink?
-static eQuantic.UI.Web.FaceSink.Ambient.set -> void
 static eQuantic.UI.Web.FontFaceRules.ContentType(string! resource) -> string!
 static eQuantic.UI.Web.FontFaceRules.Format(eQuantic.UI.Primitives.FontFile! file) -> string!
 static eQuantic.UI.Web.FontFaceRules.Write(System.Collections.Generic.IEnumerable<(eQuantic.UI.Primitives.FontFamily! Family, eQuantic.UI.Primitives.FontFile! File, string! Url)>! faces) -> string!
-static eQuantic.UI.Web.GradientSink.Ambient.get -> eQuantic.UI.Web.GradientSink?
-static eQuantic.UI.Web.GradientSink.Ambient.set -> void
 static eQuantic.UI.Web.HtmlNode.Text(string! content) -> eQuantic.UI.Web.HtmlNode!
 static eQuantic.UI.Web.HtmlRenderer.RenderNode(eQuantic.UI.Web.HtmlNode! node) -> string!
 static eQuantic.UI.Web.HtmlRenderer.RenderNodePretty(eQuantic.UI.Web.HtmlNode! node, int indent = 0) -> string!
@@ -783,13 +804,11 @@ static eQuantic.UI.Web.HtmlRenderer.RenderToString(eQuantic.UI.Web.IComponent! c
 static eQuantic.UI.Web.IconRegistry.Path(eQuantic.UI.Primitives.Icons glyph) -> string!
 static eQuantic.UI.Web.LoadedComponentState.operator !=(eQuantic.UI.Web.LoadedComponentState? left, eQuantic.UI.Web.LoadedComponentState? right) -> bool
 static eQuantic.UI.Web.LoadedComponentState.operator ==(eQuantic.UI.Web.LoadedComponentState? left, eQuantic.UI.Web.LoadedComponentState? right) -> bool
-static eQuantic.UI.Web.RenderContext.LinkPolicy.get -> System.Func<string!, string!>?
-static eQuantic.UI.Web.RenderContext.ResolveDestination(string! destination) -> string?
-static eQuantic.UI.Web.RenderContext.SetLinkPolicy(System.Func<string!, string!>? policy) -> void
+static eQuantic.UI.Web.MarkupHost.ForPage(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, eQuantic.UI.Primitives.RouteValues? route = null, eQuantic.UI.Primitives.ComponentBoundary? boundary = null) -> eQuantic.UI.Web.MarkupHost!
+static eQuantic.UI.Web.MarkupHost.Structural(eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, eQuantic.UI.Primitives.RouteValues? route = null, eQuantic.UI.Primitives.ComponentBoundary? boundary = null) -> eQuantic.UI.Web.MarkupHost!
+static eQuantic.UI.Web.RenderChannels.BridgeWith(eQuantic.UI.Web.RenderChannels! channels) -> System.IDisposable!
 static eQuantic.UI.Web.StyleAtomizer.Atomize(eQuantic.UI.Web.HtmlStyle! style, eQuantic.UI.Web.ThemeVarMap! vars, eQuantic.UI.Web.StyleSink! sink) -> string!
 static eQuantic.UI.Web.StyleAtomizer.AtomizeTree(eQuantic.UI.Web.HtmlElement! element, eQuantic.UI.Web.ThemeVarMap! vars, eQuantic.UI.Web.StyleSink! sink) -> void
-static eQuantic.UI.Web.StyleSink.Ambient.get -> eQuantic.UI.Web.StyleSink?
-static eQuantic.UI.Web.StyleSink.Ambient.set -> void
 static eQuantic.UI.Web.Styling.ClassBuilder.Create() -> eQuantic.UI.Web.Styling.ClassBuilder!
 static eQuantic.UI.Web.Styling.ClassBuilder.Create(params string?[]! initialClasses) -> eQuantic.UI.Web.Styling.ClassBuilder!
 static eQuantic.UI.Web.Styling.ClassBuilder.implicit operator string!(eQuantic.UI.Web.Styling.ClassBuilder! builder) -> string!
@@ -820,10 +839,8 @@ static eQuantic.UI.Web.TokenCss.Shift(float x, float y) -> string?
 static eQuantic.UI.Web.TokenCss.Transform(eQuantic.UI.Primitives.Transform2D transform) -> string?
 static eQuantic.UI.Web.TokenCss.Transition(eQuantic.UI.Primitives.TransitionSpec spec) -> string!
 static eQuantic.UI.Web.TokenCss.Value(eQuantic.UI.Primitives.ColorToken token) -> string!
-static eQuantic.UI.Web.VisualNodeComponent.AmbientDensity.get -> eQuantic.UI.Primitives.Density?
-static eQuantic.UI.Web.VisualNodeComponent.AmbientDensity.set -> void
+static eQuantic.UI.Web.TokenCss.ValueAt(eQuantic.UI.Primitives.ColorToken token, eQuantic.UI.Primitives.ContrastLevel contrast) -> string!
 static eQuantic.UI.Web.WebRealizer.GradientId(eQuantic.UI.Primitives.VectorGradient run) -> string!
-static eQuantic.UI.Web.WebRealizer.Lower(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Web.StyleSink? styles = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> eQuantic.UI.Web.HtmlElement!
-static eQuantic.UI.Web.WebRealizer.LowerFrame(eQuantic.UI.Primitives.Element! root, eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Web.StyleSink? styles = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> eQuantic.UI.Web.HtmlElement!
+static eQuantic.UI.Web.WebRealizer.Lower(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Web.StyleSink? styles = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable, eQuantic.UI.Primitives.ComponentBoundary? boundary = null) -> eQuantic.UI.Web.HtmlElement!
 virtual eQuantic.UI.Web.HtmlElement.AddChild(eQuantic.UI.Web.IComponent! child) -> void
 virtual eQuantic.UI.Web.HtmlElement.RemoveChild(eQuantic.UI.Web.IComponent! child) -> void

@@ -117,6 +117,10 @@ public sealed class LayoutContext
     /// read the spec's thresholds, and a node that switches elsewhere showed another arm here.</summary>
     internal VisualNode ArmOf(AdaptiveNode adaptive) => adaptive.ResolveWidth(WindowWidth);
 
+    /// <summary>The slot of the arm <see cref="ArmOf"/> answers: the element tree holds the one arm it
+    /// resolves at the arm's own index (0 compact, 1 medium, 2 expanded), as the web's arms stand (#1783).</summary>
+    internal int ArmSlotOf(AdaptiveNode adaptive) => adaptive.ResolveIndex(WindowWidth);
+
     /// <summary>
     /// The margins the SYSTEM owns — notch, status bar, home indicator. The HOST reports them; a
     /// desktop window has no cutouts, so the default of zero is the correct answer there, and the

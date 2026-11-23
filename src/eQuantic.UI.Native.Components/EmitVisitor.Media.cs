@@ -281,6 +281,9 @@ internal sealed partial class EmitVisitor
         var b = node.Bounds;
         Rect dest;
         var clip = !image.CornerRadius.IsZero;
+        // The focal point (#1785): the picture's point at that fraction stands at the same fraction of the
+        // box, which centres it when it is the centre, as the browser's `object-position` places it.
+        var (fx, fy) = (image.FocalPoint.X, image.FocalPoint.Y);
         switch (image.Fit)
         {
             case ImageFit.Stretch:
@@ -291,7 +294,7 @@ internal sealed partial class EmitVisitor
                 var scale = MathF.Min(b.Width / data.Width, b.Height / data.Height);
                 var w = data.Width * scale;
                 var h = data.Height * scale;
-                dest = new Rect(b.X + (b.Width - w) / 2, b.Y + (b.Height - h) / 2, w, h);
+                dest = new Rect(b.X + (b.Width - w) * fx, b.Y + (b.Height - h) * fy, w, h);
                 break;
             }
             default: // Cover — fills and overflows; always clipped to the bounds.
@@ -299,10 +302,20 @@ internal sealed partial class EmitVisitor
                 var scale = MathF.Max(b.Width / data.Width, b.Height / data.Height);
                 var w = data.Width * scale;
                 var h = data.Height * scale;
-                dest = new Rect(b.X + (b.Width - w) / 2, b.Y + (b.Height - h) / 2, w, h);
+                dest = new Rect(b.X + (b.Width - w) * fx, b.Y + (b.Height - h) * fy, w, h);
                 clip = true;
                 break;
             }
+        }
+
+        // The zoom, around the focal point's place in the box, as the browser's scale around its
+        // `transform-origin`: that point stays where it is, so the picture still covers what it covered.
+        if (image.Zoom != 1)
+        {
+            var (ox, oy) = (b.X + b.Width * fx, b.Y + b.Height * fy);
+            dest = new Rect(ox + (dest.X - ox) * image.Zoom, oy + (dest.Y - oy) * image.Zoom,
+                dest.Width * image.Zoom, dest.Height * image.Zoom);
+            clip = true;
         }
 
         if (clip) builder.PushClip(new RRect(b, image.CornerRadius));

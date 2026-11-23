@@ -24,7 +24,7 @@ export class Tabs extends StatelessComponent {
         let slot = theme.navigation;
         let indicator = slot?.indicatorThickness ?? 3;
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: slot?.tabHeight ?? 48 });
-        for (let i = 0; i < $eq.collections.count(this.labels); i++) {
+        for (let i = 0; i < $eq.collections.count(this.labels); i = i + 1 | 0) {
             let isActive = i === this.selected;
             let index = i;
             let label = new Text($eq.collections.item(this.labels, i), 'caption', isActive ? primary.base : slot?.inactiveColor ?? theme.textMuted, 1, null, false, false, null, 0, { styleOverride: new TypeStyle(slot?.tabLabelSize ?? 14, slot?.tabLabelLineHeight ?? 18, isActive ? slot?.tabSelectedLabelWeight ?? 'bold' : slot?.tabLabelWeight ?? 'semiBold', slot?.tabLabelTracking ?? Math.fround(0.1), Math.fround(1.3)) });
@@ -38,7 +38,7 @@ export class Tabs extends StatelessComponent {
         }
         if (this.onSelect == null || $eq.collections.count(this.labels) === 0) return row;
         let count = $eq.collections.count(this.labels);
-        return new Adjustable(row, (direction: number) => this.onSelect!($eq.num.intRem(this.selected + direction + count, count)), { role: 'tablist' });
+        return new Adjustable(row, (direction: number) => this.onSelect!($eq.num.intRem((this.selected + direction | 0) + count | 0, count)), { role: 'tablist' });
     }
 }
 

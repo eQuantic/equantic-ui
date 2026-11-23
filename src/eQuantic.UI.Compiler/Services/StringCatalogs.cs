@@ -19,8 +19,15 @@ internal static class StringCatalogs
     /// whose reads this build sees as it sees the app's own.</param>
     /// <param name="output">Where the build narrates.</param>
     /// <param name="errors">Where the build warns.</param>
+    /// <param name="readByWrittenModules">The <c>id/key</c> strings the written modules read: a string only a
+    /// module the browser never reaches reads is server code's, and stays out of every catalogue (#1782).
+    /// Null keeps every read.</param>
+    /// <param name="pages">The strings each page and layout reads through the modules it reaches, written
+    /// beside the catalogues for the server to ship a page only those (<see cref="PageStrings"/>).</param>
     public static void Write(ComponentCompiler compiler, string outputDirectory, string appSourceDirectory,
-        Func<string, bool> isOfAReferencedProject, TextWriter output, TextWriter errors)
+        Func<string, bool> isOfAReferencedProject, TextWriter output, TextWriter errors,
+        IReadOnlySet<string>? readByWrittenModules = null,
+        IReadOnlyDictionary<string, IReadOnlyCollection<string>>? pages = null)
     {
         // Two contributions, and the difference is not a preference — it is what each side can KNOW.
         // The app's own resx contributes the keys its pages actually read (D3: unused keys never
@@ -38,11 +45,18 @@ internal static class StringCatalogs
                 && !isOfAReferencedProject(pair.Value))
             .ToList();
 
-        var uses = compiler.ResourceUses;
+        var uses = compiler.ResourceUses
+            .Select(use => (use.Id, use.DesignerPath, Keys: use.Keys
+                .Where(key => readByWrittenModules is null || readByWrittenModules.Contains($"{use.Id}/{key}"))
+                .ToList()))
+            .Where(use => use.Keys.Count > 0)
+            .ToList();
         var stringsDir = Path.Combine(outputDirectory, "strings");
+        var index = Path.Combine(outputDirectory, PageIndexFile);
         if (uses.Count == 0 && libraryResources.Count == 0)
         {
             Prune(stringsDir, new HashSet<string>(StringComparer.Ordinal));
+            if (File.Exists(index)) File.Delete(index);
             return;
         }
 
@@ -114,9 +128,24 @@ internal static class StringCatalogs
             produced.Add(culture + ".json");
         }
         Prune(stringsDir, produced);
+
+        // Which strings each page reads, and which catalogues ship whole (a library's, whose reads this
+        // build cannot see): the server hands a page those, and the browser asks for the rest on a miss.
+        if (pages is not null)
+            OutputFile.Write(index, JsonSerializer.Serialize(new
+            {
+                whole = libraryResources.Select(pair => pair.Key).Distinct().Order(StringComparer.Ordinal),
+                pages,
+            }, options));
+        else if (File.Exists(index)) File.Delete(index);
+
         output.WriteLine($"🌐 Strings: {neutral.Count} keys → neutral" +
             (cultures.Count > 0 ? " + " + string.Join(", ", cultures.Keys) : ""));
     }
+
+    /// <summary>The index of the strings each page reads, beside the catalogues' folder rather than in it,
+    /// where it would be listed as a catalogue (#1782).</summary>
+    internal const string PageIndexFile = "page-strings.json";
 
     /// <summary>
     /// Removes each catalogue this compile did not produce, after it wrote the rest: a culture taken

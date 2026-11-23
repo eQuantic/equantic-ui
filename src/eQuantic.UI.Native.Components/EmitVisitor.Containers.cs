@@ -90,7 +90,7 @@ internal sealed partial class EmitVisitor
     // built there, in the overlay's own deferred slot, and only when the layer is shown.
     private void EmitOverlay(Overlay overlay, EmitState s)
     {
-        s.Overlays.Add(new QueuedLayer(overlay, s.Node.Element as NodeElement, s.Content));
+        s.Overlays.Add(new QueuedLayer(overlay, s.Node.Element as NodeElement, s.Press.InScrolledHeader, s.Content));
     }
 
     // Wave 3 anchored overlay: the anchor renders in flow; while Open, a SYNTHETIC overlay
@@ -169,7 +169,7 @@ internal sealed partial class EmitVisitor
         // always was, so a component in an open menu keeps its state from frame to frame and one in a
         // closed menu leaves the tree.
         s.Overlays.Add(new QueuedLayer(new Overlay(layer) { Modal = anchored.PanelRole == AnchorPanelRole.Dialog },
-            s.Node.Element as NodeElement, s.Content));
+            s.Node.Element as NodeElement, s.Press.InScrolledHeader, s.Content));
     }
 
     // Loop motion: translate the subtree by the frame-clock offset (spec §06 transform-only).

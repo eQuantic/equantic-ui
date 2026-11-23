@@ -1,3 +1,5 @@
+using eQuantic.UI.Primitives;
+
 namespace eQuantic.UI.Native.Components;
 
 /// <summary>
@@ -33,6 +35,13 @@ public sealed class TextInputSession
     public bool Obscure { get; private set; }
 
     /// <summary>
+    /// What the field takes (<see cref="TextEntry.Kind"/>): the keyboard a shell opens, the autofill it
+    /// offers, and whether it suggests and autocorrects. <see cref="TextEntryKind.Text"/> for a surface that
+    /// takes keys, and for a multi-line field, which is prose whatever its kind.
+    /// </summary>
+    public TextEntryKind Kind { get; private set; }
+
+    /// <summary>
     /// What the keyboard has to do now. Reads the host after a frame: whether anything holds the
     /// caret, which field or surface, and whether the field's state is still the one the keyboard
     /// has. Each answer is given once; the keyboard is assumed to have done it.
@@ -50,14 +59,19 @@ public sealed class TextInputSession
             : TakesKeys() ? TextInputTarget.Keys
             : TextInputTarget.None;
         var focus = target == TextInputTarget.None ? null : _host.FocusedId;
-        var obscure = target == TextInputTarget.Text && _host.TextTarget?.Obscure == true;
+        var field = target == TextInputTarget.Text ? _host.TextTarget : null;
+        var obscure = field?.Obscure == true;
+        var kind = field is { Lines: <= 1 } ? field.Kind : TextEntryKind.Text;
         var value = editing ?? TextEditingValue.Collapsed("", 0);
 
         var was = Target;
-        var samePlace = target == was && focus == _focus && obscure == Obscure;
+        // A keyboard reads what it is describing when it opens, so a field of another kind, or one that
+        // stopped or started hiding its text, starts it over as another field does.
+        var samePlace = target == was && focus == _focus && obscure == Obscure && kind == Kind;
         Target = target;
         _focus = focus;
         Obscure = obscure;
+        Kind = kind;
 
         if (target == TextInputTarget.None)
         {

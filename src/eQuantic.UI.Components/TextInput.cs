@@ -19,7 +19,8 @@ public sealed class TextInput : StatefulComponent
 
     public TextInput(string value, Action<string>? onChanged = null, string label = "",
         string? placeholder = null, string? helper = null, string? error = null,
-        Icons? leading = null, SizeVariant size = SizeVariant.Large, VisualNode? trailing = null)
+        Icons? leading = null, SizeVariant size = SizeVariant.Large, VisualNode? trailing = null,
+        TextEntryKind kind = TextEntryKind.Text, string? prefix = null, string? suffix = null)
     {
         if (size == SizeVariant.Small)
             throw new ArgumentOutOfRangeException(nameof(size),
@@ -33,11 +34,22 @@ public sealed class TextInput : StatefulComponent
         Leading = leading;
         Trailing = trailing;
         Size = size;
+        Kind = kind;
+        Prefix = prefix;
+        Suffix = suffix;
     }
 
     public string Value { get; private set; }
     public Action<string>? OnChanged { get; private set; }
     public string Label { get; private set; }
+
+    /// <summary>
+    /// Whether the label is left out of the drawing, for a form that lays its labels out itself: it
+    /// still names the field for assistive technology, and nothing above the box repeats the one the
+    /// form already drew (#1780). Backed by a field, so <see cref="AdoptConfig"/> can carry it.
+    /// </summary>
+    public bool LabelHidden { get => _labelHidden; init => _labelHidden = value; }
+    private bool _labelHidden;
     public string? Placeholder { get; private set; }
     public string? Helper { get; private set; }
 
@@ -60,6 +72,23 @@ public sealed class TextInput : StatefulComponent
     public VisualNode? Trailing { get; private set; }
 
     public SizeVariant Size { get; private set; }
+
+    /// <summary>What the field takes (<see cref="TextEntry.Kind"/>): the keyboard a phone opens, the
+    /// autofill offered, and whether the text is prose.</summary>
+    public TextEntryKind Kind { get; private set; }
+
+    /// <summary>
+    /// Text drawn before the entry, inside the field's box, in the muted colour: a currency's symbol.
+    /// Part of the value rather than a label, as <see cref="Stepper.Suffix"/> is, so it is announced with
+    /// the field's name (<c>Price (€)</c>): a screen reader on the field reads its name and its value,
+    /// and not the text beside it. Flutter's <c>InputDecoration.prefixText</c>.
+    /// </summary>
+    public string? Prefix { get; private set; }
+
+    /// <summary>Text drawn after the entry, inside the field's box, in the muted colour: a unit, or a
+    /// currency's symbol where the culture writes it after the amount. Announced as
+    /// <see cref="Prefix"/> is. Flutter's <c>InputDecoration.suffixText</c>.</summary>
+    public string? Suffix { get; private set; }
     /// <summary>Backed by a field, so <see cref="AdoptConfig"/> can carry it, as are the three settings
     /// after it: this instance is kept across the parent's rebuilds, and an <c>init</c> accessor
     /// cannot be written from there.</summary>
@@ -88,12 +117,16 @@ public sealed class TextInput : StatefulComponent
         Value = fresh.Value;
         OnChanged = fresh.OnChanged;
         Label = fresh.Label;
+        _labelHidden = fresh.LabelHidden;
         Placeholder = fresh.Placeholder;
         Helper = fresh.Helper;
         Error = fresh.Error;
         Leading = fresh.Leading;
         Trailing = fresh.Trailing;
         Size = fresh.Size;
+        Kind = fresh.Kind;
+        Prefix = fresh.Prefix;
+        Suffix = fresh.Suffix;
         _disabled = fresh.Disabled;
         _autofocus = fresh.Autofocus;
         _obscure = fresh.Obscure;
@@ -130,6 +163,7 @@ public sealed class TextInput : StatefulComponent
         {
             row.Add(new Icon(leading, slot?.IconSize ?? IconSize.Dense, theme.TextMuted)); // spec B9: 20dp leading glyph
         }
+        if (Prefix is { Length: > 0 } prefix) row.Add(Affix(prefix, theme));
         // The field keeps what was typed on its position until the page builds it again (#996), and
         // this component holds the field but not the value: it rebuilds on its own when the focus
         // moves, from the value its parent last handed it. So it keeps the last value the field
@@ -144,7 +178,8 @@ public sealed class TextInput : StatefulComponent
         })
         {
             Placeholder = Placeholder,
-            Label = Label.Length > 0 ? Label : null,
+            Label = AccessibleName(),
+            Kind = Kind,
             Description = caption.Length > 0 ? caption : null,
             Invalid = hasError,
             Disabled = Disabled,
@@ -156,6 +191,7 @@ public sealed class TextInput : StatefulComponent
                 OnFocusChanged?.Invoke(focused);
             },
         }, 1));
+        if (Suffix is { Length: > 0 } suffix) row.Add(Affix(suffix, theme));
         if (Trailing is { } trailing)
         {
             row.Add(trailing);
@@ -173,7 +209,7 @@ public sealed class TextInput : StatefulComponent
         }, row);
 
         var top = new Column(gap: slot?.LabelGap ?? 6) { Width = SizeValue.Fill };
-        if (Label.Length > 0) top.Add(new Text(Label, slot?.LabelRole ?? TypeRole.Label, theme.TextSecondary));
+        if (Label.Length > 0 && !LabelHidden) top.Add(new Text(Label, slot?.LabelRole ?? TypeRole.Label, theme.TextSecondary));
         top.Add(container);
 
         // The helper/error line is ALWAYS reserved — swaps never shift the form (spec B9).
@@ -187,5 +223,23 @@ public sealed class TextInput : StatefulComponent
         // is hidden from the page's reading order.
         column.Add(new LiveRegion(new Text(caption, slot?.CaptionRole ?? TypeRole.Caption, captionColor, maxLines: 1)));
         return column;
+    }
+
+    /// <summary>A prefix or a suffix: the entry's type role, so the two share a baseline, in the muted
+    /// colour, and never wrapped.</summary>
+    private static Text Affix(string text, IAppTheme theme) =>
+        new Text(text, TypeRole.BodyL, theme.TextMuted, maxLines: 1);
+
+    /// <summary>
+    /// The entry's name: the label, and the affixes in parentheses after it (<c>Price (€)</c>,
+    /// <c>Weight (g)</c>), since what is drawn beside the entry is part of what it holds. None with no
+    /// label: a field with no visible label states one in its placeholder's stead, and the affixes alone
+    /// name nothing.
+    /// </summary>
+    private string? AccessibleName()
+    {
+        if (Label.Length == 0) return null;
+        var affixes = (Prefix ?? "") + (Prefix is { Length: > 0 } && Suffix is { Length: > 0 } ? " " : "") + (Suffix ?? "");
+        return affixes.Length > 0 ? SdkStrings.NamedWithAffixes(Label, affixes) : Label;
     }
 }

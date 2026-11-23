@@ -16,6 +16,8 @@
 [EQX0001]eQuantic.UI.Native.Shell.iOS.PhotonView.PhotonView() -> void
 [EQX0001]eQuantic.UI.Native.Shell.iOS.PhotonView.PhotonView(ObjCRuntime.NativeHandle handle) -> void
 [EQX0001]eQuantic.UI.Native.Shell.iOS.PhotonViewController
+[EQX0001]eQuantic.UI.Native.Shell.iOS.PhotonViewController.Boundary.get -> eQuantic.UI.Primitives.ComponentBoundary!
+[EQX0001]eQuantic.UI.Native.Shell.iOS.PhotonViewController.Boundary.init -> void
 [EQX0001]eQuantic.UI.Native.Shell.iOS.PhotonViewController.FramesPresented.get -> int
 [EQX0001]eQuantic.UI.Native.Shell.iOS.PhotonViewController.MaxFrames.get -> int
 [EQX0001]eQuantic.UI.Native.Shell.iOS.PhotonViewController.MaxFrames.init -> void
@@ -40,5 +42,5 @@
 [EQX0001]override eQuantic.UI.Native.Shell.iOS.PhotonViewController.TraitCollectionDidChange(UIKit.UITraitCollection? previous) -> void
 [EQX0001]override eQuantic.UI.Native.Shell.iOS.PhotonViewController.ViewDidLayoutSubviews() -> void
 [EQX0001]override eQuantic.UI.Native.Shell.iOS.PhotonViewController.ViewDidLoad() -> void
-[EQX0001]static eQuantic.UI.Native.Shell.iOS.PhotonApp.Run(string![]! args, System.Func<eQuantic.UI.Primitives.VisualNode!>! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode? forcedMode = null, int maxFrames = 0, bool smoothScroll = true) -> void
+[EQX0001]static eQuantic.UI.Native.Shell.iOS.PhotonApp.Run(string![]! args, System.Func<eQuantic.UI.Primitives.VisualNode!>! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode? forcedMode = null, int maxFrames = 0, bool smoothScroll = true, eQuantic.UI.Primitives.ComponentBoundary? boundary = null) -> void
 [EQX0001]static eQuantic.UI.Native.Shell.iOS.PhotonView.GetLayerClass() -> ObjCRuntime.Class!

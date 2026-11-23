@@ -249,14 +249,9 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         if (binaryOp is "+" or "-" or "*" or "<<" && IntegerWidth.Of(type) is { } width)
         {
             var arithmetic = ArithmeticContext.Of(assignment, context);
-            if (arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width))
-            {
-                return (current, operand) => IntegerWidth.Settle(
-                    binaryOp == "*" && width.Bits == 32 && !arithmetic.IsChecked
-                        ? JsExpr.Callish($"Math.imul({JsExprWriter.Write(current)}, {JsExprWriter.Write(operand)})")
-                        : JsExpr.Binary(current, binaryOp, operand),
-                    type, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
-            }
+            // An int's `<<=` is JavaScript's own, which shifts in signed 32 bits as C# does.
+            if (binaryOp == "<<" && width is (32, false) && !arithmetic.IsChecked) return null;
+            return (current, operand) => IntegerWidth.Arithmetic(binaryOp, current, operand, width, arithmetic, context);
         }
         // A bitwise compound writes the target's width back (IntegerWidth.Bitwise): a uint's `&=`
         // stored -1 for uint.MaxValue, and its `>>=` shifted a sign in.
@@ -283,9 +278,8 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             if (binaryOp == "/" || check)
             {
                 var arithmetic = ArithmeticContext.Of(assignment, context);
-                return (current, operand) => IntegerWidth.Settle(
-                    IntegerDivision.OfNumbers(binaryOp, current, operand, check, context),
-                    type, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
+                return (current, operand) => IntegerWidth.Quotient(
+                    IntegerDivision.OfNumbers(binaryOp, current, operand, check, context), type, arithmetic, context);
             }
         }
         return null;

@@ -18,7 +18,7 @@ public static class AppThemeExtensions
         SegmentedTheme? segmented = null, ChipTheme? chip = null, ModalTheme? modal = null, MenuTheme? menu = null,
         NoticeTheme? notice = null, ProgressTheme? progress = null, CardTheme? card = null,
         NavigationTheme? navigation = null, ListTheme? list = null, TableTheme? table = null, BadgeTheme? badge = null,
-        CalendarTheme? calendar = null, MarkdownTheme? markdown = null) =>
+        CalendarTheme? calendar = null, MarkdownTheme? markdown = null, SortableTheme? sortable = null) =>
         new OverriddenTheme(theme, controls, button, iconButton, input, selectionControls, segmented, chip, modal, menu,
-            notice, progress, card, navigation, list, table, badge, calendar, markdown);
+            notice, progress, card, navigation, list, table, badge, calendar, markdown, sortable);
 }

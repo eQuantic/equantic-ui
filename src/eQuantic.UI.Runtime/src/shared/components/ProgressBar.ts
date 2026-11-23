@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Progress, RangeValue, Row, SizeValue, Spacer, StatefulComponent, UiComponent, VariantValue } from "../runtime-exports";
+import { $eq, $VariantValue, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Progress, RangeValue, Row, SizeValue, Spacer, StatefulComponent, UiComponent } from "../runtime-exports";
 
 export class ProgressBar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.ProgressBar';
@@ -10,7 +10,7 @@ export class ProgressBar extends StatefulComponent {
     _label: string = '';
     _valueText: any = null;
     declare value: any;
-    declare variant: VariantValue;
+    declare variant: $VariantValue;
 
     get prominent() {
         return this._prominent;
@@ -63,7 +63,7 @@ export class ProgressBar extends StatefulComponent {
                 track.add(new Flexible(new Box(new BoxStyle({ height: height, background: theme.colors(this.variant).base, cornerRadius: ends })), filledWeight, 0, 1, { animateChanges: animate }));
             }
             if (filledWeight < 1000) {
-                track.add(new Spacer(1000 - filledWeight, { animateChanges: animate }));
+                track.add(new Spacer(1000 - filledWeight | 0, { animateChanges: animate }));
             }
             return new Progress(track, { label: this.label, value: new RangeValue(Math.fround(Math.fround(filledWeight) / 1000), 0, 1), valueText: this.valueText });
         }

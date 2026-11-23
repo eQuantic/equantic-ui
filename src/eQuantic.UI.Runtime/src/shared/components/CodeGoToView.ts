@@ -1,4 +1,4 @@
-import { $eq, Anchored, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeCompletionView, CodeEditorController, CodeGoTo, CodeGoToEntry, CodeGoToModeValue, CodeGoToNotFound, CodeLineCells, CodeSymbolKindValue, Column, CornerRadii, EdgeInsets, LiveRegion, Pressable, Row, SdkStrings, SizeValue, StyleDiff, Text, TextEntry, VisualNode } from "../runtime-exports";
+import { $CodeGoToModeValue, $CodeSymbolKindValue, $eq, Anchored, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeCompletionView, CodeEditorController, CodeGoTo, CodeGoToEntry, CodeGoToNotFound, CodeLineCells, Column, CornerRadii, EdgeInsets, LiveRegion, Pressable, Row, SdkStrings, SizeValue, StyleDiff, Text, TextEntry, VisualNode } from "../runtime-exports";
 
 export class CodeGoToView {
     static maxWidth: number = 560;
@@ -14,7 +14,7 @@ export class CodeGoToView {
         } });
         let panel = listed ? CodeGoToView.list(theme, metrics, goTo, width, top, pick) : CodeGoToView.said(theme, metrics, CodeGoToView.saying(editor));
         let coated = new Box(new BoxStyle({ width: SizeValue.fill, background: theme.surface, borderWidth: 1, borderColor: theme.border, cornerRadius: new CornerRadii(theme.shape('medium')), padding: EdgeInsets.symmetric(8, 4), shadow: theme.elevation(2) }), field);
-        return new Box(new BoxStyle({ width: width }), new Anchored(coated, panel, { open: true, panelRole: listed ? 'listbox' : 'none', activeIndex: listed ? goTo.selected - top : -1, matchAnchorWidth: true }));
+        return new Box(new BoxStyle({ width: width }), new Anchored(coated, panel, { open: true, panelRole: listed ? 'listbox' : 'none', activeIndex: listed ? goTo.selected - top | 0 : -1, matchAnchorWidth: true }));
     }
 
     static saying(editor: CodeEditorController) {
@@ -35,7 +35,7 @@ export class CodeGoToView {
         return SdkStrings.goToStart;
     }
 
-    static lists(mode: CodeGoToModeValue) {
+    static lists(mode: $CodeGoToModeValue) {
         return mode === 'definitions' || mode === 'references';
     }
 
@@ -51,7 +51,7 @@ export class CodeGoToView {
     }
 
     static said(theme: any, metrics: CodeBlock$CodeMetrics, saying: string) {
-        return new LiveRegion(CodeGoToView.panel(theme, new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(8, 4) }), new Text(saying, 'labelSmall', theme.textMuted, null, null, false, false, null, 0, { styleOverride: $eq.withPatch(metrics.style, { mono: false }) }))));
+        return new LiveRegion(CodeGoToView.panel(theme, new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(8, 4) }), new Text(saying, 'labelSmall', theme.textMuted, 0, 'start', false, false, null, 0, { styleOverride: $eq.withPatch(metrics.style, { mono: false }) }))));
     }
 
     static list(theme: any, metrics: CodeBlock$CodeMetrics, goTo: CodeGoTo, width: number, top: number, pick: (int: number) => void) {
@@ -60,7 +60,7 @@ export class CodeGoToView {
         let page = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         let heading = CodeGoToView.lists(goTo.mode) ? CodeGoToView.title(goTo, $eq.collections.count(entries)) : SdkStrings.symbolsCount($eq.collections.count(entries));
         page.add(new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(8, 4) }), new Text(heading, 'labelSmall', theme.textMuted, 1)));
-        for (let i = top; i < top + CodeGoToView.pageRows && i < $eq.collections.count(entries); i++) {
+        for (let i = top; i < (top + CodeGoToView.pageRows | 0) && i < $eq.collections.count(entries); i = i + 1 | 0) {
             let index = i;
             page.add(CodeGoToView.entry(theme, metrics, $eq.collections.item(entries, i), i === goTo.selected, columns, () => pick(index)));
         }
@@ -78,18 +78,18 @@ export class CodeGoToView {
         let row = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
         let kind: any; 
         if ((kind = entry.kind) != null) row.add(CodeCompletionView.glyph(theme, metrics, CodeGoToView.kindOf(kind)));
-        row.add(new Text(name, 'labelSmall', ink, 1, null, false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(name, entry.matches, ink, accent) }));
-        let room = columns - CodeLineCells.widthOf(name, 4) - 2;
+        row.add(new Text(name, 'labelSmall', ink, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(name, entry.matches, ink, accent) }));
+        let room = (columns - CodeLineCells.widthOf(name, 4) | 0) - 2 | 0;
         let held: any; 
         if ((($0) => (($0 != null && $0.length > 0) && (held = $0, true)))(entry.container) && room >= 2) {
             let container = CodeCompletionView.fit(held, room);
-            row.add(new Text(container, 'labelSmall', theme.textMuted, 1, null, false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(container, entry.containerMatches, theme.textMuted, accent) }));
+            row.add(new Text(container, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(container, entry.containerMatches, theme.textMuted, accent) }));
         }
         let container2: any; 
         return new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: metrics.lineHeight, padding: EdgeInsets.symmetric(8, 0), background: selected ? theme.colors('primary').subtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), pressed, { role: 'option', selected: selected, canRequestFocus: false, label: (($0) => (($0 != null && $0.length > 0) && (container2 = $0, true)))(entry.container) ? entry.name + ', ' + container2 : entry.name });
     }
 
-    static kindOf(kind: CodeSymbolKindValue) {
+    static kindOf(kind: $CodeSymbolKindValue) {
         return (() => { const $s = kind; if ($s === 'file') return 'file'; if ((($s === 'module' || $s === 'namespace') || $s === 'package')) return 'module'; if ($s === 'class') return 'class'; if ($s === 'method') return 'method'; if ($s === 'property') return 'property'; if ($s === 'field') return 'field'; if ($s === 'constructor') return 'constructor'; if ($s === 'enum') return 'enum'; if ($s === 'interface') return 'interface'; if ($s === 'function') return 'function'; if ($s === 'variable') return 'variable'; if ($s === 'constant') return 'constant'; if ($s === 'enumMember') return 'enumMember'; if ($s === 'struct') return 'struct'; if ($s === 'event') return 'event'; if ($s === 'operator') return 'operator'; if ($s === 'typeParameter') return 'typeParameter'; return 'value'; })();
     }
 }

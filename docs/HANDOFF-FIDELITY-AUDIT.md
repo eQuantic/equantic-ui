@@ -488,7 +488,7 @@ the pill's 40 down.
   ```
   ProgressBar.cs                Value = new RangeValue(filledWeight / 1000f, 0, 1),
   ProgressBar.cs                Value = new RangeValue(filledWeight / 1000f, 0, 1),\nValueText = ValueText,
-  WebLoweringVisitor.Interaction.cs  RawAttributes = new Dictionary<string, string> { ["role"] = "progressbar" },
+  WebLoweringVisitor.Interaction.cs  var attributes = new Dictionary<string, string> { ["role"] = "progressbar" };
   SemanticsVisitor.Interaction.cs         Announce(new(SemanticRole.ProgressIndicator, laidOut.Path ?? "", laidOut.Bounds,
   ```
 

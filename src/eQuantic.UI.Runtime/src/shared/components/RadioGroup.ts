@@ -30,7 +30,7 @@ export class RadioGroup extends StatelessComponent {
         let side = ControlMetrics.atDensity((slot?.radioSize ?? null), context.density) ?? (ControlMetrics.atDensity((slot?.box ?? null), context.density) ?? Sizing.selectionBox(context.density));
         let dot = ControlMetrics.atDensity((slot?.radioDot ?? null), context.density) ?? Sizing.radioDot(context.density);
         let options = new Column(4, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        for (let i = 0; i < $eq.collections.count(this.options); i++) {
+        for (let i = 0; i < $eq.collections.count(this.options); i = i + 1 | 0) {
             let isSelected = i === this.selected;
             let index = i;
             let circleContent = isSelected ? VisualNodeExtensions.centered(new Box(new BoxStyle({ width: dot, height: dot, background: primary.base, cornerRadius: new CornerRadii(theme.shape('full')) }))) : null;
@@ -43,7 +43,7 @@ export class RadioGroup extends StatelessComponent {
         let group: VisualNode = options;
         if (!this.disabled && !(this.onChanged == null) && $eq.collections.count(this.options) > 0) {
             let count = $eq.collections.count(this.options);
-            group = new Adjustable(options, (direction: number) => this.onChanged!($eq.num.intRem(this.selected + direction + count, count)), { role: 'radiogroup', label: this.label ?? '' });
+            group = new Adjustable(options, (direction: number) => this.onChanged!($eq.num.intRem((this.selected + direction | 0) + count | 0, count)), { role: 'radiogroup', label: this.label ?? '' });
         }
         let column = new Column(4, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         let groupLabel: any; 

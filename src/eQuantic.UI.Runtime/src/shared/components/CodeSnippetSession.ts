@@ -31,8 +31,8 @@ export class CodeSnippetSession {
     next() {
         if (this._stops == null) return false;
         this.leaving();
-        let next = this._current + 1;
-        while (next < this._stops.length - 1 && CodeSnippetSession.skipped(this._stops[next])) next++;
+        let next = this._current + 1 | 0;
+        while (next < (this._stops.length - 1 | 0) && CodeSnippetSession.skipped(this._stops[next])) next = next + 1 | 0;
         this.reach(next);
         return true;
     }
@@ -94,7 +94,7 @@ export class CodeSnippetSession {
 
     previousOf(index: number) {
         if (this._stops == null) return -1;
-        for (let i = index - 1; i >= 0; i--) if (!CodeSnippetSession.skipped(this._stops[i])) return i;
+        for (let i = index - 1 | 0; i >= 0; i = i - 1 | 0) if (!CodeSnippetSession.skipped(this._stops[i])) return i;
         return -1;
     }
 
@@ -133,7 +133,7 @@ export class CodeSnippetSession {
         if (this.textOf(leaving) === this._reached) return;
         for (const stop of $eq.collections.listWalk(this._stops)) {
             if (stop.final || (stop === leaving)) continue;
-            for (let i = stop.ranges.length - 1; i >= 0; i--) if (stop.enclosing[i].includes(leaving.index)) stop.removeAt(i);
+            for (let i = stop.ranges.length - 1 | 0; i >= 0; i = i - 1 | 0) if (stop.enclosing[i].includes(leaving.index)) stop.removeAt(i);
             if (stop.ranges.length === 0) stop.dropped = true;
         }
     }
@@ -151,15 +151,15 @@ export class CodeSnippetSession {
         if ($eq.collections.count(change.edits) === 0) return;
         let growing = this.growing();
         for (const edit of $eq.collections.sequenceWalk(change.edits)) {
-            for (let s = 0; s < this._stops.length; s++) {
+            for (let s = 0; s < this._stops.length; s = s + 1 | 0) {
                 let ranges = this._stops[s].ranges;
-                for (let i = 0; i < ranges.length; i++) {
+                for (let i = 0; i < ranges.length; i = i + 1 | 0) {
                     let range = ranges[i];
                     $eq.collections.listSet(ranges, i, growing[s] ? new CodeRange(edit.carryAnchor(range.start), edit.carryReach(range.end)) : edit.carry(range));
                 }
             }
         }
-        for (let s = 0; s < this._stops.length; s++) if (growing[s]) CodeSnippetSession.separate(this._stops[s].ranges);
+        for (let s = 0; s < this._stops.length; s = s + 1 | 0) if (growing[s]) CodeSnippetSession.separate(this._stops[s].ranges);
     }
 
     growing() {
@@ -167,17 +167,17 @@ export class CodeSnippetSession {
         if (this._stops == null || this._current < 0) return growing;
         growing[this._current] = true;
         let current = this._stops[this._current];
-        for (let s = 0; s < this._stops.length; s++) if (!this._stops[s].final && current.nestedIn(this._stops[s].index)) growing[s] = true;
+        for (let s = 0; s < this._stops.length; s = s + 1 | 0) if (!this._stops[s].final && current.nestedIn(this._stops[s].index)) growing[s] = true;
         return growing;
     }
 
     static separate(ranges: CodeRange[]) {
         if (ranges.length < 2) return;
         let order: number[] = [];
-        for (let i = 0; i < ranges.length; i++) $eq.collections.listAdd(order, i);
+        for (let i = 0; i < ranges.length; i = i + 1 | 0) $eq.collections.listAdd(order, i);
         $eq.collections.listSortBy(order, (a: number, b: number) => ranges[a].start.compareTo(ranges[b].start), 'System.Comparison`1[System.Int32]');
-        for (let k = 1; k < order.length; k++) {
-            let before = ranges[order[k - 1]];
+        for (let k = 1; k < order.length; k = k + 1 | 0) {
+            let before = ranges[order[k - 1 | 0]];
             let range = ranges[order[k]];
             if (CodePosition.opLessThan(before.start, range.start) && CodePosition.opLessThan(range.start, before.end)) $eq.collections.listSet(ranges, order[k], new CodeRange(CodePosition.opLessThan(before.end, range.end) ? before.end : range.end, range.end));
         }
@@ -199,7 +199,7 @@ export class CodeSnippetSession {
     stopWithin() {
         if (this._stops == null) return -1;
         if (this.holds(this._stops[this._current])) return this._current;
-        for (let s = 0; s < this._stops.length; s++) if (this.holds(this._stops[s])) return s;
+        for (let s = 0; s < this._stops.length; s = s + 1 | 0) if (this.holds(this._stops[s])) return s;
         return -1;
     }
 

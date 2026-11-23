@@ -22,6 +22,7 @@ StatelessComponent	constructor
 StatelessComponent	disposeQuietly
 StatelessComponent	getCurrentTree
 StatelessComponent	getVirtualNode
+StatelessComponent	globalKey
 StatelessComponent	gridSpan
 StatelessComponent	hydrate
 StatelessComponent	key
@@ -48,6 +49,7 @@ StatefulComponent	disposeQuietly
 StatefulComponent	enterPosition
 StatefulComponent	getCurrentTree
 StatefulComponent	getVirtualNode
+StatefulComponent	globalKey
 StatefulComponent	gridSpan
 StatefulComponent	hydrate
 StatefulComponent	key
