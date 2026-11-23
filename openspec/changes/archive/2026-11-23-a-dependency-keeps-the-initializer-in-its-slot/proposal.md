@@ -47,6 +47,6 @@ two answers, one at the drop and none at the fill, and now has one.
 
 ## Impact
 
-`tests/eQuantic.UI.Conformance.Tests` gains `DependencyBesideAnInitializerConformanceTests`, five constructions read
+`tests/eQuantic.UI.Conformance.Tests` gains `DependencyBesideAnInitializerConformanceTests`, six constructions read
 on both sides in both modes. `ConstructorInjectionTests` in `tests/eQuantic.UI.Web.Tests` gains a pin of the
 construction the twin is built with for four of them.
