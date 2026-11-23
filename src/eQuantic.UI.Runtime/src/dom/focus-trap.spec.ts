@@ -7,6 +7,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { activeFocusTraps, commitFocusTraps, resetFocusTraps } from './focus-trap';
+import { gateCompactUntil, gateExpandedFrom } from '../shared/style-atomizer';
 
 /** A modal layer as the lowerings emit it: the marker plus the dialog semantics. */
 function layer(...focusables: HTMLElement[]): HTMLElement {
@@ -343,5 +344,103 @@ describe('§10 the focus goes to the control in the invoker place when the invok
     commitFocusTraps();
 
     expect(document.activeElement).toBe(settingsButton);
+  });
+});
+
+/**
+ * A layer in an adaptive arm the window hides lets go of the keyboard (#1185). The web mounts every arm and
+ * its CSS shows one, so a drawer left open in the compact arm kept its marker when the window widened, and
+ * held the keyboard in a layer nobody could see. The controller asks the arms' gates when the Tab or the
+ * focus arrives, from the same media conditions the gates' CSS applies.
+ */
+describe('§10 a layer in a hidden adaptive arm', () => {
+  let width = 700;
+  const matches = (media: string): boolean => {
+    const min = /min-width:\s*([\d.]+)px/.exec(media);
+    const max = /max-width:\s*([\d.]+)px/.exec(media);
+    return (!min || width >= Number(min[1])) && (!max || width <= Number(max[1]));
+  };
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    resetFocusTraps();
+    width = 700;
+    vi.stubGlobal('matchMedia', (media: string) => ({
+      matches: matches(media),
+      media,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    resetFocusTraps();
+  });
+
+  /** An arm behind `gate`, holding `children`, as the lowerings wrap one. */
+  function arm(gate: string, ...children: HTMLElement[]): HTMLElement {
+    const el = document.createElement('div');
+    el.className = gate;
+    for (const child of children) el.appendChild(child);
+    document.body.appendChild(el);
+    return el;
+  }
+
+  it('a drawer in the compact arm cycles Tab at 700, lets go of it at 1024, and holds it again back at 700', () => {
+    const page = button('Page');
+    document.body.appendChild(page);
+    const home = button('Home');
+    const settings = button('Settings');
+    arm(gateCompactUntil(840), layer(home, settings));
+    const sidebar = button('Sidebar');
+    arm(gateExpandedFrom(840), sidebar);
+    page.focus();
+    commitFocusTraps();
+    settings.focus();
+
+    expect(tab().defaultPrevented, 'at 700 the drawer is on screen and cycles Tab').toBe(true);
+    expect(document.activeElement).toBe(home);
+
+    width = 1024;
+    expect(tab().defaultPrevented, 'at 1024 the drawer is hidden, and Tab walks the page').toBe(false);
+    sidebar.focus();
+    expect(document.activeElement, 'a focus outside the hidden drawer stays where it went').toBe(sidebar);
+
+    width = 700;
+    expect(tab().defaultPrevented, 'back at 700 the drawer holds Tab again').toBe(true);
+    expect(document.activeElement).toBe(home);
+  });
+
+  it('a layer outside every arm holds the keyboard at every width', () => {
+    const cancel = button('Cancel');
+    const dialog = layer(cancel, button('Delete'));
+    document.body.appendChild(dialog);
+    commitFocusTraps();
+    cancel.focus();
+
+    for (const at of [500, 700, 1024]) {
+      width = at;
+      const outside = button(`Behind ${at}`);
+      document.body.appendChild(outside);
+      outside.focus();
+      expect(dialog.contains(document.activeElement), `at ${at} the focus is pulled back into the dialog`).toBe(true);
+    }
+  });
+
+  it('under a hidden layer, the layer on screen owns the keyboard', () => {
+    const keep = button('Keep');
+    const discard = button('Discard');
+    const dialog = layer(keep, discard);
+    document.body.appendChild(dialog);
+    commitFocusTraps();
+    const home = button('Home');
+    arm(gateCompactUntil(840), layer(home, button('Settings')));
+    commitFocusTraps();
+
+    width = 1024;
+    discard.focus();
+    expect(tab().defaultPrevented, 'the dialog on screen cycles Tab').toBe(true);
+    expect(document.activeElement).toBe(keep);
   });
 });

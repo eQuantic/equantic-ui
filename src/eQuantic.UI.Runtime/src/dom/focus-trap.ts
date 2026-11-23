@@ -22,6 +22,8 @@
  * was never indented (#598).
  */
 
+import { adaptiveGateOpen, isAdaptiveGate } from '../shared/style-atomizer';
+
 /** What CAN take focus inside a trap. `[data-eq-trap]` itself is excluded: it is the fallback. */
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), ' +
@@ -40,9 +42,29 @@ const invokers = new WeakMap<Element, { invoker: Element; place: number }>();
 let returned: { invoker: Element; place: number } | null = null;
 let installed = false;
 
-/** The layer that owns the keyboard right now: the last marked layer in the document. */
+/**
+ * Whether every adaptive arm around `layer` is on screen NOW. The web mounts every arm of an adaptive
+ * node and its CSS shows one, so a dialog or a drawer open in an arm the window has just hidden keeps its
+ * marker, and as a trap it held the keyboard in a layer nobody could see: Tab was prevented, and a click on
+ * the page was pulled back (#1185). Asked when the Tab or the focus arrives, never when the pass ran, as
+ * the shortcut dispatcher asks the gates around a binding when its key comes (#363), and from the gates'
+ * own media conditions, never the layout.
+ */
+function onScreen(layer: Element): boolean {
+  for (let at = layer.parentElement; at; at = at.parentElement) {
+    for (const name of Array.from(at.classList)) {
+      if (isAdaptiveGate(name) && !adaptiveGateOpen(name)) return false;
+    }
+  }
+  return true;
+}
+
+/** The layer that owns the keyboard right now: the last marked layer in the document that is on screen. */
 function topmost(): Element | null {
-  return active.length > 0 ? active[active.length - 1] : null;
+  for (let i = active.length - 1; i >= 0; i--) {
+    if (onScreen(active[i])) return active[i];
+  }
+  return null;
 }
 
 /**
@@ -75,7 +97,7 @@ function focusInto(layer: Element): void {
  * order is the document's, which is the order Tab walks and the order Photon lists its stops in.
  */
 function focusablesBeneath(marked: Element[], above: readonly Element[]): HTMLElement[] {
-  const holder = [...marked].reverse().find((layer) => !above.includes(layer)) ?? null;
+  const holder = [...marked].reverse().find((layer) => !above.includes(layer) && onScreen(layer)) ?? null;
   const scope: ParentNode = holder ?? document;
   return Array.from(scope.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
     (el) =>
