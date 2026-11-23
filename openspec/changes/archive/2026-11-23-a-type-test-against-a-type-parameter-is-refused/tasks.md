@@ -1,6 +1,6 @@
 ## 1. The refusal
 
-- [x] 1.1 `TypeParameterTypeTestTests`: five forms of a test against a type parameter, none refused on main, and a test against a class
+- [x] 1.1 `TypeParameterTypeTestTests`: six forms of a test against a type parameter, none refused on main, and a test against a class
 - [x] 1.2 `PatternConverter.TypeCheck` refuses a type parameter with EQ2016, which names it
 - [x] 1.3 `docs/DIAGNOSTICS.md`'s row, and the diagnostics baseline
 

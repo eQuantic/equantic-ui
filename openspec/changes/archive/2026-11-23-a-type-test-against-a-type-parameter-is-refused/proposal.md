@@ -38,5 +38,5 @@ Rules followed: CLAUDE.md's, that a construct the model cannot answer is a build
 
 ## Impact
 
-`tests/eQuantic.UI.Compiler.Tests` gains `TypeParameterTypeTestTests`. Five forms are refused, none of them on main,
+`tests/eQuantic.UI.Compiler.Tests` gains `TypeParameterTypeTestTests`. Six forms are refused, none of them on main,
 and a test against a class is not. The diagnostics baseline records EQ2016's reporting site.
