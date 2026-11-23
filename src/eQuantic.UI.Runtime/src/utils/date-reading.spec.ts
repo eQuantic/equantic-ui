@@ -299,4 +299,11 @@ describe('readMoment: an ISO date that does not exist (#1616)', () => {
     expect(read('2024-02-30', 'invariant')).toBe('format');
     expect(read('2024-02-30 10:00', 'invariant')).toBe('format');
   });
+
+  it('reads a T before a clock only after the ISO form\'s date, and a T that starts a word as the word', () => {
+    expect(read('2024-02T10:00', 'invariant')).toBe('format');
+    expect(read('1/15/2024T10:00', 'invariant')).toBe('format');
+    expect(read('2024-01-15Tx', 'invariant')).toBe('word at 10');
+    expect(read('2024-02-30Tx', 'invariant')).toBe('format');
+  });
 });

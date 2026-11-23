@@ -17,6 +17,9 @@ does not exist refused in other words than .NET's.
   before one, the ISO clock is read, and a well-formed clock with a day that does not exist is refused as
   .NET refuses it, in the name of the culture's calendar; a clock malformed after the `T`, and a day that
   does not exist outside the ISO form, keep the plain refusal, as in .NET.
+- A `T` before a clock is the ISO form's only after its date, three numbers with the year first: after
+  any other date the text is refused plainly, where the browser read `2024-02T10:00` as the 1st of
+  February. A `T` that a letter follows starts a word, whose refusal names it after a date that exists.
 
 ## Impact
 

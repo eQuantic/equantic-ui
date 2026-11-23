@@ -18,3 +18,9 @@ SHALL keep the plain refusal.
 
 - **WHEN** browser-side code reads `2024-02-30Tjunk` and `2024-02-30`
 - **THEN** each throws "String '…' was not recognized as a valid DateTime.", as in .NET
+
+#### Scenario: A T after a date that is not the ISO form's
+
+- **WHEN** browser-side code reads `2024-02T10:00` and `1/15/2024T10:00`
+- **THEN** each is refused plainly, as in .NET, where the browser read the first as the 1st of February
+  2024, and `2024-01-15Tx` names an unknown word at its `T`
