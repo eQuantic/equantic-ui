@@ -1,20 +1,24 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 
 namespace eQuantic.UI.Web.Tests;
 
 /// <summary>
-/// Each config interface of the hand-written mirror holds what its C# class lets an object initializer set, and
-/// nothing C# does not have (#1823). A transpiled initializer is typed against the interface the twin's constructor
-/// takes, so a member the interface lacks is a TS2353 the runtime's `tsc` raises only once some component first
-/// sets it: `BoxStyleConfig` lacked `foreground`, carried by `BoxStyle` since #614, until a slice of #1606 set it and
-/// had to stop and repair the mirror. A member the interface declares and C# no longer has would never be met at all.
+/// The config each class of the hand-written mirror takes holds what its C# class lets an object initializer set,
+/// and nothing C# does not have (#1823). A transpiled initializer is typed against the config the twin's constructor
+/// takes, so a member the config lacks is a TS2353 the runtime's `tsc` raises only once some component first sets
+/// it: `BoxStyleConfig` lacked `foreground`, carried by `BoxStyle` since #614, until a slice of #1606 set it and had
+/// to stop and repair the mirror. A member the config declares and C# no longer has would never be met at all.
 /// <para>
-/// Read both ways: the C# class's public settable members (set or init, inherited ones included), less the ones its
-/// constructor takes by position, against the interface's members, the ones it extends included. A member absent
-/// on purpose is named in <c>vocabulary-config.baseline.txt</c> with its reason, by its config or by the C# type that
+/// A config is a named interface (<c>BoxStyleConfig</c>), or a literal the constructor writes in place, alone or
+/// intersected with interfaces (<c>VisualNodeConfig &amp; { … }</c>). <c>EqConfig</c>, a record of anything, takes
+/// every member and so can lack none: a class that takes it is not read. Each config is read both ways: the C#
+/// class's public settable members (set or init, inherited ones included), less the ones its public constructors
+/// take by position, against the config's members, those it extends or intersects included. A member absent on
+/// purpose is named in <c>vocabulary-config.baseline.txt</c> with its reason, by its config or by the C# type that
 /// declares it, and the list may only shrink: an entry that no longer differs fails until it is removed.
 /// </para>
 /// </summary>
@@ -31,15 +35,18 @@ public class VocabularyConfigShapeTests
         new[] { "vocabulary.ts", "value-types.ts", "primitive-values.ts", "route-values.ts" }
             .Select(name => File.ReadAllText(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", name))));
 
-    /// <summary>The text between the brace that opens at <paramref name="open"/> and the one that closes it.</summary>
-    private static string Body(string text, int open)
+    /// <summary>
+    /// The text between the bracket just before <paramref name="open"/> and the one that closes it: a brace by
+    /// default, or the parenthesis of a parameter list.
+    /// </summary>
+    private static string Body(string text, int open, char opening = '{', char closing = '}')
     {
         var depth = 1;
         var index = open;
         while (index < text.Length && depth > 0)
         {
-            if (text[index] == '{') depth++;
-            else if (text[index] == '}') depth--;
+            if (text[index] == opening) depth++;
+            else if (text[index] == closing) depth--;
             index++;
         }
         return text[open..(index - 1)];
@@ -47,14 +54,31 @@ public class VocabularyConfigShapeTests
 
     private static string Camel(string name) => char.ToLowerInvariant(name[0]) + name[1..];
 
+    /// <summary>
+    /// The members a type literal's body declares at its own level: comments, and whatever nests in braces,
+    /// parentheses or brackets (a nested literal, a function type's parameters), are read as nothing.
+    /// </summary>
+    private static HashSet<string> TopLevelMembers(string body)
+    {
+        var top = new StringBuilder();
+        var depth = 0;
+        foreach (var character in Regex.Replace(body, @"/\*[\s\S]*?\*/|//[^\n]*", ""))
+        {
+            if (character is '{' or '(' or '[') depth++;
+            else if (character is '}' or ')' or ']') depth--;
+            else if (depth == 0) top.Append(character);
+        }
+        return Regex.Matches(top.ToString(), @"(?:^|[;,\n])\s*(?:readonly\s+)?(\w+)\??\s*:")
+            .Select(member => member.Groups[1].Value).ToHashSet(StringComparer.Ordinal);
+    }
+
     /// <summary>Each config interface's own members and the interfaces it extends.</summary>
     private static Dictionary<string, (HashSet<string> Members, string[] Extends)> Interfaces(string text) =>
         Regex.Matches(text, @"interface (\w+Config)(?:\s+extends\s+([\w,\s]+?))?\s*\{")
             .ToDictionary(
                 match => match.Groups[1].Value,
                 match => (
-                    Regex.Matches(Body(text, match.Index + match.Length), @"^\s{2}(\w+)\??\s*:", RegexOptions.Multiline)
-                        .Select(member => member.Groups[1].Value).ToHashSet(StringComparer.Ordinal),
+                    TopLevelMembers(Body(text, match.Index + match.Length)),
                     match.Groups[2].Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)));
 
     /// <summary>An interface's members with the ones it extends.</summary>
@@ -66,6 +90,28 @@ public class VocabularyConfigShapeTests
         return all;
     }
 
+    /// <summary>
+    /// The config parameter of a class's constructor: its name, the interface itself when it is one alone and the class's
+    /// own otherwise (<c>Image.config</c>), with its members, those of the interfaces it extends or intersects
+    /// (<c>VisualNodeConfig &amp; { … }</c>) and those its literal writes in place.
+    /// </summary>
+    private static (string Name, HashSet<string> Members, string[] Named)? ConfigOf(
+        string type, string body, Dictionary<string, (HashSet<string> Members, string[] Extends)> interfaces)
+    {
+        var constructor = body.IndexOf("constructor(", StringComparison.Ordinal);
+        if (constructor < 0) return null;
+        var parameters = Body(body, constructor + "constructor(".Length, '(', ')');
+        var match = Regex.Match(parameters, @"\bconfig\??\s*:\s*((?:\w+\s*&\s*)*)(\{|\w+)");
+        if (!match.Success) return null;
+        var named = Regex.Matches(match.Groups[1].Value, @"\w+").Select(name => name.Value).ToList();
+        var literal = match.Groups[2].Value == "{";
+        if (!literal) named.Add(match.Groups[2].Value);
+        var members = literal ? TopLevelMembers(Body(parameters, match.Index + match.Length)) : new HashSet<string>(StringComparer.Ordinal);
+        foreach (var name in named.Where(interfaces.ContainsKey)) members.UnionWith(MembersOf(name, interfaces));
+        var label = !literal && named.Count == 1 ? named[0] : $"{type}.config";
+        return (label, members, named.ToArray());
+    }
+
     /// <summary>Each line of the baseline that names a member and the reason it is absent.</summary>
     private static Dictionary<string, string> Baseline() =>
         File.ReadAllLines(BaselinePath())
@@ -74,59 +120,67 @@ public class VocabularyConfigShapeTests
             .ToDictionary(parts => parts[0], parts => parts.Length > 1 ? parts[1] : "", StringComparer.Ordinal);
 
     [Fact]
-    public void EveryConfigInterface_HoldsWhatItsClassLetsAnInitializerSet_AndNothingElse()
+    public void EveryConfig_HoldsWhatItsClassLetsAnInitializerSet_AndNothingElse()
     {
         var text = MirrorText();
         var interfaces = Interfaces(text);
         interfaces.Should().HaveCountGreaterThan(10, "the mirror's config interfaces have to be read at all");
-        var classes = Regex.Matches(text, @"export (?:abstract )?class (\w+)[^{]*\{")
-            .Select(match => (Name: match.Groups[1].Value, Body: Body(text, match.Index + match.Length)))
-            .ToList();
         var csharp = VocabularyTypesByTwinName.Get();
         var baseline = Baseline();
         baseline.Values.Should().NotContain(string.Empty, "every entry of the baseline says why the member is absent");
         var used = new HashSet<string>(StringComparer.Ordinal);
+        var taken = new HashSet<string>(StringComparer.Ordinal);
+        // A config typed as a record of anything (`EqConfig`) takes every member, so it can lack none.
+        var open = Regex.Matches(text, @"export type (\w+) = Record<string, unknown>;")
+            .Select(match => match.Groups[1].Value).ToHashSet(StringComparer.Ordinal);
+        open.Should().NotBeEmpty("the mirror's open config has to be recognised, or each class taking it reads as drift");
         var offenders = new List<string>();
+        var read = 0;
 
-        foreach (var name in interfaces.Keys.Where(name => !interfaces.Values.Any(other => other.Extends.Contains(name))))
+        foreach (Match declaration in Regex.Matches(text, @"export (?:abstract )?class (\w+)[^{]*\{"))
         {
-            var takers = classes.Where(type => Regex.IsMatch(type.Body, $@"config\??\s*:\s*{name}\b")).Select(type => type.Name).ToList();
-            if (takers.Count == 0) offenders.Add($"{name} is taken by no class of the mirror, so nothing pins it to C#");
-            var members = MembersOf(name, interfaces);
-
-            foreach (var taker in takers)
+            var taker = declaration.Groups[1].Value;
+            if (ConfigOf(taker, Body(text, declaration.Index + declaration.Length), interfaces) is not var (name, members, named))
+                continue;
+            if (named.Any(open.Contains)) continue;
+            read++;
+            taken.UnionWith(named);
+            foreach (var unknown in named.Where(type => !interfaces.ContainsKey(type)))
+                offenders.Add($"{taker} takes its config as {unknown}, which is no config interface of the mirror");
+            if (!csharp.TryGetValue(taker, out var type))
             {
-                if (!csharp.TryGetValue(taker, out var type))
-                {
-                    offenders.Add($"{name} is taken by {taker}, which mirrors no C# type");
-                    continue;
-                }
-                var settable = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(property => property.SetMethod is { IsPublic: true })
-                    .GroupBy(property => Camel(property.Name))
-                    .ToDictionary(group => group.Key, group => group.First().DeclaringType!.Name, StringComparer.Ordinal);
-                var positional = type.GetConstructors()
-                    .SelectMany(constructor => constructor.GetParameters())
-                    .Select(parameter => Camel(parameter.Name!))
-                    .ToHashSet(StringComparer.Ordinal);
+                offenders.Add($"{taker} takes {name}, and mirrors no C# type");
+                continue;
+            }
+            var settable = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(property => property.SetMethod is { IsPublic: true })
+                .GroupBy(property => Camel(property.Name))
+                .ToDictionary(group => group.Key, group => group.First().DeclaringType!.Name, StringComparer.Ordinal);
+            var positional = type.GetConstructors()
+                .SelectMany(constructor => constructor.GetParameters())
+                .Select(parameter => Camel(parameter.Name!))
+                .ToHashSet(StringComparer.Ordinal);
 
-                foreach (var (member, declaredBy) in settable.Where(pair => !members.Contains(pair.Key) && !positional.Contains(pair.Key)))
-                {
-                    var byConfig = $"{name}.{member}";
-                    var byType = $"{declaredBy}.{member}";
-                    if (baseline.ContainsKey(byConfig)) used.Add(byConfig);
-                    else if (baseline.ContainsKey(byType)) used.Add(byType);
-                    else offenders.Add($"{byConfig}: {taker} lets an initializer set {declaredBy}.{member}, and the config lacks it");
-                }
-                foreach (var member in members.Where(member => !settable.ContainsKey(member) && !positional.Contains(member)))
-                {
-                    var byConfig = $"{name}.{member}";
-                    if (baseline.ContainsKey(byConfig)) used.Add(byConfig);
-                    else offenders.Add($"{byConfig}: the config declares it, and {taker} has no settable {member} nor a parameter of that name");
-                }
+            foreach (var (member, declaredBy) in settable.Where(pair => !members.Contains(pair.Key) && !positional.Contains(pair.Key)))
+            {
+                var byConfig = $"{name}.{member}";
+                var byType = $"{declaredBy}.{member}";
+                if (baseline.ContainsKey(byConfig)) used.Add(byConfig);
+                else if (baseline.ContainsKey(byType)) used.Add(byType);
+                else offenders.Add($"{byConfig}: {taker} lets an initializer set {declaredBy}.{member}, and the config lacks it");
+            }
+            foreach (var member in members.Where(member => !settable.ContainsKey(member) && !positional.Contains(member)))
+            {
+                var byConfig = $"{name}.{member}";
+                if (baseline.ContainsKey(byConfig)) used.Add(byConfig);
+                else offenders.Add($"{byConfig}: the config declares it, and {taker} has no settable {member} nor a parameter of that name");
             }
         }
 
+        read.Should().BeGreaterThan(30, "the classes that take a config have to be read at all");
+        offenders.AddRange(interfaces.Keys
+            .Where(name => !taken.Contains(name) && !interfaces.Values.Any(other => other.Extends.Contains(name)))
+            .Select(name => $"{name} is taken by no class of the mirror, so nothing pins it to C#"));
         offenders.AddRange(baseline.Keys.Where(key => !used.Contains(key))
             .Select(key => $"{key} is in vocabulary-config.baseline.txt and no longer differs: remove it, the list may only shrink"));
         string.Join("\n", offenders).Should().BeEmpty("a transpiled initializer is typed against the config its twin takes, "
