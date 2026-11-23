@@ -535,8 +535,6 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     private static JsExpr Spliced(IReadOnlyList<JsExpr> values) =>
         values.Count == 1 ? values[0] : JsExpr.Opaque(string.Join(", ", values.Select(JsExprWriter.Write)));
 
-    /// <summary>A parameter's C# default as the literal a skipped argument is filled with
-    /// (<see cref="DefaultLiteralFor"/>).</summary>
     /// <summary>
     /// The defaults of the parameters <paramref name="parts"/> does not reach yet, so the config object that
     /// follows lands in the twin's trailing slot. Counted from the arguments EMITTED, never from the ones the
@@ -551,6 +549,8 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         for (var i = parts.Count; i < ctor.Parameters.Length; i++) parts.Add(DefaultOf(ctor.Parameters[i], context));
     }
 
+    /// <summary>A parameter's C# default as the literal a skipped argument is filled with
+    /// (<see cref="DefaultLiteralFor"/>).</summary>
     private static JsExpr DefaultOf(IParameterSymbol parameter, ConversionContext context) =>
         JsExpr.Literal(DefaultLiteralFor(parameter, context));
 
