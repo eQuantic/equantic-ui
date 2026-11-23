@@ -62,7 +62,9 @@ public class RadioGroupOptionBuilderTests
     private static bool Paints(DisplayList list, ColorToken token)
     {
         var color = token.Resolve(ThemeMode.Light, ContrastLevel.Standard).WithOpacity(0.30f);
-        return list.Commands.Any(command => command.Kind == DrawCommandKind.FillRRect && command.Paint.Color == color);
+        foreach (var command in list.Commands)
+            if (command.Kind == DrawCommandKind.FillRRect && command.Paint.Color == color) return true;
+        return false;
     }
 
     private static DisplayList Draw(VisualNode node)
