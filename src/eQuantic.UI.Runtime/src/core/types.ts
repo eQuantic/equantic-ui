@@ -59,6 +59,9 @@ export interface RenderContext {
    * and REQUIRED like its C# original: a transpiled component reads it into a local of this type,
    * and an optional mirror of a non-nullable property is a twin that cannot compile. */
   density: import('../shared/enums.generated').DensityValue;
+  /** Which way this component's text runs (C# `context.TextDirection`): the nearest `Directionality`
+   * above it, or the UI culture's. REQUIRED for the reason `density` is. */
+  readonly textDirection: import('../shared/enums.generated').TextDirectionValue;
   /** The type scale multiplier the target is rendering at (C# `context.TypeScale`). REQUIRED for
    * the reason `density` is: a twin multiplies by it, and an optional mirror of a non-nullable
    * float is a `number | undefined` the twin cannot compile against. Every context the runtime

@@ -105,9 +105,29 @@ public static class TokenCss
         // CSS order: top-left, top-right, bottom-right, bottom-left — same as the token.
         : $"{Px(radii.TopLeft)} {Px(radii.TopRight)} {Px(radii.BottomRight)} {Px(radii.BottomLeft)}";
 
-    /// <summary>EdgeInsets → CSS padding shorthand (top right bottom left; Start→left in LTR v1).</summary>
-    public static string Padding(EdgeInsets insets) =>
-        $"{Px(insets.Top)} {Px(insets.End)} {Px(insets.Bottom)} {Px(insets.Start)}";
+    /// <summary>
+    /// A padding as the physical shorthand, <c>top right bottom left</c>, when its start and its end are
+    /// equal, so it reads the same in both directions and the classes of a symmetric padding never move
+    /// (#1568); null for none, and when the two differ, which <see cref="PaddingBlock"/> and
+    /// <see cref="PaddingInline"/> write instead. The TS <c>paddingEntries</c> twin writes the same three.
+    /// </summary>
+    public static string? Padding(EdgeInsets insets) =>
+        insets == EdgeInsets.Zero || insets.Start != insets.End
+            ? null
+            : $"{Px(insets.Top)} {Px(insets.End)} {Px(insets.Bottom)} {Px(insets.Start)}";
+
+    /// <summary>A padding whose start and end differ, its top and bottom as <c>padding-block</c>; null otherwise.</summary>
+    public static string? PaddingBlock(EdgeInsets insets) =>
+        insets.Start == insets.End ? null : Pair(insets.Top, insets.Bottom);
+
+    /// <summary>A padding whose start and end differ, as <c>padding-inline</c>, which mirrors under <c>rtl</c>; null otherwise.</summary>
+    public static string? PaddingInline(EdgeInsets insets) =>
+        insets.Start == insets.End ? null : Pair(insets.Start, insets.End);
+
+    /// <summary>The two sides of one axis, as a logical shorthand writes them: one length when they are equal.</summary>
+    internal static string Pair(string first, string second) => first == second ? first : $"{first} {second}";
+
+    private static string Pair(float first, float second) => Pair(Px(first), Px(second));
 
     /// <summary>
     /// The focus ring's place in a box's shadow list (#508). A transparent zero shadow until the
@@ -158,7 +178,8 @@ public static class TokenCss
     /// <summary>
     /// One edge of a positioned box: a point offset, a fraction of the containing box, or both
     /// added (<c>calc(30% - 16px)</c>); null when neither is set. The TS <c>edge()</c> twin writes
-    /// the same string.
+    /// the same string. A start and an end are written as <c>inset-inline-start</c> and
+    /// <c>inset-inline-end</c>, so they are measured from the side the text starts and ends on.
     /// </summary>
     public static string? Edge(float? point, float? fraction) => (point, fraction) switch
     {
@@ -169,9 +190,17 @@ public static class TokenCss
         ({ } p, { } f) => $"calc({Percent(f)} {(p < 0 ? "-" : "+")} {Px(Math.Abs(p))})",
     };
 
-    /// <summary>A shift by fractions of the box's OWN size, or null for none (<c>translate(-50%, -100%)</c>).</summary>
+    /// <summary>
+    /// A shift by fractions of the box's OWN size, or null for none: across, toward the END, so the
+    /// centring idiom (a start at half the stack, a shift of half the box back) stays centred under
+    /// <c>rtl</c>. The token sheet sets <c>--eq-inline</c> to 1 under <c>ltr</c> and -1 under <c>rtl</c>
+    /// (<see cref="ThemeStylesheet"/>): <c>translate(calc(var(--eq-inline, 1) * -50%), -100%)</c>. The TS
+    /// <c>shift()</c> twin writes the same string.
+    /// </summary>
     public static string? Shift(float x, float y) =>
-        x == 0 && y == 0 ? null : $"translate({(x == 0 ? "0" : Percent(x))}, {(y == 0 ? "0" : Percent(y))})";
+        x == 0 && y == 0
+            ? null
+            : $"translate({(x == 0 ? "0" : $"calc(var(--eq-inline, 1) * {Percent(x)})")}, {(y == 0 ? "0" : Percent(y))})";
 
     /// <summary>A bare invariant number ("0.####") — opacity, aspect-ratio, scale factors.</summary>
     public static string Number(float value) => value.ToString("0.####", CultureInfo.InvariantCulture);

@@ -202,6 +202,8 @@ export type TableRoleValue = 'group' | 'table' | 'grid';
 
 export type TextAlignmentValue = 'start' | 'center' | 'end';
 
+export type TextDirectionValue = 'leftToRight' | 'rightToLeft';
+
 export type ThemeModeValue = 'light' | 'dark';
 
 export type TypeRoleValue =

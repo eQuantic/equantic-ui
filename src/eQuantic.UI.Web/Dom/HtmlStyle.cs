@@ -16,6 +16,14 @@ public class HtmlStyle
     public string? Right { get; set; }
     public string? Bottom { get; set; }
     public string? Left { get; set; }
+
+    /// <summary>`inset-inline-start`: the offset from the side the text starts on, left under
+    /// <c>ltr</c> and right under <c>rtl</c>.</summary>
+    public string? InsetInlineStart { get; set; }
+
+    /// <summary>`inset-inline-end`: the offset from the side the text ends on.</summary>
+    public string? InsetInlineEnd { get; set; }
+
     public string? ZIndex { get; set; }
 
     #endregion
@@ -72,6 +80,12 @@ public class HtmlStyle
     public string? PaddingBottom { get; set; }
     public string? PaddingLeft { get; set; }
 
+    /// <summary>`padding-block`: the top and the bottom, as one or two lengths.</summary>
+    public string? PaddingBlock { get; set; }
+
+    /// <summary>`padding-inline`: the start and the end, which mirror under <c>rtl</c>.</summary>
+    public string? PaddingInline { get; set; }
+
     #endregion
 
     #region Background
@@ -98,6 +112,13 @@ public class HtmlStyle
 
     public string? Border { get; set; }
     public string? BorderWidth { get; set; }
+
+    /// <summary>`border-block-width`: the top's and the bottom's widths.</summary>
+    public string? BorderBlockWidth { get; set; }
+
+    /// <summary>`border-inline-width`: the start's and the end's widths, which mirror under <c>rtl</c>.</summary>
+    public string? BorderInlineWidth { get; set; }
+
     public string? BorderStyle { get; set; }
     public string? BorderColor { get; set; }
     public string? BorderRadius { get; set; }
@@ -229,6 +250,8 @@ public class HtmlStyle
         AddProperty(properties, "right", Right);
         AddProperty(properties, "bottom", Bottom);
         AddProperty(properties, "left", Left);
+        AddProperty(properties, "inset-inline-start", InsetInlineStart);
+        AddProperty(properties, "inset-inline-end", InsetInlineEnd);
         AddProperty(properties, "place-items", PlaceItems);
         AddProperty(properties, "grid-area", GridArea);
         AddProperty(properties, "z-index", ZIndex);
@@ -270,6 +293,8 @@ public class HtmlStyle
         AddProperty(properties, "padding-right", PaddingRight);
         AddProperty(properties, "padding-bottom", PaddingBottom);
         AddProperty(properties, "padding-left", PaddingLeft);
+        AddProperty(properties, "padding-block", PaddingBlock);
+        AddProperty(properties, "padding-inline", PaddingInline);
 
         AddProperty(properties, "background", Background);
         AddProperty(properties, "background-color", BackgroundColor);
@@ -283,6 +308,8 @@ public class HtmlStyle
 
         AddProperty(properties, "border", Border);
         AddProperty(properties, "border-width", BorderWidth);
+        AddProperty(properties, "border-block-width", BorderBlockWidth);
+        AddProperty(properties, "border-inline-width", BorderInlineWidth);
         AddProperty(properties, "border-style", BorderStyle);
         AddProperty(properties, "border-color", BorderColor);
         AddProperty(properties, "border-radius", BorderRadius);

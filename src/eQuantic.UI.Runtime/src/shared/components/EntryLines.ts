@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeEditorController, CodeGrid, ColorToken, Point, Positioned, Rect, SheetPalette, SizeValue, Stack, StatelessComponent, Text, TypeRoleValue } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeEditorController, CodeGrid, ColorToken, Directionality, Point, Positioned, Rect, SheetPalette, SizeValue, Stack, StatelessComponent, Text, TypeRoleValue } from "../runtime-exports";
 
 export class EntryLines extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.EntryLines';
@@ -42,7 +42,7 @@ export class EntryLines extends StatelessComponent {
             let to = this._entry.caretRect(composing.end);
             if (from.y === to.y && to.x > from.x) layers.add(this.rectangle(new Rect(from.x, Math.fround(from.bottom - 1.5), Math.fround(to.x - from.x), 1.5), this._palette.cellText));
         }
-        return layers;
+        return new Directionality('leftToRight', layers);
     }
 
     rectangle(rect: Rect, colour: ColorToken) {

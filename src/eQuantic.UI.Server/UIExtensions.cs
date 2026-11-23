@@ -967,6 +967,9 @@ public static class UIExtensions
         var uiCulture = System.Globalization.CultureInfo.CurrentUICulture;
         var formatCulture = System.Globalization.CultureInfo.CurrentCulture;
         var htmlLang = uiCulture.Name.Length > 0 ? uiCulture.Name : "en";
+        // Which way the page reads, beside its language and from the same culture (#1568): every start
+        // and end the realizer writes is logical CSS, so this one attribute mirrors the page.
+        var htmlDir = uiCulture.TextInfo.IsRightToLeft ? "rtl" : "ltr";
         var cultureDataJson = CultureBridge.BuildCultureData(context, uiCulture, formatCulture);
 
         // The app icon the SDK generated, linked without the app saying so. Stating it once — in
@@ -1198,6 +1201,7 @@ public static class UIExtensions
             ctx.Set("Nonce", nonce)
                .Set("HtmlClass", shell.HtmlClass)
                .Set("HtmlLang", htmlLang)
+               .Set("HtmlDir", htmlDir)
                .Set("Title", System.Web.HttpUtility.HtmlEncode(metadata.Title ?? string.Empty))
                .Set("MetadataTags", metadata.RenderTags())
                .SetOrEmpty("FontPreloads", fonts.Preloads)

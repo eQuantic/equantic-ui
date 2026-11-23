@@ -227,13 +227,13 @@ describe('a positioned child of a stack', () => {
   it('spans between both edges when its child fills', () => {
     const style = styleOf(corner(fillingRow()), 1);
 
-    expect(style).toContain('left: 0');
-    expect(style).toContain('right: 0');
+    expect(style).toContain('inset-inline-start: 0');
+    expect(style).toContain('inset-inline-end: 0');
   });
 
   it('stays where it was put when its child hugs', () => {
     const style = styleOf(corner(new Box(new BoxStyle({ width: 32, height: 32 }))), 1);
 
-    expect(style).not.toContain('left: 0');
+    expect(style).not.toContain('inset-inline-start: 0');
   });
 });

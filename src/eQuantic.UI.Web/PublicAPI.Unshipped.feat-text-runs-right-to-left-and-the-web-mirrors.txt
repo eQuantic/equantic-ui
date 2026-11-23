@@ -1,0 +1,17 @@
+#nullable enable
+*REMOVED*static eQuantic.UI.Web.TokenCss.Padding(eQuantic.UI.Primitives.EdgeInsets insets) -> string!
+eQuantic.UI.Web.HtmlStyle.BorderBlockWidth.get -> string?
+eQuantic.UI.Web.HtmlStyle.BorderBlockWidth.set -> void
+eQuantic.UI.Web.HtmlStyle.BorderInlineWidth.get -> string?
+eQuantic.UI.Web.HtmlStyle.BorderInlineWidth.set -> void
+eQuantic.UI.Web.HtmlStyle.InsetInlineStart.get -> string?
+eQuantic.UI.Web.HtmlStyle.InsetInlineStart.set -> void
+eQuantic.UI.Web.HtmlStyle.InsetInlineEnd.get -> string?
+eQuantic.UI.Web.HtmlStyle.InsetInlineEnd.set -> void
+eQuantic.UI.Web.HtmlStyle.PaddingBlock.get -> string?
+eQuantic.UI.Web.HtmlStyle.PaddingBlock.set -> void
+eQuantic.UI.Web.HtmlStyle.PaddingInline.get -> string?
+eQuantic.UI.Web.HtmlStyle.PaddingInline.set -> void
+static eQuantic.UI.Web.TokenCss.Padding(eQuantic.UI.Primitives.EdgeInsets insets) -> string?
+static eQuantic.UI.Web.TokenCss.PaddingBlock(eQuantic.UI.Primitives.EdgeInsets insets) -> string?
+static eQuantic.UI.Web.TokenCss.PaddingInline(eQuantic.UI.Primitives.EdgeInsets insets) -> string?

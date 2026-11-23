@@ -47,6 +47,9 @@ internal sealed partial class WebLoweringVisitor
                 PointerEvents = "auto",
                 TouchAction = "none",
             },
+            // Its cells and bands stand at physical x and it scrolls by scrollLeft, whose origin moves
+            // under rtl: it lays out left to right in every language until a table mirrors (#1568).
+            Dir = "ltr",
         };
         // A table or a grid reads as rows of cells (TS twin: lowerTableViewport, #1081). A group has no rows,
         // and is still read row by row, as Photon reads it, whichever band draws a cell (#1331).

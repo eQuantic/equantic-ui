@@ -12,6 +12,7 @@ import { hydrateValue } from '../utils/hydrate-value';
 import { hydrate, type HydrationSpec } from '../utils/hydrate';
 import { adoptMember } from '../utils/adopt-member';
 import { getCurrentRoute } from '../router/current-route';
+import { activeTextDirection } from '../utils/culture';
 import { ElementRoots, enterPass, exitPass, lowerRoot, relowerRoot, type Relowered } from '../shared/element-roots';
 import { partialCommitIsExact } from '../dom/shortcuts';
 import {
@@ -295,6 +296,8 @@ function pageContext(serviceProvider: ServiceProvider): RenderContext {
     route: getCurrentRoute(),
     theme: getPhotonTheme(),
     density: getPhotonDensity(),
+    // A page builds with no position, so it reads its culture's direction, as the C# frame does.
+    textDirection: activeTextDirection(),
     typeScale: getPhotonTypeScale(),
     measureText: measurePhotonText,
     monoAdvance: photonMonoAdvance,

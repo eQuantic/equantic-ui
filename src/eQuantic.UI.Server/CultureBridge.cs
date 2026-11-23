@@ -9,7 +9,7 @@ namespace eQuantic.UI.Server;
 
 /// <summary>
 /// Track L D4 — the culture half of the shell bridge, the theme bridge's shape slot for slot:
-/// <c>window.__EQ_CULTURE__ = { name, formatName, format, strings, catalogs }</c>, applied by boot BEFORE
+/// <c>window.__EQ_CULTURE__ = { name, formatName, format, rightToLeft, strings, catalogs }</c>, applied by boot BEFORE
 /// hydration, so the client writes every number and date as the server wrote them, names a month as
 /// the server named it, and resolves exactly the strings it rendered. The FORMAT culture travels with
 /// every page (<c>format</c>, from .NET's own data — see <see cref="Web.CultureFormatBridge"/>, whose
@@ -22,7 +22,9 @@ namespace eQuantic.UI.Server;
 /// this walk only picks a FILE and never merges. <c>catalogs</c> names the files the build wrote, so a
 /// switch in the browser walks the same chain and asks for none that is not there (#825). A culture
 /// switch fetches the format half for the culture it switches to from
-/// <c>/_equantic/culture/{name}.json</c> (<see cref="FormatDocument"/>).
+/// <c>/_equantic/culture/{name}.json</c> (<see cref="FormatDocument"/>). Both say which way the culture's text
+/// runs (<c>rightToLeft</c>, the UI culture's in the shell), which a switch writes on the document's
+/// <c>dir</c> (#1568).
 /// </summary>
 internal static class CultureBridge
 {
@@ -44,7 +46,8 @@ internal static class CultureBridge
         // culture names and the format data serialize through the encoder too.
         return $"{{\"name\":{JsonSerializer.Serialize(uiCulture.Name)}," +
             $"\"formatName\":{JsonSerializer.Serialize(formatCulture.Name)}," +
-            $"\"format\":{Web.CultureFormatBridge.SerializeJson(formatCulture)}" +
+            $"\"format\":{Web.CultureFormatBridge.SerializeJson(formatCulture)}," +
+            $"\"rightToLeft\":{RightToLeft(uiCulture)}" +
             (catalog is null ? "" : $",\"strings\":{catalog}") +
             $",\"catalogs\":{written}" + "}";
     }
@@ -78,8 +81,13 @@ internal static class CultureBridge
             return null;
         }
         return $"{{\"formatName\":{JsonSerializer.Serialize(culture.Name)}," +
-            $"\"format\":{Web.CultureFormatBridge.SerializeJson(culture)}}}";
+            $"\"format\":{Web.CultureFormatBridge.SerializeJson(culture)}," +
+            $"\"rightToLeft\":{RightToLeft(culture)}}}";
     }
+
+    /// <summary>Whether <paramref name="culture"/>'s text runs right to left, as a JSON literal: .NET's
+    /// answer, which the browser takes rather than keeping a list of languages that drifts from ICU.</summary>
+    private static string RightToLeft(CultureInfo culture) => culture.TextInfo.IsRightToLeft ? "true" : "false";
 
     private static string? PickCatalog(string stringsDir, CultureInfo uiCulture)
     {

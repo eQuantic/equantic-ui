@@ -272,6 +272,9 @@ export async function boot(): Promise<void> {
         // definite article in one and without it in the other), and text that differs between the
         // SSR HTML and the hydrated tree is a flicker nobody catches.
         format?: CultureFormat;
+        // Which way the UI culture's text runs, from .NET's TextInfo.IsRightToLeft: what a component
+        // with no Directionality above it reads, and what a switch writes on <html dir>.
+        rightToLeft?: boolean;
       };
     }).__EQ_CULTURE__;
     if (cultureData) {
@@ -281,6 +284,7 @@ export async function boot(): Promise<void> {
         cultureData.strings ?? {},
         cultureData.format,
         cultureData.catalogs,
+        cultureData.rightToLeft,
       );
     }
 
