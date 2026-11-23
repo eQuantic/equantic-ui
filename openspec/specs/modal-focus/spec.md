@@ -85,11 +85,15 @@ topmost layer whose every arm is on screen SHALL own it, asked when the Tab or t
 
 When a modal layer opens, it SHALL record the control that had the focus, on every target. Photon's
 layer SHALL then take the focus itself: on the control marked `InitialFocus`, else on its first stop,
-unless the focus is inside it already.
+unless the focus is inside it already. The web SHALL record the opener and take the focus in the pass
+that writes the layer, against the DOM that pass wrote.
 
 When the layer closes, whatever closed it, the focus SHALL go back to that control. When that control
 is gone, the focus SHALL go to the control that now stands at its place among those Tab reaches beneath
 the layer. Beneath a modal layer that stays open, that place SHALL be inside that layer.
+
+A menu's item SHALL leave the keyboard where it is when it is pressed, so a layer an item opens records
+the control that had the focus before: the menu's trigger, which keeps it while the menu shows.
 
 #### Scenario: Cancel
 
@@ -122,3 +126,14 @@ the layer. Beneath a modal layer that stays open, that place SHALL be inside tha
 
 - **WHEN** a confirm opened from a settings dialog closes both at once
 - **THEN** the focus is on the settings dialog's opener, on the web and on Photon
+
+#### Scenario: A dialog opened from a menu item
+
+- **WHEN** a row's menu is opened, its Delete item chosen by a pointer or by the keyboard, and the confirm
+  it opened closed with Cancel
+- **THEN** the focus is on the menu's trigger, on the web and on Photon
+
+#### Scenario: A dialog a page's render opens
+
+- **WHEN** a page's render opens a confirm in the browser, and no later pass comes
+- **THEN** the confirm is trapped and holds the focus, and its Cancel gives the focus back to the opener

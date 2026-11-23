@@ -1,0 +1,3 @@
+#nullable enable
+const eQuantic.UI.Compiler.CodeGen.Eq.TruncatedFromDecimal = "$eq.num.truncatedFromDecimal" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.DecClamp = "$eq.num.decClamp" -> string!

@@ -7,6 +7,8 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { activeFocusTraps, commitFocusTraps, resetFocusTraps } from './focus-trap';
+import { StatefulComponent } from '../core/component';
+import { Column, Overlay, Pressable, Stack, Text } from '../shared/vocabulary';
 import { gateCompactUntil, gateExpandedFrom } from '../shared/style-atomizer';
 
 /** A modal layer as the lowerings emit it: the marker plus the dialog semantics. */
@@ -541,5 +543,73 @@ describe('§10 a layer in a hidden adaptive arm', () => {
     discard.focus();
     expect(tab().defaultPrevented, 'the dialog on screen cycles Tab').toBe(true);
     expect(document.activeElement).toBe(keep);
+  });
+});
+
+/**
+ * The same contract through the pipeline a page runs, not a commit called by hand: a render's pass ends,
+ * the render manager writes the tree, and only then are the traps reconciled. The commit ran at the end
+ * of the pass, before the write, and read the DOM the pass before had written, so a dialog a render
+ * opened took no focus and recorded no opener until some later pass came; the cases above, which call
+ * `commitFocusTraps` themselves, could not see the order (#1812).
+ */
+describe('§10 through a page’s own render and write', () => {
+  /** A row's Delete that opens the confirm, its Cancel the safe action that takes the focus first. */
+  class ConfirmPage extends StatefulComponent {
+    asking = false;
+
+    build(): never {
+      const page = new Stack();
+      page.add(
+        new Pressable(new Text('Delete one', 'bodyM'), () => this.setState(() => (this.asking = true)), {
+          label: 'Delete one',
+        }) as never,
+      );
+      if (this.asking) {
+        const actions = new Column(4);
+        actions.add(
+          new Pressable(new Text('Cancel', 'bodyM'), () => this.setState(() => (this.asking = false)), {
+            label: 'Cancel',
+            initialFocus: true,
+          }) as never,
+        );
+        page.add(new Overlay(actions, { label: 'Delete the row?' }) as never);
+      }
+      return page as never;
+    }
+  }
+
+  const nextFrame = () =>
+    new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+  const labelled = (label: string) => document.querySelector(`[aria-label="${label}"]`) as HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    resetFocusTraps();
+  });
+
+  afterEach(() => resetFocusTraps());
+
+  it('a dialog a render opens takes the focus, and gives it back to its opener when it closes', async () => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    new ConfirmPage().mount(host);
+    await nextFrame();
+
+    labelled('Delete one').focus();
+    labelled('Delete one').click();
+    await nextFrame();
+    await nextFrame();
+
+    expect(activeFocusTraps(), 'the dialog is trapped in the pass that wrote it').toHaveLength(1);
+    expect(document.activeElement).toBe(labelled('Cancel'));
+
+    labelled('Cancel').click();
+    await nextFrame();
+    await nextFrame();
+
+    expect(activeFocusTraps()).toHaveLength(0);
+    expect(document.activeElement).toBe(labelled('Delete one'));
   });
 });
