@@ -275,7 +275,9 @@ internal sealed class RunningCompiler : IModuleCompiler
                 return null;
             }
             var json = answer.Output;
-            var properties = JsonDocument.Parse(json[json.IndexOf('{')..]).RootElement.GetProperty("Properties");
+            // Disposed: a JsonDocument rents its buffer from the shared pool and has no finalizer to give it back.
+            using var document = JsonDocument.Parse(json[json.IndexOf('{')..]);
+            var properties = document.RootElement.GetProperty("Properties");
             var eqc = properties.GetProperty("EqcCliPath").GetString();
             var arguments = properties.GetProperty("_EqcArgumentsPath").GetString();
             var project = properties.GetProperty("MSBuildProjectDirectory").GetString() ?? contentRoot;
@@ -309,7 +311,9 @@ internal sealed class RunningCompiler : IModuleCompiler
         try
         {
             var json = answer.Output;
-            var properties = JsonDocument.Parse(json[json.IndexOf('{')..]).RootElement.GetProperty("Properties");
+            // Disposed: a JsonDocument rents its buffer from the shared pool and has no finalizer to give it back.
+            using var document = JsonDocument.Parse(json[json.IndexOf('{')..]);
+            var properties = document.RootElement.GetProperty("Properties");
             return !string.IsNullOrEmpty(properties.GetProperty("EqcCliPath").GetString());
         }
         catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or ArgumentException)
