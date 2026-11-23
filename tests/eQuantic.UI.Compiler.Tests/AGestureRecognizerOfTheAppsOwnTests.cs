@@ -55,6 +55,27 @@ public class AGestureRecognizerOfTheAppsOwnTests
         recognizer.Should().Contain("startDeadline(500)", "the platforms' long press is a constant the C# names, which crosses as its value");
         foreach (var member in new[] { "isPointerAllowed(", "addAllowedPointer(", "handleEvent(", "didExceedDeadline(", "acceptGesture(", "rejectGesture(" })
             recognizer.Should().Contain(member, "every override the recognizer writes crosses");
-        built.Module("Cards").Should().Contain("new GestureRecognizerFactory(", "a component hosts the recognizer through its factory");
+        built.Module("Cards").Should().Contain("new GestureRecognizerFactoryWithHandlers(", "a component hosts the recognizer through its factory");
+    }
+
+    /// <summary>
+    /// TODAY'S ANSWER, pinned on purpose (#1846). An app reads the framework from metadata, and eqc marks a generic
+    /// construction with its type arguments only for a type the source declares, so the factory crosses unmarked: in
+    /// the browser <c>GestureRecognizerFactoryWithHandlers&lt;A&gt;</c> and <c>&lt;B&gt;</c> are one runtime type, and a
+    /// detector whose factory changes type at the same place keeps its old recognizer there. Photon makes a new one,
+    /// and so does the twin once the construction is marked (<c>gesture-arena.spec.ts</c>). When #1846 marks it, this
+    /// fails: flip it, and mark that case of the <c>RawGestureDetector</c> row in <c>docs/FLUTTER-PARITY.md</c> SAME.
+    /// </summary>
+    [Fact]
+    public void AnAppsConstructionOfTheFrameworksFactory_CarriesNoTypeArgumentYet()
+    {
+        using var solution = new Solution()
+            .App("Console", globalUsings: SharedLibrary.Factories,
+                files: [("Gestures/HoldThenDrag.cs", Sample()), ("Components/Cards.cs", Cards)]);
+
+        var cards = solution.Build().Module("Cards");
+
+        cards.Should().Contain("[new GestureRecognizerFactoryWithHandlers(", "the construction is not wrapped in its type's mark")
+            .And.NotContain("closing(", "no type argument reaches the browser for a framework generic yet");
     }
 }

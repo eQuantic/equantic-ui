@@ -3,7 +3,8 @@
  * of the C# `GestureRouter`, which the browser runs, as `GestureArenaFixtureTests` runs it against the C# Photon
  * runs. The members are the transpiled twins of the suite's `ArenaProbe`, a recognizer written as an app writes one,
  * and `ArenaMember`, a gesture of the SDK's: so this also executes an app's subclass of the runtime's
- * `GestureRecognizer`, call for call, against the same sequence as its C#.
+ * `GestureRecognizer`, call for call, against the same sequence as its C#; and the dashboard's own `HoldThenDrag`,
+ * transpiled from the sample's file, is a member too.
  */
 import { describe, expect, it } from 'vitest';
 import fixture from './gesture-arena.fixture.json';
@@ -13,6 +14,8 @@ import type { GestureArenaEntry } from './components/GestureArenaEntry';
 import type { GestureRecognizer } from './components/GestureRecognizer';
 import { ArenaProbe } from './__fixtures__/ArenaProbe';
 import { ArenaMember } from './__fixtures__/ArenaMember';
+import { HoldThenDrag } from './__fixtures__/HoldThenDrag';
+import { FactoryTypeChange } from './__fixtures__/FactoryTypeChange';
 import { Point, PointerEvent } from './value-types';
 import type { PointerPhaseValue } from './enums.generated';
 
@@ -24,6 +27,7 @@ type IGestureArenaMember = ArenaMember | GestureRecognizer;
 interface MemberSpec {
   name: string;
   plain?: boolean;
+  sample?: boolean;
   origin?: number[];
   deadline?: number;
   atDeadline?: Disposition;
@@ -64,6 +68,7 @@ class Run {
   readonly router = new GestureRouter();
   private readonly probes = new Map<string, ArenaProbe>();
   private readonly plain = new Map<string, IGestureArenaMember>();
+  private readonly samples = new Map<string, HoldThenDrag>();
   private readonly entries = new Map<string, GestureArenaEntry>();
   private build = 0;
 
@@ -92,6 +97,10 @@ class Run {
     const build = ++this.build;
     for (const member of this.members) {
       if (member.plain) continue;
+      if (member.sample) {
+        this.samples.set(member.name, this.router.recognizers(member.name, [this.sample(member.name)])[0] as HoldThenDrag);
+        continue;
+      }
       const factory = new GestureRecognizerFactoryWithHandlers<ArenaProbe>(
         () => {
           this.heard.push(`${member.name}.create`);
@@ -113,9 +122,25 @@ class Run {
     }
   }
 
+  /** The dashboard's recognizer, built as its screen builds it: each callback says what it reported. */
+  private sample(name: string): GestureRecognizerFactoryWithHandlers<HoldThenDrag> {
+    return new GestureRecognizerFactoryWithHandlers<HoldThenDrag>(
+      () => {
+        this.heard.push(`${name}.create`);
+        return new HoldThenDrag();
+      },
+      (drag: HoldThenDrag) => {
+        drag.onHeld = () => this.heard.push(`${name}.held`);
+        drag.onMoved = (offset: Point) => this.heard.push(`${name}.moved ${offset.x},${offset.y}`);
+        drag.onReleased = (offset: Point) => this.heard.push(`${name}.released ${offset.x},${offset.y}`);
+        drag.onCancelled = () => this.heard.push(`${name}.cancelled`);
+      },
+    );
+  }
+
   private down(at: number[], buttons: number): void {
     const members: IGestureArenaMember[] = this.members.map((member) =>
-      member.plain ? this.plain.get(member.name)! : this.probes.get(member.name)!,
+      member.plain ? this.plain.get(member.name)! : member.sample ? this.samples.get(member.name)! : this.probes.get(member.name)!,
     );
     const entries = this.router.down(event('down', at[0], at[1], buttons), members, this.inBox('down', at, buttons));
     this.members.forEach((member, i) => {
@@ -141,7 +166,7 @@ describe('the gesture arena, run by its transpiled twin', () => {
   const cases = (fixture as { cases: CaseSpec[] }).cases;
 
   it('holds the cases the spec names', () => {
-    expect(cases.length).toBeGreaterThanOrEqual(14);
+    expect(cases.length).toBeGreaterThanOrEqual(18);
   });
 
   for (const testCase of cases) {
@@ -156,4 +181,15 @@ describe('the gesture arena, run by its transpiled twin', () => {
       });
     });
   }
+});
+
+describe('a place whose factory changes type', () => {
+  // Flutter's canUpdate, as the C# router answers it (GestureArenaFixtureTests.APlaceWhoseFactoryChangesType_GetsANewRecognizer).
+  // The twin compares the factories' runtime types, which in the browser are the type arguments the construction
+  // was marked with: this suite compiles the framework from source, so eqc marks GestureRecognizerFactoryWithHandlers
+  // <ArenaProbe> and <HoldThenDrag>. An app reads the framework from metadata, and its construction goes unmarked
+  // until #1846: AGestureRecognizerOfTheAppsOwnTests pins that, and docs/FLUTTER-PARITY.md names the difference.
+  it('makes a new recognizer, and never hands the old one to the new initialize', () => {
+    expect(FactoryTypeChange.run()).toEqual(['probe.create', 'probe.initialize', 'drag.create', 'drag.initialize its own', 'made new']);
+  });
 });

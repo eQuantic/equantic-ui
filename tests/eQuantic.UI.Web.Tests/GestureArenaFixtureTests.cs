@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using eQuantic.Console;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Web.Tests.Fixtures;
 using FluentAssertions;
@@ -9,7 +11,8 @@ namespace eQuantic.UI.Web.Tests;
 /// <summary>
 /// The arena, written once (#1563): every case of <c>gesture-arena.fixture.json</c> runs here against the C#
 /// <see cref="GestureRouter"/>, which Photon runs, and in <c>gesture-arena.spec.ts</c> against its transpiled twin,
-/// which the browser runs, with <see cref="ArenaProbe"/> and <see cref="ArenaMember"/> as the members on both sides.
+/// which the browser runs, with <see cref="ArenaProbe"/> and <see cref="ArenaMember"/> as the members on both sides,
+/// and the dashboard's own <see cref="HoldThenDrag"/>, compiled here from the sample's file and transpiled there from it.
 /// Each step says what every member heard while it ran, so the two sides agree on who wins, and at which step.
 /// </summary>
 public class GestureArenaFixtureTests
@@ -44,9 +47,19 @@ public class GestureArenaFixtureTests
         }
     }
 
+    /// <summary>
+    /// Flutter's <c>canUpdate</c>: a place whose factory changes type gets a new recognizer, made and initialized by the
+    /// new factory, and the old one is never handed to it. This is the C# answer, which Photon runs, and
+    /// <c>gesture-arena.spec.ts</c> runs the same code transpiled, where the construction carries its type argument.
+    /// An app's does not yet (#1846, pinned by <c>AGestureRecognizerOfTheAppsOwnTests</c>).
+    /// </summary>
+    [Fact]
+    public void APlaceWhoseFactoryChangesType_GetsANewRecognizer() =>
+        FactoryTypeChange.Run().Should().Equal("probe.create", "probe.initialize", "drag.create", "drag.initialize its own", "made new");
+
     [Fact]
     public void TheFixture_HoldsTheCasesTheSpecNames() =>
-        Fixture().GetProperty("cases").GetArrayLength().Should().BeGreaterThanOrEqualTo(14);
+        Fixture().GetProperty("cases").GetArrayLength().Should().BeGreaterThanOrEqualTo(18);
 
     /// <summary>One case: the members, the router and the detectors it keeps, and what was heard.</summary>
     private sealed class Run
@@ -55,6 +68,7 @@ public class GestureArenaFixtureTests
         private readonly Dictionary<string, Point> _origins = [];
         private readonly Dictionary<string, ArenaProbe> _probes = [];
         private readonly Dictionary<string, IGestureArenaMember> _plain = [];
+        private readonly Dictionary<string, HoldThenDrag> _samples = [];
         private readonly Dictionary<string, GestureArenaEntry> _entries = [];
         private int _build;
 
@@ -103,6 +117,11 @@ public class GestureArenaFixtureTests
             foreach (var (memberName, spec) in _members)
             {
                 if (_plain.ContainsKey(memberName)) continue;
+                if (spec.TryGetProperty("sample", out var sample) && sample.GetBoolean())
+                {
+                    _samples[memberName] = (HoldThenDrag)Router.Recognizers(memberName, [Sample(memberName)]).Single();
+                    continue;
+                }
                 var factory = new GestureRecognizerFactoryWithHandlers<ArenaProbe>(
                     () =>
                     {
@@ -118,7 +137,9 @@ public class GestureArenaFixtureTests
         {
             var buttons = step.TryGetProperty("buttons", out var held) ? (PointerButtons)held.GetInt32() : PointerButtons.Primary;
             var members = _members
-                .Select(member => _plain.TryGetValue(member.Name, out var plain) ? plain : _probes[member.Name])
+                .Select(member => _plain.TryGetValue(member.Name, out var plain) ? plain
+                    : _samples.TryGetValue(member.Name, out var sample) ? sample
+                    : _probes[member.Name])
                 .ToList();
             var entries = Router.Down(Event(PointerPhase.Down, at, buttons), members, InBox(PointerPhase.Down, at, buttons));
             for (var i = 0; i < members.Count; i++)
@@ -138,6 +159,23 @@ public class GestureArenaFixtureTests
             new(phase, at, PointerKind.Touch, buttons, KeyModifiers.None, 1, Point.Zero, 0);
 
         private static PointerEvent Event(PointerPhase phase, Point at, int buttons) => Event(phase, at, (PointerButtons)buttons);
+
+        /// <summary>The dashboard's recognizer, built as its screen builds it: each callback says what it reported.</summary>
+        private GestureRecognizerFactoryWithHandlers<HoldThenDrag> Sample(string memberName) => new(
+            () =>
+            {
+                Heard.Add($"{memberName}.create");
+                return new HoldThenDrag();
+            },
+            drag =>
+            {
+                drag.OnHeld = () => Heard.Add($"{memberName}.held");
+                drag.OnMoved = offset => Heard.Add($"{memberName}.moved {Pair(offset)}");
+                drag.OnReleased = offset => Heard.Add($"{memberName}.released {Pair(offset)}");
+                drag.OnCancelled = () => Heard.Add($"{memberName}.cancelled");
+            });
+
+        private static string Pair(Point offset) => string.Create(CultureInfo.InvariantCulture, $"{offset.X},{offset.Y}");
 
         private ArenaProbe Probe(string memberName, JsonElement spec) => new(memberName, Heard,
             deadlineMs: spec.TryGetProperty("deadline", out var deadline) ? deadline.GetDouble() : 0,

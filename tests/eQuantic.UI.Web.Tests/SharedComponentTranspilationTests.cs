@@ -480,14 +480,17 @@ public class SharedComponentTranspilationTests
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
         "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain",
-        "ArenaProbe", "ArenaMember",
+        "ArenaProbe", "ArenaMember", "HoldThenDrag", "FactoryTypeChange",
     ];
 
-    /// <summary>The arena's members as an app writes them (#1563), files of this suite's own.</summary>
+    /// <summary>The arena's members as an app writes them (#1563): files of this suite's own, and the dashboard's own
+    /// recognizer, read from the sample that ships it.</summary>
     private static string[] GestureFixtureSources(string root) =>
     [
         Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "ArenaProbe.cs"),
         Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "ArenaMember.cs"),
+        Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "FactoryTypeChange.cs"),
+        Path.Combine(root, "samples", "DefaultUIDashboard", "Gestures", "HoldThenDrag.cs"),
     ];
 
     /// <summary>The source this asks about, kept HERE rather than pointed at a production class.
