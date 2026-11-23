@@ -254,10 +254,18 @@ public readonly record struct NativeRole(
         // TalkBack names "drop-down list" and which is the class Chrome gives the web half of this
         // very component (a combobox that is not a text field). UIKit has no trait for it: a menu
         // button reports the button trait, and whether the list is open rides the expanded status
-        // the bridge already sets. An editable combobox, a text field with the list under it, would
-        // take Core-AAM's own pair, and nothing in the library builds one.
+        // the bridge already sets. An editable combobox, a text field with the list under it, takes
+        // Core-AAM's own pair: the row below.
         SemanticRole.ComboBox =>
             new("AXPopUpButton", "android.widget.Spinner", UIKitTrait.Button,
+                Activatable: true, Adjustable: false),
+
+        // A text field with the list under it (#1088), the code editor's go-to field: Core-AAM's own
+        // pair for an editable combobox, NSComboBox's AXComboBox on the Mac and, on Android, the
+        // field TalkBack calls an edit box and offers to type into. UIKit has no trait for it: a text
+        // field reports none, and whether its list is open rides the expanded status the bridge sets.
+        SemanticRole.EditableComboBox =>
+            new("AXComboBox", "android.widget.EditText", UIKitTrait.None,
                 Activatable: true, Adjustable: false),
 
         // A layer that holds the screen until it is answered: AXGroup with the AXApplicationDialog
