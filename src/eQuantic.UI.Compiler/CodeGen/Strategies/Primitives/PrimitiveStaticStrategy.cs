@@ -233,15 +233,31 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
     /// <summary>Emission template ({0}, {1}, … are the converted arguments), or null = fenced.</summary>
     private static string? MethodTable(SpecialType home, string name, int argCount, bool indexed)
     {
-        // A decimal is the runtime's Decimal, which rounds itself to whole units in any of .NET's
-        // directions, the scale .NET keeps included: decimal's and Math's Truncate, Floor and Ceiling
-        // (#1765, where a money field asks whether an amount has more digits than its currency).
+        // A decimal is the runtime's Decimal, which answers every member Math has for a decimal itself,
+        // the scale .NET keeps included: it rounds to whole units in any of .NET's directions (#1765,
+        // where a money field asks whether an amount has more digits than its currency), and its
+        // magnitude, sign, larger, smaller and clamp are its own (#1767), where JavaScript's Math read
+        // the object as NaN. decimal's own statics of the same names reach this row, and so do its
+        // conversions to an integer, toward zero from its digits as a cast converts it (#1766).
         if (home == SpecialType.System_Decimal)
             return (name, argCount) switch
             {
                 ("Truncate", 1) => "{0}.round(0, 'toZero')",
                 ("Floor", 1) => "{0}.round(0, 'toNegativeInfinity')",
                 ("Ceiling", 1) => "{0}.round(0, 'toPositiveInfinity')",
+                ("Abs", 1) => "{0}.abs()",
+                ("Sign", 1) => "{0}.sign()",
+                ("Max", 2) => "{0}.max({1})",
+                ("Min", 2) => "{0}.min({1})",
+                ("Clamp", 3) => $"{Eq.DecClamp}({{0}}, {{1}}, {{2}})",
+                ("ToSByte", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'sbyte')",
+                ("ToByte", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'byte')",
+                ("ToInt16", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'short')",
+                ("ToUInt16", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'ushort')",
+                ("ToInt32", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'int')",
+                ("ToUInt32", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'uint')",
+                ("ToInt64", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'long')",
+                ("ToUInt64", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'ulong')",
                 _ => null,
             };
         if (home == SpecialType.System_Single && SingleTable(name, argCount) is { } single) return single;

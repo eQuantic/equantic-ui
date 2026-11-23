@@ -1,0 +1,60 @@
+name: Approve the owner's pull requests
+
+# The main ruleset (21198869) requires one approving review, so that a contributor's pull request waits
+# for the owner (#1847). The owner's own pull requests, every session's included (they work as the
+# owner's account), cannot be approved by their author, so this workflow approves them.
+#
+# It runs on pull_request_target, which runs THIS file as main holds it and never a branch's copy, so no
+# branch can change what approves it. It checks out no code from the pull request and runs nothing of
+# it: the one step is a review through the API. A pull request is approved only when its author AND the
+# actor of the event (the opening, the push, the move out of draft) are the owner's account and its head
+# is a branch of this repository. A push a contributor makes to the owner's branch is not approved, and
+# the ruleset dismisses the earlier approval when new commits arrive.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+concurrency:
+  group: approve-owner-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  approve:
+    if: >-
+      github.event.pull_request.user.login == 'edgarmesquita' &&
+      github.event.sender.login == 'edgarmesquita' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Approve the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # The owner's commits carry the identity edgar@equantic.tech, which GitHub resolves to the
+          # account equantictech; the pull requests are opened by edgarmesquita.
+          OWNERS: '["edgarmesquita","equantictech"]'
+        run: |
+          # Every commit on the branch must be the owner's: an owner push must not vouch for a
+          # contributor's commit pushed earlier to the same branch. GitHub's own merge of main
+          # ("Update branch") is committed by web-flow.
+          others=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$NUMBER/commits" \
+            --jq "(env.OWNERS | fromjson) as \$o | .[] | select(([.author.login] | inside(\$o) | not) or ([.committer.login] | inside(\$o + [\"web-flow\"]) | not)) | .sha")
+          if [ -n "$others" ]; then
+            echo "Not approved: commits not made by the owner's account:"
+            echo "$others"
+            exit 0
+          fi
+          approved=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$NUMBER/reviews" \
+            --jq "[.[] | select(.user.login == \"github-actions[bot]\" and .state == \"APPROVED\" and .commit_id == env.HEAD_SHA)] | length")
+          if [ "$approved" != "0" ]; then
+            echo "The head $HEAD_SHA is already approved."
+            exit 0
+          fi
+          gh pr review "$NUMBER" --repo "$GITHUB_REPOSITORY" --approve \
+            --body "Approved for the owner: the author, the event's actor and every commit are the owner's account (#1847)."
