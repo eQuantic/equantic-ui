@@ -32,7 +32,8 @@ the focus only for a Tab that control did not consume.
 While a modal and open layer is shown, Tab and Shift+Tab SHALL walk the controls of the topmost such layer only,
 on the web and on Photon, and SHALL wrap inside it. A layer opened from inside it SHALL be part of its walk, and
 a non-modal layer SHALL NOT be. A modal layer with no control SHALL hold the keyboard, and no control behind it
-SHALL take the focus.
+SHALL take the focus. On the web, a layer inside an adaptive arm the window hides SHALL NOT hold the keyboard: the
+topmost layer whose every arm is on screen SHALL own it, asked when the Tab or the focus arrives.
 
 #### Scenario: Tab from a dialog's last control
 
@@ -63,6 +64,22 @@ SHALL take the focus.
 
 - **WHEN** a dialog with no control is shown over a page with a button, and Tab is pressed
 - **THEN** no control takes the focus, and the page's button is not reached
+
+#### Scenario: A drawer in an arm the window hides
+
+- **WHEN** a drawer is open in the compact arm at 700, the window widens to 1024, and back to 700
+- **THEN** at 700 the drawer cycles Tab, at 1024 Tab walks the page and a focus outside the drawer stays there,
+  and back at 700 the drawer holds Tab again
+
+#### Scenario: A layer outside every arm
+
+- **WHEN** a dialog that stands in no adaptive arm is open at 500, 700 and 1024
+- **THEN** at each width a focus behind it is pulled back into it
+
+#### Scenario: A hidden layer over a shown one
+
+- **WHEN** a dialog on the page is open under a drawer in the compact arm, and the window is at 1024
+- **THEN** the dialog cycles Tab
 
 ### Requirement: A modal layer gives the focus back when it closes
 
