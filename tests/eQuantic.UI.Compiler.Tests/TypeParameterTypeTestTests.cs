@@ -30,12 +30,13 @@ public class TypeParameterTypeTestTests
     [InlineData("public string Name(object value) => value switch { T made => \"made\", _ => \"other\" };")]
     [InlineData("public bool Holds(object value) => value is T { } made && made != null;")]
     [InlineData("public bool Makes<TOther>(object value) where TOther : class => value is TOther;")]
+    [InlineData("public string Guard<TError>(Action run) where TError : Exception { try { run(); return \"ran\"; } catch (TError) { return \"caught\"; } }")]
     public void ATypeTestAgainstATypeParameter_IsRefused_NamingIt(string member)
     {
         var refused = Errors(member).Where(error => error.Code == "EQ2016").ToList();
 
         refused.Should().ContainSingle("the test is refused once, at the type it names");
-        refused[0].Message.Should().MatchRegex("'T(Other)?'", "the message names the type parameter");
+        refused[0].Message.Should().MatchRegex("'T(Other|Error)?'", "the message names the type parameter");
         refused[0].Message.Should().Contain("type arguments", "and says why the browser cannot answer it");
     }
 
