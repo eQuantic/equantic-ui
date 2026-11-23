@@ -16,7 +16,7 @@ namespace eQuantic.UI.Web.Tests;
 public class CalendarTests
 {
     private static readonly IAppTheme Theme = PhotonTheme.Instance;
-    /// <summary>The culture <see cref="Render"/> pins, so an expectation built here reads the same
+    /// <summary>The culture <see cref="Render(VisualNode, string)"/> pins, so an expectation built here reads the same
     /// day and month names the tree does.</summary>
     private static readonly CultureInfo Culture = new("en-US");
 
@@ -42,7 +42,9 @@ public class CalendarTests
 
     /// <summary>Renders under a fixed culture, so a machine in São Paulo and one in Berlin assert
     /// the same tree.</summary>
-    private static HtmlNode Render(VisualNode node, string culture = "en-US")
+    private static HtmlNode Render(VisualNode node, string culture = "en-US") => Render(node, new CultureInfo(culture));
+
+    private static HtmlNode Render(VisualNode node, CultureInfo culture)
     {
         var previousFormat = CultureInfo.CurrentCulture;
         var previousUi = CultureInfo.CurrentUICulture;
@@ -51,8 +53,8 @@ public class CalendarTests
             // BOTH: the day and month names follow the FORMAT culture, and the chevron labels come
             // from SdkStrings through a ResourceManager, which reads the UI culture. Pinning only
             // the first passes here and fails on a machine whose language is not English.
-            CultureInfo.CurrentCulture = new CultureInfo(culture);
-            CultureInfo.CurrentUICulture = new CultureInfo(culture);
+            CultureInfo.CurrentCulture = culture;
+            CultureInfo.CurrentUICulture = culture;
             return WebRealizer.Lower(node, Theme).Render();
         }
         finally
@@ -283,12 +285,14 @@ public class CalendarTests
     private static readonly DateOnly January17 = new(2024, 1, 17);
 
     /// <summary>Runs <paramref name="act"/> in a format culture, as a press under that page's culture.</summary>
-    private static void InCulture(string culture, Action act)
+    private static void InCulture(string culture, Action act) => InCulture(new CultureInfo(culture), act);
+
+    private static void InCulture(CultureInfo culture, Action act)
     {
         var previous = CultureInfo.CurrentCulture;
         try
         {
-            CultureInfo.CurrentCulture = new CultureInfo(culture);
+            CultureInfo.CurrentCulture = culture;
             act();
         }
         finally
@@ -356,15 +360,27 @@ public class CalendarTests
     [InlineData(2077, 11, 1)]
     public void ABoundedCalendarsFirstAndLastMonth_Draw(int year, int month, int day)
     {
-        // ar-SA's Um Al Qura calendar writes from April 30th 1900 to November 16th 2077, its first month's
-        // first day and its last month's last: the grid's leading and trailing weeks reach days it does not
-        // write, and the grid draws without asking them their month. (Linux's ar-SA counts Gregorian, and
-        // the same month then has the Gregorian length.)
+        // The Um Al Qura calendar writes from April 30th 1900 to November 16th 2077, its first month's first
+        // day and its last month's last: the grid's leading and trailing weeks reach days it does not write,
+        // and the grid draws without asking them their month. Set explicitly, on whichever culture the host
+        // offers it to, because Linux's ar-SA counts Gregorian by default.
         var shown = new DateOnly(year, month, day);
-        var length = 0;
-        InCulture("ar-SA", () => length = CultureCalendar.DaysInMonth(shown));
+        var culture = UmAlQura();
 
-        Cells(Render(new Calendar(shown), "ar-SA")).Should().HaveCount(length);
+        Cells(Render(new Calendar(shown), culture)).Should().HaveCount(year == 1900 ? 29 : 30,
+            "Muharram 1318 has 29 days and Dhu al-Hijjah 1500 has 30");
+    }
+
+    /// <summary>A culture counting in the Um Al Qura calendar: whichever one its host's data offers it to.</summary>
+    private static CultureInfo UmAlQura()
+    {
+        var calendar = new UmAlQuraCalendar();
+        var culture = (CultureInfo)CultureInfo.GetCultures(CultureTypes.SpecificCultures)
+            .OrderBy(candidate => candidate.Name != "ar-SA")
+            .First(candidate => candidate.OptionalCalendars.Any(optional => optional is UmAlQuraCalendar))
+            .Clone();
+        culture.DateTimeFormat.Calendar = calendar;
+        return culture;
     }
 
     [Fact]
