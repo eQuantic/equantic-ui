@@ -300,4 +300,124 @@ public class AppKitAccessibilityTests
 
         (dialog.Role, dialog.Subrole).Should().Be(("AXGroup", "AXApplicationDialog"));
     }
+
+    /// <summary>The element each build hands AppKit for a node, by the node's id.</summary>
+    private static Dictionary<string, IntPtr> ElementsOf(IntPtr children)
+    {
+        var found = new Dictionary<string, IntPtr>();
+        var count = SendULong(children, Sel("count"));
+        for (nuint index = 0; index < count; index++)
+        {
+            var element = Send(children, Sel("objectAtIndex:"), index);
+            found[FromNSString(Send(element, Sel("accessibilityIdentifier")))!] = element;
+        }
+        return found;
+    }
+
+    /// <summary>
+    /// A node's element lives as long as the node (#1111): read again, the tree hands AppKit the same element,
+    /// told what the node says now. Each read built new elements and released the ones before, so the element
+    /// VoiceOver's cursor stood on died the next time anything read the tree, and its walk stopped at the
+    /// title bar. A node that leaves takes its element with it, and a position that holds another kind of
+    /// node is a new element.
+    /// </summary>
+    [MacFact]
+    public void ANodesElementLivesAsLongAsTheNode_ToldWhatItSaysNow()
+    {
+        SemanticNode NodeOf(SemanticRole role, int id, string name, string? value = null) =>
+            new(role, id, new Rect(0, id * 30, 120, 24), name, value, false);
+        List<SemanticNode> tree =
+        [
+            NodeOf(SemanticRole.Button, 1, "Save"),
+            NodeOf(SemanticRole.TextField, 2, "Name", "Ana"),
+            NodeOf(SemanticRole.Button, 3, "Delete"),
+        ];
+        var previous = PhotonAccessibility.Source;
+        PhotonAccessibility.Source = () => tree;
+        try
+        {
+            var view = Send(Send(AppKit.Class("NSView"), Sel("alloc")), Sel("init"));
+            var first = ElementsOf(PhotonAccessibility.BuildChildren(view));
+
+            tree[1] = NodeOf(SemanticRole.TextField, 2, "Name", "Ana Lima");
+            tree[2] = NodeOf(SemanticRole.Checkbox, 3, "Delete");
+            tree.RemoveAt(0);
+            var second = ElementsOf(PhotonAccessibility.BuildChildren(view));
+
+            second["2"].Should().Be(first["2"], "the field is the same node, so VoiceOver's cursor on it stays valid");
+            FromNSString(Send(second["2"], Sel("accessibilityValue"))).Should().Be("Ana Lima", "and it says what it holds now");
+            second.Should().NotContainKey("1", "a node that left takes its element with it");
+            second["3"].Should().NotBe(first["3"], "a position that holds another kind of node is another element");
+            FromNSString(Send(second["3"], Sel("accessibilityRole"))).Should().Be("AXCheckBox");
+        }
+        finally
+        {
+            PhotonAccessibility.Source = previous;
+        }
+    }
+
+    /// <summary>What a node stops saying, its element stops saying: a value, a pick and an open list, each taken
+    /// away rather than left from the read before, now that an element outlives a read (#1111).</summary>
+    [MacFact]
+    public void WhatANodeStopsSaying_ItsElementStopsSaying()
+    {
+        List<SemanticNode> tree =
+            [new(SemanticRole.Tab, 1, new Rect(0, 0, 120, 24), "Overview", "1 of 2", false, Selected: true, Expanded: true)];
+        var previous = PhotonAccessibility.Source;
+        PhotonAccessibility.Source = () => tree;
+        try
+        {
+            var view = Send(Send(AppKit.Class("NSView"), Sel("alloc")), Sel("init"));
+            var element = ElementsOf(PhotonAccessibility.BuildChildren(view))["1"];
+            tree[0] = new(SemanticRole.Tab, 1, new Rect(0, 0, 120, 24), "Overview", null, false, Selected: false, Expanded: false);
+            ElementsOf(PhotonAccessibility.BuildChildren(view))["1"].Should().Be(element);
+
+            Send(element, Sel("accessibilityValue")).Should().Be(IntPtr.Zero, "the value it no longer has is gone");
+            SendBool(element, Sel("isAccessibilitySelected")).Should().BeFalse("the tab is no longer picked");
+            SendBool(element, Sel("isAccessibilityExpanded")).Should().BeFalse("and nothing under it is open");
+        }
+        finally
+        {
+            PhotonAccessibility.Source = previous;
+        }
+    }
+
+    /// <summary>
+    /// The window's content is a group AppKit lists, and its focused element is the element of the node with
+    /// the keyboard (#1111). The view was no element, so the window listed the elements while each named a
+    /// parent nothing listed, and the focused element was the window itself. Read through the real view's own
+    /// dispatch, as AppKit asks it.
+    /// </summary>
+    [MacFact]
+    public void TheContentIsAGroup_WhoseFocusedElementHoldsTheKeyboard()
+    {
+        IReadOnlyList<SemanticNode> tree =
+        [
+            new(SemanticRole.Button, 1, new Rect(0, 0, 120, 24), "Save", null, false),
+            new(SemanticRole.TextField, 2, new Rect(0, 30, 120, 24), "Name", "Ana", false),
+        ];
+        int? focused = null;
+        var previousSource = PhotonAccessibility.Source;
+        var previousFocus = PhotonAccessibility.FocusedId;
+        PhotonAccessibility.Source = () => tree;
+        PhotonAccessibility.FocusedId = () => focused;
+        try
+        {
+            var view = Send(Send(PhotonContentView.Register(), Sel("alloc")), Sel("init"));
+            SendBool(view, Sel("isAccessibilityElement")).Should().BeTrue("the group the window lists, its elements' parent");
+            FromNSString(Send(view, Sel("accessibilityRole"))).Should().Be("AXGroup");
+            var elements = ElementsOf(Send(view, Sel("accessibilityChildren")));
+            Send(elements["2"], Sel("accessibilityParent")).Should().Be(view);
+
+            Send(view, Sel("accessibilityFocusedUIElement")).Should().Be(view, "nothing holds the keyboard yet");
+            focused = 2;
+            Send(view, Sel("accessibilityFocusedUIElement")).Should().Be(elements["2"],
+                "the field with the keyboard is the focused element, the same one the group lists");
+        }
+        finally
+        {
+            PhotonAccessibility.Source = previousSource;
+            PhotonAccessibility.FocusedId = previousFocus;
+        }
+    }
 }
