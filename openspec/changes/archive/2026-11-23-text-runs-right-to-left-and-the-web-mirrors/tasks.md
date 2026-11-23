@@ -12,7 +12,7 @@
 
 ## 3. The web, both producers
 
-- [x] 3.1 `Directionality` lowers to a `display: contents` host with `dir` (C# `Visit(InheritedComponent)`, TS `case 'inherited'`)
+- [x] 3.1 `Directionality` writes `dir` on its child's own element, adding none (C# `Visit(InheritedComponent)`, TS `lowerInherited`)
 - [x] 3.2 Asymmetric padding and border widths as `*-inline` / `*-block`, symmetric ones unchanged (`TokenCss.Padding`, `SideWidths` and the TS twins); `HtmlStyle` gains the logical members it needs
 - [x] 3.3 `Positioned.Start`/`End` as `inset-inline-start`/`-end`; `ShiftX` through `--eq-inline`, declared by the token sheet; the anchored centre placement physical
 - [x] 3.4 `TableViewport`, `SheetSurface` and `CodeSurface` hosts carry `dir="ltr"`
@@ -25,6 +25,6 @@
 
 ## 5. Proof and docs
 
-- [ ] 5.1 Tests: the shell's `dir` for `ar` and `en`; the context's direction from the culture and from a `Directionality` on both targets; the lowered properties under each direction; the browser's `dir` after a culture switch
-- [ ] 5.2 The dashboard in Arabic, driven in a real browser: the page mirrored (a padded, start-aligned row and a start-positioned child measured from the right)
-- [ ] 5.3 `docs/FLUTTER-PARITY.md` row SAME for the web, `FlutterParityPinTests` probe; `docs/I18N-PLAN.md` D9 says where RTL went; ledger entry; the wiki in five languages
+- [x] 5.1 Tests: the shell's `dir` for `ar` and `en`; the context's direction from the culture and from a `Directionality` on both targets; the lowered properties under each direction; the browser's `dir` after a culture switch
+- [x] 5.2 The dashboard in Arabic, driven in a real browser: the page mirrored (a padded, start-aligned row and a start-positioned child measured from the right)
+- [x] 5.3 `docs/FLUTTER-PARITY.md` row SAME for the web, `FlutterParityPinTests` probe; `docs/I18N-PLAN.md` D9 says where RTL went; ledger entry; the wiki in five languages

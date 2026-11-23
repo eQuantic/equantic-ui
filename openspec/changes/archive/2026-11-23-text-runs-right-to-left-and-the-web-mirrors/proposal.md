@@ -23,7 +23,7 @@ fenced right to left out of the i18n track and into the layout vocabulary: this 
   source; the browser keeps no list of languages.
 - **The web writes start and end as the reader's start and end**, in both producers (the server's C# and the
   browser's TypeScript):
-  - a `Directionality` lowers to a `display: contents` host carrying `dir`, so it adds no box;
+  - a `Directionality` writes `dir` on its child's own element, so it adds no element;
   - padding and border widths whose start and end differ are written with `padding-inline` / `padding-block` and
     `border-inline-width` / `border-block-width`; equal ones keep the physical shorthand, which reads the same
     either way;

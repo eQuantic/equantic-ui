@@ -58,8 +58,12 @@ it at layout. Here the vocabulary's values are directional already, so only the 
    and `-1` on `[dir=rtl]`, inherited, so a nested `Directionality` flips it. Its documentation changes from "right"
    to "toward the end". The anchored centre placement becomes `left: 50%; transform: translateX(-50%)`.
 
-6. **A `Directionality` adds no box.** It lowers to a `div` with `display: contents` and `dir`. `display: contents`
-   keeps the subtree in its parent's layout, and `direction` still inherits through it.
+6. **A `Directionality` adds no element.** It writes `dir` on its child's own element, which keeps it when it already
+   says a direction, so the nearest `Directionality` wins, and so does a surface that lays out left to right. A host
+   of its own, even one with `display: contents`, would take what a parent writes on its child (an `align-self`, a
+   grid span, a stretched height, a drag's offset), and a box that draws nothing ignores all of it; every code view
+   builds inside one, so the host lost those on every code block. A partial render keeps the attribute, since it
+   replays on a component's new root what its parents wrote there.
 
 7. **What places content by physical x reads left to right.** `TableViewport`, `SheetSurface` and `CodeSurface`
    hosts carry `dir="ltr"`: under `rtl` their overflow would open to the left and their `scrollLeft` would change
