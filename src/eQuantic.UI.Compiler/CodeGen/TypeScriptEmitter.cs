@@ -553,7 +553,7 @@ public class TypeScriptEmitter
                     _converter.SetCurrentClass(component.Name);
 
                     // The C# constructor's parameters, each with its default (ConstructorParameter), or the
-                    // generic props a parameterless one hands its base for Object.assign. An interface among
+                    // generic props a parameterless one takes, applied after its body. An interface among
                     // them stays a parameter: a construction site passes it as written (#1837).
                     var jsParams = hasExplicitParams
                         ? string.Join(", ", parameters.Select(ConstructorParameter))
@@ -561,8 +561,7 @@ public class TypeScriptEmitter
 
                     var ctorStatements = new List<JsStatement>
                     {
-                        JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("super"),
-                            hasExplicitParams ? Array.Empty<JsExpr>() : new[] { JsExpr.Identifier("props") })),
+                        JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("super"))),
                     };
 
                     // Each parameter is stored as a component's is (ParameterStores): a primary constructor's
@@ -590,6 +589,11 @@ public class TypeScriptEmitter
                     // The C# constructor's body, a block's or an arrow's (ConstructorBody).
                     var ctorBodyLine = ctorStatements.Count + 1;
                     ctorStatements.AddRange(ConstructorBody(ctor));
+                    // …and the props a parameterless one takes LAST, where C# runs an object initializer, as the
+                    // component branch applies its config: handed to super() first, a body that sets a member
+                    // overwrote what the props carried, once the body ran at all (#1837).
+                    if (!hasExplicitParams)
+                        ctorStatements.Add(JsStatement.Raw("if (props && typeof props === 'object') Object.assign(this, props);"));
                     c.Member(JsClassMember.Constructor(jsParams, JsStatement.Block(ctorStatements)),
                         bodySource: (SyntaxNode?)ctor?.BodyNode ?? ctor?.ExpressionBodyNode, bodyLine: ctorBodyLine);
 
