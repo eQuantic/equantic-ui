@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeFold, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, CodeTokenKindValue, ColorToken, Column, ControlMetrics, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
+import { $CodeDecorationKindValue, $CodeGutterKindValue, $CodeTokenKindValue, $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDocument, CodeFold, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, ColorToken, Column, ControlMetrics, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
@@ -24,7 +24,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     declare standalone: boolean;
-    declare size: SizeVariantValue;
+    declare size: $SizeVariantValue;
     declare inverse: boolean;
     declare gutterMarkers: CodeGutterMarker[];
     declare decorations: CodeDecoration[];
@@ -159,24 +159,24 @@ export class CodeBlock extends StatelessComponent {
         let widest = 0;
         let known: any; 
         if ((known = this.widestLine) != null) widest = known; else {
-            for (let index = 0; index < this.document.lineCount; index++) widest = Math.max(widest, CodeLineCells.widthOf(this.document.line(index), this.tabSize));
+            for (let index = 0; index < this.document.lineCount; index = index + 1 | 0) widest = Math.max(widest, CodeLineCells.widthOf(this.document.line(index), this.tabSize));
             let fillers: any; 
             if ((fillers = this.fillerDocument) != null) {
-                for (let index = 0; index < fillers.lineCount; index++) widest = Math.max(widest, CodeLineCells.widthOf(fillers.line(index), this.tabSize));
+                for (let index = 0; index < fillers.lineCount; index = index + 1 | 0) widest = Math.max(widest, CodeLineCells.widthOf(fillers.line(index), this.tabSize));
             }
         }
         let codeWidth = Math.fround(Math.fround(Math.fround(widest) * metrics.columnWidth) + metrics.columnWidth);
         for (const header of $eq.collections.sequenceWalk(this.foldedLines)) {
             let fold: any; 
             if (header < 0 || header >= this.document.lineCount || !((fold = this.foldAt(header)) != null)) continue;
-            let cells = CodeLineCells.widthOf(this.document.line(header), this.tabSize) + CodeLineCells.widthOf(CodeBlock.markerOf(fold), this.tabSize);
+            let cells = CodeLineCells.widthOf(this.document.line(header), this.tabSize) + CodeLineCells.widthOf(CodeBlock.markerOf(fold), this.tabSize) | 0;
             codeWidth = Math.max(codeWidth, Math.fround(Math.fround(Math.fround(Math.fround(cells) * metrics.columnWidth) + CodeBlock.markerRoom) + metrics.columnWidth));
         }
         let fillerHighlighter = this.fillerDocument == null ? null : this.fillerHighlighter ?? new CodeHighlighter(this.language);
         let lines = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         if (first > 0) lines.add(Spacer.fixed(Math.fround(Math.fround(first) * lineHeight)));
-        for (let row = first; row <= last; row++) lines.add(this.rowView(this.rowAt(row), highlighter, fillerHighlighter, metrics, ink, theme));
-        if (last < this.rowCount - 1) lines.add(Spacer.fixed(Math.fround(Math.fround(this.rowCount - 1 - last) * lineHeight)));
+        for (let row = first; row <= last; row = row + 1 | 0) lines.add(this.rowView(this.rowAt(row), highlighter, fillerHighlighter, metrics, ink, theme));
+        if (last < (this.rowCount - 1 | 0)) lines.add(Spacer.fixed(Math.fround(Math.fround((this.rowCount - 1 | 0) - last | 0) * lineHeight)));
         let content: VisualNode = new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(0, 12) }), lines);
         let width = Math.max(codeWidth, this.viewportWidth);
         let marks = new Stack('topStart', { width: SizeValue.fill });
@@ -189,7 +189,7 @@ export class CodeBlock extends StatelessComponent {
         if ($eq.collections.count(this.selectionBands) > 0) {
             let band = CodeBlock.selectionFor(this.inverse, theme);
             let windowTop = Math.fround(metrics.contentTop + Math.fround(Math.fround(first) * lineHeight));
-            let windowBottom = Math.fround(metrics.contentTop + Math.fround(Math.fround(last + 1) * lineHeight));
+            let windowBottom = Math.fround(metrics.contentTop + Math.fround(Math.fround(last + 1 | 0) * lineHeight));
             for (const rect of $eq.collections.sequenceWalk(this.selectionBands)) {
                 if (Math.fround(rect.y + rect.height) <= windowTop || rect.y >= windowBottom) continue;
                 marks.add(new Positioned(new Box(new BoxStyle({ width: rect.width, height: rect.height, background: band, cornerRadius: new CornerRadii(1) })), rect.y, null, null, rect.x));
@@ -230,11 +230,11 @@ export class CodeBlock extends StatelessComponent {
     ownMetrics(context: BuildContext) {
         let given: any; 
         if ((given = this.metrics) != null) return given;
-        let own = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + this.document.lineCount - 1);
+        let own = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, (this.firstLineNumber + this.document.lineCount | 0) - 1 | 0);
         return this.showLineNumbers && ($eq.collections.count(this.folds) > 0 || !(this.onFoldPressed == null)) ? own.with({ gutterWidth: Math.fround(own.gutterWidth + CodeBlock.foldSlot) }) : own;
     }
 
-    static metricsFor(context: BuildContext, size: SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
+    static metricsFor(context: BuildContext, size: $SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
         let style = $eq.withPatch(TypeStyle.ofSize(ControlMetrics.labelSize(context, size), 'regular'), { mono: true });
         let gutter = showLineNumbers ? Math.fround(Math.ceil(context.measureText($eq.text.format(lastLineNumber, null, undefined, undefined, 'int32') + '0', style)) + 12) : 0;
         return new CodeBlock$CodeMetrics(style, $eq.math.roundSingle(Math.fround(style.lineHeight * Math.fround(1.15))), context.monoAdvance(style), gutter);
@@ -262,8 +262,8 @@ export class CodeBlock extends StatelessComponent {
         let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fixed(metrics.gutterWidth) });
         column.add(Spacer.fixed(12));
         if (first > 0) column.add(Spacer.fixed(Math.fround(Math.fround(first) * lineHeight)));
-        for (let row = first; row <= last; row++) column.add(this.gutterCell(this.rowAt(row), numberOf, metrics, theme));
-        if (last < this.rowCount - 1) column.add(Spacer.fixed(Math.fround(Math.fround(this.rowCount - 1 - last) * lineHeight)));
+        for (let row = first; row <= last; row = row + 1 | 0) column.add(this.gutterCell(this.rowAt(row), numberOf, metrics, theme));
+        if (last < (this.rowCount - 1 | 0)) column.add(Spacer.fixed(Math.fround(Math.fround((this.rowCount - 1 | 0) - last | 0) * lineHeight)));
         return column;
     }
 
@@ -271,7 +271,7 @@ export class CodeBlock extends StatelessComponent {
         let isLine = shown.kind === 'line';
         let index = shown.line;
         let number: any; 
-        let label = (number = numberOf) != null ? number(shown) : isLine ? $eq.text.format((this.firstLineNumber + index), null, undefined, undefined, 'int32') : null;
+        let label = (number = numberOf) != null ? number(shown) : isLine ? $eq.text.format((this.firstLineNumber + index | 0), null, undefined, undefined, 'int32') : null;
         let numbers = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'end', cross: 'center' });
         let mark: any; 
         if (isLine && (mark = this.markerFor(index)) != null) {
@@ -284,12 +284,12 @@ export class CodeBlock extends StatelessComponent {
         let cell = new Box(new BoxStyle({ width: SizeValue.fixed(metrics.gutterWidth), height: SizeValue.fixed(metrics.lineHeight), padding: new EdgeInsets(0, 0, 12, 0), background: !isLine ? this.fillerColor : this.activeLines.includes(index) ? this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle : null }), numbers);
         if ($eq.collections.count(this.folds) === 0 && this.onFoldPressed == null) {
             let pressed: any; 
-            return isLine && (pressed = this.onGutterPressed) != null ? new Pressable(cell, () => pressed(index), { label: SdkStrings.lineNumbered(this.firstLineNumber + index) }) : cell;
+            return isLine && (pressed = this.onGutterPressed) != null ? new Pressable(cell, () => pressed(index), { label: SdkStrings.lineNumbered(this.firstLineNumber + index | 0) }) : cell;
         }
         let slot = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fixed(metrics.gutterWidth), height: SizeValue.fixed(metrics.lineHeight), cross: 'center' });
         let numbered: VisualNode = new Box(new BoxStyle({ width: SizeValue.fixed(Math.fround(Math.fround(metrics.gutterWidth - CodeBlock.foldSlot) - 12)), height: SizeValue.fill }), numbers);
         let press: any; 
-        if (isLine && (press = this.onGutterPressed) != null) numbered = new Pressable(numbered, () => press(index), { label: SdkStrings.lineNumbered(this.firstLineNumber + index) });
+        if (isLine && (press = this.onGutterPressed) != null) numbered = new Pressable(numbered, () => press(index), { label: SdkStrings.lineNumbered(this.firstLineNumber + index | 0) });
         slot.add(numbered);
         slot.add(this.foldChevron(isLine ? this.foldAt(index) : null, metrics, theme));
         return new Box(new BoxStyle({ width: SizeValue.fixed(metrics.gutterWidth), height: SizeValue.fixed(metrics.lineHeight), background: !isLine ? this.fillerColor : this.activeLines.includes(index) ? this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle : null }), slot);
@@ -313,8 +313,8 @@ export class CodeBlock extends StatelessComponent {
         let slot = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fixed(CodeBlock.foldSlot), height: SizeValue.fill, main: 'end', cross: 'center' });
         if (fold == null) return slot;
         let folded = this.isFolded(fold.startLine);
-        let from = this.firstLineNumber + fold.startLine;
-        let to = this.firstLineNumber + fold.endLine;
+        let from = this.firstLineNumber + fold.startLine | 0;
+        let to = this.firstLineNumber + fold.endLine | 0;
         slot.add(new Icon(IconGlyph.fromIcons(folded ? 'chevronRight' : 'chevronDown'), Math.min(16, metrics.lineHeight), this.inverse ? CodeBlock.codeInkMuted : theme.textMuted));
         let box: VisualNode = slot;
         let pressed: any; 
@@ -355,7 +355,7 @@ export class CodeBlock extends StatelessComponent {
         spaced.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(4, 0), background: theme.colors('primary').subtle, cornerRadius: new CornerRadii(theme.shape('small')) }), this.muted(CodeBlock.markerOf(fold), metrics, theme)));
         let marker: VisualNode = spaced;
         let pressed: any; 
-        return (pressed = this.onFoldPressed) != null ? new Pressable(marker, () => pressed(fold.startLine), { label: SdkStrings.unfoldLines(this.firstLineNumber + fold.startLine, this.firstLineNumber + fold.endLine), expanded: false, canRequestFocus: false }) : marker;
+        return (pressed = this.onFoldPressed) != null ? new Pressable(marker, () => pressed(fold.startLine), { label: SdkStrings.unfoldLines(this.firstLineNumber + fold.startLine | 0, this.firstLineNumber + fold.endLine | 0), expanded: false, canRequestFocus: false }) : marker;
     }
 
     muted(text: string, metrics: CodeBlock$CodeMetrics, theme: any) {
@@ -425,15 +425,15 @@ export class CodeBlock extends StatelessComponent {
     }
 
     static windowOf(lineCount: number, lineHeight: number, offset: number, viewportHeight: number): [number, number] {
-        if (viewportHeight <= 0 || lineHeight <= 0) return [0, lineCount - 1];
+        if (viewportHeight <= 0 || lineHeight <= 0) return [0, lineCount - 1 | 0];
         offset = Math.min(offset, Math.max(0, Math.fround(Math.fround(Math.fround(lineCount) * lineHeight) - viewportHeight)));
         let margin = 8;
-        let first = Math.max(0, $eq.num.saturate(Math.floor(Math.fround(offset / lineHeight))) - margin);
-        let visible = $eq.num.saturate(Math.ceil(Math.fround(viewportHeight / lineHeight))) + margin * 2;
-        return [first, Math.min(lineCount - 1, first + visible)];
+        let first = Math.max(0, $eq.num.saturate(Math.floor(Math.fround(offset / lineHeight))) - margin | 0);
+        let visible = $eq.num.saturate(Math.ceil(Math.fround(viewportHeight / lineHeight))) + margin * 2 | 0;
+        return [first, Math.min(lineCount - 1 | 0, first + visible | 0)];
     }
 
-    static passOf(kind: CodeDecorationKindValue) {
+    static passOf(kind: $CodeDecorationKindValue) {
         return (() => { const $s = kind; if ($s === 'line') return CodeBlock.linePass; if ($s === 'highlight') return CodeBlock.highlightPass; return CodeBlock.outlinePass; })();
     }
 
@@ -448,7 +448,7 @@ export class CodeBlock extends StatelessComponent {
         let rows: number[] = [];
         let lowest = 2147483647;
         let highest = -1;
-        for (let row = first; row <= last; row++) {
+        for (let row = first; row <= last; row = row + 1 | 0) {
             let shown = this.rowAt(row);
             if (shown.kind !== 'filler' || shown.sourceLine < 0) continue;
             $eq.collections.listAdd(sources, shown.sourceLine);
@@ -464,7 +464,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     static rowOfSource(sources: number[], rows: number[], line: number) {
-        for (let i = 0; i < sources.length; i++) if (sources[i] === line) return rows[i];
+        for (let i = 0; i < sources.length; i = i + 1 | 0) if (sources[i] === line) return rows[i];
         return -1;
     }
 
@@ -475,8 +475,8 @@ export class CodeBlock extends StatelessComponent {
         let color = decoration.color ?? this.defaultColor(decoration.kind, theme);
         if (this.inverse) color = new ColorToken(color.dark, color.dark);
         let whole = decoration.kind === 'line';
-        let lastTouched = whole && end.line > start.line && end.column === 0 ? end.line - 1 : end.line;
-        for (let line = Math.max(start.line, first); line <= Math.min(lastTouched, last); line++) {
+        let lastTouched = whole && end.line > start.line && end.column === 0 ? end.line - 1 | 0 : end.line;
+        for (let line = Math.max(start.line, first); line <= Math.min(lastTouched, last); line = line + 1 | 0) {
             let row = rowOf(line);
             if (row < 0) continue;
             let top = Math.fround(metrics.contentTop + Math.fround(Math.fround(row) * metrics.lineHeight));
@@ -490,20 +490,20 @@ export class CodeBlock extends StatelessComponent {
             if (to <= from && !point) continue;
             let cells = cellsOf(line);
             let left = Math.fround(metrics.contentLeft + Math.fround(Math.fround(cells.cellOf(from)) * metrics.columnWidth));
-            let width = point ? Math.fround(metrics.columnWidth * Math.fround(Math.max(1, cells.cellOf(Math.min(from + 1, document.line(line).length)) - cells.cellOf(from)))) : Math.fround(Math.fround(cells.cellOf(to) - cells.cellOf(from)) * metrics.columnWidth);
+            let width = point ? Math.fround(metrics.columnWidth * Math.fround(Math.max(1, cells.cellOf(Math.min(from + 1 | 0, document.line(line).length)) - cells.cellOf(from) | 0))) : Math.fround(Math.fround(cells.cellOf(to) - cells.cellOf(from) | 0) * metrics.columnWidth);
             if (width <= 0 && !(decoration.kind === 'dots')) continue;
             _seq.push((() => { const $s = decoration.kind; if ($s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if ($s === 'squiggle') return new Positioned(CodeBlock.wave(width, color), Math.fround(Math.fround(top + metrics.lineHeight) - CodeBlock.waveHeight), null, null, left); if ($s === 'dots') return new Positioned(new Drawing(CodeBlock.hintDots, CodeBlock.hintDots.width, CodeBlock.hintDots.height, color), Math.fround(Math.fround(top + metrics.lineHeight) - CodeBlock.hintDots.height), null, null, left); if ($s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(top + Math.fround(metrics.lineHeight / 2)), null, null, left); if ($s === 'underline') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(Math.fround(top + metrics.lineHeight) - 2), null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());
         }
         return _seq;
     }
 
-    defaultColor(kind: CodeDecorationKindValue, theme: any) {
+    defaultColor(kind: $CodeDecorationKindValue, theme: any) {
         return (() => { const $s = kind; if ($s === 'squiggle') return theme.colors('destructive').base; if ($s === 'outline') return theme.borderStrong; if ($s === 'strike') return theme.textMuted; if ($s === 'underline') return CodeBlock.inkFor(this.inverse, theme); if ($s === 'line') return theme.colors('primary').subtle; if ($s === 'dots') return theme.textMuted; return theme.colors('warning').subtle; })();
     }
 
     static wave(width: number, color: ColorToken) {
         let path = $eq.text.stringBuilder('M0 2');
-        for (let x = 0; Math.fround(x) < width; x += CodeBlock.wavePeriod) path.append(' L').append($eq.text.format(x + Math.trunc(CodeBlock.wavePeriod / 2), null, undefined, undefined, 'int32')).append(' 0 L').append($eq.text.format(x + CodeBlock.wavePeriod, null, undefined, undefined, 'int32')).append(' 2');
+        for (let x = 0; Math.fround(x) < width; x = x + CodeBlock.wavePeriod | 0) path.append(' L').append($eq.text.format(x + Math.trunc(CodeBlock.wavePeriod / 2) | 0, null, undefined, undefined, 'int32')).append(' 0 L').append($eq.text.format(x + CodeBlock.wavePeriod | 0, null, undefined, undefined, 'int32')).append(' 2');
         let wave = new VectorDrawing(0, -1, width, CodeBlock.waveHeight, [new VectorShape(path.toString(), VectorPaint.none, VectorPaint.inherit, 1)]);
         return new Drawing(wave, width, CodeBlock.waveHeight, color);
     }
@@ -511,13 +511,13 @@ export class CodeBlock extends StatelessComponent {
     static addSpan(code: Row, cells: CodeLineCells, from: number, to: number, color: ColorToken, style: TypeStyle, columnWidth: number) {
         if (to <= from) return;
         let run = '';
-        for (let i = cells.indexOf(from); i < cells.count; i++) {
+        for (let i = cells.indexOf(from); i < cells.count; i = i + 1 | 0) {
             let element = cells.elementAt(i);
             if (element.start >= to) break;
             if (element.start < from) continue;
-            let text = $eq.text.substring(cells.text, element.start, element.end - element.start);
+            let text = $eq.text.substring(cells.text, element.start, element.end - element.start | 0);
             if (text === '\t') {
-                for (let space = 0; space < element.width; space++) run += ' ';
+                for (let space = 0; space < element.width; space = space + 1 | 0) run += ' ';
             } else if (element.width === 2) {
                 if (run.length > 0) code.add(CodeBlock.run(run, color, style));
                 run = '';
@@ -563,12 +563,12 @@ export class CodeBlock extends StatelessComponent {
         return null;
     }
 
-    gutterColor(kind: CodeGutterKindValue, theme: any) {
+    gutterColor(kind: $CodeGutterKindValue, theme: any) {
         let token = CodeBlock.gutterToken(kind, theme);
         return this.inverse ? new ColorToken(token.dark, token.dark) : token;
     }
 
-    static gutterToken(kind: CodeGutterKindValue, theme: any) {
+    static gutterToken(kind: $CodeGutterKindValue, theme: any) {
         return (() => { const $s = kind; if ($s === 'breakpoint') return theme.colors('destructive').base; if ($s === 'breakpointDisabled') return theme.borderStrong; if ($s === 'error') return theme.colors('destructive').base; if ($s === 'warning') return theme.colors('warning').base; if ($s === 'added') return theme.colors('success').base; if ($s === 'modified') return theme.colors('info').base; if ($s === 'removed') return theme.colors('destructive').subtle; return theme.colors('primary').base; })();
     }
 
@@ -584,7 +584,7 @@ export class CodeBlock extends StatelessComponent {
         return inverse ? CodeBlock.codeSlab : theme.surfaceSubtle;
     }
 
-    static inverseCode(kind: CodeTokenKindValue, theme: any) {
+    static inverseCode(kind: $CodeTokenKindValue, theme: any) {
         let token = theme.code(kind);
         return new ColorToken(token.dark, token.dark);
     }

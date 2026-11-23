@@ -207,6 +207,13 @@ public interface IAppTheme
     MarkdownTheme? Markdown => null;
 
     /// <summary>
+    /// The look of an item carried in a sortable list (<see cref="SortableTheme"/>), NULL by default, which reads as
+    /// <see cref="SortPlacement"/>'s defaults. A list's own <see cref="Primitives.Sortable.Style"/> comes first,
+    /// member by member (#1602).
+    /// </summary>
+    SortableTheme? Sortable => null;
+
+    /// <summary>
     /// The colour of a code token. DEFAULTED from the palette the theme already has — a design
     /// system that ships one set of variants should not have to invent a second one to show code,
     /// and a theme that wants a real syntax palette overrides this and nothing else.

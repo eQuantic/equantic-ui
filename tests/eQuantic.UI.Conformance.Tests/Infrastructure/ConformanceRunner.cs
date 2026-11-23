@@ -55,9 +55,10 @@ public static class ConformanceRunner
     /// answer holds the host's newline: an exception's message is the usual one, since
     /// <c>ArgumentOutOfRangeException</c> writes its actual value after <c>Environment.NewLine</c>.
     /// </summary>
-    public static void AssertStatementsSameAsDotNetExceptTheHostsNewline(string csharpStatements, string why, string prelude = "")
+    public static void AssertStatementsSameAsDotNetExceptTheHostsNewline(string csharpStatements, string why, string prelude = "",
+        string? culture = null)
     {
-        var (jsBlock, actual, expected) = RunStatements(csharpStatements, prelude);
+        var (jsBlock, actual, expected) = RunStatements(csharpStatements, prelude, culture);
         if (actual == expected) return;
 
         Folded(actual).Should().Be(Folded(expected),

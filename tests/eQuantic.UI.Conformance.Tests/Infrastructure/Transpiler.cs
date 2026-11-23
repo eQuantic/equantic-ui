@@ -56,6 +56,8 @@ public static class Transpiler
         TestReferences.Of(typeof(System.DateOnly).Assembly.Location),
         TestReferences.Of(Assembly.Load("System.Runtime").Location),
         TestReferences.Of(Assembly.Load("System.Collections").Location),
+        // System.Uri's statics, which a component reaches to build a link (#1805).
+        TestReferences.Of(typeof(Uri).Assembly.Location),
         // The vocabulary, as the .NET side references it: a reference brings no name into
         // scope, so only a case that says `using eQuantic.UI.Primitives;` reads it.
         TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location),

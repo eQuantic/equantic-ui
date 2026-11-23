@@ -46,6 +46,21 @@ const CULTURES = {
     amDesignator: '오전',
     pmDesignator: '오후',
   }),
+  // Linux's ar-SA, whose ICU counts it in the Gregorian calendar: its era is spelled as its PM.
+  'ar-SA (Linux)': culture({
+    shortDatePattern: 'd/M/yyyy',
+    amDesignator: 'ص',
+    pmDesignator: 'م',
+    eraName: 'م',
+    abbreviatedEraName: 'م',
+  }),
+  // A culture of the Thai Buddhist calendar, whose era .NET reads beside a date.
+  'th-TH': culture({
+    shortDatePattern: 'd/M/yyyy',
+    eraName: 'พ.ศ.',
+    abbreviatedEraName: 'พ.ศ.',
+    calendar: { name: 'System.Globalization.ThaiBuddhistCalendar', twoDigitYearMax: 2572, yearOffset: 543 },
+  }),
 } satisfies Record<string, DateTimeFormatData>;
 
 type Culture = keyof typeof CULTURES;
@@ -243,5 +258,30 @@ describe('readMoment: the order of the parts', () => {
   it('reads a number of eight digits and refuses one of nine', () => {
     expect(read('1/1/00002024', 'invariant')).toBe('2024-01-01');
     expect(read('1/1/000002024', 'invariant')).toBe('format');
+  });
+});
+
+describe('readMoment: the era beside a date (#1191)', () => {
+  it('reads the era before and after a date, as often as it is written, in the culture\'s count', () => {
+    expect(read('15/1/2567 พ.ศ.', 'th-TH')).toBe('2024-01-15');
+    expect(read('พ.ศ. 15/1/2567', 'th-TH')).toBe('2024-01-15');
+    expect(read('พ.ศ. 15/1/2567 พ.ศ. พ.ศ.', 'th-TH')).toBe('2024-01-15');
+    expect(read('15/1/2567พ.ศ.', 'th-TH')).toBe('2024-01-15');
+    expect(read('1/15/2024 AD AD', 'en-US')).toBe('2024-01-15');
+  });
+
+  it('reads a designator beside a date with no clock as noon or midnight, and none alone', () => {
+    expect(read('1/15/2024 PM', 'en-US')).toBe('2024-01-15 12:00:00');
+    expect(read('1/15/2024 AM', 'en-US')).toBe('2024-01-15 00:00:00');
+    expect(read('PM 1/15/2024', 'en-US')).toBe('2024-01-15 12:00:00');
+    expect(read('1/15/2024PM', 'en-US')).toBe('2024-01-15 12:00:00');
+    expect(read('PM', 'en-US')).toBe('format');
+  });
+
+  it('reads an era spelled as a designator as the designator, as .NET does', () => {
+    expect(read('15/1/2024 م', 'ar-SA (Linux)')).toBe('2024-01-15 12:00:00');
+    expect(read('15/1/2024 ص', 'ar-SA (Linux)')).toBe('2024-01-15 00:00:00');
+    expect(read('15/1/2024 10:30 م', 'ar-SA (Linux)')).toBe('2024-01-15 22:30:00');
+    expect(read('م 15/1/2024', 'ar-SA (Linux)')).toBe('2024-01-15 12:00:00');
   });
 });

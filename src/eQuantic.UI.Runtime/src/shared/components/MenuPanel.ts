@@ -5,7 +5,7 @@ export class MenuPanel {
         let theme = context.theme;
         let slot = theme.menu;
         let list = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        for (let i = 0; i < $eq.collections.count(items); i++) {
+        for (let i = 0; i < $eq.collections.count(items); i = i + 1 | 0) {
             let item = $eq.collections.item(items, i);
             let index = i;
             let row = new Row(slot?.itemGap ?? 8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
@@ -25,12 +25,12 @@ export class MenuPanel {
     }
 
     static firstEnabled(items: MenuItem[]) {
-        for (let i = 0; i < $eq.collections.count(items); i++) if (!$eq.collections.item(items, i).disabled) return i;
+        for (let i = 0; i < $eq.collections.count(items); i = i + 1 | 0) if (!$eq.collections.item(items, i).disabled) return i;
         return 0;
     }
 
     static step(items: MenuItem[], highlight: number, direction: number) {
-        for (let i = highlight + direction; i >= 0 && i < $eq.collections.count(items); i += direction) if (!$eq.collections.item(items, i).disabled) return i;
+        for (let i = highlight + direction | 0; i >= 0 && i < $eq.collections.count(items); i = i + direction | 0) if (!$eq.collections.item(items, i).disabled) return i;
         return highlight;
     }
 }

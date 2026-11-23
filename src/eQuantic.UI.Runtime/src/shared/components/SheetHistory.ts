@@ -25,7 +25,7 @@ export class SheetHistory {
     popUndo() {
         if (this._undo.length === 0) return null;
         let edit = (($0) => $0[$0.length - 1])(this._undo);
-        $eq.collections.listRemoveAt(this._undo, this._undo.length - 1);
+        $eq.collections.listRemoveAt(this._undo, this._undo.length - 1 | 0);
         $eq.collections.listAdd(this._redo, edit);
         return edit;
     }
@@ -33,7 +33,7 @@ export class SheetHistory {
     popRedo() {
         if (this._redo.length === 0) return null;
         let edit = (($0) => $0[$0.length - 1])(this._redo);
-        $eq.collections.listRemoveAt(this._redo, this._redo.length - 1);
+        $eq.collections.listRemoveAt(this._redo, this._redo.length - 1 | 0);
         $eq.collections.listAdd(this._undo, edit);
         return edit;
     }

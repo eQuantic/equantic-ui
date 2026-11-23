@@ -26,9 +26,12 @@ internal sealed class AndroidBiometrics : IBiometrics
             if (!OperatingSystem.IsAndroidVersionAtLeast(29)) return false;
             if (PhotonActivity.Current?.GetSystemService(global::Android.Content.Context.BiometricService)
                 is not BiometricManager manager) return false;
-            // 0 is BIOMETRIC_SUCCESS. The named constant is deprecated in favour of the overload
-            // that takes authenticators, which is not bound here — and the value is the contract.
-            return manager.CanAuthenticate() == 0;
+            // A reader with something enrolled, which is the question the call without authenticators
+            // asked: Android 11 deprecated it for this one, naming the weak class it always meant.
+            var answer = OperatingSystem.IsAndroidVersionAtLeast(30)
+                ? manager.CanAuthenticate((int)BiometricManagerAuthenticators.BiometricWeak)
+                : manager.CanAuthenticate();
+            return answer == BiometricCode.Success;
         }
     }
 
@@ -51,9 +54,8 @@ internal sealed class AndroidBiometrics : IBiometrics
         // only promised 29 — so on an Android 29 device the prompt threw before it was ever
         // shown. Each version is asked in its own words now.
         if (OperatingSystem.IsAndroidVersionAtLeast(30))
-            // 0x00FF | 0x8000: BIOMETRIC_WEAK | DEVICE_CREDENTIAL, stated as values because the
-            // named flags are not bound.
-            builder.SetAllowedAuthenticators(0x000000FF | 0x00008000);
+            builder.SetAllowedAuthenticators(
+                (int)(BiometricManagerAuthenticators.BiometricWeak | BiometricManagerAuthenticators.DeviceCredential));
         else
             builder.SetDeviceCredentialAllowed(true);
 

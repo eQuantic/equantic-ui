@@ -10,12 +10,18 @@
     "1.9s off eqc's part, its median from 5.5s at a load average of 35 to 38 to 3.6s at 27 to 31.",
     "#1280 kept one bun between saves and wrote only what changed: bun's part from a median of 508ms (its",
     "runs 261 to 1230ms, a load average of 198 to 235) to 145ms (77 to 439ms, at 147 to 204). It lowers the",
-    "ceiling by 0.3s, under the 0.36s it measured, since the two ran at different loads."
+    "ceiling by 0.3s, under the 0.36s it measured, since the two ran at different loads.",
+    "#1364 and #1380 took eqc's part to the files a save can have changed. The web's warm medians over",
+    "six of main's samples jobs were 479, 634, 708, 722, 818 and 1053ms: under the bar on five. The 1053ms",
+    "run was not the load, the lowest of them (39); its eqc part ran 520 to 2129ms, against 166 to 492ms",
+    "in the others. A ceiling of a second would have failed it, so it is 1.5s, the runner's spread over",
+    "the bar, and within that spread the run says whether the median met the bar rather than asking for",
+    "the ceiling to come down."
   ],
   "desktop": {
     "total": 1000
   },
   "web": {
-    "total": 35500
+    "total": 1500
   }
 }

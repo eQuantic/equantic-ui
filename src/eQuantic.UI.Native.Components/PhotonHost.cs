@@ -423,6 +423,7 @@ public sealed partial class PhotonHost
         // Costs one length check in a frame with no live region, which is almost every frame.
         _announcer.Observe(_lastFrame, timeMs);
         AdoptAutofocus();
+        KeepModalFocus();
         AdoptFocusRequests();
         AdoptCompositeFocus();
         // A subscribed frame ticker IS motion: frames keep flowing while anyone wants them, and the
@@ -604,7 +605,8 @@ public sealed partial class PhotonHost
     /// <summary>
     /// Moves focus to the next ENABLED pressable in paint order (wrapping; spec: traversal = child
     /// order, depth-first — hit regions register in exactly that order). Returns false when the
-    /// frame has no focusable region.
+    /// frame has no focusable region. While a modal layer is shown, the walk stays inside the topmost
+    /// one and wraps there (#1066).
     /// </summary>
     public bool FocusNext() => MoveFocus(1);
 
@@ -631,11 +633,30 @@ public sealed partial class PhotonHost
             }
         }
 
+        // A modal layer holds the walk (#1066): the stops of the topmost one are the only ones Tab visits,
+        // and it wraps among them, as the web's focus trap cycles (focus-trap.ts). From a stop behind the
+        // layer, the walk goes on in paint order to the layer's first stop, or back to its last.
+        var trap = _lastFrame!.ModalLayerRoot();
         var start = current < 0 ? (step > 0 ? 0 : stops.Count - 1) : current + step;
-        var index = ((start % stops.Count) + stops.Count) % stops.Count;
-        var stop = stops[index];
+        for (var walked = 0; walked < stops.Count; walked++)
+        {
+            var index = (((start + walked * step) % stops.Count) + stops.Count) % stops.Count;
+            if (trap is null || Holds(trap, stops[index].Element)) return Land(stops[index]);
+        }
 
-        return Land(stop);
+        // A modal layer with nothing to stop on holds the keyboard all the same: nothing behind it takes
+        // the focus, as the web's trap focuses the layer itself.
+        EndEditing();
+        ClearFocus();
+        return true;
+    }
+
+    /// <summary>Whether <paramref name="element"/> is <paramref name="root"/> or under it.</summary>
+    private static bool Holds(Element root, Element element)
+    {
+        for (Element? at = element; at is not null && at.Depth >= root.Depth; at = at.Parent)
+            if (ReferenceEquals(at, root)) return true;
+        return false;
     }
 
     /// <summary>
@@ -2028,6 +2049,7 @@ public sealed partial class PhotonHost
             for (var i = 0; i < links.Count; i++)
             {
                 if (links[i].Id != id) continue;
+                if (OpenedBeside(links[i])) return true;
                 if (_navigationRequested is null) return false;
                 _navigationRequested(links[i].Destination);
                 return true;
@@ -3204,15 +3226,38 @@ public sealed partial class PhotonHost
     private bool ResolveLink(float x, float y)
     {
         var regions = _lastFrame?.LinkRegions;
-        if (regions is null || _navigationRequested is null) return false;
+        if (regions is null) return false;
         var point = new Point(x, y);
         for (var i = regions.Count - 1; i >= 0; i--)
         {
             if (!Covers(regions, i, regions[i].Bounds, point)) continue;
+            if (OpenedBeside(regions[i])) return true;
+            if (_navigationRequested is null) return false;
             _navigationRequested(regions[i].Destination);
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// A link that opens beside the page (<see cref="Link.OpensBeside"/>, #941), handed to the system
+    /// when its destination is an absolute <c>http</c> or <c>https</c> address and the shell opens
+    /// addresses (<see cref="IUrlLauncher"/>). False for an app's own route, which navigates in place.
+    /// The press is the link's once it is handed over, whatever the system answers, as a browser's
+    /// blocked tab still took the click; a launcher that fails says so through <see cref="Log"/>.
+    /// </summary>
+    private bool OpenedBeside(LinkRegion link)
+    {
+        if (!link.OpensBeside
+            || !Uri.TryCreate(link.Destination, UriKind.Absolute, out var url)
+            || url.Scheme is not ("http" or "https")
+            || CapabilityScope.Resolve<IUrlLauncher>() is not { } launcher)
+            return false;
+        var log = Log;
+        _ = launcher.OpenUrlAsync(url).AsTask().ContinueWith(
+            opening => log?.Invoke($"[eQuantic.UI] the system could not open '{url}': {opening.Exception?.GetBaseException().Message}"),
+            CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+        return true;
     }
 
     /// <summary>
@@ -3580,7 +3625,8 @@ public sealed partial class PhotonHost
     /// Spec S8 — a key press from the shell (desktop windows have a real keyboard): fires the LAST
     /// matching <see cref="Shortcut"/> of the current frame (the dialog on top wins the chord) and
     /// returns whether it was handled, so the shell can stop propagating it. Being on screen IS the
-    /// subscription — an unmounted dialog's Esc simply is not in the frame any more.
+    /// subscription — an unmounted dialog's Esc simply is not in the frame any more. Escape waits for the
+    /// code or sheet surface the keyboard is in while it would claim the key (#1181).
     /// <para>
     /// <paramref name="modifiers"/> carries <see cref="KeyModifiers.Command"/> for the PLATFORM's
     /// command key (⌘ on macOS, Ctrl elsewhere) — the shell resolves that, exactly like the browser
@@ -3597,13 +3643,9 @@ public sealed partial class PhotonHost
             return true;
         }
 
-        // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it.
-        if (BindingFor(key, modifiers) is { } binding)
-        {
-            binding.OnPressed();
-            NeedsRender = true;
-            return true;
-        }
+        // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it. Escape
+        // waits for the surface the keyboard is in, while the surface has something of its own to close.
+        if (BindingFor(key, modifiers) is { } binding && !SurfaceTakesFirst(key, modifiers)) return Fire(binding);
 
         // The menu key or Shift+F10 asks the target around the focus for its menu (#1531).
         if (RequestByKeyboard(key, modifiers)) return true;
@@ -3716,6 +3758,28 @@ public sealed partial class PhotonHost
         return false;
     }
 
+    /// <summary>
+    /// Whether the code or sheet surface the keyboard is in takes <paramref name="key"/> before a binding of
+    /// it fires (#1181; TS twin: the text door's answer to <c>TAKES_KEY_FIRST</c>, which shortcuts.ts asks the
+    /// focus): Escape, while the surface would claim it, so a dialog stays open over an open completion list
+    /// or a cell being edited, as Flutter dismisses a route only for an Escape nothing under the focus took.
+    /// <see cref="KeyDown"/>'s sheet or code branch then takes the key.
+    /// </summary>
+    private bool SurfaceTakesFirst(string key, KeyModifiers modifiers)
+    {
+        if (key != KeyChord.Escape.Key || modifiers != KeyChord.Escape.Modifiers) return false;
+        if (SheetTarget is { } sheet) return sheet.Model.ClaimsEscape(KeyboardConvention);
+        return CodeTarget is { } code && code.Model.ClaimsEscape(KeyboardConvention);
+    }
+
+    /// <summary>Runs a binding's action and asks for the frame that shows it.</summary>
+    private bool Fire(ShortcutBinding binding)
+    {
+        binding.OnPressed();
+        NeedsRender = true;
+        return true;
+    }
+
     /// <summary>The binding of THIS frame that answers a chord: the last one declared (the dialog on
     /// top wins), skipping a focus-scoped one whose subtree does not hold the focus.</summary>
     private ShortcutBinding? BindingFor(string key, KeyModifiers modifiers)
@@ -3750,7 +3814,8 @@ public sealed partial class PhotonHost
     /// The platform's back, Android's gesture and button: the layer on top (a dialog, a sheet, a
     /// drawer, a menu, a phone's detail pane) closes, through the Escape it already declares, because
     /// every layer back should close already answers to it. A field inside a dialog leaves with the
-    /// dialog, as a binding answers every key before the field does.
+    /// dialog: back fires the binding itself, where <see cref="KeyDown"/> lets a code or sheet surface with
+    /// something of its own to close take Escape first (#1181).
     /// <para>
     /// Unlike <see cref="KeyDown"/>, neither an edit nor a focus ring takes it, as a focused
     /// <c>TextField</c> never holds Flutter's back and an <c>EditText</c> never holds Android's. On a
@@ -3760,7 +3825,7 @@ public sealed partial class PhotonHost
     /// focused. Answers whether anything took it.
     /// </para>
     /// </summary>
-    public bool Back() => CanGoBack && KeyDown(KeyChord.Escape.Key, KeyChord.Escape.Modifiers);
+    public bool Back() => BindingFor(KeyChord.Escape.Key, KeyChord.Escape.Modifiers) is { } binding && Fire(binding);
 
     /// <summary>
     /// Takes the tree down: every component that mounted is told it left, the root among them.

@@ -21,7 +21,7 @@ export class LeadingSpans extends TableSpans {
     }
 
     get count(): number {
-        return this._rest.count + 1;
+        return this._rest.count + 1 | 0;
     }
 
     get total(): number {
@@ -29,15 +29,15 @@ export class LeadingSpans extends TableSpans {
     }
 
     extentOf(index: number) {
-        return index <= 0 ? this._lead : this._rest.extentOf(index - 1);
+        return index <= 0 ? this._lead : this._rest.extentOf(index - 1 | 0);
     }
 
     offsetOf(index: number) {
-        return index <= 0 ? 0 : this._lead + this._rest.offsetOf(index - 1);
+        return index <= 0 ? 0 : this._lead + this._rest.offsetOf(index - 1 | 0);
     }
 
     indexAt(offset: number) {
-        return offset < this._lead || this._rest.count === 0 ? 0 : this._rest.indexAt(offset - this._lead) + 1;
+        return offset < this._lead || this._rest.count === 0 ? 0 : this._rest.indexAt(offset - this._lead) + 1 | 0;
     }
 }
 

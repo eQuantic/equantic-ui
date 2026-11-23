@@ -129,14 +129,11 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
                     IntegerWidth.Of(shifted.UnwrapNullable()) is { Unsigned: true }, context);
             }
             var longResult = JsExpr.Binary(leftIr, jsOp, rightIr);
-            // A 64-bit result settles like any fixed-width one: checked throws, an explicit
-            // `unchecked` wraps (BigInt does not on its own), the default keeps counting.
+            // A 64-bit result settles like any fixed-width one: it wraps where C# wraps, which a
+            // BigInt never does on its own, and a checked context throws.
             if (op is "+" or "-" or "*")
-            {
-                var arithmetic = ArithmeticContext.Of(binary, context);
                 return IntegerWidth.Settle(longResult, context.SemanticHelper.GetType(binary),
-                    arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
-            }
+                    ArithmeticContext.Of(binary, context), context);
             return longResult;
         }
 
@@ -277,23 +274,11 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
 
         var resultType = context.SemanticHelper.GetType(binary);
 
-        // A FIXED-WIDTH result settles by its type (IntegerWidth): sub-int widths and uint wrap,
-        // int and long wrap under an explicit `unchecked`, a checked context throws. An int
-        // product goes through Math.imul, which wraps exactly where a double would lose bits.
+        // A FIXED-WIDTH result settles by its type (IntegerWidth.Arithmetic): every width wraps
+        // where C# wraps in its default context, a checked context throws, and a constant C# proved
+        // in range is left as written.
         if (op is "+" or "-" or "*" or "<<" && IntegerWidth.Of(resultType) is { } width)
-        {
-            var arithmetic = ArithmeticContext.Of(binary, context);
-            var settles = arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width);
-            if (settles && op == "*" && width.Bits == 32)
-            {
-                var product = JsExpr.Callish($"Math.imul({left}, {right})");
-                return arithmetic.IsChecked
-                    ? IntegerWidth.Checked(JsExpr.Binary(leftIr, "*", rightIr), width, context)
-                    : width.Unsigned ? IntegerWidth.Wrap(product, width) : product;
-            }
-            return IntegerWidth.Settle(JsExpr.Binary(leftIr, op, rightIr), resultType,
-                arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
-        }
+            return IntegerWidth.Arithmetic(op, leftIr, rightIr, width, ArithmeticContext.Of(binary, context), context);
 
         // A BITWISE result keeps its width (IntegerWidth.Bitwise): JavaScript's operators compute in
         // signed 32 bits, so `uint.MaxValue & uint.MaxValue` was -1 and a uint's `>>` shifted a sign in.
@@ -364,8 +349,7 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             var check = IntegerDivision.NeedsCheck(binary.Right, context);
             return result.IsLong()
                 ? IntegerDivision.OfLongs(op, a, b, check, context)
-                : IntegerWidth.Settle(IntegerDivision.OfNumbers(op, a, b, check, context), result,
-                    arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
+                : IntegerWidth.Quotient(IntegerDivision.OfNumbers(op, a, b, check, context), result, arithmetic, context);
         }
         if (op is "<<" or ">>" or ">>>" && result.IsLong())
         {
@@ -375,14 +359,7 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         if (op is "&" or "|" or "^" or ">>" or ">>>" && IntegerWidth.Of(result) is { } bits)
             return IntegerWidth.Bitwise(op, a, b, bits);
         if (op is "+" or "-" or "*" or "<<" && IntegerWidth.Of(result) is { } width)
-        {
-            var settles = arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width);
-            if (!settles) return null;
-            return op == "*" && width.Bits == 32 && !arithmetic.IsChecked
-                ? IntegerWidth.Settle(JsExpr.Callish($"Math.imul({JsExprWriter.Write(a)}, {JsExprWriter.Write(b)})"),
-                    result, false, arithmetic.ExplicitUnchecked, context)
-                : IntegerWidth.Settle(JsExpr.Binary(a, op, b), result, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
-        }
+            return IntegerWidth.Arithmetic(op, a, b, width, arithmetic, context);
         return op is "+" or "-" or "*" or "/" && SinglePrecision.Is(result)
             ? SinglePrecision.Round(JsExpr.Binary(a, op, b))
             : null;

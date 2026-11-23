@@ -55,9 +55,11 @@ import type {
   SizeKindValue,
   TableCellRoleValue,
   TableRoleValue,
+  TextEntryKindValue,
   VectorPaintKindValue,
 } from './enums.generated';
 import type { NodeKind } from './node-kinds.generated';
+import type { SortableTheme } from './theme-slots';
 
 export type { NodeKind } from './node-kinds.generated';
 
@@ -285,6 +287,8 @@ export interface BoxStyleValue {
   focus?: StyleDiffValue | null;
   /** Style diff while the control the box is inside is pressed (C# `BoxStyle.Pressed`). */
   pressed?: StyleDiffValue | null;
+  /** Style diff while the nearest pinned header around the box is scrolled (C# `BoxStyle.Scrolled`, #1769). */
+  scrolled?: StyleDiffValue | null;
   /** CSS cursor mirror — the C# PointerCursor member name in camelCase ('crosshair', 'colResize'). */
   cursor?: string;
 }
@@ -500,6 +504,7 @@ export interface SortDropValue {
   readonly to: string;
   readonly index: number;
   readonly into: string | null;
+  readonly depth: number | null;
 }
 
 /** The value a C# `SortAnnouncements` crosses as (#1564): the words a reader hears while the keyboard sorts,
@@ -522,9 +527,13 @@ export interface SortableNode extends VisualNodeValue {
   id: string;
   onDropped: (drop: SortDropValue) => void;
   announcements?: SortAnnouncementsValue | null;
+  /** The list's own look of a carried item (C# `Sortable.Style`, #1602). */
+  style?: SortableTheme | null;
   group?: string;
   axis?: string;
   nests?: boolean;
+  /** How far across the axis one depth of the items is indented (C# `Sortable.Indent`, #1594); 0, no depths. */
+  indent?: number;
   label?: string;
   onHovered?: ((drop: SortDropValue | null) => void) | null;
   accepts?: ((drop: SortDropValue) => boolean) | null;
@@ -539,6 +548,8 @@ export interface SortableItemNode extends VisualNodeValue {
   enabled?: boolean;
   /** The name the keyboard's steps say (C# `SortableItem.Name`); empty, what the item's subtree says. */
   name?: string;
+  /** The item's depth in a list whose items have depths (C# `SortableItem.Depth`, #1594). */
+  depth?: number;
 }
 
 /** Wire shape of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
@@ -702,6 +713,8 @@ export interface LinkNode extends VisualNodeValue {
   keepsPosition?: boolean;
   /** This link points at the page the reader is ON — aria-current="page" (C# twin). */
   current?: boolean;
+  /** Opens the destination beside the page, in a new tab (C# `Link.OpensBeside`, #941). */
+  opensBeside?: boolean;
 }
 
 /** Gestures v2: vertical drag-to-dismiss — the child follows a downward drag; releasing past the
@@ -729,6 +742,8 @@ export interface TextEntryNode extends VisualNodeValue {
   onFocusChanged?: ((focused: boolean) => void) | null;
   disabled?: boolean;
   obscure?: boolean;
+  /** What the field takes (C# `TextEntryKind`): its keyboard, its autofill, and that a value is no prose. */
+  kind?: TextEntryKindValue;
   role: string;
   /** Takes focus on MOUNT (the command-palette contract) — the attribute alone only fires on the
    * initial document parse, so the client lowering focuses it too. */
@@ -883,6 +898,9 @@ export interface SheetSurfaceModelLike {
   ): boolean;
   /** What the pointer looks like resting at a point: a PointerCursor member name ('crosshair'). */
   cursorAt(position: { x: number; y: number }): string;
+  /** Whether Escape pressed now would be the sheet's (an edit to cancel), asked before a binding of
+   * Escape around the sheet fires (#1181). */
+  claimsEscape(convention: KeyboardConventionValue): boolean;
 }
 
 /** Arrow-key adjustment semantics — one Tab stop wrapping a slider-like control. */
@@ -939,6 +957,20 @@ export interface GroupNode extends VisualNodeValue {
   child: VisualNodeValue;
   /** The group's name; none is announced when absent or empty. */
   label?: string;
+}
+
+/** A subtree a reader hears as one stop (C# twin: MergeSemantics). */
+export interface MergeSemanticsNode extends VisualNodeValue {
+  nodeKind: 'mergeSemantics';
+  child: VisualNodeValue;
+}
+
+/** A subtree a reader passes over (C# twin: ExcludeSemantics). */
+export interface ExcludeSemanticsNode extends VisualNodeValue {
+  nodeKind: 'excludeSemantics';
+  child: VisualNodeValue;
+  /** Whether it is passed over now; absent reads as true, the C# default. */
+  excluding?: boolean;
 }
 
 /**
@@ -1061,6 +1093,9 @@ export interface CodeSurfaceModelLike {
   focusChanged(focused: boolean): void;
   /** What the pointer looks like resting at a point: a PointerCursor member name ('text', 'pointer'). */
   cursorAt(position: { x: number; y: number }): string;
+  /** Whether Escape pressed now would be the editor's (a list, a card, a snippet, a second caret to
+   * close), asked before a binding of Escape around the editor fires (#1181). */
+  claimsEscape(convention: KeyboardConventionValue): boolean;
 }
 
 /** A live camera surface — the session id names the MediaStream the runtime attaches. */
@@ -1101,6 +1136,11 @@ export interface ImageNode extends VisualNodeValue {
   fit: string;
   label: string;
   cornerRadius?: CornerRadiiValue;
+  /** C# `Image.FocalPoint`: the picture's point held at the same fraction of the box (#1785); the
+   * centre when absent. */
+  focalPoint?: Point | null;
+  /** C# `Image.Zoom`: how much closer than its fit, around the focal point; 1 when absent. */
+  zoom?: number;
 }
 
 /** Wire shape of the C# `IconGlyph`: target-neutral path data (any pack or the curated set). */

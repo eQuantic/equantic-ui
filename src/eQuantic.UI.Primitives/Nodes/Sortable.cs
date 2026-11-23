@@ -22,13 +22,21 @@ public sealed class Sortable : SingleChildNode
 {
     public override string NodeKind => "sortable";
 
-    public Sortable(VisualNode child, string id, Action<SortDrop> onDropped, SortAnnouncements? announcements = null)
+    public Sortable(VisualNode child, string id, Action<SortDrop> onDropped, SortAnnouncements? announcements = null,
+        SortableTheme? style = null)
         : base(child)
     {
         Id = id;
         OnDropped = onDropped;
         Announcements = announcements;
+        Style = style;
     }
+
+    /// <summary>The look of an item carried from this list (#1602), laid over the theme's
+    /// (<see cref="IAppTheme.Sortable"/>) member by member, on every target: the item dimmed in its place, the copy
+    /// that follows a pointer, its shadow and how far it leans. Null takes the theme's look. A carried item keeps
+    /// the look of the list it was picked up from, in every list of the group.</summary>
+    public SortableTheme? Style { get; init; }
 
     /// <summary>What a reader hears while an item of this list is sorted by the keyboard: how to, and each step,
     /// on every target, in the words of the list the item was picked up from. <c>UI.Sortable</c> gives the SDK's
@@ -54,6 +62,15 @@ public sealed class Sortable : SingleChildNode
     /// <summary>Whether an item may also land INTO another (the middle half of the other's box), which
     /// <see cref="SortDrop.Into"/> then names: a tree's folders.</summary>
     public bool Nests { get; init; }
+
+    /// <summary>
+    /// How far across the <see cref="Axis"/> one depth of the items is indented, in logical pixels: a tree's
+    /// indentation per level (#1594). Above 0 the list's items have depths (<see cref="SortableItem.Depth"/>): an item
+    /// carries the deeper items right after it, its subtree, and a place between two items says in
+    /// <see cref="SortDrop.Depth"/> the depth the item takes there, which a pointer picks by its travel across the axis
+    /// and the keyboard by its cross arrows (<see cref="SortPlacement.Depths"/>). 0, the default, the list has none.
+    /// </summary>
+    public float Indent { get; init; }
 
     /// <summary>Where a carried item would land while it is over this list, each time that changes, and
     /// <c>null</c> once it leaves or the drag ends. Opt-in, because each report builds the component again.</summary>

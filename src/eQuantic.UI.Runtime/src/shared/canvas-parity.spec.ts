@@ -17,13 +17,14 @@ import type { CanvasNodeValue } from './nodes';
  * cast its way past that could not fail when the shape moved under it. */
 const fill = { kind: 'fill', value: 0 } as const;
 
-const canvas = (interactive: boolean): CanvasNodeValue => ({
+const canvas = (interactive: boolean, pressed = false): CanvasNodeValue => ({
   nodeKind: 'canvas',
   draw: () => {},
   width: fill,
   height: fill,
   label: interactive ? 'Sunburst' : null,
   onPointerMove: interactive ? () => {} : null,
+  onPointerDown: pressed ? () => {} : null,
 });
 
 /** The lowering only reads the theme for tokens a canvas never carries. */
@@ -45,5 +46,17 @@ describe('canvas parity (C# CanvasUnderALayerTests cross-pin)', () => {
     expect(only(listening, mute)).toHaveLength(1);
     expect(only(mute, listening)).toHaveLength(1);
     expect(lowerVisualNode(canvas(false), context).attributes['data-eq-canvas']).toBeUndefined();
+  });
+
+  // A canvas whose handlers follow a drag, a press and a move, claims the finger (#1786), so a phone
+  // does not scroll the page under the frame editor's drag. Cross-pinned with the C#
+  // `ACanvasThatFollowsADrag_ClaimsTheFinger_AsTheTwinDoes`. One that only hovers (a chart's tooltip)
+  // or only takes a press leaves the finger to the page.
+  it('a canvas that follows a drag claims the finger, and one that hovers or takes a press does not', () => {
+    // eq-182ppyb is `touch-action: none`, the one class the dragging canvas adds.
+    const dragging = lowerVisualNode(canvas(true, true), context).attributes['class'];
+    expect(dragging).toBe('eq-16x7aca eq-182ppyb eq-1jjc6f6 eq-akjizx eq-g7fowl');
+    expect(lowerVisualNode(canvas(true), context).attributes['class']).not.toContain('eq-182ppyb');
+    expect(lowerVisualNode(canvas(false, true), context).attributes['class']).not.toContain('eq-182ppyb');
   });
 });

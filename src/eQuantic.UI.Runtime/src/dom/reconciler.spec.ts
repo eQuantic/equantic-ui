@@ -635,6 +635,60 @@ describe('Hydration takes the client attributes and text', () => {
     container.remove();
   });
 
+  it('records each text and attribute the client wrote over, so a test can say the two disagreed (#1775)', () => {
+    const container = served(
+      '<div class="page"><section><p class="title">Our cakes</p></section>' +
+        '<a class="link" href="/en/terms">terms</a><button disabled="">Save</button></div>',
+    );
+
+    const result = new Reconciler().hydrateRoot(
+      container,
+      node('div', { class: 'page' }, [
+        node('section', {}, [node('p', { class: 'title' }, [text('')])]),
+        node('a', { class: 'link', href: '/pt-BR/terms' }, [text('terms')]),
+        node('button', {}, [text('Save')]),
+      ]),
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.differences).toEqual([
+      { kind: 'text', where: 'div > div > section > p', server: 'Our cakes', client: '' },
+      { kind: 'attribute', where: 'div > div > a', name: 'href', server: '/en/terms', client: '/pt-BR/terms' },
+      { kind: 'attribute', where: 'div > div > button', name: 'disabled', server: '', client: null },
+    ]);
+    container.remove();
+  });
+
+  it('records a text the server wrote that the client replaced, and an element only the server wrote', () => {
+    const container = served('<div class="page"><p>Ready</p><aside>promo</aside></div>');
+
+    const result = new Reconciler().hydrateRoot(container, node('div', { class: 'page' }, [node('p', {}, [text('Waiting')])]));
+
+    expect(result.differences).toEqual([
+      { kind: 'text', where: 'div > div > p', server: 'Ready', client: 'Waiting' },
+      { kind: 'element', where: 'div > div', server: 'aside', client: null },
+    ]);
+    container.remove();
+  });
+
+  it('records nothing where the two agree, nor a framework marker, a field a person used or the classes in another order', () => {
+    const container = served(
+      '<div class="page" data-eq-island="a1"><input class="typed" value=""><span class="b a">x</span></div>',
+    );
+    container.querySelector<HTMLInputElement>('.typed')!.value = 'mine';
+
+    const result = new Reconciler().hydrateRoot(
+      container,
+      node('div', { class: 'page', 'data-eq-table': '224' }, [
+        node('input', { class: 'typed', value: 'draft' }),
+        node('span', { class: 'a b' }, [text('x')]),
+      ]),
+    );
+
+    expect(result.differences).toEqual([]);
+    container.remove();
+  });
+
   it("keeps a framework marker the server wrote that the client's tree does not name", () => {
     const container = served('<div class="page" data-eq-island="a1"><span>x</span></div>');
 

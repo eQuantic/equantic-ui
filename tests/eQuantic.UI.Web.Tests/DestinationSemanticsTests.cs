@@ -162,4 +162,18 @@ public class DestinationSemanticsTests
         current.Should().ContainSingle().Which.Attributes["aria-current"].Should().Be("page");
         plain.Should().ContainSingle().Which.Attributes.Should().NotContainKey("aria-current");
     }
+
+    /// <summary>A link that opens beside the page (#941) is a new tab cut from this one, written by the
+    /// server exactly as the browser's lowering writes it (<c>destination-semantics.spec.ts</c>), so the
+    /// first hydration rewrites nothing; the router leaves a <c>_blank</c> anchor to the browser.</summary>
+    [Fact]
+    public void ALinkThatOpensBeside_IsANewTabCutFromThePage()
+    {
+        var beside = WebRealizer.Lower(Components.UI.Link("/terms", new Text("Terms of use", TypeRole.Label), opensBeside: true), Theme).Render();
+        var inPlace = WebRealizer.Lower(new Link("/terms", new Text("Terms of use", TypeRole.Label)), Theme).Render();
+
+        beside.Tag.Should().Be("a");
+        beside.Attributes.Should().Contain("target", "_blank").And.Contain("rel", "noopener noreferrer");
+        inPlace.Attributes.Should().NotContainKey("target").And.NotContainKey("rel");
+    }
 }

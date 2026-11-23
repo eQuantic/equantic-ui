@@ -31,8 +31,9 @@ internal static class ChildSlots
         // A component builds its one child; its element never asks this.
         "component" => NodeSlots.None,
         // Every arm at a slot of its own where the realizer draws them all (BuildOwner.HoldsEveryArm),
-        // the one the window's width resolves, at the node's own thresholds, where it draws one.
-        "adaptive" => everyArm ? EveryArm((AdaptiveNode)node) : NodeSlots.One(((AdaptiveNode)node).ResolveWidth(windowWidth)),
+        // and where it draws one, the one the window's width resolves, at the node's own thresholds, at
+        // the SAME slot it holds beside the others (#1783).
+        "adaptive" => everyArm ? EveryArm((AdaptiveNode)node) : OneArm((AdaptiveNode)node, windowWidth),
         "adjustable" => NodeSlots.One(((Adjustable)node).Child),
         // The panel is not a child of the anchor: the realizer shows it in a layer of its own, made when
         // the anchored node is painted and only while it is open, so that slot is built when it is shown.
@@ -53,6 +54,8 @@ internal static class ChildSlots
         "flexible" => NodeSlots.One(((Flexible)node).Child),
         "grid" => NodeSlots.Listed(((Grid)node).Children),
         "group" => NodeSlots.One(((Group)node).Child),
+        "mergeSemantics" => NodeSlots.One(((MergeSemantics)node).Child),
+        "excludeSemantics" => NodeSlots.One(((ExcludeSemantics)node).Child),
         "hoverable" => NodeSlots.One(((Hoverable)node).Child),
         "icon" => NodeSlots.None,
         "image" => NodeSlots.None,
@@ -94,6 +97,16 @@ internal static class ChildSlots
     // Each arm at its own slot whether or not the node declares the ones before it, so an arm keeps its
     // slot, and its position, when a build declares another.
     private static NodeSlots EveryArm(AdaptiveNode node) => NodeSlots.Three(node.Compact, node.Medium, node.Expanded);
+
+    // The arm the width shows, at its own slot, and the other two empty: a position in it is named as the
+    // web's every-arm tree names it, so the server's data reaches it, and the browser switching from every
+    // arm to one after hydration keeps the instances of the arm it shows.
+    private static NodeSlots OneArm(AdaptiveNode node, float windowWidth)
+    {
+        var shown = node.ResolveIndex(windowWidth);
+        return NodeSlots.Three(shown == 0 ? node.Compact : null, shown == 1 ? node.Medium : null,
+            shown == 2 ? node.Expanded : null);
+    }
 
     // The code, what it offers at its caret when it offers anything, then each note it explains with:
     // the order the layout measures them in.

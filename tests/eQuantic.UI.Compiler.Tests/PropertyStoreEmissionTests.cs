@@ -47,7 +47,7 @@ public class PropertyStoreEmissionTests
     public void ARecordWithAStore_AnswersToJson_AndATypeWithNone_DoesNot()
     {
         Module("Tagged").Should().Contain("toJSON(): Record<string, unknown> { return $eq.json(this); }")
-            .And.Contain("this.$count = value * 2");
+            .And.Contain("this.$count = Math.imul(value, 2)");
         Module("Plain").Should().NotContain("toJSON").And.NotContain("$name");
     }
 }

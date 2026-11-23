@@ -121,10 +121,12 @@ public sealed class ComponentElement : Element
             Configuration = configuration;
             var next = (UiComponent)configuration;
             // The retained instance stays and LEARNS the new configuration; a stateless one is
-            // replaced, since nothing about it outlives the build that made it.
-            if (Component is StatefulComponent retained)
+            // replaced, since nothing about it outlives the build that made it, and so is a stateful
+            // one its owner does not keep (BuildOwner.KeepsInstance).
+            if (Component is StatefulComponent retained && !ReferenceEquals(retained, next))
             {
-                if (!ReferenceEquals(retained, next)) retained.AdoptConfig(next);
+                if (Owner.KeepsInstance is not { } keeps || keeps(retained)) retained.AdoptConfig(next);
+                else Take(retained, next);
             }
             else
             {
@@ -133,6 +135,18 @@ public sealed class ComponentElement : Element
         }
 
         Rebuild(force);
+    }
+
+    /// <summary>
+    /// The fresh instance takes this position from the one it held: the old one leaves it, as a
+    /// position that leaves the tree lets it go, and the new one enters it, as a first build does, so a
+    /// live tree unmounts the one and mounts the other.
+    /// </summary>
+    private void Take(StatefulComponent retained, UiComponent next)
+    {
+        if (Owner.Live && retained.LeavePosition(this)) Owner.QueueUnmount(retained);
+        Component = next;
+        if (Owner.Live && next is StatefulComponent stateful && stateful.EnterPosition(this)) Owner.QueueMount(this);
     }
 
     /// <summary>
@@ -185,6 +199,27 @@ public sealed class ComponentElement : Element
         if (_child is null) return;
         _child.Deactivate();
         _child = null;
+    }
+
+    internal override void ForgetChild(Element child)
+    {
+        if (ReferenceEquals(_child, child)) _child = null;
+    }
+
+    internal override void FillForgotten()
+    {
+        if (_child is null) Rebuild(force: false);
+    }
+
+    private protected override void OnRebased()
+    {
+        if (_dependencies is null) return;
+        foreach (var dependency in _dependencies) dependency.RemoveDependent(this);
+        _dependencies = null;
+        DependenciesChanged = true;
+        // Marked as well as forced: the move's update builds what it reaches, and a position in a layer
+        // below it (a deferred slot) builds when its layer is next shown, reading its values again there.
+        MarkNeedsBuild();
     }
 
     private protected override void OnDeactivated()

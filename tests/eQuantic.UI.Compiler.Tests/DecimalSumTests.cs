@@ -160,7 +160,7 @@ public class DecimalCompoundAssignmentTests
     public void PlusEqualsOnANumber_StaysPlain()
     {
         var js = Compile("""
-                    var count = 0;
+                    var count = 0.0;
                     count += 2;
                     return new Text($"{count}", TypeRole.BodyM);
             """);

@@ -54,7 +54,7 @@ public class LocalFunctionNameTests
         var ts = TestHelper.ConvertClass(
             "private int _v; public int V { get => _v; set { int Value() => value * 2; _v = Value(); } }", "Cell");
 
-        ts.Should().Contain("const value$ = ").And.Contain("return value * 2").And.Contain("this._v = value$()");
+        ts.Should().Contain("const value$ = ").And.Contain("return Math.imul(value, 2)").And.Contain("this._v = value$()");
     }
 
     [Fact]

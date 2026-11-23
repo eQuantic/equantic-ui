@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, Column, CornerRadii, Divider, EdgeInsets, Grid, GridTrack, MarkdownBlock, MarkdownParser, MarkdownRun, MarkdownTheme, Mermaid, Row, SizeValue, StatelessComponent, Text, TextRun, TypeRoleValue, TypeStyle } from "../runtime-exports";
+import { $eq, $TypeRoleValue, Box, BoxStyle, BuildContext, CodeBlock, Column, CornerRadii, Divider, EdgeInsets, Grid, GridTrack, MarkdownBlock, MarkdownParser, MarkdownRun, MarkdownTheme, Mermaid, Row, SizeValue, StatelessComponent, Text, TextRun, TypeStyle } from "../runtime-exports";
 
 export class Markdown extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Markdown';
@@ -29,7 +29,7 @@ export class Markdown extends StatelessComponent {
         switch (block.kind) {
             case 'heading':
                 {
-                    let role: TypeRoleValue = style.heading4 ?? 'label';
+                    let role: $TypeRoleValue = style.heading4 ?? 'label';
                     if (block.level === 1) role = style.heading1 ?? 'heading'; else if (block.level === 2) role = style.heading2 ?? 'title'; else if (block.level === 3) role = style.heading3 ?? 'titleSmall';
                     return new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(0, block.level <= 2 ? style.headingSpace ?? 10 : style.subheadingSpace ?? 6, 0, 0) }), new Text(block.text, role, style.headingColor ?? theme.textPrimary, 0, 'start', false, false, null, block.level, { key: block.id }));
                 }
@@ -50,7 +50,7 @@ export class Markdown extends StatelessComponent {
     }
 
     static paragraph(runs: MarkdownRun[], theme: any, style: MarkdownTheme) {
-        let body: TypeRoleValue = Markdown.bodyRole(style);
+        let body: $TypeRoleValue = Markdown.bodyRole(style);
         let prose = theme.type(body);
         let codeMax = style.inlineCodeMaxSize ?? 13.5;
         let codeSize = prose.size < codeMax ? prose.size : codeMax;
@@ -79,7 +79,7 @@ export class Markdown extends StatelessComponent {
         let headerY = style.tableHeaderPaddingY ?? 10;
         let cellY = style.tableCellPaddingY ?? 11;
         let tracks: GridTrack[] = [];
-        for (let i = 0; i < block.head.length; i++) $eq.collections.listAdd(tracks, GridTrack.flex(1));
+        for (let i = 0; i < block.head.length; i = i + 1 | 0) $eq.collections.listAdd(tracks, GridTrack.flex(1));
         let rows = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         let head = new Grid(tracks, 0, null, { width: SizeValue.fill });
         for (const cell of $eq.collections.listWalk(block.head)) head.add(new Box(new BoxStyle({ padding: new EdgeInsets(paddingX, headerY, paddingX, headerY) }), Markdown.paragraph(cell.runs, theme, style)));

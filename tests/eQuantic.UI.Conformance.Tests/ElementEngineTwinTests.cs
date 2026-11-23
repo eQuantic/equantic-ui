@@ -135,13 +135,13 @@ public class ElementEngineTwinTests
 
     /// <summary>The twins of the components above, over the runtime's classes, and the frame helper.</summary>
     private static string Prelude(string runtime) => $$"""
-        import { BuildOwner, StatefulComponent, Column, Row, Text, InFlow, ComponentContext } from '{{runtime}}';
+        import { BuildOwner, StatefulComponent, Column, Row, Text, InFlow, ComponentContext, AdaptiveNode, GlobalKey, DevelopmentNotices } from '{{runtime}}';
         const trace = [];
         // The browser's own context, as a component's build receives it: what it reports is what the
         // C# components read through theirs (InFlow, above all).
         const context = new ComponentContext(null);
         const owner = new BuildOwner((component, context, depth) => component.build(context));
-        const frame = (root, rebuildAll = true) => { const element = owner.build(root, context, 400, rebuildAll); owner.endFrame(); return element; };
+        const frame = (root, rebuildAll = true, width = 400) => { const element = owner.build(root, context, width, rebuildAll); owner.endFrame(); return element; };
         const componentAt = (element) => element.component;
         class Counter extends StatefulComponent {
           constructor(label, builds = null) { super(); this.label = label; this.count = 0; this.builds = 0; this._log = builds; }
@@ -199,13 +199,46 @@ public class ElementEngineTwinTests
           build(context) { this._seen.push(this._name + ':' + context.density); return new Text('x', 'bodyM'); }
         }
         const placed = (first, second) => { const column = new Column(); column.children.push(first, second); return column; };
+        // The drawer template's shell: the screen alone in a column on a phone, beside a rail in a row on a
+        // wide window, each arm building its own screen with the one key.
+        const shell = (log, key) => {
+          const screen = () => { const made = new Logged('screen', log); made.globalKey = key; return made; };
+          const compact = new Column(); compact.children.push(screen());
+          const docked = new Row(); docked.children.push(new Text('rail', 'label'), screen());
+          return new AdaptiveNode(compact, null, docked);
+        };
+        const screenIn = (element) => {
+          if (element.component instanceof Logged) return element;
+          let found = null;
+          element.visitChildren((child) => { found ??= screenIn(child); });
+          return found;
+        };
         """;
 
-    private static Element Frame(BuildOwner owner, VisualNode root, bool rebuildAll = true)
+    private static Element Frame(BuildOwner owner, VisualNode root, bool rebuildAll = true, float width = 400f)
     {
-        var element = owner.Build(root, Context, 400f, rebuildAll);
+        var element = owner.Build(root, Context, width, rebuildAll);
         owner.EndFrame();
         return element;
+    }
+
+    /// <summary>The twin of the prelude's <c>shell</c>.</summary>
+    private static AdaptiveNode Shell(List<string> log, GlobalKey key)
+    {
+        var compact = new Column();
+        compact.Add(new Logged("screen", log) { GlobalKey = key });
+        var docked = new Row();
+        docked.Add(new Text("rail", TypeRole.Label));
+        docked.Add(new Logged("screen", log) { GlobalKey = key });
+        return new AdaptiveNode(compact, expanded: docked);
+    }
+
+    private static ComponentElement? ScreenIn(Element element)
+    {
+        if (element is ComponentElement { Component: Logged } screen) return screen;
+        ComponentElement? found = null;
+        element.VisitChildren(child => found ??= ScreenIn(child));
+        return found;
     }
 
     private static T ComponentAt<T>(Element element) where T : UiComponent => (T)((ComponentElement)element).Component;
@@ -592,6 +625,80 @@ public class ElementEngineTwinTests
             trace.push('then');
             frame(placed(new Text('gone', 'bodyM'), new Text('gone too', 'bodyM')));
             """).Should().Equal(log);
+    }
+
+    /// <summary>A screen that carries a global key crosses an adaptive node's arms with its state, both
+    /// ways, where one arm is held (#797, #1783): the browser runs the very engine Photon runs.</summary>
+    [SkippableFact]
+    public void AKeyedScreen_CrossesTheArmsWithItsState_BothWays()
+    {
+        SkipUnlessBun();
+        var log = new List<string>();
+        var owner = new ComponentBoundary().Owner();
+        var shell = Shell(log, new GlobalKey("screen"));
+        var root = Frame(owner, shell);
+        var first = ScreenIn(root)!;
+        ((Logged)first.Component).Press();
+        Frame(owner, shell, rebuildAll: false);
+        foreach (var width in new[] { 914f, 400f })
+        {
+            root = Frame(owner, shell, width: width);
+            var screen = ScreenIn(root)!;
+            log.Add($"{width}:same={ReferenceEquals(screen, first)},count={((Logged)screen.Component).Count},"
+                + $"slots={screen.SlotsBelow(0)},shown={(root.ChildAt(0) is null ? "-" : "0")}{(root.ChildAt(2) is null ? "-" : "2")}");
+        }
+
+        OnTheWeb("""
+            const shell_ = shell(trace, new GlobalKey('screen'));
+            let root = frame(shell_);
+            const first = screenIn(root);
+            first.component.press();
+            frame(shell_, false);
+            for (const width of [914, 400]) {
+              root = frame(shell_, true, width);
+              const screen = screenIn(root);
+              trace.push(width + ':same=' + (screen === first ? 'True' : 'False') + ',count=' + screen.component.count
+                + ',slots=' + screen.slotsBelow(0) + ',shown=' + (root.childAt(0) === null ? '-' : '0') + (root.childAt(2) === null ? '-' : '2'));
+            }
+            """).Should().Equal(log);
+        log.Should().Equal("mount:screen", "914:same=True,count=1,slots=2.1,shown=-2", "400:same=True,count=1,slots=0.0,shown=0-");
+    }
+
+    /// <summary>A key placed at two positions in one frame fills both, starts one of them again, and says
+    /// so, on both engines.</summary>
+    [SkippableFact]
+    public void AKeyPlacedTwice_FillsBothPositions_AndSaysSo()
+    {
+        SkipUnlessBun();
+        var log = new List<string>();
+        var heard = new List<string>();
+        var key = new GlobalKey("twin-placed-twice");
+        DevelopmentNotices.Sink = heard.Add;
+        try
+        {
+            var owner = new ComponentBoundary().Owner();
+            var root = Frame(owner, Placed(new Logged("a", log) { GlobalKey = key }, new Logged("b", log) { GlobalKey = key }));
+            log.Add($"filled:{root.ChildAt(0) is not null},{root.ChildAt(1) is not null}");
+            log.Add($"apart:{!ReferenceEquals(ComponentAt<Logged>(root.ChildAt(0)!), ComponentAt<Logged>(root.ChildAt(1)!))}");
+            log.AddRange(heard.Where(notice => notice.Contains("twin-placed-twice", StringComparison.Ordinal)));
+        }
+        finally
+        {
+            DevelopmentNotices.Sink = null;
+        }
+
+        OnTheWeb("""
+            const heard = [];
+            DevelopmentNotices.sink = (notice) => heard.push(notice);
+            const key = new GlobalKey('twin-placed-twice');
+            const a = new Logged('a', trace); a.globalKey = key;
+            const b = new Logged('b', trace); b.globalKey = key;
+            const root = frame(placed(a, b));
+            trace.push('filled:' + (root.childAt(0) !== null ? 'True' : 'False') + ',' + (root.childAt(1) !== null ? 'True' : 'False'));
+            trace.push('apart:' + (componentAt(root.childAt(0)) !== componentAt(root.childAt(1)) ? 'True' : 'False'));
+            trace.push(...heard);
+            """).Should().Equal(log);
+        log.Should().HaveCount(5).And.Contain(entry => entry.Contains("two positions in one frame"));
     }
 
     [SkippableFact]

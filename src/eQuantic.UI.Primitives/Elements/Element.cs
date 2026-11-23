@@ -103,7 +103,8 @@ public abstract class Element
     internal bool UnderInFlow { get; private set; }
 
     /// <summary>The nearest inherited position above this one, where a lookup by a component below it
-    /// starts: read from the parent when this position mounts, since a position never moves.</summary>
+    /// starts: read from the parent when this position mounts, and again when a global key moves it
+    /// (<see cref="Reattach"/>).</summary>
     internal InheritedElement? NearestInherited { get; private set; }
 
     /// <summary>The reconciliation that last claimed this position (see <see cref="NodeElement"/>):
@@ -124,7 +125,8 @@ public abstract class Element
     /// runtime type and carries the same key, and is replaced otherwise.
     /// </summary>
     internal static bool CanUpdate(VisualNode current, VisualNode next) =>
-        current.GetType() == next.GetType() && string.Equals(current.Key, next.Key, StringComparison.Ordinal);
+        current.GetType() == next.GetType() && string.Equals(current.Key, next.Key, StringComparison.Ordinal)
+        && ReferenceEquals(current.GlobalKey, next.GlobalKey);
 
     /// <summary>Takes its place under <paramref name="parent"/> and builds what is below it.</summary>
     internal void Mount(BuildOwner owner, Element? parent, int slot)
@@ -138,6 +140,7 @@ public abstract class Element
         UnderInFlow = parent is not null && (parent.UnderInFlow || parent.Configuration is InFlow);
         NearestInherited = parent as InheritedElement ?? parent?.NearestInherited;
         IsActive = true;
+        if (Configuration.GlobalKey is { } key) owner.Hold(key, this);
         FirstBuild();
     }
 
@@ -179,13 +182,70 @@ public abstract class Element
         return Inflate(configuration, slot);
     }
 
-    /// <summary>A new position under this one, at <paramref name="slot"/>, mounted and built.</summary>
+    /// <summary>
+    /// A position under this one, at <paramref name="slot"/>: a new one mounted and built, or, for a node
+    /// whose <see cref="VisualNode.GlobalKey"/> a position left with earlier in this build, that position,
+    /// moved here with everything below it and built with the node (#797).
+    /// </summary>
     private protected Element Inflate(VisualNode configuration, int slot)
     {
+        if (configuration.GlobalKey is { } key && Owner.Retake(key, configuration, this) is { } moved)
+        {
+            moved.Reattach(this, slot);
+            moved.Update(configuration, force: true);
+            return moved;
+        }
+
         var created = Create(configuration);
         created.Mount(Owner, this, slot);
         return created;
     }
+
+    /// <summary>
+    /// Takes its place under <paramref name="parent"/> at <paramref name="slot"/>, having left another in
+    /// this build: what it read from where it stood (its depth, the components and the inherited value
+    /// above it) is read again here, for it and everything below it. Its id stays: it is the same position.
+    /// </summary>
+    internal void Reattach(Element parent, int slot)
+    {
+        Parent = parent;
+        Slot = slot;
+        IsActive = true;
+        Rebase();
+    }
+
+    private void Rebase()
+    {
+        var parent = Parent;
+        Depth = parent is null ? 0 : parent.Depth + 1;
+        ComponentDepth = parent is null ? 0 : parent.ComponentDepth + (parent is ComponentElement ? 1 : 0);
+        UnderInFlow = parent is not null && (parent.UnderInFlow || parent.Configuration is InFlow);
+        NearestInherited = parent as InheritedElement ?? parent?.NearestInherited;
+        OnRebased();
+        VisitChildren(child => child.Rebase());
+    }
+
+    /// <summary>What a kind does when a global key moved it: a component lets go of the values it read
+    /// where it stood, and reads them again from where it stands, as Flutter's <c>activate</c> does.</summary>
+    private protected virtual void OnRebased()
+    {
+    }
+
+    /// <summary>Whether this position is <paramref name="element"/> or stands below it.</summary>
+    internal bool IsAtOrBelow(Element element)
+    {
+        for (Element? at = this; at is not null; at = at.Parent)
+            if (ReferenceEquals(at, element)) return true;
+        return false;
+    }
+
+    /// <summary>Lets go of <paramref name="child"/>, which a global key took to another parent in this
+    /// build, without taking it out: the slot it held is empty until this position builds again.</summary>
+    internal abstract void ForgetChild(Element child);
+
+    /// <summary>Builds again a slot a global key emptied (<see cref="ForgetChild"/>) when this position's
+    /// node still places something there: the build that moved the key never reached this position.</summary>
+    internal abstract void FillForgotten();
 
     /// <summary>
     /// Takes this position and everything below it out of the tree, the children first: Flutter's
@@ -193,8 +253,23 @@ public abstract class Element
     /// </summary>
     internal void Deactivate()
     {
+        // A position with a global key leaves whole, and waits for the build to end: a node of its key
+        // placed elsewhere in the same build takes it, and what is below it, there (#797).
+        if (Configuration.GlobalKey is { } key && Owner.Park(key, this))
+        {
+            IsActive = false;
+            return;
+        }
+
+        Leave();
+    }
+
+    /// <summary>Takes this position and everything below it out of the tree, whatever it carries.</summary>
+    internal void Leave()
+    {
         DeactivateChildren();
         IsActive = false;
+        if (Configuration.GlobalKey is { } key) Owner.LetGo(key, this);
         OnDeactivated();
     }
 
