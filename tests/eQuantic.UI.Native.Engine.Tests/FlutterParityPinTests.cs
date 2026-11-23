@@ -316,10 +316,12 @@ public class FlutterParityPinTests
         ["Listener"] = () => HasMember("Listener", "OnPointerDown") && HasMember("Listener", "OnPointerScroll")
             && Has("PointerEvent"),
         ["HitTestBehavior"] = () => Has("HitTestBehavior") && HasMember("Listener", "Behavior"),
-        ["GestureArena"] = () => Nothing("GestureArena", "GestureRecognizer"),
+        // One arena, written once and transpiled, and the recognizer an app subclasses (#1563).
+        ["GestureArena"] = () => Has("GestureArena") && Has("GestureRouter") && Has("IGestureArenaMember"),
         ["GestureDetector"] = () => Has("Pressable") && Has("Draggable") && Has("Hoverable")
             && Has("Adjustable") && Has("Navigable"),
-        ["RawGestureDetector"] = () => Nothing("RawGestureDetector"),
+        ["RawGestureDetector"] = () => Has("RawGestureDetector") && Has("GestureRecognizer") && Has("GestureArena")
+            && HasMember("RawGestureDetector", "Gestures"),
         ["MenuAnchor"] = () => HasMember("ContextTarget", "OnRequested") && HasMember("ContextRequest", "At")
             && HasMember("Anchored", "At") && Has("ContextMenu"),
         ["FocusNode"] = () => HasMember("Pressable", "InitialFocus") && Nothing("FocusNode", "FocusScope"),
