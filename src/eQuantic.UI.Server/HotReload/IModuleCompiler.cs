@@ -9,6 +9,9 @@ internal interface IModuleCompiler : IDisposable
     /// <summary>Gets ready for the first save without compiling, while the app starts.</summary>
     void Prepare();
 
+    /// <summary>False once the compiler knows that no compile can run for this host (#1757).</summary>
+    bool Available { get; }
+
     /// <summary>Compiles the app's modules, and gives up after <paramref name="limit"/>.</summary>
     CompileOutcome Compile(TimeSpan limit);
 }
