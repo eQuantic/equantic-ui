@@ -1,4 +1,4 @@
-import { CodeDocument, CodeEditorController, CodeGrid, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect, SheetController, SheetEntryLanguage, TextReading } from "../runtime-exports";
+import { $KeyboardConventionValue, $PointerPhaseValue, CodeDocument, CodeEditorController, CodeGrid, CodePosition, CodeRange, Point, Rect, SheetController, SheetEntryLanguage, TextReading } from "../runtime-exports";
 
 export class SheetNameBox {
     constructor(sheet: SheetController) {
@@ -55,18 +55,18 @@ export class SheetNameBox {
     }
 
     placed() {
-        return this._placed++;
+        return (($old) => (this._placed = $old + 1 | 0, $old))(this._placed);
     }
 
     removed() {
-        return this._placed = Math.max(0, this._placed - 1);
+        return this._placed = Math.max(0, this._placed - 1 | 0);
     }
 
     requestFocus() {
-        return this._focusVersion++;
+        return (($old) => (this._focusVersion = $old + 1 | 0, $old))(this._focusVersion);
     }
 
-    handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any) {
+    handleKey(key: string, modifiers: number, convention: $KeyboardConventionValue, clipboard: any) {
         if (!this.typing) return false;
         this._justFocused = false;
         switch (key) {
@@ -87,6 +87,10 @@ export class SheetNameBox {
         let claimed = this._box.handleKey(key, modifiers, convention, clipboard);
         if (claimed) this.invalid = false;
         return claimed;
+    }
+
+    claimsEscape(_convention: $KeyboardConventionValue) {
+        return this.typing;
     }
 
     handleText(text: string) {
@@ -112,7 +116,7 @@ export class SheetNameBox {
         return this.typing && this._box.paste(text);
     }
 
-    handlePointer(phase: PointerPhaseValue, position: Point, modifiers: number, clicks: number) {
+    handlePointer(phase: $PointerPhaseValue, position: Point, modifiers: number, clicks: number) {
         if (!this.typing) return false;
         if (phase === 'down' && this._justFocused) {
             this._justFocused = false;

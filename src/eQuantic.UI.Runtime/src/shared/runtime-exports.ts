@@ -94,6 +94,7 @@ export {
 } from './vocabulary';
 export { DynamicElement } from '../core/dynamic-element';
 export { Navigator } from '../router/navigator';
+export { DevelopmentNotices } from './development-notices';
 export {
   Color,
   ColorToken,
@@ -132,6 +133,7 @@ export {
   BadgeTheme,
   CalendarTheme,
   MarkdownTheme,
+  SortableTheme,
 } from './theme-slots';
 // Primitives types route to @equantic/runtime implicitly, so a page reading its route needs this
 // name to resolve here or it dies at hydration on an unresolvable import.
@@ -158,7 +160,7 @@ export {
 } from './value-types';
 // A page placing a WebFrame names this to say WHICH form its content is; same implicit promise.
 export { WebContent } from './value-types';
-export { GridPattern, InFlow, InheritedComponent, InView, RadialGradient, Simulated, Theme } from './vocabulary';
+export { GlobalKey, GridPattern, InFlow, InheritedComponent, InView, RadialGradient, Simulated, Theme } from './vocabulary';
 export { VisualNodeExtensions } from './visual-node-extensions';
 // The Primitives VALUE types a page can name — same implicit promise, see primitive-values.ts.
 export {
@@ -206,6 +208,8 @@ export { VisualNodeComponent } from './visual-node-component';
 // does not compile — and a page that does not compile is a page that does not render.
 export { DateTime, DateOnly, TimeOnly, TimeSpan, DateTimeOffset } from '../utils/datetime';
 export { Decimal } from '../utils/decimal';
+// A culture's `NumberFormatInfo` is its data under .NET's names, which a transpiled method names as a type (#1765).
+export type { NumberFormatData as NumberFormatInfo } from '../utils/culture';
 // The cancellation pair, built through `$eq.cancellation` and NAMED by a twin's annotations.
 export {
   CancellationToken,

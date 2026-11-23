@@ -203,11 +203,13 @@ public class LinqStrategyTests
         result.Should().Be("$eq.query.selectMany(this.list, (x) => x.items)");
     }
 
+    /// <summary>An int's sum adds through the runtime's checked addition, which .NET's Sum is whatever the
+    /// context of the call (#1808).</summary>
     [Fact]
     public void Sum_NoPredicate_MapsToReduce()
     {
         var result = TestHelper.ConvertExpression("numbers.Sum()");
-        result.Should().Be("this.numbers.reduce(($a, $b) => $a + $b, 0)");
+        result.Should().Be("this.numbers.reduce(($a, $b) => $eq.num.addInt($a, $b), 0)");
     }
 
     [Fact]
@@ -223,9 +225,9 @@ public class LinqStrategyTests
     public void Sum_AndAverage_WithABlockSelector_CallTheLambda()
     {
         TestHelper.ConvertExpression("numbers.Sum(x => { return x * 2; })")
-            .Should().Contain("$sum + ((x) => {").And.Contain("return x * 2;");
+            .Should().Contain("$eq.num.addInt($sum, ((x) => {").And.Contain("return Math.imul(x, 2);");
         TestHelper.ConvertExpression("numbers.Average(x => { return x * 2; })")
-            .Should().Contain("$eq.linq.average(this.numbers, (x) => {").And.Contain("return x * 2;");
+            .Should().Contain("$eq.linq.average(this.numbers, (x) => {").And.Contain("return Math.imul(x, 2);");
     }
 
     /// <summary>The mean is the runtime's, told how the values add and whether they are nullable,

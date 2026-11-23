@@ -19,11 +19,14 @@
 [EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.Clear(eQuantic.UI.Primitives.Color color) -> void
 [EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.CommandCount.get -> int
 [EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.CommandsFrom(int start) -> eQuantic.UI.Native.Engine.DrawCommand[]!
+[EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.CurrentTransform.get -> eQuantic.UI.Primitives.Matrix2D
 [EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.DisplayListBuilder() -> void
+[EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.DrawPicture(eQuantic.UI.Native.Engine.Picture! picture, in eQuantic.UI.Primitives.Matrix2D offset) -> void
 [EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.FillAnnularSector(eQuantic.UI.Primitives.Point center, float innerRadius, float outerRadius, float startAngle, float endAngle, in eQuantic.UI.Native.Engine.Paint paint, float rounding = 0) -> void
 [EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.FillCircle(eQuantic.UI.Primitives.Point center, float radius, in eQuantic.UI.Native.Engine.Paint paint) -> void
 [EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.FillRRect(in eQuantic.UI.Primitives.RRect shape, in eQuantic.UI.Native.Engine.Paint paint) -> void
 [EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.FillRect(eQuantic.UI.Primitives.Rect rect, in eQuantic.UI.Native.Engine.Paint paint) -> void
+[EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.PictureFrom(int start) -> eQuantic.UI.Native.Engine.Picture!
 [EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.Pop() -> void
 [EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.PopClip() -> void
 [EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.PopLayer() -> void
@@ -144,6 +147,8 @@
 [EQX0001]eQuantic.UI.Native.Engine.PaintKind.LinearGradient = 1 -> eQuantic.UI.Native.Engine.PaintKind
 [EQX0001]eQuantic.UI.Native.Engine.PaintKind.RadialGradient = 2 -> eQuantic.UI.Native.Engine.PaintKind
 [EQX0001]eQuantic.UI.Native.Engine.PaintKind.Solid = 0 -> eQuantic.UI.Native.Engine.PaintKind
+[EQX0001]eQuantic.UI.Native.Engine.Picture
+[EQX0001]eQuantic.UI.Native.Engine.Picture.Count.get -> int
 [EQX0001]eQuantic.UI.Native.Engine.PipelineCache
 [EQX0001]eQuantic.UI.Native.Engine.PngCodec
 [EQX0001]eQuantic.UI.Native.Engine.RenderBackendKind

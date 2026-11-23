@@ -580,7 +580,7 @@ public class DefaultInterfaceMemberEmissionTests
     {
         var result = Compile("Indexed");
 
-        result.TypeScript.Should().MatchRegex(@"item\(i(: number)?\)(: number)? \{\s*return i \* 2;");
+        result.TypeScript.Should().MatchRegex(@"item\(i(: number)?\)(: number)? \{\s*return Math\.imul\(i, 2\);");
     }
 
     /// <summary>An explicit implementation lowers under its member's own name (found in review, #418):

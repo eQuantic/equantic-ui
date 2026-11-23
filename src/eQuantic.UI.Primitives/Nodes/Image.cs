@@ -51,6 +51,48 @@ public sealed class Image : VisualNode
     /// <summary>Radius token clips via rrect — per-corner allowed (spec A11).</summary>
     public CornerRadii CornerRadius { get; init; }
 
+    /// <summary>
+    /// The point of the picture its box is held by, as fractions of the picture from its top-left
+    /// corner (0..1 on each axis): the point of the picture at that fraction stands at the same fraction
+    /// of the box, so a photograph cropped by <see cref="ImageFit.Cover"/> keeps its subject in the frame
+    /// wherever it sits (#1785). The centre, the default, is the crop the fit makes on its own.
+    /// <para>
+    /// The rule needs nothing of the picture but the fit, which the browser knows before the picture has
+    /// loaded: it is the one a page lays out in CSS, and Photon computes it the same way. It is Flutter's
+    /// <c>Image.alignment</c> given as a <c>FractionalOffset</c>.
+    /// </para>
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">An axis outside 0..1.</exception>
+    public Point FocalPoint
+    {
+        get;
+        init
+        {
+            if (!(value.X is >= 0 and <= 1) || !(value.Y is >= 0 and <= 1))
+                throw new ArgumentOutOfRangeException(nameof(FocalPoint), value,
+                    "A focal point is a fraction of the picture on each axis, from 0 to 1.");
+            field = value;
+        }
+    } = new(0.5f, 0.5f);
+
+    /// <summary>
+    /// How much closer than its fit the picture is drawn, around <see cref="FocalPoint"/>: 1, the default,
+    /// is the fit itself, and 1.5 draws it half as large again. The focal point keeps its place in the
+    /// box, so a zoomed picture still fills the frame and never shows past its own edge (#1785).
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">Below 1, or not a finite number.</exception>
+    public float Zoom
+    {
+        get;
+        init
+        {
+            if (!(value >= 1) || float.IsInfinity(value))
+                throw new ArgumentOutOfRangeException(nameof(Zoom), value,
+                    "A zoom draws the picture at its fit (1) or closer, never farther.");
+            field = value;
+        }
+    } = 1;
+
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

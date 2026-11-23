@@ -99,6 +99,7 @@
     <!-- How a test starts a program: one deadline over the exit and both streams, and for dotnet a
          build that leaves nothing holding its output (#971). -->
     <Compile Include="..\Shared\ChildProcess.cs" Link="Shared\ChildProcess.cs" />
+    <Compile Include="..\Shared\ResxAccessors.cs" Link="Shared\ResxAccessors.cs" />
     <Compile Include="..\Shared\SheetSlotTheme.cs" Link="Shared\SheetSlotTheme.cs" />
     <!-- A TrueType font built in code: a face no machine has installed, with no file to licence. -->
     <Compile Include="..\Shared\TestFont.cs" Link="Shared\TestFont.cs" />

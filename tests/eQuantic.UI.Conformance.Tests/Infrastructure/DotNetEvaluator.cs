@@ -15,7 +15,12 @@ public static class DotNetEvaluator
     // Preview, to match both eqc and the transpiler side of the harness. The .NET side of a
     // conformance case has to ACCEPT everything the JS side is asked to translate, or the
     // comparison is between a compiler error and a value.
-    private static readonly ScriptOptions Options = ScriptOptions.Default
+    //
+    // Every script resolves its references through one ReferencesResolvedOnce: scripting's own
+    // resolver read the framework's metadata again for each script, into native memory the GC never
+    // saw (#1816).
+    internal static readonly ScriptOptions Options = ScriptOptions.Default
+        .WithMetadataResolver(new ReferencesResolvedOnce(ScriptOptions.Default.MetadataResolver))
         .WithLanguageVersion(Microsoft.CodeAnalysis.CSharp.LanguageVersion.Preview)
         .AddReferences(
             typeof(object).Assembly,

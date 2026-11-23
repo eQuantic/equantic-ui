@@ -41,9 +41,9 @@ public sealed class AnArrayOfAnEnumTests
     }
 
     [Theory]
-    [InlineData("private static readonly TypeRole[] Roles = [TypeRole.BodyM];", "static get roles(): TypeRoleValue[]")]
-    [InlineData("private static readonly TypeRole[][] Rows = [[TypeRole.BodyM]];", "static get rows(): TypeRoleValue[][]")]
-    [InlineData("private readonly TypeRole[] _roles = [TypeRole.BodyM]; public int Count => _roles.Length;", "_roles!: TypeRoleValue[]")]
+    [InlineData("private static readonly TypeRole[] Roles = [TypeRole.BodyM];", "static get roles(): $TypeRoleValue[]")]
+    [InlineData("private static readonly TypeRole[][] Rows = [[TypeRole.BodyM]];", "static get rows(): $TypeRoleValue[][]")]
+    [InlineData("private readonly TypeRole[] _roles = [TypeRole.BodyM]; public int Count => _roles.Length;", "_roles!: $TypeRoleValue[]")]
     [InlineData("private static readonly Shade[] Shades = [Shade.Light];", "static get shades(): string[]")]
     public void AnArrayOfAnEnum_IsTypedAsTheEnumCrosses(string members, string annotation)
     {
@@ -56,5 +56,5 @@ public sealed class AnArrayOfAnEnumTests
     [Fact]
     public void AVocabularyEnumsUnion_IsImportedFromTheRuntime() =>
         Compile("private static readonly TypeRole[] Roles = [TypeRole.BodyM];")
-            .Should().MatchRegex(@"import \{[^}]*\bTypeRoleValue\b[^}]*\} from ""@equantic/runtime""");
+            .Should().MatchRegex(@"import \{[^}]*\$TypeRoleValue\b[^}]*\} from ""@equantic/runtime""");
 }

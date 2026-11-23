@@ -61,6 +61,14 @@ export class InheritedElement extends Element {
         this._child = null;
     }
 
+    forgetChild(child: Element) {
+        if ((this._child === child)) this._child = null;
+    }
+
+    fillForgotten() {
+        if (this._child == null) this._child = this.updateChild(null, this.inherited.child, 0, false);
+    }
+
     onDeactivated() {
         this._dependents.clear();
     }

@@ -54,6 +54,96 @@
         measuring against it announces the samples too, since they do not live under src. The branch
         comes out of .git/HEAD rather than from running git, so it costs a file read.
     -->
+    <!--
+        One version, stated once (#1788). global.json's msbuild-sdks pins this SDK, and the SDK pins its
+        packages to its own version (Sdk.props). A project that sets EQuanticUIVersion to another
+        restored packages of one version under an SDK of the other, which built and then failed in odd
+        ways, so it fails here, before the packages are collected for a restore and before a build.
+    -->
+    <Target Name="EQuanticRequireOneVersion" BeforeTargets="CollectPackageReferences;PrepareForBuild"
+        Condition="'$(_EQuanticSdkVersion)' != '' AND '$(EQuanticUIVersion)' != '$(_EQuanticSdkVersion)'">
+        <Error Code="EQ4010"
+            Text="This project builds with eQuantic.UI.Sdk $(_EQuanticSdkVersion), the version global.json pins, and sets EQuanticUIVersion to $(EQuanticUIVersion). The SDK ships with its packages at its own version and reads it itself: remove EQuanticUIVersion, and change the version in global.json alone." />
+    </Target>
+
+    <!--
+        A catalog's typed accessors are the build's to write (#1784): a site kept a script that wrote
+        each Strings.Designer.cs from its neutral .resx, and a CI step that failed when the committed
+        file differed, which it did over a stray blank line. MSBuild's own GenerateResource writes
+        them, from the StronglyTyped* metadata set here, in the shape Visual Studio's
+        ResXFileCodeGenerator writes (one internal class with a static ResourceManager and Culture,
+        and one static string per key), which is the shape eqc turns into lookups in the browser
+        (ResourceShape). Its namespace is the project's root namespace and the .resx's folder, as
+        Visual Studio names it, and its ResourceManager's base name is the manifest name MSBuild gave
+        the resource, so the satellite assemblies answer it even where MSBuild named the resource
+        without its folder (a project built through a symbolic link to its folder). The class lands in the
+        compiler's generated tree, where eqc reads generated sources.
+        eqc reads a catalog's .resx and its cultures BESIDE the file that declares the class (ResxFiles),
+        so the generated tree mirrors the project's folders: Resources/Strings.resx gets
+        generated/eQuantic.UI.Resources/Resources/Strings.Designer.cs, with copies of Strings.resx and
+        its cultures beside it, refreshed before eqc runs, a hot reload's compile included.
+
+        A culture's .resx gets nothing: the neutral one carries the keys. A neutral .resx with a
+        Designer.cs beside it keeps it, so an app that has one changes nothing, and so does one whose
+        project already set the StronglyTyped* metadata itself. Neither does a .resx read the
+        ASP.NET Core way through IStringLocalizer: one named by a dotted path (Views.Home.Index.resx),
+        which no class can be named after, or one beside the marker class it is named for
+        (SharedResource.cs beside SharedResource.resx). A key added while a hot reload runs gets its
+        accessor at the next build: the reload's compile runs eqc, not the resources.
+    -->
+    <Target Name="EQuanticResourceAccessors" AfterTargets="CreateManifestResourceNames" BeforeTargets="CoreResGen"
+            DependsOnTargets="_EQuanticMirrorResources" Condition="'@(EmbeddedResource)' != ''">
+        <PropertyGroup>
+            <_EqAccessorsDir Condition="'$(CompilerGeneratedFilesOutputPath)' != ''">$(CompilerGeneratedFilesOutputPath)/eQuantic.UI.Resources/</_EqAccessorsDir>
+            <_EqAccessorsDir Condition="'$(_EqAccessorsDir)' == ''">$(IntermediateOutputPath)generated/eQuantic.UI.Resources/</_EqAccessorsDir>
+        </PropertyGroup>
+        <ItemGroup>
+            <EmbeddedResource Update="@(EmbeddedResource)"
+                Condition="'%(Extension)' == '.resx' AND '%(EmbeddedResource.WithCulture)' != 'true'
+                           AND '%(EmbeddedResource.StronglyTypedLanguage)' == '' AND '%(EmbeddedResource.GenerateResource)' != 'false'
+                           AND !Exists('%(RootDir)%(Directory)%(Filename).Designer.cs')
+                           AND !Exists('%(RootDir)%(Directory)%(Filename).cs')
+                           AND $([System.Text.RegularExpressions.Regex]::IsMatch('%(Filename)', '^[A-Za-z_][A-Za-z0-9_]*$'))
+                           AND !$([System.IO.Path]::IsPathRooted('%(RelativeDir)')) AND !$([System.String]::Copy('%(RelativeDir)').StartsWith('..'))"
+                StronglyTypedLanguage="C#"
+                StronglyTypedClassName="%(Filename)"
+                StronglyTypedNamespace="$([System.Text.RegularExpressions.Regex]::Replace($([System.Text.RegularExpressions.Regex]::Replace($([System.Text.RegularExpressions.Regex]::Replace('$(RootNamespace)/%(RelativeDir)', '[/\\]+', '.')), '[^\w.]', '_')), '\.$', ''))"
+                StronglyTypedManifestPrefix="$([System.Text.RegularExpressions.Regex]::Replace('%(ManifestResourceName)', '\.[^.]+$', ''))"
+                StronglyTypedFileName="$(_EqAccessorsDir)%(RelativeDir)%(Filename).Designer.cs" />
+        </ItemGroup>
+        <!-- The folder exists: _EQuanticMirrorResources copied the .resx into it before CoreResGen. -->
+    </Target>
+
+    <!--
+        The accessors are in the compilation of a build that runs Compile alone (#1801). MSBuild's
+        CoreResGen writes them and adds them to Compile, inside PrepareResources, which a build runs
+        before Compile and CompileDependsOn does not name. dotnet watch loads the compilation it applies
+        an edit to from a design-time build of Compile alone, as an editor does, so that compilation
+        had no accessor class: every save failed with CS0234 on the catalog's namespace, no edit reached
+        the server, and the page drew over its markup. A Designer.cs beside the .resx was a source file,
+        which every loader sees. A build has run PrepareResources by then, so this asks nothing of it.
+    -->
+    <Target Name="EQuanticResourceAccessorsCompiled" BeforeTargets="CoreCompile" DependsOnTargets="PrepareResources"
+            Condition="'@(EmbeddedResource)' != ''" />
+
+    <!-- The copies eqc reads beside a generated accessor class (EQuanticResourceAccessors): every .resx
+         under the project, mirrored into the generated tree, skipped when unchanged. -->
+    <Target Name="_EQuanticMirrorResources" BeforeTargets="CoreResGen;CompileEQuanticUI"
+            Condition="'@(EmbeddedResource)' != ''">
+        <PropertyGroup>
+            <_EqAccessorsDir Condition="'$(CompilerGeneratedFilesOutputPath)' != ''">$(CompilerGeneratedFilesOutputPath)/eQuantic.UI.Resources/</_EqAccessorsDir>
+            <_EqAccessorsDir Condition="'$(_EqAccessorsDir)' == ''">$(IntermediateOutputPath)generated/eQuantic.UI.Resources/</_EqAccessorsDir>
+        </PropertyGroup>
+        <ItemGroup>
+            <!-- Mirrored by the path the project names them by, which is relative for every .resx the
+                 project's own folders hold. One named outside them gets no mirror and no accessors. -->
+            <_EqMirroredResx Include="@(EmbeddedResource)"
+                Condition="'%(Extension)' == '.resx' AND !$([System.IO.Path]::IsPathRooted('%(RelativeDir)')) AND !$([System.String]::Copy('%(RelativeDir)').StartsWith('..'))" />
+        </ItemGroup>
+        <Copy SourceFiles="@(_EqMirroredResx)" DestinationFiles="@(_EqMirroredResx->'$(_EqAccessorsDir)%(RelativeDir)%(Filename)%(Extension)')"
+              SkipUnchangedFiles="true" />
+    </Target>
+
     <Target Name="EQuanticAnnounceDevSource" BeforeTargets="Build"
             Condition="'$(IsEQuanticDevMode)' == 'true'
                        AND !$([MSBuild]::EnsureTrailingSlash('$(MSBuildProjectDirectory)').StartsWith($([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))))))">
@@ -185,8 +275,9 @@
         </UnpackProgram>
     </Target>
 
+    <!-- Returns the path, for a test project's HydrationAssert to run the same bun (eQuantic.UI.Testing, #1775). -->
     <Target Name="ResolveBunPath" BeforeTargets="CompileEQuanticUI"
-        DependsOnTargets="EnsureBunExtracted">
+        DependsOnTargets="EnsureBunExtracted" Returns="$(BunPath)">
         <PropertyGroup Condition="'$(BunPath)' != ''">
             <BunPath>$(BunPath.Trim())</BunPath>
         </PropertyGroup>
@@ -280,6 +371,11 @@
         </PropertyGroup>
         <ItemGroup Condition="'$(_EQuanticCompileRan)' == 'true'">
             <_EQuanticGeneratedFile Include="$(CompilerGeneratedFilesOutputPath)/**/*.cs" Exclude="@(Compile)" />
+        </ItemGroup>
+        <!-- Apart, and only over files that exist: a condition that batches over an empty item list is still
+             evaluated once, with empty metadata, and an app no generator wrote a file for failed its build
+             on GetLastWriteTime('') (an app of pages alone, #1775's fixture site). -->
+        <ItemGroup Condition="'@(_EQuanticGeneratedFile)' != ''">
             <_EQuanticStaleGeneratedFile Include="@(_EQuanticGeneratedFile)"
                 Condition="$([System.IO.File]::GetLastWriteTime('%(FullPath)').ToUniversalTime().Ticks) &lt; $(_EQuanticStaleBeforeTicks)" />
         </ItemGroup>
@@ -297,6 +393,41 @@
         file), then eqc itself. They were one target, and the middle one is where a value of the
         project reached a shell (#836): it is a target of its own so a test runs it as it ships.
     -->
+    <!--
+        A component of a referenced project is composed like the app's own (#818): `Wordmark()`, not
+        `new Wordmark()`. The factory surface's generator sees a referenced project only as metadata,
+        and a package's components must not get factories (eqc compiles a referenced PROJECT from its
+        source, #624, and has no source for a package), so it is told which assemblies came from
+        projects: the ones eqc compiles from source, without the SDK's own projects and icon packs
+        (_EQuanticCompilerInputs keeps the same set). The names go one a line in a file the compiler
+        is handed with the additional files, which the generator finds by its name, and never in a
+        compiler-visible property: an analyzer config ends a value at ';' or '#', so the list joined
+        with ';' reached the generator as its first name alone (#1803). Written before the compiler's
+        inputs are, a design-time build included, which is where an editor's compilation comes from.
+    -->
+    <Target Name="_EQuanticFactoryReferences" BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun"
+            DependsOnTargets="ResolveReferences;FindReferenceAssembliesForReferences"
+            Condition="'$(EQuanticGenerateFactorySurface)' != 'false'">
+        <PropertyGroup>
+            <_EqFactorySdkRoot Condition="'$(IsEQuanticDevMode)' == 'true'">$([System.IO.Path]::GetFullPath('$(_DevRootDir)'))</_EqFactorySdkRoot>
+        </PropertyGroup>
+        <ItemGroup>
+            <_EqFactoryProjectAssembly Include="@(ReferencePathWithRefAssemblies)"
+                Condition="'%(ReferencePathWithRefAssemblies.MSBuildSourceProjectFile)' != ''
+                           And !Exists('$([System.IO.Path]::GetDirectoryName(%(ReferencePathWithRefAssemblies.MSBuildSourceProjectFile)))/EQuanticIconPack.marker')
+                           And ('$(_EqFactorySdkRoot)' == '' Or !$([System.String]::Copy('%(ReferencePathWithRefAssemblies.MSBuildSourceProjectFile)').StartsWith('$(_EqFactorySdkRoot)')))" />
+        </ItemGroup>
+        <PropertyGroup>
+            <_EqFactoryProjectsFile>$(IntermediateOutputPath)equantic.factory-projects.txt</_EqFactoryProjectsFile>
+        </PropertyGroup>
+        <WriteLinesToFile Condition="'@(_EqFactoryProjectAssembly)' != ''" File="$(_EqFactoryProjectsFile)"
+                          Lines="@(_EqFactoryProjectAssembly->'%(Filename)')" Overwrite="true" WriteOnlyWhenDifferent="true" />
+        <ItemGroup Condition="'@(_EqFactoryProjectAssembly)' != ''">
+            <AdditionalFiles Include="$(_EqFactoryProjectsFile)" />
+            <FileWrites Include="$(_EqFactoryProjectsFile)" />
+        </ItemGroup>
+    </Target>
+
     <Target Name="_EQuanticCompilerInputs"
         DependsOnTargets="ResolveReferences;FindReferenceAssembliesForReferences;AddImplicitDefineConstants;GenerateGlobalUsings"
         Condition="'$(EnableEQuanticUICompilation)' == 'true'">

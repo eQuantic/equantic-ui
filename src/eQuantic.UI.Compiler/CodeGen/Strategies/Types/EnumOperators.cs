@@ -69,8 +69,7 @@ internal static class EnumOperators
         var r = Value(right, rightType, context);
         var computed = op switch
         {
-            "+" or "-" => IntegerWidth.Settle(JsExpr.Binary(l, op, r), enumType.EnumUnderlyingType,
-                arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context),
+            "+" or "-" => IntegerWidth.Settle(JsExpr.Binary(l, op, r), enumType.EnumUnderlyingType, arithmetic, context),
             "&" or "|" or "^" => IntegerWidth.Bitwise(op, l, r, EnumShape.Width(enumType)) ?? JsExpr.Binary(l, op, r),
             _ => JsExpr.Binary(l, op, r),
         };
@@ -107,7 +106,7 @@ internal static class EnumOperators
         var one = JsExpr.Literal(EnumShape.ValueLiteral(enumType, 1));
         return current => EnumShape.Held(enumType,
             IntegerWidth.Settle(JsExpr.Binary(EnumShape.ValueOf(enumType, current, context), delta, one),
-                enumType.EnumUnderlyingType, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context),
+                enumType.EnumUnderlyingType, arithmetic, context),
             context);
     }
 

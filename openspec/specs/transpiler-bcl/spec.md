@@ -1083,15 +1083,15 @@ A sorted set's `GetViewBetween` SHALL be the twin's.
 A read of a property or a field of a .NET type that no translation answers SHALL fail the build with
 EQ2004, naming the member, unless a value the browser holds carries the member by its own name: a
 string's, an array's and a span's `Length`, the members an exception's twin carries, a decimal's
-`Scale`, and a `KeyValuePair`'s `Key` and `Value`. A member an interface declares SHALL NOT be
-refused, since the value read through the interface may be a type of the app's own. A chain of such
-reads SHALL be refused once, at its first member, whether it is read through `.` or through `?.`,
-and a read made on a value a translation answered SHALL be asked as any other. A culture handed to a
-call that reads it from how the call names it SHALL NOT be read as a value.
+`Scale`, a `KeyValuePair`'s `Key` and `Value`, and the scalar members of a `NumberFormatInfo`. A member
+an interface declares SHALL NOT be refused, since the value read through the interface may be a type of
+the app's own. A chain of such reads SHALL be refused once, at its first member, whether it is read
+through `.` or through `?.`, and a read made on a value a translation answered SHALL be asked as any
+other. A culture handed to a call that reads it from how the call names it SHALL NOT be read as a value.
 
 #### Scenario: A culture's property
 
-- **WHEN** a component reads `CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator`
+- **WHEN** a component reads `CultureInfo.CurrentCulture.TextInfo.ListSeparator`
 - **THEN** the build fails with one EQ2004 naming `System.Globalization.CultureInfo.CurrentCulture`;
   in the browser `CultureInfo` was not defined
 
@@ -1793,3 +1793,94 @@ A `KeyValuePair<TKey, TValue>` SHALL write `[key, value]` through a hole, a conc
 
 - **WHEN** a client component calls `System.Tuple.Create(1, "a")`
 - **THEN** the build fails with EQ2004
+
+### Requirement: A culture's number format is read as .NET reads it
+
+`NumberFormatInfo.CurrentInfo` and `CultureInfo.CurrentCulture.NumberFormat` SHALL read in the browser
+as the page's culture's number format, and `NumberFormatInfo.InvariantInfo` and
+`CultureInfo.InvariantCulture.NumberFormat` as the invariant culture's, with every scalar member
+(separators, symbols, digit counts and patterns) answering what .NET answers for that culture. A write
+to a member and a read of `NumberGroupSizes`, `CurrencyGroupSizes` or `PercentGroupSizes` SHALL fail the
+build with EQ2004.
+
+#### Scenario: Where the currency's symbol goes
+
+- **WHEN** browser-side code reads `NumberFormatInfo.CurrentInfo.CurrencyPositivePattern` and
+  `CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator`
+- **THEN** they are `3` and `,` in pt-PT, `0` and `.` in en-US, `2` and `,` in nl-NL, as in .NET
+
+#### Scenario: The invariant culture on any page
+
+- **WHEN** browser-side code on a pt-PT page reads `NumberFormatInfo.InvariantInfo.CurrencySymbol`
+- **THEN** it is `¤`
+
+#### Scenario: A write
+
+- **WHEN** a component assigns `NumberFormatInfo.CurrentInfo.CurrencySymbol`
+- **THEN** the build fails with EQ2004
+
+### Requirement: A decimal truncates, floors and ceils as .NET does
+
+`decimal.Truncate`, `decimal.Floor` and `decimal.Ceiling`, and `Math`'s over a decimal, SHALL answer the
+whole number .NET answers, in its direction and with the scale .NET keeps, on the runtime's `Decimal`.
+
+#### Scenario: A negative fraction
+
+- **WHEN** browser-side code computes `Math.Truncate(-0.5m)`, `Math.Floor(-0.5m)` and `Math.Ceiling(-0.5m)`
+- **THEN** they are `0`, `-1` and `0`, as in .NET
+
+#### Scenario: Whether an amount has more digits than its currency
+
+- **WHEN** browser-side code compares `decimal.Truncate(12505m / 10m)` with `12505m / 10m`
+- **THEN** they differ, as in .NET
+
+### Requirement: Uri's escaping is .NET's
+
+`Uri.EscapeDataString`, `Uri.EscapeUriString` and `Uri.UnescapeDataString` SHALL answer in the browser what they
+answer in .NET: the same characters kept and escaped, a lone surrogate written as U+FFFD, a malformed escape or a
+byte that starts no well-formed UTF-8 character left as written, and a null text refused with the
+`ArgumentNullException` .NET throws.
+
+#### Scenario: The characters encodeURIComponent keeps
+
+- **WHEN** browser-side code computes `Uri.EscapeDataString("Hello! (cake) it's *the* one")`
+- **THEN** it is `Hello%21%20%28cake%29%20it%27s%20%2Athe%2A%20one`, as in .NET
+
+#### Scenario: A link built in a component
+
+- **WHEN** a page links to `"https://wa.me/1?text=" + Uri.EscapeDataString("Hello! I'd like a cake (14 cm) * 2")`
+- **THEN** the page hydrates with the link the server drew, and no difference
+
+#### Scenario: A malformed escape
+
+- **WHEN** browser-side code computes `Uri.UnescapeDataString("%C3%28")` and `Uri.UnescapeDataString("100%")`
+- **THEN** they are `%C3(` and `100%`, as in .NET, and nothing throws
+
+#### Scenario: The brackets of a URI
+
+- **WHEN** browser-side code computes `Uri.EscapeUriString("http://x/a b?q=[1]")`
+- **THEN** it is `http://x/a%20b?q=[1]`, as in .NET
+
+### Requirement: A signed integer's magnitude refuses its MinValue
+
+`Abs` and `CopySign` of a signed integer, `sbyte`, `short`, `int`, `long` or `nint`, through `Math` or through the
+type, SHALL answer in the browser what they answer in .NET: the magnitude, and for the type's `MinValue`, whose
+magnitude is no value of the type, the `OverflowException` .NET throws, in an unchecked context too.
+`CopySign` of `MinValue` SHALL answer `MinValue` for a negative sign, and SHALL answer 0 for a zero, never `-0`.
+A real's `Abs` SHALL stay `Math.abs`, and a real's `CopySign` its inline lowering, a signed
+zero's sign included, with nothing checked.
+
+#### Scenario: The magnitude of MinValue
+
+- **WHEN** browser-side code computes `Math.Abs(n)` with `n` an `int` holding `int.MinValue`, or `long.Abs(l)` with `l` holding `long.MinValue`
+- **THEN** it throws `OverflowException` with "Negating the minimum value of a twos complement number is invalid.", as .NET does
+
+#### Scenario: A sign copied onto MinValue
+
+- **WHEN** browser-side code computes `int.CopySign(n, 1)` and `int.CopySign(n, -1)` with `n` holding `int.MinValue`
+- **THEN** the first throws `OverflowException` and the second is -2147483648, as in .NET
+
+#### Scenario: An integer's one zero
+
+- **WHEN** browser-side code computes `1.0 / int.CopySign(n, -1)` with `n` holding 0
+- **THEN** it is positive infinity, as in .NET, where the browser's `-0` made it negative

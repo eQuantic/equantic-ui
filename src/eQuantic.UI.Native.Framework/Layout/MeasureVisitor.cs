@@ -101,7 +101,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     // (LaidOutChildren); every other parent measures the node through this door, a Stack included,
     // which reads the arm off the node it measured (PositionedOf).
     public LayoutNode Visit(AdaptiveNode node, MeasureState s) =>
-        Measure(_ctx.ArmOf(node), s.Constraints, _ctx, s.At?.ChildAt(0));
+        Measure(_ctx.ArmOf(node), s.Constraints, _ctx, s.At?.ChildAt(_ctx.ArmSlotOf(node)));
 
     // Spec S7: Pinned renders IN FLOW on native until engine scrolling lands (correct at scroll
     // offset 0); the pinning joins the scroll compositor (fence on the node's doc).

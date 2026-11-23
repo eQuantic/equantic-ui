@@ -13,8 +13,9 @@ namespace eQuantic.UI.Conformance.Tests;
 /// building through branches. Deterministic by construction (own xorshift PRNG — System.Random's
 /// sequence is not contractual across .NET versions), so a failure names its seed and program,
 /// reproduces anywhere, and its minimized form belongs in a permanent conformance case.
-/// The grammar deliberately AVOIDS the documented divergences (default-context int overflow,
-/// double formatting, zero divisors) — those are known and pinned elsewhere; this hunts unknowns.
+/// The grammar deliberately AVOIDS the documented divergences (double formatting, zero divisors);
+/// those are known and pinned elsewhere, and this hunts unknowns. Its fold overflows an int and a
+/// long in the default context on purpose, since the browser wraps them as .NET does (#1807).
 /// </summary>
 public class GeneratedDifferentialTests
 {
@@ -243,11 +244,9 @@ public class GeneratedDifferentialTests
             {
                 var name = $"n{i}";
                 // BOUNDED at birth. The expression is evaluated in full — that is what is under
-                // test — and only then brought back into a range where the arithmetic
-                // downstream cannot overflow an int. Without this the bitwise operators put
-                // values at 2^31 and the fold reaches the default-context overflow, which is
-                // a DOCUMENTED divergence: every program would then fail for the one reason
-                // this instrument exists not to hunt.
+                // test — and only then brought back into a small range, so the statements that
+                // read it (indexes, counts, the Money and set statements) meet the magnitudes
+                // they were written for. Overflow is the FOLD's to reach, below.
                 program.Append($"var {name} = ({IntExpr(2)}) % 100003; ");
                 _ints.Add(name);
             }
@@ -371,39 +370,39 @@ public class GeneratedDifferentialTests
             for (var i = 0; i < statements; i++) program.Append(Statement());
 
             // The observable fold: every local reaches the result, so nothing generated is dead.
-            // The fold stays INSIDE an int. Mixing by 31 overflows in a handful of steps once
-            // the grammar grew, and an int overflowing in the default context is a documented
-            // divergence pinned elsewhere — reaching it here would make every program fail for
-            // the one reason this generator is meant not to hunt.
+            // It OVERFLOWS on purpose: mixing by 31 leaves an int in a handful of steps, and the
+            // default context wraps it, on .NET and in the browser alike (#1807). Until then this
+            // fold was kept inside an int by a modulo at every step, and hunted nothing there.
             program.Append("var acc = 17; ");
-            foreach (var n in _ints) program.Append($"acc = (acc * 31 + {n} % 9973) % 1000003; ");
-            foreach (var b in _bools) program.Append($"acc = (acc * 2 + ({b} ? 1 : 0)) % 1000003; ");
-            foreach (var xs in _lists) program.Append($"acc = (acc * 7 + {IntChain(xs)}) % 1000003; ");
+            foreach (var n in _ints) program.Append($"acc = acc * 31 + {n} % 9973; ");
+            foreach (var b in _bools) program.Append($"acc = acc * 2 + ({b} ? 1 : 0); ");
+            foreach (var xs in _lists) program.Append($"acc = acc * 7 + {IntChain(xs)}; ");
             // A char folds through its CODE UNIT, the way C# promotes it.
-            foreach (var c in _chars) program.Append($"acc = (acc * 5 + {c}) % 1000003; ");
-            foreach (var q in _nullables) program.Append($"acc = (acc * 3 + ({q} ?? -1)) % 1000003; ");
+            foreach (var c in _chars) program.Append($"acc = acc * 5 + {c}; ");
+            foreach (var q in _nullables) program.Append($"acc = acc * 3 + ({q} ?? -1); ");
             // A date is OBSERVED through its parts and its comparisons, never its text.
             foreach (var d in _dates)
-                program.Append($"acc = (acc * 11 + {d}.Year + {d}.Month * 31 + {d}.Day + {d}.DayOfYear) % 1000003; ");
+                program.Append($"acc = acc * 11 + {d}.Year + {d}.Month * 31 + {d}.Day + {d}.DayOfYear; ");
             foreach (var t in _spans)
-                program.Append($"acc = (acc * 13 + (int){t}.TotalMinutes + {t}.Hours) % 1000003; ");
+                program.Append($"acc = acc * 13 + (int){t}.TotalMinutes + {t}.Hours; ");
             foreach (var n in _maybeDates)
-                program.Append($"acc = (acc * 17 + ({n}.HasValue ? {n}.Value.Day : -1)) % 1000003; ");
+                program.Append($"acc = acc * 17 + ({n}.HasValue ? {n}.Value.Day : -1); ");
             foreach (var m in _maps)
-                program.Append($"acc = (acc * 19 + {m}.Count + {m}.Values.Sum() + ({m}.ContainsKey(\"k1\") ? 7 : 0)) % 1000003; ");
+                program.Append($"acc = acc * 19 + {m}.Count + {m}.Values.Sum() + ({m}.ContainsKey(\"k1\") ? 7 : 0); ");
             // A narrow integer promotes to int to be folded, which is what C# does at every use.
-            foreach (var w in _narrow) program.Append($"acc = (acc * 23 + {w}) % 1000003; ");
-            foreach (var u in _unsigned) program.Append($"acc = (acc * 29 + (int)({u} % 9973u)) % 1000003; ");
+            foreach (var w in _narrow) program.Append($"acc = acc * 23 + {w}; ");
+            foreach (var u in _unsigned) program.Append($"acc = acc * 29 + (int)({u} % 9973u); ");
             // A double and a float are observed EXACTLY, and never printed: the text of a
             // floating-point number is a documented divergence and would drown this. Scaled by
             // 2^52 — exact, a power of two — every bit of a value below 512 is a whole number, and
             // a long carries it and prints it identically on both sides. This was a truncation to
             // 1/1024 once, which is coarser than the last bit: the generator wrote chains of float
             // operations for months and never saw the one rounding the twin skipped (#146).
+            // The long fold overflows as the int one does, and wraps in a BigInt on the other side.
             program.Append("long bits = 17; ");
-            foreach (var d in _doubles) program.Append($"bits = (bits * 31L + (long)({d} * 4503599627370496.0)) % 1000000007L; ");
-            foreach (var f in _floats) program.Append($"bits = (bits * 37L + (long)((double){f} * 4503599627370496.0)) % 1000000007L; ");
-            foreach (var mo in _monies) program.Append($"acc = (acc * 41 + (int){mo} % 9973) % 1000003; ");
+            foreach (var d in _doubles) program.Append($"bits = bits * 31L + (long)({d} * 4503599627370496.0); ");
+            foreach (var f in _floats) program.Append($"bits = bits * 37L + (long)((double){f} * 4503599627370496.0); ");
+            foreach (var mo in _monies) program.Append($"acc = acc * 41 + (int){mo} % 9973; ");
             var fold = new StringBuilder("return $\"{acc}|{bits}");
             foreach (var s in _strings) fold.Append($"|{{{s}}}");
             // A long and a decimal are OBSERVED as text: their runtime representations differ from

@@ -1,3 +1,0 @@
-#nullable enable
-eQuantic.UI.Primitives.BuildOwner.DrewOnly(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Element!>! parts) -> void
-eQuantic.UI.Primitives.BuildOwner.WaitsForALayer.get -> bool

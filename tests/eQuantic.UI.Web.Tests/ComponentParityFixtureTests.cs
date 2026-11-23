@@ -129,6 +129,21 @@ public class ComponentParityFixtureTests
             },
             Transition = new TransitionSpec(StyleChannels.Colors),
         }, NoPresses),
+        // The boxes inside a header follow its scroll (#1769), on a header with no scrolled style of
+        // its own: the header-scrolled family, beside a hover on the same fill.
+        ("header-scrolled-boxes", new Pinned(Stack(0,
+            new Box(new BoxStyle
+            {
+                Width = 96, Height = 96,
+                Transition = new TransitionSpec(StyleChannels.Opacity | StyleChannels.Transform),
+                Scrolled = new StyleDiff { Opacity = 0, Transform = Transform2D.Scale(0.6f) },
+            }),
+            new Box(new BoxStyle
+            {
+                Width = 80, Height = 32, Background = Theme.SurfaceSubtle,
+                Scrolled = new StyleDiff { Background = Theme.Surface },
+                Hover = new StyleDiff { Background = Theme.SurfaceHighlight },
+            }))), NoPresses),
         // The same builder writes a hover border along the edges the box draws, and a width alone
         // in the base's colour, as Photon draws them (#506).
         ("box-hover-border-edge", new Box(new BoxStyle
@@ -177,6 +192,12 @@ public class ComponentParityFixtureTests
         ("tabs", new Tabs(["One", "Two", "Three"], 1), NoPresses),
         ("search-field", new SearchField("term"), NoPresses),
         ("text-input", new TextInput("value", null, "Label"), NoPresses),
+        // A kind and the affixes beside the entry (#1761), and the two fields built on them (#1764). Each with a
+        // helper, so the line under it is not the empty one `text-input` is a known divergence for.
+        ("text-input-kind", new TextInput("a@b", null, "E-mail", helper: "Where the receipt goes",
+            kind: TextEntryKind.Email, prefix: "to", suffix: "@work"), NoPresses),
+        ("money-input", new MoneyInput(123450, null, "Price", Currency.Euro, helper: "VAT included"), NoPresses),
+        ("number-input", new NumberInput(3, null, "Lead time", "days", 1, 30, helper: "Working days"), NoPresses),
         ("radio-group", new RadioGroup(["a", "b"], 0), NoPresses),
         ("empty-state", new EmptyState(new Icon(Icons.Search), "Nothing here", "Try another term"), NoPresses),
 
@@ -282,6 +303,10 @@ public class ComponentParityFixtureTests
             Group = "board",
             OnHovered = _ => { },
         }, NoPresses),
+        // A list with a look of its own (#1602): each member it sets on its element, for the controller to lay over
+        // the browser's theme.
+        ("sortable-styled", new Sortable(Stack(0, new SortableItem(new Text("a", TypeRole.BodyM, Theme.TextPrimary), "a")),
+            "todo", _ => { }, style: new SortableTheme { LiftedOpacity = 0.25f, CopyElevation = 5, MaxLean = 0 }), NoPresses),
         ("accordion-switches", new Accordion([
             new AccordionItem("One") { Content = new Text("body one", TypeRole.BodyM, Theme.TextPrimary) },
             new AccordionItem("Two") { Content = new Text("body two", TypeRole.BodyM, Theme.TextPrimary) },

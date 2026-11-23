@@ -236,7 +236,7 @@ public class FlutterParityPinTests
         // once for both targets.
         ["ReorderableListView"] = () => HasMember("Sortable", "OnDropped") && HasMember("Sortable", "Accepts")
             && HasMember("Sortable", "OnHovered") && HasMember("Sortable", "Group") && Has("SortableItem")
-            && HasMember("SortDrop", "Into"),
+            && HasMember("SortDrop", "Into") && HasMember("Sortable", "Indent") && HasMember("SortDrop", "Depth"),
         // The table composes the vocabulary's nodes to move and size its columns, which Flutter's leaves to the app.
         ["DataTable"] = () => HasMember("DataTable", "ColumnOrder") && HasMember("DataTable", "OnColumnsReordered")
             && HasMember("DataTable", "OnColumnResized") && HasMember("DataColumn", "MinWidth")
@@ -399,6 +399,9 @@ public class FlutterParityPinTests
         ["ThemeData"] = () => Has("IAppTheme") && Has("Density") && Nothing("CupertinoThemeData"),
         ["MediaQuery"] = () => Has("SafeArea") && Nothing("MediaQuery"),
         ["MediaQuery.viewInsets"] = () => HasMember("PhotonHost", "ViewInsets"),
+        ["TextField.keyboardType"] = () => HasMember("TextEntry", "Kind") && Has("TextEntryKind"),
+        ["InputDecoration.prefixText"] = () => HasMember("TextInput", "Prefix") && HasMember("TextInput", "Suffix")
+            && Has("MoneyInput") && Has("NumberInput"),
 
         // 10 — lifecycle and windows
         ["WidgetsBindingObserver"] = () => Nothing("WidgetsBindingObserver", "AppLifecycleState"),

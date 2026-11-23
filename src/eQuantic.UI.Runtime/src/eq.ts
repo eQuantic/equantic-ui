@@ -56,7 +56,13 @@ import {
   log2Of64,
 } from './utils/bits';
 import {
+  abs,
+  absLong,
+  addInt,
+  addLong,
   checked,
+  copySign,
+  copySignLong,
   mapGet,
   mapSet,
   divRem,
@@ -138,6 +144,7 @@ import {
 import {
   asNumber,
   format,
+  numberFormatInfo,
   recordText,
   recordTextGroup,
   stringFormat,
@@ -152,6 +159,7 @@ import { nextTextElementLength, textElementStarts } from './utils/text-elements'
 import { unicodeCategory } from './utils/unicode-category';
 import { hasNonWhiteSpace, isWhiteSpace, trim, trimEnd, trimStart } from './utils/white-space';
 import { toLower, toUpper } from './utils/casing';
+import { escapeData, escapeUri, unescapeData } from './utils/uri-escaping';
 import { split, splitAny } from './utils/string-split';
 import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
@@ -445,6 +453,14 @@ export const $eq = {
     intRem,
     longDiv,
     longRem,
+    /** An int and a long added as Enumerable.Sum adds them, checked whatever the context (#1808). */
+    addInt,
+    addLong,
+    /** A signed integer's Abs and CopySign, which throw for its MinValue's magnitude (#1808). */
+    abs,
+    absLong,
+    copySign,
+    copySignLong,
     single,
     double,
     singleFromLong,
@@ -491,6 +507,8 @@ export const $eq = {
     trailingZeroCount64,
     log2Of64,
   },
+  /** `Uri.EscapeDataString`, `EscapeUriString` and `UnescapeDataString` as .NET escapes and unescapes (#1805). */
+  uri: { escapeData, escapeUri, unescapeData },
   /** Text: number/string formatting, StringBuilder, StringInfo's text elements (grapheme clusters,
    * from the platform's segmenter), a character's general category, string's comparisons and
    * ranged join, a string's own searches by a comparison, its split, .NET's white space, and its
@@ -543,6 +561,8 @@ export const $eq = {
     /** A text's case and a char's, as .NET changes them, in the page's culture or the invariant one. */
     toUpper,
     toLower,
+    /** `NumberFormatInfo`: the page's culture's, or the invariant one's, as .NET's own object (#1765). */
+    numberFormat: numberFormatInfo,
   },
   /** A dictionary's indexer read, which fails on a missing key the way .NET does, and its write,
    * which answers the value written as C#'s assignment does. */

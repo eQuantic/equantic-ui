@@ -100,8 +100,6 @@
 [EQX0001]eQuantic.UI.Native.Framework.LayoutContext.ReducedMotion.init -> void
 [EQX0001]eQuantic.UI.Native.Framework.LayoutContext.SafeAreaInsets.get -> eQuantic.UI.Primitives.EdgeInsets
 [EQX0001]eQuantic.UI.Native.Framework.LayoutContext.SafeAreaInsets.init -> void
-[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.SizeClass.get -> eQuantic.UI.Primitives.WindowSizeClass
-[EQX0001]eQuantic.UI.Native.Framework.LayoutContext.SizeClass.init -> void
 [EQX0001]eQuantic.UI.Native.Framework.LayoutContext.Theme.get -> eQuantic.UI.Primitives.IAppTheme!
 [EQX0001]eQuantic.UI.Native.Framework.LayoutContext.TimeMs.get -> float
 [EQX0001]eQuantic.UI.Native.Framework.LayoutContext.TimeMs.init -> void

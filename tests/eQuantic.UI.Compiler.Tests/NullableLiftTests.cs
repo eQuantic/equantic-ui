@@ -52,7 +52,7 @@ public class NullableLiftTests
     public void ACompoundOnANullableInt_IsLifted()
     {
         var js = Compile("int? x = null; x += 1;");
-        Assert.Contains("x = $eq.nullable.arith(x, 1, ($a, $b) => $a + $b)", js);
+        Assert.Contains("x = $eq.nullable.arith(x, 1, ($a, $b) => $a + $b | 0)", js);
     }
 
     [Fact]
@@ -80,6 +80,6 @@ public class NullableLiftTests
     public void ANegatedNullableInt_IsLifted()
     {
         var js = Compile("int? x = null; var y = -x;");
-        Assert.Contains("$eq.nullable.unary(x, ($a) => -$a)", js);
+        Assert.Contains("$eq.nullable.unary(x, ($a) => -$a | 0)", js);
     }
 }

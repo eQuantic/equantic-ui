@@ -82,4 +82,25 @@ public class DecimalConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>
+    /// <c>decimal.Truncate</c>, <c>Floor</c> and <c>Ceiling</c>, and <c>Math</c>'s over a decimal, answer the
+    /// whole number .NET answers, in its direction, with the scale .NET keeps, and on a negative value and
+    /// a value already whole (#1765). They were refused (EQ2004) where a money field asks whether an amount
+    /// has more fraction digits than its currency has.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("decimal a = 12.75m; return decimal.Truncate(a).ToString(System.Globalization.CultureInfo.InvariantCulture);")]
+    [InlineData("decimal a = -12.75m; return decimal.Truncate(a).ToString(System.Globalization.CultureInfo.InvariantCulture);")]
+    [InlineData("decimal a = 1250.00m; return decimal.Truncate(a).ToString(System.Globalization.CultureInfo.InvariantCulture);")]
+    [InlineData("decimal a = 1250.00m; return decimal.Truncate(a) == a;")]
+    [InlineData("decimal a = 12505m / 10m; return decimal.Truncate(a) == a;")]
+    [InlineData("decimal a = 12.25m; return decimal.Floor(a) + \"|\" + decimal.Floor(-a) + \"|\" + decimal.Ceiling(a) + \"|\" + decimal.Ceiling(-a);")]
+    [InlineData("decimal a = -0.5m; return Math.Truncate(a) + \"|\" + Math.Floor(a) + \"|\" + Math.Ceiling(a);")]
+    [InlineData("decimal a = 7.10m; return (int)decimal.Truncate(a).Scale + \"|\" + (int)decimal.Floor(a).Scale;")]
+    public void ADecimalTruncatesFloorsAndCeilsAsDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }

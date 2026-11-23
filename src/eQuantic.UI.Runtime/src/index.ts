@@ -178,6 +178,7 @@ export {
   Image,
   ScrollView,
   LoopMotion,
+  GlobalKey,
   GridPattern,
   LinearGradient,
   RadialGradient,
@@ -266,6 +267,7 @@ export {
   BadgeTheme,
   CalendarTheme,
   MarkdownTheme,
+  SortableTheme,
 } from './shared/theme-slots';
 // The vocabulary's interface defaults, which an app's twin delegates to where eqc has the
 // interface's signature and not its body (#414).
@@ -292,6 +294,7 @@ export {
   PhotonTheme,
 } from './shared/design-system.generated';
 export { Navigator } from './router/navigator';
+export { DevelopmentNotices } from './shared/development-notices';
 export { StyleBuilder } from './utils/style-builder';
 export { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 

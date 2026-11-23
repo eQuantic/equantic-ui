@@ -321,6 +321,66 @@ public class ComponentTesterTests
         tester.Semantics.Select(stop => stop.Name).Should().Equal("Title a", "Title b");
     }
 
+    /// <summary>A STATEFUL section handed what its page loads, through its constructor, which loads nothing
+    /// itself. It counts the instances that mounted and unmounted, so a test can see which one is drawn.</summary>
+    private sealed class Greeting(string name, List<string> lifecycle) : StatefulComponent
+    {
+        private readonly string _name = name;
+
+        protected override void OnMount() => lifecycle.Add("mount " + _name);
+
+        protected override void OnUnmount() => lifecycle.Add("unmount " + _name);
+
+        public override VisualNode Build(ComponentContext context) => Text("Hello " + _name);
+    }
+
+    private sealed class GreetingPage(List<string> lifecycle) : StatelessComponent, IServerPrefetch
+    {
+        private string _name = "";
+
+        [ServerOnly]
+        public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken) =>
+            _name = await services.GetRequiredService<ICatalog>().TitleAsync("ana");
+
+        public override VisualNode Build(ComponentContext context) =>
+            Column(children: [Text("Name " + _name), new Greeting(_name, lifecycle)]);
+    }
+
+    [Fact]
+    public async Task AStatefulSectionHandedWhatItsPageLoads_IsDrawnWithIt()
+    {
+        // The page is built before its prefetch runs, and the section with it, holding the page's empty
+        // name. A position keeps a stateful instance, so the section kept that one, and the page drew
+        // "Name Title ana" beside "Hello " (#1776): the server's markup and the state the browser hydrates.
+        var lifecycle = new List<string>();
+        using var tester = new ComponentTester(services: Services());
+
+        await tester.PumpPageAsync(new GreetingPage(lifecycle));
+
+        tester.Semantics.Select(stop => stop.Name).Should().Equal("Name Title ana", "Hello Title ana");
+        tester.Html.Should().Contain("Hello Title ana");
+        lifecycle.Should().Equal(["mount Title ana"],
+            "the one drawn is mounted once, and the one built with the empty name never mounted: a tree mounts "
+            + "after the frame that settles it, and the position it was queued at holds the fresh one by then");
+    }
+
+    [Fact]
+    public async Task AStatefulSection_KeepsItsInstanceOnceThePageHasLoaded()
+    {
+        // Only the rounds give a position to the fresh instance: once they settle, a stateful component
+        // keeps its state through its parent's builds, as it always did.
+        var lifecycle = new List<string>();
+        using var tester = new ComponentTester(services: Services());
+        await tester.PumpPageAsync(new GreetingPage(lifecycle));
+        lifecycle.Clear();
+
+        tester.Pump(new GreetingPage(lifecycle));
+
+        lifecycle.Should().BeEmpty("the section drawn after the rounds is the one its position keeps");
+        tester.Find("Hello Title ana").Role.Should().Be(SemanticRole.StaticText,
+            "and it keeps what it was built with, though the page handed again holds an empty name");
+    }
+
     [Fact]
     public async Task TheArmAWidthHides_LoadsItsDataAsTheServersDoes()
     {
@@ -375,6 +435,46 @@ public class ComponentTesterTests
             services: new ServiceCollection().AddSingleton<ICatalog>(catalog).BuildServiceProvider());
 
         await tester.PumpPageAsync(new LoadingPage());
+
+        tester.Semantics.Select(stop => stop.Name).Should().Equal("a", "Title stats");
+        catalog.Asked.Should().Equal("ids", "stats");
+    }
+
+    /// <summary>A STATEFUL component that loads its own data, which its position keeps through its
+    /// parent's builds, loaded or not.</summary>
+    private sealed class StatefulStats : StatefulComponent, IServerPrefetch
+    {
+        private string _title = "loading";
+
+        [ServerOnly]
+        public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken) =>
+            _title = await services.GetRequiredService<ICatalog>().TitleAsync("stats");
+
+        public override VisualNode Build(ComponentContext context) => Text(_title);
+    }
+
+    private sealed class PageOverStatefulStats : StatelessComponent, IServerPrefetch
+    {
+        private string _heading = "";
+
+        [ServerOnly]
+        public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken) =>
+            _heading = (await services.GetRequiredService<ICatalog>().IdsAsync())[0];
+
+        public override VisualNode Build(ComponentContext context) => Column(children: [Text(_heading), new StatefulStats()]);
+    }
+
+    [Fact]
+    public async Task AStatefulComponentThatLoads_KeepsWhatItLoaded_ThroughItsLoadingParentsBuild()
+    {
+        // While the rounds run, a stateful component that loads nothing takes what its parent hands it
+        // (#1776), and one that loads keeps its instance: what it loaded is the page's data. Handed the
+        // fresh one, it would be asked again, and a page would load twice what it draws once.
+        var catalog = new CountingCatalog();
+        using var tester = new ComponentTester(
+            services: new ServiceCollection().AddSingleton<ICatalog>(catalog).BuildServiceProvider());
+
+        await tester.PumpPageAsync(new PageOverStatefulStats());
 
         tester.Semantics.Select(stop => stop.Name).Should().Equal("a", "Title stats");
         catalog.Asked.Should().Equal("ids", "stats");

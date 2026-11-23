@@ -10,7 +10,7 @@ public class OperatorsTests : StrategyTestBase
         var code = "(int)1.5";
         var js = Convert(code);
         // C# int cast truncates AND wraps to 32 bits — `| 0` is the JS twin of both.
-        Assert.StartsWith("(Math.trunc(1.5) | 0)", js);
+        Assert.StartsWith("Math.trunc(1.5) | 0", js);
     }
 
     [Fact]

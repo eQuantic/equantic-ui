@@ -168,6 +168,36 @@ public static class SdkStrings
     /// <summary>A time picker's accessible name when the app supplies none.</summary>
     public static string ChooseTime => SdkResources.ChooseTime;
 
+    // MoneyInput and NumberInput: what the field wants, when what was typed is not it.
+
+    /// <summary>What a money field says of text that is no amount, with one written as the field writes it.</summary>
+    public static string AmountExpected(string example) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.AmountExpected, example);
+
+    /// <summary>What a number field says of text that is no whole number, with one as the field writes it.</summary>
+    public static string WholeNumberExpected(string example) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.WholeNumberExpected, example);
+
+    /// <summary>What a field says of a value outside its range, its bounds written as the field writes them.</summary>
+    public static string ValueBetween(string least, string most) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ValueBetween, least, most);
+
+    /// <summary>What a field with only a least value says of one under it.</summary>
+    public static string ValueAtLeast(string least) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ValueAtLeast, least);
+
+    /// <summary>What a field with only a greatest value says of one over it.</summary>
+    public static string ValueAtMost(string most) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ValueAtMost, most);
+
+    /// <summary>A field's accessible name with what is drawn beside its text: <c>Price (€)</c>.</summary>
+    public static string NamedWithAffixes(string label, string affixes) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.NamedWithAffixes, label, affixes);
+
+    /// <summary>A number with its unit, in the language's order: <c>30 days</c>.</summary>
+    public static string ValueWithUnit(string number, string unit) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ValueWithUnit, number, unit);
+
     /// <summary>
     /// What shape the typed row expects: <c>MM/DD/YYYY</c> in the United States,
     /// <c>DD/MM/AAAA</c> in Brazil, <c>YYYY-MM-DD</c> in Sweden.

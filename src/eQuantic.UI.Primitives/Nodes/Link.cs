@@ -51,6 +51,17 @@ public sealed class Link : SingleChildNode
     /// </summary>
     public bool Current { get; init; }
 
+    /// <summary>
+    /// Opens the destination BESIDE the page rather than in its place, so the reader keeps what they
+    /// were doing: a form that holds its draft in the page's state, with a consent box beside links to
+    /// the documents it names (#941). The web writes <c>target="_blank"</c> with
+    /// <c>rel="noopener noreferrer"</c>, on the server and after hydration alike, and the router leaves
+    /// the click to the browser. A Photon shell hands an absolute <c>http</c> or <c>https</c> destination
+    /// to the system's browser (<see cref="IUrlLauncher"/>), and navigates in place to one of the app's
+    /// own routes, since it has no second page to open it in.
+    /// </summary>
+    public bool OpensBeside { get; init; }
+
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

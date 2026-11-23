@@ -238,8 +238,13 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     {
         var chrome = PinnedStyle(node, s.Press.SurfaceScrolled);
         if (chrome is { } drawn) EmitStyledChrome(drawn, box: null, s);
+        // The header's scroll reaches every box under it, which shows its Scrolled diff (#1769), up
+        // to a header nested in it, which sets its own.
+        var outerScrolledHeader = s.Press.InScrolledHeader;
+        s.Press.InScrolledHeader = s.Press.SurfaceScrolled;
         // The scrolled diff's foreground descends like a box's, as the web writes it as `color` (#614).
         Descend(chrome?.Foreground is { } foreground ? s with { Foreground = foreground } : s);
+        s.Press.InScrolledHeader = outerScrolledHeader;
         return Nothing.Value;
     }
 

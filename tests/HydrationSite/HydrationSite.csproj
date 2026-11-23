@@ -1,0 +1,17 @@
+<Project>
+    <!--
+        The site eQuantic.UI.Testing.Tests hydrates (#1775): a clean page beside one page per defect a real
+        site met only once its pages hydrated, each reproduced as it happened. Built from the source tree,
+        as the samples are.
+    -->
+    <Import Project="../../src/eQuantic.UI.Sdk/Sdk/Sdk.props" />
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <Import Project="../../src/eQuantic.UI.Sdk/Sdk/Sdk.targets" />
+</Project>

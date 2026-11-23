@@ -2,7 +2,7 @@ export abstract class EmittedStep {
     constructor() {}
 
     run() {
-        return this.draw() + this.measure() + this.layout() + this.paint();
+        return ((this.draw() + this.measure() | 0) + this.layout() | 0) + this.paint() | 0;
     }
 
     abstract draw(): number;

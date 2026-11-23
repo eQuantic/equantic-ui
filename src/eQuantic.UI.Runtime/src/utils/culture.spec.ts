@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   activeCulture,
   activeFormatData,
+  addStrings,
   formatLocale,
   INVARIANT_FORMAT,
   installCulture,
@@ -34,16 +35,51 @@ describe('culture atom', () => {
     expect($eq.str('Strings', 'Hero.Title')).toBe('Construa produtos');
   });
 
-  it('a missing key renders the KEY and warns once — ugly, never blank, never thrown', () => {
+  it('a missing key renders the KEY and warns once — ugly, never blank, never thrown', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    setCultureCatalogLoader(async () => ({}));
     try {
       installCulture('pt-BR', 'pt-BR', {});
+      expect(str('Strings', 'Hero.Title')).toBe('Hero.Title');
+      // The whole catalog is asked for first (#1782): a key a page was not handed is no missing key yet.
+      await new Promise((resolve) => setTimeout(resolve, 0));
       expect(str('Strings', 'Hero.Title')).toBe('Hero.Title');
       expect(str('Strings', 'Hero.Title')).toBe('Hero.Title');
       expect(warn).toHaveBeenCalledTimes(1);
     } finally {
       warn.mockRestore();
+      setCultureCatalogLoader();
     }
+  });
+
+  it('a key the page was not handed is asked of the whole catalog once, and the tree drawn again (#1782)', async () => {
+    const asked: string[] = [];
+    const redraw = vi.fn();
+    setCultureInvalidator(redraw);
+    setCultureCatalogLoader(async (culture) => {
+      asked.push(culture);
+      return { 'Strings/Hero.Title': 'Construa produtos', 'Strings/Admin.Orders': 'Pedidos' };
+    });
+    try {
+      installCulture('pt-BR', 'pt-BR', { 'Strings/Hero.Title': 'Construa produtos' });
+      expect(str('Strings', 'Admin.Orders')).toBe('Admin.Orders');
+      expect(str('Strings', 'Admin.Orders')).toBe('Admin.Orders');
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(asked).toEqual(['pt-BR']);
+      expect(redraw).toHaveBeenCalledTimes(1);
+      expect(str('Strings', 'Admin.Orders')).toBe('Pedidos');
+    } finally {
+      setCultureInvalidator(() => {});
+      setCultureCatalogLoader();
+    }
+  });
+
+  it("a navigation's strings join the active catalog (#1782)", () => {
+    installCulture('pt-BR', 'pt-BR', { 'Strings/Hero.Title': 'Construa produtos' });
+    addStrings({ 'Strings/Shop.Title': 'Nossos bolos' });
+    expect(str('Strings', 'Hero.Title')).toBe('Construa produtos');
+    expect(str('Strings', 'Shop.Title')).toBe('Nossos bolos');
   });
 
   it("the SDK's own strings fall back to built-in English rather than to raw keys", () => {
@@ -244,16 +280,20 @@ describe('culture atom', () => {
     expect(document.documentElement.lang).toBe('pt-BR');
   });
 
-  it('installing a new culture swaps the catalog and re-arms the warnings', () => {
+  it('installing a new culture swaps the catalog and re-arms the warnings', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    setCultureCatalogLoader(async () => ({}));
     try {
       installCulture('en', 'en', {});
+      str('Strings', 'Greeting');
+      await new Promise((resolve) => setTimeout(resolve, 0));
       str('Strings', 'Greeting');
       installCulture('pt-BR', 'pt-BR', { 'Strings/Greeting': 'Olá, {0}!' });
       expect(str('Strings', 'Greeting')).toBe('Olá, {0}!');
       expect(warn).toHaveBeenCalledTimes(1);
     } finally {
       warn.mockRestore();
+      setCultureCatalogLoader();
     }
   });
 });

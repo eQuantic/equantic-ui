@@ -181,6 +181,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eQuantic.UI.Native.Testing"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eQuantic.UI.Native.Testing.Tests", "tests\eQuantic.UI.Native.Testing.Tests\eQuantic.UI.Native.Testing.Tests.csproj", "{C33B5D2A-80F3-494A-87B1-666127A9E8DA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HydrationSite", "tests\HydrationSite\HydrationSite.csproj", "{5C4513EF-D592-4EA9-BAA5-42C0EC681E3E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1091,6 +1093,18 @@ Global
 		{C33B5D2A-80F3-494A-87B1-666127A9E8DA}.Release|x64.Build.0 = Release|Any CPU
 		{C33B5D2A-80F3-494A-87B1-666127A9E8DA}.Release|x86.ActiveCfg = Release|Any CPU
 		{C33B5D2A-80F3-494A-87B1-666127A9E8DA}.Release|x86.Build.0 = Release|Any CPU
+		{5C4513EF-D592-4EA9-BAA5-42C0EC681E3E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C4513EF-D592-4EA9-BAA5-42C0EC681E3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C4513EF-D592-4EA9-BAA5-42C0EC681E3E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5C4513EF-D592-4EA9-BAA5-42C0EC681E3E}.Debug|x64.Build.0 = Debug|Any CPU
+		{5C4513EF-D592-4EA9-BAA5-42C0EC681E3E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5C4513EF-D592-4EA9-BAA5-42C0EC681E3E}.Debug|x86.Build.0 = Debug|Any CPU
+		{5C4513EF-D592-4EA9-BAA5-42C0EC681E3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C4513EF-D592-4EA9-BAA5-42C0EC681E3E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C4513EF-D592-4EA9-BAA5-42C0EC681E3E}.Release|x64.ActiveCfg = Release|Any CPU
+		{5C4513EF-D592-4EA9-BAA5-42C0EC681E3E}.Release|x64.Build.0 = Release|Any CPU
+		{5C4513EF-D592-4EA9-BAA5-42C0EC681E3E}.Release|x86.ActiveCfg = Release|Any CPU
+		{5C4513EF-D592-4EA9-BAA5-42C0EC681E3E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1178,5 +1192,6 @@ Global
 		{6974F684-4B29-4A23-818C-CF2E62124A8F} = {1EBDA820-0C68-4246-AB87-F1D9814EC64D}
 		{399208C0-2B7E-44B8-B621-F24865B8116F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{C33B5D2A-80F3-494A-87B1-666127A9E8DA} = {1EBDA820-0C68-4246-AB87-F1D9814EC64D}
+		{5C4513EF-D592-4EA9-BAA5-42C0EC681E3E} = {1EBDA820-0C68-4246-AB87-F1D9814EC64D}
 	EndGlobalSection
 EndGlobal

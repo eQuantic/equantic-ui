@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <PackageId>eQuantic.UI.Testing</PackageId>
-    <Description>Component tests for eQuantic.UI apps, in any .NET test framework: draw a component with a theme and a culture, tap and type by the name a screen reader announces, and read the markup the web gets and what a screen reader hears, with no browser.</Description>
+    <Description>Component and page tests for eQuantic.UI apps, in any .NET test framework: draw a component with a theme and a culture, tap and type by the name a screen reader announces, and read the markup the web gets and what a screen reader hears, with no browser; and hydrate a served page against the server's markup, failing where the browser would draw it differently.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +14,49 @@
          vocabulary's own BuildOwner and lowers them with the realizer the server uses. It takes no
          test framework, so an xUnit, NUnit or MSTest project asserts on what it answers. -->
     <ProjectReference Include="..\eQuantic.UI.Web\eQuantic.UI.Web.csproj" />
+    <!-- HydrationAssert serves the app under test on a real port, which the page's scripts are fetched
+         from (WebApplicationFactory.UseKestrel, #1775). -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
   </ItemGroup>
+
+  <!--
+      THE HYDRATION HARNESS (#1775): Hydration/harness.ts with the DOM the runtime's own tests run in
+      (happy-dom, from the runtime's lockfile), bundled by the embedded bun into one script the assembly
+      carries. HydrationAssert writes it out and runs it with the bun the app under test was built with,
+      which the targets in buildTransitive/ find, so a test project installs nothing: no Node, no npm,
+      no browser.
+  -->
+  <Import Project="../Shared/EmbeddedBun.targets" />
+
+  <PropertyGroup>
+    <_EqRuntimeDir>$(MSBuildThisFileDirectory)../eQuantic.UI.Runtime/</_EqRuntimeDir>
+    <_EqHarness>$(BaseIntermediateOutputPath)$(Configuration)/hydration-harness.js</_EqHarness>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(_EqHarness)" LogicalName="eQuantic.UI.Testing.hydration-harness.js" Visible="false" />
+    <None Include="buildTransitive/eQuantic.UI.Testing.targets" Pack="true" PackagePath="buildTransitive/eQuantic.UI.Testing.targets" />
+    <None Include="$(_EqRuntimeDir)node_modules/happy-dom/LICENSE" Pack="true" PackagePath="THIRD-PARTY-NOTICES/happy-dom.LICENSE" Visible="false"
+          Condition="Exists('$(_EqRuntimeDir)node_modules/happy-dom/LICENSE')" />
+  </ItemGroup>
+
+  <Target Name="BundleHydrationHarness" BeforeTargets="BeforeBuild" DependsOnTargets="ResolveEmbeddedBun"
+          Inputs="Hydration/harness.ts;Hydration/tsconfig.json;$(_EqRuntimeDir)bun.lock" Outputs="$(_EqHarness)">
+    <ItemGroup>
+      <_EqHarnessInstall Include="command" Value="install" />
+      <_EqHarnessInstall Include="lockfile" Value="--frozen-lockfile" />
+      <_EqHarnessBuild Include="command" Value="build" />
+      <_EqHarnessBuild Include="entry" Value="$(MSBuildThisFileDirectory)Hydration/harness.ts" />
+      <_EqHarnessBuild Include="target" Value="--target=bun" />
+      <_EqHarnessBuild Include="tsconfig" Value="--tsconfig-override=$(MSBuildThisFileDirectory)Hydration/tsconfig.json" />
+      <_EqHarnessBuild Include="out" Value="--outfile=$(MSBuildProjectDirectory)/$(_EqHarness)" />
+    </ItemGroup>
+    <!-- The runtime's packages as its lockfile pins them: a tree installed before the lock moved is brought to it. -->
+    <RunProgram Program="$(_BunPath)" Arguments="@(_EqHarnessInstall)" WorkingDirectory="$(_EqRuntimeDir)" />
+    <RunProgram Program="$(_BunPath)" Arguments="@(_EqHarnessBuild)" WorkingDirectory="$(MSBuildThisFileDirectory)" />
+    <ItemGroup>
+      <FileWrites Include="$(_EqHarness)" />
+    </ItemGroup>
+  </Target>
 
 </Project>
