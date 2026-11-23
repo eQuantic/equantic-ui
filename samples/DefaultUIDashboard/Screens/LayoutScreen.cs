@@ -3,7 +3,7 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.Console;
 
 /// <summary>
-/// A child built for the room its box has (#1555). Each card holds a <see cref="Primitives.LayoutBuilder"/> that
+/// A child built for the room its box has (#1555). Each card holds a <c>LayoutBuilder</c> that
 /// writes the room it was told and lays its two parts side by side from 480 points, stacking them below.
 /// The two fixed cards are told the same room on every target, which the e2e suite reads in a browser and
 /// the Photon suite lays out (<c>LayoutBuilderTests</c>); the last card fills the width the window leaves
