@@ -34,9 +34,9 @@ public class VocabularyConfigShapeTests
         Path.Combine(Path.GetDirectoryName(sourcePath)!, "vocabulary-config.baseline.txt");
 
     /// <summary>A comment, which the reading skips: one naming <c>constructor(</c> or holding a brace would
-    /// otherwise be read as code, and the class it sits in skipped or misread without a word. A <c>//</c> after a
-    /// colon is an address's, not a comment's.</summary>
-    private static readonly Regex Comment = new(@"/\*[\s\S]*?\*/|(?<!:)//[^\n]*", RegexOptions.Compiled);
+    /// otherwise be read as code, and the class it sits in skipped or misread without a word. A line comment opens a
+    /// line or follows a space, so a <c>//</c> inside a string or an address is left as it is.</summary>
+    private static readonly Regex Comment = new(@"/\*[\s\S]*?\*/|(?<=^|\s)//[^\n]*", RegexOptions.Compiled | RegexOptions.Multiline);
 
     /// <summary>The hand-written mirrors, as <see cref="VocabularyMirrorShapeTests"/> reads them, without their comments.</summary>
     private static string MirrorText() => Comment.Replace(string.Join("\n",
@@ -76,7 +76,7 @@ public class VocabularyConfigShapeTests
             else if (character is '}' or ')' or ']') depth--;
             else if (depth == 0) top.Append(character);
         }
-        return Regex.Matches(top.ToString(), @"(?:^|[;,\n])\s*(?:readonly\s+)?(\w+)\??\s*:")
+        return Regex.Matches(top.ToString(), @"(?:^|[;,\n])\s*(?:readonly\s+)?['""]?([\w-]+)['""]?\??\s*:")
             .Select(member => member.Groups[1].Value).ToHashSet(StringComparer.Ordinal);
     }
 
@@ -145,7 +145,7 @@ public class VocabularyConfigShapeTests
         var offenders = new List<string>();
         var read = 0;
 
-        foreach (Match declaration in Regex.Matches(text, @"export (?:abstract )?class (\w+)[^{]*\{"))
+        foreach (Match declaration in Regex.Matches(text, @"(?:export )?(?:abstract )?\bclass (\w+)[^{]*\{"))
         {
             var taker = declaration.Groups[1].Value;
             if (ConfigOf(taker, Body(text, declaration.Index + declaration.Length), interfaces) is not var (name, members, named))
@@ -181,7 +181,8 @@ public class VocabularyConfigShapeTests
             }
         }
 
-        read.Should().BeGreaterThan(30, "the classes that take a config have to be read at all");
+        // 37 when this was written: a class the reading stops finding lowers it, where a floor far below would let it go.
+        read.Should().BeGreaterThanOrEqualTo(37, "every class that takes a config has to be read, and one skipped is drift unseen");
         offenders.AddRange(interfaces.Keys
             .Where(name => !taken.Contains(name) && !interfaces.Values.Any(other => other.Extends.Contains(name)))
             .Select(name => $"{name} is taken by no class of the mirror, so nothing pins it to C#"));

@@ -9,7 +9,7 @@ it mirrors. So a member C# lets an initializer set and the config lacks is a TS2
 raises only once some component first sets it. `BoxStyleConfig` lacked `foreground`, which `BoxStyle` has carried
 since #614, until a slice of #1606 set it and had to stop and repair the mirror.
 
-Measured on main, 179 members differ:
+Measured on main, 183 members differ:
 
 - `foreground`;
 - the node members every `VisualNode` carries (`bookmark`, `alignSelf`, `gridSpan`, and `key` or `globalKey`
@@ -76,5 +76,5 @@ Rules of `docs/PRINCIPLES.md` followed:
 
 `tests/eQuantic.UI.Web.Tests` gains `VocabularyConfigShapeTests` and its baseline. It also gains emission shapes in
 `SharedComponentTranspilationTests`, written to `src/eQuantic.UI.Runtime/src/shared/__fixtures__/EmittedConfigs.ts`
-and run by `vocabulary-config.spec.ts`. On main's mirror the shape test fails with 179 offenders, and the runtime's
+and run by `vocabulary-config.spec.ts`. On main's mirror the shape test fails with 183 offenders, and the runtime's
 `tsc` refuses the fixture eight times with TS2353.
