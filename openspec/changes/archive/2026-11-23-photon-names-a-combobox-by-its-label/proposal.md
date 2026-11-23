@@ -7,7 +7,8 @@ Closes #1328, a bug found by the semantics parity fixture of #339 (`SemanticsPar
 A `Select(["Lisbon", "Porto"], 0, ...)` was announced on the web as a combobox with no name, since it has no label,
 whose value is `Lisbon`. On Photon it was a combobox NAMED `Lisbon` with no value, and named by its placeholder with
 nothing chosen. The vocabulary's contract is the web's: a combobox's name is its label, and what its field shows is
-its value. A reader on Photon heard the option where the field's name belongs, and a labelled one heard it twice.
+its value. A reader on Photon heard the option where the field's name belongs. A labelled one already read as the web reads it:
+only an unlabelled one changes.
 
 ## What changes
 

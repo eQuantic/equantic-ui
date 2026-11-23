@@ -33,8 +33,8 @@ internal sealed partial class SemanticsVisitor
         // Its NAME is the author's label, and none without one, and what the field SHOWS is always its
         // value, the choice or the placeholder: "Country, Brazil". That is the web's reading, where a
         // combobox is never named from its content (accname) and a select-only combobox's content is
-        // its value. What the field showed was the name here until #1328, so a reader heard the option
-        // where the field's name belongs, and a labelled one heard it twice.
+        // its value. With no label, what the field showed was the name here until #1328, so a reader heard
+        // the option where the field's name belongs; a labelled one already read as it does now.
         if (AnchorsAListbox(laidOut))
         {
             var shown = TextWithin(laidOut);
