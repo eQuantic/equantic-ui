@@ -126,6 +126,12 @@ function restore(layer: Element, closing: readonly Element[]): void {
   focusPlace(recorded.place);
 }
 
+/** Whether `layer` recorded an invoker still in the document and on screen, the one a restore gives the focus. */
+function standsOnScreen(layer: Element): boolean {
+  const recorded = invokers.get(layer);
+  return recorded !== undefined && recorded.invoker.isConnected && onScreen(recorded.invoker);
+}
+
 /** The invoker is gone (a row that removed itself is what opened the dialog): the control now at its
  * place takes the focus, the next row's, or the last one when it was the last. */
 function focusPlace(place: number): void {
@@ -218,11 +224,14 @@ export function commitFocusTraps(): void {
 
   // Restore before focusing into anything new: closing one dialog to open another must not leave
   // focus on the old invoker. Of layers that closed together, the bottommost's invoker is the one
-  // still standing, as Photon gives back the outermost's: the others are only forgotten.
+  // still standing, as Photon gives back the outermost's: the others are only forgotten. A layer whose
+  // invoker an arm the window hides holds is passed over for one whose invoker is on screen: a drawer
+  // left open in a hidden arm does not take the focus from the dialog the user was in (#1185).
   followReturned();
   if (closed.length > 0) returned = null;
-  for (const layer of closed.slice(1)) invokers.delete(layer);
-  if (closed.length > 0) restore(closed[0], closed);
+  const giver = closed.find(standsOnScreen) ?? closed[0];
+  for (const layer of closed) if (layer !== giver) invokers.delete(layer);
+  if (giver) restore(giver, closed);
   const layer = topmost();
   if (layer && opened.includes(layer)) {
     // After the next frame, for the same reason the mount hook waits: a layer transitioning out of

@@ -498,6 +498,35 @@ describe('§10 a layer in a hidden adaptive arm', () => {
     expect(document.activeElement, 'the closed drawer gave nothing back over the user’s choice').toBe(search);
   });
 
+  it('a hidden layer and one on screen closing together give the focus to the opener on screen', () => {
+    // A drawer opens from the compact arm's menu, and the window then widens: its arm hides with it open.
+    const menu = button('Menu');
+    const compact = arm(gateCompactUntil(840), menu);
+    menu.focus();
+    const drawer = layer(button('Home'), button('Settings'));
+    compact.appendChild(drawer);
+    commitFocusTraps();
+    width = 1024;
+    // On screen, a dialog opens from the second control of the wide arm: the first is where the drawer's
+    // place, taken for the menu, would put the focus.
+    const sidebar = button('Sidebar');
+    const share = button('Share');
+    const wide = arm(gateExpandedFrom(840), sidebar, share);
+    share.focus();
+    const copy = button('Copy link');
+    const dialog = layer(copy, button('Close'));
+    wide.appendChild(dialog);
+    commitFocusTraps();
+    copy.focus();
+
+    // One pass closes both, the drawer first in the document.
+    drawer.remove();
+    dialog.remove();
+    commitFocusTraps();
+
+    expect(document.activeElement, 'the opener on screen takes the focus back, not the hidden menu’s place').toBe(share);
+  });
+
   it('under a hidden layer, the layer on screen owns the keyboard', () => {
     const keep = button('Keep');
     const discard = button('Discard');
