@@ -194,9 +194,10 @@ export class ShadowSpec {
 
 /**
  * What an object initializer may set on every node: the C# `VisualNode` members a transpiled initializer reaches, which
- * each node's config extends. Each config repeated a few of them by hand and lacked the rest, so `new Grid(…) { Key = k }`
- * would have failed the runtime's tsc the first time a component wrote it (#1823). `Origin` and `OriginLabel` are left
- * out on purpose: only a design-mode compilation sets them, on the C# tree the design host reads.
+ * each node's config extends, or intersects when the constructor writes it in place. Each config repeated a few of them
+ * by hand and lacked the rest, so `new Grid(…) { Key = k }` would have failed the runtime's tsc the first time a
+ * component wrote it (#1823). `Origin` and `OriginLabel` are left out on purpose: only a design-mode compilation sets
+ * them, on the C# tree the design host reads.
  */
 interface VisualNodeConfig {
   key?: string | null;

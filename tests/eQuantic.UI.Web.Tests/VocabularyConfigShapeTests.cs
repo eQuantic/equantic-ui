@@ -33,10 +33,15 @@ public class VocabularyConfigShapeTests
     private static string BaselinePath([CallerFilePath] string sourcePath = "") =>
         Path.Combine(Path.GetDirectoryName(sourcePath)!, "vocabulary-config.baseline.txt");
 
-    /// <summary>The hand-written mirrors, as <see cref="VocabularyMirrorShapeTests"/> reads them.</summary>
-    private static string MirrorText() => string.Join("\n",
+    /// <summary>A comment, which the reading skips: one naming <c>constructor(</c> or holding a brace would
+    /// otherwise be read as code, and the class it sits in skipped or misread without a word. A <c>//</c> after a
+    /// colon is an address's, not a comment's.</summary>
+    private static readonly Regex Comment = new(@"/\*[\s\S]*?\*/|(?<!:)//[^\n]*", RegexOptions.Compiled);
+
+    /// <summary>The hand-written mirrors, as <see cref="VocabularyMirrorShapeTests"/> reads them, without their comments.</summary>
+    private static string MirrorText() => Comment.Replace(string.Join("\n",
         new[] { "vocabulary.ts", "value-types.ts", "primitive-values.ts", "route-values.ts" }
-            .Select(name => File.ReadAllText(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", name))));
+            .Select(name => File.ReadAllText(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", name)))), "");
 
     /// <summary>
     /// The text between the bracket just before <paramref name="open"/> and the one that closes it: a brace by
@@ -58,14 +63,14 @@ public class VocabularyConfigShapeTests
     private static string Camel(string name) => char.ToLowerInvariant(name[0]) + name[1..];
 
     /// <summary>
-    /// The members a type literal's body declares at its own level: comments, and whatever nests in braces,
-    /// parentheses or brackets (a nested literal, a function type's parameters), are read as nothing.
+    /// The members a type literal's body declares at its own level: whatever nests in braces, parentheses or
+    /// brackets (a nested literal, a function type's parameters) is read as nothing.
     /// </summary>
     private static HashSet<string> TopLevelMembers(string body)
     {
         var top = new StringBuilder();
         var depth = 0;
-        foreach (var character in Regex.Replace(body, @"/\*[\s\S]*?\*/|//[^\n]*", ""))
+        foreach (var character in body)
         {
             if (character is '{' or '(' or '[') depth++;
             else if (character is '}' or ')' or ']') depth--;
