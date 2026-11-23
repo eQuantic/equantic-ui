@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, Color, ColorToken, CornerRadii, Flexible, LinearGradient, LoopMotion, Row, SizeValue, StatelessComponent } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Color, ColorToken, CornerRadii, Flexible, LinearGradient, LoopMotion, ProgressTheme, Row, SizeValue, StatelessComponent } from "../runtime-exports";
 
 export class Skeleton extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Skeleton';
@@ -6,24 +6,27 @@ export class Skeleton extends StatelessComponent {
     declare shape: string;
     declare width: number;
     declare height: number;
+    declare style: any;
 
-    constructor(shape?: any, width?: any, height: any = 0, props?: any) {
+    constructor(shape?: any, width?: any, height: any = 0, style: any = null, props?: any) {
         super();
         if (shape !== undefined) this.shape = shape;
         if (width !== undefined) this.width = width;
         if (height !== undefined) this.height = height;
+        if (style !== undefined) this.style = style;
         if (this.shape === undefined) this.shape = 'line';
         if (this.width === undefined) this.width = 0;
         if (this.height === undefined) this.height = 0;
         this.shape = shape;
         this.width = width;
         this.height = height;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let slot = theme.progress;
+        let slot = ProgressTheme.merge(theme.progress, this.style);
         let highlight = slot?.skeletonHighlight ?? theme.surfaceHighlight;
         let height = (() => { const $s = this.shape; if ($s === 'line') return slot?.skeletonLineHeight ?? 12; if ($s === 'circle') return this.width; return this.height > 0 ? this.height : this.width; })();
         let radius = (() => { const $s = this.shape; if ($s === 'line') return theme.shape('full'); if ($s === 'circle') return theme.shape('full'); return theme.shape(slot?.skeletonShape ?? 'medium'); })();

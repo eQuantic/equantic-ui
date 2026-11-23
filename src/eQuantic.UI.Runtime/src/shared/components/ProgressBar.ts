@@ -1,4 +1,4 @@
-import { $eq, $VariantValue, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Progress, RangeValue, Row, SizeValue, Spacer, StatefulComponent, UiComponent } from "../runtime-exports";
+import { $eq, $VariantValue, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Progress, ProgressTheme, RangeValue, Row, SizeValue, Spacer, StatefulComponent, UiComponent } from "../runtime-exports";
 
 export class ProgressBar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.ProgressBar';
@@ -11,6 +11,7 @@ export class ProgressBar extends StatefulComponent {
     _valueText: any = null;
     declare value: any;
     declare variant: $VariantValue;
+    declare style: any;
 
     get prominent() {
         return this._prominent;
@@ -36,19 +37,21 @@ export class ProgressBar extends StatefulComponent {
         this._valueText = value;
     }
 
-    constructor(value: any = null, variant: any = 'primary', props?: any) {
+    constructor(value: any = null, variant: any = 'primary', style: any = null, props?: any) {
         super();
         if (value !== undefined) this.value = value;
         if (variant !== undefined) this.variant = variant;
+        if (style !== undefined) this.style = style;
         if (this.variant === undefined) this.variant = 'primary';
         this.value = value;
         this.variant = variant;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let slot = theme.progress;
+        let slot = ProgressTheme.merge(theme.progress, this.style);
         let height = this.prominent ? slot?.prominentBarHeight ?? 8 : slot?.barHeight ?? 4;
         let ends = new CornerRadii(theme.shape(slot?.barShape ?? 'full'));
         let trackColor = slot?.trackColor ?? theme.surfaceSubtle;
@@ -80,6 +83,7 @@ export class ProgressBar extends StatefulComponent {
         this._snapNext = (incoming = fresh.value) != null && (current = this.value) != null && incoming < current;
         this.value = fresh.value;
         this.variant = fresh.variant;
+        this.style = fresh.style;
         this._label = fresh.label;
         this._valueText = fresh.valueText;
         this._prominent = fresh.prominent;

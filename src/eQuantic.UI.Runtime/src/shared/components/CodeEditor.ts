@@ -596,9 +596,9 @@ export class CodeEditor extends StatefulComponent {
         let row = new Row(8, 'start', 'center', false, null, null, { cross: 'center' });
         row.add(new Box(new BoxStyle({ width: 168 }), new TextEntry(this._findText, (value: string) => this.setState(() => this._findText = value), { placeholder: SdkStrings.find, label: SdkStrings.find, autofocus: true, onSubmit: () => step(true) })));
         row.add(new Text($eq.collections.count(matches) === 0 ? this._findText.length === 0 ? '' : '0' : `${$eq.text.format(index, null, undefined, undefined, 'int32')}/${$eq.text.format($eq.collections.count(matches), null, undefined, undefined, 'int32')}`, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { tabular: true }));
-        row.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronUp')), SdkStrings.previousMatch, 'standard', 'medium', null, { size: 'small', onPressed: () => step(false) }));
-        row.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronDown')), SdkStrings.nextMatch, 'standard', 'medium', null, { size: 'small', onPressed: () => step(true) }));
-        row.add(new IconButton(new Icon(IconGlyph.fromIcons('close')), SdkStrings.closeFind, 'standard', 'medium', null, { size: 'small', onPressed: () => this.closeFind(editor) }));
+        row.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronUp')), SdkStrings.previousMatch, 'standard', 'medium', null, null, { size: 'small', onPressed: () => step(false) }));
+        row.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronDown')), SdkStrings.nextMatch, 'standard', 'medium', null, null, { size: 'small', onPressed: () => step(true) }));
+        row.add(new IconButton(new Icon(IconGlyph.fromIcons('close')), SdkStrings.closeFind, 'standard', 'medium', null, null, { size: 'small', onPressed: () => this.closeFind(editor) }));
         return new Box(new BoxStyle({ background: theme.surface, borderWidth: 1, borderColor: theme.border, cornerRadius: new CornerRadii(theme.shape('medium')), padding: EdgeInsets.symmetric(8, 4), shadow: theme.elevation(2) }), row);
     }
 }

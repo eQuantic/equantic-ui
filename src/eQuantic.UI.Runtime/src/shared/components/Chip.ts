@@ -1,4 +1,4 @@
-import { $VariantValue, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Icon, IconGlyph, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle } from "../runtime-exports";
+import { $VariantValue, Box, BoxStyle, BuildContext, ChipTheme, ControlMetrics, CornerRadii, EdgeInsets, Icon, IconGlyph, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle } from "../runtime-exports";
 
 export class Chip extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Chip';
@@ -8,14 +8,16 @@ export class Chip extends StatelessComponent {
     declare onPressed: (() => void) | null;
     declare onRemove: (() => void) | null;
     declare variant: $VariantValue;
+    declare style: any;
 
-    constructor(label?: any, kind: any = 'filter', selected: any = false, onPressed: any = null, onRemove: any = null, props?: any) {
+    constructor(label?: any, kind: any = 'filter', selected: any = false, onPressed: any = null, onRemove: any = null, style: any = null, props?: any) {
         super();
         if (label !== undefined) this.label = label;
         if (kind !== undefined) this.kind = kind;
         if (selected !== undefined) this.selected = selected;
         if (onPressed !== undefined) this.onPressed = onPressed;
         if (onRemove !== undefined) this.onRemove = onRemove;
+        if (style !== undefined) this.style = style;
         if (this.kind === undefined) this.kind = 'filter';
         if (this.selected === undefined) this.selected = false;
         if (this.variant === undefined) this.variant = 'secondary';
@@ -24,6 +26,7 @@ export class Chip extends StatelessComponent {
         this.selected = selected;
         this.onPressed = onPressed;
         this.onRemove = onRemove;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
@@ -31,7 +34,7 @@ export class Chip extends StatelessComponent {
         let theme = context.theme;
         let primary = theme.colors('primary');
         let tint = theme.colors(this.variant);
-        let slot = theme.chip;
+        let slot = ChipTheme.merge(theme.chip, this.style);
         let quietFill = slot?.fill ?? theme.surfaceSubtle;
         let fill = (() => { const $s = this.kind; if (($s === 'filter') && (this.selected)) return primary.subtle; if ($s === 'filter') return null; if ($s === 'tag') return tint.subtle; return quietFill; })();
         let textColor = (() => { const $s = this.kind; if (($s === 'filter') && (this.selected)) return primary.onSubtle; if ($s === 'tag') return tint.onSubtle; return theme.textPrimary; })();

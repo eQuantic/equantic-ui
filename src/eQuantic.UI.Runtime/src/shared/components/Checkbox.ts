@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, IconGlyph, Pressable, Row, Sizing, StatelessComponent, Text, VisualNode, VisualNodeExtensions } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, IconGlyph, Pressable, Row, SelectionControlsTheme, Sizing, StatelessComponent, Text, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Checkbox extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Checkbox';
@@ -8,12 +8,14 @@ export class Checkbox extends StatelessComponent {
     declare disabled: boolean;
     declare error: boolean;
     declare indeterminate: boolean;
+    declare style: any;
 
-    constructor(checked?: any, onChanged: any = null, label: any = null, props?: any) {
+    constructor(checked?: any, onChanged: any = null, label: any = null, style: any = null, props?: any) {
         super();
         if (checked !== undefined) this.checked = checked;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (label !== undefined) this.label = label;
+        if (style !== undefined) this.style = style;
         if (this.checked === undefined) this.checked = false;
         if (this.disabled === undefined) this.disabled = false;
         if (this.error === undefined) this.error = false;
@@ -21,13 +23,14 @@ export class Checkbox extends StatelessComponent {
         this.checked = checked;
         this.onChanged = onChanged;
         this.label = label;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
         let primary = theme.colors('primary');
-        let slot = theme.selectionControls;
+        let slot = SelectionControlsTheme.merge(theme.selectionControls, this.style);
         let side = ControlMetrics.atDensity((slot?.box ?? null), context.density) ?? Sizing.selectionBox(context.density);
         let borderColor = this.error ? theme.colors('destructive').base : slot?.borderColor ?? theme.borderStrong;
         let filled = this.checked || this.indeterminate;

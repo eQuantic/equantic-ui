@@ -1,4 +1,4 @@
-import { $eq, Adjustable, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, Pressable, Row, SizeValue, Sizing, StatelessComponent, Text, VisualNode, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, Adjustable, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, Pressable, Row, SelectionControlsTheme, SizeValue, Sizing, StatelessComponent, Text, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class RadioGroup extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.RadioGroup';
@@ -7,26 +7,32 @@ export class RadioGroup extends StatelessComponent {
     declare onChanged: ((int: number) => void) | null;
     declare label: any;
     declare disabled: boolean;
+    declare optionBuilder: ((value: number) => VisualNode) | null;
+    declare style: any;
 
-    constructor(options?: any, selected?: any, onChanged: any = null, label: any = null, props?: any) {
+    constructor(options?: any, selected?: any, onChanged: any = null, label: any = null, optionBuilder: any = null, style: any = null, props?: any) {
         super();
         if (options !== undefined) this.options = options;
         if (selected !== undefined) this.selected = selected;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (label !== undefined) this.label = label;
+        if (optionBuilder !== undefined) this.optionBuilder = optionBuilder;
+        if (style !== undefined) this.style = style;
         if (this.selected === undefined) this.selected = 0;
         if (this.disabled === undefined) this.disabled = false;
         this.options = options;
         this.selected = selected;
         this.onChanged = onChanged;
         this.label = label;
+        this.optionBuilder = optionBuilder;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
         let primary = theme.colors('primary');
-        let slot = theme.selectionControls;
+        let slot = SelectionControlsTheme.merge(theme.selectionControls, this.style);
         let side = ControlMetrics.atDensity((slot?.radioSize ?? null), context.density) ?? (ControlMetrics.atDensity((slot?.box ?? null), context.density) ?? Sizing.selectionBox(context.density));
         let dot = ControlMetrics.atDensity((slot?.radioDot ?? null), context.density) ?? Sizing.radioDot(context.density);
         let options = new Column(4, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
@@ -37,7 +43,9 @@ export class RadioGroup extends StatelessComponent {
             let circle = new Box(new BoxStyle({ width: side, height: side, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: slot?.borderWidth ?? 2, borderColor: isSelected ? primary.base : slot?.borderColor ?? theme.borderStrong }), circleContent);
             let row = new Row(slot?.labelGap ?? 12, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: slot?.radioRowHeight ?? 44 });
             row.add(circle);
-            row.add(new Text($eq.collections.item(this.options, i), 'bodyM', this.disabled ? theme.textMuted : theme.textPrimary, 1));
+            let textColor = this.disabled ? theme.textMuted : theme.textPrimary;
+            let build: any; 
+            row.add((build = this.optionBuilder) != null ? new Box(new BoxStyle({ foreground: textColor }), build(index)) : new Text($eq.collections.item(this.options, i), 'bodyM', textColor, 1));
             options.add(new Pressable(row, this.disabled || this.onChanged == null || isSelected ? null : () => this.onChanged!(index), { disabled: this.disabled, label: $eq.collections.item(this.options, i), role: 'radio', selected: isSelected }));
         }
         let group: VisualNode = options;

@@ -41,7 +41,7 @@ export class FileUpload extends StatefulComponent {
         let invitation = new Column(8, 'start', 'center');
         invitation.add(new Text(config.label ?? (config.multiple ? SdkStrings.uploadDropHere : SdkStrings.uploadDropOneHere), 'label', theme.textPrimary, 2, 'center'));
         invitation.add(new Text(config.hint ?? FileUpload.accepted(config.policy), 'caption', theme.textSecondary, 2, 'center'));
-        invitation.add(new Button(config.multiple ? SdkStrings.uploadChooseFiles : SdkStrings.uploadChooseFile, 'secondary', 'small', () => this.choose(picker, uploads), { disabled: !enabled }));
+        invitation.add(new Button(config.multiple ? SdkStrings.uploadChooseFiles : SdkStrings.uploadChooseFile, 'secondary', 'small', () => this.choose(picker, uploads), null, { disabled: !enabled }));
         let area = new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.all(24), background: this._over && enabled ? theme.colors('primary').subtle : theme.surfaceSubtle, borderWidth: this._over && enabled ? 2 : 1, borderColor: this._over && enabled ? theme.colors('primary').base : theme.borderStrong, cornerRadius: new CornerRadii(theme.shape('large')), opacity: enabled ? null : Math.fround(0.6) }), invitation);
         let column = new Column(12, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         column.add(new DropTarget(area, (files) => this.send(uploads, files), { onDragOverChanged: (over: boolean) => this.setState(() => this._over = over), enabled: enabled }));
@@ -73,7 +73,7 @@ export class FileUpload extends StatefulComponent {
         heading.add(new Text(FileUpload.statusOf(upload), 'caption', failed ? theme.colors('destructive').base : theme.textSecondary, 1));
         let row = new Column(8, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         row.add(heading);
-        row.add(new ProgressBar(FileUpload.fraction(upload), failed ? 'destructive' : state === 'completed' ? 'success' : 'primary', { label: SdkStrings.uploadProgress(upload.file.name) }));
+        row.add(new ProgressBar(FileUpload.fraction(upload), failed ? 'destructive' : state === 'completed' ? 'success' : 'primary', null, { label: SdkStrings.uploadProgress(upload.file.name) }));
         let error: any; 
         if (failed && (($0) => (($0 != null && $0.length > 0) && (error = $0, true)))(upload.error)) row.add(new Text(error, 'caption', theme.colors('destructive').base, 3));
         let actions = new Row(8);

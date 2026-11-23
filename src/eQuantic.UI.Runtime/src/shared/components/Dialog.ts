@@ -34,7 +34,7 @@ export class Dialog extends StatelessComponent {
         let actions = new Row(slot?.dialogActionGap ?? 8, 'start', 'center', false, null, null, { main: 'end' });
         let safe = (this.actions.find((action) => action.variant === 'ghost') ?? null);
         for (const action of this.actions) {
-            actions.add(new Button(action.label, action.variant, 'medium', action.onPressed, { initialFocus: (action === safe) }));
+            actions.add(new Button(action.label, action.variant, 'medium', action.onPressed, null, { initialFocus: (action === safe) }));
         }
         let body = new Column(slot?.dialogGap ?? 20, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         body.add(content);

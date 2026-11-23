@@ -73,7 +73,7 @@ export class Pagination extends StatelessComponent {
     }
 
     static step(label: string, enabled: boolean, onPressed: () => void) {
-        return new Button(label, 'outline', 'small', null, { disabled: !enabled, onPressed: onPressed });
+        return new Button(label, 'outline', 'small', null, null, { disabled: !enabled, onPressed: onPressed });
     }
 }
 

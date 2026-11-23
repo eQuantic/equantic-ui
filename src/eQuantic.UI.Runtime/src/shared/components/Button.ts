@@ -1,4 +1,4 @@
-import { $SizeVariantValue, $VariantValue, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Icon, Pressable, Row, SizeValue, Spinner, StatelessComponent, StyleDiff, Text, TypeStyle } from "../runtime-exports";
+import { $SizeVariantValue, $VariantValue, Box, BoxStyle, BuildContext, ButtonTheme, ControlMetrics, CornerRadii, EdgeInsets, Icon, Pressable, Row, SizeValue, Spinner, StatelessComponent, StyleDiff, Text, TypeStyle } from "../runtime-exports";
 
 export class Button extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Button';
@@ -6,18 +6,20 @@ export class Button extends StatelessComponent {
     declare variant: $VariantValue;
     declare size: $SizeVariantValue;
     declare onPressed: (() => void) | null;
+    declare style: any;
     declare disabled: boolean;
     declare expand: boolean;
     declare initialFocus: boolean;
     declare leading: any;
     declare loading: boolean;
 
-    constructor(label?: any, variant: any = 'primary', size: any = 'medium', onPressed: any = null, props?: any) {
+    constructor(label?: any, variant: any = 'primary', size: any = 'medium', onPressed: any = null, style: any = null, props?: any) {
         super();
         if (label !== undefined) this.label = label;
         if (variant !== undefined) this.variant = variant;
         if (size !== undefined) this.size = size;
         if (onPressed !== undefined) this.onPressed = onPressed;
+        if (style !== undefined) this.style = style;
         if (this.variant === undefined) this.variant = 'primary';
         if (this.size === undefined) this.size = 'small';
         if (this.disabled === undefined) this.disabled = false;
@@ -28,13 +30,14 @@ export class Button extends StatelessComponent {
         this.variant = variant;
         this.size = size;
         this.onPressed = onPressed;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
         let colors = theme.colors(this.variant);
-        let slot = theme.button;
+        let slot = ButtonTheme.merge(theme.button, this.style);
         let ladder = (slot?.controls ?? null);
         let height = ControlMetrics.height(context, this.size, ladder);
         let padX = ControlMetrics.paddingX(context, this.size, ladder);

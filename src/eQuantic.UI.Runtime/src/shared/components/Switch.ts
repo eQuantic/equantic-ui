@@ -1,4 +1,4 @@
-import { $DensityValue, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Draggable, Positioned, Pressable, Sizing, Stack, StatelessComponent } from "../runtime-exports";
+import { $DensityValue, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Draggable, Positioned, Pressable, SelectionControlsTheme, Sizing, Stack, StatelessComponent } from "../runtime-exports";
 
 export class Switch extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Switch';
@@ -6,21 +6,24 @@ export class Switch extends StatelessComponent {
     declare onChanged: (() => void) | null;
     declare disabled: boolean;
     declare label: any;
+    declare style: any;
 
-    constructor(on?: any, onChanged: any = null, props?: any) {
+    constructor(on?: any, onChanged: any = null, style: any = null, props?: any) {
         super();
         if (on !== undefined) this.on = on;
         if (onChanged !== undefined) this.onChanged = onChanged;
+        if (style !== undefined) this.style = style;
         if (this.on === undefined) this.on = false;
         if (this.disabled === undefined) this.disabled = false;
         this.on = on;
         this.onChanged = onChanged;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let slot = theme.selectionControls;
+        let slot = SelectionControlsTheme.merge(theme.selectionControls, this.style);
         let trackFill = this.on ? theme.colors('primary').base : slot?.switchOffTrack ?? theme.borderStrong;
         if (this.disabled) trackFill = trackFill.withOpacity(theme.disabledOpacity);
         let density: $DensityValue = context.density;

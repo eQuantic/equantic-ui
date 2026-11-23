@@ -41,7 +41,7 @@ export class CultureSwitcher extends StatelessComponent {
         }
         let chosen = $eq.collections.item(this.options, selected);
         let code: any; 
-        return new Menu(new Button((($0) => (($0 != null && $0.length > 0) && (code = $0, true)))(chosen.short) ? code : chosen.label, 'ghost', this.size, null, { leading: this.icon }), items, (index: number) => this.switch(controller, index));
+        return new Menu(new Button((($0) => (($0 != null && $0.length > 0) && (code = $0, true)))(chosen.short) ? code : chosen.label, 'ghost', this.size, null, null, { leading: this.icon }), items, (index: number) => this.switch(controller, index));
     }
 
     switch(controller: any, index: number) {

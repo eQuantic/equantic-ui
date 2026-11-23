@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Draggable, Positioned, Row, SizeValue, Spinner, Stack, StatelessComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, Draggable, Positioned, ProgressTheme, Row, SizeValue, Spinner, Stack, StatelessComponent, VisualNode } from "../runtime-exports";
 
 export class PullToRefresh extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.PullToRefresh';
@@ -6,21 +6,25 @@ export class PullToRefresh extends StatelessComponent {
     declare child: VisualNode;
     declare onRefresh: (() => void) | null;
     declare refreshing: boolean;
+    declare style: any;
 
-    constructor(child?: any, onRefresh: any = null, props?: any) {
+    constructor(child?: any, onRefresh: any = null, style: any = null, props?: any) {
         super();
         if (child !== undefined) this.child = child;
         if (onRefresh !== undefined) this.onRefresh = onRefresh;
+        if (style !== undefined) this.style = style;
         if (this.refreshing === undefined) this.refreshing = false;
         this.child = child;
         this.onRefresh = onRefresh;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
         let indicator = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: PullToRefresh.threshold, main: 'center', cross: 'center' });
-        indicator.add(new Spinner(theme.progress?.refreshSpinner ?? 20, theme.colors('primary').base));
+        let slot = ProgressTheme.merge(theme.progress, this.style);
+        indicator.add(new Spinner(slot?.refreshSpinner ?? 20, theme.colors('primary').base));
         let content = new Box(new BoxStyle({ width: SizeValue.fill, background: theme.background }), this.child);
         let stack = new Stack();
         stack.add(new Positioned(indicator, 0, 0, null, 0));

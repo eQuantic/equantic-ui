@@ -249,7 +249,7 @@ export class CodeBlock extends StatelessComponent {
         }
         let copy: any; 
         if ((copy = onCopy) != null) {
-            corner.add(new IconButton(new Icon(IconGlyph.fromIcons('copy')), SdkStrings.copyCode, 'standard', 'medium', null, { size: 'small', onPressed: copy }));
+            corner.add(new IconButton(new Icon(IconGlyph.fromIcons('copy')), SdkStrings.copyCode, 'standard', 'medium', null, null, { size: 'small', onPressed: copy }));
         }
         return new Positioned(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(12, 8) }), corner), 0, 0);
     }

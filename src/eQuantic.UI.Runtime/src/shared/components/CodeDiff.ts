@@ -263,9 +263,9 @@ export class CodeDiff extends StatefulComponent {
         bar.add(new Text(`+${$eq.text.format(addedLines, null, undefined, undefined, 'int32')}`, 'labelSmall', theme.colors('success').base, 1, 'start', false, false, null, 0, { tabular: true }));
         bar.add(new Text(`−${$eq.text.format(removedLines, null, undefined, undefined, 'int32')}`, 'labelSmall', theme.colors('destructive').base, 1, 'start', false, false, null, 0, { tabular: true }));
         let none = $eq.collections.count(source.changes) === 0;
-        bar.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronUp')), SdkStrings.previousChange, 'standard', 'medium', null, { size: 'small', disabled: none, onPressed: () => this.stepTo(false) }));
-        bar.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronDown')), SdkStrings.nextChange, 'standard', 'medium', null, { size: 'small', disabled: none, onPressed: () => this.stepTo(true) }));
-        bar.add(new Button(inline ? SdkStrings.showSideBySide : SdkStrings.showInline, 'ghost', 'small', null, { onPressed: () => this.setState(() => {
+        bar.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronUp')), SdkStrings.previousChange, 'standard', 'medium', null, null, { size: 'small', disabled: none, onPressed: () => this.stepTo(false) }));
+        bar.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronDown')), SdkStrings.nextChange, 'standard', 'medium', null, null, { size: 'small', disabled: none, onPressed: () => this.stepTo(true) }));
+        bar.add(new Button(inline ? SdkStrings.showSideBySide : SdkStrings.showInline, 'ghost', 'small', null, null, { onPressed: () => this.setState(() => {
             this._inlineChosen = true;
             this._inlineChoice = !inline;
         }) }));

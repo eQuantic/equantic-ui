@@ -34,7 +34,7 @@ describe('a pressed fill is its surface\'s Pressed diff (#616)', () => {
   });
 
   it('a disabled button takes no pressed state at all', () => {
-    const node = new Button('Save', 'primary', 'medium', () => {}, { disabled: true }).render();
+    const node = new Button('Save', 'primary', 'medium', () => {}, null, { disabled: true }).render();
     expect(node.attributes.class ?? '').not.toContain('eq-pressable');
     expect(stateStyle(node.children[0] as HtmlNode, CONTROL_PRESSED)).toBe('');
   });

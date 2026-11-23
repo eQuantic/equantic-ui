@@ -93,7 +93,7 @@ export class DataTable extends StatefulComponent {
         let grid = new Grid(tracks, 0, null, { width: SizeValue.fill });
         if (this.selectable) {
             let anySelected = $eq.collections.count(this._config.selection!) > 0;
-            grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(anySelected, this._config.onToggleAll, null, { indeterminate: anySelected && $eq.collections.count(this._config.selection) < $eq.collections.count(this._config.rows) })), 'center', slot));
+            grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(anySelected, this._config.onToggleAll, null, null, { indeterminate: anySelected && $eq.collections.count(this._config.selection) < $eq.collections.count(this._config.rows) })), 'center', slot));
         }
         let others = this._carried >= 0 ? DataTable.without(order, this._carried) : order;
         for (let i = 0; i < order.length; i = i + 1 | 0) {
@@ -216,7 +216,7 @@ export class DataTable extends StatefulComponent {
         let grid = new Grid(tracks, 0, null, { width: SizeValue.fill });
         if (this.selectable) {
             let toggle = this._config.onToggleRow;
-            grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(selected, () => toggle?.(row), null, { disabled: toggle == null })), 'center', slot));
+            grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(selected, () => toggle?.(row), null, null, { disabled: toggle == null })), 'center', slot));
         }
         for (const index of $eq.collections.listWalk(order)) {
             grid.add(DataTable.cell(index < $eq.collections.count(row.cells) ? $eq.collections.item(row.cells, index) : new Box(new BoxStyle()), $eq.collections.item(this._config.columns, index).align, slot));

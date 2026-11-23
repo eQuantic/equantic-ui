@@ -1,4 +1,4 @@
-import { $SizeVariantValue, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, Pressable, StatelessComponent, StyleDiff, VisualNodeExtensions } from "../runtime-exports";
+import { $SizeVariantValue, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, IconButtonTheme, Pressable, StatelessComponent, StyleDiff, VisualNodeExtensions } from "../runtime-exports";
 
 export class IconButton extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.IconButton';
@@ -8,16 +8,18 @@ export class IconButton extends StatelessComponent {
     declare size: $SizeVariantValue;
     declare onPressed: (() => void) | null;
     declare disabled: boolean;
+    declare style: any;
     declare selected: boolean;
     declare selectedGlyph: any;
 
-    constructor(glyph?: any, label?: any, kind: any = 'standard', size: any = 'medium', onPressed: any = null, props?: any) {
+    constructor(glyph?: any, label?: any, kind: any = 'standard', size: any = 'medium', onPressed: any = null, style: any = null, props?: any) {
         super();
         if (glyph !== undefined) this.glyph = glyph;
         if (label !== undefined) this.label = label;
         if (kind !== undefined) this.kind = kind;
         if (size !== undefined) this.size = size;
         if (onPressed !== undefined) this.onPressed = onPressed;
+        if (style !== undefined) this.style = style;
         if (this.kind === undefined) this.kind = 'standard';
         if (this.size === undefined) this.size = 'small';
         if (this.disabled === undefined) this.disabled = false;
@@ -27,13 +29,14 @@ export class IconButton extends StatelessComponent {
         this.kind = kind;
         this.size = size;
         this.onPressed = onPressed;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
         let primary = theme.colors('primary');
-        let slot = theme.iconButton;
+        let slot = IconButtonTheme.merge(theme.iconButton, this.style);
         let side = ControlMetrics.height(context, this.size, (slot?.controls ?? null));
         let iconSize = ControlMetrics.atSize((slot?.iconSize ?? null), this.size) ?? (() => { const $s = this.size; if ($s === 'small') return 16; if ($s === 'medium') return 20; return 24; })();
         let quietFill = slot?.quietFill ?? theme.surfaceSubtle;

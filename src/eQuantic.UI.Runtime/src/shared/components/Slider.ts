@@ -1,4 +1,4 @@
-import { $eq, $VariantValue, Adjustable, Box, BoxStyle, BuildContext, ColorToken, Column, CornerRadii, Draggable, Flexible, Motion, Pressable, RangeValue, Row, SizeValue, StatelessComponent, TransitionSpec } from "../runtime-exports";
+import { $eq, $VariantValue, Adjustable, Box, BoxStyle, BuildContext, ColorToken, Column, CornerRadii, Draggable, Flexible, Motion, Pressable, RangeValue, Row, SelectionControlsTheme, SizeValue, StatelessComponent, TransitionSpec } from "../runtime-exports";
 
 export class Slider extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Slider';
@@ -14,11 +14,13 @@ export class Slider extends StatelessComponent {
     declare variant: $VariantValue;
     declare label: string;
     declare valueText: any;
+    declare style: any;
 
-    constructor(value?: any, onChanged: any = null, props?: any) {
+    constructor(value?: any, onChanged: any = null, style: any = null, props?: any) {
         super();
         if (value !== undefined) this.value = value;
         if (onChanged !== undefined) this.onChanged = onChanged;
+        if (style !== undefined) this.style = style;
         if (this.value === undefined) this.value = 0;
         if (this.min === undefined) this.min = 0;
         if (this.max === undefined) this.max = 1;
@@ -28,6 +30,7 @@ export class Slider extends StatelessComponent {
         if (this.label === undefined) this.label = '';
         this.value = value;
         this.onChanged = onChanged;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
@@ -39,7 +42,7 @@ export class Slider extends StatelessComponent {
         let step = this.step > 0 ? this.step : Math.fround(span / 10);
         let accent = theme.colors(this.variant).base;
         let fill = this.disabled ? theme.borderStrong : accent;
-        let slot = theme.selectionControls;
+        let slot = SelectionControlsTheme.merge(theme.selectionControls, this.style);
         let thumbSize = slot?.sliderThumbSize ?? Slider.thumbSize;
         let trackHeight = slot?.sliderTrackHeight ?? Slider.trackHeight;
         let thumb = new Box(new BoxStyle({ width: thumbSize, height: thumbSize, background: slot?.thumbFill ?? theme.surface, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: slot?.sliderThumbBorder ?? Slider.thumbBorder, borderColor: slot?.sliderThumbBorderColor ?? theme.border, elevation: slot?.sliderThumbElevation ?? 2, transition: TransitionSpec.of(1, Motion.press) }));

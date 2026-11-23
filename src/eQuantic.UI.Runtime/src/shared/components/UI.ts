@@ -1,4 +1,4 @@
-import { $AdjustableRoleValue, $AlignmentValue, $CrossAlignValue, $DragAxisValue, $eq, $HitTestBehaviorValue, $IconsValue, $ImageFitValue, $LiveRegionUrgencyValue, $LoopEffectValue, $MainAlignValue, $NavigableMoveValue, $NavigableRoleValue, $PresenceMotionValue, $PressableRoleValue, $ScrollAxisValue, $SizeVariantValue, $TableCellRoleValue, $TableRoleValue, $TextAlignmentValue, $TextEntryKindValue, $TypeRoleValue, $VariantValue, AdaptiveNode, Adjustable, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, CodeSurface, ColorToken, Column, ContextMenu, ContextRequest, ContextTarget, CookieConsent, CornerRadii, CultureOption, CultureSwitcher, Currency, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, DropTarget, EdgeInsets, EmptyState, ExcludeSemantics, FileUpload, Flexible, Grid, GridTrack, Group, Hoverable, Icon, IconButton, IconGlyph, Image, InFlow, InView, KeyChord, Link, ListDetail, Listener, ListItem, ListTheme, ListView, LiveRegion, LoopMotion, Markdown, MenuItem, MergeSemantics, Mermaid, MoneyInput, Navigable, NavigationRail, NavItem, NumberInput, OptionGroup, Overlay, PickedFile, Pinned, PointerEvent, Positioned, Presence, Pressable, Progress, ProgressBar, RangeValue, Row, SafeArea, ScrollView, SdkStrings, SearchField, SegmentedControl, Select, SheetSurface, Shortcut, Simulated, Size, SizeValue, Skeleton, Slider, Sortable, SortableItem, SortableTheme, SortAnnouncements, SortDrop, Spacer, Spinner, Stack, Stepper, Switch, TableOffset, TableRange, TableScroll, TableScrollRequest, TableSpans, TableView, TableViewCell, TableViewport, Tabs, Text, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TreeEditRequest, TreeMove, TreeNode, TreeReloadRequest, TreeRowState, TreeView, TypeStyle, UploadedFile, UploadPolicy, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "../runtime-exports";
+import { $AdjustableRoleValue, $AlignmentValue, $CrossAlignValue, $DragAxisValue, $eq, $HitTestBehaviorValue, $IconsValue, $ImageFitValue, $LiveRegionUrgencyValue, $LoopEffectValue, $MainAlignValue, $NavigableMoveValue, $NavigableRoleValue, $PresenceMotionValue, $PressableRoleValue, $ScrollAxisValue, $SizeVariantValue, $TableCellRoleValue, $TableRoleValue, $TextAlignmentValue, $TextEntryKindValue, $TypeRoleValue, $VariantValue, AdaptiveNode, Adjustable, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, ButtonTheme, Calendar, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, ChipTheme, CodeSurface, ColorToken, Column, ContextMenu, ContextRequest, ContextTarget, CookieConsent, CornerRadii, CultureOption, CultureSwitcher, Currency, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, DropTarget, EdgeInsets, EmptyState, ExcludeSemantics, FileUpload, Flexible, Grid, GridTrack, Group, Hoverable, Icon, IconButton, IconButtonTheme, IconGlyph, Image, InFlow, InView, KeyChord, Link, ListDetail, Listener, ListItem, ListTheme, ListView, LiveRegion, LoopMotion, Markdown, MenuItem, MergeSemantics, Mermaid, MoneyInput, Navigable, NavigationRail, NavItem, NumberInput, OptionGroup, Overlay, PickedFile, Pinned, PointerEvent, Positioned, Presence, Pressable, Progress, ProgressBar, ProgressTheme, RadioGroup, RangeValue, Row, SafeArea, ScrollView, SdkStrings, SearchField, SegmentedControl, Select, SelectionControlsTheme, SheetSurface, Shortcut, Simulated, Size, SizeValue, Skeleton, Slider, Sortable, SortableItem, SortableTheme, SortAnnouncements, SortDrop, Spacer, Spinner, Stack, Stepper, Switch, TableOffset, TableRange, TableScroll, TableScrollRequest, TableSpans, TableView, TableViewCell, TableViewport, Tabs, Text, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TreeEditRequest, TreeMove, TreeNode, TreeReloadRequest, TreeRowState, TreeView, TypeStyle, UploadedFile, UploadPolicy, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "../runtime-exports";
 
 export class UI {
     static column(gap: number = 0, main: $MainAlignValue = 'start', cross: $CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
@@ -199,8 +199,8 @@ export class UI {
         return new WebFrame(content, title, { sandbox: sandbox, cornerRadius: cornerRadius });
     }
 
-    static button(label: string, variant: $VariantValue = 'primary', size: $SizeVariantValue = 'medium', onPressed: (() => void) | null = null) {
-        return new Button(label, variant, size, onPressed);
+    static button(label: string, variant: $VariantValue = 'primary', size: $SizeVariantValue = 'medium', onPressed: (() => void) | null = null, style: ButtonTheme | null = null) {
+        return new Button(label, variant, size, onPressed, style);
     }
 
     static cookieConsent(policyHref: string | null = null) {
@@ -211,8 +211,8 @@ export class UI {
         return new Card(child, kind);
     }
 
-    static chip(label: string, kind: string = 'filter', selected: boolean = false, onPressed: (() => void) | null = null, onRemove: (() => void) | null = null) {
-        return new Chip(label, kind, selected, onPressed, onRemove);
+    static chip(label: string, kind: string = 'filter', selected: boolean = false, onPressed: (() => void) | null = null, onRemove: (() => void) | null = null, style: ChipTheme | null = null) {
+        return new Chip(label, kind, selected, onPressed, onRemove, style);
     }
 
     static badge(count: number = 0, max: number = 99, variant: $VariantValue = 'destructive') {
@@ -231,16 +231,20 @@ export class UI {
         return new Banner(status, title, body);
     }
 
-    static checkbox(checked: boolean, onChanged: (() => void) | null = null, label: string | null = null, disabled: boolean = false) {
-        return new Checkbox(checked, onChanged, label, { disabled: disabled });
+    static checkbox(checked: boolean, onChanged: (() => void) | null = null, label: string | null = null, style: SelectionControlsTheme | null = null, disabled: boolean = false) {
+        return new Checkbox(checked, onChanged, label, style, { disabled: disabled });
     }
 
-    static switch(on: boolean, onChanged: (() => void) | null = null, label: string | null = null, disabled: boolean = false) {
-        return new Switch(on, onChanged, { label: label, disabled: disabled });
+    static radioGroup(options: string[], selected: number, onChanged: ((int: number) => void) | null = null, label: string | null = null, optionBuilder: ((value: number) => VisualNode) | null = null, style: SelectionControlsTheme | null = null, disabled: boolean = false) {
+        return new RadioGroup(options, selected, onChanged, label, optionBuilder, style, { disabled: disabled });
     }
 
-    static slider(value: number, onChanged: ((float: number) => void) | null = null, min: number = 0, max: number = 1, step: number = 0, label: string = '', valueText: string | null = null, disabled: boolean = false, variant: $VariantValue = 'primary') {
-        return new Slider(value, onChanged, { min: min, max: max, step: step, label: label, valueText: valueText, disabled: disabled, variant: variant });
+    static switch(on: boolean, onChanged: (() => void) | null = null, style: SelectionControlsTheme | null = null, label: string | null = null, disabled: boolean = false) {
+        return new Switch(on, onChanged, style, { label: label, disabled: disabled });
+    }
+
+    static slider(value: number, onChanged: ((float: number) => void) | null = null, style: SelectionControlsTheme | null = null, min: number = 0, max: number = 1, step: number = 0, label: string = '', valueText: string | null = null, disabled: boolean = false, variant: $VariantValue = 'primary') {
+        return new Slider(value, onChanged, style, { min: min, max: max, step: step, label: label, valueText: valueText, disabled: disabled, variant: variant });
     }
 
     static stepper(value: number, onChanged: ((int: number) => void) | null = null) {
@@ -283,8 +287,8 @@ export class UI {
         return new SearchField(query, onChanged, placeholder, onSubmit);
     }
 
-    static progressBar(value: number | null = null, variant: $VariantValue = 'primary', label: string = '', valueText: string | null = null, prominent: boolean = false) {
-        return new ProgressBar(value, variant, { label: label, valueText: valueText, prominent: prominent });
+    static progressBar(value: number | null = null, variant: $VariantValue = 'primary', style: ProgressTheme | null = null, label: string = '', valueText: string | null = null, prominent: boolean = false) {
+        return new ProgressBar(value, variant, style, { label: label, valueText: valueText, prominent: prominent });
     }
 
     static divider(inset: string = 'none', axis: string = 'horizontal') {
@@ -303,8 +307,8 @@ export class UI {
         return new CultureSwitcher(options);
     }
 
-    static iconButton(glyph: Icon, label: string, kind: string = 'standard', size: $SizeVariantValue = 'medium', onPressed: (() => void) | null = null) {
-        return new IconButton(glyph, label, kind, size, onPressed);
+    static iconButton(glyph: Icon, label: string, kind: string = 'standard', size: $SizeVariantValue = 'medium', onPressed: (() => void) | null = null, style: IconButtonTheme | null = null) {
+        return new IconButton(glyph, label, kind, size, onPressed, style);
     }
 
     static emptyState(icon: Icon, title: string, body: string | null = null) {
@@ -363,8 +367,8 @@ export class UI {
         return new Tooltip(child, text);
     }
 
-    static skeleton(shape: string, width: number, height: number = 0) {
-        return new Skeleton(shape, width, height);
+    static skeleton(shape: string, width: number, height: number = 0, style: ProgressTheme | null = null) {
+        return new Skeleton(shape, width, height, style);
     }
 
     static tableView(rows: TableSpans, columns: TableSpans, cellBuilder: (arg1: number, arg2: number) => VisualNode | null, pinnedRows: number = 0, pinnedColumns: number = 0, overscan: number = 3, width?: SizeValue, height?: SizeValue, marks: TableViewCell[] | null = null, request: TableScrollRequest | null = null, onScrolled: ((tableOffset: TableOffset) => void) | null = null, onViewportChanged: ((size: Size) => void) | null = null, label: string | null = null, canRequestFocus: boolean = true, scroll: TableScroll | null = null, role: $TableRoleValue = 'group', cellRole: ((arg1: number, arg2: number) => $TableCellRoleValue) | null = null, selected: ((arg1: number, arg2: number) => boolean) | null = null, current: TableRange | null = null) {
