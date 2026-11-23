@@ -192,6 +192,20 @@ export class ShadowSpec {
   }
 }
 
+/**
+ * What an object initializer may set on every node: the C# `VisualNode` members a transpiled initializer reaches, which
+ * each node's config extends. Each config repeated a few of them by hand and lacked the rest, so `new Grid(…) { Key = k }`
+ * would have failed the runtime's tsc the first time a component wrote it (#1823). `Origin` and `OriginLabel` are left
+ * out on purpose: only a design-mode compilation sets them, on the C# tree the design host reads.
+ */
+interface VisualNodeConfig {
+  key?: string | null;
+  globalKey?: GlobalKey | null;
+  bookmark?: string | null;
+  alignSelf?: CrossAlignValue | null;
+  gridSpan?: number;
+}
+
 interface BoxStyleConfig {
   width?: SizeValue | number;
   height?: SizeValue | number;
@@ -203,6 +217,8 @@ interface BoxStyleConfig {
   maxHeight?: SizeValue | number;
   padding?: EdgeInsetsValue;
   background?: ColorTokenValue | null;
+  /** The content color the box hands its descendants (C# `BoxStyle.Foreground`, #614). */
+  foreground?: ColorTokenValue | null;
   cornerRadius?: CornerRadii;
   borderWidth?: number;
   borderColor?: ColorTokenValue;
@@ -307,9 +323,7 @@ export class Box extends VisualNode {
   }
 }
 
-interface FlexConfig {
-  key?: string | null;
-  globalKey?: GlobalKey | null;
+interface FlexConfig extends VisualNodeConfig {
   main?: MainAlignValue;
   cross?: CrossAlignValue;
   wrap?: boolean;
@@ -491,12 +505,10 @@ export class Pinned extends VisualNode {
   }
 }
 
-interface AdaptiveConfig {
+interface AdaptiveConfig extends VisualNodeConfig {
   /** Custom thresholds in dp (default 600/840 — the spec size classes). */
   mediumFrom?: number;
   expandedFrom?: number;
-  key?: string | null;
-  globalKey?: GlobalKey | null;
 }
 
 /** Mirror of the C# `AdaptiveNode` (spec S6): up to three variants, switched at the node's own thresholds. */
@@ -567,7 +579,7 @@ export class GridTrack {
   }
 }
 
-interface GridConfig {
+interface GridConfig extends VisualNodeConfig {
   rowGap?: number | null;
   padding?: EdgeInsetsValue;
   width?: SizeValue | number;
@@ -691,7 +703,7 @@ function level(value: number): number {
   return value;
 }
 
-interface TextConfig {
+interface TextConfig extends VisualNodeConfig {
   styleOverride?: TypeStyleValue | null;
   /** 1..6, or 0 for text that is not part of the outline. */
   headingLevel?: number;
@@ -709,7 +721,6 @@ interface TextConfig {
   align?: string;
   /** Spec S6: animates color changes (the design's transition-colors). */
   transition?: TransitionSpec | null;
-  key?: string | null;
 }
 
 export class Text extends VisualNode {
@@ -773,10 +784,9 @@ export class Text extends VisualNode {
   }
 }
 
-interface PressableConfig {
+interface PressableConfig extends VisualNodeConfig {
   disabled?: boolean;
   label?: string | null;
-  key?: string | null;
   /** Selection for a toggling/picking button — lowers to aria-pressed. */
   selected?: boolean | null;
   /** Partly selected — checkbox role only; wins over selected. */
@@ -1269,7 +1279,7 @@ export class DragDismiss extends VisualNode {
   }
 }
 
-interface TextEntryConfig {
+interface TextEntryConfig extends VisualNodeConfig {
   placeholder?: string | null;
   /** The accessible name (aria-label) — the C# initializer `{ Label = … }` lands here. */
   label?: string | null;
@@ -1501,7 +1511,7 @@ export class GridPattern {
   }
 }
 
-interface LoopMotionConfig {
+interface LoopMotionConfig extends VisualNodeConfig {
   hideAtRest?: boolean;
 }
 
@@ -2357,7 +2367,7 @@ export class Positioned extends VisualNode {
   }
 }
 
-interface FlexibleConfig {
+interface FlexibleConfig extends VisualNodeConfig {
   /** C#'s object initializer can set the three numbers too (they are `init` there). */
   flex?: number;
   basis?: number;
