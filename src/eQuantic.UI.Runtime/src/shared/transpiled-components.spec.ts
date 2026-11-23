@@ -14,7 +14,9 @@ import { Card } from './components/Card';
 import { Column, Text } from './vocabulary';
 import { photonTheme } from './design-system.generated';
 import { setPhotonTheme } from './photon-context';
-import { AppThemeExtensions, ButtonTheme } from './theme-slots';
+import { ProgressBar } from './components/ProgressBar';
+import { RadioGroup } from './components/RadioGroup';
+import { AppThemeExtensions, ButtonTheme, ProgressTheme } from './theme-slots';
 
 describe('transpiled shared Button (real eqc output)', () => {
   it('renders the same composition the C# WebRealizer pins (button > box > row > label)', () => {
@@ -119,5 +121,35 @@ describe('transpiled shared Card (real eqc output)', () => {
     const column = node.children[0];
     expect(effectiveStyle(column)).toContain('flex-direction: column');
     expect(column.children[1].tag).toBe('button');
+  });
+});
+
+// The family's own style and the option builder, in the browser's twins (#1606).
+describe("the family's own style and option builder (real eqc output)", () => {
+  const collect = (node: HtmlNode, found: HtmlNode[] = []): HtmlNode[] => {
+    found.push(node);
+    for (const child of node.children ?? [])
+      if (typeof child === 'object' && child !== null && 'tag' in child) collect(child as HtmlNode, found);
+    return found;
+  };
+
+  it('a retained bar adopts the style its parent hands it', () => {
+    const bar = new ProgressBar(0.4, 'primary', new ProgressTheme({ barHeight: 7 }));
+    expect(effectiveStyle(bar.render().children[0] as HtmlNode)).toContain('height: 7px');
+
+    bar.adoptConfig(new ProgressBar(0.4, 'primary', new ProgressTheme({ barHeight: 11 })));
+    expect(effectiveStyle(bar.render().children[0] as HtmlNode)).toContain('height: 11px');
+  });
+
+  it("draws what the builder gives while each radio keeps its option's name", () => {
+    const shown = ['Standard, in five days', 'Express, tomorrow'];
+    const node = new RadioGroup(['Standard', 'Express'], 1, () => {}, null, (i: number) => new Text(shown[i])).render();
+    const all = collect(node);
+
+    const radios = all.filter((n) => n.attributes?.role === 'radio');
+    expect(radios.map((r) => r.attributes['aria-label'])).toEqual(['Standard', 'Express']);
+    const texts = all.map((n) => n.textContent).filter((t): t is string => typeof t === 'string');
+    expect(texts).toEqual(expect.arrayContaining(shown));
+    expect(texts).not.toContain('Standard');
   });
 });

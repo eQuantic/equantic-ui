@@ -18,7 +18,9 @@ public sealed record SelectionControlsTheme
     public DensityPair? Box { get; init; }
 
     /// <summary>The radio's circle where it differs from the checkbox's square, ahead of
-    /// <see cref="Box"/> for the radio (Material 3 draws an 18dp checkbox and a 20dp radio).</summary>
+    /// <see cref="Box"/> for the radio (Material 3 draws an 18dp checkbox and a 20dp radio). A radio group's
+    /// own style that names only <see cref="Box"/> keeps the theme's radio size, so one that sizes its ring
+    /// names this.</summary>
     public DensityPair? RadioSize { get; init; }
 
     /// <summary>The border width of an unchecked box and of the radio's ring (2).</summary>
