@@ -2,10 +2,10 @@
 
 ## How Flutter solves it
 
-Flutter never looks an element up by its widget. Build, layout and paint all walk the element tree,
-so one widget instance placed at two positions is two elements, each reached from its parent. A widget
-whose `build` returns itself recurses in Flutter until the stack overflows: Flutter has no bound, and
-ours is the boundary's (`ComponentBoundary`, #1452).
+Flutter never finds an element by the configuration it was built from. Build, layout and paint all walk
+the element tree, so one configuration placed at two positions is two elements, each reached from its
+parent. A configuration whose `build` returns itself recurses in Flutter until the stack overflows:
+Flutter has no bound, and ours is the boundary's (`ComponentBoundary`, #1452).
 
 ## The choice
 
