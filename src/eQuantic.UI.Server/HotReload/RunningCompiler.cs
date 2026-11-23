@@ -265,6 +265,12 @@ internal sealed class RunningCompiler : IModuleCompiler
                         + "eQuantic.UI.Sdk, so there is no eqc to rebuild the pages it serves");
                     return null;
                 }
+                // A stop during the question above answers it with nothing, which reads as an app: that is the
+                // app stopping, no failure to report.
+                lock (_gate)
+                {
+                    if (_disposed) return null;
+                }
                 Console.WriteLine($"[eQuantic.HotReload] MSBuild could not say how to start eqc:\n{answer.Output}{answer.Errors}");
                 return null;
             }

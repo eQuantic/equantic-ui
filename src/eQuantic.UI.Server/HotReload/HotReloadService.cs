@@ -113,7 +113,17 @@ public sealed class HotReloadService : IDisposable
                 _compiler.Prepare();
                 // A host that is not an eQuantic.UI app has no eqc, which the compiler has just said: a save of
                 // its C# has nothing to rebuild, so its sources are watched no more (#1757).
-                if (!_compiler.Available && _watcher is { } watcher) watcher.EnableRaisingEvents = false;
+                if (!_disposed && !_compiler.Available && _watcher is { } watcher)
+                {
+                    try
+                    {
+                        watcher.EnableRaisingEvents = false;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // The app stopped while the compiler got ready: the watcher is gone with it.
+                    }
+                }
             }
             catch (Exception ex)
             {
