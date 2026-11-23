@@ -202,6 +202,26 @@ export function commitFocusTraps(): void {
   }
 }
 
+let commitScheduled = false;
+
+/**
+ * Reconciles the traps once the pass is WRITTEN: what calls this at the end of a pass runs before the
+ * render manager writes the tree the pass produced, so a commit on the spot read the DOM the pass
+ * before it had written. A dialog a render opened then took no focus and recorded no opener until some
+ * later pass came, and one that came none never did (#1812). The microtask after the write is the
+ * moment the in-view observers attach at, for the same reason.
+ */
+export function scheduleFocusTrapCommit(): void {
+  if (typeof document === 'undefined' || commitScheduled) return;
+  commitScheduled = true;
+  const commit = () => {
+    commitScheduled = false;
+    commitFocusTraps();
+  };
+  if (typeof queueMicrotask === 'function') queueMicrotask(commit);
+  else void Promise.resolve().then(commit);
+}
+
 /** Test seam: the layers a Tab would currently be trapped inside (topmost last). */
 export function activeFocusTraps(): readonly Element[] {
   return active;

@@ -188,6 +188,99 @@ public class ModalFocusReturnTests
         host.FocusVisible.Should().BeFalse();
     }
 
+    /// <summary>Rows with a menu each, whose Delete item opens the dialog that confirms it: the case of
+    /// #1812, where the item that opened the dialog leaves with its menu in the same pass.</summary>
+    private sealed class MenuRows(params string[] rows) : StatefulComponent
+    {
+        private readonly List<string> _rows = [.. rows];
+        private string? _asking;
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var page = new Stack();
+            var list = new Column(gap: 4);
+            foreach (var row in _rows)
+            {
+                var line = new Row(gap: 4) { Key = row };
+                line.Add(new Text(row, TypeRole.BodyM));
+                line.Add(new Menu(new Text($"Actions {row}", TypeRole.BodyM),
+                    [new MenuItem("Edit"), new MenuItem("Delete") { Destructive = true }],
+                    index => { if (index == 1) SetState(() => _asking = row); }));
+                list.Add(line);
+            }
+            page.Add(list);
+            if (_asking is not null)
+            {
+                var actions = new Column(gap: 4);
+                actions.Add(Button("Cancel", () => SetState(() => _asking = null), initialFocus: true));
+                page.Add(new Overlay(actions) { Label = "Delete the row?" });
+            }
+            return page;
+        }
+    }
+
+    /// <summary>Whether <paramref name="pressable"/> is the trigger of the menu of <paramref name="row"/>.</summary>
+    private static bool IsTrigger(Pressable? pressable, string row) =>
+        pressable?.Child is Text { Content: var content } && content == $"Actions {row}";
+
+    private static void PressAt(PhotonHost host, HitRegion region)
+    {
+        var center = region.Bounds.Center;
+        host.PressDown(center.X, center.Y);
+        host.PressUp(center.X, center.Y);
+        Settle(host);
+    }
+
+    /// <summary>
+    /// A press on a menu's item leaves the keyboard on the menu's trigger, as the menu pattern keeps it while
+    /// the arrows walk the items, so a dialog the item opens records the trigger as its opener and gives the
+    /// focus back to it. The item took the focus on the press and left with its menu in the same pass, and
+    /// the dialog recorded nothing (#1812).
+    /// </summary>
+    [Fact]
+    public void ADialogOpenedFromAMenuItemByAPointer_GivesTheFocusBackToTheMenusTrigger()
+    {
+        var host = Host(new MenuRows("one", "two"));
+        Settle(host);
+        PressAt(host, host.LastFrame!.HitRegions.Single(region => IsTrigger(region.Node, "one")));
+        IsTrigger(host.Focused, "one").Should().BeTrue("a press on the trigger focuses it, as a press on any control does");
+
+        var items = host.LastFrame!.HitRegions.Where(region => region.Node.Role == PressableRole.MenuItem).ToList();
+        items.Should().HaveCount(2, "the menu is open over its two items");
+        PressAt(host, items[1]);
+        (host.Focused?.Label).Should().Be("Cancel", "the dialog the item opened took the focus");
+
+        PressAt(host, host.LastFrame!.HitRegions.Single(region => region.Node.Label == "Cancel"));
+
+        IsTrigger(host.Focused, "one").Should().BeTrue("Cancel gave the focus back to the menu's trigger");
+    }
+
+    /// <summary>The same case from the keyboard: the arrows walk the items with the focus on the trigger, Enter
+    /// runs Delete, and Cancel gives the focus back to the trigger.</summary>
+    [Fact]
+    public void ADialogOpenedFromAMenuItemByTheKeyboard_GivesTheFocusBackToTheMenusTrigger()
+    {
+        var host = Host(new MenuRows("one", "two"));
+        Settle(host);
+        for (var i = 0; i < 4 && !IsTrigger(host.Focused, "one"); i++)
+        {
+            host.FocusNext();
+            Settle(host);
+        }
+        IsTrigger(host.Focused, "one").Should().BeTrue();
+
+        Press(host);
+        host.KeyDown("ArrowDown");
+        Settle(host);
+        host.KeyDown("Enter");
+        Settle(host);
+        (host.Focused?.Label).Should().Be("Cancel", "Enter ran Delete, and its dialog took the focus");
+
+        Press(host);
+
+        IsTrigger(host.Focused, "one").Should().BeTrue("Cancel gave the focus back to the menu's trigger");
+    }
+
     /// <summary>A settings dialog over a page, whose Remove opens a confirm over it that removes Remove.</summary>
     private sealed class Nested : StatefulComponent
     {
