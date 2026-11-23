@@ -289,6 +289,30 @@ export class Decimal {
     return new Decimal(m, s);
   }
 
+  /** `Math.Abs` and `decimal.Abs`: the value without its sign, its scale kept (`-12.50m` is `12.50`). */
+  abs(): Decimal {
+    return this.mantissa < 0n ? new Decimal(-this.mantissa, this.scale) : this;
+  }
+
+  /** `Math.Sign` and `decimal.Sign`: -1, 0 or 1, whatever the scale. */
+  sign(): number {
+    return this.mantissa < 0n ? -1 : this.mantissa > 0n ? 1 : 0;
+  }
+
+  /**
+   * `Math.Max` and `decimal.Max`: the larger, and this one where the two are equal, as .NET's
+   * `VarDecCmp(x, y) >= 0 ? x : y` answers, so the scale kept is the first's (`Max(1.0m, 1.00m)` is 1.0).
+   */
+  max(other: Decimal): Decimal {
+    return this.compareTo(other) >= 0 ? this : other;
+  }
+
+  /** `Math.Min` and `decimal.Min`: the smaller, and the other one where the two are equal, as .NET's
+   * `VarDecCmp(x, y) < 0 ? x : y` answers (`Min(1.0m, 1.00m)` is 1.00). */
+  min(other: Decimal): Decimal {
+    return this.compareTo(other) < 0 ? this : other;
+  }
+
   compareTo(other: Decimal): number {
     const [am, bm] = Decimal.align(this, other);
     return am < bm ? -1 : am > bm ? 1 : 0;

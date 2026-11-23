@@ -780,6 +780,62 @@ SHALL be that type, imported from its own module, and never taken for the union.
 - **THEN** the component's module imports `DensityValue` from the app's module and `$DensityValue` from
   the runtime, and it builds and runs as .NET runs it, with type annotations on and off
 
+### Requirement: A named argument and an initializer both reach the twin
+
+A construction that hands its object initializer to the twin as the constructor's trailing config SHALL
+place each argument in the parameter the bound tree binds it to, fill the parameters no argument reached
+with their defaults counted from the arguments emitted, and pass the initializer in the config slot, so a
+named argument beside an initializer keeps both.
+
+#### Scenario: A vocabulary record with a named argument and an initializer
+
+- **WHEN** a component builds `new TextRun(code, Mono: true) { StyleOverride = new TypeStyle(13, …) }`
+- **THEN** the twin receives the content, no color and `mono` in its positional parameters and the
+  initializer in its config, and the run's `Mono` and its `StyleOverride` are what .NET reads
+
+#### Scenario: Every argument named, out of order
+
+- **WHEN** `new TextRun(Mono: true, Content: "x") { Italic = true }` is built
+- **THEN** the twin's content is `"x"`, its `mono` is true and its `italic` is true, as in .NET
+
+### Requirement: A hand-written twin's config takes every member its C# class lets an initializer set
+
+An object initializer on a vocabulary type whose twin the runtime writes by hand SHALL pass the runtime's strict
+`tsc` for every member the C# class lets it set, and the twin SHALL hold each value it sets. The config each such
+twin's constructor takes, a named interface or a literal written in place, SHALL hold the C# class's public
+settable members, those its constructor also takes as parameters included, and nothing C# does not have, but for
+the members `vocabulary-config.baseline.txt` names with a reason, a list that may only shrink. A config typed as a
+record of anything (`EqConfig`) takes every member.
+
+#### Scenario: A box style's foreground
+
+- **WHEN** a module eqc writes builds `new BoxStyle { Foreground = new ColorToken(Color.Black) }`
+- **THEN** the runtime's `tsc` takes it, and the twin's `foreground` holds that token
+
+#### Scenario: A node's config written in place
+
+- **WHEN** a module eqc writes builds `new Group(child) { Label = "Totals", Bookmark = "totals", AlignSelf = CrossAlign.Center, GridSpan = 2 }`
+- **THEN** the runtime's `tsc` takes it, and the twin holds `bookmark` `totals`, `alignSelf` `center` and
+  `gridSpan` `2`
+
+#### Scenario: A spacer's fixed length
+
+- **WHEN** a module eqc writes builds `new Spacer { FixedLength = 8 }`
+- **THEN** the runtime's `tsc` takes it, and the twin's `fixedLength` is `8`
+
+#### Scenario: A member the constructor also takes
+
+- **WHEN** a module eqc writes builds `new Image("a.png", 1, 2) { Label = "Chart" }` and
+  `new Group(first) { Child = second }`
+- **THEN** the runtime's `tsc` takes both, the image's `label` is `Chart` and the group's `child` is `second`, as
+  in .NET, where the initializer runs after the constructor
+
+#### Scenario: Every config of the mirror
+
+- **WHEN** the suite reads every config a class of the hand-written mirror takes, and the C# type of that class
+- **THEN** no member differs either way but those the baseline names, and an entry of the baseline that no longer
+  differs fails the suite
+
 ### Requirement: An HtmlElement subclass runs its constructor as C# does
 
 A class deriving from `HtmlElement` SHALL run its constructor's body in the browser, a block's or an arrow's. Its

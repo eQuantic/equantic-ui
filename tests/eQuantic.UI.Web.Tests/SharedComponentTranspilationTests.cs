@@ -177,7 +177,11 @@ public class SharedComponentTranspilationTests
     /// (#1303 to #1307): a downcast reaching a member of the derived type, abstract members of every
     /// accessibility called through the base, a constructor chained to one with an argument the first
     /// supplies, a lambda stored in a static field, and a field's collection initializer beside a base
-    /// constructor call. Written to <c>__fixtures__</c>, where the runtime's <c>tsc</c> reads every line.
+    /// constructor call. And initializers of hand-written vocabulary twins setting a member their config
+    /// lacked (#1823): a box style's foreground, a node's bookmark, cross alignment and grid span on a config
+    /// written in place, a spacer's fixed length, and members the constructor takes as parameters too (an image's
+    /// label, a text's role, a group's child, a safe area's edges, a gradient's direction). Written to
+    /// <c>__fixtures__</c>, where the runtime's <c>tsc</c> reads every line.
     /// </summary>
     private const string EmissionShapesSource = """
         using System;
@@ -290,6 +294,28 @@ public class SharedComponentTranspilationTests
             private List<string?> _items = new();
             public EmittedBag(string name) : base(name) { }
             public int Count => _items.Count;
+        }
+
+        public static class EmittedConfigs
+        {
+            public static BoxStyle Inked() => new BoxStyle { Foreground = new ColorToken(Color.Black) };
+
+            public static VisualNode Grouped(VisualNode child) =>
+                new Group(child) { Label = "Totals", Bookmark = "totals", AlignSelf = CrossAlign.Center, GridSpan = 2 };
+
+            public static Spacer Rigid() => new Spacer { FixedLength = 8 };
+
+            // Members the constructor takes as parameters too, which an initializer sets through the config.
+            public static Image Labelled() => new Image("a.png", 1, 2) { Label = "Chart" };
+
+            public static Text Titled() => new Text("Totals") { Role = TypeRole.Title, MaxLines = 2 };
+
+            public static Group Reparented(VisualNode first, VisualNode second) => new Group(first) { Child = second };
+
+            public static SafeArea Inset(VisualNode child) => new SafeArea(child) { Edges = 3 };
+
+            public static LinearGradient Downward() =>
+                new LinearGradient(new ColorToken(Color.Black), new ColorToken(Color.White)) { Direction = GradientDirection.ToBottom };
         }
         """;
 
@@ -472,7 +498,7 @@ public class SharedComponentTranspilationTests
     [
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
-        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain",
+        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs",
     ];
 
     /// <summary>The source this asks about, kept HERE rather than pointed at a production class.
