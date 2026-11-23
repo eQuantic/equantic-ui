@@ -203,6 +203,8 @@ export function commitFocusTraps(): void {
 }
 
 let commitScheduled = false;
+/** Counted up by a reset, so a commit queued before it reconciles nothing after it. */
+let commitGeneration = 0;
 
 /**
  * Reconciles the traps once the pass is WRITTEN: what calls this at the end of a pass runs before the
@@ -214,7 +216,9 @@ let commitScheduled = false;
 export function scheduleFocusTrapCommit(): void {
   if (typeof document === 'undefined' || commitScheduled) return;
   commitScheduled = true;
+  const generation = commitGeneration;
   const commit = () => {
+    if (generation !== commitGeneration) return;
     commitScheduled = false;
     commitFocusTraps();
   };
@@ -231,4 +235,6 @@ export function activeFocusTraps(): readonly Element[] {
 export function resetFocusTraps(): void {
   active = [];
   returned = null;
+  commitScheduled = false;
+  commitGeneration++;
 }
