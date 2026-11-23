@@ -1111,8 +1111,8 @@ the base and remove the deltas, and SHALL write nothing when one file is not a d
 ### Requirement: A contributor's pull request waits for the owner's approval, and the owner's is approved by a workflow
 
 The `main` ruleset SHALL require one approving review. A workflow on `pull_request_target`, running as `main` holds it
-and running no code of the pull request, SHALL approve a pull request whose author and event actor are the owner's
-account and whose head is a branch of this repository; it SHALL NOT approve any other pull request, nor a push another
+and running no code of the pull request, SHALL approve a pull request whose author, event actor and every commit are the
+owner's account and whose head is a branch of this repository; it SHALL NOT approve any other pull request, nor a push another
 account makes to the owner's branch.
 
 #### Scenario: The owner opens a pull request

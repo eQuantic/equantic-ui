@@ -35,6 +35,26 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           NUMBER: ${{ github.event.pull_request.number }}
-        run: >-
-          gh pr review "$NUMBER" --repo "$GITHUB_REPOSITORY" --approve
-          --body "Approved for the owner: the author and the actor of this event are the owner's account (#1847)."
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # The owner's commits carry the identity edgar@equantic.tech, which GitHub resolves to the
+          # account equantictech; the pull requests are opened by edgarmesquita.
+          OWNERS: '["edgarmesquita","equantictech"]'
+        run: |
+          # Every commit on the branch must be the owner's: an owner push must not vouch for a
+          # contributor's commit pushed earlier to the same branch. GitHub's own merge of main
+          # ("Update branch") is committed by web-flow.
+          others=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$NUMBER/commits" \
+            --jq "(env.OWNERS | fromjson) as \$o | .[] | select(([.author.login] | inside(\$o) | not) or ([.committer.login] | inside(\$o + [\"web-flow\"]) | not)) | .sha")
+          if [ -n "$others" ]; then
+            echo "Not approved: commits not made by the owner's account:"
+            echo "$others"
+            exit 0
+          fi
+          approved=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$NUMBER/reviews" \
+            --jq "[.[] | select(.user.login == \"github-actions[bot]\" and .state == \"APPROVED\" and .commit_id == env.HEAD_SHA)] | length")
+          if [ "$approved" != "0" ]; then
+            echo "The head $HEAD_SHA is already approved."
+            exit 0
+          fi
+          gh pr review "$NUMBER" --repo "$GITHUB_REPOSITORY" --approve \
+            --body "Approved for the owner: the author, the event's actor and every commit are the owner's account (#1847)."
