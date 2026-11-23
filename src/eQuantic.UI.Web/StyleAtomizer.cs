@@ -229,6 +229,10 @@ public sealed class StyleSink
     /// past <see cref="Primitives.Pinned.ScrolledThreshold"/> (markers.ts' <c>SCROLLED_MARKER</c>).</summary>
     internal const string ScrolledMarker = "data-eq-scrolled";
 
+    /// <summary>The attribute every pinned header carries (markers.ts' <c>PINNED_MARKER</c>), which a
+    /// box's scrolled rule reads to stop at a nested header that is not scrolled (#1769).</summary>
+    internal const string PinnedMarker = "data-eq-pinned";
+
     /// <summary>SCROLL-LINKED variant (Pinned.ScrolledStyle): the declaration only applies while
     /// the header carries <c>data-eq-scrolled</c>, which the runtime sets from the surface the header
     /// pins to, its own ScrollView or the page (#506). The same hash family as the pseudo variants
@@ -256,6 +260,14 @@ public sealed class StyleSink
     internal const string ControlPressed = "pressed";
 
     /// <summary>
+    /// The family of a HEADER's scroll: the <see cref="Primitives.BoxStyle.Scrolled"/> diff of a box
+    /// applies while the nearest <see cref="Primitives.Pinned"/> around it carries
+    /// <see cref="ScrolledMarker"/> (#1769). Not <c>scrolled</c>, which is the header's own rule's
+    /// hash (<see cref="ClassForScrolled"/>): one class names one rule.
+    /// </summary>
+    internal const string HeaderScrolled = "header-scrolled";
+
+    /// <summary>
     /// The selector a state family's rule takes for a class. A hover is the box's OWN state, so it
     /// is the class's own pseudo-class. A focus and a press happen to the CONTROL, and only an
     /// enabled control carries <c>eq-pressable</c>, so they select every box inside one in that
@@ -273,6 +285,14 @@ public sealed class StyleSink
     /// "pressed beats hover". The nesting rule rides in a <c>:where()</c>, which weighs nothing, so
     /// it leaves that order as it is. The TypeScript twin is <c>stateSelector</c>.
     /// </para>
+    /// <para>
+    /// A header's scroll is laid UNDER all three and over the box's resting class (0,1,0): (0,1,1),
+    /// its header part in a <c>:where()</c> and the <c>html</c> every element of the page is under
+    /// as the one type, so a link in a scrolled header still lights under the pointer (#1769). It is
+    /// the NEAREST header's: a box under a header that is not scrolled, inside one that is, rests.
+    /// CSS has no nearest-ancestor combinator, so that is exact for one header nested in another
+    /// and not for a third level that alternates again; Photon's twin is exact at any depth.
+    /// </para>
     /// </summary>
     internal static string StateSelector(string family, string className) => family switch
     {
@@ -288,6 +308,9 @@ public sealed class StyleSink
         ControlPressed =>
             $".eq-pressable.eq-pressable:active:not(:where(:has(.eq-pressable:active))) .{className}"
             + $":not(:where(.eq-pressable:not(:active) .{className}))",
+        HeaderScrolled =>
+            $"html :where([{ScrolledMarker}]) .{className}"
+            + $":not(:where([{ScrolledMarker}] [{PinnedMarker}]:not([{ScrolledMarker}]) .{className}))",
         _ => $".{className}{family}",
     };
 

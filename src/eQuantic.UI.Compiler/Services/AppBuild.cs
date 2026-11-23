@@ -605,6 +605,9 @@ public sealed class AppBuild
 
             // Which names are already taken — see EmittedTwins for why a name collision is an error.
             var written = new EmittedTwins();
+            // Each module written, by its name, for the strings each page reads through them (#1782).
+            var writtenModules = new Dictionary<string, CompilationResult>(StringComparer.Ordinal);
+            var pageEntries = new List<string>();
             var entryPoints = new List<string>();
 
             if (!Directory.Exists(_intermediateDir)) Directory.CreateDirectory(_intermediateDir);
@@ -694,6 +697,9 @@ public sealed class AppBuild
                 // The same module already on disk: writing it again would rewrite its map
                 // with one pointing at a different C# file.
                 if (claim == TwinClaim.Repeat) return;
+                writtenModules[result.ComponentName] = result;
+                if (result.IsPage || layoutModules.Contains((result.Namespace, result.ComponentName)))
+                    pageEntries.Add(result.ComponentName);
 
                 // Written only when its text changed (#1279): a save that changes one screen writes that
                 // screen's module and leaves the others, and their times, as they were.
@@ -717,6 +723,9 @@ public sealed class AppBuild
 
             var compiledFiles = new List<string>();
             var units = 0;
+            // The app's own modules, written once the walk from the roots says which the browser reaches
+            // (AppModules, #1779): what no page reaches is server code, whatever it is marked.
+            var appModules = new AppModules();
             foreach (var group in compileUnits)
             {
                 var dir = group.Key;
@@ -751,10 +760,13 @@ public sealed class AppBuild
                         var identity = string.IsNullOrEmpty(result.Namespace)
                             ? result.ComponentName
                             : $"{result.Namespace}.{result.ComponentName}";
-                        Write(result, file, isEntryCandidate, identity, path => Path.GetRelativePath(dir, path));
+                        appModules.Add(result, file, isEntryCandidate, identity, path => Path.GetRelativePath(dir, path));
                     }
                 }
             }
+
+            foreach (var module in appModules.Reached(result => layoutModules.Contains((result.Namespace, result.ComponentName))))
+                Write(module.Result, module.File, module.IsEntryCandidate, module.Identity, module.Describe);
 
             CompiledFiles = compiledFiles;
             if (_reusable.Count > 0)
@@ -783,7 +795,9 @@ public sealed class AppBuild
             if (hasErrors) return true;
 
             StringCatalogs.Write(_compiler, outputDir, _primarySourceDir,
-                file => _referenced?.ProjectOf(file) is not null, _output, _errors);
+                file => _referenced?.ProjectOf(file) is not null, _output, _errors,
+                writtenModules.Values.SelectMany(module => module.StringKeys).ToHashSet(StringComparer.Ordinal),
+                PageStrings.Of(writtenModules, pageEntries));
 
             if (!hasBun && entryPoints.Count > 0)
             {

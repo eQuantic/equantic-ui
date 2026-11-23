@@ -981,7 +981,7 @@ public class SharedComponentTranspilationTests
 
         // The NAMED argument lands at the constructor's real position, with the skipped parameters
         // filled from their C# defaults — JS has no named arguments.
-        counter.Should().Contain("new Button('Increment', 'primary', 'medium', () => this.setState(() => this._count++))");
+        counter.Should().Contain("new Button('Increment', 'primary', 'medium', () => this.setState(() => this._count = this._count + 1 | 0))");
 
         // async void — the modifier drives the emission, not the return type (the site's
         // hover-intent grace timer found this: awaits inside a non-async function don't parse).

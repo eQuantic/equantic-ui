@@ -748,4 +748,117 @@ public class PhoneKeyboardTests
         while (node.Source is not Box && node.Children.Count > 0) node = node.Children[0];
         return node;
     }
+
+    // ---- the field's kind (#1761) ------------------------------------------------------------------
+
+    private sealed class KindsForm : Primitives.StatefulComponent
+    {
+        public TextEntryKind Second = TextEntryKind.Phone;
+
+        public void Change(TextEntryKind kind) => SetState(() => Second = kind);
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+            column.Add(new TextEntry("", _ => { }) { Placeholder = "Name" });
+            column.Add(new TextEntry("", _ => { }) { Placeholder = "Phone", Kind = Second });
+            column.Add(new TextEntry("", _ => { }) { Placeholder = "Price", Kind = TextEntryKind.Decimal });
+            column.Add(new TextEntry("", _ => { }) { Placeholder = "Note", Kind = TextEntryKind.Email, Lines = 3 });
+            return column;
+        }
+    }
+
+    private static (PhotonHost Host, KindsForm Form, TextInputSession Session) OpenKinds()
+    {
+        var form = new KindsForm();
+        var host = new PhotonHost(form, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        Tap(host, frame.TextRegions[0].Bounds.Center);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        var session = new TextInputSession(host);
+        session.Poll().Should().Be(TextInputChange.Began);
+        return (host, form, session);
+    }
+
+    /// <summary>A keyboard reads what it describes when it opens, so a field of another kind starts it over,
+    /// and a multi-line field is prose whatever its kind.</summary>
+    [Fact]
+    public void TheSession_SaysTheFieldsKind_AndStartsOverForAnother()
+    {
+        var (host, _, session) = OpenKinds();
+        session.Kind.Should().Be(TextEntryKind.Text);
+
+        var seen = new List<(TextInputChange, TextEntryKind)>();
+        for (var i = 0; i < 3; i++)
+        {
+            host.KeyDown("Tab");
+            host.RenderFrame(new DisplayListBuilder(), 32 + i);
+            seen.Add((session.Poll(), session.Kind));
+        }
+
+        seen.Should().Equal(
+            (TextInputChange.Retargeted, TextEntryKind.Phone),
+            (TextInputChange.Retargeted, TextEntryKind.Decimal),
+            (TextInputChange.Retargeted, TextEntryKind.Text));
+    }
+
+    [Fact]
+    public void AFrameInTheSameField_ChangesNothing()
+    {
+        var (host, _, session) = OpenKinds();
+        host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        session.Poll().Should().Be(TextInputChange.Retargeted);
+
+        host.RenderFrame(new DisplayListBuilder(), 48);
+        session.Poll().Should().Be(TextInputChange.None);
+        session.Kind.Should().Be(TextEntryKind.Phone);
+    }
+
+    /// <summary>The app changing the kind of the field being edited is another keyboard: it starts over.</summary>
+    [Fact]
+    public void AKindTheAppChanges_StartsTheKeyboardOver()
+    {
+        var (host, form, session) = OpenKinds();
+        host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        session.Poll();
+
+        form.Change(TextEntryKind.Email);
+        host.RenderFrame(new DisplayListBuilder(), 48);
+
+        session.Poll().Should().Be(TextInputChange.Retargeted);
+        session.Kind.Should().Be(TextEntryKind.Email);
+    }
+
+    /// <summary>A money field on Photon: the decimal keypad's edit reaches the app as cents, read in the
+    /// culture, and the separator the keypad shows need not be the page's (#1764).</summary>
+    [Fact]
+    public void AMoneyField_TakesTheKeypadsEdit_AsCents()
+    {
+        var previous = System.Globalization.CultureInfo.CurrentCulture;
+        System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("pt-PT");
+        try
+        {
+            var handed = new List<long?>();
+            var field = new MoneyInput(null, handed.Add, "Price", Currency.Euro);
+            var host = new PhotonHost(field, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
+            var frame = host.RenderFrame(new DisplayListBuilder());
+            Tap(host, frame.TextRegions[0].Bounds.Center);
+            host.RenderFrame(new DisplayListBuilder(), 16);
+            var session = new TextInputSession(host);
+            session.Poll().Should().Be(TextInputChange.Began);
+            session.Kind.Should().Be(TextEntryKind.Decimal);
+            host.TextTarget!.Label.Should().Be("Price (€)");
+
+            session.Update(TextEditingValue.Collapsed("12.5", 4)).Should().BeTrue();
+            host.RenderFrame(new DisplayListBuilder(), 32);
+
+            handed.Should().Equal([1250L]);
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = previous;
+        }
+    }
 }

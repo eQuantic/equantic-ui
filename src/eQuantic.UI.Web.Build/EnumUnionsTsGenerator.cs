@@ -41,7 +41,8 @@ public static class EnumUnionsTsGenerator
         ts.AppendLine(" * One table follows the unions: each FontWeight's number, which the runtime asks for by name.");
         ts.AppendLine(" */");
 
-        foreach (var type in Unions())
+        var unions = Unions().ToList();
+        foreach (var type in unions)
         {
             // Distinct: an alias (two names, one value) is one member of the union, named twice.
             var members = Enum.GetNames(type)
@@ -51,6 +52,15 @@ public static class EnumUnionsTsGenerator
             ts.AppendLine();
             TsUnion.Write(ts, $"{type.Name}Value", members);
         }
+
+        // The runtime's own code names a union plainly. A module eqc writes names it with a `$`, a
+        // character C# cannot spell, so a type an app or the vocabulary declares never meets it: named
+        // `DensityValue`, an app's `record DensityValue` was taken for the union (#1427).
+        ts.AppendLine();
+        ts.AppendLine("/** Each union under the name a module eqc writes imports it by: a `$` no C# type can carry. */");
+        using (ts.BeginBlock("export type {", "};"))
+            foreach (var type in unions)
+                ts.AppendLine($"{type.Name}Value as ${type.Name}Value,");
 
         // A weight is the one vocabulary enum whose VALUE is its meaning, the weight class CSS, CoreText,
         // DirectWrite and Android are all asked for, while the transpiler emits a member as its name. So

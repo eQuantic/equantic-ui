@@ -110,15 +110,18 @@ a recognizer cannot start an arbitrary timer of its own; a deadline per pointer 
 
 `RawGestureDetector(VisualNode child, IReadOnlyList<GestureRecognizerFactory> gestures)` with
 `Behavior : HitTestBehavior` (default `DeferToChild`), a layout-transparent `SingleChildNode` like `Listener`.
-A factory is `new GestureRecognizerFactory<T>(Func<T> create, Action<T> initialize) where T :
-GestureRecognizer`, over a non-generic `GestureRecognizerFactory` the list holds.
+A factory is `new GestureRecognizerFactoryWithHandlers<T>(Func<T> create, Action<T> initialize) where T :
+GestureRecognizer`, over a non-generic `GestureRecognizerFactory` the list holds. Both are Flutter's names. The
+generic one is not `GestureRecognizerFactory<T>` beside its base: JavaScript has no arity, so the two would be
+two twins of one name, which eqc refuses in an app (EQ1005), and which collided in the shared library's
+transpilation when this change first wrote them so.
 
 Measured with a single-file `dotnet run` program on .NET 10.0.301 (the two classes as written here, not
-committed): a C# class generic is
-invariant, so `GestureRecognizerFactory<HoldThenDrag>` is NOT a `GestureRecognizerFactory<GestureRecognizer>`
-(`is` answered `False`), which is why the list holds the non-generic base; and an app writes
-`new GestureRecognizerFactory<HoldThenDrag>(() => new(), r => r.OnMoved = Move)`: the target-typed `new()`
-inside the lambda compiles and creates a `HoldThenDrag`.
+committed): a C# class generic is invariant, so `GestureRecognizerFactoryWithHandlers<HoldThenDrag>` is NOT a
+`GestureRecognizerFactoryWithHandlers<GestureRecognizer>` (`is` answered `False`), which is why the list holds
+the non-generic base; and an app writes
+`new GestureRecognizerFactoryWithHandlers<HoldThenDrag>(() => new(), r => r.OnMoved = Move)`: the target-typed
+`new()` inside the lambda compiles and creates a `HoldThenDrag`.
 
 Why factories and not instances (the alternative, Flutter's `TextSpan.recognizer` shape, where a
 `StatefulComponent` creates the recognizer in a field and hands the instance to the node): a `VisualNode` is
@@ -138,10 +141,18 @@ Where the recognizers live, per target (the SECOND tree's job, as in Flutter):
   controller's request with the latest factories, so `initialize` runs with the callbacks the latest build
   wrote before the recognizers hear a down.
 
-Recognizers are kept by their PLACE in the list, as unkeyed children are. A factory whose recognizer at that
-place is not its `T` creates a new one: `GestureRecognizerFactory<T>` answers it with `recognizer is T`.
-eqc reads a type parameter's class constraint for a runtime type (`RuntimeTypeEqualityStrategy.Unknowable`),
-but whether `is T` lowers is NOT measured: task 1.5 checks it, and a refusal is filed and fixed in eqc.
+Recognizers are kept by their PLACE in the list, as unkeyed children are. A place keeps its recognizer while
+the factory handed to it is of the same type as the one before (`factory.GetType() != maker.GetType()` makes a
+new one), which is Flutter's `canUpdate`, asked of the factory as the element engine asks it of a node (#1202).
+
+Measured by task 1.5: the first shape, `recognizer is T` inside the factory, transpiled to `recognizer != null`,
+true for every recognizer, and nothing said so (filed as #1846). The runtime-type comparison is a construct eqc
+translates and its Conformance suite runs. One gap is left, on the web only. A generic class declared outside
+the app is not marked with its type arguments when the app constructs it (`ObjectCreationStrategy.ClosureOf`
+marks only a type the source declares). So until eqc marks it, `GestureRecognizerFactoryWithHandlers<A>` and
+`<B>` compare as one type in the browser, and a place handed a factory of another recognizer type keeps the one
+it has there. Photon answers it as .NET does. The gap is eqc's, on #1846, and the change's spec scenario for it
+is proved on Photon and waits on the web.
 
 ### 3. One arena and one router, written once in C# and transpiled
 

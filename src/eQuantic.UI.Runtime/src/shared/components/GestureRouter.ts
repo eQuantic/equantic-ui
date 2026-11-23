@@ -4,12 +4,14 @@ export class GestureRouter {
     constructor() {
         this._routes = $eq.collections.dictionary();
         this._kept = $eq.collections.dictionary(null, 'own');
+        this._makers = $eq.collections.dictionary(null, 'own');
         this._deadlines = [];
         this.arena = new GestureArena();
     }
 
     _routes!: any;
     _kept!: any;
+    _makers!: any;
     _deadlines!: GestureDeadline[];
     arena!: GestureArena;
 
@@ -18,24 +20,29 @@ export class GestureRouter {
     }
 
     recognizers(position: any, gestures: GestureRecognizerFactory[]) {
-        let kept: any; 
-        if (!(($0) => ($0.has(position) ? ((kept = $0.get(position)), true) : ((kept = null), false)))(this._kept)) {
+        let kept: any; let makers: any; 
+        if (!(($0) => ($0.has(position) ? ((kept = $0.get(position)), true) : ((kept = null), false)))(this._kept) || !(($0) => ($0.has(position) ? ((makers = $0.get(position)), true) : ((makers = null), false)))(this._makers)) {
             kept = [];
+            makers = [];
             $eq.mapSet(this._kept, position, kept);
+            $eq.mapSet(this._makers, position, makers);
         }
-        for (let i = 0; i < $eq.collections.count(gestures); i++) {
+        for (let i = 0; i < $eq.collections.count(gestures); i = i + 1 | 0) {
             let factory = $eq.collections.item(gestures, i);
-            if (i < kept.length && !factory.makes(kept[i])) {
+            if (i < kept.length && !$eq.types.same($eq.types.of(factory), $eq.types.of(makers[i]))) {
                 this.retire(kept[i]);
                 $eq.collections.listSet(kept, i, GestureRouter.made(factory, position));
             } else if (i >= kept.length) {
                 $eq.collections.listAdd(kept, GestureRouter.made(factory, position));
+                $eq.collections.listAdd(makers, factory);
             }
+            $eq.collections.listSet(makers, i, factory);
             factory.initialize(kept[i]);
         }
         while (kept.length > $eq.collections.count(gestures)) {
-            this.retire(kept[kept.length - 1]);
-            $eq.collections.listRemoveAt(kept, kept.length - 1);
+            this.retire(kept[kept.length - 1 | 0]);
+            $eq.collections.listRemoveAt(kept, kept.length - 1 | 0);
+            $eq.collections.listRemoveAt(makers, makers.length - 1 | 0);
         }
         return kept;
     }
@@ -44,6 +51,7 @@ export class GestureRouter {
         let kept: any; 
         if (!(($0) => ($0.has(position) ? ((kept = $0.get(position)), true) : ((kept = null), false)))(this._kept)) return;
         this._kept.delete(position);
+        this._makers.delete(position);
         for (const recognizer of $eq.collections.listWalk(kept)) this.retire(recognizer);
     }
 

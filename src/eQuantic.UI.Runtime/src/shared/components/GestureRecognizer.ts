@@ -1,4 +1,4 @@
-import { $eq, GestureArenaEntry, GestureDispositionValue, GestureRouter, PointerEvent } from "../runtime-exports";
+import { $eq, $GestureDispositionValue, GestureArenaEntry, GestureRouter, PointerEvent } from "../runtime-exports";
 
 export abstract class GestureRecognizer {
     static $interfaces = ['eQuantic.UI.Primitives.IGestureArenaMember'];
@@ -37,12 +37,12 @@ export abstract class GestureRecognizer {
 
     didExceedDeadline(_pointer: number) {}
 
-    resolve(disposition: GestureDispositionValue) {
+    resolve(disposition: $GestureDispositionValue) {
         let entries: GestureArenaEntry[] = $eq.collections.listCopy(this._entries.values());
         for (const entry of $eq.collections.listWalk(entries)) entry.resolve(disposition);
     }
 
-    resolvePointer(pointer: number, disposition: GestureDispositionValue) {
+    resolvePointer(pointer: number, disposition: $GestureDispositionValue) {
         let entry: any; 
         if ((($0) => ($0.has(pointer) ? ((entry = $0.get(pointer)), true) : ((entry = null), false)))(this._entries)) entry.resolve(disposition);
     }

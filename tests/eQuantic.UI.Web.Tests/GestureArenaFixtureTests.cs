@@ -103,7 +103,7 @@ public class GestureArenaFixtureTests
             foreach (var (memberName, spec) in _members)
             {
                 if (_plain.ContainsKey(memberName)) continue;
-                var factory = new GestureRecognizerFactory<ArenaProbe>(
+                var factory = new GestureRecognizerFactoryWithHandlers<ArenaProbe>(
                     () =>
                     {
                         Heard.Add($"{memberName}.create");

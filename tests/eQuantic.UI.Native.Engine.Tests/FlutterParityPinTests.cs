@@ -236,7 +236,7 @@ public class FlutterParityPinTests
         // once for both targets.
         ["ReorderableListView"] = () => HasMember("Sortable", "OnDropped") && HasMember("Sortable", "Accepts")
             && HasMember("Sortable", "OnHovered") && HasMember("Sortable", "Group") && Has("SortableItem")
-            && HasMember("SortDrop", "Into"),
+            && HasMember("SortDrop", "Into") && HasMember("Sortable", "Indent") && HasMember("SortDrop", "Depth"),
         // The table composes the vocabulary's nodes to move and size its columns, which Flutter's leaves to the app.
         ["DataTable"] = () => HasMember("DataTable", "ColumnOrder") && HasMember("DataTable", "OnColumnsReordered")
             && HasMember("DataTable", "OnColumnResized") && HasMember("DataColumn", "MinWidth")
@@ -259,7 +259,7 @@ public class FlutterParityPinTests
         // Box's is optional). WrapperNode and ProxyNode stay in the negative set they were in while this row
         // was a GAP — a SECOND wrapper base would change the shape surface just as much as a first.
         ["SingleChildRenderObjectWidget"] = () => EveryOneChildNodeIsA("SingleChildNode")
-            && Descendants("SingleChildNode") == 30 && Has("FlexNode")
+            && Descendants("SingleChildNode") == 32 && Has("FlexNode")
             && Nothing("MultiChildNode", "LeafNode", "WrapperNode", "ProxyNode"),
 
         // 2 — layout
@@ -384,12 +384,16 @@ public class FlutterParityPinTests
             && HasMember("SheetSurface", "Announcement")
             && IosShellCode.Value.Contains("SpeechAttributeQueueAnnouncement", StringComparison.Ordinal)
             && AndroidShellCode.Value.Contains("LiveRegion", StringComparison.Ordinal),
-        ["MergeSemantics"] = () => Nothing("MergeSemantics", "ExcludeSemantics"),
+        ["MergeSemantics"] = () => Has("MergeSemantics") && Has("ExcludeSemantics")
+            && WebRealizerCode().Contains("\"aria-labelledby\"", StringComparison.Ordinal),
         ["Localizations"] = () => Has("ICultureController") && Nothing("LocalizationsDelegate"),
         ["TextDirection.ltr/rtl"] = () => Nothing("TextDirection"),
         ["ThemeData"] = () => Has("IAppTheme") && Has("Density") && Nothing("CupertinoThemeData"),
         ["MediaQuery"] = () => Has("SafeArea") && Nothing("MediaQuery"),
         ["MediaQuery.viewInsets"] = () => HasMember("PhotonHost", "ViewInsets"),
+        ["TextField.keyboardType"] = () => HasMember("TextEntry", "Kind") && Has("TextEntryKind"),
+        ["InputDecoration.prefixText"] = () => HasMember("TextInput", "Prefix") && HasMember("TextInput", "Suffix")
+            && Has("MoneyInput") && Has("NumberInput"),
 
         // 10 — lifecycle and windows
         ["WidgetsBindingObserver"] = () => Nothing("WidgetsBindingObserver", "AppLifecycleState"),

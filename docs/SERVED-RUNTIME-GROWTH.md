@@ -153,6 +153,7 @@ at 62e5680d2 measures 357,984, inside that base's 1%.
 | Pull request | Merge | Before | After | Gzip | Raw | What it delivered | In proportion |
 |---|---|---:|---:|---:|---:|---|---|
 | #1584 | | 357,984 | 361,698 | +3,714 | +29,011 | a LINQ query runs when it is walked, and a list changed while it is walked throws, as .NET's do | yes |
+| #1620 | | 370,922 | 372,479 | +1,557 | +5,069 | a date is written and read in the calendar of its culture, th-TH's Thai Buddhist years, fa-IR's Persian calendar and ar-SA's Um Al Qura, as .NET counts them | yes |
 
 It records a delta of 3,996 bytes, measured against the base rather than against `main`, which had grown
 282 bytes past it. It is the largest single growth the runtime has had, so it answers the three
@@ -186,3 +187,11 @@ forms they replaced, measured by writing them back and bundling again.
   a call per element, for `ToList`, `Count`, `First` and the others. A chain of generators cost five to
   nine times what the array methods did, measured when the walker was written, so the pushed half is what
   keeps a query's cost near theirs.
+
+#1620 is measured against `main` at 84e9b1381. Its 1,557 bytes are `utils/calendar.ts` (1,629 gzipped on its
+own, the Gregorian arithmetic `datetime.ts` already carried included) and the reader's and the writer's
+calls into it. The calendars' data is not in the runtime: a culture's format data carries its own
+calendar, measured by the server from .NET's (`CalendarBridge`), so only a page in a Persian or an Um Al
+Qura culture pays for that calendar's months: 385 bytes gzipped of fa-IR's data and 516 of ar-SA's. The
+Persian calendar's arithmetic in .NET computes each year from the equinox; carried in the runtime, every
+page would pay for it.

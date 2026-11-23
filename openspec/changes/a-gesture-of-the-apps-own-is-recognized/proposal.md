@@ -24,7 +24,7 @@ competes for the pointer with the SDK's own gestures by one stated rule, on ever
   (`DidExceedDeadline`), counted by the realizer's own clock. Flutter's names, which are neutral.
 - **A block that hosts recognizers**: `RawGestureDetector(child, gestures)`, a layout-transparent wrapper over
   any node, with `Behavior` (the `HitTestBehavior` of #1562) saying where it is hit. `gestures` is a list of
-  `GestureRecognizerFactory<T>(create, initialize)`: the recognizer is created once for the detector's
+  `GestureRecognizerFactoryWithHandlers<T>(create, initialize)`: the recognizer is created once for the detector's
   position and kept across rebuilds, and `initialize` runs on every build to hand it the callbacks the
   latest build wrote, as Flutter's `GestureRecognizerFactoryWithHandlers` does.
 - **One arena, written once**: `GestureArena` and `GestureRouter` in the vocabulary, Flutter's
@@ -62,7 +62,7 @@ never joins the arena.
 ## Impact
 
 - **Vocabulary** (`eQuantic.UI.Primitives`, contract): `GestureRecognizer`, `GestureRecognizerFactory`,
-  `GestureRecognizerFactory<T>`, `GestureDisposition`, `GestureArena`, `IGestureArenaMember`, `GestureRouter`,
+  `GestureRecognizerFactoryWithHandlers<T>`, `GestureDisposition`, `GestureArena`, `IGestureArenaMember`, `GestureRouter`,
   `RawGestureDetector`, one visitor member. Additions only, in `PublicAPI.Unshipped.txt`. Each new type joins
   `primitives-types.fixture.json`, the runtime's exports. The node coverage suites grow by one node.
 - **Components** (contract): the `UI.RawGestureDetector` factory.

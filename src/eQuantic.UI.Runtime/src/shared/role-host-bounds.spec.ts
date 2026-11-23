@@ -63,3 +63,83 @@ describe('a role-bearing host has the bounds of what it names', () => {
     });
   }
 });
+
+const cappedTrack = () => ({
+  ...hugTrack(),
+  style: {
+    width: { kind: 'fixed', value: 120 },
+    maxWidth: { kind: 'fixed', value: 200 },
+    height: { kind: 'fixed', value: 8 },
+  },
+});
+
+const fillCappedTrack = () => ({
+  ...hugTrack(),
+  style: {
+    width: { kind: 'fill' },
+    maxWidth: { kind: 'fixed', value: 200 },
+    height: { kind: 'fixed', value: 8 },
+  },
+});
+
+const fillDownTrack = () => ({
+  ...hugTrack(),
+  style: { width: { kind: 'fixed', value: 120 }, height: { kind: 'fill' } },
+});
+
+/**
+ * The host takes the child's WHOLE contract (C# cross-pin: RoleBearingHostBoundsTests): the width, the
+ * cap through as `max-width` and a filling height as `height: 100%`, on every wrapper the one host
+ * writes. A host that kept the width and dropped the others passes the suite above (#1517).
+ */
+describe('the semantics host takes the child whole contract', () => {
+  for (const [name, wrap] of [
+    ['progress', (child: unknown) => ({ nodeKind: 'progress', child, label: 'Uploading' })],
+    ['adjustable', (child: unknown) => ({ nodeKind: 'adjustable', child, onAdjust: () => {} })],
+    ['liveRegion', (child: unknown) => ({ nodeKind: 'liveRegion', child, label: 'Upload status' })],
+    ['group', (child: unknown) => ({ nodeKind: 'group', child, label: 'Shipping' })],
+    // These two bear no role: the width contract is all their host is.
+    ['mergeSemantics', (child: unknown) => ({ nodeKind: 'mergeSemantics', child })],
+    ['excludeSemantics', (child: unknown) => ({ nodeKind: 'excludeSemantics', child })],
+  ] as const) {
+    it(`${name} passes the cap and the height through`, () => {
+      const lower = (child: unknown) =>
+        styleOf(lowerVisualNode(wrap(child) as unknown as VisualNodeValue, ctx));
+      const plain = lower(hugTrack());
+
+      expect(plain).toContain('width: fit-content');
+      expect(plain).not.toContain('max-width');
+      expect(plain).not.toContain('height');
+      expect(lower(fillTrack())).toContain('width: 100%');
+      expect(lower(cappedTrack())).toContain('max-width: 200px');
+      expect(lower(fillDownTrack())).toContain('height: 100%');
+      // The cap goes through on the fill branch too, never one without the other.
+      const fillCapped = lower(fillCappedTrack());
+      expect(fillCapped).toContain('width: 100%');
+      expect(fillCapped).toContain('max-width: 200px');
+      // The pointer is taken by the one wrapper that is a tab stop and operated, and by none of the others.
+      if (name === 'adjustable') expect(plain).toContain('pointer-events: auto');
+      else expect(plain).not.toContain('pointer-events');
+    });
+  }
+});
+
+/**
+ * The host writes the caller's attributes (the role's) and THEN the accessible name, as the tree wrote
+ * them before the helper: the delivery's claim is byte equality, and a host that wrote the name first
+ * passes every other test here (#1517). C# cross-pin: RoleBearingHostBoundsTests.
+ */
+describe('the semantics host writes the role attributes, then the accessible name', () => {
+  for (const [name, node, order] of [
+    ['progress', { nodeKind: 'progress', label: 'Uploading' }, ['role', 'aria-label']],
+    ['adjustable', { nodeKind: 'adjustable', label: 'Volume', onAdjust: () => {} }, ['role', 'tabindex', 'aria-label']],
+    ['liveRegion', { nodeKind: 'liveRegion', label: 'Upload status' }, ['role', 'aria-live', 'aria-atomic', 'aria-label']],
+    ['group', { nodeKind: 'group', label: 'Shipping' }, ['role', 'aria-label']],
+  ] as const) {
+    it(`${name} writes ${order.join(', ')}`, () => {
+      const host = lowerVisualNode({ ...node, child: hugTrack() } as unknown as VisualNodeValue, ctx);
+      const keys = Object.keys((host as { attributes: Record<string, string> }).attributes).filter((k) => k !== 'style' && k !== 'class');
+      expect(keys.slice(0, order.length)).toEqual([...order]);
+    });
+  }
+});

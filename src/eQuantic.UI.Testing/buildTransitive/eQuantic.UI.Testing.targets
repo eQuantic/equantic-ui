@@ -1,0 +1,30 @@
+<Project>
+
+    <!--
+        THE BUN HYDRATIONASSERT RUNS (#1775): the embedded bun the app under test was built with, found by
+        asking each project this test project references for the one its own build resolved
+        (ResolveBunPath, in the SDK's targets), and written beside the test assembly. A test project
+        references the app and this package, and installs nothing else: no Node, no npm, no browser. A
+        project that is no eQuantic.UI app has no such target and is passed over.
+    -->
+    <Target Name="EQuanticTestingFindBun" AfterTargets="Build" Condition="'@(ProjectReference)' != ''">
+        <MSBuild Projects="@(ProjectReference)" Targets="ResolveBunPath" SkipNonexistentTargets="true"
+                 Properties="Configuration=$(Configuration)" RemoveProperties="TargetFramework;RuntimeIdentifier">
+            <Output TaskParameter="TargetOutputs" ItemName="_EqTestingBun" />
+        </MSBuild>
+        <ItemGroup>
+            <_EqTestingBunFound Include="@(_EqTestingBun)" Condition="'%(Identity)' != '' And Exists('%(Identity)')" />
+        </ItemGroup>
+        <PropertyGroup>
+            <_EqTestingBunPath>%(_EqTestingBunFound.Identity)</_EqTestingBunPath>
+        </PropertyGroup>
+        <WriteLinesToFile File="$(OutDir)eQuantic.UI.Testing.bun" Lines="$(_EqTestingBunPath)" Overwrite="true"
+                          WriteOnlyWhenDifferent="true" Condition="'$(_EqTestingBunPath)' != ''" />
+        <!-- A build that found none leaves no file naming a bun from before. -->
+        <Delete Files="$(OutDir)eQuantic.UI.Testing.bun" Condition="'$(_EqTestingBunPath)' == ''" />
+        <ItemGroup>
+            <FileWrites Include="$(OutDir)eQuantic.UI.Testing.bun" Condition="'$(_EqTestingBunPath)' != ''" />
+        </ItemGroup>
+    </Target>
+
+</Project>

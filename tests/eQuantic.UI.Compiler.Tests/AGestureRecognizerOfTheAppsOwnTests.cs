@@ -7,7 +7,7 @@ namespace eQuantic.UI.Compiler.Tests;
 /// <summary>
 /// A gesture of the app's own crosses to the browser (#1563): an app's subclass of the vocabulary's
 /// <c>GestureRecognizer</c> is a client class like any other, and a component hosts it with a
-/// <c>RawGestureDetector</c> and a <c>GestureRecognizerFactory&lt;T&gt;</c>. Built as an app is built, from the
+/// <c>RawGestureDetector</c> and a <c>GestureRecognizerFactoryWithHandlers&lt;T&gt;</c>. Built as an app is built, from the
 /// dashboard's own <c>HoldThenDrag.cs</c>, the recognizer the sample ships: fields, nullable delegates, a deadline,
 /// a resolution, and an override of every virtual a long press needs.
 /// </summary>
@@ -27,7 +27,7 @@ public class AGestureRecognizerOfTheAppsOwnTests
 
             public override VisualNode Build(ComponentContext context) =>
                 RawGestureDetector(Text($"{_offset.X}", TypeRole.BodyM),
-                    [new GestureRecognizerFactory<HoldThenDrag>(() => new(), drag => drag.OnMoved = Move)],
+                    [new GestureRecognizerFactoryWithHandlers<HoldThenDrag>(() => new(), drag => drag.OnMoved = Move)],
                     behavior: HitTestBehavior.Opaque);
         }
         """;

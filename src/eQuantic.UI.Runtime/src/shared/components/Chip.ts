@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Icon, IconGlyph, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle, VariantValue } from "../runtime-exports";
+import { $VariantValue, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Icon, IconGlyph, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle } from "../runtime-exports";
 
 export class Chip extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Chip';
@@ -7,7 +7,7 @@ export class Chip extends StatelessComponent {
     declare selected: boolean;
     declare onPressed: (() => void) | null;
     declare onRemove: (() => void) | null;
-    declare variant: VariantValue;
+    declare variant: $VariantValue;
 
     constructor(label?: any, kind: any = 'filter', selected: any = false, onPressed: any = null, onRemove: any = null, props?: any) {
         super();

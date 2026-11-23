@@ -230,6 +230,37 @@ public class UiFactoryConformanceTests
     }
 
     /// <summary>
+    /// A mirrored parameter allows what its constructor's allows (#1776): the build reads a constant
+    /// against the <c>[AllowedValues]</c> of the parameter the CALL binds (EQ3106), and a screen calls the
+    /// factory, so a mark on the constructor alone let <c>Icon(glyph, 22)</c> through while
+    /// <c>new Icon(glyph, 22)</c> failed. Its words travel too, since they are what the error says.
+    /// </summary>
+    [Fact]
+    public void EveryMirroredParameter_AllowsWhatItsConstructorAllows()
+    {
+        static (string Values, string? Why)? Allowed(ParameterInfo parameter) =>
+            parameter.GetCustomAttribute<System.ComponentModel.DataAnnotations.AllowedValuesAttribute>() is { } allowed
+                ? (string.Join(", ", allowed.Values), allowed.ErrorMessage)
+                : null;
+
+        var marked = 0;
+        foreach (var factory in Factories)
+        {
+            if (MirroredConstructor(factory) is not { } constructor) continue;
+            var parameters = constructor.GetParameters();
+            foreach (var (parameter, index) in parameters.Select((parameter, index) => (parameter, index)))
+            {
+                var mine = Allowed(factory.GetParameters()[index]);
+                Allowed(parameter).Should().Be(mine,
+                    $"{factory.Name}'s '{parameter.Name}' must allow what new {constructor.DeclaringType!.Name}(…)'s allows");
+                if (mine is not null) marked++;
+            }
+        }
+
+        marked.Should().BeGreaterThan(0, "Icon's size is marked, so a rule that found no mark reads nothing");
+    }
+
+    /// <summary>
     /// The VALUE question the shape rule above cannot ask (#259): a tail parameter's default is
     /// written in the FACTORY's signature, and the body applies it through an object initializer —
     /// so an omitted argument OVERWRITES whatever the property initializes itself to. Where the two

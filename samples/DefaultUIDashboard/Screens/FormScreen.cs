@@ -39,6 +39,11 @@ public sealed class FormScreen : StatefulComponent
     /// point: a condition is ordinary C# that happens to be true or false right now.</summary>
     private bool _callMe;
 
+    /// <summary>Two typed values that are page state, not form fields: an amount kept in cents, as money
+    /// is kept, and a count with its unit. Neither is ever a free text box.</summary>
+    private long? _budget = 25000;
+    private int? _seats = 5;
+
     public FormScreen()
     {
         // Conditional: the phone is not a field with a passing rule while nobody asked to be
@@ -86,11 +91,19 @@ public sealed class FormScreen : StatefulComponent
             TypeRole.BodyM, theme.TextSecondary, maxLines: 3));
 
         var card = new Column(gap: Space.S3) { Width = SizeValue.Fill };
+        // The kind opens the e-mail keyboard on a phone and offers the browser's autofill for it.
         card.Add(new FormInput(_form, "Email", "Email", placeholder: "you@example.com",
-            helper: "We never share it."));
+            helper: "We never share it.", kind: TextEntryKind.Email));
         card.Add(new FormInput(_form, "Password", "Password", helper: "At least 8 characters")
             { Obscure = true });
         card.Add(new FormInput(_form, "Confirm", "Confirm password") { Obscure = true });
+
+        // Money in cents, written and read in the page's culture, with the decimal keypad on a phone; and
+        // a whole number with its unit. Type 12,5 on a page in English: a phone's keypad may show the comma.
+        card.Add(new MoneyInput(_budget, value => SetState(() => _budget = value), "Monthly budget", Currency.Euro,
+            min: 0, helper: "What you plan to spend each month"));
+        card.Add(new NumberInput(_seats, value => SetState(() => _seats = value), "Team size", "people",
+            min: 1, max: 500));
 
         // The conditional half. The checkbox is page state, so the form is TOLD it changed —
         // the one case a value moving inside the form does not cover.
@@ -101,7 +114,7 @@ public sealed class FormScreen : StatefulComponent
         }), "Call me instead of emailing"));
 
         if (_form.Field("Phone") is { Relevant: true })
-            card.Add(new FormInput(_form, "Phone", "Phone", placeholder: "+351 912 345 678"));
+            card.Add(new FormInput(_form, "Phone", "Phone", placeholder: "+351 912 345 678", kind: TextEntryKind.Phone));
 
         if (_form.SubmitError is { } failure)
             card.Add(new Banner(Variant.Destructive, failure));

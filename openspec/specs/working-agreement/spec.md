@@ -860,7 +860,8 @@ Priority and nothing above it. Every other issue needs an open parent under an e
 of 1, 2, 3, 5, 8 or 13, except a feature or a story created to be split, which carries none of its own. `scripts/new-issue.py` SHALL refuse, before any request, an issue that lacks
 one of them, naming what it lacks. It SHALL create the issue with its type, parent, milestone,
 assignee and priority, put it on the board with its points and status, read it back, and fail naming
-whatever did not land. A session's `PreToolUse` hook SHALL refuse the other ways a session creates an
+whatever did not land. An issue the board's own workflow adds at the same moment SHALL still get its
+points and status. A session's `PreToolUse` hook SHALL refuse the other ways a session creates an
 issue (`gh issue create`, the GraphQL `createIssue`, a REST `POST` to `/issues` and an MCP tool that
 creates one), naming the script, and SHALL let a read, a comment, an edit and a phrase quoted in an
 argument pass. It SHALL read the file of a script the command runs, and the scripts that file runs one
@@ -877,6 +878,18 @@ pass.
 
 - **WHEN** an epic is to be created without `--priority`
 - **THEN** the script exits 2 naming the priority
+
+#### Scenario: The board adds the issue at the same moment
+
+- **WHEN** the board's own workflow adds the new issue as the script does, and GitHub refuses the
+  script's add with `Content already exists in this project`
+- **THEN** the script makes the add again, sets the status and the points on the item it answers, and
+  the issue is read back whole
+
+#### Scenario: The add is refused for another reason
+
+- **WHEN** GitHub refuses the script's add with anything else, or with the same refusal on every try
+- **THEN** the script exits 1 saying the issue was created but not whole, naming the refusal
 
 #### Scenario: A session runs gh issue create
 

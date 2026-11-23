@@ -38,6 +38,9 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 const double BarMs = 1000;
+// How far over the bar a ceiling may sit to hold the runner's spread: the warm median of the same tree
+// moved from 479 to 1053ms between three runs on main (#900).
+const double Spread = 1.5;
 
 var target = args.FirstOrDefault();
 if (target is not ("web" or "desktop"))
@@ -192,9 +195,15 @@ if (budgetPath is not null && JsonNode.Parse(File.ReadAllText(budgetPath))?[targ
         else if (median.GetValue<double>() > limit!.GetValue<double>())
             failures.Add($"{target} {name}: the warm median is {median.GetValue<double>():F0}ms, over the budget of {limit.GetValue<double>():F0}ms");
         // A ceiling above the bar only ever comes down: a change that made this part faster says by how
-        // much, so the number it earned is written into the budget in the same pull request.
-        else if (limit.GetValue<double>() > BarMs && median.GetValue<double>() < limit.GetValue<double>() / 2)
+        // much, so the number it earned is written into the budget in the same pull request. Once the
+        // ceiling is within the runner's spread of the bar, it holds that spread and nothing more, so the
+        // run says whether the median met the bar instead (#900).
+        else if (limit.GetValue<double>() > BarMs * Spread && median.GetValue<double>() < limit.GetValue<double>() / 2)
             Console.WriteLine($"::notice::{target} {name}: the warm median is {median.GetValue<double>():F0}ms, under half its ceiling of {limit.GetValue<double>():F0}ms: lower the ceiling in the budget");
+        else if (limit.GetValue<double>() > BarMs && limit.GetValue<double>() <= BarMs * Spread)
+            Console.WriteLine($"::notice::{target} {name}: the warm median is {median.GetValue<double>():F0}ms, "
+                + (median.GetValue<double>() <= BarMs ? "under" : "over")
+                + $" the bar of {BarMs:F0}ms, inside its ceiling of {limit.GetValue<double>():F0}ms, which holds the runner's spread");
     }
 }
 foreach (var failure in failures) Console.WriteLine($"::error::{failure}");

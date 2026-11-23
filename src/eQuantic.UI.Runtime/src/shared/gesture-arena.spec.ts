@@ -8,9 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import fixture from './gesture-arena.fixture.json';
 import { GestureRouter } from './components/GestureRouter';
-// The twin of the C# `GestureRecognizerFactory<T>`: eqc writes it today under the same module name as the non-generic
-// base it derives from, so this import waits for that gap to close (see the change's tasks, 1.5).
-import { GestureRecognizerFactory } from './components/GestureRecognizerFactory';
+import { GestureRecognizerFactoryWithHandlers } from './components/GestureRecognizerFactoryWithHandlers';
 import type { GestureArenaEntry } from './components/GestureArenaEntry';
 import type { GestureRecognizer } from './components/GestureRecognizer';
 import { ArenaProbe } from './__fixtures__/ArenaProbe';
@@ -94,7 +92,7 @@ class Run {
     const build = ++this.build;
     for (const member of this.members) {
       if (member.plain) continue;
-      const factory = new GestureRecognizerFactory<ArenaProbe>(
+      const factory = new GestureRecognizerFactoryWithHandlers<ArenaProbe>(
         () => {
           this.heard.push(`${member.name}.create`);
           return new ArenaProbe(

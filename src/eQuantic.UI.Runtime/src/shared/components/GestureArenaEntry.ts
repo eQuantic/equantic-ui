@@ -1,4 +1,4 @@
-import { GestureArena, GestureArenaPointer, GestureDispositionValue } from "../runtime-exports";
+import { $GestureDispositionValue, GestureArena, GestureArenaPointer } from "../runtime-exports";
 
 export class GestureArenaEntry {
     constructor(arena: GestureArena, pointer: GestureArenaPointer, member: any) {
@@ -18,7 +18,7 @@ export class GestureArenaEntry {
         return this._pointer.pointer;
     }
 
-    resolve(disposition: GestureDispositionValue) {
+    resolve(disposition: $GestureDispositionValue) {
         return this._arena.resolve(this._pointer, this._member, disposition);
     }
 

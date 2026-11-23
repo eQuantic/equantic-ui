@@ -12,12 +12,9 @@ public readonly record struct ResourceUse(string Id, string Key, string Designer
 /// <summary>
 /// Track L (docs/I18N-PLAN.md D2/D3): resource-class SHAPE detection and catalog identity.
 /// <para>
-/// Detection is the ResXFileCodeGenerator shape, never a name list: a class exposing a static
-/// <c>ResourceManager</c> property of type <c>System.Resources.ResourceManager</c> and a static
-/// <c>Culture</c> property of type <c>CultureInfo</c>. The generator's class itself is NOT static
-/// (it carries a private constructor), so the shape reads the members, not the class modifier —
-/// and types compare by name + namespace, never by display string, which a nullable annotation
-/// would silently unmatch.
+/// Detection is the ResXFileCodeGenerator shape, never a name list (<see cref="ResourceShape"/>,
+/// one file linked into eqc and into the source generator, which warns when an accessor is read
+/// once into a static).
 /// </para>
 /// <para>
 /// Ids are the MINIMAL UNIQUE name: the simple class name while it is unique among the app's own
@@ -31,33 +28,13 @@ public static class ResourceClasses
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<
         Compilation, Dictionary<INamedTypeSymbol, string>> IdCache = new();
 
-    public static bool IsResourceClass(INamedTypeSymbol? type)
-    {
-        if (type is not { TypeKind: TypeKind.Class }) return false;
-        var resourceManager = false;
-        var culture = false;
-        foreach (var member in type.GetMembers())
-        {
-            if (member is not IPropertySymbol { IsStatic: true } property) continue;
-            if (property.Name == "ResourceManager"
-                && IsType(property.Type, "System.Resources", "ResourceManager"))
-                resourceManager = true;
-            else if (property.Name == "Culture"
-                && IsType(property.Type, "System.Globalization", "CultureInfo"))
-                culture = true;
-            if (resourceManager && culture) return true;
-        }
-        return false;
-    }
+    /// <summary>Whether <paramref name="type"/> is a resx catalog's accessor class
+    /// (<see cref="ResourceShape"/>, the rule the source generator's analyzer reads too).</summary>
+    public static bool IsResourceClass(INamedTypeSymbol? type) => ResourceShape.IsResourceClass(type);
 
-    private static bool IsType(ITypeSymbol type, string ns, string name) =>
-        type.Name == name && type.ContainingNamespace?.ToDisplayString() == ns;
-
-    /// <summary>A static string property on a resource class — the generated accessor for one key.
-    /// (ResourceManager and Culture exclude themselves by type.)</summary>
-    public static bool IsResourceAccessor(IPropertySymbol? property) =>
-        property is { IsStatic: true, Type.SpecialType: SpecialType.System_String }
-        && IsResourceClass(property.ContainingType);
+    /// <summary>A static string property on a resource class — the generated accessor for one key
+    /// (<see cref="ResourceShape"/>).</summary>
+    public static bool IsResourceAccessor(IPropertySymbol? property) => ResourceShape.IsResourceAccessor(property);
 
     /// <summary>
     /// The resx KEY behind an accessor: the literal its getter hands to <c>GetString("…")</c> —

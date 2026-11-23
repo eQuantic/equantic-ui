@@ -1,4 +1,4 @@
-import { $eq, GestureArenaEntry, GestureArenaPointer, GestureDispositionValue } from "../runtime-exports";
+import { $eq, $GestureDispositionValue, GestureArenaEntry, GestureArenaPointer } from "../runtime-exports";
 
 export class GestureArena {
     constructor() {
@@ -36,7 +36,7 @@ export class GestureArena {
         this.decide(arena);
         if (arena.members.length === 0) return;
         arena.members[0].acceptGesture(pointer);
-        for (let i = 1; i < arena.members.length; i++) arena.members[i].rejectGesture(pointer);
+        for (let i = 1; i < arena.members.length; i = i + 1 | 0) arena.members[i].rejectGesture(pointer);
     }
 
     cancel(pointer: number) {
@@ -46,7 +46,7 @@ export class GestureArena {
         for (const member of $eq.collections.listWalk(arena.members)) member.rejectGesture(pointer);
     }
 
-    resolve(arena: GestureArenaPointer, member: any, disposition: GestureDispositionValue) {
+    resolve(arena: GestureArenaPointer, member: any, disposition: $GestureDispositionValue) {
         if (arena.phase === 'decided') return;
         let at = GestureArena.indexOf(arena.members, member);
         if (at < 0) return;
@@ -91,7 +91,7 @@ export class GestureArena {
     }
 
     static indexOf(members: any[], member: any) {
-        for (let i = 0; i < members.length; i++) if ((members[i] === member)) return i;
+        for (let i = 0; i < members.length; i = i + 1 | 0) if ((members[i] === member)) return i;
         return -1;
     }
 

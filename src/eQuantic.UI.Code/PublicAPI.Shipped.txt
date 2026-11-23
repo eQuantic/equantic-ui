@@ -5,6 +5,7 @@ abstract eQuantic.UI.Code.CurlyBraceLanguage.ReservedWords.get -> System.Collect
 abstract eQuantic.UI.Code.CurlyBraceLanguage.TypeWords.get -> System.Collections.Generic.IReadOnlySet<string!>!
 const eQuantic.UI.Code.CodeDiffLayout.DefaultContext = 3 -> int
 const eQuantic.UI.Code.CodeEditorController.CaretWidth = 2 -> float
+const eQuantic.UI.Code.CodeEditorController.ReadingLines = 10 -> int
 const eQuantic.UI.Code.CodeJumpList.Capacity = 50 -> int
 const eQuantic.UI.Code.CodeJumpList.Distance = 10 -> int
 const eQuantic.UI.Code.CurlyBraceLanguage.StateBlockComment = 1 -> int
@@ -416,6 +417,7 @@ eQuantic.UI.Code.CodeEditorController.Carets.get -> System.Collections.Generic.I
 eQuantic.UI.Code.CodeEditorController.CellsOf(int line) -> eQuantic.UI.Code.CodeLineCells!
 eQuantic.UI.Code.CodeEditorController.Changed -> System.Action<eQuantic.UI.Code.CodeChange!>?
 eQuantic.UI.Code.CodeEditorController.CharacterAt(eQuantic.UI.Primitives.Point point) -> eQuantic.UI.Code.CodePosition?
+eQuantic.UI.Code.CodeEditorController.ClaimsEscape(eQuantic.UI.Primitives.KeyboardConvention convention) -> bool
 eQuantic.UI.Code.CodeEditorController.CodeEditorController(string! text = "", eQuantic.UI.Code.ICodeLanguage? language = null) -> void
 eQuantic.UI.Code.CodeEditorController.Completion.get -> eQuantic.UI.Code.CodeCompletion!
 eQuantic.UI.Code.CodeEditorController.Composition.get -> eQuantic.UI.Code.CodeRange?
@@ -462,9 +464,11 @@ eQuantic.UI.Code.CodeEditorController.NextOf(System.Collections.Generic.IReadOnl
 eQuantic.UI.Code.CodeEditorController.OpenRequested -> System.Action<eQuantic.UI.Code.CodeLocation!>?
 eQuantic.UI.Code.CodeEditorController.Outdent() -> bool
 eQuantic.UI.Code.CodeEditorController.Paste(string! text) -> bool
+eQuantic.UI.Code.CodeEditorController.Pasted -> System.Action?
 eQuantic.UI.Code.CodeEditorController.PositionAt(eQuantic.UI.Primitives.Point point) -> eQuantic.UI.Code.CodePosition
 eQuantic.UI.Code.CodeEditorController.ReadOnly.get -> bool
 eQuantic.UI.Code.CodeEditorController.ReadOnly.set -> void
+eQuantic.UI.Code.CodeEditorController.Reading.get -> eQuantic.UI.Primitives.TextReading
 eQuantic.UI.Code.CodeEditorController.Redo() -> bool
 eQuantic.UI.Code.CodeEditorController.References.get -> eQuantic.UI.Code.CodeReferences!
 eQuantic.UI.Code.CodeEditorController.RemoveSecondaryCursors() -> bool

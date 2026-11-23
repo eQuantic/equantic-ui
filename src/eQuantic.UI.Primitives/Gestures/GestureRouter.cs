@@ -21,6 +21,11 @@ public sealed class GestureRouter
     /// <summary>Each detector position's recognizers, by their place in its list.</summary>
     private readonly Dictionary<object, List<GestureRecognizer>> _kept = new();
 
+    /// <summary>The factory each kept recognizer last heard from, by the same position and place: a place keeps its
+    /// recognizer while the factory handed to it is of the same type, as an element keeps its state while the node
+    /// handed to it is (Flutter's <c>canUpdate</c>).</summary>
+    private readonly Dictionary<object, List<GestureRecognizerFactory>> _makers = new();
+
     /// <summary>The deadlines asked for, in the order they were asked.</summary>
     private readonly List<GestureDeadline> _deadlines = new();
 
@@ -29,23 +34,25 @@ public sealed class GestureRouter
 
     /// <summary>
     /// The recognizers of the detector at <paramref name="position"/>, one per place of <paramref name="gestures"/>:
-    /// the one the place already keeps when its factory makes that type, a new one otherwise, each handed what this
-    /// build wrote. A recognizer a place no longer keeps hears nothing more.
+    /// the one the place already keeps when its factory is of the same type as the one before, a new one otherwise,
+    /// each handed what this build wrote. A recognizer a place no longer keeps hears nothing more.
     /// </summary>
     /// <param name="position">What identifies the detector's place in the tree across builds: an element on Photon,
     /// the detector's DOM element on the web.</param>
     /// <param name="gestures">The factories the latest build handed the detector.</param>
     public IReadOnlyList<GestureRecognizer> Recognizers(object position, IReadOnlyList<GestureRecognizerFactory> gestures)
     {
-        if (!_kept.TryGetValue(position, out var kept))
+        if (!_kept.TryGetValue(position, out var kept) || !_makers.TryGetValue(position, out var makers))
         {
             kept = new List<GestureRecognizer>();
+            makers = new List<GestureRecognizerFactory>();
             _kept[position] = kept;
+            _makers[position] = makers;
         }
         for (var i = 0; i < gestures.Count; i++)
         {
             var factory = gestures[i];
-            if (i < kept.Count && !factory.Makes(kept[i]))
+            if (i < kept.Count && factory.GetType() != makers[i].GetType())
             {
                 Retire(kept[i]);
                 kept[i] = Made(factory, position);
@@ -53,13 +60,16 @@ public sealed class GestureRouter
             else if (i >= kept.Count)
             {
                 kept.Add(Made(factory, position));
+                makers.Add(factory);
             }
+            makers[i] = factory;
             factory.Initialize(kept[i]);
         }
         while (kept.Count > gestures.Count)
         {
             Retire(kept[kept.Count - 1]);
             kept.RemoveAt(kept.Count - 1);
+            makers.RemoveAt(makers.Count - 1);
         }
         return kept;
     }
@@ -70,6 +80,7 @@ public sealed class GestureRouter
     {
         if (!_kept.TryGetValue(position, out var kept)) return;
         _kept.Remove(position);
+        _makers.Remove(position);
         foreach (var recognizer in kept) Retire(recognizer);
     }
 

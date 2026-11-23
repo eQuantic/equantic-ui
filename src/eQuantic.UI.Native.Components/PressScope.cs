@@ -154,4 +154,12 @@ internal sealed class PressScope
     /// does not scroll on Photon. The web twin is the header's <c>data-eq-scrolled</c>.
     /// </summary>
     public bool SurfaceScrolled { get; set; }
+
+    /// <summary>
+    /// True while the subtree of a SCROLLED pinned header is drawn: its boxes show their
+    /// <c>Scrolled</c> diff (#1769). Set by the header's visit from <see cref="SurfaceScrolled"/> and
+    /// restored after, so the NEAREST header decides, a nested one setting its own for its subtree.
+    /// The web twin is the header-scrolled family's selector.
+    /// </summary>
+    public bool InScrolledHeader { get; set; }
 }

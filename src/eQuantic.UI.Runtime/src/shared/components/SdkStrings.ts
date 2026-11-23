@@ -341,6 +341,34 @@ export class SdkStrings {
         return $eq.text.stringFormat($eq.str('SdkResources', 'UnfoldLines'), $eq.text.asNumber(from, 'int32'), $eq.text.asNumber(to, 'int32'));
     }
 
+    static amountExpected(example: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'AmountExpected'), example);
+    }
+
+    static wholeNumberExpected(example: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'WholeNumberExpected'), example);
+    }
+
+    static valueBetween(least: string, most: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'ValueBetween'), least, most);
+    }
+
+    static valueAtLeast(least: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'ValueAtLeast'), least);
+    }
+
+    static valueAtMost(most: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'ValueAtMost'), most);
+    }
+
+    static namedWithAffixes(label: string, affixes: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'NamedWithAffixes'), label, affixes);
+    }
+
+    static valueWithUnit(number: string, unit: string) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'ValueWithUnit'), number, unit);
+    }
+
     static hint(pattern: string, letters: string) {
         let day = letters.length > 0 ? letters[0] : 'D';
         let month = letters.length > 1 ? letters[1] : 'M';
@@ -350,19 +378,19 @@ export class SdkStrings {
         while (i < pattern.length) {
             let letter = pattern[i];
             if (letter === '\'') {
-                let close = $eq.text.indexOfChar(pattern, '\'', i + 1);
+                let close = $eq.text.indexOfChar(pattern, '\'', i + 1 | 0);
                 if (close < 0) {
-                    hint.append($eq.text.substring(pattern, i + 1));
+                    hint.append($eq.text.substring(pattern, i + 1 | 0));
                     break;
                 }
-                hint.append($eq.text.substring(pattern, i + 1, close - i - 1));
-                i = close + 1;
+                hint.append($eq.text.substring(pattern, i + 1 | 0, (close - i | 0) - 1 | 0));
+                i = close + 1 | 0;
                 continue;
             }
             let run = 1;
-            while (i + run < pattern.length && pattern[i + run] === letter) run++;
+            while ((i + run | 0) < pattern.length && pattern[i + run | 0] === letter) run = run + 1 | 0;
             if (letter === 'd') hint.append(day).append(day); else if (letter === 'M') hint.append(month).append(month); else if (letter === 'y') hint.append(year).append(year).append(year).append(year); else hint.append($eq.text.substring(pattern, i, run));
-            i += run;
+            i = i + run | 0;
         }
         return hint.toString();
     }

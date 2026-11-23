@@ -3,8 +3,8 @@ namespace eQuantic.UI.Primitives;
 /// <summary>
 /// How a <see cref="RawGestureDetector"/> makes one of its recognizers and hands it what the latest build wrote
 /// (#1563): Flutter's <c>GestureRecognizerFactory</c>. The list a detector holds is of this type because a C#
-/// generic is invariant, so a <see cref="GestureRecognizerFactory{T}"/> of the app's recognizer is not one of
-/// <see cref="GestureRecognizer"/>; every factory is a <see cref="GestureRecognizerFactory{T}"/>.
+/// generic is invariant, so a <see cref="GestureRecognizerFactoryWithHandlers{T}"/> of the app's recognizer is not
+/// one of <see cref="GestureRecognizer"/>; every factory is a <see cref="GestureRecognizerFactoryWithHandlers{T}"/>.
 /// </summary>
 public abstract class GestureRecognizerFactory
 {
@@ -17,7 +17,4 @@ public abstract class GestureRecognizerFactory
 
     /// <summary>Hands the kept <paramref name="recognizer"/> what the latest build wrote.</summary>
     internal abstract void Initialize(GestureRecognizer recognizer);
-
-    /// <summary>Whether <paramref name="recognizer"/> is one this factory makes, so a place keeps it.</summary>
-    internal abstract bool Makes(GestureRecognizer recognizer);
 }

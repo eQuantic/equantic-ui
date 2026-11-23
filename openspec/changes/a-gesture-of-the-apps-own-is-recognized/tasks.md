@@ -1,7 +1,7 @@
 ## 1. The vocabulary
 
 - [x] 1.1 `GestureDisposition` (Accepted, Rejected; append-only, `EnumValueAbiTests`), `IGestureArenaMember`, and `GestureRecognizer` in `src/eQuantic.UI.Primitives/Gestures/`, with `IsPointerAllowed`, `AddAllowedPointer`, `HandleEvent`, `AcceptGesture`, `RejectGesture`, `Resolve`, `ResolvePointer`, `StopTrackingPointer`, `StartDeadline`, `DidExceedDeadline`, and the tracked pointers
-- [x] 1.2 `GestureRecognizerFactory` and the sealed `GestureRecognizerFactory<T>(Func<T> create, Action<T> initialize)`
+- [x] 1.2 `GestureRecognizerFactory` and the sealed `GestureRecognizerFactoryWithHandlers<T>(Func<T> create, Action<T> initialize)`
 - [x] 1.3 `RawGestureDetector(VisualNode child, IReadOnlyList<GestureRecognizerFactory> gestures)` with `Behavior`, every registration a node has (visitor member, node kind, coverage suites), and `UI.RawGestureDetector`
 - [x] 1.4 Each new type in `primitives-types.fixture.json` and `PublicAPI.Unshipped.txt`; read the diff
 - [x] 1.6 `PointerEvent.TimeMs` (design 6b): the record widens, its unshipped entries move; the web reads the DOM event's `timeStamp`, Photon the shell's time or its own `Stopwatch`, the host's pointer entry points take an optional `timeMs`, the macOS shell passes `NSEvent.timestamp`; the value twin and its fixture carry it, and `Listener`'s tests on both targets assert it rises monotonically

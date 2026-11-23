@@ -9,9 +9,18 @@ namespace eQuantic.UI.Primitives;
 /// In a list that nests, <see cref="Into"/> names the item it lands INSIDE, and <see cref="Index"/> is that
 /// item's position.
 /// </para>
+/// <para>
+/// In a list whose items have depths, <see cref="Depth"/> is the depth the carried item takes between the item before
+/// <see cref="Index"/> and the item at it (#1594).
+/// </para>
 /// </summary>
 public sealed record SortDrop(string Item, string From, string To, int Index)
 {
     /// <summary>The id of the item the carried one lands inside, in a list that nests; null otherwise.</summary>
     public string? Into { get; init; }
+
+    /// <summary>The depth the carried item takes at a place between two items of a list whose items have depths
+    /// (<see cref="Sortable.Indent"/> above 0): at least the depth of the item after the place, at most one deeper than
+    /// the item before it. Null at a place inside an item and in a list without depths.</summary>
+    public int? Depth { get; init; }
 }

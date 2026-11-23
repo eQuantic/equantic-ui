@@ -107,6 +107,19 @@ public sealed class DeclaringTreeOfAReferencedProjectTests : IClassFixture<Decla
                         public string Name => "app";
                     }
                     """),
+                // A class of the app's is a module when a component names it (#1779), as Deck is.
+                ("Screens/DescribedUser.cs",
+                    """
+                    using eQuantic.UI.Primitives;
+
+                    namespace App.Screens;
+
+                    public sealed class DescribedUser : StatelessComponent
+                    {
+                        public override VisualNode Build(ComponentContext context) =>
+                            Text(new Described().Name, TypeRole.BodyM, context.Theme.TextPrimary, maxLines: 1);
+                    }
+                    """),
                 ("Screens/CounterUser.cs",
                     """
                     using eQuantic.UI.Primitives;

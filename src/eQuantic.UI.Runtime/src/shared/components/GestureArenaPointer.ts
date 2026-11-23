@@ -1,4 +1,4 @@
-import { GestureArenaPhaseValue } from "../runtime-exports";
+import { $GestureArenaPhaseValue } from "../runtime-exports";
 
 export class GestureArenaPointer {
     constructor(pointer: number) {
@@ -11,7 +11,7 @@ export class GestureArenaPointer {
 
     pointer!: number;
     members!: any[];
-    phase!: GestureArenaPhaseValue;
+    phase!: $GestureArenaPhaseValue;
     eagerWinner!: any;
 
     toString(): string {

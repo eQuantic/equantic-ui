@@ -1,9 +1,9 @@
-import { $eq, GestureDispositionValue, GestureRecognizer, PointerEvent, PointerPhaseValue } from "@equantic/runtime";
+import { $eq, $GestureDispositionValue, $PointerPhaseValue, GestureRecognizer, PointerEvent } from "@equantic/runtime";
 
 export class ArenaProbe extends GestureRecognizer {
     static $interfaces = ['eQuantic.UI.Primitives.IGestureArenaMember'];
 
-    constructor(name: string, heard: string[], deadlineMs: number = 0, atDeadline: GestureDispositionValue | null = null, onAdd: GestureDispositionValue | null = null, onMove: GestureDispositionValue | null = null, primaryOnly: boolean = false) {
+    constructor(name: string, heard: string[], deadlineMs: number = 0, atDeadline: $GestureDispositionValue | null = null, onAdd: $GestureDispositionValue | null = null, onMove: $GestureDispositionValue | null = null, primaryOnly: boolean = false) {
         super();
         this._name = null!;
         this._heard = null!;
@@ -25,10 +25,10 @@ export class ArenaProbe extends GestureRecognizer {
     _name!: string;
     _heard!: string[];
     _deadlineMs!: number;
-    _atDeadline!: GestureDispositionValue | null;
-    _onAdd!: GestureDispositionValue | null;
+    _atDeadline!: $GestureDispositionValue | null;
+    _onAdd!: $GestureDispositionValue | null;
     _primaryOnly!: boolean;
-    _onMove!: GestureDispositionValue | null;
+    _onMove!: $GestureDispositionValue | null;
     onDeadline!: ((string: string) => void) | null;
 
     isPointerAllowed(down: PointerEvent) {
@@ -66,7 +66,7 @@ export class ArenaProbe extends GestureRecognizer {
         if ((disposition = this._atDeadline) != null) this.resolve(disposition);
     }
 
-    say(disposition: GestureDispositionValue) {
+    say(disposition: $GestureDispositionValue) {
         return this.resolve(disposition);
     }
 
@@ -78,7 +78,7 @@ export class ArenaProbe extends GestureRecognizer {
         return $eq.collections.listAdd(this._heard, `${this._name}.${what}`);
     }
 
-    static phaseOf(phase: PointerPhaseValue) {
+    static phaseOf(phase: $PointerPhaseValue) {
         return (() => { const $s = phase; if ($s === 'down') return 'down'; if ($s === 'move') return 'move'; if ($s === 'up') return 'up'; if ($s === 'cancel') return 'cancel'; return 'other'; })();
     }
 

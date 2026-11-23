@@ -148,6 +148,12 @@ jobs:
       - name: The forecast's arithmetic holds
         run: python3 -m unittest discover -s scripts -p 'roadmap_*_test.py' -v
 
+      # scripts/new-issue.py run whole against a board that answers in memory (#1752): an issue the
+      # board's own workflow adds at the same moment still gets its points, and any other refusal of
+      # the add is still reported.
+      - name: An issue is still created whole
+        run: python3 -m unittest discover -s scripts -p 'new_issue_test.py' -v
+
       # A session creates an issue only through scripts/new-issue.py (#1430): the hook that refuses
       # the other ways still tells a creation from a read, a comment and a quoted phrase.
       - name: The session hook still tells an issue's creation apart

@@ -29,7 +29,11 @@ public class PlatformMemberReadTests
     /// <summary>A chain is refused once, at the first member nothing carries, and the message names it.</summary>
     [Theory]
     [InlineData("var n = System.Globalization.CultureInfo.CurrentCulture.Name", "System.Globalization.CultureInfo.CurrentCulture")]
-    [InlineData("var s = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator", "System.Globalization.CultureInfo.CurrentCulture")]
+    [InlineData("var s = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ListSeparator", "System.Globalization.CultureInfo.CurrentCulture")]
+    [InlineData("var s = System.Globalization.CultureInfo.CurrentUICulture.NumberFormat.NumberDecimalSeparator", "System.Globalization.CultureInfo.CurrentUICulture")]
+    // A culture's number format crosses, but not the arrays .NET hands out as copies (#1765).
+    [InlineData("var s = System.Globalization.NumberFormatInfo.CurrentInfo.NumberGroupSizes", "System.Globalization.NumberFormatInfo.NumberGroupSizes")]
+    [InlineData("var s = System.Globalization.NumberFormatInfo.CurrentInfo.NaNSymbol", "System.Globalization.NumberFormatInfo.NaNSymbol")]
     [InlineData("var p = System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat.ShortDatePattern", "System.Globalization.CultureInfo.InvariantCulture")]
     [InlineData("var n = System.Globalization.CultureInfo.CurrentCulture?.Name", "System.Globalization.CultureInfo.CurrentCulture")]
     [InlineData("var line = Environment.NewLine", "System.Environment.NewLine")]
@@ -69,8 +73,38 @@ public class PlatformMemberReadTests
     [InlineData("var c = char.ToUpper('i', System.Globalization.CultureInfo.InvariantCulture)")]
     [InlineData("var c = char.ToLower(culture: System.Globalization.CultureInfo.CurrentCulture, c: 'I')")]
     [InlineData("var n = item.Name")]
+    // A culture's number format, the page's and the invariant one's, by both doors (#1765).
+    [InlineData("var p = System.Globalization.NumberFormatInfo.CurrentInfo.CurrencyPositivePattern")]
+    [InlineData("var s = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator")]
+    [InlineData("var s = System.Globalization.NumberFormatInfo.InvariantInfo.CurrencySymbol")]
+    [InlineData("var s = System.Globalization.CultureInfo.InvariantCulture.NumberFormat.NegativeSign")]
+    [InlineData("var f = System.Globalization.NumberFormatInfo.CurrentInfo; var s = f.PercentSymbol + f.PerMilleSymbol")]
     public void AMemberTheBrowserCarries_Builds(string code)
     {
         TestHelper.DiagnosticsFor(code).Should().BeEmpty();
+    }
+
+    /// <summary>A culture's number format is the one every formatter of the page reads: it is read in the
+    /// browser and never written, by an assignment, a compound one or an increment (#1765).</summary>
+    [Theory]
+    [InlineData("System.Globalization.NumberFormatInfo.CurrentInfo.CurrencySymbol = \"x\"", "CurrencySymbol")]
+    [InlineData("System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NegativeSign += \"x\"", "NegativeSign")]
+    [InlineData("System.Globalization.NumberFormatInfo.CurrentInfo.CurrencyDecimalDigits++", "CurrencyDecimalDigits")]
+    public void ANumberFormatsMember_IsNeverWritten(string code, string member)
+    {
+        var refused = TestHelper.DiagnosticsFor(code).Should().ContainSingle().Which;
+        refused.Code.Should().Be("EQ2004");
+        refused.Message.Should().Be($"'System.Globalization.NumberFormatInfo.{member}' is read in the browser and never written: "
+            + "the culture's number format is the object every formatter of the page reads.");
+    }
+
+    /// <summary>The read writes the object the culture travels as, the page's or the invariant one's.</summary>
+    [Theory]
+    [InlineData("var p = System.Globalization.NumberFormatInfo.CurrentInfo.CurrencyPositivePattern", "$eq.text.numberFormat(false).currencyPositivePattern")]
+    [InlineData("var p = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.CurrencyPositivePattern", "$eq.text.numberFormat(false).currencyPositivePattern")]
+    [InlineData("var p = System.Globalization.CultureInfo.InvariantCulture.NumberFormat.CurrencySymbol", "$eq.text.numberFormat(true).currencySymbol")]
+    public void ANumberFormat_IsTheCulturesObject(string code, string emitted)
+    {
+        TestHelper.ConvertStatement(code + ";").Should().Contain(emitted);
     }
 }

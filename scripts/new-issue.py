@@ -11,7 +11,9 @@ for an epic, its priority; for every other issue, a parent that is open and unde
 one of 1, 2, 3, 5, 8 or 13 (bigger is a feature or a story created with `--split`, which carries
 no points of its own, and its slices, created next with it as their parent). It creates the
 issue with its type, parent, milestone, assignee and priority in one request, puts it on Project 11 with
-its points and status, then reads it back and fails naming whatever did not land.
+its points and status, then reads it back and fails naming whatever did not land. The board's own
+workflow adds every new issue too, and when GitHub refuses the script's add because both ran at the
+same moment, the add is made again a few seconds later and answers the item the workflow made.
 
 The body is read from a file, or from standard input with `-`, and every value reaches GitHub as a
 GraphQL variable, never through a shell. The issue is assigned to the account that runs this, unless
@@ -23,6 +25,7 @@ from __future__ import annotations
 import argparse
 import sys
 import time
+from pathlib import Path
 
 import roadmap_board as board
 from roadmap_model import PRIORITIES, TYPES, lacks
@@ -30,6 +33,10 @@ from roadmap_model import PRIORITIES, TYPES, lacks
 STATUSES = ("Backlog", "Ready", "In progress")
 # How far up the tree an epic is looked for: epic, feature, story, task.
 DEPTH = 4
+# What GitHub answers an add of the issue when the board's own workflow adds it at the same moment, and
+# how many times the add is made, three seconds apart, before the script reports it.
+ALREADY_ON_THE_BOARD = "Content already exists in this project"
+ADD_TRIES = 3
 
 
 def refuse(reasons: list):
@@ -85,7 +92,7 @@ def main():
     if missing:
         refuse(missing)
     try:
-        body = sys.stdin.read() if args.body_file == "-" else open(args.body_file, encoding="utf-8").read()
+        body = sys.stdin.read() if args.body_file == "-" else Path(args.body_file).read_text(encoding="utf-8")
     except OSError as unread:
         refuse([f"a body file that can be read ({unread.strerror}: {args.body_file})"])
     if not args.title.strip() or not body.strip():
@@ -169,11 +176,7 @@ def main():
 
 def finish(project: dict, created: dict, args):
     """Puts the created issue on the board with its status and points."""
-
-    # The board's own fields are set on its item. Adding it answers the item at once, where an item
-    # createIssue would add shows on the issue only some seconds later.
-    item = board.gql("""mutation($p: ID!, $c: ID!) { addProjectV2ItemById(input: { projectId: $p, contentId: $c }) {
-        item { id } } }""", p=project["id"], c=created["id"])["addProjectV2ItemById"]["item"]["id"]
+    item = on_the_board(project, created)
     option = next(o["id"] for o in project["field"]["options"] if o["name"] == args.status)
     board.gql("""mutation($p: ID!, $i: ID!, $f: ID!, $o: String!) { updateProjectV2ItemFieldValue(input: {
         projectId: $p, itemId: $i, fieldId: $f, value: { singleSelectOptionId: $o } }) { projectV2Item { id } } }""",
@@ -182,6 +185,29 @@ def finish(project: dict, created: dict, args):
         board.gql("""mutation($p: ID!, $i: ID!, $f: ID!, $n: Float!) { updateProjectV2ItemFieldValue(input: {
             projectId: $p, itemId: $i, fieldId: $f, value: { number: $n } }) { projectV2Item { id } } }""",
                   p=project["id"], i=item, f=project["estimate"]["id"], n=float(args.points))
+
+
+def on_the_board(project: dict, created: dict) -> str:
+    """The created issue's item on the board, which its status and points are set on.
+
+    Adding the issue answers its item at once, where a read of the issue shows the item only some
+    seconds later. Adding an issue the board already holds answers the item it has, as
+    adding a new one does (measured on #1752), so the add can be made again. The board's own workflow
+    adds every new issue too, and when the two adds run at the same moment GitHub refuses one of them
+    with ALREADY_ON_THE_BOARD (#1752): the add is then made again a few seconds later, and answers the
+    item the workflow made. Any other refusal, or this one every time, ends the script as before."""
+    def add() -> str:
+        return board.gql("""mutation($p: ID!, $c: ID!) { addProjectV2ItemById(input: { projectId: $p, contentId: $c }) {
+            item { id } } }""", p=project["id"], c=created["id"])["addProjectV2ItemById"]["item"]["id"]
+
+    for _ in range(ADD_TRIES - 1):
+        try:
+            return add()
+        except SystemExit as refused:
+            if ALREADY_ON_THE_BOARD not in str(refused.code):
+                raise
+        time.sleep(3)
+    return add()
 
 
 def whole(landed: dict, args, login: str) -> list:

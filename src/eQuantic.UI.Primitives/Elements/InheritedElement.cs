@@ -80,6 +80,16 @@ public sealed class InheritedElement : Element
         _child = null;
     }
 
+    internal override void ForgetChild(Element child)
+    {
+        if (ReferenceEquals(_child, child)) _child = null;
+    }
+
+    internal override void FillForgotten()
+    {
+        if (_child is null) _child = UpdateChild(null, Inherited.Child, 0, force: false);
+    }
+
     private protected override void OnDeactivated()
     {
         _dependents.Clear();

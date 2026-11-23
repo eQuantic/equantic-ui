@@ -4,7 +4,7 @@
 
 An app SHALL write a gesture recognizer as a C# class deriving from `GestureRecognizer`, and SHALL host it over
 any node with `RawGestureDetector(child, gestures)`, where each entry is a
-`GestureRecognizerFactory<T>(create, initialize)`. The recognizer SHALL be offered every pointer that goes down
+`GestureRecognizerFactoryWithHandlers<T>(create, initialize)`. The recognizer SHALL be offered every pointer that goes down
 where its detector is hit by its `Behavior` (the rule of `HitTestBehavior`), through `IsPointerAllowed` and
 `AddAllowedPointer`; it SHALL hear every later move, up and cancel of a pointer it tracks through
 `HandleEvent`, with the position in its detector's box, until the pointer ends or it stops tracking it. The
@@ -36,7 +36,7 @@ the app.
 
 A `RawGestureDetector` SHALL keep one recognizer per place in its `gestures` list for as long as its position
 lives: `create` SHALL run once for a place, `initialize` SHALL run on the kept recognizer with every build that
-hands the position a new detector, and a place whose factory's `T` is not the kept recognizer's type SHALL
+hands the position a new detector, and a place handed a factory of another type than the one before SHALL
 create a new one. A recognizer in the middle of a gesture SHALL go on with the callbacks the latest build gave
 it. A recognizer SHALL be dropped when its position leaves the tree.
 

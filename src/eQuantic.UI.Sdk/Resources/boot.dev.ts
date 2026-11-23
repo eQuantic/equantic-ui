@@ -12,6 +12,12 @@ import {
   restorePageState,
 } from '../../eQuantic.UI.Runtime/src/dev/hot-reload-state';
 
+import { DevelopmentNotices } from '../../eQuantic.UI.Runtime/src/shared/development-notices';
+
+// What a component tells the developer (a picker drawn again without the value it reported, #1780)
+// reaches the console here, and only here: a production page loads no sink.
+DevelopmentNotices.sink = (notice) => console.warn(`[eQuantic] ${notice}`);
+
 installDevLoop({
   installErrorOverlay,
   showBuildErrors: (errors) => errorOverlay.showBuildErrors(errors),
