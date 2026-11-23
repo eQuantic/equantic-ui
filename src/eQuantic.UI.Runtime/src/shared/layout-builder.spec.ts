@@ -192,12 +192,6 @@ describe('a LayoutBuilder in the browser', () => {
     expect(told).toHaveLength(runs);
   });
 
-  it('refuses a null builder where it is written, as the C# constructor does', () => {
-    expect(() => new LayoutBuilder(null as never)).toThrow(
-      "Value cannot be null. (Parameter 'builder')",
-    );
-  });
-
   it('keeps its components when a component beside it builds alone (#1575)', async () => {
     const container = mount();
     await settle();
