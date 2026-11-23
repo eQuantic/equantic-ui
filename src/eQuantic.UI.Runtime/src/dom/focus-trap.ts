@@ -102,6 +102,7 @@ function focusablesBeneath(marked: Element[], above: readonly Element[]): HTMLEl
   return Array.from(scope.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
     (el) =>
       el.closest('[data-eq-trap]') === holder &&
+      onScreen(el) &&
       el.closest('[hidden], [aria-hidden="true"], [data-eq-exiting]') === null,
   );
 }
@@ -110,7 +111,13 @@ function restore(layer: Element): void {
   const recorded = invokers.get(layer);
   invokers.delete(layer);
   if (!recorded) return;
-  if (recorded.invoker.isConnected) {
+  // A layer that closed while its arm was hidden let the page have the keyboard, and the focus may be on
+  // a control the user chose since: it stays there. The focus is given back only from the layer itself,
+  // or from nowhere, which is where a removed layer's focus goes (#1185).
+  const focused = document.activeElement;
+  if (focused && focused !== document.body && !layer.contains(focused)) return;
+  // An invoker in an arm the window hides is as gone as a removed one: its place takes the focus.
+  if (recorded.invoker.isConnected && onScreen(recorded.invoker)) {
     (recorded.invoker as HTMLElement).focus?.();
     returned = recorded;
     return;

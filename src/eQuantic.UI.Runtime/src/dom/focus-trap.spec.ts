@@ -428,6 +428,41 @@ describe('§10 a layer in a hidden adaptive arm', () => {
     }
   });
 
+  it('a layer that opens in an arm already hidden takes no focus and traps nothing', () => {
+    // A served page carries every arm, and a dialog open from the start in the compact arm reaches a wide
+    // window behind its gate.
+    width = 1024;
+    const page = button('Page');
+    document.body.appendChild(page);
+    page.focus();
+    arm(gateCompactUntil(840), layer(button('Accept'), button('Decline')));
+    commitFocusTraps();
+
+    expect(tab().defaultPrevented, 'Tab walks the page').toBe(false);
+    expect(document.activeElement).toBe(page);
+  });
+
+  it('a hidden drawer that closes leaves the focus where the user moved it', () => {
+    const menu = button('Menu');
+    arm(gateCompactUntil(840), menu);
+    menu.focus();
+    const drawer = layer(button('Home'), button('Settings'));
+    const compact = arm(gateCompactUntil(840), drawer);
+    commitFocusTraps();
+    // Two controls in the wide arm, and the user picks the second: the one a place taken for the menu
+    // would not pick, so a restore over the user's choice shows.
+    const sidebar = button('Sidebar');
+    const search = button('Search');
+    arm(gateExpandedFrom(840), sidebar, search);
+
+    width = 1024;
+    search.focus();
+    compact.remove();
+    commitFocusTraps();
+
+    expect(document.activeElement, 'the closed drawer gave nothing back over the user’s choice').toBe(search);
+  });
+
   it('under a hidden layer, the layer on screen owns the keyboard', () => {
     const keep = button('Keep');
     const discard = button('Discard');
