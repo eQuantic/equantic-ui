@@ -320,7 +320,7 @@ public class ComponentParser
                 SyntaxTree = tree,
                 ClassSyntax = classDecl,
                 Namespace = ns ?? "",
-                TypeParameters = classDecl.TypeParameterList?.Parameters.Select(p => p.Identifier.ValueText.ToJsIdentifier()).ToList() ?? new List<string>(),
+                TypeParameters = classDecl.TwinTypeParameters().ToList(),
                 IsAbstract = classDecl.Modifiers.Any(SyntaxKind.AbstractKeyword),
                 BaseClassName = baseType,
             };
