@@ -111,6 +111,9 @@ describe('a camera preview a render shows', () => {
 });
 
 describe('the moment after the write', () => {
+  // The stub goes whatever the case does, so a later case reports its errors where a window does.
+  afterEach(() => vi.unstubAllGlobals());
+
   it('runs every task queued, though one throws', async () => {
     const reported: unknown[] = [];
     vi.stubGlobal('reportError', (error: unknown) => reported.push(error));
@@ -121,7 +124,6 @@ describe('the moment after the write', () => {
     });
     afterWrite(() => ran.push('second'));
     await Promise.resolve();
-    vi.unstubAllGlobals();
 
     expect(ran).toEqual(['first', 'second']);
     expect(reported).toHaveLength(1);
