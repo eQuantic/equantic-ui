@@ -75,4 +75,25 @@ public class DecimalMathConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>A decimal cast to an enum converts it to the enum's underlying type as a cast to that type
+    /// does: toward zero, from its digits.</summary>
+    [SkippableTheory]
+    [InlineData("return ((Level)0.99999999999999999m).ToString() + \"|\" + ((Level)2.5m).ToString();")]
+    [InlineData("return ((long)(Wide)9007199254740993m).ToString();")]
+    public void ADecimalCastToAnEnum_IsCutAsItsUnderlyingType(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "enum Level { Low, Mid, High } enum Wide : long { None }");
+    }
+
+    /// <summary>Clamp's refusal writes its values in the current culture, as string.Format writes them.</summary>
+    [SkippableFact]
+    public void AClampRefusal_WritesItsValuesInTheCulture()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "decimal a = 2m; try { return Math.Clamp(a, 3.5m, 1.25m).ToString(); } catch (ArgumentException e) { return e.Message; }",
+            culture: "pt-BR");
+    }
 }

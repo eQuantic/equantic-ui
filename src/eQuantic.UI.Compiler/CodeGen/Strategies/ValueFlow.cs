@@ -509,8 +509,6 @@ public static class ValueFlow
         ? to.Bits > from.Bits || (to.Bits == from.Bits && to.Unsigned)
         : !to.Unsigned && to.Bits >= from.Bits;
 
-    /// <summary>The primitive a number of this type is held as here: a native integer is a long or a ulong
-    /// on every target this SDK ships to (#649), and every other type is itself.</summary>
     /// <summary>The runtime's name of an integer type or a char a decimal is cut into, as
     /// <c>truncatedFromDecimal</c> takes it, or null for a type a decimal reaches through its number.</summary>
     private static string? DecimalCastTarget(SpecialType type) => type switch
@@ -527,6 +525,8 @@ public static class ValueFlow
         _ => null,
     };
 
+    /// <summary>The primitive a number of this type is held as here: a native integer is a long or a ulong
+    /// on every target this SDK ships to (#649), and every other type is itself.</summary>
     private static SpecialType HeldAs(SpecialType type) => type switch
     {
         SpecialType.System_IntPtr => SpecialType.System_Int64,
