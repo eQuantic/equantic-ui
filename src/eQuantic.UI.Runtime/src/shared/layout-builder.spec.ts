@@ -2,7 +2,8 @@
  * A `LayoutBuilder` in the browser (#1555): the page draws its box empty, the pass's commit measures the
  * room the box is given as if it held nothing, and the component above builds the child for it. jsdom
  * lays nothing out, so the box's measurement is the one thing faked here: a box under size containment
- * answers the room the test gives it, and an axis sized by content (the height, here) answers zero.
+ * answers the room the test gives it, and an axis sized by content (the height, here) answers the box's
+ * `contain-intrinsic-size`.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,7 +13,9 @@ import type { BoxConstraints } from './value-types';
 import type { VisualNodeValue } from './nodes';
 
 const nextFrame = () =>
-  new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
 
 /** The width the parent gives the builder's box, which the test moves. */
 let roomWidth = 600;
@@ -33,14 +36,28 @@ beforeEach(() => {
       disconnect(): void {}
     },
   );
-  // Size containment makes the box as large as its parent decides: the room's width, and no height,
-  // since the page's column sizes its height from what it holds. Without containment the box is its
-  // content's size, which a builder must never be told.
-  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+  // Size containment makes the box as large as its parent decides: the room's width, and on the height,
+  // which the page's column sizes from what it holds, the box's intrinsic size. Without containment the
+  // box is its content's size, which a builder must never be told.
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+    this: HTMLElement,
+  ) {
     const contained = this.style.getPropertyValue('contain') === 'size';
+    const intrinsic =
+      parseFloat(this.style.getPropertyValue('contain-intrinsic-size').split(' ')[1] ?? '0') || 0;
     const width = contained ? roomWidth : 17;
-    const height = contained ? 0 : 23;
-    return { width, height, top: 0, left: 0, right: width, bottom: height, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    const height = contained ? intrinsic : 23;
+    return {
+      width,
+      height,
+      top: 0,
+      left: 0,
+      right: width,
+      bottom: height,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect;
   });
 });
 
@@ -67,9 +84,13 @@ class Counter extends StatefulComponent {
   }
 
   build(): VisualNodeValue {
-    return new Pressable(new Text(`${this.label}: ${this.count}`, 'label'), () => this.setState(() => this.count++), {
-      label: `bump ${this.label}`,
-    }) as unknown as VisualNodeValue;
+    return new Pressable(
+      new Text(`${this.label}: ${this.count}`, 'label'),
+      () => this.setState(() => this.count++),
+      {
+        label: `bump ${this.label}`,
+      },
+    ) as unknown as VisualNodeValue;
   }
 }
 
@@ -115,7 +136,8 @@ async function press(label: string): Promise<void> {
   await nextFrame();
 }
 
-const builderBox = (container: HTMLElement) => container.querySelector<HTMLElement>('[data-eq-layout-builder]')!;
+const builderBox = (container: HTMLElement) =>
+  container.querySelector<HTMLElement>('[data-eq-layout-builder]')!;
 
 describe('a LayoutBuilder in the browser', () => {
   beforeEach(() => {
@@ -130,7 +152,12 @@ describe('a LayoutBuilder in the browser', () => {
 
     await settle();
 
-    expect(told[told.length - 1]).toMatchObject({ minWidth: 0, maxWidth: 600, minHeight: 0, maxHeight: Infinity });
+    expect(told[told.length - 1]).toMatchObject({
+      minWidth: 0,
+      maxWidth: 600,
+      minHeight: 0,
+      maxHeight: Infinity,
+    });
     expect(builderBox(container).textContent).toContain('side by side');
   });
 
@@ -146,6 +173,14 @@ describe('a LayoutBuilder in the browser', () => {
     expect(builderBox(container).textContent).toContain('stacked');
   });
 
+  it('is told zero for an axis its parent decides at zero, which Photon tells it too', async () => {
+    roomWidth = 0;
+    mount();
+    await settle();
+
+    expect(told[told.length - 1]).toMatchObject({ maxWidth: 0, maxHeight: Infinity });
+  });
+
   it('runs the builder again only when the room changes', async () => {
     mount();
     await settle();
@@ -155,6 +190,12 @@ describe('a LayoutBuilder in the browser', () => {
     await nextFrame();
 
     expect(told).toHaveLength(runs);
+  });
+
+  it('refuses a null builder where it is written, as the C# constructor does', () => {
+    expect(() => new LayoutBuilder(null as never)).toThrow(
+      "Value cannot be null. (Parameter 'builder')",
+    );
   });
 
   it('keeps its components when a component beside it builds alone (#1575)', async () => {

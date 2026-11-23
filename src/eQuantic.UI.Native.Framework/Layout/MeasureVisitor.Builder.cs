@@ -19,8 +19,17 @@ internal sealed partial class MeasureVisitor
     /// Runs the builder for the room the node has, unless the node and the room are the ones it last ran
     /// for, shows what it answered in the position's slot, which builds its components, and lays it out
     /// as a filling box's child. The slot is shown in every frame the node is measured in, built again or
-    /// not, because a slot no frame showed is taken out when that frame ends. A parent that measures the
-    /// node twice under two rooms builds twice, as Flutter's does.
+    /// not, because a slot no frame showed is taken out when that frame ends.
+    /// <para>
+    /// A parent may measure the node twice in one frame under two rooms: a box whose minimum or maximum
+    /// bites measures its child again at the size it settled on. Flutter lays out once and keeps the
+    /// result until something changes, so a builder there is told such a pair once; Photon lays the tree
+    /// out in every frame, so the pair would build two children in every frame, and the slot would take
+    /// one's components out and put the other's in, twice a frame, losing what they hold. So the room a
+    /// frame was first measured in, when a later measurement in the same frame built another child, is
+    /// remembered beside the room that child was built for, and the next frame measured in that first
+    /// room shows the child the last one settled on: built once for each room, and stable from then on.
+    /// </para>
     /// </summary>
     private LayoutNode MeasureBuilder(LayoutBuilder builder, LayoutConstraints constraints, LayoutContext ctx, Element? at)
     {
@@ -30,15 +39,32 @@ internal sealed partial class MeasureVisitor
                 + "layout, at the builder's own position.");
 
         var room = constraints.FillingRoom();
-        var child = holder.State is BuiltFor last && ReferenceEquals(last.Builder, builder) && last.Room == room
-            ? last.Child
-            : builder.Builder(room);
-        holder.State = new BuiltFor(builder, room, child);
-        holder.ShowDeferred(child);
-        return MeasureBox(builder, FillingBox, child, constraints, ctx, at);
+        var last = holder.State as BuiltFor;
+        var sameNode = last is not null && ReferenceEquals(last.Builder, builder);
+        // A context is made for each frame, so the one a measurement ran in says which frame it was.
+        var firstThisFrame = !sameNode || !ReferenceEquals(last!.Frame, ctx);
+        var firstRoom = firstThisFrame ? room : last!.FirstRoom;
+
+        BuiltFor now;
+        if (sameNode && (last!.Room == room || last.SettledFrom == room))
+            now = last with { Frame = ctx, FirstRoom = firstRoom };
+        else
+            now = new BuiltFor(builder, room, builder.Builder(room), ctx, firstRoom,
+                // Built by a later measurement of the frame: the first room is the one it settled from.
+                SettledFrom: firstThisFrame || firstRoom == room ? null : firstRoom);
+
+        holder.State = now;
+        holder.ShowDeferred(now.Child);
+        return MeasureBox(builder, FillingBox, now.Child, constraints, ctx, at);
     }
 
-    /// <summary>What a builder answered, for which node and which room: kept on the position, so the same
-    /// node in the same room is shown its child again rather than built again.</summary>
-    private sealed record BuiltFor(LayoutBuilder Builder, BoxConstraints Room, VisualNode Child);
+    /// <summary>
+    /// What a builder answered, for which node and which room, kept on the position so the same node in
+    /// the same room is shown its child again rather than built again. <see cref="Frame"/> and
+    /// <see cref="FirstRoom"/> are the frame it was last measured in and that frame's first room;
+    /// <see cref="SettledFrom"/> is the first room of the frame that built <see cref="Child"/> in a
+    /// later measurement, which shows the same child.
+    /// </summary>
+    private sealed record BuiltFor(LayoutBuilder Builder, BoxConstraints Room, VisualNode Child,
+        LayoutContext Frame, BoxConstraints FirstRoom, BoxConstraints? SettledFrom);
 }

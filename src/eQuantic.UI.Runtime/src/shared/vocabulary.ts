@@ -543,6 +543,12 @@ export class LayoutBuilder extends VisualNode {
     config?: EqConfig,
   ) {
     super();
+    // As the C# constructor refuses it, where it is written, and not in the commit that runs it.
+    if (builder == null)
+      throw exception(
+        'System.ArgumentNullException',
+        "Value cannot be null. (Parameter 'builder')",
+      );
     if (config) Object.assign(this, config);
   }
 }

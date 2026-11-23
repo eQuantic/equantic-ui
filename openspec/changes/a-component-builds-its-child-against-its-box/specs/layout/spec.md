@@ -31,6 +31,19 @@ the web SHALL hand the builder the same constraints for the same tree in the sam
 - **WHEN** a frame lays out a `LayoutBuilder` whose node and room are the ones its builder last ran for
 - **THEN** the builder does not run, and the child it built stays
 
+#### Scenario: A parent that measures the builder twice in a frame
+
+- **WHEN** a `ConstrainedBox` with a minimum width of 200 stands in a `Row` and holds a `LayoutBuilder`, so the
+  box first hands it an unbounded width and then, settled at its minimum, measures it again at 200, in every
+  frame
+- **THEN** the builder runs once for each of the two rooms, and from the second frame on the child the box
+  settled on stays, with its components mounted
+
+#### Scenario: A box its parent decides at zero
+
+- **WHEN** a `LayoutBuilder`'s box is given a width of zero by its parent
+- **THEN** its builder is handed a maximum width of zero, not an unbounded one, on both targets
+
 ### Requirement: The server writes a LayoutBuilder empty
 
 The server SHALL write a `LayoutBuilder` as the filling box with nothing in it, since it has no box to measure.

@@ -87,9 +87,11 @@ and built back"):
 - **The browser's first lowering** has no measurement either and writes the same empty box, so hydration
   adopts it. The node's state lives on its position (`node-states.ts`). The lowering marks the box as a
   builder to measure, and the pass's commit (`exitPass`) measures every marked box.
-- **The measurement** reads the box as if it held nothing: `contain: size` is set on it for one read of
+- **The measurement** reads the box as if it held nothing: `contain: size` is set on it for two reads of
   `getBoundingClientRect` and taken off. Under size containment, an axis the parent decides keeps its size,
-  and an axis sized by content comes out zero, which is read as unbounded. A `ResizeObserver` measures again
+  and an axis sized by content takes the box's `contain-intrinsic-size`. The two reads set two intrinsic
+  sizes: an axis that follows them is sized by content and read as unbounded, and one that does not is the
+  parent's, zero included, so a box decided at zero is told zero, as Photon tells it. A `ResizeObserver` measures again
   whenever the box changes size. A change of content changes only an axis sized by content, and that axis
   measures unbounded again, so content never feeds back into the constraints.
 - **When the measured constraints change**, the nearest component above the node is marked to build. The

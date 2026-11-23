@@ -5,10 +5,12 @@
  * The browser lays out after the runtime writes the DOM, so a builder cannot run inside that layout as
  * Photon's runs inside its own. It runs right after it, against the same room. The first lowering
  * writes the box empty, as the server does. The pass's commit measures each builder's box AS IF IT
- * HELD NOTHING: `contain: size` is set on it for one read and taken off. Under size containment an
- * axis the parent decides keeps its size, and an axis sized by content comes out zero, which is read
- * as unbounded: exactly the room Photon projects from its own constraints (`FillingRoom`). Content
- * therefore never feeds back into the constraints.
+ * HELD NOTHING: `contain: size` is set on it for two reads and taken off. Under size containment an
+ * axis the parent decides keeps its size, and an axis sized by content takes the box's
+ * `contain-intrinsic-size`, so the two reads give it two intrinsic sizes and an axis that follows them
+ * is sized by content, which is read as unbounded. One that does not is the parent's, zero included:
+ * exactly the room Photon projects from its own constraints (`FillingRoom`). Content therefore never
+ * feeds back into the constraints.
  *
  * When the measured room changes, the nearest component above the builder is marked to build. The
  * builder is that component's closure, so the render that follows patches that component, and its
@@ -56,7 +58,10 @@ export class LayoutBuilderState implements NodeState {
    * The child for `node` in the room last measured: the one built before when the node and the room are
    * the same, so a pass that lowers the builder again in the same room runs nothing (C# `BuiltFor`).
    */
-  childFor(node: object, builder: (room: BoxConstraints) => VisualNodeValue): VisualNodeValue | null {
+  childFor(
+    node: object,
+    builder: (room: BoxConstraints) => VisualNodeValue,
+  ): VisualNodeValue | null {
     const room = this.room;
     if (!room) return null;
     const last = this.built;
@@ -108,18 +113,41 @@ export class LayoutBuilderState implements NodeState {
 
 /**
  * The room `view` is given, read with nothing in it: size containment makes the box as large as its
- * parent decides on each axis, and zero on an axis sized by content, which is unbounded. Rounded as
- * the canvas rounds its box, then to single precision, since every bound of the C# value is a `float`.
+ * parent decides on each axis, and as large as its `contain-intrinsic-size` on an axis sized by
+ * content. Read at two intrinsic sizes, an axis that moves with them is unbounded, and one that does
+ * not is the parent's, zero included: a box its parent decides at zero is told zero, as Photon tells
+ * it. Rounded as the canvas rounds its box, then to single precision, since every bound of the C#
+ * value is a `float`.
  */
 export function roomOf(view: HTMLElement): BoxConstraints {
   const style = view.style;
-  const before = style.getPropertyValue('contain');
+  const before = {
+    contain: style.getPropertyValue('contain'),
+    intrinsic: style.getPropertyValue('contain-intrinsic-size'),
+  };
   style.setProperty('contain', 'size');
-  const box = view.getBoundingClientRect();
-  if (before) style.setProperty('contain', before);
-  else style.removeProperty('contain');
-  const extent = (length: number) => (length > 0 ? Math.fround(parseFloat(num(length))) : Infinity);
-  return new BoxConstraints(0, extent(box.width), 0, extent(box.height));
+  const at = (intrinsic: string) => {
+    style.setProperty('contain-intrinsic-size', intrinsic);
+    return view.getBoundingClientRect();
+  };
+  const none = at('0px 0px');
+  const some = at('1px 1px');
+  restore(style, 'contain', before.contain);
+  restore(style, 'contain-intrinsic-size', before.intrinsic);
+  const extent = (length: number, moved: boolean) =>
+    moved ? Infinity : Math.fround(parseFloat(num(length)));
+  return new BoxConstraints(
+    0,
+    extent(none.width, some.width !== none.width),
+    0,
+    extent(none.height, some.height !== none.height),
+  );
+}
+
+/** Puts back what an inline property was before a read changed it. */
+function restore(style: CSSStyleDeclaration, property: string, value: string): void {
+  if (value) style.setProperty(property, value);
+  else style.removeProperty(property);
 }
 
 /**
@@ -144,7 +172,10 @@ const declared = new Map<string, LayoutBuilderState>();
  * The state the builder at `position` keeps, declared as a box to measure after the pass. Answers the
  * id the lowering stamps on the box as `data-eq-layout-builder`. Called once per pass that lowers it.
  */
-export function declareLayoutBuilder(position: Position): { id: string; state: LayoutBuilderState } {
+export function declareLayoutBuilder(position: Position): {
+  id: string;
+  state: LayoutBuilderState;
+} {
   const state = nodeStateFor(position, LayoutBuilderState);
   state.position = position;
   state.renderPage = passInvalidator();

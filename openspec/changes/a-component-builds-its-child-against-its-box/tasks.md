@@ -10,6 +10,7 @@
 - [x] 2.1 `MeasureBox` takes the box's style and child; the `LayoutBuilder` door projects the constraints, builds when the node or the room changed, shows the slot every frame and measures the child as a filling box's
 - [x] 2.2 The fill readings (`FillsOf`, `DeclaredSizeKind`, the intrinsic fill height) and the intrinsic widths answer for the node; emit and semantics pass through
 - [x] 2.3 Check: layout tests on the engine (a fixed box, a column sized by content, a resize, the same room building nothing, a nested builder, components under the builder keeping their state across a rebuild), each failing without the behaviour it names
+- [x] 2.4 A parent that measures the builder twice in a frame (a box's minimum reflow) builds each room once, and the next frames show the child the first one settled on; checked by an engine test that fails without the memory of the pair
 
 ## 3. The web
 
@@ -20,8 +21,8 @@
 
 ## 4. Both targets, one answer
 
-- [ ] 4.1 A dashboard sample page whose card lays its fields out by the room it has
-- [ ] 4.2 Check: the e2e suite reads the constraints the builder was handed in Chromium at two widths, and a Photon test lays out the same tree at the same widths and asserts the same numbers
+- [x] 4.1 A dashboard sample page whose card lays its fields out by the room it has
+- [x] 4.2 Check: the e2e suite reads the constraints the builder was handed in Chromium at two widths, and a Photon test lays out the same tree at the same widths and asserts the same numbers
 
 ## 5. Docs
 

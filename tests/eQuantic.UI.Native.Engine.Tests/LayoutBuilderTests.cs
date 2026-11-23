@@ -64,6 +64,17 @@ public class LayoutBuilderTests
         told[^1].Should().Be(new BoxConstraints(0, 300, 0, 200));
     }
 
+    /// <summary>A width its parent decides at zero is a room of zero, not an unbounded one: the browser
+    /// reads the same box the same way (layout-builder.spec.ts).</summary>
+    [Fact]
+    public void ABuilderInABoxDecidedAtZero_IsToldZero()
+    {
+        var told = new List<BoxConstraints>();
+        Open(new Box(new BoxStyle { Width = 0, Height = 200 }, Telling(told)));
+
+        told[^1].Should().Be(new BoxConstraints(0, 0, 0, 200));
+    }
+
     /// <summary>The box the builder takes its room as fills both axes, so the node is the room it was
     /// told, whatever it built inside it: a text far smaller than the box changes nothing.</summary>
     [Fact]
@@ -212,6 +223,37 @@ public class LayoutBuilderTests
         told.Should().HaveCount(1, "the room and the node did not change");
     }
 
+    /// <summary>
+    /// A parent that measures the builder twice in a frame: in a row, a box with a minimum width hugs, so
+    /// the builder is first told an unbounded width, and the box, settling at its minimum, measures it again
+    /// at 200. Photon lays out in every frame, so without a memory of the pair it would build both children
+    /// in every frame and take the settled one's components out and put them back in each time. Each room
+    /// is built once, and from the second frame on the child the first frame settled on stays.
+    /// </summary>
+    [Fact]
+    public void ABuilderMeasuredTwiceAFrame_BuildsEachRoomOnce_AndKeepsTheChildItSettledOn()
+    {
+        var log = new List<string>();
+        var told = new List<BoxConstraints>();
+        var row = new Row();
+        row.Add(new eQuantic.UI.Components.ConstrainedBox(new BoxConstraints(minWidth: 200),
+            new LayoutBuilder(room =>
+            {
+                told.Add(room);
+                return room.MaxWidth >= 480 ? new Wide(log) : new Narrow(log);
+            })));
+        var host = Open(new Box(new BoxStyle { Width = 600, Height = 300 }, row), width: 800);
+        var afterFirstFrame = log.ToList();
+
+        LayoutNode root = null!;
+        for (var frame = 1; frame <= 3; frame++) root = Frame(host, frame * 16f);
+
+        told.Select(room => room.MaxWidth).Should().Equal(float.PositiveInfinity, 200);
+        log.Should().Equal(afterFirstFrame, "the settled child's components stay mounted");
+        log.Should().EndWith("narrow mounted");
+        Texts(root).Should().Equal("narrow");
+    }
+
     /// <summary>A held value applied: in a column 600 wide whose children stretch, a box loose at 320 by
     /// 480 is its maximum wide, the CSS rule a Box follows, and its child is laid out within it.</summary>
     [Fact]
@@ -252,5 +294,10 @@ public class LayoutBuilderTests
         told["narrow"].Should().Be(new BoxConstraints(0, 360, 0, 200));
         told["fill"].HasBoundedHeight.Should().BeFalse("the card sizes its height from what it holds");
         told["fill"].MaxWidth.Should().Be(1280, "the card fills the window's width, which no chrome narrows here");
+
+        // The e2e suite's narrower window: the filling card is told less than 480, so its parts stack.
+        Open(page, width: 420, height: 900);
+        told["fill"].MaxWidth.Should().Be(420);
+        told["fill"].HasBoundedHeight.Should().BeFalse();
     }
 }
