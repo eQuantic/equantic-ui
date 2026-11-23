@@ -326,15 +326,17 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
   if (leading === 'invalid') return FORMAT;
   if (leading === 'weekday') return { refused: 'weekday' };
   if (leading !== 'none') {
-    date = leading.date;
     const before = cursor.at;
     cursor.space();
     if (leading.yearFirst && (text[cursor.at] === 'T' || text[cursor.at] === 't')) {
       // In another calendar, a date the Gregorian one does not count is no ISO date.
       if (shapes.calendar !== GREGORIAN) return FORMAT;
       cursor.at++;
-      return readIso(cursor, date);
+      return readIso(cursor, leading.date);
     }
+    // Numbers that name no date are one only before an ISO clock, which refuses them in other words.
+    if (leading.date === null) return FORMAT;
+    date = leading.date;
     cursor.at = before;
   }
 
@@ -365,6 +367,7 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
     if (trailing === 'invalid') return FORMAT;
     if (trailing === 'weekday') return { refused: 'weekday' };
     if (trailing === 'none') cursor.at = before;
+    else if (trailing.date === null) return FORMAT;
     else {
       date = trailing.date;
       if (zone === null) {
@@ -419,7 +422,7 @@ function readIsoFirst(text: string, shapes: Shapes): Moment | Refusal | null {
  * digits each and seconds of two, joined by colons with white space allowed beside them, a fraction
  * after the seconds, then a zone. No designator, and nothing after: what is left is the plain refusal.
  */
-function readIso(cursor: Cursor, date: ReadDate): Moment | Refusal {
+function readIso(cursor: Cursor, date: ReadDate | null): Moment | Refusal {
   const two = (): number | null => {
     cursor.space();
     const digits = cursor.digits();
@@ -458,7 +461,9 @@ function readIso(cursor: Cursor, date: ReadDate): Moment | Refusal {
   if (zone !== null && typeof zone === 'object') return zone;
   cursor.space();
   if (!cursor.done) return FORMAT;
-  if (hour > 23 || minute > 59 || second > 59) return { refused: 'clock' };
+  // The date and the clock are checked together once the text is read, as .NET's `ParseISO8601` checks them:
+  // a day that does not exist is refused as a clock that does not exist is, in the calendar's words (#1616).
+  if (date === null || hour > 23 || minute > 59 || second > 59) return { refused: 'clock' };
   return { date, clock: { hour, minute, second, fraction }, zone };
 }
 
@@ -494,11 +499,12 @@ function readDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
     weekday = cursor.name(shapes.days);
     if (weekday === null) cursor.at = after;
   }
-  return weekday !== null && weekdayOf(read.date) !== weekday ? 'weekday' : read;
+  return weekday !== null && read.date !== null && weekdayOf(read.date) !== weekday ? 'weekday' : read;
 }
 
-/** A date as a reader of one answers it. */
-type ReadingOfADate = { date: ReadDate; yearFirst: boolean } | 'none' | 'invalid' | 'weekday';
+/** A date as a reader of one answers it: its date, or null for year-first numbers that name none, which only
+ * the ISO form reads on (#1616). */
+type ReadingOfADate = { date: ReadDate | null; yearFirst: boolean } | 'none' | 'invalid' | 'weekday';
 
 /** The day of the week of a date, as `System.DayOfWeek` counts. */
 function weekdayOf({ year, month, day }: ReadDate): number {
@@ -655,7 +661,10 @@ function readNumericDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
   if (parts.some((part) => part.length > 8)) return 'invalid';
   endOfDate(cursor, shapes);
   const date = parts.length === 2 ? dateOfTwo(parts, shapes) : dateOf(parts, shapes);
-  return date === null ? 'invalid' : { date, yearFirst: looksLikeYear(parts[0]) };
+  // Year-first numbers that name no date (`2024-02-30`) are kept as such: before a `T` they are the ISO
+  // form, which .NET reads through before it refuses the day (#1616).
+  if (date === null) return looksLikeYear(parts[0]) ? { date: null, yearFirst: true } : 'invalid';
+  return { date, yearFirst: looksLikeYear(parts[0]) };
 }
 
 /** Two numbers, as .NET's `GetDayOfNN` and `GetDayOfYN` read them. */
