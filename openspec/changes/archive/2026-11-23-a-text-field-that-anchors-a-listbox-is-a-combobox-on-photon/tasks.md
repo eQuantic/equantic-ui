@@ -15,6 +15,11 @@
 - [x] 2.2 The option is the row `ActiveIndex` counts to over the item rows in tree order, read from the layer's layout; a closed list or no active row says nothing
 - [x] 2.3 Check: the announcement comes from the field as the keyboard moves, again when the list opens or the keyboard comes back, never from the option marked selected; the tests fail without the change and with the selected option in place of the active row
 
-## 3. Documentation
+## 3. Where a person listens to it
 
-- [x] 3.1 One entry under `docs/ledger/`
+- [x] 3.1 The desktop gallery's editor lists what its snippet names (`SpecimenSymbols`, the sample's own C#), so ⇧⌘O shows the field and its list on Photon; the README's gallery pictures retaken, unchanged
+- [x] 3.2 Check: the code editor's own go-to on a Photon host, driven by ⇧⌘O and the arrows, is the editable combobox and announces each row from the field
+
+## 4. Documentation
+
+- [x] 4.1 One entry under `docs/ledger/`

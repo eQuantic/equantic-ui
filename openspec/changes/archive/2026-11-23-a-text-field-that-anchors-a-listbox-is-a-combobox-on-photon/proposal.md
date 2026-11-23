@@ -36,6 +36,8 @@ A developer writes nothing different. The public surface gains one enum member,
 - `eQuantic.UI.Native.Components`: the semantics walk and its merge, the native role table, the realizer's overlay
   pass and the live region announcer (a mark can be said from a position other than the one that keeps it).
 - `eQuantic.UI.Testing`: the announced tree and `EnterText`.
+- `samples/PhotonDesktop`: the gallery's editor gets a symbol provider written in the sample's own C#, so the
+  field and its list can be heard on a Mac; no SDK ships one.
 - The shells: none changed. macOS and iOS post the announcement as they post every live region's. Android finds
   the field's node and reports a change from it, but TalkBack reads a change only from a live region's node, and
   the field's node carries its own text, so on Android the option is not heard yet: a follow-up, which needs a
