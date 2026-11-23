@@ -1,4 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { StatefulComponent } from '../core/component';
+import { WebCamera, type CameraSessionValue } from './devices/camera';
+import { CameraPreview } from './vocabulary';
+import type { VisualNodeValue } from './nodes';
 import { lowerVisualNode } from './lowering';
 import type { LoweringContext } from './lowering';
 import { photonTheme } from './design-system.generated';
@@ -31,5 +35,74 @@ describe('cameraPreview lowering (C# cross-pin)', () => {
     expect(html.attributes['data-eq-camera']).toBe('cam-1');
     expect(html.attributes['autoplay']).toBe('');
     expect(html.attributes['muted']).toBe('');
+  });
+});
+
+/**
+ * A preview a page's render shows gets its stream in that render (#1830). The streams attached at the end of a
+ * pass, before the render manager wrote the tree it produced, so the preview's <video> was not in the document
+ * yet and played nothing until some later pass came. They now attach in the microtask after the write, with the
+ * focus traps (shared/after-write.ts).
+ */
+describe('a camera preview a render shows', () => {
+  const nextFrame = () =>
+    new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+  class Viewfinder extends StatefulComponent {
+    session: CameraSessionValue | null = null;
+
+    show(session: CameraSessionValue | null): void {
+      this.setState(() => (this.session = session));
+    }
+
+    build(): VisualNodeValue {
+      return new CameraPreview(this.session, 320, 240) as unknown as VisualNodeValue;
+    }
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  // jsdom checks a srcObject against a MediaStream it does not implement: the property is a plain slot here.
+  const srcObject = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'srcObject');
+  const slots = new WeakMap<HTMLMediaElement, unknown>();
+
+  beforeEach(() => {
+    Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
+      configurable: true,
+      get(this: HTMLMediaElement) {
+        return slots.get(this) ?? null;
+      },
+      set(this: HTMLMediaElement, value: unknown) {
+        slots.set(this, value);
+      },
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    if (srcObject) Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', srcObject);
+  });
+
+  it('plays its stream with no later pass', async () => {
+    const stream = { getTracks: () => [] } as unknown as MediaStream;
+    vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: () => Promise.resolve(stream) } });
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(() => Promise.resolve());
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const page = new Viewfinder();
+    page.mount(host);
+    await nextFrame();
+
+    const session = await new WebCamera().startPreviewAsync();
+    page.show(session);
+    await nextFrame();
+
+    const video = host.querySelector('video[data-eq-camera]') as HTMLVideoElement | null;
+    expect(video, 'the render wrote the preview').not.toBeNull();
+    expect(video!.srcObject, 'the stream attached to the video the render wrote').toBe(stream);
+    session!.dispose();
   });
 });
