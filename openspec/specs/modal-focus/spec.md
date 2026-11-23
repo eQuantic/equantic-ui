@@ -92,6 +92,11 @@ When the layer closes, whatever closed it, the focus SHALL go back to that contr
 is gone, the focus SHALL go to the control that now stands at its place among those Tab reaches beneath
 the layer. Beneath a modal layer that stays open, that place SHALL be inside that layer.
 
+On the web, a control inside an adaptive arm the window hides SHALL count as gone. A layer that closes while
+the focus is on a control outside every layer closing in that pass SHALL leave the focus there. Of layers that
+close together, the focus SHALL be given back from the first in the document whose recorded control is on
+screen, and from the first of all when none is.
+
 A menu's item SHALL leave the keyboard where it is when it is pressed, so a layer an item opens records
 the control that had the focus before: the menu's trigger, which keeps it while the menu shows.
 
@@ -137,3 +142,15 @@ the control that had the focus before: the menu's trigger, which keeps it while 
 
 - **WHEN** a page's render opens a confirm in the browser, and no later pass comes
 - **THEN** the confirm is trapped and holds the focus, and its Cancel gives the focus back to the opener
+
+#### Scenario: A hidden drawer that closes
+
+- **WHEN** a drawer opened from the compact arm's menu is open at 1024, the user focuses a control of the wide
+  arm, and the drawer closes
+- **THEN** the focus stays on that control
+
+#### Scenario: A hidden drawer and a dialog on screen closing together
+
+- **WHEN** a drawer opened at 700 stays open in the compact arm, the window widens to 1024, a dialog opens from
+  the wide arm's second control, and one pass closes both
+- **THEN** the focus is on the wide arm's second control, not at the place of the hidden menu
