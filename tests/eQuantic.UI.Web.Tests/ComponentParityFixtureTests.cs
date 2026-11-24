@@ -99,6 +99,22 @@ public class ComponentParityFixtureTests
             Transition = new TransitionSpec(StyleChannels.Colors),
             Hover = new StyleDiff { Transform = Transform2D.Translate(0, -2) },
         }), _ => { }) { Axis = DragAxis.Horizontal, Min = -80, Max = 0, RestOffset = -80 }, NoPresses),
+        // What only the SDK draws or hears follows the direction (#1569), each under a right to left page and
+        // each written the same on both producers: a glyph that matches the direction turns through the
+        // sign the nearest [dir] sets, and one that does not is drawn as before; a horizontal rest is
+        // written toward the END through the same sign, in pixels and normalized, and a vertical one is not.
+        ("icon-matching-glyph-rtl", new Directionality(TextDirection.RightToLeft, new Icon(Icons.ChevronLeft)), NoPresses),
+        ("icon-pack-glyph-rtl", new Directionality(TextDirection.RightToLeft,
+            new Icon(new IconGlyph("arrowLeft", "M19 12H5m7-7-7 7 7 7", IconGlyphStyle.Stroke))), NoPresses),
+        ("draggable-rest-px-rtl", new Directionality(TextDirection.RightToLeft,
+            new Draggable(new Box(new BoxStyle { Width = 40, Height = 40, Background = Theme.Surface }), _ => { })
+            { Axis = DragAxis.Horizontal, Min = -96, Max = 0, RestOffset = -96 }), NoPresses),
+        ("draggable-rest-normalized-rtl", new Directionality(TextDirection.RightToLeft,
+            new Draggable(new Box(new BoxStyle { Width = 40, Height = 40, Background = Theme.Surface }), _ => { })
+            { Axis = DragAxis.Horizontal, Min = 0, Max = 1, RestOffset = 0.25f, Normalized = true }), NoPresses),
+        ("draggable-rest-vertical-rtl", new Directionality(TextDirection.RightToLeft,
+            new Draggable(new Box(new BoxStyle { Width = 40, Height = 40, Background = Theme.Surface }), _ => { })
+            { Axis = DragAxis.Vertical, Min = 0, Max = 100, RestOffset = 40 }), NoPresses),
         // A drop area over a box that fills across: the same transparent div on both producers, the
         // fill passed through, and the four drag events declared by the server and attached by the client.
         ("drop-target", new DropTarget(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), _ => { }), NoPresses),

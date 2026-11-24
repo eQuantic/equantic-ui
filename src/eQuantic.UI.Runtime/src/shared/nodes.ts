@@ -1150,6 +1150,8 @@ export interface IconGlyphValue {
   style?: string;
   viewBox?: string;
   strokeWidth?: number;
+  /** C# `IconGlyph.MatchTextDirection`: the glyph is drawn mirrored where its element reads right to left. */
+  matchTextDirection?: boolean;
 }
 
 export interface IconNode extends VisualNodeValue {

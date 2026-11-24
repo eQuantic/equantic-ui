@@ -1,0 +1,9 @@
+#nullable enable
+*REMOVED*eQuantic.UI.Primitives.IconGlyph.Deconstruct(out string! Name, out string! Path, out eQuantic.UI.Primitives.IconGlyphStyle Style, out string! ViewBox, out float StrokeWidth) -> void
+*REMOVED*eQuantic.UI.Primitives.IconGlyph.IconGlyph(string! Name, string! Path, eQuantic.UI.Primitives.IconGlyphStyle Style = eQuantic.UI.Primitives.IconGlyphStyle.Fill, string! ViewBox = "0 0 24 24", float StrokeWidth = 2) -> void
+*REMOVED*static eQuantic.UI.Primitives.NavigableKeys.Move(string! key, bool shift) -> eQuantic.UI.Primitives.NavigableMove?
+eQuantic.UI.Primitives.IconGlyph.Deconstruct(out string! Name, out string! Path, out eQuantic.UI.Primitives.IconGlyphStyle Style, out string! ViewBox, out float StrokeWidth, out bool MatchTextDirection) -> void
+eQuantic.UI.Primitives.IconGlyph.IconGlyph(string! Name, string! Path, eQuantic.UI.Primitives.IconGlyphStyle Style = eQuantic.UI.Primitives.IconGlyphStyle.Fill, string! ViewBox = "0 0 24 24", float StrokeWidth = 2, bool MatchTextDirection = false) -> void
+eQuantic.UI.Primitives.IconGlyph.MatchTextDirection.get -> bool
+eQuantic.UI.Primitives.IconGlyph.MatchTextDirection.init -> void
+static eQuantic.UI.Primitives.NavigableKeys.Move(string! key, bool shift, eQuantic.UI.Primitives.TextDirection direction) -> eQuantic.UI.Primitives.NavigableMove?

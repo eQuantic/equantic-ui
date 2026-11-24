@@ -14,13 +14,22 @@ public enum IconGlyphStyle : byte
 /// <c>&lt;svg&gt;&lt;path&gt;</c>, the native glyph atlas (W4) rasterizes the same data. Icon PACKS
 /// (Lucide, Heroicons, …) are catalogs of these referencing ONLY Primitives, so one authored tree
 /// carries any pack glyph to both targets.
+/// <para>
+/// <paramref name="MatchTextDirection"/> is Flutter's <c>IconData.matchTextDirection</c>: the glyph
+/// points ALONG the reading (a back chevron, a "next" arrow), so it is drawn mirrored wherever its
+/// element reads right to left. The web draws it through <c>--eq-inline</c>, so it follows the
+/// direction where it sits, a <c>dir="ltr"</c> surface included, and a culture switch with no new
+/// build. Photon draws every glyph as it is, because it lays out left to right for 1.0. A glyph an
+/// author means as a direction in the PICTURE (a play button, a compass needle) leaves it off.
+/// </para>
 /// </summary>
 public readonly record struct IconGlyph(
     string Name,
     string Path,
     IconGlyphStyle Style = IconGlyphStyle.Fill,
     string ViewBox = "0 0 24 24",
-    float StrokeWidth = 2)
+    float StrokeWidth = 2,
+    bool MatchTextDirection = false)
 {
     /// <summary>
     /// A CURATED glyph is a glyph, so <c>Icon(Icons.Search)</c> needs no second constructor to say
@@ -39,7 +48,10 @@ public readonly record struct IconGlyph(
 }
 
 /// <summary>The curated glyph set behind the <see cref="Icons"/> enum (spec A10) — 24×24 single-path
-/// alpha masks. The web registry and the generated TS catalog both derive from HERE.</summary>
+/// alpha masks. The web registry and the generated TS catalog both derive from HERE. The sideways
+/// glyphs of the set (<see cref="Icons.ChevronLeft"/> and <see cref="Icons.ChevronRight"/>) match the
+/// text direction; <see cref="Icons.Play"/> is media and keeps its direction, as Flutter's
+/// <c>play_arrow</c> does.</summary>
 public static class CuratedIcons
 {
     public static IconGlyph Resolve(Icons glyph) => glyph switch
@@ -54,8 +66,8 @@ public static class CuratedIcons
         Icons.Warning => new IconGlyph("warning", "M1 21h22L12 2zm12-3h-2v-2h2zm0-4h-2v-4h2z"),
         Icons.Error => new IconGlyph("error", "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m1 15h-2v-2h2zm0-4h-2V7h2z"),
         Icons.Person => new IconGlyph("person", "M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4"),
-        Icons.ChevronLeft => new IconGlyph("chevronLeft", "M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"),
-        Icons.ChevronRight => new IconGlyph("chevronRight", "M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"),
+        Icons.ChevronLeft => new IconGlyph("chevronLeft", "M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z", MatchTextDirection: true),
+        Icons.ChevronRight => new IconGlyph("chevronRight", "M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z", MatchTextDirection: true),
         Icons.ChevronUp => new IconGlyph("chevronUp", "m12 8-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14z"),
         Icons.ChevronDown => new IconGlyph("chevronDown", "m16.59 8.59-4.59 4.58-4.59-4.58L6 10l6 6 6-6z"),
         Icons.Plus => new IconGlyph("plus", "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"),

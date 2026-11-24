@@ -133,6 +133,8 @@ internal sealed partial class WebLoweringVisitor
     private HtmlElement LowerSheetSurface(
         SheetSurface sheet, bool? horizontalAxis)
     {
+        // The host writes dir="ltr" on itself below, so everything it holds is read left to right.
+        using var reading = ReadAs(TextDirection.LeftToRight);
         // No role of its own (#1081): the table it holds is the grid a reader walks, and the door is the
         // field that takes the sheet's keys, named as the sheet is.
         var sheetFills = Fills(sheet.Child);
@@ -259,6 +261,8 @@ internal sealed partial class WebLoweringVisitor
     /// </summary>
     private HtmlElement LowerCodeSurface(CodeSurface surface)
     {
+        // The host writes dir="ltr" on itself below, so everything it holds is read left to right.
+        using var reading = ReadAs(TextDirection.LeftToRight);
         var element = new RealizedElement("div")
         {
             ClassName = "eq-code-surface",

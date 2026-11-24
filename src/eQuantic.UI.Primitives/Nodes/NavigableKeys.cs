@@ -35,10 +35,26 @@ namespace eQuantic.UI.Primitives;
 [ServerOnly]
 public static class NavigableKeys
 {
-    public static NavigableMove? Move(string key, bool shift) => key switch
+    /// <summary>
+    /// The move <paramref name="key"/> means to a composite that reads in <paramref name="direction"/>,
+    /// or null for a key the composite does not claim.
+    /// <para>
+    /// The horizontal arrows are the NEXT and the PREVIOUS item along the reading, so what ArrowLeft
+    /// means depends on the direction: <see cref="NavigableMove.PreviousItem"/> where it reads left to
+    /// right and <see cref="NavigableMove.NextItem"/> where it reads right to left, and ArrowRight the
+    /// other way round. Every other key means the same in both: ArrowUp and ArrowDown are rows, the page
+    /// keys are pages and sections, and Home and End are the row's start and end.
+    /// </para>
+    /// <para>
+    /// A realizer that lays out left to right whatever the culture says (Photon, for 1.0) passes
+    /// <see cref="TextDirection.LeftToRight"/>, which is what its physical keys already are; the
+    /// day it mirrors, it passes its own direction and nothing else moves.
+    /// </para>
+    /// </summary>
+    public static NavigableMove? Move(string key, bool shift, TextDirection direction) => key switch
     {
-        "ArrowLeft" => NavigableMove.PreviousItem,
-        "ArrowRight" => NavigableMove.NextItem,
+        "ArrowLeft" => direction == TextDirection.RightToLeft ? NavigableMove.NextItem : NavigableMove.PreviousItem,
+        "ArrowRight" => direction == TextDirection.RightToLeft ? NavigableMove.PreviousItem : NavigableMove.NextItem,
         "ArrowUp" => NavigableMove.PreviousRow,
         "ArrowDown" => NavigableMove.NextRow,
         "PageUp" => shift ? NavigableMove.PreviousSection : NavigableMove.PreviousPage,

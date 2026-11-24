@@ -3704,9 +3704,15 @@ public sealed partial class PhotonHost
         // Nothing dispatched here at all before the rows laid out (#248): Navigable.OnMove was wired
         // on one target, so a calendar on Photon was a grid you could not walk. A key the grid does
         // not claim answers null and travels on, so Tab and Escape still belong to the page.
+        //
+        // LEFT TO RIGHT, whatever the culture says: Photon lays out left to right for 1.0 (the direction
+        // is read and not yet mirrored), so ArrowRight points the way the next item is drawn, which is
+        // what this table answers for that direction. The day Photon mirrors, it passes its own direction
+        // here and nothing else moves; until then a culture that reads right to left must not turn the
+        // keys of a layout that did not turn (#1569).
         if (modifiers is KeyModifiers.None or KeyModifiers.Shift
             && _focusedId != 0
-            && NavigableKeys.Move(key, modifiers.HasFlag(KeyModifiers.Shift)) is { } move
+            && NavigableKeys.Move(key, modifiers.HasFlag(KeyModifiers.Shift), TextDirection.LeftToRight) is { } move
             && _lastFrame?.FocusStops is { } gridStops)
         {
             for (var i = 0; i < gridStops.Count; i++)

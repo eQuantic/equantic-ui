@@ -13,7 +13,7 @@ import type { NodeKind } from './node-kinds.generated';
 import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue, TextDirectionValue, TextEntryKindValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
 import type { AppTheme, ContextRequest, PointerEvent } from './value-types';
-import { iconPaths } from './icons.generated';
+import { iconPaths, iconsMatchingTextDirection } from './icons.generated';
 import { exception } from '../utils/exceptions';
 import type {
   BoxStyleValue,
@@ -1495,7 +1495,7 @@ interface TransitionSpecConfig {
  */
 export const CuratedIcons = {
   resolve(glyph: string): IconGlyph {
-    return new IconGlyph(glyph, iconPaths[glyph] ?? '');
+    return new IconGlyph(glyph, iconPaths[glyph] ?? '', 'fill', '0 0 24 24', 2, iconsMatchingTextDirection.has(glyph));
   },
 };
 
@@ -1993,6 +1993,9 @@ export class IconGlyph {
   style: string;
   viewBox: string;
   strokeWidth: number;
+  /** C# `IconGlyph.MatchTextDirection` (Flutter's `IconData.matchTextDirection`): drawn mirrored where
+   * its element reads right to left. */
+  matchTextDirection: boolean;
 
   constructor(
     name: string,
@@ -2000,6 +2003,7 @@ export class IconGlyph {
     style = 'fill',
     viewBox = '0 0 24 24',
     strokeWidth = 2,
+    matchTextDirection = false,
     config?: EqConfig,
   ) {
     this.name = name;
@@ -2007,6 +2011,7 @@ export class IconGlyph {
     this.style = style;
     this.viewBox = viewBox;
     this.strokeWidth = strokeWidth;
+    this.matchTextDirection = matchTextDirection;
     if (config) Object.assign(this, config);
   }
 

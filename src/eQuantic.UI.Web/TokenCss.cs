@@ -200,7 +200,17 @@ public static class TokenCss
     public static string? Shift(float x, float y) =>
         x == 0 && y == 0
             ? null
-            : $"translate({(x == 0 ? "0" : $"calc(var(--eq-inline, 1) * {Percent(x)})")}, {(y == 0 ? "0" : Percent(y))})";
+            : $"translate({(x == 0 ? "0" : TowardEnd(Percent(x)))}, {(y == 0 ? "0" : Percent(y))})";
+
+    /// <summary>
+    /// A horizontal length measured toward the END of the direction where its element sits:
+    /// <c>calc(var(--eq-inline, 1) * 25%)</c>. The token sheet sets <c>--eq-inline</c> to 1 under
+    /// <c>ltr</c> and -1 under <c>rtl</c> (<see cref="ThemeStylesheet"/>), so the same string is
+    /// "toward the right" in one and "toward the left" in the other, and follows a direction that
+    /// changes with no lowering again. A shift (<see cref="Shift"/>) and a draggable's horizontal rest
+    /// both write through it; the TS <c>towardEnd()</c> twin writes the same string.
+    /// </summary>
+    internal static string TowardEnd(string length) => $"calc(var(--eq-inline, 1) * {length})";
 
     /// <summary>A bare invariant number ("0.####") — opacity, aspect-ratio, scale factors.</summary>
     public static string Number(float value) => value.ToString("0.####", CultureInfo.InvariantCulture);
