@@ -35,8 +35,14 @@ function weekdays(style: 'short' | 'long'): string[] {
   return Array.from({ length: 7 }, (_, index) => format.format(new Date(SUNDAY + index * DAY)));
 }
 
+/** The Gregorian months' names: a culture whose data did not travel counts the Gregorian calendar
+ * (`CultureCalendar`), where `Intl` names the locale's own calendar's months, Dey for January in fa-IR. */
 function months(style: 'short' | 'long'): string[] {
-  const format = new Intl.DateTimeFormat(formatLocale(), { month: style, timeZone: 'UTC' });
+  const format = new Intl.DateTimeFormat(formatLocale(), {
+    month: style,
+    timeZone: 'UTC',
+    calendar: 'gregory',
+  });
   return Array.from({ length: 12 }, (_, index) =>
     format.format(new Date(Date.UTC(2026, index, 15))),
   );

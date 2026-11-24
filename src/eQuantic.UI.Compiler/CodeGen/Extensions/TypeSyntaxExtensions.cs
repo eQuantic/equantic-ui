@@ -24,6 +24,16 @@ internal static class TypeSyntaxExtensions
             declaration.Identifier.ValueText);
 
     /// <summary>
+    /// The type parameters a declared type's twin declares, each a legal JS identifier: what the class header of its
+    /// module writes after the name, in TypeScript. The one list every kind of class reads, a component's, a plain
+    /// class's, a static helper's, a record's and a struct's. Only the component path wrote it once, so a plain generic
+    /// class named <c>T</c> in its members while its class declared none, which the runtime's <c>tsc</c> refuses
+    /// (#1845).
+    /// </summary>
+    internal static IReadOnlyList<string> TwinTypeParameters(this TypeDeclarationSyntax declaration) =>
+        declaration.TypeParameterList?.Parameters.Select(parameter => parameter.Identifier.ValueText.ToJsIdentifier()).ToList() ?? [];
+
+    /// <summary>
     /// Without a model, an alias the file declares (<c>using UiBase = …StatelessComponent;</c>) is
     /// read through its directive, from the innermost namespace out to the file, the order C# looks
     /// in. Its own name is no twin's, and <c>extends UiBase</c> named a class no import brings. A

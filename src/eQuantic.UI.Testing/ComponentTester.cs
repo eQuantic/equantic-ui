@@ -176,13 +176,14 @@ public sealed class ComponentTester : IDisposable
     /// <summary>
     /// Types <paramref name="text"/> into the text field a screen reader announces as
     /// <paramref name="name"/>, replacing what it held: its change callback runs with the whole text,
-    /// as the browser's input handler calls it. Draws nothing; call <see cref="Pump()"/> to see it.
+    /// as the browser's input handler calls it. A field a list hangs from, the editable combobox, is
+    /// typed into the same way. Draws nothing; call <see cref="Pump()"/> to see it.
     /// </summary>
     public void EnterText(string name, string text)
     {
         ArgumentNullException.ThrowIfNull(text);
         var (announcement, _) = Locate(name, "text field",
-            (stop, _) => stop.Role is SemanticRole.TextField or SemanticRole.CodeField);
+            (stop, _) => stop.Role is SemanticRole.TextField or SemanticRole.CodeField or SemanticRole.EditableComboBox);
         if (announcement.Disabled) throw new InvalidOperationException($"{announcement} takes no text.");
 
         // The server's lowering carries no input handler (the runtime binds one), so the field is

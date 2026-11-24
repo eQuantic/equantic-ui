@@ -320,7 +320,7 @@ public class ComponentParser
                 SyntaxTree = tree,
                 ClassSyntax = classDecl,
                 Namespace = ns ?? "",
-                TypeParameters = classDecl.TypeParameterList?.Parameters.Select(p => p.Identifier.ValueText.ToJsIdentifier()).ToList() ?? new List<string>(),
+                TypeParameters = classDecl.TwinTypeParameters().ToList(),
                 IsAbstract = classDecl.Modifiers.Any(SyntaxKind.AbstractKeyword),
                 BaseClassName = baseType,
             };
@@ -741,34 +741,17 @@ public class ComponentParser
         }
     }
 
+    /// <summary>
+    /// An <c>HtmlElement</c> subclass's members. Its constructors are read by <see cref="ParseConstructors"/>, the
+    /// component path's: the primitive path kept a reader of its own that stored no constructor's syntax, so no
+    /// body ran, no parameter kept its default and a primary constructor was not read at all (#1837). The rest of
+    /// its members still take the primitive path's own way (#1540, #1541), and the direction that closes them is
+    /// every member parser of the component path.
+    /// </summary>
     private void ParsePrimitiveClass(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
         ParseMethods(classDecl, definition);
-
-        // Extract constructors, a static one excepted: it is the type initializer's.
-        var constructors = InstanceConstructors(classDecl);
-
-        foreach (var ctor in constructors)
-        {
-            var ctorDef = new MethodDefinition
-            {
-                Name = ctor.Identifier.ValueText,
-                ReturnType = "void",
-                Body = ctor.Body?.ToString() ?? ctor.ExpressionBody?.Expression.ToString() ?? "",
-                SyntaxNode = null // Marker for constructor helper
-            };
-
-            foreach (var param in ctor.ParameterList.Parameters)
-            {
-                ctorDef.Parameters.Add(new ParameterDefinition
-                {
-                    Name = param.Identifier.ValueText,
-                    Type = param.Type?.ValueText() ?? "object"
-                });
-            }
-
-            definition.Constructors.Add(ctorDef);
-        }
+        ParseConstructors(classDecl, definition);
     }
 
     /// <summary>The constructors that build an instance: every one the class declares but a static
