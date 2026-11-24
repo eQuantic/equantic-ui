@@ -29,6 +29,8 @@ import { installSortableController } from '../dom/sortable';
 import { dropHandlers, installDropGuard } from '../dom/file-drop';
 import { installContextController } from '../dom/context-request';
 import { installPointerListener } from '../dom/pointer-listener';
+import { installGestureArena, type GestureRequest } from '../dom/gesture-arena';
+import type { GestureRecognizerFactory } from './components/GestureRecognizerFactory';
 import { MOUNTED_HOOK, clickWithEvent } from '../dom/reconciler';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import {
@@ -6079,8 +6081,10 @@ function lowerListener(node: ListenerNode, context: LoweringContext, path: strin
 
 /**
  * Gestures of the app's own over a subtree (#1563, the C# LowerRawGestureDetector twin): the same layout-transparent
- * div as a listener, the child's box being its box. The arena's controller is not wired on the web yet, so the
- * detector recognizes nothing and its child presses, drags and scrolls as it would without it.
+ * div as a listener, marked with its behaviour as a listener is, so the browser's hit test reads it by the same
+ * rule, and marked `data-eq-gestures` for the arena's controller (dom/gesture-arena.ts). The controller asks it for
+ * its factories with `eq-gestures` before its recognizers hear anything, and this handler, which every build
+ * replaces, answers with the ones the latest build wrote.
  */
 function lowerRawGestureDetector(node: RawGestureDetectorNode, context: LoweringContext, path: string): HtmlNode {
   const fill = fills(node.child);
@@ -6088,8 +6092,17 @@ function lowerRawGestureDetector(node: RawGestureDetectorNode, context: Lowering
   const host = element('div', {
     width: fill.width ? '100%' : undefined,
     'max-width': sizeValue(cap),
+    'pointer-events': 'auto',
     height: fill.height ? '100%' : undefined,
   });
+  host.attributes['data-eq-listener'] =
+    node.behavior === 'opaque' ? 'opaque' : node.behavior === 'translucent' ? 'translucent' : 'defer';
+  host.attributes['data-eq-gestures'] = '';
+  const gestures = node.gestures ?? [];
+  host.events['eq-gestures'] = ((ev: Event) => {
+    (ev as CustomEvent<GestureRequest>).detail.gestures = gestures as readonly GestureRecognizerFactory[];
+  }) as unknown as EventHandler;
+  installGestureArena();
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;
