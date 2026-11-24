@@ -2,7 +2,8 @@
 
 - [x] 1.1 `EmittedArena` among the emission shapes, refused by the runtime's `tsc` on main (TS18046)
 - [x] 1.2 The scanner declares an `out var` of a named type by that type, definitely assigned, where a statement writer has a context
-- [x] 1.3 `OutArgument.Missed` writes a null miss as `null!` in TypeScript, and a `TryParse`'s landed read is asserted
+- [x] 1.3 A list or an array of a named item is declared as its array (`LocalDeclarationStrategy.ListType`)
+- [x] 1.4 `OutArgument.Missed` writes a null miss as `null!` in TypeScript, and a `TryParse`'s landed read is asserted
 
 ## 2. An internal enum has its union (#1859)
 

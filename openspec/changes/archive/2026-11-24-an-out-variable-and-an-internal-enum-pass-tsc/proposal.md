@@ -21,8 +21,9 @@ For a developer using the SDK nothing they write changes, and no module's JavaSc
 app's modules are TypeScript the runtime's `tsc` takes in these shapes.
 
 - **An `out var` of a named type is declared by that type** in TypeScript: `let arena!: GestureArenaPointer;`, definitely
-  assigned since the call that declares it assigns it inside an arrow. A primitive's or a generic's stays `any`, as
-  before.
+  assigned since the call that declares it assigns it inside an arrow. A list or an array of a named item is declared as
+  its array (`let routed!: GestureRecognizer[];`, `LocalDeclarationStrategy.ListType`, the rule a local's empty list
+  reads). Any other type keeps `any`, as before.
 - **A miss writes `null!` in TypeScript.** `OutArgument.Missed`, the one writer of an inline lowering's miss, writes
   .NET's null there, for `TryGetValue` and the queue's and the set's takes, since `[MaybeNullWhen(false)]` leaves a null
   in a variable whose type does not admit one.
@@ -32,7 +33,7 @@ app's modules are TypeScript the runtime's `tsc` takes in these shapes.
 
 Parts reached: eqc (`ExpressionVariableScanner`, `OutArgument`, `DictionaryLookup`, `QueueStackStrategy`, the statement
 writers) and the build's generator of enum unions. The scanner's new overloads are internal. No contract surface or
-developer surface moves. Thirteen of the runtime's library modules declare their out vars by type, and their
+developer surface moves. Seventeen of the runtime's library modules declare their out vars by type, and their
 JavaScript is unchanged.
 
 ## Capabilities
