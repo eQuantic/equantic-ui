@@ -146,7 +146,7 @@ public class S6AdaptiveRealizerTests
         layer.Children[0].Children.Single().Attributes["style"].Should().Contain("grid-area: 1 / 1",
             "an ordinary arm takes the cell a direct child would");
         layer.Children[1].Children.Single().Attributes["style"].Should().Be(
-            "position: absolute; top: 0; right: 0; z-index: 2",
+            "position: absolute; top: 0; inset-inline-end: 0; z-index: 2",
             "the positioned arm is anchored at its offsets, at the depth of the node it stands in for");
     }
 

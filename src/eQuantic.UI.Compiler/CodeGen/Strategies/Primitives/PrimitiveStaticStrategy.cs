@@ -263,7 +263,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
         if (home == SpecialType.System_Single && SingleTable(name, argCount) is { } single) return single;
         if (IsFloating(home))
         {
-            var shared = SharedNumeric(name, argCount);
+            var shared = SharedNumeric(home, name, argCount);
             if (shared is not null) return shared;
             return name switch
             {
@@ -361,7 +361,8 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 // Native = the platform's plain comparison; no NaN promises to keep.
                 "MaxNative" => "Math.max({0}, {1})",
                 "MinNative" => "Math.min({0}, {1})",
-                "ClampNative" => "Math.min(Math.max({0}, {1}), {2})",
+                // Refused as Clamp refuses a minimum above the maximum, measured on .NET 10 (#1824).
+                "ClampNative" when argCount == 3 => Clamp(home),
                 // The tie-and-NaN rule set lives once, in the runtime.
                 "MaxMagnitude" => "$eq.math.maxMagnitude({0}, {1})",
                 "MinMagnitude" => "$eq.math.minMagnitude({0}, {1})",
@@ -382,7 +383,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
             {
                 "Max" when argCount == 2 => "Math.max({0}, {1})",
                 "Min" when argCount == 2 => "Math.min({0}, {1})",
-                "Clamp" when argCount == 3 => "Math.min(Math.max({0}, {1}), {2})",
+                "Clamp" when argCount == 3 => Clamp(home),
                 "BigMul" when argCount == 2 => $"({Eq.Long}({{0}}) * {Eq.Long}({{1}}))",
                 "DivRem" when argCount == 2 => DivRem(home),
                 _ => null,
@@ -404,7 +405,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 if (signed is not null) return signed;
             }
 
-            var shared = SharedNumeric(name, argCount);
+            var shared = SharedNumeric(home, name, argCount);
             if (shared is not null) return shared;
 
             // The BIT surface is width-specific — a short rotates 16 bits, not 32 — so only
@@ -471,7 +472,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 "Abs" => "({0} < 0n ? -{0} : {0})",
                 "Max" when argCount == 2 => "({0} > {1} ? {0} : {1})",
                 "Min" when argCount == 2 => "({0} < {1} ? {0} : {1})",
-                "Clamp" when argCount == 3 => "({0} < {1} ? {1} : {0} > {2} ? {2} : {0})",
+                "Clamp" when argCount == 3 => "$eq.num.clampLong({0}, {1}, {2})",
                 "Sign" => "({0} < 0n ? -1 : {0} > 0n ? 1 : 0)",
                 "IsPositive" => "({0} >= 0n)",
                 "IsNegative" => "({0} < 0n)",
@@ -558,16 +559,27 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
         _ => null,
     };
 
-    /// <summary>Numeric members whose emission is identical for floats and small ints.</summary>
-    private static string? SharedNumeric(string name, int argCount) => name switch
+    /// <summary>Numeric members whose emission is the same for floats and small ints but for the kind
+    /// of number a refusal writes.</summary>
+    private static string? SharedNumeric(SpecialType home, string name, int argCount) => name switch
     {
         "Abs" => "Math.abs({0})",
         "Max" when argCount == 2 => "Math.max({0}, {1})",
         "Min" when argCount == 2 => "Math.min({0}, {1})",
         "Sign" => "Math.sign({0})",
-        "Clamp" when argCount == 3 => "Math.min(Math.max({0}, {1}), {2})",
+        "Clamp" when argCount == 3 => Clamp(home),
         _ => null,
     };
+
+    /// <summary>
+    /// <c>Clamp</c> over a number the runtime holds as a JavaScript number, as .NET clamps it (#1824): a
+    /// minimum above the maximum is refused with .NET's <c>ArgumentException</c>, its values written in
+    /// the current culture as their type writes them (a float's <c>0.1</c>, not its double's digits);
+    /// then the minimum where the value is below it, the maximum where it is above, and the value
+    /// otherwise, which keeps a NaN bound from turning the answer into NaN and a negative zero its sign,
+    /// where <c>Math.min(Math.max(…))</c> did both.
+    /// </summary>
+    private static string Clamp(SpecialType home) => $"$eq.num.clamp({{0}}, {{1}}, {{2}}, '{FormatKind.Of(home)}')";
 
     /// <summary>
     /// The static values of a primitive that are not constants: null = fenced. Every CONSTANT

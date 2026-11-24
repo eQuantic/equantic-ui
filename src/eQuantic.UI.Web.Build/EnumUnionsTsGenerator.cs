@@ -79,15 +79,27 @@ public static class EnumUnionsTsGenerator
     private static string Emitted(string name) => char.ToLowerInvariant(name[0]) + name[1..];
 
     /// <summary>
-    /// Every public non-flags enum of the vocabulary assemblies, in name order so the file is stable
-    /// whatever order reflection hands them back. The same three the compiler routes as vocabulary
-    /// (<c>RuntimeProvidedTypeScanner.VocabularyNamespaces</c>): an enum it annotates with a union
-    /// this file does not declare is a transpiled twin that does not compile.
+    /// Every non-flags enum of the vocabulary assemblies a twin can name (<see cref="UnionsIn"/>), in name order so the
+    /// file is stable whatever order reflection hands them back. The same three the compiler routes as vocabulary
+    /// (<c>RuntimeProvidedTypeScanner.VocabularyNamespaces</c>): an enum it annotates with a union this file does not
+    /// declare is a transpiled twin that does not compile.
     /// </summary>
     public static IEnumerable<Type> Unions() =>
-        new[] { typeof(VisualNode).Assembly, typeof(CodeEditorController).Assembly, typeof(SheetController).Assembly }
+        UnionsIn([typeof(VisualNode).Assembly, typeof(CodeEditorController).Assembly, typeof(SheetController).Assembly]);
+
+    /// <summary>
+    /// The enums of <paramref name="assemblies"/> a twin can name, so each needs its union: every top-level non-flags
+    /// enum, internal ones included. A twin of the library imports the union of whatever enum its C# names, whatever
+    /// that enum's accessibility, and only public ones were written: <c>GestureArenaPhase</c>, an internal detail of
+    /// the gesture arena, was imported as a <c>$GestureArenaPhaseValue</c> nothing declared, which the runtime's tsc
+    /// refuses (#1859). A nested enum is its owner's, and has no union of its own here. Nor has a <c>file</c> enum,
+    /// whose metadata name is one no code can say (<c>&lt;Arena&gt;F…__Phase</c>): a union named after it would not
+    /// be a TypeScript name, and would break every module that reads the unions.
+    /// </summary>
+    public static IEnumerable<Type> UnionsIn(IEnumerable<System.Reflection.Assembly> assemblies) =>
+        assemblies
             .SelectMany(assembly => assembly.GetTypes())
-            .Where(type => type.IsEnum && type.IsPublic
+            .Where(type => type.IsEnum && !type.IsNested && !type.Name.Contains('<')
                 && type.GetCustomAttribute<FlagsAttribute>() is null)
             .OrderBy(type => type.Name, StringComparer.Ordinal);
 }

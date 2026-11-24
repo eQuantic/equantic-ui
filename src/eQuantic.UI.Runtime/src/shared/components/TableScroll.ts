@@ -1,4 +1,4 @@
-import { $PointerKindValue, $PointerPhaseValue, $ScrollAxisValue, Point, Rect, Size, TableOffset, TableScrollRequest, TableSpans } from "../runtime-exports";
+import { $eq, $PointerKindValue, $PointerPhaseValue, $ScrollAxisValue, Point, Rect, Size, TableOffset, TableScrollRequest, TableSpans } from "../runtime-exports";
 
 export class TableScroll {
     constructor() {
@@ -90,12 +90,12 @@ export class TableScroll {
         this._barDown = down;
         this._barAcross = across;
         this._viewport = new Size(Math.max(0, Math.fround(window.width - (down ? TableScroll.thickness : 0))), Math.max(0, Math.fround(window.height - (across ? TableScroll.thickness : 0))));
-        this._across = Math.min(Math.max(this._across, 0), this.maxAcross);
-        this._down = Math.min(Math.max(this._down, 0), this.maxDown);
+        this._across = $eq.num.clamp(this._across, 0, this.maxAcross, 'double');
+        this._down = $eq.num.clamp(this._down, 0, this.maxDown, 'double');
         let targetAcross: any; 
-        if ((targetAcross = this._targetAcross) != null) this._targetAcross = Math.min(Math.max(targetAcross, 0), this.maxAcross);
+        if ((targetAcross = this._targetAcross) != null) this._targetAcross = $eq.num.clamp(targetAcross, 0, this.maxAcross, 'double');
         let targetDown: any; 
-        if ((targetDown = this._targetDown) != null) this._targetDown = Math.min(Math.max(targetDown, 0), this.maxDown);
+        if ((targetDown = this._targetDown) != null) this._targetDown = $eq.num.clamp(targetDown, 0, this.maxDown, 'double');
         if (reduceMotion) this.land();
         return this._viewport;
     }
@@ -110,8 +110,8 @@ export class TableScroll {
         let glide = stepped && !this._reduceMotion;
         let fromAcross = glide ? this._targetAcross ?? this._across : this._across;
         let fromDown = glide ? this._targetDown ?? this._down : this._down;
-        let toAcross = Math.min(Math.max(fromAcross + across, 0), this.maxAcross);
-        let toDown = Math.min(Math.max(fromDown + down, 0), this.maxDown);
+        let toAcross = $eq.num.clamp(fromAcross + across, 0, this.maxAcross, 'double');
+        let toDown = $eq.num.clamp(fromDown + down, 0, this.maxDown, 'double');
         if (glide) {
             if (toAcross !== fromAcross) this.glideAcross(toAcross);
             if (toDown !== fromDown) this.glideDown(toDown);
@@ -189,8 +189,8 @@ export class TableScroll {
         let across = TableScroll.speed(at.x, this._pinnedAcross, this._viewport.width);
         let down = TableScroll.speed(at.y, this._pinnedDown, this._viewport.height);
         if (across === 0 && down === 0) return false;
-        let toAcross = Math.min(Math.max(this._across + across * elapsed, 0), this.maxAcross);
-        let toDown = Math.min(Math.max(this._down + down * elapsed, 0), this.maxDown);
+        let toAcross = $eq.num.clamp(this._across + across * elapsed, 0, this.maxAcross, 'double');
+        let toDown = $eq.num.clamp(this._down + down * elapsed, 0, this.maxDown, 'double');
         if (toAcross !== this._across || toDown !== this._down) this.letGo();
         this._across = toAcross;
         this._down = toDown;
@@ -199,7 +199,7 @@ export class TableScroll {
 
     static speed(at: number, from: number, to: number) {
         let past = at < from ? at - from : at > to ? at - to : 0;
-        return Math.min(Math.max(past * TableScroll.autoScrollRate, -TableScroll.autoScrollCap), TableScroll.autoScrollCap);
+        return $eq.num.clamp(past * TableScroll.autoScrollRate, -TableScroll.autoScrollCap, TableScroll.autoScrollCap, 'double');
     }
 
     trackOf(axis: $ScrollAxisValue) {
@@ -234,8 +234,8 @@ export class TableScroll {
             across = offset.across;
             down = offset.down;
         } }
-        across = Math.min(Math.max(across, 0), this.maxAcross);
-        down = Math.min(Math.max(down, 0), this.maxDown);
+        across = $eq.num.clamp(across, 0, this.maxAcross, 'double');
+        down = $eq.num.clamp(down, 0, this.maxDown, 'double');
         this._targetAcross = null;
         this._targetDown = null;
         if (across === this._across && down === this._down) return false;
@@ -246,8 +246,8 @@ export class TableScroll {
 
     reveal(area: Rect, across: boolean, down: boolean) {
         this.letGo();
-        let toAcross = across ? Math.min(Math.max(this._across + TableScroll.into(area.x, Math.fround(area.x + area.width), this._pinnedAcross, this._viewport.width), 0), this.maxAcross) : this._across;
-        let toDown = down ? Math.min(Math.max(this._down + TableScroll.into(area.y, Math.fround(area.y + area.height), this._pinnedDown, this._viewport.height), 0), this.maxDown) : this._down;
+        let toAcross = across ? $eq.num.clamp(this._across + TableScroll.into(area.x, Math.fround(area.x + area.width), this._pinnedAcross, this._viewport.width), 0, this.maxAcross, 'double') : this._across;
+        let toDown = down ? $eq.num.clamp(this._down + TableScroll.into(area.y, Math.fround(area.y + area.height), this._pinnedDown, this._viewport.height), 0, this.maxDown, 'double') : this._down;
         if (toAcross === this._across && toDown === this._down) return false;
         this._targetAcross = null;
         this._targetDown = null;
@@ -274,8 +274,8 @@ export class TableScroll {
     static reveal(offset: number, spans: TableSpans, first: number, count: number, pinned: number, pinnedExtent: number, window: number) {
         let last = first + Math.max(1, count) | 0;
         if (spans.count === 0 || last <= pinned) return offset;
-        let start = spans.offsetOf(Math.min(Math.max(Math.max(first, pinned), 0), spans.count));
-        let end = spans.offsetOf(Math.min(Math.max(last, 0), spans.count));
+        let start = spans.offsetOf($eq.num.clamp(Math.max(first, pinned), 0, spans.count, 'int32'));
+        let end = spans.offsetOf($eq.num.clamp(last, 0, spans.count, 'int32'));
         if (end - start > window - pinnedExtent || start < offset + pinnedExtent) return start - pinnedExtent;
         if (end > offset + window) return end - window;
         return offset;
@@ -329,7 +329,7 @@ export class TableScroll {
             let vertical = axis === 'vertical';
             let room = vertical ? Math.fround(track.height - thumb.height) : Math.fround(track.width - thumb.width);
             let travel = (vertical ? Math.fround(at.y - track.y) : Math.fround(at.x - track.x)) - this._grab;
-            let fraction = room <= 0 ? 0 : Math.min(Math.max(travel / room, 0), 1);
+            let fraction = room <= 0 ? 0 : $eq.num.clamp(travel / room, 0, 1, 'double');
             if (vertical) {
                 this._down = fraction * this.maxDown;
                 this._targetDown = null;
@@ -343,8 +343,8 @@ export class TableScroll {
         let elapsed = time - this._panTime;
         let beforeAcross = this._across;
         let beforeDown = this._down;
-        this._across = Math.min(Math.max(this._across - Math.fround(at.x - this._panAt.x), 0), this.maxAcross);
-        this._down = Math.min(Math.max(this._down - Math.fround(at.y - this._panAt.y), 0), this.maxDown);
+        this._across = $eq.num.clamp(this._across - Math.fround(at.x - this._panAt.x), 0, this.maxAcross, 'double');
+        this._down = $eq.num.clamp(this._down - Math.fround(at.y - this._panAt.y), 0, this.maxDown, 'double');
         if (elapsed > 0) {
             this._velocityAcross = 0.8 * ((this._across - beforeAcross) / elapsed) + 0.2 * this._velocityAcross;
             this._velocityDown = 0.8 * ((this._down - beforeDown) / elapsed) + 0.2 * this._velocityDown;
@@ -362,8 +362,8 @@ export class TableScroll {
         if (!this._panning) return false;
         this._panning = false;
         if (!fling || this._reduceMotion || time - this._panTime > TableScroll.flingWindow) return true;
-        if (Math.abs(this._velocityAcross) >= TableScroll.flingFloor) this.glideAcross(Math.min(Math.max(this._across + this._velocityAcross * TableScroll.flingReach, 0), this.maxAcross));
-        if (Math.abs(this._velocityDown) >= TableScroll.flingFloor) this.glideDown(Math.min(Math.max(this._down + this._velocityDown * TableScroll.flingReach, 0), this.maxDown));
+        if (Math.abs(this._velocityAcross) >= TableScroll.flingFloor) this.glideAcross($eq.num.clamp(this._across + this._velocityAcross * TableScroll.flingReach, 0, this.maxAcross, 'double'));
+        if (Math.abs(this._velocityDown) >= TableScroll.flingFloor) this.glideDown($eq.num.clamp(this._down + this._velocityDown * TableScroll.flingReach, 0, this.maxDown, 'double'));
         return true;
     }
 

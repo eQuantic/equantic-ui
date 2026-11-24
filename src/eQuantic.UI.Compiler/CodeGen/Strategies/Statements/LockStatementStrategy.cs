@@ -30,7 +30,7 @@ public class LockStatementStrategy : IStatementStrategy
         var expression = JsStatement.Expression(
             JsExpr.Call(JsExpr.Identifier(Eq.LockGate), context.Converter.ConvertIr(lockStmt.Expression)));
         // Declared in front, unless a switch declares them for the section this lock stands in.
-        var declared = ExpressionVariableScanner.InFrontOf(lockStmt, lockStmt.Expression, context.TypeAnnotations);
+        var declared = ExpressionVariableScanner.InFrontOf(lockStmt, lockStmt.Expression, context);
         return declared.Length == 0
             ? JsStatement.Sequence(expression, body)
             : JsStatement.Sequence(JsStatement.Raw(declared.TrimEnd()), expression, body);

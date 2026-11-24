@@ -282,12 +282,12 @@ describe('a TreeView whose nodes move, in the browser', () => {
 
   it("draws the line from the indentation of the depth the pointer chose, not from the row's own", async () => {
     const container = await mount();
-    /** Where the line over docs starts: the `left` of the box that holds it, read from the atomic sheet. */
+    /** Where the line over docs starts: the inline start inset of the box that holds it, read from the atomic sheet. */
     const lineStart = (): string | null => {
       const classes = new Set(Array.from(row(container, 'docs').querySelectorAll('*')).flatMap((at) => Array.from(at.classList)));
       const sheet = document.getElementById('eq-atomic') as HTMLStyleElement | null;
       for (const rule of Array.from(sheet?.sheet?.cssRules ?? [])) {
-        const match = /^\.([\w-]+)\s*\{\s*left:\s*([\d.]+px)/.exec(rule.cssText);
+        const match = /^\.([\w-]+)\s*\{\s*inset-inline-start:\s*([\d.]+px)/.exec(rule.cssText);
         if (match && classes.has(match[1])) return match[2];
       }
       return null;

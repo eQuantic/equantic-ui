@@ -1110,12 +1110,14 @@ public sealed class CodeEditor : StatefulComponent
         // so nothing under them moves in the tree.
         var findable = new Shortcut(closable, new KeyChord("f", KeyModifiers.Command),
             () => SetState(() => _findOpen = true)) { FocusScoped = true };
-        return new Box(new BoxStyle
+        // Code reads left to right in every language, and the notes, the caret's door and the go-to
+        // field stand where the engine measured them, from the left (#1568).
+        return new Directionality(TextDirection.LeftToRight, new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Height = Height,
             MaxHeight = capped ? SizeValue.Fixed(MaxHeight) : SizeValue.Hug,
-        }, findable);
+        }, findable));
     }
 
     /// <summary>One key of the go-to field, answered while the keyboard is in this editor and only while the

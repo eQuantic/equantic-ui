@@ -29,12 +29,12 @@ export class UniformTableSpans extends TableSpans {
     }
 
     offsetOf(index: number) {
-        return Math.min(Math.max(index, 0), this.count) * this.extent;
+        return $eq.num.clamp(index, 0, this.count, 'int32') * this.extent;
     }
 
     indexAt(offset: number) {
         if (this.count === 0 || this.extent <= 0) return 0;
-        return $eq.num.saturate(Math.min(Math.max(Math.floor(offset / this.extent), 0), this.count - 1 | 0));
+        return $eq.num.saturate($eq.num.clamp(Math.floor(offset / this.extent), 0, this.count - 1 | 0, 'double'));
     }
 
     toJSON() {

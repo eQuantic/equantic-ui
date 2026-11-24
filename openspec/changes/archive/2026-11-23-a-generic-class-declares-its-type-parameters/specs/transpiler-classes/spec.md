@@ -47,8 +47,9 @@ SHALL name its own type by its closure.
 
 - **WHEN** an app or the library declares `class Factory<T>` storing a `Func<T>`, `record Pair<TKey>(TKey Key, int Rank)`
   and `struct Slot<TValue>` with a `TValue` field
-- **THEN** their modules declare `class Factory<T>`, `class Pair<TKey>` and `class Slot<TValue>`, a record's `with` and
-  `$clone` answer `Slot<TValue>`, and `tsc` takes them
+- **THEN** their modules declare `class Factory<T>`, `class Pair<TKey>` and `class Slot<TValue>`; `Pair`'s `with` answers
+  `Pair<TKey>`, `Slot`'s `with` and `$clone` answer `Slot<TValue>` and its static `$zero` answers `Slot<any>`; and `tsc`
+  takes them
 
 #### Scenario: Plain JavaScript declares no type parameters
 

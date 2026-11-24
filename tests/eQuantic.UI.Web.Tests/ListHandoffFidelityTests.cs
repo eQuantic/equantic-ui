@@ -69,12 +69,12 @@ public class ListHandoffFidelityTests
             Walk(Render(new List([
                 new ListItem("Wi-Fi", "Photon-5G") { Leading = leading },
                 new ListItem("Notifications"),
-            ]))).Select(StyleOf).First(style => style.Contains("padding: 0 0 0 "));
+            ]))).Select(StyleOf).First(style => style.Contains("padding-inline: "));
 
         // 16 + 24 + 12, from the Icon's own size.
-        Inset(new Icon(Icons.Info, 24, Theme.TextSecondary)).Should().Contain("padding: 0 0 0 52px");
+        Inset(new Icon(Icons.Info, 24, Theme.TextSecondary)).Should().Contain("padding-inline: 52px 0");
         // 16 + 40 + 12, from the Avatar's tier — nobody had to say 40.
-        Inset(new Avatar("AB", SizeVariant.Large)).Should().Contain("padding: 0 0 0 68px");
+        Inset(new Avatar("AB", SizeVariant.Large)).Should().Contain("padding-inline: 68px 0");
     }
 
     /// <summary>A slot the app built itself cannot be measured before layout, so THAT one is asked
@@ -91,7 +91,7 @@ public class ListHandoffFidelityTests
             new ListItem("Notifications"),
         ]));
 
-        Walk(html).Select(StyleOf).Should().Contain(style => style.Contains("padding: 0 0 0 84px"));
+        Walk(html).Select(StyleOf).Should().Contain(style => style.Contains("padding-inline: 84px 0"));
     }
 
     /// <summary>A list with no leading slots keeps the plain 16 — there is nothing to clear.</summary>
@@ -100,6 +100,6 @@ public class ListHandoffFidelityTests
     {
         var html = Render(new List([new ListItem("One"), new ListItem("Two")]));
 
-        Walk(html).Select(StyleOf).Should().Contain(style => style.Contains("padding: 0 0 0 16px"));
+        Walk(html).Select(StyleOf).Should().Contain(style => style.Contains("padding-inline: 16px 0"));
     }
 }

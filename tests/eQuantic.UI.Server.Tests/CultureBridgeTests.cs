@@ -36,8 +36,8 @@ public class CultureBridgeTests
         // The APP wires negotiation (D5) — the SDK only reads the statics the middleware set.
         app.UseRequestLocalization(options =>
         {
-            options.AddSupportedUICultures("pt-BR", "fr");
-            options.AddSupportedCultures("pt-BR", "fr");
+            options.AddSupportedUICultures("pt-BR", "fr", "ar");
+            options.AddSupportedCultures("pt-BR", "fr", "ar");
         });
         app.MapUI();
         await app.StartAsync();
@@ -216,6 +216,44 @@ public class CultureBridgeTests
 
         (await client.GetAsync("/_equantic/culture/not-a-culture.json")).StatusCode
             .Should().Be(System.Net.HttpStatusCode.NotFound);
+    }
+
+    /// <summary>
+    /// The page says which way it reads beside its language, from the request's UI culture as .NET's
+    /// TextInfo says it (#1568), and the culture data the browser is handed says the same, so a component
+    /// with no Directionality above it reads it there, and a switch writes it on the document.
+    /// </summary>
+    [Theory]
+    [InlineData("ar", "rtl", true)]
+    [InlineData("pt-BR", "ltr", false)]
+    [InlineData("fr", "ltr", false)]
+    public async Task TheShellSaysWhichWayThePageReads(string culture, string dir, bool rightToLeft)
+    {
+        var (app, client, _) = await StartAppAsync();
+        await using var _1 = app;
+
+        var html = await (await GetWithLanguage(client, culture)).Content.ReadAsStringAsync();
+
+        html.Should().Contain($"<html lang=\"{culture}\" dir=\"{dir}\"");
+        CultureData(html).GetProperty("rightToLeft").GetBoolean().Should().Be(rightToLeft);
+    }
+
+    /// <summary>A switch reads the direction of the culture it switches to from the culture's document.</summary>
+    [Fact]
+    public async Task TheCultureEndpoint_SaysWhichWayTheCultureReads()
+    {
+        var (app, client, _) = await StartAppAsync(withCatalogs: false);
+        await using var _1 = app;
+
+        async Task<bool> RightToLeft(string name)
+        {
+            using var document = JsonDocument.Parse(await client.GetStringAsync($"/_equantic/culture/{name}.json"));
+            return document.RootElement.GetProperty("rightToLeft").GetBoolean();
+        }
+
+        (await RightToLeft("ar-EG")).Should().BeTrue();
+        (await RightToLeft("he")).Should().BeTrue();
+        (await RightToLeft("en-US")).Should().BeFalse();
     }
 
     /// <summary>The object the shell assigns to <c>window.__EQ_CULTURE__</c>.</summary>

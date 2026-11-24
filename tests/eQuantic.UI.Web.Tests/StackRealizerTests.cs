@@ -31,7 +31,7 @@ public class StackRealizerTests
         // notice. CROSS-PINNED: stack.spec.ts asserts the same property on the same cell.
         node.Children[0].Attributes["style"].Should().Contain("pointer-events: none");
         // CROSS-PIN: asserted verbatim by the TS lowering spec (hydration parity).
-        node.Children[1].Attributes["style"].Should().Be("position: absolute; top: -4px; right: -4px; z-index: 2");
+        node.Children[1].Attributes["style"].Should().Be("position: absolute; top: -4px; inset-inline-end: -4px; z-index: 2");
     }
 
     [Fact]
@@ -160,6 +160,6 @@ public class StackRealizerTests
         anchor.DataAttributes!["eq-origin"].Should().Be("Landing.cs:42");
         // CROSS-PIN: asserted verbatim by the TS lowering spec (hydration parity).
         anchor.Render().Attributes["style"].Should().Be(
-            "position: absolute; top: 0; right: -28px; z-index: 1; scroll-margin-top: var(--eq-anchor-offset, 0px)");
+            "position: absolute; top: 0; inset-inline-end: -28px; z-index: 1; scroll-margin-top: var(--eq-anchor-offset, 0px)");
     }
 }
