@@ -308,7 +308,8 @@ function refused<T extends object>(read: T | Refusal): read is Refusal {
 /**
  * The moment a text names, read in `culture`, or why it names none: a date, then a clock and a zone,
  * or a clock and a zone, then a date, as .NET's lexer takes them in either order; or a date whose year
- * is written first, a `T` and the ISO clock.
+ * is written first, a `T` and the ISO clock, wherever the date stands. A zone may lead the text, and a
+ * day's name may stand once between any of the parts.
  */
 export function readMoment(text: string, culture: DateTimeFormatData): Moment | Refusal {
   const shapes = shapesOf(culture);
@@ -321,11 +322,75 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
   const cursor = new Cursor(text);
   cursor.space();
 
+  // A day's name, ONCE, wherever .NET's lexer meets one: before the date or after it, before the clock
+  // or after it, after the zone or the designator (#1842). A second is the plain refusal where it
+  // stands; whether it is the date's day is asked last, once the date and the clock are known to exist.
+  let weekday: number | null = null;
+  const noteWeekday = (named: number | null): boolean => {
+    if (named === null) return true;
+    if (weekday !== null) return false;
+    weekday = named;
+    return true;
+  };
+  const takeWeekday = (): boolean => {
+    const before = cursor.at;
+    cursor.space();
+    const named = cursor.name(shapes.days);
+    if (named === null) {
+      cursor.at = before;
+      return true;
+    }
+    cursor.space();
+    cursor.take([',']);
+    return noteWeekday(named);
+  };
+
+  let zone: Moment['zone'] = null;
+  // A zone, once: a second is the plain refusal, as .NET's lexer refuses `Z 2024-01-15 Z`.
+  const readZoneHere = (): Refusal | null => {
+    const before = cursor.at;
+    cursor.space();
+    const read = readZone(cursor);
+    if (read === null) cursor.at = before;
+    else if (zone !== null) return FORMAT;
+    else if (typeof read === 'object') return read;
+    else zone = read;
+    return null;
+  };
+  // The ISO form where a date may start, read in the Gregorian calendar whatever the culture's: its clock
+  // takes the place of any clock and designator before it, and its zone that of a zone before it, as
+  // .NET's `ParseISO8601` reads it after whatever it met first (#1841). Null where none starts here.
+  const readIsoHere = (): Moment | Refusal | null => {
+    const before = cursor.at;
+    cursor.space();
+    const gregorian = shapes.calendar === GREGORIAN ? shapes : { ...shapes, calendar: GREGORIAN };
+    const leading = readDate(cursor, gregorian);
+    if (typeof leading === 'object' && leading.isoDate && noteWeekday(leading.weekday)) {
+      cursor.space();
+      if (isoMarker(text, cursor.at) === 'clock') {
+        cursor.at++;
+        const iso = readIso(cursor, leading.date);
+        return refused(iso) ? iso : { ...iso, zone: iso.zone ?? zone };
+      }
+      if (leading.weekday !== null) weekday = null;
+    }
+    cursor.at = before;
+    return null;
+  };
+
+  if (!takeWeekday()) return FORMAT;
+  const leadingZone = readZoneHere();
+  if (leadingZone) return leadingZone;
+  if (!takeWeekday()) return FORMAT;
+  const isoFirst = readIsoHere();
+  if (isoFirst !== null) return isoFirst;
+
   let date: ReadDate | null = null;
+  cursor.space();
   const leading = readDate(cursor, shapes);
   if (leading === 'invalid') return FORMAT;
-  if (leading === 'weekday') return { refused: 'weekday' };
   if (leading !== 'none') {
+    if (!noteWeekday(leading.weekday)) return FORMAT;
     const before = cursor.at;
     cursor.space();
     const marker = isoMarker(text, cursor.at);
@@ -335,7 +400,8 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
       // calendar, a date the Gregorian one does not count is no ISO date either.
       if (!leading.isoDate || shapes.calendar !== GREGORIAN) return FORMAT;
       cursor.at++;
-      return readIso(cursor, leading.date);
+      const iso = readIso(cursor, leading.date);
+      return refused(iso) ? iso : { ...iso, zone: iso.zone ?? zone };
     }
     // Numbers that name no date are one only before an ISO clock, which refuses them in other words; a
     // `T` that starts a word after them is the plain refusal too, where after a date it is the word's.
@@ -347,37 +413,36 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
   cursor.space();
   const raw = readClockAndDesignator(cursor, shapes);
   if (raw === 'invalid') return FORMAT;
+  if (!takeWeekday()) return FORMAT;
 
-  let zone: Moment['zone'] = null;
-  const readZoneHere = (): Refusal | null => {
-    const before = cursor.at;
-    cursor.space();
-    const read = readZone(cursor);
-    if (read === null) cursor.at = before;
-    else if (typeof read === 'object') return read;
-    else zone = read;
-    return null;
-  };
   if (date !== null || raw !== null) {
     const refusal = readZoneHere();
     if (refusal) return refusal;
+    if (!takeWeekday()) return FORMAT;
   }
 
   // A date after the clock, and a zone after it where none came before.
   if (date === null && raw !== null) {
+    const iso = readIsoHere();
+    if (iso !== null) return iso;
     const before = cursor.at;
     cursor.space();
     const trailing = readDate(cursor, shapes);
     if (trailing === 'invalid') return FORMAT;
-    if (trailing === 'weekday') return { refused: 'weekday' };
     if (trailing === 'none') cursor.at = before;
     else if (trailing.date === null) return FORMAT;
     else {
+      if (!noteWeekday(trailing.weekday)) return FORMAT;
+      // A `T` before a clock after a date that is not the ISO form's is the plain refusal, as it is
+      // after a leading one (the ISO form itself was read just above).
+      const after = cursor.at;
+      cursor.space();
+      if (isoMarker(text, cursor.at) === 'clock') return FORMAT;
+      cursor.at = after;
       date = trailing.date;
-      if (zone === null) {
-        const refusal = readZoneHere();
-        if (refusal) return refusal;
-      }
+      const refusal = readZoneHere();
+      if (refusal) return refusal;
+      if (!takeWeekday()) return FORMAT;
     }
   }
 
@@ -387,6 +452,7 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
     cursor.space();
     raw.pm = readDesignator(cursor, shapes);
     if (raw.pm === null) cursor.at = before;
+    else if (!takeWeekday()) return FORMAT;
   }
 
   // A word a time pattern writes after the clock: hsb-DE's `hodź.`, and bg-BG's `ч.` in Windows' data.
@@ -405,7 +471,16 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
   if (raw !== null && raw.parts.length === 0 && date === null) return FORMAT;
   const clock = raw === null ? null : clockOf(raw);
   if (clock !== null && refused(clock)) return clock;
+  // The day's name is asked last, as .NET asks it once the day and the clock exist: of the date, or of
+  // today where the text names none.
+  if (weekday !== null && weekdayOf(date ?? localToday()) !== weekday) return { refused: 'weekday' };
   return { date, clock, zone };
+}
+
+/** Today's date where the browser is, which .NET takes for a text that names a clock and no date. */
+function localToday(): ReadDate {
+  const now = new Date();
+  return { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
 }
 
 /** A text that starts with the ISO form, read in `shapes`, which count in the Gregorian calendar, or null
@@ -506,7 +581,7 @@ function readDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
     cursor.at = start;
     return 'none';
   }
-  if (read === 'invalid' || read === 'weekday') return read;
+  if (read === 'invalid') return read;
   // A day's name may follow the date too, as ko-KR's and ja-JP's long dates write it.
   if (weekday === null) {
     const after = cursor.at;
@@ -517,12 +592,16 @@ function readDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
     weekday = cursor.name(shapes.days);
     if (weekday === null) cursor.at = after;
   }
-  return weekday !== null && read.date !== null && weekdayOf(read.date) !== weekday ? 'weekday' : read;
+  return { ...read, weekday };
 }
 
 /** A date as a reader of one answers it: its date, or null for year-first numbers that name none, which only
- * the ISO form reads on (#1616), and whether it is the ISO form's date, three numbers with the year first. */
-type ReadingOfADate = { date: ReadDate | null; isoDate: boolean } | 'none' | 'invalid' | 'weekday';
+ * the ISO form reads on (#1616), whether it is the ISO form's date, three numbers with the year first, and
+ * the day's name written beside it, which the reader asks of the date last (#1842). */
+type ReadingOfADate =
+  | { date: ReadDate | null; isoDate: boolean; weekday: number | null }
+  | 'none'
+  | 'invalid';
 
 /** The day of the week of a date, as `System.DayOfWeek` counts. */
 function weekdayOf({ year, month, day }: ReadDate): number {
@@ -584,7 +663,7 @@ function readNamedDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
   endOfDate(cursor, shapes);
   if (numbers.some((number) => number.length > 8)) return 'invalid';
   const date = namedDateOf(month, numbers, numberFirst, shapes);
-  return date === null ? 'invalid' : { date, isoDate: false };
+  return date === null ? 'invalid' : { date, isoDate: false, weekday: null };
 }
 
 /**
@@ -677,13 +756,16 @@ function readNumericDate(cursor: Cursor, shapes: Shapes): ReadingOfADate {
   if (shapes.pointIsClock && points && parts.every((part) => !looksLikeYear(part))) return none();
   // .NET reads a number of eight digits at most.
   if (parts.some((part) => part.length > 8)) return 'invalid';
+  // A number of three digits or more is a year to .NET's lexer, and a date has one year: `2024-01-001` and
+  // `1/001/2024` name no date (#1843).
+  if (parts.filter(looksLikeYear).length > 1) return 'invalid';
   endOfDate(cursor, shapes);
   const date = parts.length === 2 ? dateOfTwo(parts, shapes) : dateOf(parts, shapes);
   // The ISO form's date is three numbers, the year first. Ones that name no date (`2024-02-30`) are kept as
   // such: before a `T` they are the ISO form, which .NET reads through before it refuses the day (#1616).
   const iso = parts.length === 3 && looksLikeYear(parts[0]);
-  if (date === null) return iso ? { date: null, isoDate: true } : 'invalid';
-  return { date, isoDate: iso };
+  if (date === null) return iso ? { date: null, isoDate: true, weekday: null } : 'invalid';
+  return { date, isoDate: iso, weekday: null };
 }
 
 /** Two numbers, as .NET's `GetDayOfNN` and `GetDayOfYN` read them. */

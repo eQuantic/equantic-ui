@@ -314,3 +314,42 @@ describe('readMoment: an ISO date that does not exist (#1616)', () => {
     expect(read('2024-01-15T10:00+15', 'invariant')).toBe('zone');
   });
 });
+
+describe('readMoment: the ISO form after what came first (#1841)', () => {
+  it('reads it after a designator, a clock or a zone, its clock in their place', () => {
+    expect(read('PM 2024-01-15T10:00', 'invariant')).toBe('2024-01-15 10:00:00');
+    expect(read('10:00 PM 2024-01-15T11:00', 'invariant')).toBe('2024-01-15 11:00:00');
+    expect(read('10:00 Z 2024-01-15T11:00', 'invariant')).toBe('2024-01-15 11:00:00 Z');
+    expect(read('Z 2024-01-15T10:00+01:00', 'invariant')).toBe('2024-01-15 10:00:00 60min');
+    expect(read('PM 2024-02-30T10:00', 'invariant')).toBe('clock');
+  });
+
+  it('asks a day’s name beside it nothing, and refuses a T after another date plainly', () => {
+    expect(read('Tuesday 2024-01-15T10:00', 'invariant')).toBe('2024-01-15 10:00:00');
+    expect(read('10:00 1/15/2024T11:00', 'invariant')).toBe('format');
+  });
+});
+
+describe('readMoment: a day’s name once, anywhere (#1842)', () => {
+  it('reads it after the clock, the zone or the designator, and asks it of the date last', () => {
+    expect(read('2024-01-15 10:00 Monday', 'invariant')).toBe('2024-01-15 10:00:00');
+    expect(read('Monday 10:00 2024-01-15', 'invariant')).toBe('2024-01-15 10:00:00');
+    expect(read('2024-01-15 10:00 PM Monday', 'invariant')).toBe('2024-01-15 22:00:00');
+    expect(read('2024-01-15 10:00 Tuesday', 'invariant')).toBe('weekday');
+    expect(read('2024-01-15 Tuesday junk', 'invariant')).toBe('word at 19');
+  });
+
+  it('refuses a second day’s name or a second zone plainly', () => {
+    expect(read('Monday 2024-01-15 Monday', 'invariant')).toBe('format');
+    expect(read('Z 2024-01-15 Z', 'invariant')).toBe('format');
+  });
+});
+
+describe('readMoment: a date has one year (#1843)', () => {
+  it('refuses two numbers of three digits or more, and reads one', () => {
+    expect(read('2024-01-001', 'invariant')).toBe('format');
+    expect(read('1/001/2024', 'invariant')).toBe('format');
+    expect(read('2024-001', 'invariant')).toBe('format');
+    expect(read('001-01-15', 'invariant')).toBe('0001-01-15');
+  });
+});
