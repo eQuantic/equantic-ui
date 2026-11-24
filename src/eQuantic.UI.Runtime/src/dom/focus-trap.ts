@@ -23,6 +23,7 @@
  */
 
 import { cancelAfterWrite } from '../shared/after-write';
+import { adaptiveGateOpen, isAdaptiveGate } from '../shared/style-atomizer';
 
 /** What CAN take focus inside a trap. `[data-eq-trap]` itself is excluded: it is the fallback. */
 const FOCUSABLE =
@@ -42,9 +43,29 @@ const invokers = new WeakMap<Element, { invoker: Element; place: number }>();
 let returned: { invoker: Element; place: number } | null = null;
 let installed = false;
 
-/** The layer that owns the keyboard right now: the last marked layer in the document. */
+/**
+ * Whether every adaptive arm around `layer` is on screen NOW. The web mounts every arm of an adaptive
+ * node and its CSS shows one, so a dialog or a drawer open in an arm the window has just hidden keeps its
+ * marker, and as a trap it held the keyboard in a layer nobody could see: Tab was prevented, and a click on
+ * the page was pulled back (#1185). Asked when the Tab or the focus arrives, never when the pass ran, as
+ * the shortcut dispatcher asks the gates around a binding when its key comes (#363), and from the gates'
+ * own media conditions, never the layout.
+ */
+function onScreen(layer: Element): boolean {
+  for (let at = layer.parentElement; at; at = at.parentElement) {
+    for (const name of Array.from(at.classList)) {
+      if (isAdaptiveGate(name) && !adaptiveGateOpen(name)) return false;
+    }
+  }
+  return true;
+}
+
+/** The layer that owns the keyboard right now: the last marked layer in the document that is on screen. */
 function topmost(): Element | null {
-  return active.length > 0 ? active[active.length - 1] : null;
+  for (let i = active.length - 1; i >= 0; i--) {
+    if (onScreen(active[i])) return active[i];
+  }
+  return null;
 }
 
 /**
@@ -77,25 +98,39 @@ function focusInto(layer: Element): void {
  * order is the document's, which is the order Tab walks and the order Photon lists its stops in.
  */
 function focusablesBeneath(marked: Element[], above: readonly Element[]): HTMLElement[] {
-  const holder = [...marked].reverse().find((layer) => !above.includes(layer)) ?? null;
+  const holder = [...marked].reverse().find((layer) => !above.includes(layer) && onScreen(layer)) ?? null;
   const scope: ParentNode = holder ?? document;
   return Array.from(scope.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
     (el) =>
       el.closest('[data-eq-trap]') === holder &&
+      onScreen(el) &&
       el.closest('[hidden], [aria-hidden="true"], [data-eq-exiting]') === null,
   );
 }
 
-function restore(layer: Element): void {
+function restore(layer: Element, closing: readonly Element[]): void {
   const recorded = invokers.get(layer);
   invokers.delete(layer);
   if (!recorded) return;
-  if (recorded.invoker.isConnected) {
+  // A layer that closed while its arm was hidden let the page have the keyboard, and the focus may be on
+  // a control the user chose since: it stays there. The focus is given back only from a layer closing in
+  // this pass, a confirm closing over its settings dialog included, or from nowhere, which is where a
+  // removed layer's focus goes (#1185).
+  const focused = document.activeElement;
+  if (focused && focused !== document.body && !closing.some((closed) => closed.contains(focused))) return;
+  // An invoker in an arm the window hides is as gone as a removed one: its place takes the focus.
+  if (recorded.invoker.isConnected && onScreen(recorded.invoker)) {
     (recorded.invoker as HTMLElement).focus?.();
     returned = recorded;
     return;
   }
   focusPlace(recorded.place);
+}
+
+/** Whether `layer` recorded an invoker still in the document and on screen, the one a restore gives the focus. */
+function standsOnScreen(layer: Element): boolean {
+  const recorded = invokers.get(layer);
+  return recorded !== undefined && recorded.invoker.isConnected && onScreen(recorded.invoker);
 }
 
 /** The invoker is gone (a row that removed itself is what opened the dialog): the control now at its
@@ -190,11 +225,14 @@ export function commitFocusTraps(): void {
 
   // Restore before focusing into anything new: closing one dialog to open another must not leave
   // focus on the old invoker. Of layers that closed together, the bottommost's invoker is the one
-  // still standing, as Photon gives back the outermost's: the others are only forgotten.
+  // still standing, as Photon gives back the outermost's: the others are only forgotten. A layer whose
+  // invoker an arm the window hides holds is passed over for one whose invoker is on screen: a drawer
+  // left open in a hidden arm does not take the focus from the dialog the user was in (#1185).
   followReturned();
   if (closed.length > 0) returned = null;
-  for (const layer of closed.slice(1)) invokers.delete(layer);
-  if (closed.length > 0) restore(closed[0]);
+  const giver = closed.find(standsOnScreen) ?? closed[0];
+  for (const layer of closed) if (layer !== giver) invokers.delete(layer);
+  if (giver) restore(giver, closed);
   const layer = topmost();
   if (layer && opened.includes(layer)) {
     // After the next frame, for the same reason the mount hook waits: a layer transitioning out of
