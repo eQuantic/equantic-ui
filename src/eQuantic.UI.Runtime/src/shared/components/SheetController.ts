@@ -585,7 +585,7 @@ export class SheetController {
     }
 
     goTo(reference: string) {
-        let range: any; 
+        let range!: SheetRange; 
         if (!($o => (range = $o.range, $o.$))(SheetReference.tryParse(reference, this.document.rows, this.document.cols))) return false;
         if (this.editing) this.commitEdit();
         $eq.collections.listClear(this._others);

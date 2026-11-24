@@ -57,8 +57,8 @@ export class CodeSnippetParser {
 
     construct() {
         let start = this._at;
-        let known: any; 
-        if ((($0) => ($0.has(start) ? ((known = $0.get(start)), true) : ((known = null), false)))(this._read)) {
+        let known!: CodeSnippetPart; 
+        if ((($0) => ($0.has(start) ? ((known = $0.get(start)), true) : ((known = null!), false)))(this._read)) {
             this._at = $eq.mapGet(this._readTo, start);
             return known;
         }

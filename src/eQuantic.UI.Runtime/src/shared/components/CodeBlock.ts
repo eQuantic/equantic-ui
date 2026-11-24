@@ -300,8 +300,8 @@ export class CodeBlock extends StatelessComponent {
             this._foldsByHeader = $eq.collections.dictionary();
             for (const fold of $eq.collections.sequenceWalk(this.folds)) $eq.mapSet(this._foldsByHeader, fold.startLine, fold);
         }
-        let found: any; 
-        return (($0) => ($0.has(line) ? ((found = $0.get(line)), true) : ((found = null), false)))(this._foldsByHeader) ? found : null;
+        let found!: CodeFold; 
+        return (($0) => ($0.has(line) ? ((found = $0.get(line)), true) : ((found = null!), false)))(this._foldsByHeader) ? found : null;
     }
 
     isFolded(line: number) {
@@ -388,16 +388,16 @@ export class CodeBlock extends StatelessComponent {
     }
 
     cellsOf(line: number) {
-        let cells: any; 
-        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._cells)) return cells;
+        let cells!: CodeLineCells; 
+        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null!), false)))(this._cells)) return cells;
         cells = new CodeLineCells(this.document.line(line), this.tabSize);
         $eq.mapSet(this._cells, line, cells);
         return cells;
     }
 
     fillerCellsOf(line: number) {
-        let cells: any; 
-        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._fillerCells)) return cells;
+        let cells!: CodeLineCells; 
+        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null!), false)))(this._fillerCells)) return cells;
         cells = new CodeLineCells((this.fillerDocument!).line(line), this.tabSize);
         $eq.mapSet(this._fillerCells, line, cells);
         return cells;

@@ -157,7 +157,7 @@ export class BuildOwner {
 
     hold(key: GlobalKey, element: Element) {
         let holders: any; 
-        if (!(($0) => ($0.has(key) ? ((holders = $0.get(key)), true) : ((holders = null), false)))(this._held)) {
+        if (!(($0) => ($0.has(key) ? ((holders = $0.get(key)), true) : ((holders = null!), false)))(this._held)) {
             holders = [];
             $eq.mapSet(this._held, key, holders);
         }
@@ -167,7 +167,7 @@ export class BuildOwner {
 
     letGo(key: GlobalKey, element: Element) {
         let holders: any; 
-        if (!(($0) => ($0.has(key) ? ((holders = $0.get(key)), true) : ((holders = null), false)))(this._held)) return;
+        if (!(($0) => ($0.has(key) ? ((holders = $0.get(key)), true) : ((holders = null!), false)))(this._held)) return;
         $eq.collections.remove(holders, element, 'item');
         if (holders.length === 0) this._held.delete(key);
     }
@@ -180,8 +180,8 @@ export class BuildOwner {
 
     retake(key: GlobalKey, configuration: VisualNode, parent: Element) {
         if (!this._inFrameBuild) return null;
-        let parked: any; 
-        if ((($0) => ($0.has(key) ? ((parked = $0.get(key)), true) : ((parked = null), false)))(this._parked)) {
+        let parked!: Element; 
+        if ((($0) => ($0.has(key) ? ((parked = $0.get(key)), true) : ((parked = null!), false)))(this._parked)) {
             this._parked.delete(key);
             if (!Element.canUpdate(parked.configuration, configuration)) {
                 parked.leave();
@@ -191,7 +191,7 @@ export class BuildOwner {
             return parked;
         }
         let holders: any; 
-        if (this.holdsEveryArm || !(($0) => ($0.has(key) ? ((holders = $0.get(key)), true) : ((holders = null), false)))(this._held) || holders.length !== 1) return null;
+        if (this.holdsEveryArm || !(($0) => ($0.has(key) ? ((holders = $0.get(key)), true) : ((holders = null!), false)))(this._held) || holders.length !== 1) return null;
         let held = holders[0];
         let from: any; 
         if (!held.isActive || !((from = held.parent) != null) || !Element.canUpdate(held.configuration, configuration) || parent.isAtOrBelow(held)) return null;

@@ -77,6 +77,51 @@ public static class ExpressionVariableScanner
     public static string InFrontOf(StatementSyntax statement, ExpressionSyntax? expression, bool typeAnnotations) =>
         statement.Parent is SwitchSectionSyntax ? "" : Declarations(expression, typeAnnotations);
 
+    /// <summary>As <see cref="InFrontOf(StatementSyntax, ExpressionSyntax?, bool)"/>, with each <c>out var</c>
+    /// declared by the type the bound tree gives it (<see cref="Declarations(ExpressionSyntax?, ConversionContext)"/>).</summary>
+    internal static string InFrontOf(StatementSyntax statement, ExpressionSyntax? expression, ConversionContext context) =>
+        statement.Parent is SwitchSectionSyntax ? "" : Declarations(expression, context);
+
+    /// <summary>
+    /// As <see cref="Declarations(ExpressionSyntax?, bool)"/>, where a converter can ask the bound tree: in TypeScript
+    /// an <c>out var</c> of a named type is declared by that type, <c>let arena!: GestureArenaPointer;</c>, every other
+    /// variable as <c>any</c>. An <c>out var</c> declared <c>any</c> made what it reached untyped, and a walk of a list
+    /// read from it, <c>listWalk(arena.members)</c>, inferred <c>unknown</c> elements, which the runtime's tsc refuses at
+    /// the first use (#1858). Definitely assigned (<c>!</c>), since the call that declares it assigns it inside an
+    /// arrow TypeScript does not follow, and a miss writes the null .NET leaves as <c>null!</c>
+    /// (<see cref="Strategies.OutArgument.Missed"/>).
+    /// </summary>
+    internal static string Declarations(ExpressionSyntax? expression, ConversionContext context)
+    {
+        var names = Names(expression);
+        if (!context.TypeAnnotations) return Declarations(names, typeAnnotations: false);
+        var typed = OutVariableTypes(expression, context);
+        var declared = names.Distinct(StringComparer.Ordinal)
+            .Select(name => typed.TryGetValue(name, out var type) ? $"let {name}!: {type};" : $"let {name}: any;").ToList();
+        return declared.Count == 0 ? "" : string.Join(" ", declared) + " ";
+    }
+
+    /// <summary>The TypeScript type of each <c>out var</c> <paramref name="expression"/> declares outside a lambda, by
+    /// its name, where the type has a name to say there (<see cref="TsNamedType.For"/>): a primitive's and a generic's
+    /// are left out, and keep <c>any</c>.</summary>
+    private static Dictionary<string, string> OutVariableTypes(ExpressionSyntax? expression, ConversionContext context)
+    {
+        var typed = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (expression is null) return typed;
+        foreach (var declaration in expression.DescendantNodesAndSelf(node =>
+                     node == expression || node is not (LambdaExpressionSyntax or AnonymousFunctionExpressionSyntax))
+                     .OfType<DeclarationExpressionSyntax>())
+        {
+            if (declaration is not { Designation: SingleVariableDesignationSyntax single, Parent: ArgumentSyntax argument }
+                || !argument.RefKindKeyword.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.OutKeyword)
+                || context.SemanticHelper.GetDeclaredSymbol(single) is not ILocalSymbol local
+                || TsNamedType.For(local.Type, context) is not { } type || type == "any")
+                continue;
+            typed.TryAdd(single.Identifier.ValueText.ToJsIdentifier(), type);
+        }
+        return typed;
+    }
+
     /// <summary>
     /// The names a statement declares into the block it stands in, which Roslyn measured for each
     /// kind: an expression statement's, an <c>if</c>'s condition's, a <c>return</c>'s, a

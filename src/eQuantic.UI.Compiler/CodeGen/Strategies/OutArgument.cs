@@ -18,6 +18,16 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// </summary>
 internal static class OutArgument
 {
+    /// <summary>
+    /// What a miss leaves in the out: the default of <paramref name="type"/>, as .NET leaves it. In TypeScript a null
+    /// default is written <c>null!</c>: an <c>out var</c> is declared by its named type, which a <c>TryGetValue</c>
+    /// declares <c>[MaybeNullWhen(false)]</c>, so .NET leaves a null in a variable whose type does not admit one, and
+    /// TypeScript refuses <c>arena = null</c> for a <c>GestureArenaPointer</c> where C#'s flow analysis knows the miss
+    /// returned before any read (#1858). The one writer of an inline lowering's miss.
+    /// </summary>
+    public static string Missed(ITypeSymbol? type, ConversionContext context) =>
+        DefaultValue.Of(type, context) is var value && value == "null" && context.TypeAnnotations ? "null!" : value;
+
     /// <summary><c>out _</c>, <c>out var _</c> and <c>out T _</c>: a discard, which nothing reads.
     /// Converted as a name, <c>_</c> read as a member of the component: <c>this._ = …</c> gave it a
     /// property nobody declared.</summary>
@@ -87,8 +97,12 @@ internal static class OutArgument
             JsExprWriter.Write(JsExpr.Template(template, parts));
         if (IsDiscard(result, context)) return Answer("({0} !== undefined)", [read]);
         var target = Target(result, context);
+        // The read lands in the variable before the test, so in TypeScript it is said to be what the variable holds:
+        // an out var is declared by its named type (#1858), and the reader answers that type or undefined, which the
+        // miss replaces with the default at once. Plain JavaScript has no such assertion.
+        var landed = context.TypeAnnotations ? "({0})!" : "{0}";
         if (IsBareName(target))
-            return Answer($"(({target} = {{0}}) !== undefined || (({target} = {failed}), false))", [read]);
+            return Answer($"(({target} = {landed}) !== undefined || (({target} = {failed}), false))", [read]);
 
         var parts = new List<JsExpr>();
         var placeFirst = result.SpanStart < readStart;

@@ -80,7 +80,7 @@ internal static class DictionaryLookup
         // The parts the out reads (an element's array and index) are evaluated where it was written.
         var at = arguments.IndexOf(valueArgument);
         var place = OutArgument.Place(valueArgument, context, part => parts.Add(at, $"t{parts.Count}", part));
-        var fallback = DefaultValue.Of(method?.Parameters.ElementAtOrDefault(key + 1)?.Type, context);
+        var fallback = OutArgument.Missed(method?.Parameters.ElementAtOrDefault(key + 1)?.Type, context);
         return parts.Template(
             $"({Has} ? (({place} = {Get}), {hit}) : (({place} = {fallback}), false))");
     }

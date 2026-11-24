@@ -428,7 +428,7 @@ export class TreeView extends StatefulComponent {
         let given: any; 
         if ((given = node.children) != null) return given;
         let loaded: any; 
-        if ((($0, $1) => ($0.has($1) ? ((loaded = $0.get($1)), true) : ((loaded = null), false)))(this._loaded, node.key)) return loaded;
+        if ((($0, $1) => ($0.has($1) ? ((loaded = $0.get($1)), true) : ((loaded = null!), false)))(this._loaded, node.key)) return loaded;
         return this.loadChildren == null ? TreeView.noChildren : null;
     }
 
@@ -479,7 +479,7 @@ export class TreeView extends StatefulComponent {
             if (node.key === key) return node;
             if (!deep || node.isLeaf) continue;
             let loaded: any; 
-            let children = node.children ?? ((($0, $1) => ($0.has($1) ? ((loaded = $0.get($1)), true) : ((loaded = null), false)))(this._loaded, node.key) ? loaded : null);
+            let children = node.children ?? ((($0, $1) => ($0.has($1) ? ((loaded = $0.get($1)), true) : ((loaded = null!), false)))(this._loaded, node.key) ? loaded : null);
             let found: any; 
             if (!(children == null) && (found = this.findIn(children, key, true)) != null) return found;
         }

@@ -27,7 +27,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
             // A reserved JS word takes a trailing underscore — declaration and references go
             // through the same rule, so `var package = …` stays one identifier on both sides.
             var name = variable.Identifier.ValueText.ToJsIdentifier();
-            var declared = ExpressionVariableScanner.InFrontOf(decl, variable.Initializer?.Value, context.TypeAnnotations);
+            var declared = ExpressionVariableScanner.InFrontOf(decl, variable.Initializer?.Value, context);
             var init = variable.Initializer != null
                 ? context.Converter.ConvertIr(variable.Initializer.Value)
                 : JsExpr.Literal("null");
