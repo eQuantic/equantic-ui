@@ -9,10 +9,15 @@ namespace eQuantic.UI.Native.Shell.MacOS;
 /// </summary>
 internal static partial class AppKitNotifications
 {
+    /// <summary>Each notification as it is posted, the element and the name: what a test reads, since AppKit
+    /// keeps what it is told to itself.</summary>
+    internal static event Action<IntPtr, string>? Posted;
+
     /// <summary>Posts AppKit's notification <paramref name="name"/> on <paramref name="element"/>, or nothing
     /// when AppKit does not export that name.</summary>
     internal static void Post(IntPtr element, string name)
     {
+        Posted?.Invoke(element, name);
         var notification = Symbol(name);
         if (element == IntPtr.Zero || notification == IntPtr.Zero) return;
         PostNotification(element, notification);

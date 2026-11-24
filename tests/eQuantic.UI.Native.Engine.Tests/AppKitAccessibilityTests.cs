@@ -436,6 +436,58 @@ public class AppKitAccessibilityTests
         }
     }
 
+    /// <summary>
+    /// VoiceOver is told where the keyboard goes once per move (#1111): on the element of the node that holds
+    /// it, or, while that node has no element yet, once on the view and once more when a read of the tree
+    /// gives the node one. A position that comes to hold another kind of node is a new element, and the
+    /// keyboard on it is told again. Read from what the bridge posts, since AppKit keeps it to itself.
+    /// </summary>
+    [MacFact]
+    public void TheKeyboardMoving_IsToldOnce_AndAgainWhenItsNodeGetsAnElement()
+    {
+        List<SemanticNode> tree = [new(SemanticRole.Button, 1, new Rect(0, 0, 120, 24), "Save", null, false)];
+        int? focused = null;
+        var told = new List<(IntPtr Element, string Name)>();
+        void Hear(IntPtr element, string name) => told.Add((element, name));
+        var previousSource = PhotonAccessibility.Source;
+        var previousFocus = PhotonAccessibility.FocusedId;
+        PhotonAccessibility.Source = () => tree;
+        PhotonAccessibility.FocusedId = () => focused;
+        AppKitNotifications.Posted += Hear;
+        try
+        {
+            var view = Send(Send(AppKit.Class("NSView"), Sel("alloc")), Sel("init"));
+            PhotonAccessibility.BuildChildren(view);
+            PhotonAccessibility.FocusMoved(view);
+            told.Should().BeEmpty("the keyboard has not moved");
+
+            // The keyboard lands on a field the tree does not hold yet: told once, on the view, however many
+            // frames draw before the field arrives.
+            focused = 2;
+            for (var frame = 0; frame < 5; frame++) PhotonAccessibility.FocusMoved(view);
+            told.Select(said => said.Element).Should().Equal([view]);
+
+            // The field arrives, and the read that gives it an element tells VoiceOver so.
+            tree.Add(new(SemanticRole.TextField, 2, new Rect(0, 30, 120, 24), "Name", "Ana", false));
+            var field = ElementsOf(PhotonAccessibility.BuildChildren(view))["2"];
+            PhotonAccessibility.FocusMoved(view);
+            told.Select(said => said.Element).Should().Equal([view, field]);
+
+            // The position comes to hold another kind of node: a new element, told on the next frame.
+            tree[1] = new(SemanticRole.Checkbox, 2, new Rect(0, 30, 120, 24), "Remember", null, false);
+            var box = ElementsOf(PhotonAccessibility.BuildChildren(view))["2"];
+            PhotonAccessibility.FocusMoved(view);
+            told.Select(said => said.Element).Should().Equal([view, field, box]);
+            told.Should().OnlyContain(said => said.Name == "NSAccessibilityFocusedUIElementChangedNotification");
+        }
+        finally
+        {
+            AppKitNotifications.Posted -= Hear;
+            PhotonAccessibility.Source = previousSource;
+            PhotonAccessibility.FocusedId = previousFocus;
+        }
+    }
+
     /// <summary>A text field a listbox hangs from (#1088) reaches AppKit as NSComboBox's role, named by its label,
     /// holding its text as its value and saying whether its list shows: Core-AAM's pair for an editable
     /// combobox, which VoiceOver reads as a combo box a person types into.</summary>

@@ -59,6 +59,10 @@ internal static class PhotonAccessibility
     /// <summary>The node VoiceOver was last told holds the keyboard, or null.</summary>
     private static int? _reportedFocus;
 
+    /// <summary>Whether the node with the keyboard had no element when VoiceOver was told, so the view was
+    /// named instead: the read of the tree that gives the node one tells VoiceOver again.</summary>
+    private static bool _focusAwaitsElement;
+
     /// <summary>A node's element and what the node said the last time it was told.</summary>
     private sealed class Kept(IntPtr element, SemanticNode said)
     {
@@ -165,6 +169,12 @@ internal static class PhotonAccessibility
             Release(gone.Key, gone.Value);
         // The array before this one is released only now that every element still living is in the new one.
         if (previous != IntPtr.Zero) SendVoid(previous, Sel("release"));
+        // The node with the keyboard has its element now: VoiceOver, told the view, is told the element.
+        if (_focusAwaitsElement && _reportedFocus is { } waiting && Elements.TryGetValue(waiting, out var arrived))
+        {
+            _focusAwaitsElement = false;
+            AppKitNotifications.Post(arrived.Element, "NSAccessibilityFocusedUIElementChangedNotification");
+        }
         return _children;
     }
 
@@ -192,10 +202,13 @@ internal static class PhotonAccessibility
         if (_view == IntPtr.Zero || view != _view) return;
         var id = FocusedId?.Invoke();
         if (id == _reportedFocus) return;
+        _reportedFocus = id;
+        _focusAwaitsElement = false;
         var target = FocusedElement(view);
-        // Reported only once the node has an element: a keyboard on a node the tree does not hold yet is told
-        // again when the node arrives, rather than taken as said.
-        _reportedFocus = id is not null && target == view ? null : id;
+        // A keyboard on a node the tree does not hold yet is told ONCE, on the view, and told again when a
+        // read of the tree gives the node its element (BuildChildren). Recorded as unreported instead, it was
+        // told again on every frame, each time reading the whole tree, for as long as the node had none.
+        _focusAwaitsElement = id is not null && target == view;
         AppKitNotifications.Post(target, "NSAccessibilityFocusedUIElementChangedNotification");
     }
 
@@ -345,5 +358,6 @@ internal static class PhotonAccessibility
     {
         foreach (var entry in Elements.ToList()) Release(entry.Key, entry.Value);
         _reportedFocus = null;
+        _focusAwaitsElement = false;
     }
 }
