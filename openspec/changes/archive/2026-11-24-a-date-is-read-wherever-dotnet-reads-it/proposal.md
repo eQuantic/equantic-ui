@@ -12,6 +12,7 @@
 - A zone may lead the text. A second zone is the plain refusal.
 - A day's name is read once at every boundary between the parts, and beside the date as before. A second is the plain refusal where it stands. Whether it is the date's day is asked last, after a clock that does not exist, and of today where the text names no date, as .NET asks it.
 - A numeric date with two numbers of three digits or more is refused.
+- An offset past fourteen hours is refused last, after the rest of the text, the date, the clock and the day's name, and not where an ISO form after it writes its own zone, as .NET does. A zone after the clock was refused at once before this change too.
 - A `T` before a clock after a trailing date that is not the ISO form's is the plain refusal, as it already was after a leading one.
 
 A developer writes nothing. Neither the public surface nor the developer surface moves. The parts reached are the runtime's date reader (`utils/date-reading.ts`), and through it `DateTime.Parse`, `DateTimeOffset.Parse` and their `TryParse` twins.

@@ -8,8 +8,8 @@ namespace eQuantic.UI.Conformance.Tests;
 /// a designator, a clock, a zone or a day's name (#1841): its clock takes the place of the one before it, a
 /// zone before it stands unless it writes its own, and a day's name beside it is not asked. A day's name
 /// once, anywhere between the parts, asked of the date last (#1842). A number of three digits or more is a
-/// year, and a date has one (#1843). A zone may lead the text, and a second zone or a second day's name is
-/// the plain refusal.
+/// year, and a date has one (#1843). A zone may lead the text, a second zone or a second day's name is the
+/// plain refusal, and an offset past fourteen hours is refused last.
 /// </summary>
 public class DateOrderConformanceTests
 {
@@ -45,6 +45,15 @@ public class DateOrderConformanceTests
         "0001-01-01", "01/015/2024", "2024-01-015", "15/001/2024"
     ];
 
+    /// <summary>An offset past fourteen hours, wherever it stands, is refused after the rest of the text, the
+    /// date, the clock and the day's name, and not at all where an ISO form after it writes its own zone.</summary>
+    private static readonly string[] Offsets =
+    [
+        "+15:00 2024-01-15 junk", "+15:00 2024-02-30", "+15:00 2024-01-15 25:00", "+15:00 2024-01-15",
+        "2024-01-15 10:00 +15:00 junk", "2024-01-15 10:00 +15:00", "2024-02-30 10:00 +15:00", "2024-01-15 25:00 +15:00",
+        "2024-01-15 10:00 +15:00 Tuesday", "+15:00 2024-01-15T10:00Z", "+15:00 2024-01-15T10:00", "10:00 +15:00 2024-01-15"
+    ];
+
     private static string Read(string[] texts) =>
         "var s = \"\"; foreach (var t in new[] { " + string.Join(", ", texts.Select(t => "\"" + t + "\"")) + " }) "
         + "{ try { s += DateTime.Parse(t).ToString(\"o\") + \"|\"; } catch (FormatException e) { s += e.Message + \"|\"; } } return s;";
@@ -68,6 +77,15 @@ public class DateOrderConformanceTests
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(Read(DayNames), culture: culture);
+    }
+
+    [SkippableTheory]
+    [InlineData(null)]
+    [InlineData("en-US")]
+    public void AnOffsetPastFourteenHours_IsRefusedLast(string? culture)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(Read(Offsets), culture: culture);
     }
 
     [SkippableTheory]

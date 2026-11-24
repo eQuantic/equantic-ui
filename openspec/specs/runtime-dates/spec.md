@@ -807,3 +807,19 @@ each for a year.
 
 - **WHEN** browser-side code reads `2024-01-001` and `1/001/2024`
 - **THEN** each is refused as not recognized, as in .NET, where the browser read January 1st 2024
+
+### Requirement: An offset past fourteen hours is refused last
+
+Reading a date SHALL refuse an offset past fourteen hours, wherever it stands, only after the rest of the
+text, the date, the clock and the day's name are read and known to exist, and SHALL NOT refuse it where an
+ISO form after it writes its own zone, as .NET does.
+
+#### Scenario: A word after the offset
+
+- **WHEN** browser-side code reads `+15:00 2024-01-15 junk` and `2024-01-15 10:00 +15:00 junk`
+- **THEN** each names the unknown word, as in .NET, where the browser refused the offset
+
+#### Scenario: An ISO zone after it
+
+- **WHEN** browser-side code reads `+15:00 2024-01-15T10:00Z`
+- **THEN** it is 10:00 UTC on January 15th 2024, as in .NET

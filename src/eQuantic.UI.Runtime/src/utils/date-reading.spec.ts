@@ -353,6 +353,16 @@ describe('readMoment: a day’s name once, anywhere (#1842)', () => {
   });
 });
 
+describe('readMoment: an offset past fourteen hours is refused last', () => {
+  it('refuses the rest of the text, the date and the clock first, and gives way to an ISO zone', () => {
+    expect(read('+15:00 2024-01-15 junk', 'invariant')).toBe('word at 18');
+    expect(read('2024-01-15 25:00 +15:00', 'invariant')).toBe('clock');
+    expect(read('2024-01-15 10:00 +15:00', 'invariant')).toBe('zone');
+    expect(read('+15:00 2024-01-15T10:00Z', 'invariant')).toBe('2024-01-15 10:00:00 Z');
+    expect(read('+15:00 2024-01-15T10:00', 'invariant')).toBe('zone');
+  });
+});
+
 describe('readMoment: a date has one year (#1843)', () => {
   it('refuses two numbers of three digits or more, and reads one', () => {
     expect(read('2024-01-001', 'invariant')).toBe('format');

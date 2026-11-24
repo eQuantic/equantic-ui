@@ -346,16 +346,26 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
   };
 
   let zone: Moment['zone'] = null;
+  // An offset past fourteen hours is refused last, after the rest of the text, the date, the clock and the
+  // day's name, as .NET checks it, and not at all where an ISO form writes its own zone.
+  let zoneRefusal: Refusal | null = null;
   // A zone, once: a second is the plain refusal, as .NET's lexer refuses `Z 2024-01-15 Z`.
   const readZoneHere = (): Refusal | null => {
     const before = cursor.at;
     cursor.space();
     const read = readZone(cursor);
     if (read === null) cursor.at = before;
-    else if (zone !== null) return FORMAT;
-    else if (typeof read === 'object') return read;
-    else zone = read;
+    else if (zone !== null || zoneRefusal !== null) return FORMAT;
+    else if (typeof read !== 'object') zone = read;
+    else if (read.refused === 'zone') zoneRefusal = read;
+    else return read;
     return null;
+  };
+  // The ISO form's moment with what came before it: its zone where it writes one, the one before it
+  // otherwise, or the refusal of an offset before it past fourteen hours.
+  const afterIso = (iso: Moment | Refusal): Moment | Refusal => {
+    if (refused(iso) || iso.zone !== null) return iso;
+    return zoneRefusal ?? { ...iso, zone };
   };
   // The ISO form where a date may start, read in the Gregorian calendar whatever the culture's: its clock
   // takes the place of any clock and designator before it, and its zone that of a zone before it, as
@@ -369,8 +379,7 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
       cursor.space();
       if (isoMarker(text, cursor.at) === 'clock') {
         cursor.at++;
-        const iso = readIso(cursor, leading.date);
-        return refused(iso) ? iso : { ...iso, zone: iso.zone ?? zone };
+        return afterIso(readIso(cursor, leading.date));
       }
       if (leading.weekday !== null) weekday = null;
     }
@@ -400,8 +409,7 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
       // calendar, a date the Gregorian one does not count is no ISO date either.
       if (!leading.isoDate || shapes.calendar !== GREGORIAN) return FORMAT;
       cursor.at++;
-      const iso = readIso(cursor, leading.date);
-      return refused(iso) ? iso : { ...iso, zone: iso.zone ?? zone };
+      return afterIso(readIso(cursor, leading.date));
     }
     // Numbers that name no date are one only before an ISO clock, which refuses them in other words; a
     // `T` that starts a word after them is the plain refusal too, where after a date it is the word's.
@@ -474,6 +482,7 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
   // The day's name is asked last, as .NET asks it once the day and the clock exist: of the date, or of
   // today where the text names none.
   if (weekday !== null && weekdayOf(date ?? localToday()) !== weekday) return { refused: 'weekday' };
+  if (zoneRefusal !== null) return zoneRefusal;
   return { date, clock, zone };
 }
 
