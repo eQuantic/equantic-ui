@@ -341,15 +341,17 @@ public static class ConformanceRunner
     /// As <see cref="AssertStatementsSameAsDotNet"/> for a case written against the VOCABULARY: both
     /// sides read <c>using eQuantic.UI.Primitives;</c>, and the program imports from the served
     /// bundle every runtime export the translation names (a vocabulary value type's companion, such
-    /// as <c>Color</c>), the way a page imports them from <c>@equantic/runtime</c>.
+    /// as <c>Color</c>), the way a page imports them from <c>@equantic/runtime</c>. A
+    /// <paramref name="culture"/> puts both sides in it, as <see cref="AssertStatementsSameAsDotNet"/> does.
     /// </summary>
-    public static void AssertVocabularyStatementsSameAsDotNet(string csharpStatements)
+    public static void AssertVocabularyStatementsSameAsDotNet(string csharpStatements, string? culture = null)
     {
-        var (jsBlock, actual, expected) = RunVocabularyStatements(csharpStatements);
+        var (jsBlock, actual, expected) = RunVocabularyStatements(csharpStatements, culture);
 
         actual.Should().Be(
             expected,
-            $"C# block `{csharpStatements}` (transpiled to JS `{jsBlock}`) must behave identically to .NET");
+            $"C# block `{csharpStatements}` (transpiled to JS `{jsBlock}`) must behave identically to .NET"
+            + (culture is null ? "" : $" in {culture}"));
     }
 
     /// <summary>
@@ -358,9 +360,10 @@ public static class ConformanceRunner
     /// that names no vocabulary: an <c>ArgumentOutOfRangeException</c>'s message writes its actual value
     /// after <c>Environment.NewLine</c>, which is <c>\r\n</c> on Windows.
     /// </summary>
-    public static void AssertVocabularyStatementsSameAsDotNetExceptTheHostsNewline(string csharpStatements, string why)
+    public static void AssertVocabularyStatementsSameAsDotNetExceptTheHostsNewline(string csharpStatements, string why,
+        string? culture = null)
     {
-        var (jsBlock, actual, expected) = RunVocabularyStatements(csharpStatements);
+        var (jsBlock, actual, expected) = RunVocabularyStatements(csharpStatements, culture);
         if (actual == expected) return;
 
         Folded(actual).Should().Be(Folded(expected),
@@ -368,12 +371,15 @@ public static class ConformanceRunner
             + $"host's newline, which is the only difference this overload excuses: {why}");
     }
 
-    private static (string JsBlock, string Actual, string Expected) RunVocabularyStatements(string csharpStatements)
+    private static (string JsBlock, string Actual, string Expected) RunVocabularyStatements(string csharpStatements,
+        string? culture = null)
     {
         const string prelude = "using eQuantic.UI.Primitives;";
         var jsBlock = Transpiler.TranspileStatements(csharpStatements, prelude);
-        var program = ImportOfWhatItNames(jsBlock) + Log(jsBlock);
-        return (jsBlock, JsExecutor.Run(program), DotNetEvaluator.EvaluateToJson(csharpStatements, prelude));
+        var install = culture is null ? "" : CultureInstall(culture);
+        var program = ImportOfWhatItNames(jsBlock) + install + Log(jsBlock);
+        return (jsBlock, JsExecutor.Run(program), DotNetEvaluator.EvaluateToJson(csharpStatements, prelude,
+            culture is null ? null : System.Globalization.CultureInfo.GetCultureInfo(culture)));
     }
 
     /// <summary>

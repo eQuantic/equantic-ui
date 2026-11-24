@@ -170,8 +170,10 @@ public class AppKitAccessibilityTests
             "the chosen radio says so through AXValue");
 
         var field = said.Single(element => element.Role == "AXPopUpButton");
-        (field.Label, field.Description).Should().Be(("Lisbon", "pop up button"),
-            "a select-only combobox is NSPopUpButton's role on the Mac, read by the choice it shows");
+        (field.Label, field.Description).Should().Be(("", "pop up button"),
+            "a select-only combobox is NSPopUpButton's role on the Mac, and a Select has no label to name it (#1328)");
+        FromNSString(Send(field.Element, Sel("accessibilityValue"))).Should().Be("Lisbon",
+            "the choice it shows is its AXValue, as it is the web's value");
         SendBool(field.Element, Sel("isAccessibilityExpanded")).Should().BeFalse("and it says its list is closed");
 
         var dialog = said.Single(element => element.Subrole is "AXApplicationDialog" or "AXApplicationAlertDialog");

@@ -48,7 +48,8 @@ public class ComboBoxAndDialogSemanticsTests
 
         var closed = host.Semantics().Should().ContainSingle().Subject;
         closed.Role.Should().Be(SemanticRole.ComboBox, "the field a listbox hangs from is the combobox, the web's own rule");
-        closed.Label.Should().Be("Lisbon", "it is read by the choice it shows");
+        closed.Label.Should().BeEmpty("a Select has no label, and a combobox is never named from what it shows (#1328)");
+        closed.Value.Should().Be("Lisbon", "the choice it shows is its value, as on the web");
         closed.Expanded.Should().BeFalse();
         closed.Checked.Should().BeNull("a combobox carries no check");
         closed.Selected.Should().BeNull("and no pick of its own; its options carry those");
@@ -56,7 +57,7 @@ public class ComboBoxAndDialogSemanticsTests
         Open(host);
 
         host.Semantics().Select(node => (node.Role, node.Label)).Should().Equal(
-            [(SemanticRole.ComboBox, "Lisbon"), (SemanticRole.Button, "Dismiss"),
+            [(SemanticRole.ComboBox, ""), (SemanticRole.Button, "Dismiss"),
              (SemanticRole.Option, "Lisbon"), (SemanticRole.Option, "Porto")],
             "the open list follows the field with nothing announced between them but the scrim the "
             + "web emits too, and in particular no layer: a listbox is no dialog to anyone");
@@ -76,7 +77,7 @@ public class ComboBoxAndDialogSemanticsTests
         Open(host);
 
         host.Semantics().Select(node => (node.Role, node.Label)).Should().Equal(
-            [(SemanticRole.ComboBox, "Lisboa"), (SemanticRole.Button, "Dismiss"),
+            [(SemanticRole.ComboBox, ""), (SemanticRole.Button, "Dismiss"),
              (SemanticRole.Option, "Lisboa"), (SemanticRole.Group, "A seguir"), (SemanticRole.Option, "Braga")],
             "the heading is the group's name, read once: as the group, never again as text");
         host.Semantics().Where(node => node.Role == SemanticRole.Option).Select(option => option.Selected)
@@ -299,13 +300,13 @@ public class ComboBoxAndDialogSemanticsTests
 
         var asComponent = Render(new Anchored(new Button("Pick"), list) { PanelRole = AnchorPanelRole.Listbox });
         asComponent.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.ComboBox)
-            .Which.Label.Should().Be("Pick");
+            .Which.Value.Should().Be("Pick");
 
         var sized = new Box(new BoxStyle { Width = 200 },
             new Pressable(new Text("Size", TypeRole.Label), () => { }) { Expanded = false });
         var wrapped = Render(new Anchored(sized, list) { PanelRole = AnchorPanelRole.Listbox });
         wrapped.Semantics().Should().ContainSingle()
-            .Which.Should().Match<SemanticNode>(field => field.Role == SemanticRole.ComboBox && field.Label == "Size",
+            .Which.Should().Match<SemanticNode>(field => field.Role == SemanticRole.ComboBox && field.Value == "Size",
                 "a box that only sizes the trigger is not what a reader meets in its place");
 
         var row = new Row(gap: Space.S2);
@@ -332,7 +333,7 @@ public class ComboBoxAndDialogSemanticsTests
     {
         Render(new Select(["Lisbon", "Porto"], 0, _ => { }) { Disabled = true }).Semantics().Should().ContainSingle()
             .Which.Should().Match<SemanticNode>(field => field.Role == SemanticRole.ComboBox
-                && field.Disabled && field.Expanded == false && field.Label == "Lisbon");
+                && field.Disabled && field.Expanded == false && field.Label == "" && field.Value == "Lisbon");
         Render(new TimePicker(new TimeOnly(9, 30), _ => { }, label: "Arrival") { Disabled = true }).Semantics()
             .Should().ContainSingle(node => node.Role == SemanticRole.ComboBox)
             .Which.Should().Match<SemanticNode>(field => field.Disabled && field.Label == "Arrival");
@@ -341,7 +342,7 @@ public class ComboBoxAndDialogSemanticsTests
     /// <summary>
     /// A combobox an author LABELLED is named by the label, and what its field shows is its value,
     /// as a select-only combobox's content is on the web: "Country, Brazil", never "Country" alone.
-    /// Unlabelled, what it shows is its name, the way a Select's own field reads.
+    /// Unlabelled, it has no name and what it shows is still its value, as the web reads it (#1328).
     /// </summary>
     [Fact]
     public void ALabelledComboBoxSaysTheChoiceItShowsAsItsValue()
@@ -356,7 +357,7 @@ public class ComboBoxAndDialogSemanticsTests
                 && field.Label == "Country" && field.Value == "Brazil");
 
         Render(new Select(["Lisbon", "Porto"], 0, _ => { })).Semantics().Should().ContainSingle()
-            .Which.Should().Match<SemanticNode>(field => field.Label == "Lisbon" && field.Value == null,
-                "unlabelled, the choice it shows is its name and is not read twice");
+            .Which.Should().Match<SemanticNode>(field => field.Label == "" && field.Value == "Lisbon",
+                "unlabelled, the choice it shows is its value and not a name it does not have");
     }
 }

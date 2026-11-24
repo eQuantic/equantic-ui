@@ -179,7 +179,12 @@ public class SharedComponentTranspilationTests
     /// (#1303 to #1307): a downcast reaching a member of the derived type, abstract members of every
     /// accessibility called through the base, a constructor chained to one with an argument the first
     /// supplies, a lambda stored in a static field, and a field's collection initializer beside a base
-    /// constructor call. Written to <c>__fixtures__</c>, where the runtime's <c>tsc</c> reads every line.
+    /// constructor call. And initializers of hand-written vocabulary twins setting a member their config
+    /// lacked (#1823): a box style's foreground, a node's bookmark, cross alignment and grid span on a config
+    /// written in place, a spacer's fixed length, and members the constructor takes as parameters too (an image's
+    /// label, a text's role, a group's child, a safe area's edges, a gradient's direction). Written to
+    /// <c>__fixtures__</c>, where the runtime's <c>tsc</c> reads every line. And a plain generic class, a generic
+    /// record and a generic struct, whose class declared no type parameters while its members named them (#1845).
     /// </summary>
     private const string EmissionShapesSource = """
         using System;
@@ -293,6 +298,44 @@ public class SharedComponentTranspilationTests
             public EmittedBag(string name) : base(name) { }
             public int Count => _items.Count;
         }
+
+        public static class EmittedConfigs
+        {
+            public static BoxStyle Inked() => new BoxStyle { Foreground = new ColorToken(Color.Black) };
+
+            public static VisualNode Grouped(VisualNode child) =>
+                new Group(child) { Label = "Totals", Bookmark = "totals", AlignSelf = CrossAlign.Center, GridSpan = 2 };
+
+            public static Spacer Rigid() => new Spacer { FixedLength = 8 };
+
+            // Members the constructor takes as parameters too, which an initializer sets through the config.
+            public static Image Labelled() => new Image("a.png", 1, 2) { Label = "Chart" };
+
+            public static Text Titled() => new Text("Totals") { Role = TypeRole.Title, MaxLines = 2 };
+
+            public static Group Reparented(VisualNode first, VisualNode second) => new Group(first) { Child = second };
+
+            public static SafeArea Inset(VisualNode child) => new SafeArea(child) { Edges = 3 };
+
+            public static LinearGradient Downward() =>
+                new LinearGradient(new ColorToken(Color.Black), new ColorToken(Color.White)) { Direction = GradientDirection.ToBottom };
+        }
+
+        public sealed class EmittedFactory<T>
+        {
+            private readonly Func<T> _create;
+            private readonly Action<T> _initialize;
+            public EmittedFactory(Func<T> create, Action<T> initialize) { _create = create; _initialize = initialize; }
+            public T Build() { var made = _create(); _initialize(made); return made; }
+        }
+
+        public sealed record EmittedPair<TKey>(TKey Key, int Rank);
+
+        public struct EmittedSlot<TValue>
+        {
+            public TValue Value;
+            public EmittedSlot(TValue value) { Value = value; }
+        }
         """;
 
     private const string BoundReceiversSource = """
@@ -370,11 +413,13 @@ public class SharedComponentTranspilationTests
     /// (<c>CSharpLanguage</c> from <c>./CurlyBraceLanguage</c>); the element engine's types live in the
     /// vocabulary's namespace, which eqc routes to the runtime, so <c>ComponentElement</c> and
     /// <c>NodeElement</c> read <c>Element</c> through the aggregator, and every spec that entered through
-    /// the barrel failed to load. A base already imported from its module is left as it is.
+    /// the barrel failed to load. A base already imported from its module is left as it is. A generic class's header
+    /// names its type parameters before <c>extends</c> (#1845), and <c>GestureRecognizerFactoryWithHandlers&lt;T&gt;</c>
+    /// read its base off the barrel until the match took them (#1563).
     /// </summary>
     private static string BaseFromItsModule(string typeScript, IReadOnlySet<string> library)
     {
-        var extends = Regex.Match(typeScript, @"export (?:abstract )?class \w+ extends (\w+)");
+        var extends = Regex.Match(typeScript, @"export (?:abstract )?class \w+(?:<[^>]*>)? extends (\w+)");
         if (!extends.Success || !library.Contains(extends.Groups[1].Value)) return typeScript;
         var baseName = extends.Groups[1].Value;
         var import = Regex.Match(typeScript, @"^import \{ ([^}]*) \} from ""\.\./runtime-exports"";", RegexOptions.Multiline);
@@ -479,7 +524,7 @@ public class SharedComponentTranspilationTests
     [
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
-        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain",
+        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot",
         "ArenaProbe", "ArenaMember", "HoldThenDrag", "FactoryTypeChange",
     ];
 
