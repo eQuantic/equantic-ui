@@ -317,6 +317,23 @@ public class SharedComponentTranspilationTests
             public static LinearGradient Downward() =>
                 new LinearGradient(new ColorToken(Color.Black), new ColorToken(Color.White)) { Direction = GradientDirection.ToBottom };
         }
+
+        public sealed class EmittedPointer
+        {
+            public List<string> Members { get; } = new();
+        }
+
+        public sealed class EmittedArena
+        {
+            private readonly Dictionary<int, EmittedPointer> _arenas = new();
+            public int Count(int pointer)
+            {
+                if (!_arenas.TryGetValue(pointer, out var arena)) return 0;
+                var total = 0;
+                foreach (var member in arena.Members) total += member.Length;
+                return total;
+            }
+        }
         """;
 
     private const string BoundReceiversSource = """
@@ -498,7 +515,7 @@ public class SharedComponentTranspilationTests
     [
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
-        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs",
+        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedPointer", "EmittedArena",
     ];
 
     /// <summary>The source this asks about, kept HERE rather than pointed at a production class.
