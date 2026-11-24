@@ -288,6 +288,7 @@ describe('the gesture arena, in the browser', () => {
     expect(document.documentElement.style.userSelect).toBe('');
   });
 
+  // The arena closes in the window's bubble phase, after every listener of the document. "Not a microtask" cannot be pinned here: jsdom runs no microtask between the listeners of a dispatched event.
   it("gives a mouse's press to a recognizer alone under it at once, so the drag that follows selects no text", () => {
     const card = document.createElement('div');
     card.textContent = 'A card';
@@ -381,6 +382,124 @@ describe('the gesture arena, in the browser', () => {
 
     expect(log).toEqual(['add 10,10']);
   });
+
+  it('leaves the menu of a finger alone while no recognizer has won it', () => {
+    const card = document.createElement('div');
+    card.textContent = 'A card';
+    const d = detector([factoryOf(() => new Probe(log, { deadlineMs: 500 }))], card);
+    document.body.appendChild(d);
+    placeAt(d, 0, 0);
+    under(card, d);
+
+    pointer(card, 'pointerdown', 10, 10, { pointerType: 'touch' });
+    const menu = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+    card.dispatchEvent(menu);
+
+    expect(log).toEqual(['add 10,10']);
+    expect(menu.defaultPrevented).toBe(false);
+    pointer(document, 'pointerup', 10, 10, { pointerType: 'touch' });
+  });
+
+  it('closes the arena after the task when a listener stopped the down, and the recognizer alone takes the pointer', () => {
+    vi.useFakeTimers();
+    const card = document.createElement('div');
+    card.textContent = 'A card';
+    card.addEventListener('pointerdown', (e) => e.stopPropagation());
+    const d = detector([factoryOf(() => new Probe(log))], card);
+    document.body.appendChild(d);
+    placeAt(d, 0, 0);
+    under(card, d);
+
+    pointer(card, 'pointerdown', 10, 10);
+    expect(log).toEqual([]);
+    vi.advanceTimersByTime(1);
+
+    expect(log).toEqual(['add 10,10', 'accept']);
+    pointer(document, 'pointerup', 10, 10);
+  });
+
+  it('gives a tap to the innermost of two nested detectors, and the outer one hears its rejection', () => {
+    const inner = detector([factoryOf(() => new Probe(log, { deadlineMs: 5000 }))], document.createElement('div'));
+    const outerLog: string[] = [];
+    const card = document.createElement('div');
+    card.textContent = 'A card';
+    inner.replaceChildren(card);
+    const outer = detector([factoryOf(() => new Probe(outerLog, { deadlineMs: 5000 }))], inner);
+    document.body.appendChild(outer);
+    placeAt(outer, 0, 0);
+    placeAt(inner, 0, 0);
+    under(card, inner, outer);
+
+    pointer(card, 'pointerdown', 10, 10);
+    pointer(document, 'pointerup', 10, 10);
+
+    expect(log).toEqual(['add 10,10', 'up 10,10', 'accept']);
+    expect(outerLog).toEqual(['add 10,10', 'up 10,10', 'reject']);
+  });
+
+  it('puts a press around a detector after it: the recognizer takes the tap, and the click presses nothing', () => {
+    const card = document.createElement('div');
+    card.textContent = 'A card';
+    const d = detector([factoryOf(() => new Probe(log, { deadlineMs: 5000 }))], card);
+    const press = button(clicks);
+    press.replaceChildren(d);
+    document.body.appendChild(press);
+    placeAt(d, 0, 0);
+    under(card, d, press);
+
+    pointer(card, 'pointerdown', 10, 10);
+    pointer(document, 'pointerup', 10, 10);
+    click(card);
+
+    expect(log).toEqual(['add 10,10', 'up 10,10', 'accept']);
+    expect(clicks).toEqual([]);
+  });
+
+  /** detector > a target that asks for a context menu on a finger's hold (500 ms). */
+  function contextUnderADetector(rules: ConstructorParameters<typeof Probe>[1], asked: string[]) {
+    const inner = document.createElement('div');
+    inner.textContent = 'Row';
+    const target = document.createElement('div');
+    target.setAttribute('data-eq-context', 'on');
+    target.addEventListener('eq-context-requested', () => asked.push('menu'));
+    target.appendChild(inner);
+    const d = detector([factoryOf(() => new Probe(log, rules))], target);
+    document.body.appendChild(d);
+    placeAt(d, 0, 0);
+    under(inner, target, d);
+    return inner;
+  }
+
+  it('takes the finger from a recognizer that waits when its hold asks for a menu, and holds nothing', () => {
+    vi.useFakeTimers();
+    const asked: string[] = [];
+    const inner = contextUnderADetector({ deadlineMs: 5000 }, asked);
+
+    pointer(inner, 'pointerdown', 10, 10, { pointerType: 'touch' });
+    vi.advanceTimersByTime(900);
+
+    expect(asked).toEqual(['menu']);
+    expect(log).toEqual(['add 10,10', 'reject']);
+    expect(touchmove()).toBe(false);
+    expect(document.documentElement.style.userSelect).toBe('');
+    vi.advanceTimersByTime(5000);
+    pointer(document, 'pointerup', 10, 10, { pointerType: 'touch' });
+    expect(log).toEqual(['add 10,10', 'reject']);
+  });
+
+  it('lets a recognizer take the finger when its context hold travelled away, and no menu is asked', () => {
+    vi.useFakeTimers();
+    const asked: string[] = [];
+    const inner = contextUnderADetector({ deadlineMs: 5000 }, asked);
+
+    pointer(inner, 'pointerdown', 10, 10, { pointerType: 'touch' });
+    pointer(document, 'pointermove', 60, 10, { pointerType: 'touch' });
+    vi.advanceTimersByTime(900);
+    pointer(document, 'pointerup', 60, 10, { pointerType: 'touch' });
+
+    expect(asked).toEqual([]);
+    expect(log).toEqual(['add 10,10', 'move 60,10', 'up 60,10', 'accept']);
+  });
 });
 
 describe("a table's pan in the arena", () => {
@@ -441,12 +560,30 @@ describe("a table's pan in the arena", () => {
     expect(log).toEqual(['add 400,400', 'move 400,395', 'move 400,340', 'reject']);
     expect(scroll.offset.down).toBe(60);
   });
+
+  it("gives a scrollbar's thumb to the bar from the press, and a recognizer that would accept never hears the drag", () => {
+    const log: string[] = [];
+    const { scroll, view } = tableUnderADetector(log, { acceptOnMove: true });
+    const thumb = scroll.thumbOf('vertical')!;
+
+    pointer(view, 'pointerdown', thumb.x + 4, thumb.y + 4, { pointerId: 3 });
+    pointer(view, 'pointermove', thumb.x + 4, 5000, { pointerId: 3 });
+    pointer(view, 'pointerup', thumb.x + 4, 5000, { pointerId: 3 });
+
+    expect(log).toEqual([`add ${thumb.x + 4},${thumb.y + 4}`, 'reject']);
+    expect(scroll.offset.down + scroll.viewport.height).toBe(1_000 * 28);
+  });
 });
 
 describe('a RawGestureDetector through the real lowering', () => {
-  afterEach(() => resetGestureArena());
+  afterEach(() => {
+    vi.useRealTimers();
+    resetGestureArena();
+  });
 
   it('is a div marked as a listener and a detector, whose recognizer outlives the builds of a hold and runs what the latest one wrote', async () => {
+    // The clock is the test's: a frame is 32 ms and the hold's deadline 120, so no load on the host moves either.
+    vi.useFakeTimers();
     const log: string[] = [];
     let created = 0;
     class Page extends StatefulComponent {
@@ -474,7 +611,7 @@ describe('a RawGestureDetector through the real lowering', () => {
         this.setState(() => undefined);
       }
     }
-    const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    const nextFrame = () => vi.advanceTimersByTimeAsync(32);
     const host = document.createElement('div');
     document.body.appendChild(host);
     const page = new Page();
@@ -489,7 +626,7 @@ describe('a RawGestureDetector through the real lowering', () => {
       page.rebuild();
       await nextFrame();
     }
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await vi.advanceTimersByTimeAsync(200);
     pointer(document, 'pointerup', 15, 30, { pointerType: 'touch' });
     click(press);
 
