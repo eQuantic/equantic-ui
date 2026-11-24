@@ -391,6 +391,11 @@ export function readMoment(text: string, culture: DateTimeFormatData): Moment | 
   const leadingZone = readZoneHere();
   if (leadingZone) return leadingZone;
   if (!takeWeekday()) return FORMAT;
+  // A second zone right after the first, which no date or clock stands between: `Z GMT 2024-01-15`.
+  if (zone !== null || zoneRefusal !== null) {
+    const second = readZoneHere();
+    if (second) return second;
+  }
   const isoFirst = readIsoHere();
   if (isoFirst !== null) return isoFirst;
 
