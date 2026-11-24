@@ -371,6 +371,45 @@ public class CalendarTests
             "Muharram 1318 has 29 days and Dhu al-Hijjah 1500 has 30");
     }
 
+    /// <summary>The chevron that pages <paramref name="direction"/>, named in <paramref name="culture"/>'s language.</summary>
+    private static HtmlNode Chevron(HtmlNode tree, CultureInfo culture, int direction) =>
+        Walk(tree).First(n => n.Attributes.GetValueOrDefault("aria-label")
+            == UnderCulture(() => direction > 0 ? SdkStrings.NextMonth : SdkStrings.PreviousMonth, culture.Name));
+
+    [Theory]
+    [InlineData(2077, 11, 1, 1)]
+    [InlineData(1900, 5, 15, -1)]
+    public void ABoundedCalendarsChevron_StopsAtItsRange(int year, int month, int day, int direction)
+    {
+        // The chevron past Um Al Qura's last month (November 2077) or before its first (April 1900) has no
+        // month to page to: the grid stays where it is, where it asked a month .NET refuses (#1849).
+        var culture = UmAlQura();
+        var calendar = new Calendar(new DateOnly(year, month, day));
+        var before = Render(calendar, culture);
+
+        InCulture(culture, () => Press(Chevron(before, culture, direction)));
+        var after = Render(calendar, culture);
+
+        GridName(after).Should().Be(GridName(before));
+        Cells(after).Should().HaveCount(Cells(before).Count);
+    }
+
+    [Theory]
+    [InlineData(9999, 12, 15, 1)]
+    [InlineData(1, 1, 15, -1)]
+    public void TheGregorianCalendarsFirstAndLastMonth_DrawAndStop(int year, int month, int day, int direction)
+    {
+        // December 9999's last week and January 1's first reach days no date names: they are holes, and
+        // the chevron past them stays (#1849), where both failed to build.
+        var culture = new CultureInfo("en-US");
+        var calendar = new Calendar(new DateOnly(year, month, day));
+        var before = Render(calendar, culture);
+        Cells(before).Should().HaveCount(31);
+
+        InCulture(culture, () => Press(Chevron(before, culture, direction)));
+        GridName(Render(calendar, culture)).Should().Be(GridName(before));
+    }
+
     /// <summary>A culture counting in the Um Al Qura calendar: whichever one its host's data offers it to.</summary>
     private static CultureInfo UmAlQura()
     {
