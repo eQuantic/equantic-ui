@@ -584,7 +584,9 @@ accessibility. A downcast to a class with a twin SHALL keep its target's type fo
 without checking the value. A class's module SHALL import every app type its text names, whether or not its compile
 was handed a scan of the app. A parameter an alternate constructor may leave missing, a lambda stored in a static, a
 value a derived type evaluates before its base's constructor, and a primary constructor's parameter that defaults to
-null SHALL each hold the type C# declares for it.
+null SHALL each hold the type C# declares for it. A generic class, a plain one, a record, a struct or a
+component, SHALL declare its type parameters in TypeScript and none in plain JavaScript, and a record's members
+SHALL name its own type by its closure.
 
 #### Scenario: A base calls its abstract members
 
@@ -616,6 +618,19 @@ null SHALL each hold the type C# declares for it.
 
 - **WHEN** a class declares `class Base(string name)`
 - **THEN** its twin's constructor is `constructor(name: string = null!)`, and `tsc` takes it
+
+#### Scenario: A plain generic class, a record and a struct declare their type parameters
+
+- **WHEN** an app or the library declares `class Factory<T>` storing a `Func<T>`, `record Pair<TKey>(TKey Key, int Rank)`
+  and `struct Slot<TValue>` with a `TValue` field
+- **THEN** their modules declare `class Factory<T>`, `class Pair<TKey>` and `class Slot<TValue>`; `Pair`'s `with` answers
+  `Pair<TKey>`, `Slot`'s `with` and `$clone` answer `Slot<TValue>` and its static `$zero` answers `Slot<any>`; and `tsc`
+  takes them
+
+#### Scenario: Plain JavaScript declares no type parameters
+
+- **WHEN** the same classes and a generic component are compiled with type annotations off
+- **THEN** no class header carries a type parameter list, and the modules parse
 
 ### Requirement: A component's store a property guards with field starts as C# starts it
 

@@ -181,7 +181,8 @@ public class SharedComponentTranspilationTests
     /// lacked (#1823): a box style's foreground, a node's bookmark, cross alignment and grid span on a config
     /// written in place, a spacer's fixed length, and members the constructor takes as parameters too (an image's
     /// label, a text's role, a group's child, a safe area's edges, a gradient's direction). Written to
-    /// <c>__fixtures__</c>, where the runtime's <c>tsc</c> reads every line.
+    /// <c>__fixtures__</c>, where the runtime's <c>tsc</c> reads every line. And a plain generic class, a generic
+    /// record and a generic struct, whose class declared no type parameters while its members named them (#1845).
     /// </summary>
     private const string EmissionShapesSource = """
         using System;
@@ -316,6 +317,22 @@ public class SharedComponentTranspilationTests
 
             public static LinearGradient Downward() =>
                 new LinearGradient(new ColorToken(Color.Black), new ColorToken(Color.White)) { Direction = GradientDirection.ToBottom };
+        }
+
+        public sealed class EmittedFactory<T>
+        {
+            private readonly Func<T> _create;
+            private readonly Action<T> _initialize;
+            public EmittedFactory(Func<T> create, Action<T> initialize) { _create = create; _initialize = initialize; }
+            public T Build() { var made = _create(); _initialize(made); return made; }
+        }
+
+        public sealed record EmittedPair<TKey>(TKey Key, int Rank);
+
+        public struct EmittedSlot<TValue>
+        {
+            public TValue Value;
+            public EmittedSlot(TValue value) { Value = value; }
         }
 
         public sealed class EmittedPointer
@@ -524,7 +541,7 @@ public class SharedComponentTranspilationTests
     [
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
-        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedPointer", "EmittedArena",
+        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedPointer", "EmittedArena",
     ];
 
     /// <summary>The source this asks about, kept HERE rather than pointed at a production class.
