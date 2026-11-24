@@ -373,8 +373,8 @@ export class CodeBlock extends StatelessComponent {
         let [selected, selectedInk] = this.selectedOn(selectable, index, text.length, ink, theme);
         let at = 0;
         for (const token of $eq.collections.sequenceWalk(tokens)) {
-            let start = Math.min(Math.max(token.start, at), text.length);
-            let end = Math.min(Math.max(token.end, start), text.length);
+            let start = $eq.num.clamp(token.start, at, text.length, 'int32');
+            let end = $eq.num.clamp(token.end, start, text.length, 'int32');
             if (start > at) CodeBlock.addSpans(code, cells, at, start, ink, style, columnWidth, selected, selectedInk);
             CodeBlock.addSpans(code, cells, start, end, this.inverse ? CodeBlock.inverseCode(token.kind, theme) : theme.code(token.kind), style, columnWidth, selected, selectedInk);
             at = end;
@@ -544,8 +544,8 @@ export class CodeBlock extends StatelessComponent {
     static addSpans(code: Row, cells: CodeLineCells, from: number, to: number, color: ColorToken, style: TypeStyle, columnWidth: number, selected: any[], selectedInk: ColorToken) {
         let at = from;
         for (const stretch of $eq.collections.listWalk(selected)) {
-            let inFrom = Math.min(Math.max(stretch[0], at), to);
-            let inTo = Math.min(Math.max(stretch[1], inFrom), to);
+            let inFrom = $eq.num.clamp(stretch[0], at, to, 'int32');
+            let inTo = $eq.num.clamp(stretch[1], inFrom, to, 'int32');
             if (inTo <= inFrom) continue;
             CodeBlock.addSpan(code, cells, at, inFrom, color, style, columnWidth);
             CodeBlock.addSpan(code, cells, inFrom, inTo, selectedInk, style, columnWidth);

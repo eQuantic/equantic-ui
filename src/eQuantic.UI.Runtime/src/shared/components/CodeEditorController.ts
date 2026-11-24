@@ -1545,7 +1545,7 @@ export class CodeEditorController {
     visibleLineFrom(line: number, steps: number) {
         let last = this._document.lineCount - 1 | 0;
         let rows: any; 
-        if (!((rows = this.grid.rows) != null)) return Math.min(Math.max(line + steps | 0, 0), last);
+        if (!((rows = this.grid.rows) != null)) return $eq.num.clamp(line + steps | 0, 0, last, 'int32');
         let direction = steps < 0 ? -1 : 1;
         let here = line;
         let left = $eq.num.abs(steps, 32);
@@ -1591,7 +1591,7 @@ export class CodeEditorController {
     }
 
     selectLine(line: number) {
-        let last = Math.min(Math.max(line, 0), this._document.lineCount - 1 | 0);
+        let last = $eq.num.clamp(line, 0, this._document.lineCount - 1 | 0, 'int32');
         this.selection = new CodeRange(new CodePosition(last, 0), (last + 1 | 0) < this._document.lineCount ? new CodePosition(last + 1 | 0, 0) : new CodePosition(last, this._document.line(last).length));
     }
 

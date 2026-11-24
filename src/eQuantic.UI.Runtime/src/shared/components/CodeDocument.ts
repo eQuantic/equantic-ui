@@ -87,8 +87,8 @@ export class CodeDocument {
     }
 
     clamp(position: CodePosition) {
-        let line = Math.min(Math.max(position.line, 0), this._lines.length - 1 | 0);
-        let column = Math.min(Math.max(position.column, 0), this._lines[line].length);
+        let line = $eq.num.clamp(position.line, 0, this._lines.length - 1 | 0, 'int32');
+        let column = $eq.num.clamp(position.column, 0, this._lines[line].length, 'int32');
         return new CodePosition(line, column);
     }
 
