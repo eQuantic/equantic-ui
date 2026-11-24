@@ -135,7 +135,7 @@ public sealed class Calendar : StatefulComponent
         {
             var weekRow = new Row(gap: 0) { Width = SizeValue.Fill };
             for (var column = 0; column < 7; column++)
-                weekRow.Add(Cell(start.AddDays(week * 7 + column), context));
+                weekRow.Add(Cell(start + week * 7 + column, context));
             rows.Add(weekRow);
         }
 
@@ -151,14 +151,19 @@ public sealed class Calendar : StatefulComponent
         return month;
     }
 
-    /// <summary>One day. Outside the month it is a hole rather than a greyed number (C15: other
-    /// month days hidden) — the grid keeps its shape without offering somewhere to go.</summary>
-    private VisualNode Cell(DateOnly day, ComponentContext context)
+    /// <summary>One day, by its number (days since January 1st of the year 1). Outside the month it is a
+    /// hole rather than a greyed number (C15: other month days hidden) — the grid keeps its shape without
+    /// offering somewhere to go. So is a day the calendar does not write, which the first and last month's
+    /// weeks reach: before the year 1 and after 9999 no date names it at all, and Um Al Qura's end in
+    /// November 2077 (#1849).</summary>
+    private VisualNode Cell(int number, ComponentContext context)
     {
         var theme = context.Theme;
         var slot = theme.Calendar;
         var cellSize = slot?.CellSize ?? CellSize;
         var size = SizeValue.Fixed(cellSize);
+        if (!Written(number)) return new Box(new BoxStyle { Width = size, Height = size });
+        var day = DateOnly.FromDayNumber(number);
         if (!InMonth(day)) return new Box(new BoxStyle { Width = size, Height = size });
 
         var selected = Selected == day;
@@ -229,10 +234,10 @@ public sealed class Calendar : StatefulComponent
 
     /// <summary>Where the keyboard is, as the grid's own (row, item) — row 0 is the day-name
     /// header, so the weeks start at 1. Null while nothing has been focused.</summary>
-    private (int Row, int Item)? CursorCell(DateOnly start)
+    private (int Row, int Item)? CursorCell(int start)
     {
         if (_cursor is not { } cursor) return null;
-        var offset = cursor.DayNumber - start.DayNumber;
+        var offset = cursor.DayNumber - start;
         if (offset < 0 || offset >= 42) return null;
         // The cursor's own day has to BE a cell, or there is nothing to point at.
         if (!InMonth(cursor) || !InRange(cursor)) return null;
@@ -247,7 +252,9 @@ public sealed class Calendar : StatefulComponent
         var item = 0;
         for (var column = 0; column < offset % 7; column++)
         {
-            var day = start.AddDays(row * 7 + column);
+            var number = start + row * 7 + column;
+            if (!Written(number)) continue;
+            var day = DateOnly.FromDayNumber(number);
             if (InMonth(day) && InRange(day)) item++;
         }
         return (row + 1, item);
@@ -260,16 +267,16 @@ public sealed class Calendar : StatefulComponent
         var from = _cursor ?? Selected ?? ClampToRange(Today());
         var to = move switch
         {
-            NavigableMove.PreviousItem => from.AddDays(-1),
-            NavigableMove.NextItem => from.AddDays(1),
-            NavigableMove.PreviousRow => from.AddDays(-7),
-            NavigableMove.NextRow => from.AddDays(7),
-            NavigableMove.PreviousPage => CultureCalendar.AddMonths(from, -1),
-            NavigableMove.NextPage => CultureCalendar.AddMonths(from, 1),
-            NavigableMove.PreviousSection => CultureCalendar.AddYears(from, -1),
-            NavigableMove.NextSection => CultureCalendar.AddYears(from, 1),
-            NavigableMove.RowStart => from.AddDays(-DayInWeek(from)),
-            NavigableMove.RowEnd => from.AddDays(6 - DayInWeek(from)),
+            NavigableMove.PreviousItem => DaysAway(from, -1),
+            NavigableMove.NextItem => DaysAway(from, 1),
+            NavigableMove.PreviousRow => DaysAway(from, -7),
+            NavigableMove.NextRow => DaysAway(from, 7),
+            NavigableMove.PreviousPage => MonthsAway(from, -1),
+            NavigableMove.NextPage => MonthsAway(from, 1),
+            NavigableMove.PreviousSection => MonthsAway(from, -12),
+            NavigableMove.NextSection => MonthsAway(from, 12),
+            NavigableMove.RowStart => DaysAway(from, -DayInWeek(from)),
+            NavigableMove.RowEnd => DaysAway(from, 6 - DayInWeek(from)),
             _ => from,
         };
 
@@ -286,12 +293,19 @@ public sealed class Calendar : StatefulComponent
     private static int DayInWeek(DateOnly day) =>
         (SundayIndex(day) - CalendarNames.FirstDayOfWeek + 7) % 7;
 
-    /// <summary>The first cell of the grid: the start of the week containing the 1st.</summary>
-    private static DateOnly GridStart(DateOnly month, int firstDayOfWeek) =>
-        month.AddDays(-((SundayIndex(month) - firstDayOfWeek + 7) % 7));
+    /// <summary>The first cell of the grid, by its number: the start of the week containing the 1st, which
+    /// before January 1st of the year 1 no date names.</summary>
+    private static int GridStart(DateOnly month, int firstDayOfWeek) =>
+        month.DayNumber - (SundayIndex(month) - firstDayOfWeek + 7) % 7;
+
+    /// <summary>Whether the calendar writes the day of number <paramref name="number"/>.</summary>
+    private static bool Written(int number) =>
+        number >= CultureCalendar.FirstDay.DayNumber && number <= CultureCalendar.LastDay.DayNumber;
 
     private void Page(int months) => SetState(() =>
     {
+        // Past the calendar's first or last month there is no month to page to (#1849).
+        if (!Counted(_month, months)) return;
         var target = CultureCalendar.AddMonths(_month, months);
         // A month with no reachable day in it is not somewhere to go: min/max bound the chevrons
         // exactly as they bound the arrows, and paging into an empty grid would leave the reader
@@ -304,7 +318,7 @@ public sealed class Calendar : StatefulComponent
         // which is the rule the arrows already obey, so the two never disagree.
         if (_cursor is { } cursor)
         {
-            _cursor = ClampToRange(CultureCalendar.AddMonths(cursor, months));
+            _cursor = ClampToRange(MonthsAway(cursor, months));
             _month = FirstOfMonth(_cursor.Value);
         }
     });
@@ -329,17 +343,50 @@ public sealed class Calendar : StatefulComponent
         OnChanged?.Invoke(day);
     }
 
+    /// <summary>Whether a day may be picked: inside min and max, and inside the days the culture's calendar
+    /// writes, which Um Al Qura's end in November 2077 (#1849).</summary>
     private bool InRange(DateOnly day) =>
-        (Min is not { } min || day >= min) && (Max is not { } max || day <= max);
+        (Min is not { } min || day >= min) && (Max is not { } max || day <= max)
+        && day >= CultureCalendar.FirstDay && day <= CultureCalendar.LastDay;
 
     /// <summary>A move never lands outside the allowed span — the keyboard cannot walk somewhere
-    /// Enter would refuse.</summary>
+    /// Enter would refuse, nor past the days the calendar writes.</summary>
     private DateOnly ClampToRange(DateOnly day)
     {
-        if (Min is { } min && day < min) return min;
-        if (Max is { } max && day > max) return max;
-        return day;
+        if (Min is { } min && day < min) day = min;
+        if (Max is { } max && day > max) day = max;
+        var first = CultureCalendar.FirstDay;
+        var last = CultureCalendar.LastDay;
+        return day < first ? first : day > last ? last : day;
     }
+
+    /// <summary>A day <paramref name="days"/> away, held to the days the calendar writes, so an arrow at its
+    /// last day stays there instead of asking a day past it.</summary>
+    private static DateOnly DaysAway(DateOnly from, int days)
+    {
+        var first = CultureCalendar.FirstDay.DayNumber;
+        var last = CultureCalendar.LastDay.DayNumber;
+        var number = from.DayNumber + days;
+        return DateOnly.FromDayNumber(number < first ? first : number > last ? last : number);
+    }
+
+    /// <summary>A day <paramref name="months"/> of the calendar's months away, or the calendar's first or
+    /// last day where the move would leave the months it counts, which .NET refuses (#1849).</summary>
+    private static DateOnly MonthsAway(DateOnly from, int months) =>
+        Counted(from, months)
+            ? CultureCalendar.AddMonths(from, months)
+            : months < 0 ? CultureCalendar.FirstDay : CultureCalendar.LastDay;
+
+    /// <summary>Whether the month <paramref name="months"/> away from a day's is one the calendar counts,
+    /// between its first day's month and its last day's, counted as twelve a year, which every culture's
+    /// calendar has.</summary>
+    private static bool Counted(DateOnly from, int months)
+    {
+        var target = MonthIndex(from) + months;
+        return target >= MonthIndex(CultureCalendar.FirstDay) && target <= MonthIndex(CultureCalendar.LastDay);
+    }
+
+    private static int MonthIndex(DateOnly day) => CultureCalendar.YearOf(day) * 12 + CultureCalendar.MonthOf(day) - 1;
 
     private static DateOnly FirstOfMonth(DateOnly day) => CultureCalendar.FirstOfMonth(day);
 

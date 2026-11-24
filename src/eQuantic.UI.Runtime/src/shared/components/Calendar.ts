@@ -54,7 +54,7 @@ export class Calendar extends StatefulComponent {
         let start = Calendar.gridStart(Calendar.firstOfMonth(this._month), first);
         for (let week = 0; week < 6; week = week + 1 | 0) {
             let weekRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill });
-            for (let column = 0; column < 7; column = column + 1 | 0) weekRow.add(this.cell(start.addDays(Math.imul(week, 7) + column | 0), context));
+            for (let column = 0; column < 7; column = column + 1 | 0) weekRow.add(this.cell((start + Math.imul(week, 7) | 0) + column | 0, context));
             $eq.collections.listAdd(rows, weekRow);
         }
         let month = new Column(slot?.gap ?? 8);
@@ -83,11 +83,13 @@ export class Calendar extends StatefulComponent {
         } }
     }
 
-    cell(day: DateOnly, context: BuildContext) {
+    cell(number: number, context: BuildContext) {
         let theme = context.theme;
         let slot = theme.calendar;
         let cellSize = slot?.cellSize ?? Calendar.cellSize;
         let size = SizeValue.fixed(cellSize);
+        if (!Calendar.written(number)) return new Box(new BoxStyle({ width: size, height: size }));
+        let day = $eq.time.dateOnly.fromDayNumber(number);
         if (!this.inMonth(day)) return new Box(new BoxStyle({ width: size, height: size }));
         let selected = $eq.equals(this.selected, day);
         let isToday = day.equals(Calendar.today());
@@ -113,16 +115,18 @@ export class Calendar extends StatefulComponent {
         return (day.dayNumber + 1 | 0) % 7;
     }
 
-    cursorCell(start: DateOnly): [number, number] | null {
+    cursorCell(start: number): [number, number] | null {
         let cursor: any; 
         if (!((cursor = this._cursor) != null)) return null;
-        let offset = cursor.dayNumber - start.dayNumber | 0;
+        let offset = cursor.dayNumber - start | 0;
         if (offset < 0 || offset >= 42) return null;
         if (!this.inMonth(cursor) || !this.inRange(cursor)) return null;
         let row = Math.trunc(offset / 7);
         let item = 0;
         for (let column = 0; column < offset % 7; column = column + 1 | 0) {
-            let day = start.addDays(Math.imul(row, 7) + column | 0);
+            let number = (start + Math.imul(row, 7) | 0) + column | 0;
+            if (!Calendar.written(number)) continue;
+            let day = $eq.time.dateOnly.fromDayNumber(number);
             if (this.inMonth(day) && this.inRange(day)) item = item + 1 | 0;
         }
         return [row + 1 | 0, item];
@@ -130,7 +134,7 @@ export class Calendar extends StatefulComponent {
 
     move(move: $NavigableMoveValue) {
         let from = this._cursor ?? (this.selected ?? this.clampToRange(Calendar.today()));
-        let to = (() => { const $s = move; if ($s === 'previousItem') return from.addDays(-1); if ($s === 'nextItem') return from.addDays(1); if ($s === 'previousRow') return from.addDays(-7); if ($s === 'nextRow') return from.addDays(7); if ($s === 'previousPage') return CultureCalendar.addMonths(from, -1); if ($s === 'nextPage') return CultureCalendar.addMonths(from, 1); if ($s === 'previousSection') return CultureCalendar.addYears(from, -1); if ($s === 'nextSection') return CultureCalendar.addYears(from, 1); if ($s === 'rowStart') return from.addDays(-Calendar.dayInWeek(from) | 0); if ($s === 'rowEnd') return from.addDays(6 - Calendar.dayInWeek(from) | 0); return from; })();
+        let to = (() => { const $s = move; if ($s === 'previousItem') return Calendar.daysAway(from, -1); if ($s === 'nextItem') return Calendar.daysAway(from, 1); if ($s === 'previousRow') return Calendar.daysAway(from, -7); if ($s === 'nextRow') return Calendar.daysAway(from, 7); if ($s === 'previousPage') return Calendar.monthsAway(from, -1); if ($s === 'nextPage') return Calendar.monthsAway(from, 1); if ($s === 'previousSection') return Calendar.monthsAway(from, -12); if ($s === 'nextSection') return Calendar.monthsAway(from, 12); if ($s === 'rowStart') return Calendar.daysAway(from, -Calendar.dayInWeek(from) | 0); if ($s === 'rowEnd') return Calendar.daysAway(from, 6 - Calendar.dayInWeek(from) | 0); return from; })();
         this.setState(() => {
             this._cursor = this.clampToRange(to);
             this._month = Calendar.firstOfMonth($eq.nullable.value(this._cursor));
@@ -142,17 +146,22 @@ export class Calendar extends StatefulComponent {
     }
 
     static gridStart(month: DateOnly, firstDayOfWeek: number) {
-        return month.addDays(-(((Calendar.sundayIndex(month) - firstDayOfWeek | 0) + 7 | 0) % 7) | 0);
+        return month.dayNumber - ((Calendar.sundayIndex(month) - firstDayOfWeek | 0) + 7 | 0) % 7 | 0;
+    }
+
+    static written(number: number) {
+        return number >= CultureCalendar.firstDay.dayNumber && number <= CultureCalendar.lastDay.dayNumber;
     }
 
     page(months: number) {
         return this.setState(() => {
+            if (!Calendar.counted(this._month, months)) return;
             let target = CultureCalendar.addMonths(this._month, months);
             if (!this.hasReachableDay(target)) return;
             this._month = target;
             let cursor: any; 
             if ((cursor = this._cursor) != null) {
-                this._cursor = this.clampToRange(CultureCalendar.addMonths(cursor, months));
+                this._cursor = this.clampToRange(Calendar.monthsAway(cursor, months));
                 this._month = Calendar.firstOfMonth($eq.nullable.value(this._cursor));
             }
         });
@@ -176,15 +185,37 @@ export class Calendar extends StatefulComponent {
 
     inRange(day: DateOnly) {
         let min: any; let max: any; 
-        return (!((min = this.min) != null) || (day.compareTo(min) >= 0)) && (!((max = this.max) != null) || (day.compareTo(max) <= 0));
+        return (!((min = this.min) != null) || (day.compareTo(min) >= 0)) && (!((max = this.max) != null) || (day.compareTo(max) <= 0)) && (day.compareTo(CultureCalendar.firstDay) >= 0) && (day.compareTo(CultureCalendar.lastDay) <= 0);
     }
 
     clampToRange(day: DateOnly) {
         let min: any; 
-        if ((min = this.min) != null && (day.compareTo(min) < 0)) return min;
+        if ((min = this.min) != null && (day.compareTo(min) < 0)) day = min;
         let max: any; 
-        if ((max = this.max) != null && (day.compareTo(max) > 0)) return max;
-        return day;
+        if ((max = this.max) != null && (day.compareTo(max) > 0)) day = max;
+        let first = CultureCalendar.firstDay;
+        let last = CultureCalendar.lastDay;
+        return (day.compareTo(first) < 0) ? first : (day.compareTo(last) > 0) ? last : day;
+    }
+
+    static daysAway(from: DateOnly, days: number) {
+        let first = CultureCalendar.firstDay.dayNumber;
+        let last = CultureCalendar.lastDay.dayNumber;
+        let number = from.dayNumber + days | 0;
+        return $eq.time.dateOnly.fromDayNumber(number < first ? first : number > last ? last : number);
+    }
+
+    static monthsAway(from: DateOnly, months: number) {
+        return Calendar.counted(from, months) ? CultureCalendar.addMonths(from, months) : months < 0 ? CultureCalendar.firstDay : CultureCalendar.lastDay;
+    }
+
+    static counted(from: DateOnly, months: number) {
+        let target = Calendar.monthIndex(from) + months | 0;
+        return target >= Calendar.monthIndex(CultureCalendar.firstDay) && target <= Calendar.monthIndex(CultureCalendar.lastDay);
+    }
+
+    static monthIndex(day: DateOnly) {
+        return (Math.imul(CultureCalendar.yearOf(day), 12) + CultureCalendar.monthOf(day) | 0) - 1 | 0;
     }
 
     static firstOfMonth(day: DateOnly) {

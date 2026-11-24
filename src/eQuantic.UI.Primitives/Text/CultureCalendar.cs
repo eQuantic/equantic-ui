@@ -17,6 +17,14 @@ namespace eQuantic.UI.Primitives;
 /// </summary>
 public static class CultureCalendar
 {
+    /// <summary>The first day the calendar writes, its <see cref="Calendar.MinSupportedDateTime"/>'s: April 30th
+    /// 1900 in ar-SA's Um Al Qura calendar, March 22nd 622 in fa-IR's Persian one (#1849).</summary>
+    public static DateOnly FirstDay => DateOnly.FromDateTime(Current.MinSupportedDateTime);
+
+    /// <summary>The last day the calendar writes, its <see cref="Calendar.MaxSupportedDateTime"/>'s: November 16th
+    /// 2077 in ar-SA's Um Al Qura calendar, December 31st 9999 in the Gregorian one (#1849).</summary>
+    public static DateOnly LastDay => DateOnly.FromDateTime(Current.MaxSupportedDateTime);
+
     /// <summary>The year a day falls in: 1402 for January 17th 2024 in fa-IR, 2567 in th-TH.</summary>
     public static int YearOf(DateOnly day) => Current.GetYear(At(day));
 
