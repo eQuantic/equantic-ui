@@ -300,4 +300,26 @@ public class AppKitAccessibilityTests
 
         (dialog.Role, dialog.Subrole).Should().Be(("AXGroup", "AXApplicationDialog"));
     }
+
+    /// <summary>A text field a listbox hangs from (#1088) reaches AppKit as NSComboBox's role, named by its label,
+    /// holding its text as its value and saying whether its list shows: Core-AAM's pair for an editable
+    /// combobox, which VoiceOver reads as a combo box a person types into.</summary>
+    [MacFact]
+    public void AFieldAListboxHangsFrom_ReachesAppKitAsAComboBox()
+    {
+        var list = new Column(gap: 0);
+        list.Add(new Pressable(new Text("Alpha", TypeRole.BodyM), () => { }) { Role = PressableRole.Option });
+        var page = new Anchored(new TextEntry("al", _ => { }) { Label = "Go to" }, list)
+        {
+            Open = true,
+            PanelRole = AnchorPanelRole.Listbox,
+            ActiveIndex = 0,
+        };
+
+        var field = ReadBack(page).Single(element => element.Label == "Go to");
+
+        (field.Role, field.Subrole, field.Description).Should().Be(("AXComboBox", null, "combo box"));
+        FromNSString(Send(field.Element, Sel("accessibilityValue"))).Should().Be("al", "its text is its value");
+        SendBool(field.Element, Sel("isAccessibilityExpanded")).Should().BeTrue("and it says its list shows");
+    }
 }

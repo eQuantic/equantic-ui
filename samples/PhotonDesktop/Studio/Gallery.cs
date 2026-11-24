@@ -221,12 +221,14 @@ public static partial class Gallery
 
         // The SDK's own code component, coloured by the shared C# tokenizer — the gallery shows
         // the thing itself rather than a hand-drawn slab that looks like it. EDITABLE, because a
-        // gallery that only shows code you cannot put a caret in proves half the component.
+        // gallery that only shows code you cannot put a caret in proves half the component, and
+        // ⇧⌘O goes to what the snippet names, the go-to field and its list on Photon (#1088).
         VisualNode code = new CodeEditor(specimenCode, "csharp")
         {
             Inverse = true,
             ShowLineNumbers = true,
             Caption = "C#",
+            SymbolProviders = [SpecimenSymbols.Instance],
         };
 
         var preview = Column(Space.S4);
