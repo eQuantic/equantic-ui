@@ -161,21 +161,14 @@ internal sealed partial class WebLoweringVisitor
             if (adjustable.ValueText is { Length: > 0 } spoken)
                 attributes["aria-valuetext"] = spoken;
         }
-        // The arrows the twin answers (lowerAdjustable): a slider's or a separator's vertical axis is
-        // VALUE (up increases), a radio group's or tab list's is READING ORDER (down is next).
-        var downIsNext = adjustable.Role is not (AdjustableRole.Slider or AdjustableRole.Separator);
+        // The arrows the twin answers (lowerAdjustable), from the one table Photon reads too (AdjustableKeys):
+        // a slider's or a separator's vertical axis is VALUE (up increases), a radio group's or tab list's is
+        // READING ORDER (down is next).
+        var role = adjustable.Role;
         var onAdjust = adjustable.OnAdjust;
         element.OnKeyDown = key =>
         {
-            var direction = key.Key switch
-            {
-                "ArrowRight" => 1,
-                "ArrowLeft" => -1,
-                "ArrowUp" => downIsNext ? -1 : 1,
-                "ArrowDown" => downIsNext ? 1 : -1,
-                _ => 0,
-            };
-            if (direction != 0) onAdjust(direction);
+            if (AdjustableKeys.Step(key.Key, role) is { } step) onAdjust(step);
         };
         if (Lower(adjustable.Child, null, LoweringPath.Child) is { } child) element.Children.Add(child);
         return element;
