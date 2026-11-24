@@ -44,17 +44,21 @@ public class NavigableOnPhotonTests
 
         semantics.Where(node => node.Role == SemanticRole.GridCell).Should().HaveCountGreaterThan(27,
             "a month has at least twenty-eight days and every one is a cell");
-        semantics.Should().Contain(node => node.Role == SemanticRole.Group,
-            "the composite still says its own name before the reader walks into it");
+        semantics.Should().Contain(node => node.Role == SemanticRole.Grid,
+            "the composite is the grid the web writes, and says its own name before the reader walks into it (#1330)");
 
-        // The header row is announced too — it is a row of the grid, not decoration. Counted rather
-        // than named: the day names come from the CULTURE (the component's own doc says so), and a
-        // test that asserted "Sun" passed here and failed on a CI runner whose locale answered
-        // "日" — which is the component being right and the assertion being parochial.
+        // The header row is announced too, as the COLUMN HEADERS the web's columnheader cells are (#1330):
+        // they say which weekday a day falls on. Counted rather than named: the day names come from the
+        // CULTURE (the component's own doc says so), and a test that asserted "Sun" passed here and failed
+        // on a CI runner whose locale answered "日" — which is the component being right and the assertion
+        // being parochial.
         var grid = frame.FocusStops.Single(stop => stop.Grid != null).Element;
-        semantics.Where(node => node.Role == SemanticRole.StaticText
+        semantics.Where(node => node.Role == SemanticRole.ColumnHeader
                                 && Positions.Of(frame, node.Id) is { } day && Positions.IsUnder(day, grid))
-            .Should().HaveCountGreaterThanOrEqualTo(7, "seven day names, in whatever language");
+            .Should().HaveCount(7, "seven day names, in whatever language, each heading its column");
+        semantics.Where(node => node.Role == SemanticRole.StaticText
+                                && Positions.Of(frame, node.Id) is { } text && Positions.IsUnder(text, grid))
+            .Should().BeEmpty("no day name is plain text any more");
 
         frame.HitRegions.Should().HaveCountGreaterThan(27, "a day is something you tap");
         frame.Root.Bounds.Height.Should().BeGreaterThan(200, "the grid takes the space its rows need");
