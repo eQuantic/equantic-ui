@@ -351,6 +351,18 @@ public class SharedComponentTranspilationTests
                 return total;
             }
 
+            public bool Find(int pointer, out EmittedPointer? found)
+            {
+                found = _arenas.TryGetValue(pointer, out var arena) ? arena : null;
+                return found != null;
+            }
+
+            public int Forget(int pointer)
+            {
+                if (Find(pointer, out var found)) found = null;
+                return found == null ? 0 : 1;
+            }
+
             private readonly Dictionary<int, List<EmittedPointer>> _routes = new();
             public int Routed(int pointer)
             {

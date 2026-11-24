@@ -108,17 +108,27 @@ public static class ExpressionVariableScanner
     {
         var typed = new Dictionary<string, string>(StringComparer.Ordinal);
         if (expression is null) return typed;
+        // The scopes Names leaves to themselves are left here too: a lambda's body, a switch expression's arm and a
+        // query's body declare their own, and an out var of the same name there is another variable.
         foreach (var declaration in expression.DescendantNodesAndSelf(node =>
-                     node == expression || node is not (LambdaExpressionSyntax or AnonymousFunctionExpressionSyntax))
+                     node == expression || node is not (LambdaExpressionSyntax or AnonymousFunctionExpressionSyntax
+                         or SwitchExpressionArmSyntax or QueryBodySyntax))
                      .OfType<DeclarationExpressionSyntax>())
         {
             if (declaration is not { Designation: SingleVariableDesignationSyntax single, Parent: ArgumentSyntax argument }
                 || !argument.RefKindKeyword.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.OutKeyword)
-                || context.SemanticHelper.GetDeclaredSymbol(single) is not ILocalSymbol local
-                || (TsNamedType.For(local.Type, context) ?? Strategies.Statements.LocalDeclarationStrategy.ListType(local.Type, context))
-                    is not { } type || type == "any")
+                || context.SemanticHelper.GetDeclaredSymbol(single) is not ILocalSymbol local)
                 continue;
-            typed.TryAdd(single.Identifier.ValueText.ToJsIdentifier(), type);
+            var declared = local.Type.WithNullableAnnotation(NullableAnnotation.NotAnnotated);
+            if ((TsNamedType.For(declared, context) ?? Strategies.Statements.LocalDeclarationStrategy.ListType(declared, context))
+                is not { } type || type == "any")
+                continue;
+            // Whether it holds a null is the PARAMETER's to say, not the local's: Roslyn annotates every `var` local
+            // nullable and keeps its null-state in the flow. `out Shape? found` admits a null a later `found = null`
+            // writes, and TryGetValue's `out TValue`, [MaybeNullWhen(false)], does not.
+            var admitsNull = context.SemanticHelper.GetOperation(argument) is Microsoft.CodeAnalysis.Operations.IArgumentOperation
+                { Parameter.Type.NullableAnnotation: NullableAnnotation.Annotated };
+            typed.TryAdd(single.Identifier.ValueText.ToJsIdentifier(), admitsNull ? TypeScriptEmitter.OrNull(type) : type);
         }
         return typed;
     }
