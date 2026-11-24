@@ -52,6 +52,11 @@ public static class UI
     /// the portal that normally carry it. Five components rendered blank on a page without it.</summary>
     public static InFlow InFlow(VisualNode child) => new InFlow(child);
 
+    /// <summary>The direction a subtree reads in — <c>Directionality(TextDirection.LeftToRight, code)</c>
+    /// keeps a code view left to right in an Arabic page.</summary>
+    public static Directionality Directionality(TextDirection direction, VisualNode child) =>
+        new Directionality(direction, child);
+
     /// <summary>Draws its subtree AS IF it were hovered, pressed or focused — a gallery, a design
     /// review and a visual-regression suite could otherwise only ever show the rest state.</summary>
     public static Simulated Simulated(SimulatedState state, VisualNode child) =>

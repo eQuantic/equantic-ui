@@ -25,8 +25,8 @@ export class GestureRouter {
     }
 
     recognizers(position: any, gestures: GestureRecognizerFactory[]) {
-        let kept: any; let makers: any; 
-        if (!(($0) => ($0.has(position) ? ((kept = $0.get(position)), true) : ((kept = null), false)))(this._kept) || !(($0) => ($0.has(position) ? ((makers = $0.get(position)), true) : ((makers = null), false)))(this._makers)) {
+        let kept!: GestureRecognizer[]; let makers!: GestureRecognizerFactory[]; 
+        if (!(($0) => ($0.has(position) ? ((kept = $0.get(position)), true) : ((kept = null!), false)))(this._kept) || !(($0) => ($0.has(position) ? ((makers = $0.get(position)), true) : ((makers = null!), false)))(this._makers)) {
             kept = [];
             makers = [];
             $eq.mapSet(this._kept, position, kept);
@@ -53,8 +53,8 @@ export class GestureRouter {
     }
 
     forget(position: any) {
-        let kept: any; 
-        if (!(($0) => ($0.has(position) ? ((kept = $0.get(position)), true) : ((kept = null), false)))(this._kept)) return;
+        let kept!: GestureRecognizer[]; 
+        if (!(($0) => ($0.has(position) ? ((kept = $0.get(position)), true) : ((kept = null!), false)))(this._kept)) return;
         this._kept.delete(position);
         this._makers.delete(position);
         for (const recognizer of $eq.collections.listWalk(kept)) this.retire(recognizer);
@@ -88,8 +88,8 @@ export class GestureRouter {
 
     route(ev: PointerEvent, inBoxOf: ((value: any) => PointerEvent) | null = null) {
         let pointer = ev.pointer;
-        let routed: any; 
-        if ((($0) => ($0.has(pointer) ? ((routed = $0.get(pointer)), true) : ((routed = null), false)))(this._routes)) {
+        let routed!: GestureRecognizer[]; 
+        if ((($0) => ($0.has(pointer) ? ((routed = $0.get(pointer)), true) : ((routed = null!), false)))(this._routes)) {
             for (const recognizer of $eq.collections.listWalk($eq.collections.listCopy(routed))) if (recognizer.tracks(pointer)) recognizer.hear(GestureRouter.inBox(recognizer, ev, inBoxOf));
         }
         if (ev.phase === 'up') this.end(pointer, false); else if (ev.phase === 'cancel') this.end(pointer, true);
@@ -124,8 +124,8 @@ export class GestureRouter {
     }
 
     end(pointer: number, cancelled: boolean) {
-        let routed: any; 
-        if ((($0) => ($0.has(pointer) ? ((routed = $0.get(pointer)), true) : ((routed = null), false)))(this._routes)) {
+        let routed!: GestureRecognizer[]; 
+        if ((($0) => ($0.has(pointer) ? ((routed = $0.get(pointer)), true) : ((routed = null!), false)))(this._routes)) {
             this._routes.delete(pointer);
             for (const recognizer of $eq.collections.listWalk(routed)) recognizer.ended(pointer);
         }

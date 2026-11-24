@@ -7,7 +7,7 @@ using eQuantic.Console;
 namespace DefaultUIDashboard.Screens;
 
 /// <summary>
-/// Track L, live: the strings on this page come from <c>Resources/Strings.resx</c> (+ pt-BR, + es),
+/// Track L, live: the strings on this page come from <c>Resources/Strings.resx</c> (+ pt-BR, + es, + ar),
 /// written exactly as any .NET app writes them. The server resolves them through the real
 /// ResourceManager under the request culture; the browser resolves the SAME keys through the
 /// culture catalog the build emitted — request it with <c>Accept-Language: pt-BR</c> and both
@@ -36,6 +36,8 @@ public sealed class I18nScreen : StatefulComponent
         new("en", "English"),
         new("pt-BR", "Português"),
         new("es", "Español"),
+        // Right to left: switching to it mirrors the page with no reload (#1568).
+        new("ar", "العربية"),
     ];
 
     public override VisualNode Build(ComponentContext context)

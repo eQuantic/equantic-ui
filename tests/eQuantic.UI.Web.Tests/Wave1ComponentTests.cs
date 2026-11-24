@@ -22,7 +22,7 @@ public class Wave1ComponentTests
 
         // Leading inset pads the WRAPPER so the line itself is inset (spec A7: inset leading 16).
         var inset = Render(new Divider(DividerInset.Leading));
-        inset.Attributes["style"].Should().Contain("padding: 0 0 0 16px");
+        inset.Attributes["style"].Should().Contain("padding-inline: 16px 0");
     }
 
     [Fact]

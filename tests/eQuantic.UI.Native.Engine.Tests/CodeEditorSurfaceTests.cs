@@ -721,6 +721,7 @@ public class CodeEditorSurfaceTests
         Flexible flexible => [flexible.Child],
         FlexNode flex => flex,
         UiComponent component => [component.Build(new ComponentContext(PhotonTheme.Instance))],
+        InheritedComponent inherited => [inherited.Child],
         _ => [],
     };
 

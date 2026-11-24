@@ -44,7 +44,7 @@
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-15y68qx eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-w67arb">
+<div class="eq-15y68qx eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1x60j26 eq-5augbd eq-a53ok4 eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
 </div>
@@ -52,8 +52,8 @@
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-15y68qx eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
@@ -82,7 +82,7 @@
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-15y68qx eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-w67arb">
+<div class="eq-15y68qx eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1x60j26 eq-5augbd eq-a53ok4 eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
 </div>
@@ -90,8 +90,8 @@
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-15y68qx eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
@@ -143,7 +143,9 @@
 .eq-1o1uad7{border-radius:10px}
 .eq-1o3sr2w{cursor:text}
 .eq-1or4gpz{height:16px}
+.eq-1p0bb5o{padding-block:0}
 .eq-1rghpwu{color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-1s3y8t{padding-inline:0 12px}
 .eq-1su9m49{height:32px}
 .eq-1tab6xc{width:12px}
 .eq-1uhnwvg{flex-direction:row}
@@ -191,7 +193,6 @@
 @media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
 }
 .eq-v9un6z{gap:6px}
-.eq-w67arb{padding:0 12px 0 0}
 .eq-y9mhin{font-weight:600}
 .eq-yjvyu6{background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
 ### semantics
@@ -244,13 +245,14 @@ CodeDiff 0 0 480x82
                         ScrollView 26 40 213.5x42
                           CodeSurface 26 40 6.76x42
                             CodeBlock 26 40 6.76x42
-                              Box 26 40 6.76x42
+                              Directionality 26 40 6.76x42
                                 Box 26 40 6.76x42
-                                  Column 26 52 6.76x18
-                                    Row 26 52 6.76x18
-                                      Box 26 53 24x16
-                                        Row 38 53 0x16
-                                          Text 38 53 0x16 1 line(s)
+                                  Box 26 40 6.76x42
+                                    Column 26 52 6.76x18
+                                      Row 26 52 6.76x18
+                                        Box 26 53 24x16
+                                          Row 38 53 0x16
+                                            Text 38 53 0x16 1 line(s)
                   Box 239.5 40 1x42
                   Flexible 240.5 40 239.5x42
                     Row 240.5 40 239.5x42
@@ -262,13 +264,14 @@ CodeDiff 0 0 480x82
                         ScrollView 266.5 40 213.5x42
                           CodeSurface 266.5 40 6.76x42
                             CodeBlock 266.5 40 6.76x42
-                              Box 266.5 40 6.76x42
+                              Directionality 266.5 40 6.76x42
                                 Box 266.5 40 6.76x42
-                                  Column 266.5 52 6.76x18
-                                    Row 266.5 52 6.76x18
-                                      Box 266.5 53 24x16
-                                        Row 278.5 53 0x16
-                                          Text 278.5 53 0x16 1 line(s)
+                                  Box 266.5 40 6.76x42
+                                    Column 266.5 52 6.76x18
+                                      Row 266.5 52 6.76x18
+                                        Box 266.5 53 24x16
+                                          Row 278.5 53 0x16
+                                            Text 278.5 53 0x16 1 line(s)
 
 ## Small · Compact
 ### web
@@ -316,7 +319,7 @@ CodeDiff 0 0 480x82
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-u2glnw eq-w67arb">
+<div class="eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl eq-u2glnw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-5augbd eq-eo53tp eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-quo2cj eq-swcwi">1</span>
 </div>
@@ -324,8 +327,8 @@ CodeDiff 0 0 480x82
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp eq-u2glnw">
@@ -354,7 +357,7 @@ CodeDiff 0 0 480x82
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-u2glnw eq-w67arb">
+<div class="eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl eq-u2glnw">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-5augbd eq-eo53tp eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-quo2cj eq-swcwi">1</span>
 </div>
@@ -362,8 +365,8 @@ CodeDiff 0 0 480x82
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp eq-u2glnw">
@@ -416,7 +419,9 @@ CodeDiff 0 0 480x82
 .eq-1o1uad7{border-radius:10px}
 .eq-1o3sr2w{cursor:text}
 .eq-1or4gpz{height:16px}
+.eq-1p0bb5o{padding-block:0}
 .eq-1rghpwu{color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-1s3y8t{padding-inline:0 12px}
 .eq-1tab6xc{width:12px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
@@ -464,7 +469,6 @@ CodeDiff 0 0 480x82
 }
 .eq-u2glnw{height:17px}
 .eq-v9un6z{gap:6px}
-.eq-w67arb{padding:0 12px 0 0}
 .eq-y9mhin{font-weight:600}
 .eq-yjvyu6{background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
 ### semantics
@@ -517,13 +521,14 @@ CodeDiff 0 0 480x75
                         ScrollView 24 34 215.5x41
                           CodeSurface 24 34 5.98x41
                             CodeBlock 24 34 5.98x41
-                              Box 24 34 5.98x41
+                              Directionality 24 34 5.98x41
                                 Box 24 34 5.98x41
-                                  Column 24 46 5.98x17
-                                    Row 24 46 5.98x17
-                                      Box 24 47.25 24x14.5
-                                        Row 36 47.25 0x14.5
-                                          Text 36 47.25 0x14.5 1 line(s)
+                                  Box 24 34 5.98x41
+                                    Column 24 46 5.98x17
+                                      Row 24 46 5.98x17
+                                        Box 24 47.25 24x14.5
+                                          Row 36 47.25 0x14.5
+                                            Text 36 47.25 0x14.5 1 line(s)
                   Box 239.5 34 1x41
                   Flexible 240.5 34 239.5x41
                     Row 240.5 34 239.5x41
@@ -535,13 +540,14 @@ CodeDiff 0 0 480x75
                         ScrollView 264.5 34 215.5x41
                           CodeSurface 264.5 34 5.98x41
                             CodeBlock 264.5 34 5.98x41
-                              Box 264.5 34 5.98x41
+                              Directionality 264.5 34 5.98x41
                                 Box 264.5 34 5.98x41
-                                  Column 264.5 46 5.98x17
-                                    Row 264.5 46 5.98x17
-                                      Box 264.5 47.25 24x14.5
-                                        Row 276.5 47.25 0x14.5
-                                          Text 276.5 47.25 0x14.5 1 line(s)
+                                  Box 264.5 34 5.98x41
+                                    Column 264.5 46 5.98x17
+                                      Row 264.5 46 5.98x17
+                                        Box 264.5 47.25 24x14.5
+                                          Row 276.5 47.25 0x14.5
+                                            Text 276.5 47.25 0x14.5 1 line(s)
 
 ## Medium · Comfortable
 ### web
@@ -589,7 +595,7 @@ CodeDiff 0 0 480x75
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-iuiqgs eq-w67arb">
+<div class="eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl eq-iuiqgs">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1cb9own eq-5augbd eq-epaxs4 eq-jsw0f2 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
 </div>
@@ -597,8 +603,8 @@ CodeDiff 0 0 480x75
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-iuiqgs eq-kngwsg eq-m92pvu eq-mc2xdp">
@@ -627,7 +633,7 @@ CodeDiff 0 0 480x75
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-iuiqgs eq-w67arb">
+<div class="eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl eq-iuiqgs">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1cb9own eq-5augbd eq-epaxs4 eq-jsw0f2 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
 </div>
@@ -635,8 +641,8 @@ CodeDiff 0 0 480x75
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-iuiqgs eq-kngwsg eq-m92pvu eq-mc2xdp">
@@ -688,7 +694,9 @@ CodeDiff 0 0 480x75
 .eq-1o1uad7{border-radius:10px}
 .eq-1o3sr2w{cursor:text}
 .eq-1or4gpz{height:16px}
+.eq-1p0bb5o{padding-block:0}
 .eq-1rghpwu{color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-1s3y8t{padding-inline:0 12px}
 .eq-1su9m49{height:32px}
 .eq-1tab6xc{width:12px}
 .eq-1uhnwvg{flex-direction:row}
@@ -738,7 +746,6 @@ CodeDiff 0 0 480x75
 @media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
 }
 .eq-v9un6z{gap:6px}
-.eq-w67arb{padding:0 12px 0 0}
 .eq-y9mhin{font-weight:600}
 .eq-yjvyu6{background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
 ### semantics
@@ -791,13 +798,14 @@ CodeDiff 0 0 480x86
                         ScrollView 28 40 211.5x46
                           CodeSurface 28 40 7.8x46
                             CodeBlock 28 40 7.8x46
-                              Box 28 40 7.8x46
+                              Directionality 28 40 7.8x46
                                 Box 28 40 7.8x46
-                                  Column 28 52 7.8x22
-                                    Row 28 52 7.8x22
-                                      Box 28 53.5 24x19
-                                        Row 40 53.5 0x19
-                                          Text 40 53.5 0x19 1 line(s)
+                                  Box 28 40 7.8x46
+                                    Column 28 52 7.8x22
+                                      Row 28 52 7.8x22
+                                        Box 28 53.5 24x19
+                                          Row 40 53.5 0x19
+                                            Text 40 53.5 0x19 1 line(s)
                   Box 239.5 40 1x46
                   Flexible 240.5 40 239.5x46
                     Row 240.5 40 239.5x46
@@ -809,13 +817,14 @@ CodeDiff 0 0 480x86
                         ScrollView 268.5 40 211.5x46
                           CodeSurface 268.5 40 7.8x46
                             CodeBlock 268.5 40 7.8x46
-                              Box 268.5 40 7.8x46
+                              Directionality 268.5 40 7.8x46
                                 Box 268.5 40 7.8x46
-                                  Column 268.5 52 7.8x22
-                                    Row 268.5 52 7.8x22
-                                      Box 268.5 53.5 24x19
-                                        Row 280.5 53.5 0x19
-                                          Text 280.5 53.5 0x19 1 line(s)
+                                  Box 268.5 40 7.8x46
+                                    Column 268.5 52 7.8x22
+                                      Row 268.5 52 7.8x22
+                                        Box 268.5 53.5 24x19
+                                          Row 280.5 53.5 0x19
+                                            Text 280.5 53.5 0x19 1 line(s)
 
 ## Medium · Compact
 ### web
@@ -863,7 +872,7 @@ CodeDiff 0 0 480x86
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-15y68qx eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-w67arb">
+<div class="eq-15y68qx eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1x60j26 eq-5augbd eq-a53ok4 eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
 </div>
@@ -871,8 +880,8 @@ CodeDiff 0 0 480x86
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-15y68qx eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
@@ -901,7 +910,7 @@ CodeDiff 0 0 480x86
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-15y68qx eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-w67arb">
+<div class="eq-15y68qx eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1x60j26 eq-5augbd eq-a53ok4 eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
 </div>
@@ -909,8 +918,8 @@ CodeDiff 0 0 480x86
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-15y68qx eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
@@ -964,7 +973,9 @@ CodeDiff 0 0 480x86
 .eq-1o1uad7{border-radius:10px}
 .eq-1o3sr2w{cursor:text}
 .eq-1or4gpz{height:16px}
+.eq-1p0bb5o{padding-block:0}
 .eq-1rghpwu{color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-1s3y8t{padding-inline:0 12px}
 .eq-1tab6xc{width:12px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
@@ -1013,7 +1024,6 @@ CodeDiff 0 0 480x86
 @media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
 }
 .eq-v9un6z{gap:6px}
-.eq-w67arb{padding:0 12px 0 0}
 .eq-y9mhin{font-weight:600}
 .eq-yjvyu6{background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
 ### semantics
@@ -1066,13 +1076,14 @@ CodeDiff 0 0 480x76
                         ScrollView 26 34 213.5x42
                           CodeSurface 26 34 6.76x42
                             CodeBlock 26 34 6.76x42
-                              Box 26 34 6.76x42
+                              Directionality 26 34 6.76x42
                                 Box 26 34 6.76x42
-                                  Column 26 46 6.76x18
-                                    Row 26 46 6.76x18
-                                      Box 26 47 24x16
-                                        Row 38 47 0x16
-                                          Text 38 47 0x16 1 line(s)
+                                  Box 26 34 6.76x42
+                                    Column 26 46 6.76x18
+                                      Row 26 46 6.76x18
+                                        Box 26 47 24x16
+                                          Row 38 47 0x16
+                                            Text 38 47 0x16 1 line(s)
                   Box 239.5 34 1x42
                   Flexible 240.5 34 239.5x42
                     Row 240.5 34 239.5x42
@@ -1084,13 +1095,14 @@ CodeDiff 0 0 480x76
                         ScrollView 266.5 34 213.5x42
                           CodeSurface 266.5 34 6.76x42
                             CodeBlock 266.5 34 6.76x42
-                              Box 266.5 34 6.76x42
+                              Directionality 266.5 34 6.76x42
                                 Box 266.5 34 6.76x42
-                                  Column 266.5 46 6.76x18
-                                    Row 266.5 46 6.76x18
-                                      Box 266.5 47 24x16
-                                        Row 278.5 47 0x16
-                                          Text 278.5 47 0x16 1 line(s)
+                                  Box 266.5 34 6.76x42
+                                    Column 266.5 46 6.76x18
+                                      Row 266.5 46 6.76x18
+                                        Box 266.5 47 24x16
+                                          Row 278.5 47 0x16
+                                            Text 278.5 47 0x16 1 line(s)
 
 ## Large · Comfortable
 ### web
@@ -1138,7 +1150,7 @@ CodeDiff 0 0 480x76
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-1dj6liv eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-w67arb">
+<div class="eq-1dj6liv eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1o5c7c3 eq-5augbd eq-da01c7 eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
 </div>
@@ -1146,8 +1158,8 @@ CodeDiff 0 0 480x76
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-1dj6liv eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
@@ -1176,7 +1188,7 @@ CodeDiff 0 0 480x76
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-1dj6liv eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-w67arb">
+<div class="eq-1dj6liv eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1o5c7c3 eq-5augbd eq-da01c7 eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
 </div>
@@ -1184,8 +1196,8 @@ CodeDiff 0 0 480x76
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-1dj6liv eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
@@ -1238,7 +1250,9 @@ CodeDiff 0 0 480x76
 .eq-1o3sr2w{cursor:text}
 .eq-1o5c7c3{font-size:16px}
 .eq-1or4gpz{height:16px}
+.eq-1p0bb5o{padding-block:0}
 .eq-1rghpwu{color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-1s3y8t{padding-inline:0 12px}
 .eq-1su9m49{height:32px}
 .eq-1tab6xc{width:12px}
 .eq-1uhnwvg{flex-direction:row}
@@ -1287,7 +1301,6 @@ CodeDiff 0 0 480x76
 @media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
 }
 .eq-v9un6z{gap:6px}
-.eq-w67arb{padding:0 12px 0 0}
 .eq-y9mhin{font-weight:600}
 .eq-yjvyu6{background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
 ### semantics
@@ -1340,13 +1353,14 @@ CodeDiff 0 0 480x87
                         ScrollView 29 40 210.5x47
                           CodeSurface 29 40 8.32x47
                             CodeBlock 29 40 8.32x47
-                              Box 29 40 8.32x47
+                              Directionality 29 40 8.32x47
                                 Box 29 40 8.32x47
-                                  Column 29 52 8.32x23
-                                    Row 29 52 8.32x23
-                                      Box 29 53.5 24x20
-                                        Row 41 53.5 0x20
-                                          Text 41 53.5 0x20 1 line(s)
+                                  Box 29 40 8.32x47
+                                    Column 29 52 8.32x23
+                                      Row 29 52 8.32x23
+                                        Box 29 53.5 24x20
+                                          Row 41 53.5 0x20
+                                            Text 41 53.5 0x20 1 line(s)
                   Box 239.5 40 1x47
                   Flexible 240.5 40 239.5x47
                     Row 240.5 40 239.5x47
@@ -1358,13 +1372,14 @@ CodeDiff 0 0 480x87
                         ScrollView 269.5 40 210.5x47
                           CodeSurface 269.5 40 8.32x47
                             CodeBlock 269.5 40 8.32x47
-                              Box 269.5 40 8.32x47
+                              Directionality 269.5 40 8.32x47
                                 Box 269.5 40 8.32x47
-                                  Column 269.5 52 8.32x23
-                                    Row 269.5 52 8.32x23
-                                      Box 269.5 53.5 24x20
-                                        Row 281.5 53.5 0x20
-                                          Text 281.5 53.5 0x20 1 line(s)
+                                  Box 269.5 40 8.32x47
+                                    Column 269.5 52 8.32x23
+                                      Row 269.5 52 8.32x23
+                                        Box 269.5 53.5 24x20
+                                          Row 281.5 53.5 0x20
+                                            Text 281.5 53.5 0x20 1 line(s)
 
 ## Large · Compact
 ### web
@@ -1412,7 +1427,7 @@ CodeDiff 0 0 480x87
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-13vgh9p eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-w67arb">
+<div class="eq-13vgh9p eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-15cxjk8 eq-16x7aca eq-5augbd eq-epaxs4 eq-gxup24 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
 </div>
@@ -1420,8 +1435,8 @@ CodeDiff 0 0 480x87
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-13vgh9p eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
@@ -1450,7 +1465,7 @@ CodeDiff 0 0 480x87
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-13vgh9p eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-w67arb">
+<div class="eq-13vgh9p eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-15cxjk8 eq-16x7aca eq-5augbd eq-epaxs4 eq-gxup24 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
 </div>
@@ -1458,8 +1473,8 @@ CodeDiff 0 0 480x87
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-13vgh9p eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
@@ -1514,7 +1529,9 @@ CodeDiff 0 0 480x87
 .eq-1o1uad7{border-radius:10px}
 .eq-1o3sr2w{cursor:text}
 .eq-1or4gpz{height:16px}
+.eq-1p0bb5o{padding-block:0}
 .eq-1rghpwu{color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-1s3y8t{padding-inline:0 12px}
 .eq-1tab6xc{width:12px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
@@ -1562,7 +1579,6 @@ CodeDiff 0 0 480x87
 @media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
 }
 .eq-v9un6z{gap:6px}
-.eq-w67arb{padding:0 12px 0 0}
 .eq-y9mhin{font-weight:600}
 .eq-yjvyu6{background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
 ### semantics
@@ -1615,13 +1631,14 @@ CodeDiff 0 0 480x79
                         ScrollView 28 34 211.5x45
                           CodeSurface 28 34 7.54x45
                             CodeBlock 28 34 7.54x45
-                              Box 28 34 7.54x45
+                              Directionality 28 34 7.54x45
                                 Box 28 34 7.54x45
-                                  Column 28 46 7.54x21
-                                    Row 28 46 7.54x21
-                                      Box 28 47.5 24x18
-                                        Row 40 47.5 0x18
-                                          Text 40 47.5 0x18 1 line(s)
+                                  Box 28 34 7.54x45
+                                    Column 28 46 7.54x21
+                                      Row 28 46 7.54x21
+                                        Box 28 47.5 24x18
+                                          Row 40 47.5 0x18
+                                            Text 40 47.5 0x18 1 line(s)
                   Box 239.5 34 1x45
                   Flexible 240.5 34 239.5x45
                     Row 240.5 34 239.5x45
@@ -1633,13 +1650,14 @@ CodeDiff 0 0 480x79
                         ScrollView 268.5 34 211.5x45
                           CodeSurface 268.5 34 7.54x45
                             CodeBlock 268.5 34 7.54x45
-                              Box 268.5 34 7.54x45
+                              Directionality 268.5 34 7.54x45
                                 Box 268.5 34 7.54x45
-                                  Column 268.5 46 7.54x21
-                                    Row 268.5 46 7.54x21
-                                      Box 268.5 47.5 24x18
-                                        Row 280.5 47.5 0x18
-                                          Text 280.5 47.5 0x18 1 line(s)
+                                  Box 268.5 34 7.54x45
+                                    Column 268.5 46 7.54x21
+                                      Row 268.5 46 7.54x21
+                                        Box 268.5 47.5 24x18
+                                          Row 280.5 47.5 0x18
+                                            Text 280.5 47.5 0x18 1 line(s)
 
 ## XLarge · Comfortable
 ### web
@@ -1687,7 +1705,7 @@ CodeDiff 0 0 480x79
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-rwnvja eq-w67arb">
+<div class="eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl eq-rwnvja">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1hme0ng eq-5augbd eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi eq-tgoca0">1</span>
 </div>
@@ -1695,8 +1713,8 @@ CodeDiff 0 0 480x79
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp eq-rwnvja">
@@ -1725,7 +1743,7 @@ CodeDiff 0 0 480x79
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-rwnvja eq-w67arb">
+<div class="eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl eq-rwnvja">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1hme0ng eq-5augbd eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi eq-tgoca0">1</span>
 </div>
@@ -1733,8 +1751,8 @@ CodeDiff 0 0 480x79
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp eq-rwnvja">
@@ -1786,7 +1804,9 @@ CodeDiff 0 0 480x79
 .eq-1o1uad7{border-radius:10px}
 .eq-1o3sr2w{cursor:text}
 .eq-1or4gpz{height:16px}
+.eq-1p0bb5o{padding-block:0}
 .eq-1rghpwu{color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-1s3y8t{padding-inline:0 12px}
 .eq-1su9m49{height:32px}
 .eq-1tab6xc{width:12px}
 .eq-1uhnwvg{flex-direction:row}
@@ -1836,7 +1856,6 @@ CodeDiff 0 0 480x79
 }
 .eq-tgoca0{font-size:17px}
 .eq-v9un6z{gap:6px}
-.eq-w67arb{padding:0 12px 0 0}
 .eq-y9mhin{font-weight:600}
 .eq-yjvyu6{background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
 ### semantics
@@ -1889,13 +1908,14 @@ CodeDiff 0 0 480x88
                         ScrollView 30 40 209.5x48
                           CodeSurface 30 40 8.84x48
                             CodeBlock 30 40 8.84x48
-                              Box 30 40 8.84x48
+                              Directionality 30 40 8.84x48
                                 Box 30 40 8.84x48
-                                  Column 30 52 8.84x24
-                                    Row 30 52 8.84x24
-                                      Box 30 53.5 24x21
-                                        Row 42 53.5 0x21
-                                          Text 42 53.5 0x21 1 line(s)
+                                  Box 30 40 8.84x48
+                                    Column 30 52 8.84x24
+                                      Row 30 52 8.84x24
+                                        Box 30 53.5 24x21
+                                          Row 42 53.5 0x21
+                                            Text 42 53.5 0x21 1 line(s)
                   Box 239.5 40 1x48
                   Flexible 240.5 40 239.5x48
                     Row 240.5 40 239.5x48
@@ -1907,13 +1927,14 @@ CodeDiff 0 0 480x88
                         ScrollView 270.5 40 209.5x48
                           CodeSurface 270.5 40 8.84x48
                             CodeBlock 270.5 40 8.84x48
-                              Box 270.5 40 8.84x48
+                              Directionality 270.5 40 8.84x48
                                 Box 270.5 40 8.84x48
-                                  Column 270.5 52 8.84x24
-                                    Row 270.5 52 8.84x24
-                                      Box 270.5 53.5 24x21
-                                        Row 282.5 53.5 0x21
-                                          Text 282.5 53.5 0x21 1 line(s)
+                                  Box 270.5 40 8.84x48
+                                    Column 270.5 52 8.84x24
+                                      Row 270.5 52 8.84x24
+                                        Box 270.5 53.5 24x21
+                                          Row 282.5 53.5 0x21
+                                            Text 282.5 53.5 0x21 1 line(s)
 
 ## XLarge · Compact
 ### web
@@ -1961,7 +1982,7 @@ CodeDiff 0 0 480x88
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-iuiqgs eq-w67arb">
+<div class="eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl eq-iuiqgs">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1w14u2f eq-5augbd eq-79lkgi eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
 </div>
@@ -1969,8 +1990,8 @@ CodeDiff 0 0 480x88
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-iuiqgs eq-kngwsg eq-m92pvu eq-mc2xdp">
@@ -1999,7 +2020,7 @@ CodeDiff 0 0 480x88
 <div class="eq-11yg588 eq-1eb13m5 eq-1tab6xc eq-aexooi eq-bo3n4y eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div aria-hidden="true" class="eq-94p0gr eq-bo3n4y">
 </div>
-<div class="eq-1eb13m5 eq-1tab6xc eq-bo3n4y eq-g7fowl eq-iuiqgs eq-w67arb">
+<div class="eq-1eb13m5 eq-1p0bb5o eq-1s3y8t eq-1tab6xc eq-bo3n4y eq-g7fowl eq-iuiqgs">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-hqijl0 eq-kngwsg eq-m7pi4h eq-m92pvu">
 <span class="eq-type-labelsmall eq-1566de eq-16x7aca eq-1w14u2f eq-5augbd eq-79lkgi eq-epaxs4 eq-lgp7n6 eq-mbtjfn eq-oy7q1x eq-pbx3g3 eq-swcwi">1</span>
 </div>
@@ -2007,8 +2028,8 @@ CodeDiff 0 0 480x88
 </div>
 <div class="eq-168ghzj eq-5ew4ww">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
-<div class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
-<div aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
+<div dir="ltr" class="eq-code-surface eq-1566de eq-1eviv88 eq-1o3sr2w eq-a486u3 eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" aria-hidden="true" class="eq-1ayg6m8 eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
 <div class="eq-11yg588 eq-1eb13m5 eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-iuiqgs eq-kngwsg eq-m92pvu eq-mc2xdp">
@@ -2061,7 +2082,9 @@ CodeDiff 0 0 480x88
 .eq-1o1uad7{border-radius:10px}
 .eq-1o3sr2w{cursor:text}
 .eq-1or4gpz{height:16px}
+.eq-1p0bb5o{padding-block:0}
 .eq-1rghpwu{color:var(--eq-color-success-base, light-dark(#3b7a22, #89c562))}
+.eq-1s3y8t{padding-inline:0 12px}
 .eq-1tab6xc{width:12px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
@@ -2111,7 +2134,6 @@ CodeDiff 0 0 480x88
 @media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
 }
 .eq-v9un6z{gap:6px}
-.eq-w67arb{padding:0 12px 0 0}
 .eq-y9mhin{font-weight:600}
 .eq-yjvyu6{background-color:var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
 ### semantics
@@ -2164,13 +2186,14 @@ CodeDiff 0 0 480x80
                         ScrollView 29 34 210.5x46
                           CodeSurface 29 34 8.06x46
                             CodeBlock 29 34 8.06x46
-                              Box 29 34 8.06x46
+                              Directionality 29 34 8.06x46
                                 Box 29 34 8.06x46
-                                  Column 29 46 8.06x22
-                                    Row 29 46 8.06x22
-                                      Box 29 47.25 24x19.5
-                                        Row 41 47.25 0x19.5
-                                          Text 41 47.25 0x19.5 1 line(s)
+                                  Box 29 34 8.06x46
+                                    Column 29 46 8.06x22
+                                      Row 29 46 8.06x22
+                                        Box 29 47.25 24x19.5
+                                          Row 41 47.25 0x19.5
+                                            Text 41 47.25 0x19.5 1 line(s)
                   Box 239.5 34 1x46
                   Flexible 240.5 34 239.5x46
                     Row 240.5 34 239.5x46
@@ -2182,11 +2205,12 @@ CodeDiff 0 0 480x80
                         ScrollView 269.5 34 210.5x46
                           CodeSurface 269.5 34 8.06x46
                             CodeBlock 269.5 34 8.06x46
-                              Box 269.5 34 8.06x46
+                              Directionality 269.5 34 8.06x46
                                 Box 269.5 34 8.06x46
-                                  Column 269.5 46 8.06x22
-                                    Row 269.5 46 8.06x22
-                                      Box 269.5 47.25 24x19.5
-                                        Row 281.5 47.25 0x19.5
-                                          Text 281.5 47.25 0x19.5 1 line(s)
+                                  Box 269.5 34 8.06x46
+                                    Column 269.5 46 8.06x22
+                                      Row 269.5 46 8.06x22
+                                        Box 269.5 47.25 24x19.5
+                                          Row 281.5 47.25 0x19.5
+                                            Text 281.5 47.25 0x19.5 1 line(s)
 

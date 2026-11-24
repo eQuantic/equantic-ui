@@ -142,7 +142,10 @@ translation changes as data, not code.
 
 - **D9 — RTL is a LAYOUT concern and is explicitly out of this track.** Mirroring (`Row` direction,
   padding start/end, icon flipping) belongs to the layout vocabulary and is tracked with Track S,
-  not here. Stated so nobody assumes "we did i18n" means "we support Arabic".
+  not here. Stated so nobody assumes "we did i18n" means "we support Arabic". It landed there:
+  #1568 gave the vocabulary `TextDirection` and `Directionality`, took a page's direction from the
+  culture, and made the web mirror start and end; #1569 turns what only the SDK knows (icons,
+  gestures, arrow keys). Photon's right-to-left text stays after 1.0.
 
 - **D10 — Native needs no bridge at all.** Photon runs the same C# with no transpilation:
   `ResourceManager` + satellite assemblies work directly. The plan's only native work is

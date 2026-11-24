@@ -110,6 +110,8 @@ export type FontWeightValue =
   'thin' | 'extraLight' | 'light' | 'regular' | 'medium' | 'semiBold' | 'bold' | 'extraBold'
   | 'black';
 
+export type GestureArenaPhaseValue = 'open' | 'closed' | 'decided';
+
 export type GestureDispositionValue = 'accepted' | 'rejected';
 
 export type GradientDirectionValue = 'toRight' | 'toBottom' | 'toBottomRight' | 'toBottomLeft';
@@ -205,6 +207,8 @@ export type TableRoleValue = 'group' | 'table' | 'grid';
 
 export type TextAlignmentValue = 'start' | 'center' | 'end';
 
+export type TextDirectionValue = 'leftToRight' | 'rightToLeft';
+
 export type TextEntryKindValue = 'text' | 'email' | 'phone' | 'url' | 'number' | 'decimal';
 
 export type ThemeModeValue = 'light' | 'dark';
@@ -260,6 +264,7 @@ export type {
     DragAxisValue as $DragAxisValue,
     FileSaveOutcomeValue as $FileSaveOutcomeValue,
     FontWeightValue as $FontWeightValue,
+    GestureArenaPhaseValue as $GestureArenaPhaseValue,
     GestureDispositionValue as $GestureDispositionValue,
     GradientDirectionValue as $GradientDirectionValue,
     HitTestBehaviorValue as $HitTestBehaviorValue,
@@ -298,6 +303,7 @@ export type {
     TableCellRoleValue as $TableCellRoleValue,
     TableRoleValue as $TableRoleValue,
     TextAlignmentValue as $TextAlignmentValue,
+    TextDirectionValue as $TextDirectionValue,
     TextEntryKindValue as $TextEntryKindValue,
     ThemeModeValue as $ThemeModeValue,
     TypeRoleValue as $TypeRoleValue,

@@ -127,7 +127,14 @@ public static class ThemeStylesheet
         css.AppendLine($"  --eq-curve-standard: cubic-bezier({Cubic(Curve.Standard)});");
         css.AppendLine($"  --eq-curve-decelerate: cubic-bezier({Cubic(Curve.Decelerate)});");
         css.AppendLine($"  --eq-curve-accelerate: cubic-bezier({Cubic(Curve.Accelerate)});");
+        // Which way the inline axis runs (#1568): 1 left to right, -1 right to left. A positioned
+        // child's shift across multiplies by it (TokenCss.Shift), so it moves toward the end in both.
+        css.AppendLine("  --eq-inline: 1;");
         css.AppendLine("}");
+        // Set again wherever a direction is said, the page's <html dir> and a Directionality's host, and
+        // inherited from there: after :root, which these tie with, so the nearest `dir` wins.
+        css.AppendLine("[dir=ltr] { --eq-inline: 1; }");
+        css.AppendLine("[dir=rtl] { --eq-inline: -1; }");
 
         // Contrast levels (§01): the same variables at ContrastLevel.More, under the query the browser
         // answers from the system's own setting. Every atomic class reads a theme colour through its
@@ -313,8 +320,11 @@ public static class ThemeStylesheet
         css.AppendLine(".eq-anchor-t-start { bottom: 100%; inset-inline-start: 0; }");
         css.AppendLine(".eq-anchor-t-end { bottom: 100%; inset-inline-end: 0; }");
         css.AppendLine(".eq-anchor-match { min-width: 100%; }");
-        css.AppendLine(".eq-anchor-b-center { top: 100%; inset-inline-start: 50%; transform: translateX(-50%); }");
-        css.AppendLine(".eq-anchor-t-center { bottom: 100%; inset-inline-start: 50%; transform: translateX(-50%); }");
+        // The centre is PHYSICAL on both of its halves, so it reads the same in both directions: a
+        // logical start at 50% beside a physical shift of -50% put the panel a whole width off centre
+        // under rtl (#1568).
+        css.AppendLine(".eq-anchor-b-center { top: 100%; left: 50%; transform: translateX(-50%); }");
+        css.AppendLine(".eq-anchor-t-center { bottom: 100%; left: 50%; transform: translateX(-50%); }");
         // Wave 3b hover reveal (the Tooltip mechanism): the panel exists in the DOM but only shows
         // while the HOST is hovered — pure CSS, zero JS, never on touch (hover media handled by
         // the browser's hover emulation rules). At rest the panel carries an atomic

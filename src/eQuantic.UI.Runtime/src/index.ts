@@ -89,6 +89,7 @@ export { $eq } from './eq';
 export {
   installCulture,
   activeCulture,
+  activeTextDirection,
   setCulture,
   setCultureInvalidator,
   setCultureCatalogLoader,
@@ -186,6 +187,7 @@ export {
   InFlow,
   InheritedComponent,
   Theme,
+  Directionality,
   InView,
   Simulated,
   TextEntry,

@@ -136,8 +136,8 @@ export class NodeElement extends Element {
             let claimed: Element | null = null;
             let key: any; 
             if ((($0) => (($0 != null && $0.length > 0) && (key = $0, true)))(node.key)) {
-                let keyed: any; 
-                if ((byKey.has(key) ? ((keyed = byKey.get(key)), true) : ((keyed = null), false))) {
+                let keyed!: Element; 
+                if ((byKey.has(key) ? ((keyed = byKey.get(key)), true) : ((keyed = null!), false))) {
                     claimed = keyed.matchStamp !== stamp && Element.canUpdate(keyed.configuration, node) ? keyed : repeated ? this.nextUnclaimed(node, stamp) : null;
                 }
             } else { let indexed: any; if (i < this._children.length && (indexed = this._children[i]) != null && (($0) => !(($0 != null && $0.length > 0)))(indexed.configuration.key) && indexed.matchStamp !== stamp && Element.canUpdate(indexed.configuration, node)) {

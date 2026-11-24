@@ -43,8 +43,8 @@ export abstract class GestureRecognizer {
     }
 
     resolvePointer(pointer: number, disposition: $GestureDispositionValue) {
-        let entry: any; 
-        if ((($0) => ($0.has(pointer) ? ((entry = $0.get(pointer)), true) : ((entry = null), false)))(this._entries)) entry.resolve(disposition);
+        let entry!: GestureArenaEntry; 
+        if ((($0) => ($0.has(pointer) ? ((entry = $0.get(pointer)), true) : ((entry = null!), false)))(this._entries)) entry.resolve(disposition);
     }
 
     stopTrackingPointer(pointer: number) {

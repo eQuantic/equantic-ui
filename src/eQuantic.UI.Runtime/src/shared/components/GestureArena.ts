@@ -8,8 +8,8 @@ export class GestureArena {
     _arenas!: any;
 
     add(pointer: number, member: any) {
-        let arena: any; 
-        if (!(($0) => ($0.has(pointer) ? ((arena = $0.get(pointer)), true) : ((arena = null), false)))(this._arenas)) {
+        let arena!: GestureArenaPointer; 
+        if (!(($0) => ($0.has(pointer) ? ((arena = $0.get(pointer)), true) : ((arena = null!), false)))(this._arenas)) {
             arena = new GestureArenaPointer(pointer);
             $eq.mapSet(this._arenas, pointer, arena);
         } else if (arena.phase !== 'open') {
@@ -24,15 +24,15 @@ export class GestureArena {
     }
 
     close(pointer: number) {
-        let arena: any; 
-        if (!(($0) => ($0.has(pointer) ? ((arena = $0.get(pointer)), true) : ((arena = null), false)))(this._arenas) || arena.phase !== 'open') return;
+        let arena!: GestureArenaPointer; 
+        if (!(($0) => ($0.has(pointer) ? ((arena = $0.get(pointer)), true) : ((arena = null!), false)))(this._arenas) || arena.phase !== 'open') return;
         arena.phase = 'closed';
         this.tryToDecide(arena);
     }
 
     sweep(pointer: number) {
-        let arena: any; 
-        if (!(($0) => ($0.has(pointer) ? ((arena = $0.get(pointer)), true) : ((arena = null), false)))(this._arenas)) return;
+        let arena!: GestureArenaPointer; 
+        if (!(($0) => ($0.has(pointer) ? ((arena = $0.get(pointer)), true) : ((arena = null!), false)))(this._arenas)) return;
         this.decide(arena);
         if (arena.members.length === 0) return;
         arena.members[0].acceptGesture(pointer);
@@ -40,8 +40,8 @@ export class GestureArena {
     }
 
     cancel(pointer: number) {
-        let arena: any; 
-        if (!(($0) => ($0.has(pointer) ? ((arena = $0.get(pointer)), true) : ((arena = null), false)))(this._arenas)) return;
+        let arena!: GestureArenaPointer; 
+        if (!(($0) => ($0.has(pointer) ? ((arena = $0.get(pointer)), true) : ((arena = null!), false)))(this._arenas)) return;
         this.decide(arena);
         for (const member of $eq.collections.listWalk(arena.members)) member.rejectGesture(pointer);
     }
@@ -86,8 +86,8 @@ export class GestureArena {
 
     decide(arena: GestureArenaPointer) {
         arena.phase = 'decided';
-        let current: any; 
-        if ((($0, $1) => ($0.has($1) ? ((current = $0.get($1)), true) : ((current = null), false)))(this._arenas, arena.pointer) && (current === arena)) this._arenas.delete(arena.pointer);
+        let current!: GestureArenaPointer; 
+        if ((($0, $1) => ($0.has($1) ? ((current = $0.get($1)), true) : ((current = null!), false)))(this._arenas, arena.pointer) && (current === arena)) this._arenas.delete(arena.pointer);
     }
 
     static indexOf(members: any[], member: any) {
