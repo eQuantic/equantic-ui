@@ -35,7 +35,7 @@ internal sealed partial class SemanticsVisitor
         // combobox is never named from its content (accname) and a select-only combobox's content is
         // its value. With no label, what the field showed was the name here until #1328, so a reader heard
         // the option where the field's name belongs; a labelled one already read as it does now.
-        if (AnchorsAListbox(laidOut))
+        if (ListboxAnchoredBy(laidOut) is not null)
         {
             var shown = TextWithin(laidOut);
             return Announce(new(SemanticRole.ComboBox, IdOf(laidOut), laidOut.Bounds,
@@ -107,15 +107,16 @@ internal sealed partial class SemanticsVisitor
     /// this one sits inside the anchor rather than being it, and nothing in there is the combobox.
     /// </para>
     /// </summary>
-    private static bool AnchorsAListbox(LayoutNode laidOut)
+    /// <returns>The <see cref="Anchored"/> whose listbox hangs from this control, or null.</returns>
+    private static Anchored? ListboxAnchoredBy(LayoutNode laidOut)
     {
         for (var node = laidOut; node.Parent is { } parent; node = parent)
         {
             if (parent.Source is Anchored { PanelRole: not AnchorPanelRole.None } anchored)
-                return anchored.PanelRole == AnchorPanelRole.Listbox;
-            if (parent.Children.Count != 1) return false;
+                return anchored.PanelRole == AnchorPanelRole.Listbox ? anchored : null;
+            if (parent.Children.Count != 1) return null;
         }
-        return false;
+        return null;
     }
 
     /// <summary>One stop, named by the author or derived from the words inside it — the same rule

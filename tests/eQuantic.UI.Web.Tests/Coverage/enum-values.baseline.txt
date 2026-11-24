@@ -440,6 +440,7 @@ SemanticRole.RowHeader = 26
 SemanticRole.Tree = 27
 SemanticRole.TreeItem = 28
 SemanticRole.Splitter = 29
+SemanticRole.EditableComboBox = 30
 ServerConnectionState.Disconnected = 0
 ServerConnectionState.Connecting = 1
 ServerConnectionState.Connected = 2
