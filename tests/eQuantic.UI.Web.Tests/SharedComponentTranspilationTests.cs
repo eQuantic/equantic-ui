@@ -334,6 +334,27 @@ public class SharedComponentTranspilationTests
             public TValue Value;
             public EmittedSlot(TValue value) { Value = value; }
         }
+
+        public abstract class EmittedShapeBase { public abstract int Area { get; } }
+
+        public sealed class EmittedMeasured<T> where T : EmittedShapeBase
+        {
+            private readonly T _shape;
+            public EmittedMeasured(T shape) { _shape = shape; }
+            public int Area() => _shape.Area;
+        }
+
+        public sealed record EmittedTagged<T>(T Shape, string Tag) where T : EmittedShapeBase
+        {
+            public int Area => Shape.Area;
+        }
+
+        public sealed class EmittedHandler<T> where T : EmittedShapeBase
+        {
+            private readonly Action<T> _use;
+            public EmittedHandler(Action<T> use) { _use = use; }
+            public void Give(EmittedShapeBase shape) => _use((T)shape);
+        }
         """;
 
     private const string BoundReceiversSource = """
@@ -515,7 +536,7 @@ public class SharedComponentTranspilationTests
     [
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
-        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot",
+        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedShapeBase", "EmittedMeasured", "EmittedTagged", "EmittedHandler",
     ];
 
     /// <summary>The source this asks about, kept HERE rather than pointed at a production class.

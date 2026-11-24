@@ -141,6 +141,11 @@ public class CastExpressionStrategy : IExpressionIrStrategy
     {
         if (!context.TypeAnnotations) return value;
         var conversion = operation.GetConversion();
+        // A cast to a TYPE PARAMETER, `(T)recognizer`, is asserted to it: written as the value alone, the call it feeds
+        // read the operand's own type where it takes a T, which tsc refused (#1860). Nothing is checked, as a downcast
+        // checks nothing.
+        if (operation.Type is ITypeParameterSymbol parameter && !conversion.IsImplicit)
+            return JsExpr.Template("({0} as " + parameter.Name.ToJsIdentifier() + ")", value);
         if (!conversion.IsReference || conversion.IsImplicit) return value;
         if (operation.Type is not INamedTypeSymbol { TypeKind: TypeKind.Class, IsGenericType: false } target) return value;
         if (!target.Locations.Any(location => location.IsInSource) && !target.IsRuntimeProvided()) return value;

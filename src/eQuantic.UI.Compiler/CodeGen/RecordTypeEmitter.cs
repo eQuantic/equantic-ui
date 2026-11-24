@@ -103,6 +103,14 @@ public class RecordTypeEmitter
     /// <summary>A model that can answer about THIS declaration. Roslyn throws for a node from
     /// another tree, so the COMPILATION is asked for that tree's own model; when even it does not
     /// know the tree, the literal rules still apply.</summary>
+    /// <summary>A type parameter's constraint as the header writes it (#1854): a class that is not generic and has a twin,
+    /// and null for any other one.</summary>
+    private string? ConstraintType(TypeSyntax type) =>
+        ModelFor(type)?.GetTypeInfo(type).Type is INamedTypeSymbol { TypeKind: TypeKind.Class, IsGenericType: false } bound
+        && (bound.Locations.Any(location => location.IsInSource) || bound.IsRuntimeProvided())
+            ? TsTypeOf(type)
+            : null;
+
     private SemanticModel? ModelFor(SyntaxNode node)
     {
         if (_converter.Model is not { } model) return null;
@@ -308,11 +316,15 @@ public class RecordTypeEmitter
         // them, and a class that declares none is one the runtime's tsc refuses.
         var classTypeParameters = _annotations ? type.TwinTypeParameters() : [];
         var generics = classTypeParameters.Count > 0 ? $"<{string.Join(", ", classTypeParameters)}>" : "";
+        // The header declares each parameter with the constraint it can name (#1854); a member names the closure by the
+        // names alone.
+        var declaredTypeParameters = _annotations ? type.TwinTypeParameters(ConstraintType) : [];
+        var headerGenerics = declaredTypeParameters.Count > 0 ? $"<{string.Join(", ", declaredTypeParameters)}>" : "";
         // What a member's annotation names the type by: the instance's own closure, and on a static member, which
         // TypeScript forbids to read a class's type parameters, every one of them open.
         var instanceType = name + generics;
         var staticType = classTypeParameters.Count > 0 ? $"{name}<{string.Join(", ", classTypeParameters.Select(_ => "any"))}>" : name;
-        sb.Append($"class {name}{generics}{(baseName != null ? $" extends {baseName}" : "")} {{ ");
+        sb.Append($"class {name}{headerGenerics}{(baseName != null ? $" extends {baseName}" : "")} {{ ");
 
         // TYPE-ONLY member declarations: they restore checking on `record.x` without emitting any runtime
         // code (the constructor below does the assigning). Only OWN members are declared — a positional
