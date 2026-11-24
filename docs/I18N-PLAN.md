@@ -146,6 +146,9 @@ translation changes as data, not code.
   #1568 gave the vocabulary `TextDirection` and `Directionality`, took a page's direction from the
   culture, and made the web mirror start and end; #1569 turns what only the SDK knows (icons,
   gestures, arrow keys). Photon's right-to-left text stays after 1.0.
+  2026-11-24: the glyphs, gestures and keys landed in #1569 (`IconGlyph.MatchTextDirection`, a
+  drag, a sortable list and the arrow keys that read the direction, a horizontal scroll offset
+  from the start). Photon's mirroring of them stays outside 1.0.
 
 - **D10 — Native needs no bridge at all.** Photon runs the same C# with no transpilation:
   `ResourceManager` + satellite assemblies work directly. The plan's only native work is

@@ -391,6 +391,8 @@ public class FlutterParityPinTests
         // the web's half (the shell's dir, the logical CSS) is held by the Web and Server suites (#1568).
         ["TextDirection.ltr/rtl"] = () => Has("TextDirection") && Has("Directionality")
             && HasMember("ComponentContext", "TextDirection"),
+        // The glyph's flag, which the web turns under right to left (#1569); Photon draws it unmirrored.
+        ["IconData.matchTextDirection"] = () => HasMember("IconGlyph", "MatchTextDirection"),
         ["ThemeData"] = () => Has("IAppTheme") && Has("Density") && Nothing("CupertinoThemeData"),
         ["MediaQuery"] = () => Has("SafeArea") && Nothing("MediaQuery"),
         ["MediaQuery.viewInsets"] = () => HasMember("PhotonHost", "ViewInsets"),
