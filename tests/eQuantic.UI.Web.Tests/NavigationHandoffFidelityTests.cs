@@ -73,8 +73,9 @@ public class NavigationHandoffFidelityTests
     {
         var styles = Styles(new NavigationRail(Items, 0));
 
-        // Per-side, so the shorthand carries the zeros: top, END, bottom, start.
-        styles.Should().Contain(style => style.Contains("border-width: 0 1px 0 0")
+        // Its END edge alone, as logical widths, so the edge stands on the reader's end under rtl (#1568).
+        styles.Should().Contain(style => style.Contains("border-inline-width: 0 1px")
+            && style.Contains("border-block-width: 0")
             && style.Contains("width: 80px"));
     }
 

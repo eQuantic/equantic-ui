@@ -342,10 +342,11 @@ describe('the format culture', () => {
       return culture === 'de-CH' ? { format: deDe } : null;
     });
 
-    // English strings over Swiss formats: the data asked for is the FORMAT half's.
+    // English strings over Swiss formats: the data installed is the FORMAT half's, and the UI half's
+    // document is asked for once, for the direction its text runs in (#1568).
     await setCulture('en-GB', 'de-CH');
 
-    expect(asked).toEqual(['de-CH']);
+    expect(asked).toEqual(['de-CH', 'en-GB']);
     expect(activeFormatData()).toBe(deDe);
   });
 

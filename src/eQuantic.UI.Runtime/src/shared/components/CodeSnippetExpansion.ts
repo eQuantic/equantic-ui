@@ -94,9 +94,9 @@ export class CodeSnippetExpansion {
 
     defaultOf(index: number) {
         let known: any; 
-        if ((($0) => ($0.has(index) ? ((known = $0.get(index)), true) : ((known = null), false)))(this._defaults)) return known;
-        let defining: any; 
-        if (!(($0) => ($0.has(index) ? ((defining = $0.get(index)), true) : ((defining = null), false)))(this._defining) || this._resolving.includes(index)) return '';
+        if ((($0) => ($0.has(index) ? ((known = $0.get(index)), true) : ((known = null!), false)))(this._defaults)) return known;
+        let defining!: CodeSnippetPart; 
+        if (!(($0) => ($0.has(index) ? ((defining = $0.get(index)), true) : ((defining = null!), false)))(this._defining) || this._resolving.includes(index)) return '';
         $eq.collections.listAdd(this._resolving, index);
         let choices: any; let children: any; 
         let text = (($0) => (($0 != null && $eq.collections.count($0) > 0) && (choices = $0, true)))(defining.choices) ? $eq.collections.item(choices, 0) : (children = defining.children) != null ? this.plain(children) : defining.text;
@@ -113,7 +113,7 @@ export class CodeSnippetExpansion {
                 continue;
             }
             let index = this.indexOf(part);
-            if (index >= 0) text.append(this.defaultOf(index)); else { let value: any; let nested: any; if ((value = ($o => (nested = $o.nested, $o.$))(this.variableText(part))) != null) text.append(value); else if (!(nested == null)) text.append(this.plain(nested)); }
+            if (index >= 0) text.append(this.defaultOf(index)); else { let value: any; let nested!: CodeSnippetPart[] | null; if ((value = ($o => (nested = $o.nested, $o.$))(this.variableText(part))) != null) text.append(value); else if (!(nested == null)) text.append(this.plain(nested)); }
         }
         return text.toString();
     }
@@ -138,13 +138,13 @@ export class CodeSnippetExpansion {
             }
             let index = this.indexOf(part);
             if (index < 0) {
-                let value: any; let nested: any; 
+                let value: any; let nested!: CodeSnippetPart[] | null; 
                 if ((value = ($o => (nested = $o.nested, $o.$))(this.variableText(part))) != null) this.append(value); else if (!(nested == null)) this.write(nested);
                 continue;
             }
             let start = this.end;
-            let defining: any; let children: any; 
-            if ((($0) => ($0.has(index) ? ((defining = $0.get(index)), true) : ((defining = null), false)))(this._defining) && defining.choices == null && (children = defining.children) != null && !this._writing.includes(index)) {
+            let defining!: CodeSnippetPart; let children: any; 
+            if ((($0) => ($0.has(index) ? ((defining = $0.get(index)), true) : ((defining = null!), false)))(this._defining) && defining.choices == null && (children = defining.children) != null && !this._writing.includes(index)) {
                 $eq.collections.listAdd(this._writing, index);
                 $eq.collections.listAdd(this._enclosing, index);
                 this.write(children);

@@ -169,7 +169,8 @@ export type SemanticRoleValue =
   'staticText' | 'button' | 'link' | 'textField' | 'codeField' | 'slider' | 'image' | 'checkbox'
   | 'switch' | 'gridCell' | 'progressIndicator' | 'group' | 'radio' | 'tab' | 'menuItem' | 'option'
   | 'destination' | 'tabBar' | 'radioGroup' | 'comboBox' | 'dialog' | 'alertDialog' | 'table'
-  | 'grid' | 'cell' | 'columnHeader' | 'rowHeader' | 'tree' | 'treeItem' | 'splitter';
+  | 'grid' | 'cell' | 'columnHeader' | 'rowHeader' | 'tree' | 'treeItem' | 'splitter'
+  | 'editableComboBox';
 
 export type ServerConnectionStateValue =
   'disconnected' | 'connecting' | 'connected' | 'reconnecting';
@@ -201,6 +202,8 @@ export type TableCellRoleValue = 'cell' | 'columnHeader' | 'rowHeader';
 export type TableRoleValue = 'group' | 'table' | 'grid';
 
 export type TextAlignmentValue = 'start' | 'center' | 'end';
+
+export type TextDirectionValue = 'leftToRight' | 'rightToLeft';
 
 export type TextEntryKindValue = 'text' | 'email' | 'phone' | 'url' | 'number' | 'decimal';
 
@@ -294,6 +297,7 @@ export type {
     TableCellRoleValue as $TableCellRoleValue,
     TableRoleValue as $TableRoleValue,
     TextAlignmentValue as $TextAlignmentValue,
+    TextDirectionValue as $TextDirectionValue,
     TextEntryKindValue as $TextEntryKindValue,
     ThemeModeValue as $ThemeModeValue,
     TypeRoleValue as $TypeRoleValue,

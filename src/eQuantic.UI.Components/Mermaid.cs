@@ -85,8 +85,10 @@ public sealed class Mermaid : StatelessComponent
             canvas.Add(new Positioned(NodeView(placed, theme), top: placed.Y, start: placed.X));
 
         // The canvas is its own size; wide diagrams scroll sideways INSIDE the component, the
-        // same containment contract every block on a page owes its column.
-        return new ScrollView(canvas, ScrollAxis.Horizontal) { Width = SizeValue.Fill };
+        // same containment contract every block on a page owes its column. A diagram reads left to
+        // right in every language, as its layout placed it (#1568).
+        return new Directionality(TextDirection.LeftToRight,
+            new ScrollView(canvas, ScrollAxis.Horizontal) { Width = SizeValue.Fill });
     }
 
     // ---- Nodes -------------------------------------------------------------------------------

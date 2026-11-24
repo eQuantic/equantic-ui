@@ -32,9 +32,13 @@ namespace eQuantic.UI.Native.Components;
 /// <param name="Text">What the region says, when it says it in words of its own rather than through what
 /// it draws: a spreadsheet's surface announcing its moves (<see cref="SheetSurface.Announcement"/>, #1081).
 /// Null reads it from <paramref name="Node"/>'s subtree, as a <see cref="LiveRegion"/>'s.</param>
+/// <param name="SaidFrom">The position whose semantic node says it, when that is not the one that keeps what it
+/// said: an editable combobox's field, whose position keeps its text (#1088). Null says it from
+/// <paramref name="Element"/>'s node.</param>
 internal readonly record struct LiveRegionMark(
     Element Element,
     string Label,
     LiveRegionUrgency Urgency,
     LayoutNode Node,
-    string? Text = null);
+    string? Text = null,
+    Element? SaidFrom = null);

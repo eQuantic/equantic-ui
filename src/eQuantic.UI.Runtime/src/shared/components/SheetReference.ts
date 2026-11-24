@@ -13,12 +13,12 @@ export class SheetReference {
             let first = colon < 0 ? trimmed : $eq.text.substring(trimmed, 0, colon);
             let second = colon < 0 ? null : $eq.text.substring(trimmed, colon + 1 | 0);
             if (second == null) {
-                let cell: any; 
+                let cell!: CellRef; 
                 if (!($o => (cell = $o.cell, $o.$))(SheetReference.readCell(first)) || !SheetReference.inside(cell, rows, cols)) return false;
                 range = new SheetRange(cell);
                 return true;
             }
-            let from: any; let to: any; 
+            let from!: CellRef; let to!: CellRef; 
             if (($o => (from = $o.cell, $o.$))(SheetReference.readCell(first)) && ($o => (to = $o.cell, $o.$))(SheetReference.readCell(second))) {
                 if (!SheetReference.inside(from, rows, cols) || !SheetReference.inside(to, rows, cols)) return false;
                 range = SheetReference.ordered(from, to);

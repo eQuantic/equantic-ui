@@ -10,7 +10,7 @@
 
 import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { NodeKind } from './node-kinds.generated';
-import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue, TextEntryKindValue } from './enums.generated';
+import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue, TextDirectionValue, TextEntryKindValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
 import type { AppTheme, ContextRequest, PointerEvent } from './value-types';
 import { iconPaths } from './icons.generated';
@@ -32,7 +32,7 @@ import type { PickedFile } from './picked-file';
 export { CanvasPointer };
 import { floatText } from './css-values';
 import { lowerVisualNode } from './lowering';
-import { ambientLoweringContext, registerThemeNode } from './photon-context';
+import { ambientLoweringContext, registerDirectionalityNode, registerThemeNode } from './photon-context';
 import {
   artworkAspect,
   CornerRadii,
@@ -1055,6 +1055,27 @@ export class Theme extends InheritedComponent {
 }
 // The context finds it by its class, which it cannot import: this module imports the context.
 registerThemeNode(Theme);
+
+/**
+ * The direction a subtree reads in (the C# `Directionality`, after Flutter's `Directionality`): a
+ * component below it reads `context.textDirection` as this node's `direction`, and builds again when a
+ * new one replaces it; one with none above it reads its UI culture's. The lowering writes it as `dir`
+ * on its child's own element, so a start and an end mirror under it.
+ */
+export class Directionality extends InheritedComponent {
+  readonly direction: TextDirectionValue;
+
+  constructor(direction: TextDirectionValue, child: VisualChild, config?: EqConfig) {
+    super(child, config);
+    this.direction = direction;
+  }
+
+  updateShouldNotify(old: InheritedComponent): boolean {
+    return (old as Directionality).direction !== this.direction;
+  }
+}
+// The context and the lowering find it by its class, which neither can import: this module imports both.
+registerDirectionalityNode(Directionality);
 
 export class InFlow extends VisualNode {
   readonly nodeKind = 'inFlow';

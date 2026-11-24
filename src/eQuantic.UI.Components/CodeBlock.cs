@@ -374,7 +374,9 @@ public sealed class CodeBlock : StatelessComponent
         // Bare CONTENT, exactly as wide as the code: no slab, no viewport, no corner. An editor
         // frames and scrolls this from outside, and a block that framed itself here would paint a
         // second slab inside the first and clip the lines the scroll was there to reach.
-        if (!Standalone) return body;
+        // Code reads left to right in every language, and its marks stand where the grid measured them,
+        // from the left (#1568): bare content too, which a diff lays out beside another.
+        if (!Standalone) return new Directionality(TextDirection.LeftToRight, body);
 
         // Long lines scroll sideways rather than wrapping: a wrapped line of code has lost the one
         // thing its indentation was telling you.
@@ -410,12 +412,13 @@ public sealed class CodeBlock : StatelessComponent
             Clip = true,
         }, body);
 
-        if (Corner(Caption, OnCopy, Inverse, theme) is not { } corner) return slab;
+        if (Corner(Caption, OnCopy, Inverse, theme) is not { } corner)
+            return new Directionality(TextDirection.LeftToRight, slab);
 
         var layers = new Stack { Width = SizeValue.Fill };
         layers.Add(slab);
         layers.Add(corner);
-        return layers;
+        return new Directionality(TextDirection.LeftToRight, layers);
     }
 
     /// <summary>

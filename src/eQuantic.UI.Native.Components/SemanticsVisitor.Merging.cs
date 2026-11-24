@@ -55,5 +55,5 @@ internal sealed partial class SemanticsVisitor
         or SemanticRole.TextField or SemanticRole.CodeField or SemanticRole.Slider or SemanticRole.Checkbox
         or SemanticRole.Switch or SemanticRole.GridCell or SemanticRole.Radio or SemanticRole.Tab
         or SemanticRole.MenuItem or SemanticRole.Option or SemanticRole.Destination or SemanticRole.ComboBox
-        or SemanticRole.TreeItem;
+        or SemanticRole.TreeItem or SemanticRole.EditableComboBox;
 }

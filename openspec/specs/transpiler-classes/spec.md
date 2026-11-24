@@ -626,8 +626,9 @@ to a type parameter SHALL assert it in TypeScript, `(value as T)`, checking noth
 
 - **WHEN** an app or the library declares `class Factory<T>` storing a `Func<T>`, `record Pair<TKey>(TKey Key, int Rank)`
   and `struct Slot<TValue>` with a `TValue` field
-- **THEN** their modules declare `class Factory<T>`, `class Pair<TKey>` and `class Slot<TValue>`, a record's `with` and
-  `$clone` answer `Slot<TValue>`, and `tsc` takes them
+- **THEN** their modules declare `class Factory<T>`, `class Pair<TKey>` and `class Slot<TValue>`; `Pair`'s `with` answers
+  `Pair<TKey>`, `Slot`'s `with` and `$clone` answer `Slot<TValue>` and its static `$zero` answers `Slot<any>`; and `tsc`
+  takes them
 
 #### Scenario: Plain JavaScript declares no type parameters
 
@@ -805,7 +806,9 @@ A type test against an interface (`is`, `as`, a type pattern, a switch arm) SHAL
 
 A vocabulary enum's union SHALL be named, in every module eqc writes, with a character C# cannot spell
 (`$DensityValue` for `Density`), so a type of any name an app or the vocabulary declares beside the enum
-SHALL be that type, imported from its own module, and never taken for the union.
+SHALL be that type, imported from its own module, and never taken for the union. Every top-level non-flags enum
+of the vocabulary's assemblies SHALL have its union, an internal one included, since a twin imports the union of
+whatever enum its C# names. A `file` enum, whose metadata name no code can say, SHALL have none.
 
 #### Scenario: An app's record named like the union
 
@@ -813,6 +816,11 @@ SHALL be that type, imported from its own module, and never taken for the union.
   `Density` and a `DensityValue`
 - **THEN** the component's module imports `DensityValue` from the app's module and `$DensityValue` from
   the runtime, and it builds and runs as .NET runs it, with type annotations on and off
+
+#### Scenario: An internal enum has its union
+
+- **WHEN** an assembly holds an internal top-level enum, a `file` enum and a public class with a nested enum
+- **THEN** the generator's list of unions holds the internal enum, and neither the `file` one nor the nested one
 
 ### Requirement: A named argument and an initializer both reach the twin
 
@@ -893,3 +901,27 @@ initializer beside the arguments SHALL be applied after the constructor, so ever
 - **WHEN** `Blocky(string text) => _text = text;` is built as `new Blocky("g")`, and `Render()` returns
   `new HtmlNode { Tag = "p", TextContent = _text }`
 - **THEN** the node's tag is `p` and its text is `g`, as in .NET
+
+### Requirement: A component's dependency leaves no slot before its initializer
+
+A construction of a component whose constructor takes a dependency, built with an object initializer, SHALL pass
+its other arguments in the parameters the twin's constructor keeps, fill the kept parameters no argument reached
+with their own defaults, and pass the initializer in the config slot after them, so the component holds what .NET
+builds whichever way its arguments are written.
+
+#### Scenario: A named argument after the dependency
+
+- **WHEN** a component is built with `new Quark(null, mood: "x") { Size = 3 }`, for
+  `Quark(IClock? clock, string mood = "calm")` with `int Size { get; init; }`
+- **THEN** it reads `Mood` `x` and `Size` `3`, as in .NET
+
+#### Scenario: No argument after the dependency
+
+- **WHEN** it is built with `new Quark(null) { Size = 5 }`
+- **THEN** it reads `Mood` `calm` and `Size` `5`, as in .NET
+
+#### Scenario: The dependency in the middle
+
+- **WHEN** a component is built with `new Middle("a", null) { Tone = "warm" }`, for
+  `Middle(string before, IClock? clock, int after = 3)`
+- **THEN** it reads `Before` `a`, `After` `3` and `Tone` `warm`, as in .NET

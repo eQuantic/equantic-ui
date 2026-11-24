@@ -24,11 +24,13 @@ public class InvocationStrategyTests
     }
     
     [Fact]
-    public void MathClamp_ConvertsToMinMax()
+    public void MathClamp_GoesToTheRuntimesClamp()
     {
+        // .NET's refusal of a minimum above the maximum and its order of comparison live in the runtime
+        // (#1824), with the kind of number the refusal writes: a double, where no model binds `val`.
         var code = "Math.Clamp(val, 0, 100)";
         var js = ConvertExpression(code);
-        Assert.Equal("Math.min(Math.max(val, 0), 100)", js);
+        Assert.Equal("$eq.num.clamp(val, 0, 100, 'double')", js);
     }
 
     [Fact]

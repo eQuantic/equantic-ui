@@ -22,6 +22,7 @@
  * was never indented (#598).
  */
 
+import { cancelAfterWrite } from '../shared/after-write';
 import { adaptiveGateOpen, isAdaptiveGate } from '../shared/style-atomizer';
 
 /** What CAN take focus inside a trap. `[data-eq-trap]` itself is excluded: it is the fallback. */
@@ -241,30 +242,6 @@ export function commitFocusTraps(): void {
   }
 }
 
-let commitScheduled = false;
-/** Counted up by a reset, so a commit queued before it reconciles nothing after it. */
-let commitGeneration = 0;
-
-/**
- * Reconciles the traps once the pass is WRITTEN: what calls this at the end of a pass runs before the
- * render manager writes the tree the pass produced, so a commit on the spot read the DOM the pass
- * before it had written. A dialog a render opened then took no focus and recorded no opener until some
- * later pass came, and one that came none never did (#1812). The microtask after the write is the
- * moment the in-view observers attach at, for the same reason.
- */
-export function scheduleFocusTrapCommit(): void {
-  if (typeof document === 'undefined' || commitScheduled) return;
-  commitScheduled = true;
-  const generation = commitGeneration;
-  const commit = () => {
-    if (generation !== commitGeneration) return;
-    commitScheduled = false;
-    commitFocusTraps();
-  };
-  if (typeof queueMicrotask === 'function') queueMicrotask(commit);
-  else void Promise.resolve().then(commit);
-}
-
 /** Test seam: the layers a Tab would currently be trapped inside (topmost last). */
 export function activeFocusTraps(): readonly Element[] {
   return active;
@@ -274,6 +251,6 @@ export function activeFocusTraps(): readonly Element[] {
 export function resetFocusTraps(): void {
   active = [];
   returned = null;
-  commitScheduled = false;
-  commitGeneration++;
+  // A reconciliation the end of a pass queued before the reset sees nothing after it (shared/after-write.ts).
+  cancelAfterWrite(commitFocusTraps);
 }
