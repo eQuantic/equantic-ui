@@ -75,8 +75,8 @@ export class TableView extends StatefulComponent {
         let config = this._config;
         let rows = config.rows;
         let columns = config.columns;
-        let pinnedRows = Math.min(Math.max(config.pinnedRows, 0), rows.count);
-        let pinnedColumns = Math.min(Math.max(config.pinnedColumns, 0), columns.count);
+        let pinnedRows = $eq.num.clamp(config.pinnedRows, 0, rows.count, 'int32');
+        let pinnedColumns = $eq.num.clamp(config.pinnedColumns, 0, columns.count, 'int32');
         let scroll = config.scroll ?? this._ownScroll;
         if (!this.covers(scroll.offset) || this._lastRow >= rows.count || this._lastColumn >= columns.count) this.window(scroll.offset);
         let viewport = new TableViewport(rows, columns, scroll, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, width: config.width, height: config.height, request: config.request, onScrolled: $eq.delegates.bound(this, this.scrolled).bind(this), onViewportChanged: $eq.delegates.bound(this, this.viewportChanged).bind(this), label: config.label, canRequestFocus: config.canRequestFocus, role: config.role });
@@ -140,8 +140,8 @@ export class TableView extends StatefulComponent {
     window(offset: TableOffset) {
         let [firstRow, lastRow, firstColumn, lastColumn] = this.visible(offset);
         let overscan = Math.max(0, this._config.overscan);
-        let pinnedRows = Math.min(Math.max(this._config.pinnedRows, 0), this._config.rows.count);
-        let pinnedColumns = Math.min(Math.max(this._config.pinnedColumns, 0), this._config.columns.count);
+        let pinnedRows = $eq.num.clamp(this._config.pinnedRows, 0, this._config.rows.count, 'int32');
+        let pinnedColumns = $eq.num.clamp(this._config.pinnedColumns, 0, this._config.columns.count, 'int32');
         this._firstRow = Math.max(pinnedRows, firstRow - overscan | 0);
         this._lastRow = Math.min(this._config.rows.count - 1 | 0, lastRow + overscan | 0);
         this._firstColumn = Math.max(pinnedColumns, firstColumn - overscan | 0);
@@ -151,8 +151,8 @@ export class TableView extends StatefulComponent {
     visible(offset: TableOffset): [number, number, number, number] {
         let config = this._config;
         let size = this._viewport.width > 0 && this._viewport.height > 0 ? this._viewport : TableView.firstGuess;
-        let pinnedRows = Math.min(Math.max(config.pinnedRows, 0), config.rows.count);
-        let pinnedColumns = Math.min(Math.max(config.pinnedColumns, 0), config.columns.count);
+        let pinnedRows = $eq.num.clamp(config.pinnedRows, 0, config.rows.count, 'int32');
+        let pinnedColumns = $eq.num.clamp(config.pinnedColumns, 0, config.columns.count, 'int32');
         let pinnedDown = config.rows.offsetOf(pinnedRows);
         let pinnedAcross = config.columns.offsetOf(pinnedColumns);
         let firstRow = Math.max(pinnedRows, config.rows.indexAt(offset.down + pinnedDown));
