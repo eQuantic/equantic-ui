@@ -432,8 +432,8 @@ export class CodeEditorController {
     cellsOf(line: number) {
         let text = this._document.line(line);
         let tabSize = this.rules.indentWidth;
-        let cells: any; 
-        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._cells) && cells.text === text && cells.tabSize === tabSize) return cells;
+        let cells!: CodeLineCells; 
+        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null!), false)))(this._cells) && cells.text === text && cells.tabSize === tabSize) return cells;
         cells = new CodeLineCells(text, tabSize);
         $eq.mapSet(this._cells, line, cells);
         return cells;
@@ -441,8 +441,8 @@ export class CodeEditorController {
 
     advancesOf(line: number, measure: (value: string) => number) {
         let cells = this.cellsOf(line);
-        let advances: any; 
-        if ((($0) => ($0.has(line) ? ((advances = $0.get(line)), true) : ((advances = null), false)))(this._advances) && advances.text === cells.text && advances.measure === measure) return advances;
+        let advances!: CodeLineAdvances; 
+        if ((($0) => ($0.has(line) ? ((advances = $0.get(line)), true) : ((advances = null!), false)))(this._advances) && advances.text === cells.text && advances.measure === measure) return advances;
         advances = new CodeLineAdvances(cells, measure);
         $eq.mapSet(this._advances, line, advances);
         return advances;
@@ -903,7 +903,7 @@ export class CodeEditorController {
         let ordered = new CodeRange(this._document.clamp(range.start), this._document.clamp(range.end));
         let removed = this._document.textIn(ordered);
         let before = this._selection;
-        let caret: any; 
+        let caret!: CodePosition; 
         let next = ($o => (caret = $o.caret, $o.$))(this._document.replace(ordered, text));
         this._document = next;
         this._selection = new CodeRange(caret);
@@ -1029,7 +1029,7 @@ export class CodeEditorController {
         if (removed.length === 0 && text.length === 0) return false;
         let before = this._selection;
         let found = this._step == null ? this.selections : [];
-        let caret: any; 
+        let caret!: CodePosition; 
         let next = ($o => (caret = $o.caret, $o.$))(this._document.replace(ordered, text));
         this._document = next;
         let left: any; 
@@ -1734,8 +1734,8 @@ export class CodeEditorController {
         let stops: CodeSnippetStop[] = [];
         let made = this.asOneStep(() => {
             this.atEveryCaret(() => {
-                let range: any; let copy: any; 
-                if (!(($0, $1) => ($0.has($1) ? ((range = $0.get($1)), true) : ((range = CodeRange.$zero()), false)))(ranges, this._selection) || !(($0, $1) => ($0.has($1) ? ((copy = $0.get($1)), true) : ((copy = null), false)))(planned, this._selection)) return false;
+                let range!: CodeRange; let copy!: CodeSnippetExpansion; 
+                if (!(($0, $1) => ($0.has($1) ? ((range = $0.get($1)), true) : ((range = CodeRange.$zero()), false)))(ranges, this._selection) || !(($0, $1) => ($0.has($1) ? ((copy = $0.get($1)), true) : ((copy = null!), false)))(planned, this._selection)) return false;
                 let start = this._document.clamp(range.start);
                 $eq.collections.listAdd(copies, copy);
                 let edited = this.edit(range, copy.text, false);
@@ -1759,8 +1759,8 @@ export class CodeEditorController {
         for (let k = 0; k < copies.length; k = k + 1 | 0) {
             let start = carets[k].selection.start;
             for (const place of $eq.collections.sequenceWalk(copies[k].places)) {
-                let stop: any; 
-                if (!(($0, $1) => ($0.has($1) ? ((stop = $0.get($1)), true) : ((stop = null), false)))(byIndex, place.stop)) {
+                let stop!: CodeSnippetStop; 
+                if (!(($0, $1) => ($0.has($1) ? ((stop = $0.get($1)), true) : ((stop = null!), false)))(byIndex, place.stop)) {
                     stop = new CodeSnippetStop(place.stop, place.stop === 0);
                     $eq.mapSet(byIndex, place.stop, stop);
                 }
@@ -1774,8 +1774,8 @@ export class CodeEditorController {
         $eq.collections.listSort(order, $eq.collections.order('value', 'comparable'));
         let stops: CodeSnippetStop[] = [];
         for (const index of $eq.collections.listWalk(order)) $eq.collections.listAdd(stops, $eq.mapGet(byIndex, index));
-        let final: any; 
-        if ((byIndex.has(0) ? ((final = byIndex.get(0)), true) : ((final = null), false))) $eq.collections.listAdd(stops, final); else {
+        let final!: CodeSnippetStop; 
+        if ((byIndex.has(0) ? ((final = byIndex.get(0)), true) : ((final = null!), false))) $eq.collections.listAdd(stops, final); else {
             let end = new CodeSnippetStop(0, true);
             for (let k = 0; k < copies.length; k = k + 1 | 0) end.add(new CodeRange(CodeSnippetPlace.at(carets[k].selection.start, copies[k].end)), [], k === primary);
             $eq.collections.listAdd(stops, end);
@@ -2174,7 +2174,7 @@ export class CodeEditorController {
     undo() {
         if (this.readOnly) return false;
         this.endComposition();
-        let selections: any; let made: any; 
+        let selections!: CodeRange[]; let made!: CodeEdit[]; 
         if (($o => (selections = $o.selections, made = $o.made, $o.$))(this.history.undo(this._document)) == null) return false;
         this.snippet.end();
         this.replay(made, selections);
@@ -2184,7 +2184,7 @@ export class CodeEditorController {
     redo() {
         if (this.readOnly) return false;
         this.endComposition();
-        let selections: any; let made: any; 
+        let selections!: CodeRange[]; let made!: CodeEdit[]; 
         if (($o => (selections = $o.selections, made = $o.made, $o.$))(this.history.redo(this._document)) == null) return false;
         this.snippet.end();
         this.replay(made, selections);

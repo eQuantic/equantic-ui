@@ -20,7 +20,7 @@ public class ForEachStatementStrategy : IStatementStrategy
     {
         var foreachStmt = (ForEachStatementSyntax)node;
         var item = foreachStmt.Identifier.ValueText.ToJsIdentifier();
-        var declared = ExpressionVariableScanner.Declarations(foreachStmt.Expression, context.TypeAnnotations);
+        var declared = ExpressionVariableScanner.Declarations(foreachStmt.Expression, context);
         // A string enumerates its chars, the UTF-16 code units, where JavaScript's iterator gives code
         // points: `foreach (var c in "a😀b")` counted three where .NET counts four (#524). A type that
         // may hold one (`object`, `IEnumerable`, `IEnumerable<char>`) asks the value what it is.

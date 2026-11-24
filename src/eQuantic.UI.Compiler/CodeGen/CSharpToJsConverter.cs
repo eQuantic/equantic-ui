@@ -786,7 +786,7 @@ public class CSharpToJsConverter
         IReadOnlyList<string> temporaries, bool returns) =>
         new([
             JsStatement.Hoisted(
-                ExpressionVariableScanner.Declarations(expression, _context.TypeAnnotations)
+                ExpressionVariableScanner.Declarations(expression, _context)
                     + _context.Temporaries.Declarations(temporaries, _context.TypeAnnotations),
                 returns ? JsStatement.Return(converted) : JsStatement.Expression(converted)) with { Origin = expression },
         ]);

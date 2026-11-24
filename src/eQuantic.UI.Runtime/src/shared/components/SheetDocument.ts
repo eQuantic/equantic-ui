@@ -43,7 +43,7 @@ export class SheetDocument {
 
     getCell(cell: CellRef) {
         let value: any; 
-        return (($0, $1) => ($0.has($1) ? ((value = $0.get($1)), true) : ((value = null), false)))(this._cells, cell.key) ? value : '';
+        return (($0, $1) => ($0.has($1) ? ((value = $0.get($1)), true) : ((value = null!), false)))(this._cells, cell.key) ? value : '';
     }
 
     setCell(cell: CellRef, value: string) {
