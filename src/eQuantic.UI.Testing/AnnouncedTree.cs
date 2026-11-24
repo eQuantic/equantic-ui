@@ -239,6 +239,9 @@ internal sealed class AnnouncedTree
         {
             var role = written.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
             if (role == "separator" && Attribute(node, "tabindex") is null) return null;
+            // A text control that is the combobox is the EDITABLE one, Core-AAM's own distinction (#1088):
+            // a reader types into it while the arrows walk its list.
+            if (role == "combobox" && node.Tag is "input" or "textarea") return SemanticRole.EditableComboBox;
             if (role != "heading") return role is not null && AriaRoles.TryGetValue(role, out var known) ? known : null;
             headingLevel = int.TryParse(Attribute(node, "aria-level"), out var level) ? level : 2;
             return SemanticRole.StaticText;
@@ -310,7 +313,7 @@ internal sealed class AnnouncedTree
 
     private string? ValueOf(HtmlNode node, SemanticRole role) => role switch
     {
-        SemanticRole.TextField or SemanticRole.CodeField =>
+        SemanticRole.TextField or SemanticRole.CodeField or SemanticRole.EditableComboBox =>
             node.Tag == "textarea" ? TextOf(node) : Attribute(node, "value") ?? "",
         SemanticRole.Slider or SemanticRole.ProgressIndicator or SemanticRole.Splitter =>
             Attribute(node, "aria-valuetext") ?? Attribute(node, "aria-valuenow") ?? Attribute(node, "value"),

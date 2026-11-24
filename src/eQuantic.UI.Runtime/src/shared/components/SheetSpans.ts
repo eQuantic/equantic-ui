@@ -39,7 +39,7 @@ export class SheetSpans extends TableSpans {
 
     offsetOf(index: number) {
         this.read();
-        let clamped = Math.min(Math.max(index, 0), this.count);
+        let clamped = $eq.num.clamp(index, 0, this.count, 'int32');
         return clamped * this.extent + this._added[this.before(clamped)];
     }
 

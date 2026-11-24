@@ -43,7 +43,7 @@ export class SheetDocument {
 
     getCell(cell: CellRef) {
         let value: any; 
-        return (($0, $1) => ($0.has($1) ? ((value = $0.get($1)), true) : ((value = null), false)))(this._cells, cell.key) ? value : '';
+        return (($0, $1) => ($0.has($1) ? ((value = $0.get($1)), true) : ((value = null!), false)))(this._cells, cell.key) ? value : '';
     }
 
     setCell(cell: CellRef, value: string) {
@@ -73,7 +73,7 @@ export class SheetDocument {
     }
 
     clamp(cell: CellRef) {
-        return new CellRef(Math.min(Math.max(cell.row, 0), this.rows - 1 | 0), Math.min(Math.max(cell.col, 0), this.cols - 1 | 0));
+        return new CellRef($eq.num.clamp(cell.row, 0, this.rows - 1 | 0, 'int32'), $eq.num.clamp(cell.col, 0, this.cols - 1 | 0, 'int32'));
     }
 
     hasValue(cell: CellRef) {

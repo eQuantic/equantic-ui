@@ -23,7 +23,7 @@ export class Pagination extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let current = Math.min(Math.max(this.currentPage, 1), Math.max(1, this.pageCount));
+        let current = $eq.num.clamp(this.currentPage, 1, Math.max(1, this.pageCount), 'int32');
         let slot = theme.navigation;
         let numbers = new Row(slot?.pageGap ?? 3, 'start', 'center', false, null, null, { cross: 'center' });
         let previous = 0;
@@ -46,7 +46,7 @@ export class Pagination extends StatelessComponent {
             for (let page = 1; page <= pageCount; page = page + 1 | 0) all[page - 1 | 0] = page;
             return all;
         }
-        let current = Math.min(Math.max(currentPage, 1), pageCount);
+        let current = $eq.num.clamp(currentPage, 1, pageCount, 'int32');
         let pages = [1];
         for (let page = current - Pagination.window | 0; page <= (current + Pagination.window | 0); page = page + 1 | 0) if (page > 1 && page < pageCount && !pages.includes(page)) $eq.collections.listAdd(pages, page);
         if (pageCount > 1) $eq.collections.listAdd(pages, pageCount);

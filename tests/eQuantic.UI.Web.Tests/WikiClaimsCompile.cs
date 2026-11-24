@@ -818,4 +818,18 @@ public class WikiClaimsCompile
             ProgressBar(value, Variant.Primary, label: "Uploading"),
             Checkbox(on, onChanged, "Remember me", disabled: true),
         ]);
+
+    /// <summary>Localization's right-to-left section (#1568): a subtree that reads the other way, and a
+    /// component that asks which way it reads.</summary>
+    private sealed class BackLink(string snippet) : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            var back = context.TextDirection == TextDirection.RightToLeft ? Icons.ChevronRight : Icons.ChevronLeft;
+            return Column(children: [
+                Icon(back, 16),
+                Directionality(TextDirection.LeftToRight, new CodeBlock(snippet, "csharp")),
+            ]);
+        }
+    }
 }

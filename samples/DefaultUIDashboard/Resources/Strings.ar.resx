@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A culture that reads RIGHT TO LEFT, so the console proves its pages mirror: the shell writes
+     dir="rtl" from .NET's own TextInfo, and every start and end the pages say lays out from the right. -->
+<root>
+  <data name="Hero.Title" xml:space="preserve">
+    <value>ابنِ منتجات، لا أنابيب.</value>
+  </data>
+  <data name="Greeting" xml:space="preserve">
+    <value>أهلًا بك، {0}!</value>
+  </data>
+  <data name="Hero.Body" xml:space="preserve">
+    <value>تُكتب هذه الصفحة مرة واحدة بلغة C# — نصوصها في ملف .resx عادي، والصنف نفسه يتحدث لغة الطلب على الخادم وفي المتصفح وفي نافذة أصلية.</value>
+  </data>
+</root>

@@ -130,6 +130,22 @@ export function integerFromDecimal(value: Decimal, type: IntegerType): number | 
 }
 
 /**
+ * An explicit cast of a decimal to an integer or a char, and `decimal.ToInt32` and its siblings, as .NET's
+ * decimal converts it: toward zero, from the decimal's own digits, then the range, in .NET's words
+ * whether or not the context is checked (#1766). The cast went through the decimal's double first, so a
+ * long past 2^53 lost its last digits and `(int)0.99999999999999999m` was 1, the double rounding up
+ * before the truncation.
+ */
+export function truncatedFromDecimal(value: Decimal, type: LongType): bigint;
+export function truncatedFromDecimal(value: Decimal, type: NarrowType): number;
+export function truncatedFromDecimal(value: Decimal, type: 'char'): string;
+export function truncatedFromDecimal(value: Decimal, type: IntegerType | 'char'): number | bigint | string;
+export function truncatedFromDecimal(value: Decimal, type: IntegerType | 'char'): number | bigint | string {
+  const whole = value.mantissa / 10n ** BigInt(value.scale);
+  return type === 'char' ? charFrom(whole) : ranged(whole, type);
+}
+
+/**
  * `Convert.To<type>` of an `object`: a null is 0, a text reads as the type's Parse reads it, a bool is
  * 1 or 0, and a number converts as the type it holds does.
  */

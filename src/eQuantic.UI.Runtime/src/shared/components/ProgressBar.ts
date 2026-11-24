@@ -59,7 +59,7 @@ export class ProgressBar extends StatefulComponent {
         if ((value = this.value) != null) {
             let animate = !this._snapNext;
             this._snapNext = false;
-            let clamped = Math.min(Math.max(value, 0), 1);
+            let clamped = $eq.num.clamp(value, 0, 1, 'single');
             let filledWeight = $eq.num.saturate($eq.math.roundSingle(Math.fround(clamped * 1000)));
             let track = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: height, background: trackColor, cornerRadius: ends });
             if (filledWeight > 0) {

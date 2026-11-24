@@ -25,7 +25,7 @@ namespace eQuantic.UI.Native.Shell.MacOS;
 /// the kind of code that reads finished and posts nothing.
 /// </para>
 /// </summary>
-internal static partial class PhotonAnnouncements
+internal static class PhotonAnnouncements
 {
     // AppKit's own priority constants (NSAccessibilityPriorityLevel). Low is for things a user may
     // miss without consequence, High interrupts whatever is being read — which is what assertive
@@ -46,9 +46,9 @@ internal static partial class PhotonAnnouncements
     internal static void Post(IntPtr window, IReadOnlyList<LiveAnnouncement> announcements)
     {
         if (window == IntPtr.Zero || announcements.Count == 0) return;
-        var notification = Symbol("NSAccessibilityAnnouncementRequestedNotification");
-        var announcementKey = Symbol("NSAccessibilityAnnouncementKey");
-        var priorityKey = Symbol("NSAccessibilityPriorityKey");
+        var notification = AppKitNotifications.Symbol("NSAccessibilityAnnouncementRequestedNotification");
+        var announcementKey = AppKitNotifications.Symbol("NSAccessibilityAnnouncementKey");
+        var priorityKey = AppKitNotifications.Symbol("NSAccessibilityPriorityKey");
         // Nothing rather than something wrong. A notification posted with a key AppKit does not
         // read SUCCEEDS and says nothing, which is indistinguishable from working — so if the
         // framework did not give up its own names, this bridge does not guess at them.
@@ -70,47 +70,7 @@ internal static partial class PhotonAnnouncements
             SendVoid(info, Sel("setObject:forKey:"),
                 Send(objc_getClass("NSNumber"), Sel("numberWithLong:"), PriorityOf(announcement.Urgency)),
                 priorityKey);
-            PostNotificationWithUserInfo(window, notification, info);
+            AppKitNotifications.PostNotificationWithUserInfo(window, notification, info);
         }
     }
-
-    /// <summary>
-    /// APPKIT'S OWN STRINGS, read from the framework rather than written here. The first version
-    /// spelled them as literals — `AXAnnouncementKey`, `AXAnnouncementRequested`, `AXPriority` —
-    /// with a comment arguing that a literal is safer than a symbol lookup because a failed lookup
-    /// would announce nothing silently. Review pointed out that the key literal was wrong, and that
-    /// argument is what made the mistake possible: a WRONG literal also announces nothing silently,
-    /// and unlike a failed lookup there is nothing that can notice.
-    /// <para>
-    /// So the values come from the exported symbols, which cannot be wrong by construction, and a
-    /// lookup that fails posts NOTHING rather than a payload under a key AppKit does not read —
-    /// loud in the only way available here, since a notification with the wrong key succeeds.
-    /// </para>
-    /// <para>
-    /// An exported `NSString * const` is a POINTER-SIZED SLOT holding the object, so the symbol's
-    /// address must be dereferenced once; using it directly would pass the slot as if it were the
-    /// string.
-    /// </para>
-    /// </summary>
-    private static IntPtr Symbol(string name)
-    {
-        if (_appKit == IntPtr.Zero)
-            _appKit = DlOpen("/System/Library/Frameworks/AppKit.framework/AppKit", RtldLazy);
-        if (_appKit == IntPtr.Zero) return IntPtr.Zero;
-        var slot = DlSym(_appKit, name);
-        return slot == IntPtr.Zero ? IntPtr.Zero : Marshal.ReadIntPtr(slot);
-    }
-
-    private const int RtldLazy = 1;
-    private static IntPtr _appKit;
-
-    [LibraryImport("/usr/lib/libSystem.dylib", EntryPoint = "dlopen", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial IntPtr DlOpen(string path, int mode);
-
-    [LibraryImport("/usr/lib/libSystem.dylib", EntryPoint = "dlsym", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial IntPtr DlSym(IntPtr handle, string symbol);
-
-    [LibraryImport("/System/Library/Frameworks/AppKit.framework/AppKit",
-        EntryPoint = "NSAccessibilityPostNotificationWithUserInfo")]
-    private static partial void PostNotificationWithUserInfo(IntPtr element, IntPtr notification, IntPtr userInfo);
 }

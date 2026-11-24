@@ -93,13 +93,14 @@ public class LabelledNodesReachSemanticsTests
     /// <summary>
     /// The roles a reader walks INTO. <see cref="SemanticRole.Group"/> was the only one until #500
     /// and #501 gave a container its own words: a modal <see cref="Overlay"/> is a dialog now, and a
-    /// tab strip and a radio group say which they are. Each keeps walking exactly as a group does,
-    /// which is what the theory below holds them to.
+    /// tab strip and a radio group say which they are, and a <see cref="Navigable"/> is the grid or the
+    /// tree it says it is (#1330). Each keeps walking exactly as a group does, which is what the theory
+    /// below holds them to.
     /// </summary>
     private static readonly SemanticRole[] ContainerRoles =
     [
         SemanticRole.Group, SemanticRole.TabBar, SemanticRole.RadioGroup,
-        SemanticRole.Dialog, SemanticRole.AlertDialog,
+        SemanticRole.Dialog, SemanticRole.AlertDialog, SemanticRole.Grid, SemanticRole.Tree,
     ];
 
     /// <summary>

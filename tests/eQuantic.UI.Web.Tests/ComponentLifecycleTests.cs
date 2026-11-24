@@ -259,7 +259,9 @@ public class BorderSidesTests
     [Fact]
     public void AnAccentBar_DrawsOnTheStartEdge()
     {
-        Css(Ruled(BorderSides.Start)).Should().Contain("border-width:0 0 0 1px");
+        // Logical, so the bar stands on the reader's start: the left under ltr and the right under rtl (#1568).
+        Css(Ruled(BorderSides.Start)).Should().Contain("border-inline-width:1px 0").And.Contain("border-block-width:0")
+            .And.NotContain("border-width:");
     }
 
     /// <summary>A full border keeps the SHORTHAND — one declaration, one atomic class. Everything

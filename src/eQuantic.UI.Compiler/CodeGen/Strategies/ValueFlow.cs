@@ -308,13 +308,19 @@ public static class ValueFlow
         var value = translated;
         var fromSpecial = HeldAs(from?.SpecialType ?? SpecialType.None);
 
-        // A DECIMAL SOURCE is a runtime Decimal (the typed world guarantees it): its number is
-        // asked for once, and the value then narrows or widens like any double. A decimal
-        // shrinking into an integral type ALWAYS throws past the edge in C# — checked or not —
-        // so the check rides along. (Only an explicit cast gets here — implicit decimal
-        // conversions all go INTO decimal, settled below.)
+        // A DECIMAL SOURCE is a runtime Decimal (the typed world guarantees it). Into an integer or a
+        // char it is cut toward zero from its own digits and then checked against the target's range,
+        // in .NET's words, checked context or not (#1766): through its double first, a long past 2^53
+        // lost its last digits and `(int)0.99999999999999999m` was 1. Into a double or a float its number
+        // is asked for once, and narrows like any double. (Only an explicit cast gets here — implicit
+        // decimal conversions all go INTO decimal, settled below.)
         if (fromSpecial == SpecialType.System_Decimal)
         {
+            if (DecimalCastTarget(HeldAs(to?.SpecialType ?? SpecialType.None)) is { } cutInto)
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                return JsExpr.Call(JsExpr.Identifier(Eq.TruncatedFromDecimal), value, JsExpr.Literal($"'{cutInto}'"));
+            }
             value = JsExpr.Callish($"{JsExprWriter.WriteIn(value, JsPrecedence.Call)}.toNumber()");
             fromSpecial = SpecialType.System_Double;
             isChecked = true;
@@ -502,6 +508,22 @@ public static class ValueFlow
     private static bool Fits((int Bits, bool Unsigned) from, (int Bits, bool Unsigned) to) => from.Unsigned
         ? to.Bits > from.Bits || (to.Bits == from.Bits && to.Unsigned)
         : !to.Unsigned && to.Bits >= from.Bits;
+
+    /// <summary>The runtime's name of an integer type or a char a decimal is cut into, as
+    /// <c>truncatedFromDecimal</c> takes it, or null for a type a decimal reaches through its number.</summary>
+    private static string? DecimalCastTarget(SpecialType type) => type switch
+    {
+        SpecialType.System_SByte => "sbyte",
+        SpecialType.System_Byte => "byte",
+        SpecialType.System_Int16 => "short",
+        SpecialType.System_UInt16 => "ushort",
+        SpecialType.System_Int32 => "int",
+        SpecialType.System_UInt32 => "uint",
+        SpecialType.System_Int64 => "long",
+        SpecialType.System_UInt64 => "ulong",
+        SpecialType.System_Char => "char",
+        _ => null,
+    };
 
     /// <summary>The primitive a number of this type is held as here: a native integer is a long or a ulong
     /// on every target this SDK ships to (#649), and every other type is itself.</summary>

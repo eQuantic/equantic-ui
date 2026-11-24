@@ -1,0 +1,7 @@
+# The members a config of the hand-written mirror leaves out on purpose (VocabularyConfigShapeTests, #1823).
+# One per line: `<Config>.<member>` (a config written in place is `<Class>.config`) or
+# `<C# type that declares it>.<member>`, then `|` and the reason.
+# This list may only shrink: an entry that no longer differs fails the test until it is removed.
+
+VisualNode.origin | Set only by a design-mode compilation, on the C# tree the design host reads; no transpiled initializer sets it, and the browser's twin never carries it.
+VisualNode.originLabel | Set only by a design-mode compilation, beside VisualNode.origin, on the C# tree the design host reads; the browser's twin never carries it.

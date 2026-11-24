@@ -219,8 +219,8 @@ export class SheetController {
         if (caret.bottom > bottom) rise = Math.fround(rise + Math.fround(caret.bottom - bottom)); else if (caret.y < top) rise = Math.fround(rise - Math.fround(top - caret.y));
         slide = Math.min(slide, Math.fround(Math.fround(caret.x + this._slide) - left));
         rise = Math.min(rise, Math.fround(Math.fround(caret.y + this._rise) - top));
-        slide = Math.min(Math.max(slide, 0), Math.max(0, Math.fround(this.widestEntryLine() - Math.fround(right - left))));
-        rise = Math.min(Math.max(rise, 0), Math.max(0, Math.fround(Math.fround(Math.fround(this.entry.document.lineCount) * this.lineHeight) - Math.fround(bottom - top))));
+        slide = $eq.num.clamp(slide, 0, Math.max(0, Math.fround(this.widestEntryLine() - Math.fround(right - left))), 'single');
+        rise = $eq.num.clamp(rise, 0, Math.max(0, Math.fround(Math.fround(Math.fround(this.entry.document.lineCount) * this.lineHeight) - Math.fround(bottom - top))), 'single');
         if (slide !== this._slide || rise !== this._rise) {
             this._slide = slide;
             this._rise = rise;
@@ -585,7 +585,7 @@ export class SheetController {
     }
 
     goTo(reference: string) {
-        let range: any; 
+        let range!: SheetRange; 
         if (!($o => (range = $o.range, $o.$))(SheetReference.tryParse(reference, this.document.rows, this.document.cols))) return false;
         if (this.editing) this.commitEdit();
         $eq.collections.listClear(this._others);
@@ -1115,12 +1115,12 @@ export class SheetController {
         let offset = this.grid.offset;
         if (overColumns) {
             let col = this.document.columnSpans.indexAt(Math.max(0, Math.fround(point.x - this.grid.headerWidth)) + offset.across);
-            col = Math.min(Math.max(col, 0), this.document.cols - 1 | 0);
+            col = $eq.num.clamp(col, 0, this.document.cols - 1 | 0, 'int32');
             let right = this.grid.headerWidth + this.document.columnSpans.offsetOf(col + 1 | 0) - offset.across;
             return ['cols', col, false, this.grid.resizeGrip > 0 && point.x >= right - this.grid.resizeGrip];
         }
         let row = this.document.rowSpans.indexAt(Math.max(0, Math.fround(point.y - this.grid.headerHeight)) + offset.down);
-        row = Math.min(Math.max(row, 0), this.document.rows - 1 | 0);
+        row = $eq.num.clamp(row, 0, this.document.rows - 1 | 0, 'int32');
         let bottom = this.grid.headerHeight + this.document.rowSpans.offsetOf(row + 1 | 0) - offset.down;
         return ['rows', row, false, this.grid.resizeGrip > 0 && point.y >= bottom - this.grid.resizeGrip];
     }
@@ -1152,7 +1152,7 @@ export class SheetController {
     insideTheCells(position: Point) {
         let scroll: any; 
         if (!((scroll = this.grid.scroll) != null) || scroll.viewport.width <= 0 || scroll.viewport.height <= 0) return position;
-        return new Point(Math.min(Math.max(position.x, this.grid.headerWidth), Math.max(this.grid.headerWidth, Math.fround(scroll.viewport.width - 1))), Math.min(Math.max(position.y, this.grid.headerHeight), Math.max(this.grid.headerHeight, Math.fround(scroll.viewport.height - 1))));
+        return new Point($eq.num.clamp(position.x, this.grid.headerWidth, Math.max(this.grid.headerWidth, Math.fround(scroll.viewport.width - 1)), 'single'), $eq.num.clamp(position.y, this.grid.headerHeight, Math.max(this.grid.headerHeight, Math.fround(scroll.viewport.height - 1)), 'single'));
     }
 
     stopDrag() {

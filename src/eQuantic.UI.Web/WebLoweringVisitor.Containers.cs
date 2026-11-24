@@ -14,11 +14,12 @@ internal sealed partial class WebLoweringVisitor
     /// <summary>
     /// A Stack child as the STACK sees it: a component is expanded to what it builds, so a
     /// `Positioned` returned by one still positions. Only for the positioning decision — the node
-    /// that comes back is lowered normally.
+    /// that comes back is lowered normally, inside the position of the component that built it
+    /// (<see cref="ElementFrame.Enter"/>), null when no component did or the tree has no frame.
     /// </summary>
-    private VisualNode ResolveForPositioning(VisualNode child)
+    private (VisualNode Node, ComponentElement? Within) ResolveForPositioning(VisualNode child)
     {
-        if (child is not UiComponent component) return child;
+        if (child is not UiComponent component) return (child, null);
 
         // NAMED HERE TOO, because this is the one place a component is expanded WITHOUT the
         // ordinary component visit: the stack has to know whether what the child builds is a
@@ -28,11 +29,18 @@ internal sealed partial class WebLoweringVisitor
         // think twice about using. Both sides skipped it identically, so nothing drifted, which is
         // exactly why it would never have been noticed. In a frame of a live tree the name goes to
         // the instance the position keeps, as Visit(UiComponent) gives it.
+        // Each step of a chain of components is read inside the position the step before it found,
+        // as Visit(UiComponent) reads it, so the chain descends to where its engine stopped it.
         if (_frame is { } frame)
         {
             var (kept, built, position) = frame.At(component);
             _channels?.Expansion?.Name(kept, frame.KeyOf(position));
-            return built is not null ? ResolveForPositioning(built) : child;
+            if (built is null) return (child, null);
+            using (frame.Enter(position))
+            {
+                var (node, within) = ResolveForPositioning(built);
+                return (node, within ?? position);
+            }
         }
 
         // Through the boundary's bound rather than a hop count of this method's own: the loop
@@ -91,7 +99,9 @@ internal sealed partial class WebLoweringVisitor
         // flow: a corner button rendered ABOVE the slab it belonged to, silently, which is worse
         // than not rendering at all.
         var asked = _measurer.Asks;
-        var child = ResolveForPositioning(raw);
+        var (child, within) = ResolveForPositioning(raw);
+        // What the component built is lowered inside its position, as Visit(UiComponent) lowers it.
+        using var entered = _frame?.Enter(within) ?? default;
         // Counted HERE for a component this stack expanded itself, to see a Positioned through it:
         // Visit(UiComponent) never runs for one, so a measured component in a Stack was adopted with
         // the zeros it was built on. Counted before the resolved node lowers, so the components
@@ -133,9 +143,10 @@ internal sealed partial class WebLoweringVisitor
                     // A point, a fraction of the stack, or both (`calc`); the stack is the containing
                     // block, so a percentage is of ITS box, as on Photon.
                     Top = TokenCss.Edge(positioned.Top, positioned.TopFraction) ?? (spanY ? "0" : null),
-                    Right = TokenCss.Edge(positioned.End, positioned.EndFraction) ?? (spanX ? "0" : null),
+                    // The start and the end from the side the text starts and ends on, so they mirror (#1568).
+                    InsetInlineEnd = TokenCss.Edge(positioned.End, positioned.EndFraction) ?? (spanX ? "0" : null),
                     Bottom = TokenCss.Edge(positioned.Bottom, positioned.BottomFraction) ?? (spanY ? "0" : null),
-                    Left = TokenCss.Edge(positioned.Start, positioned.StartFraction) ?? (spanX ? "0" : null),
+                    InsetInlineStart = TokenCss.Edge(positioned.Start, positioned.StartFraction) ?? (spanX ? "0" : null),
                     Transform = stretched ? null : shift,
                     // Spec S7: explicit stacking WINS; otherwise the child's own depth.
                     ZIndex = (positioned.Layer != 0 ? positioned.Layer : depth).ToString(),
@@ -859,7 +870,10 @@ internal sealed partial class WebLoweringVisitor
                 // browser resolves per window.
                 MaxWidth = Size(style.MaxWidth),
                 MaxHeight = Size(style.MaxHeight, vertical: true),
-                Padding = style.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(style.Padding),
+                // Physical when the start and the end are equal, logical when they differ, so it mirrors (#1568).
+                Padding = TokenCss.Padding(style.Padding),
+                PaddingBlock = TokenCss.PaddingBlock(style.Padding),
+                PaddingInline = TokenCss.PaddingInline(style.Padding),
                 BackgroundColor = style.Background is { } bg ? TokenCss.Value(bg) : null,
                 // The foreground the text and icons inside inherit when they name none (#614): CSS's
                 // own inheritance is DefaultTextStyle's, so it is one declaration here.
@@ -879,8 +893,17 @@ internal sealed partial class WebLoweringVisitor
                 Border = style.BorderWidth > 0 && style.BorderSides == BorderSides.All
                     ? $"{TokenCss.Px(style.BorderWidth)} solid {TokenCss.Value(style.BorderColor)}"
                     : null,
+                // Physical when the start and the end draw alike, logical when one of them draws alone,
+                // so an accent bar at the start stands at the right under rtl (#1568).
                 BorderWidth = style.BorderWidth > 0 && style.BorderSides != BorderSides.All
+                    && !DrawsOneInlineSide(style.BorderSides)
                     ? SideWidths(style.BorderWidth, style.BorderSides)
+                    : null,
+                BorderBlockWidth = style.BorderWidth > 0 && DrawsOneInlineSide(style.BorderSides)
+                    ? BlockWidths(style.BorderWidth, style.BorderSides)
+                    : null,
+                BorderInlineWidth = style.BorderWidth > 0 && DrawsOneInlineSide(style.BorderSides)
+                    ? InlineWidths(style.BorderWidth, style.BorderSides)
                     : null,
                 BorderStyle = style.BorderWidth > 0 && style.BorderSides is not (BorderSides.All or BorderSides.None)
                     ? "solid"
@@ -1016,16 +1039,30 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
-    /// <c>border-width</c> in CSS's own order — top, right, bottom, left — from the logical sides.
-    /// Start/End map to left/right here because this is the LTR realization; a right-to-left
-    /// document flips them in the same place every other logical property is flipped.
+    /// Whether a box draws its start or its end and not both: then its widths are written as
+    /// <c>border-block-width</c> and <c>border-inline-width</c>, which mirror under <c>rtl</c>, and
+    /// otherwise as the physical <c>border-width</c>, which reads the same either way (#1568). The
+    /// TypeScript twin is <c>drawsOneInlineSide</c>.
     /// </summary>
-    private string SideWidths(float width, BorderSides sides)
-    {
-        var w = TokenCss.Px(width);
-        string Edge(BorderSides side) => sides.HasFlag(side) ? w : "0";
-        return $"{Edge(BorderSides.Top)} {Edge(BorderSides.End)} {Edge(BorderSides.Bottom)} {Edge(BorderSides.Start)}";
-    }
+    private static bool DrawsOneInlineSide(BorderSides sides) =>
+        sides.HasFlag(BorderSides.Start) != sides.HasFlag(BorderSides.End);
+
+    /// <summary><c>border-width</c> in CSS's own order — top, right, bottom, left — from the logical
+    /// sides, for a box whose start and end draw alike (<see cref="DrawsOneInlineSide"/>).</summary>
+    private static string SideWidths(float width, BorderSides sides) =>
+        $"{SideWidth(width, sides, BorderSides.Top)} {SideWidth(width, sides, BorderSides.End)} "
+        + $"{SideWidth(width, sides, BorderSides.Bottom)} {SideWidth(width, sides, BorderSides.Start)}";
+
+    /// <summary><c>border-block-width</c>: the top's and the bottom's widths.</summary>
+    private static string BlockWidths(float width, BorderSides sides) =>
+        TokenCss.Pair(SideWidth(width, sides, BorderSides.Top), SideWidth(width, sides, BorderSides.Bottom));
+
+    /// <summary><c>border-inline-width</c>: the start's and the end's widths.</summary>
+    private static string InlineWidths(float width, BorderSides sides) =>
+        TokenCss.Pair(SideWidth(width, sides, BorderSides.Start), SideWidth(width, sides, BorderSides.End));
+
+    private static string SideWidth(float width, BorderSides sides, BorderSides side) =>
+        sides.HasFlag(side) ? TokenCss.Px(width) : "0";
 
     /// <summary>
     /// The ONE box-shadow list of a box, in the order the base has always written it: the elevation's
@@ -1094,7 +1131,12 @@ internal sealed partial class WebLoweringVisitor
                 declarations.Add(("border", $"{TokenCss.Px(bw)} solid {color}"));
             else
             {
-                declarations.Add(("border-width", SideWidths(bw, style.BorderSides)));
+                if (DrawsOneInlineSide(style.BorderSides))
+                {
+                    declarations.Add(("border-block-width", BlockWidths(bw, style.BorderSides)));
+                    declarations.Add(("border-inline-width", InlineWidths(bw, style.BorderSides)));
+                }
+                else declarations.Add(("border-width", SideWidths(bw, style.BorderSides)));
                 declarations.Add(("border-style", "solid"));
                 declarations.Add(("border-color", color));
             }
@@ -1135,6 +1177,8 @@ internal sealed partial class WebLoweringVisitor
                 case "color": style.Color = value; break;
                 case "border": style.Border = value; break;
                 case "border-width": style.BorderWidth = value; break;
+                case "border-block-width": style.BorderBlockWidth = value; break;
+                case "border-inline-width": style.BorderInlineWidth = value; break;
                 case "border-style": style.BorderStyle = value; break;
                 case "border-color": style.BorderColor = value; break;
                 case "box-shadow": style.BoxShadow = value; break;
@@ -1212,7 +1256,10 @@ internal sealed partial class WebLoweringVisitor
                 // min-width/min-height 0 is what makes Fill mean what it says on the axis it fills.
                 MinWidth = flex.Width.Kind == SizeKind.Fill ? "0" : null,
                 MinHeight = flex.Height.Kind == SizeKind.Fill ? "0" : null,
-                Padding = flex.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(flex.Padding),
+                // Physical when the start and the end are equal, logical when they differ, so it mirrors (#1568).
+                Padding = TokenCss.Padding(flex.Padding),
+                PaddingBlock = TokenCss.PaddingBlock(flex.Padding),
+                PaddingInline = TokenCss.PaddingInline(flex.Padding),
                 BackgroundColor = flex.Background is { } bg ? TokenCss.Value(bg) : null,
                 // A layout node that PAINTS NOTHING is not a hit target — the framework's
                 // inspiration decides it this way, and the two runtimes disagree by default:
@@ -1358,7 +1405,10 @@ internal sealed partial class WebLoweringVisitor
                 Width = Size(grid.Width),
                 Height = Size(grid.Height, vertical: true),
                 FlexShrink = Rigid(grid.Width, grid.Height),
-                Padding = grid.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(grid.Padding),
+                // Physical when the start and the end are equal, logical when they differ, so it mirrors (#1568).
+                Padding = TokenCss.Padding(grid.Padding),
+                PaddingBlock = TokenCss.PaddingBlock(grid.Padding),
+                PaddingInline = TokenCss.PaddingInline(grid.Padding),
             },
         };
         for (var index = 0; index < grid.Children.Count; index++)

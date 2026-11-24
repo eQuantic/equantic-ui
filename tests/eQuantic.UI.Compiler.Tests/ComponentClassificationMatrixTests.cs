@@ -475,6 +475,36 @@ public class ComponentClassificationMatrixTests
     }
 
     /// <summary>
+    /// A parameterless <c>HtmlElement</c> takes the props a caller hands it LAST, after its constructor's body, where
+    /// C# runs an object initializer and where the component branch applies its config (#1837). Handed to
+    /// <c>super()</c> first, as the primitive path did while it ran no body, a body that sets a member would overwrite
+    /// what the props carried. No transpiled construction site passes props, so the order is pinned here, in the text.
+    /// </summary>
+    [Fact]
+    public void AParameterlessHtmlElement_TakesItsPropsAfterItsConstructorBody()
+    {
+        const string source = """
+            using eQuantic.UI.Primitives;
+            using eQuantic.UI.Web;
+
+            public sealed class Captioned : HtmlElement
+            {
+                public string Caption { get; set; } = "";
+                public Captioned() { Caption = "default"; }
+                public override HtmlNode Render() { return new HtmlNode { Tag = "em", TextContent = Caption }; }
+            }
+            """;
+        var twin = new ComponentCompiler().CompileSource(source, "Captioned.cs")
+            .First(r => r.ComponentName == "Captioned").TypeScript;
+
+        Assert.Contains("super();", twin, StringComparison.Ordinal);
+        Assert.DoesNotContain("super(props)", twin, StringComparison.Ordinal);
+        var body = twin.IndexOf("this.caption = 'default'", StringComparison.Ordinal);
+        var props = twin.IndexOf("Object.assign(this, props)", StringComparison.Ordinal);
+        Assert.True(body >= 0 && props > body, $"the body runs, and the props follow it:\n{twin}");
+    }
+
+    /// <summary>
     /// The client boundary holds for a component whatever base it was written over, the stateful ones
     /// and the stateless ones alike (#816).
     ///

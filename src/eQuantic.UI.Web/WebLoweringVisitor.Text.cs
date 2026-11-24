@@ -158,6 +158,8 @@ internal sealed partial class WebLoweringVisitor
                 Outline = "none",
                 UserSelect = "none",
             },
+            // The door and the carets stand at the model's physical x: left to right in every language (#1568).
+            Dir = "ltr",
         };
         // The pointer, DECLARED here as well as installed by the client twin, as the Navigable's
         // keyboard is. The server dispatches none of them, so these delegates never run, but the lowered
@@ -272,6 +274,8 @@ internal sealed partial class WebLoweringVisitor
                 UserSelect = "none",
                 Cursor = "text",
             },
+            // Code reads left to right in every language, and its carets and its door stand at physical x (#1568).
+            Dir = "ltr",
         };
 
         element.OnMouseDown = static _ => { };

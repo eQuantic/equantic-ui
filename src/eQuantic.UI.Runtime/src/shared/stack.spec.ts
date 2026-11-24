@@ -39,7 +39,7 @@ describe('Stack (spec A3) client lowering', () => {
     expect(effectiveStyle(node.children[0])).toContain('z-index: 1');
     // The SAME literal StackRealizerTests pins on the C# side (hydration parity).
     expect(effectiveStyle(node.children[1])).toBe(
-      'position: absolute; right: -4px; top: -4px; z-index: 2',
+      'inset-inline-end: -4px; position: absolute; top: -4px; z-index: 2',
     );
   });
 
@@ -56,9 +56,10 @@ describe('Stack (spec A3) client lowering', () => {
 
     const anchor = effectiveStyle(stack.render().children[0]);
     // The SAME literals PositionedSpanTests pins on the C# side (hydration parity).
-    expect(anchor).toContain('left: 50%');
+    expect(anchor).toContain('inset-inline-start: 50%');
     expect(anchor).toContain('top: calc(25% - 16px)');
-    expect(anchor).toContain('transform: translate(-50%, -100%)');
+    // Toward the end, through the token sheet's --eq-inline, which effectiveStyle reads as its fallback (#1568).
+    expect(anchor).toContain('transform: translate(calc(1 * -50%), -100%)');
   });
 
   it('pins the opposite edge for a drawing at its parent width (the C# Fills twin)', () => {
@@ -67,8 +68,8 @@ describe('Stack (spec A3) client lowering', () => {
     stack.add(new Positioned(new Drawing(art, SizeValue.fill), null, null, null, null, { startFraction: 0.5 }));
 
     const anchor = effectiveStyle(stack.render().children[0]);
-    expect(anchor).toContain('left: 50%');
-    expect(anchor).toContain('right: 0');
+    expect(anchor).toContain('inset-inline-start: 50%');
+    expect(anchor).toContain('inset-inline-end: 0');
   });
 
   it('shifts by the child on a wrapper when both edges stretch the anchor (C# twin)', () => {
@@ -79,7 +80,7 @@ describe('Stack (spec A3) client lowering', () => {
     expect(effectiveStyle(anchor)).not.toContain('transform');
     const wrapper = effectiveStyle(anchor.children[0]);
     expect(wrapper).toContain('width: fit-content');
-    expect(wrapper).toContain('transform: translate(-50%, 0)');
+    expect(wrapper).toContain('transform: translate(calc(1 * -50%), 0)');
   });
 
   it('lowers an end fraction alone to a percentage, and no shift to no transform', () => {
@@ -87,7 +88,7 @@ describe('Stack (spec A3) client lowering', () => {
     stack.add(new Positioned(new Box(new BoxStyle({ width: 40, height: 20 })), null, null, null, null, { endFraction: 0.1 }));
 
     const anchor = effectiveStyle(stack.render().children[0]);
-    expect(anchor).toContain('right: 10%');
+    expect(anchor).toContain('inset-inline-end: 10%');
     expect(anchor).not.toContain('translate(');
   });
 
@@ -104,7 +105,7 @@ describe('Stack (spec A3) client lowering', () => {
     expect(anchor.key).toBe('request-card');
     expect(anchor.attributes['data-eq-origin']).toBe('Landing.cs:42');
     // The SAME declarations StackRealizerTests pins on the C# side (hydration parity).
-    expect(effectiveStyle(anchor)).toContain('position: absolute; right: -28px; scroll-margin-top');
+    expect(effectiveStyle(anchor)).toContain('inset-inline-end: -28px; position: absolute; scroll-margin-top');
     expect(effectiveStyle(anchor)).toContain('top: 0; z-index: 1');
   });
 

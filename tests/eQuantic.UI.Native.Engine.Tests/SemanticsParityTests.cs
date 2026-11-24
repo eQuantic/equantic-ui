@@ -138,6 +138,23 @@ public class SemanticsParityTests(ITestOutputHelper output)
         yield return new("case progress", () => new ProgressBar(0.42f));
         yield return new("case slider", () => new Slider(0.5f, _ => { }));
         yield return new("case text-input", () => new TextInput("ana@example.com", _ => { }, label: "Email"));
+        yield return new("case editable combobox", () => EditableComboBox(open: true));
+        yield return new("case editable combobox closed", () => EditableComboBox(open: false));
+        yield return new("case editable combobox beside a word", () =>
+        {
+            var anchor = new Row(gap: 8);
+            anchor.Add(new Text("Find", TypeRole.BodyM));
+            anchor.Add(new TextEntry("al", _ => { }) { Label = "Place" });
+            anchor.Add(new TextEntry("", _ => { }) { Label = "Note" });
+            return new Anchored(anchor, new Pressable(new Text("Alpha", TypeRole.BodyM), () => { }) { Role = PressableRole.Option })
+            {
+                Open = true,
+                PanelRole = AnchorPanelRole.Listbox,
+                ActiveIndex = 0,
+            };
+        });
+        yield return new("case merge a label and an editable combobox",
+            () => new MergeSemantics(Line(new Text("Destination", TypeRole.BodyM), EditableComboBox(open: false))));
         yield return new("case image", () => new Image("https://example.com/a.png", 120, 80, ImageFit.Cover, "A harbour at dawn"));
         yield return new("case heading", () => new Text("Cards", TypeRole.Title, headingLevel: 2));
         yield return new("case list", () => new eQuantic.UI.Components.List(
@@ -194,6 +211,27 @@ public class SemanticsParityTests(ITestOutputHelper output)
             Selected = (row, column) => column == 2 && row >= 2 && row <= 3,
             Current = new TableRange(3, 2),
         };
+
+    /// <summary>A text field a listbox hangs from, the code editor's go-to in small (#1088): an editable
+    /// combobox, the keyboard on its second option.</summary>
+    private static VisualNode EditableComboBox(bool open)
+    {
+        var list = new Column(gap: 0);
+        foreach (var (place, i) in new[] { ("Alpha", 0), ("Beta", 1) })
+        {
+            list.Add(new Pressable(new Text(place, TypeRole.BodyM), () => { })
+            {
+                Role = PressableRole.Option,
+                Selected = i == 1,
+            });
+        }
+        return new Anchored(new TextEntry("al", _ => { }) { Label = "Go to" }, list)
+        {
+            Open = open,
+            PanelRole = AnchorPanelRole.Listbox,
+            ActiveIndex = 1,
+        };
+    }
 
     /// <summary>A viewport whose cells are added down the columns: both targets read the rows, each row's
     /// cells by column, whatever order they were added in.</summary>
