@@ -160,6 +160,14 @@ clock.
 - **WHEN** the same finger travels 80 px up within 100 ms of its press
 - **THEN** the list scrolls, the browser fires `pointercancel`, and the card is not moved
 
+#### Scenario: What the browser does with the finger, as measured in Chromium
+
+- **WHEN** in Chromium 145 with touch input, a finger holds a card 600 ms and then travels (60, 80) in moves of
+  (7.5, 10) px, and another finger travels 80 px up at once in moves of 16 px
+- **THEN** after the hold every `touchmove` is cancelable and the runtime prevents it, no `pointercancel` fires
+  and the list's `scrollTop` stays at 0; and for the swipe the first `touchmove` (16 px) is cancelable and not
+  prevented, `pointercancel` follows it, every later `touchmove` is not cancelable, and the list scrolls
+
 #### Scenario: A mouse's hold then drag selects nothing
 
 - **WHEN** a mouse presses a card's text, holds still for 600 ms, then drags 100 px right and releases

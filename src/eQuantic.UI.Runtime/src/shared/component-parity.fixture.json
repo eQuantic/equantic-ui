@@ -921,9 +921,13 @@
     {
       "tag": "div",
       "attrs": {
-        "class": "eq-akjizx"
+        "class": "eq-akjizx eq-g7fowl",
+        "data-eq-gestures": "",
+        "data-eq-listener": "defer"
       },
-      "events": [],
+      "events": [
+        "eq-gestures"
+      ],
       "children": [
         {
           "tag": "div",

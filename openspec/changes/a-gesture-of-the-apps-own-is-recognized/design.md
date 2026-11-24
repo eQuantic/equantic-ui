@@ -231,6 +231,28 @@ which runs after every document listener. Not a microtask: the HTML spec runs a 
 each listener of a user-initiated event, so one queued at the capture would close the arena before the
 built-ins joined (from the spec, not measured here).
 
+**Measured (task 3.5)**, in Chromium's headless shell 145.0.7632.6 under Playwright 1.58.1, on a context with
+touch, the finger driven by `Input.dispatchTouchEvent` on the dashboard's `/gestures` screen (a 360 px
+`ScrollView` of cards, each in a detector hosting `HoldThenDrag`; `tests/e2e/tests/gestures.spec.ts` asserts it):
+
+- **A touch that holds, then travels, is kept from scrolling.** Held 600 ms, then carried (60, 80) in eight moves
+  of (7.5, 10) px, 16 ms apart: the first move, 12.5 px from the press, came as a `pointermove` with no
+  `touchmove` (inside Chromium's own slop); each of the seven `touchmove`s after it was cancelable and was
+  prevented, since the recognizer had won at 500 ms; no `pointercancel` fired, the list's `scrollTop` stayed at 0,
+  and the card was reported moved by (60, 80).
+- **A touch that travels at once scrolls, and fires `pointercancel`.** Carried 80 px up in five moves of 16 px,
+  10 ms apart: the first `touchmove` (16 px) was cancelable and nobody prevented it, and `pointercancel` followed
+  it at once; the four `touchmove`s after were not cancelable; the list's `scrollTop` went from 0 to 90 (the
+  travel and the start of the fling), and the card did not move. With moves of 8 px, the `pointermove` at 8 px came
+  with no `touchmove`, and the `pointercancel` came with the `touchmove` at 16 px: Chromium's slop lies between 8
+  and 16 px there, and the `touchmove` that crosses it is still cancelable.
+
+So the hold, which is still when it wins, always takes the pointer from the browser's scroll. What a recognizer
+that accepts on travel along the scroll's axis gets is measured only as far as the order of the events: the
+arena hears the `pointermove` that crosses the browser's slop, in the capture phase, before the `touchmove` the
+browser is still willing to have cancelled. Such a recognizer is not in this change, and its outcome is not
+measured.
+
 **Verdict: the `RawGestureDetector` row reads DIFFERENT**, with the trade named: on Photon the arena is
 Flutter's, scroll included; on the web the browser's scroll is a member that wins by panning and that the
 arena can only forestall, never overrule, and the click of a lost press is swallowed rather than never fired.
@@ -274,10 +296,11 @@ linked `Compile Include`, .NET's own mechanism for one file in two projects, rat
 
 ## Risks / Trade-offs
 
-- **The browser's slop against a recognizer that accepts on travel** (web only). Not measured: whether a
-  `touchmove` is still cancelable when a recognizer accepts at 12 px depends on the browser's own slop. Task 3.5
-  measures it with real touch input in Chromium and writes the answer into the spec; the sample's gesture (a
-  hold) does not depend on it.
+- **The browser's slop against a recognizer that accepts on travel** (web only). Measured by task 3.5 (§5): in
+  Chromium the `touchmove` that crosses the browser's slop (between 8 and 16 px) is still cancelable, and the
+  `pointercancel` follows it, so a recognizer that accepts on the `pointermove` before it is heard first; one
+  that accepts later loses the pointer to the scroll. A recognizer accepting on travel was not itself driven; the
+  sample's gesture (a hold) does not depend on it.
 - **A hold then a drag on iOS Safari**: the long-press callout and the text magnifier are the system's;
   `-webkit-touch-callout` and `user-select` on the detector are the lowering's to set if the e2e shows them.
   Not measured (no WebKit touch in the e2e today).
