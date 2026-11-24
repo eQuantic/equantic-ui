@@ -169,11 +169,17 @@ internal static class PhotonAccessibility
             Release(gone.Key, gone.Value);
         // The array before this one is released only now that every element still living is in the new one.
         if (previous != IntPtr.Zero) SendVoid(previous, Sel("release"));
-        // The node with the keyboard has its element now: VoiceOver, told the view, is told the element.
-        if (_focusAwaitsElement && _reportedFocus is { } waiting && Elements.TryGetValue(waiting, out var arrived))
+        // The node with the keyboard has its element now: VoiceOver, told the view, is told the element. Only
+        // while that node still holds the keyboard: once it moved, the next frame tells VoiceOver where to.
+        if (_focusAwaitsElement && _reportedFocus is { } waiting)
         {
-            _focusAwaitsElement = false;
-            AppKitNotifications.Post(arrived.Element, "NSAccessibilityFocusedUIElementChangedNotification");
+            if (FocusedId?.Invoke() != waiting)
+                _focusAwaitsElement = false;
+            else if (Elements.TryGetValue(waiting, out var arrived))
+            {
+                _focusAwaitsElement = false;
+                AppKitNotifications.Post(arrived.Element, "NSAccessibilityFocusedUIElementChangedNotification");
+            }
         }
         return _children;
     }

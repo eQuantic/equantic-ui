@@ -17,10 +17,10 @@ internal static partial class AppKitNotifications
     /// when AppKit does not export that name.</summary>
     internal static void Post(IntPtr element, string name)
     {
-        Posted?.Invoke(element, name);
         var notification = Symbol(name);
         if (element == IntPtr.Zero || notification == IntPtr.Zero) return;
         PostNotification(element, notification);
+        Posted?.Invoke(element, name);
     }
 
     /// <summary>

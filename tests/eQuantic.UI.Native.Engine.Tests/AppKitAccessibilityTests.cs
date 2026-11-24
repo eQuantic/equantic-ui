@@ -479,6 +479,18 @@ public class AppKitAccessibilityTests
             PhotonAccessibility.FocusMoved(view);
             told.Select(said => said.Element).Should().Equal([view, field, box]);
             told.Should().OnlyContain(said => said.Name == "NSAccessibilityFocusedUIElementChangedNotification");
+
+            // The keyboard lands on a node with no element, and moves on before that node arrives: the read that
+            // gives it an element says nothing of it, and the next frame tells VoiceOver where the keyboard is.
+            told.Clear();
+            focused = 3;
+            PhotonAccessibility.FocusMoved(view);
+            focused = 1;
+            tree.Add(new(SemanticRole.Button, 3, new Rect(0, 60, 120, 24), "Later", null, false));
+            var save = ElementsOf(PhotonAccessibility.BuildChildren(view))["1"];
+            PhotonAccessibility.FocusMoved(view);
+            told.Select(said => said.Element).Should().Equal([view, save],
+                "a node the keyboard left is not said to hold it when its element arrives");
         }
         finally
         {
