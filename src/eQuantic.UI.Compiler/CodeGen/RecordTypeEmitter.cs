@@ -100,17 +100,17 @@ public class RecordTypeEmitter
         type.ReadDeclarations().Any(reference =>
             reference.GetSyntax() is TypeDeclarationSyntax declaration && CanEmit(declaration, type));
 
-    /// <summary>A model that can answer about THIS declaration. Roslyn throws for a node from
-    /// another tree, so the COMPILATION is asked for that tree's own model; when even it does not
-    /// know the tree, the literal rules still apply.</summary>
     /// <summary>A type parameter's constraint as the header writes it (#1854): a class that is not generic and has a twin,
-    /// and null for any other one.</summary>
+    /// as a downcast asks it, and null for any other one, a class the server keeps included.</summary>
     private string? ConstraintType(TypeSyntax type) =>
         ModelFor(type)?.GetTypeInfo(type).Type is INamedTypeSymbol { TypeKind: TypeKind.Class, IsGenericType: false } bound
-        && (bound.Locations.Any(location => location.IsInSource) || bound.IsRuntimeProvided())
+        && Strategies.Expressions.CastExpressionStrategy.NamesATwin(bound)
             ? TsTypeOf(type)
             : null;
 
+    /// <summary>A model that can answer about THIS declaration. Roslyn throws for a node from
+    /// another tree, so the COMPILATION is asked for that tree's own model; when even it does not
+    /// know the tree, the literal rules still apply.</summary>
     private SemanticModel? ModelFor(SyntaxNode node)
     {
         if (_converter.Model is not { } model) return null;

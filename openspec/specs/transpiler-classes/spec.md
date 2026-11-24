@@ -586,7 +586,10 @@ was handed a scan of the app. A parameter an alternate constructor may leave mis
 value a derived type evaluates before its base's constructor, and a primary constructor's parameter that defaults to
 null SHALL each hold the type C# declares for it. A generic class, a plain one, a record, a struct or a
 component, SHALL declare its type parameters in TypeScript and none in plain JavaScript, and a record's members
-SHALL name its own type by its closure.
+SHALL name its own type by its closure. A type parameter constrained to a class that is not generic and has a twin
+SHALL be declared `T extends` that class, the class imported; any other constraint, an interface's included, since
+an interface has no twin, SHALL leave it unconstrained. A cast
+to a type parameter SHALL assert it in TypeScript, `(value as T)`, checking nothing, as a downcast checks nothing.
 
 #### Scenario: A base calls its abstract members
 
@@ -630,6 +633,23 @@ SHALL name its own type by its closure.
 
 - **WHEN** the same classes and a generic component are compiled with type annotations off
 - **THEN** no class header carries a type parameter list, and the modules parse
+
+#### Scenario: A type parameter constrained to a class
+
+- **WHEN** `class Measured<T> where T : ShapeBase` reads `_shape.Area` on a `T`, and `record Tagged<T>(T Shape, string Tag)
+  where T : ShapeBase` reads `Shape.Area`
+- **THEN** their modules declare `class Measured<T extends ShapeBase>` and `class Tagged<T extends ShapeBase>`, import
+  `ShapeBase`, and `tsc` takes the reads; it refused them with TS2339
+
+#### Scenario: A cast to a type parameter
+
+- **WHEN** `class Handler<T> where T : ShapeBase` holds an `Action<T>` and calls it with `(T)shape` for a `ShapeBase`
+- **THEN** the twin writes `(shape as T)`, and `tsc` takes the call; it refused it with TS2345
+
+#### Scenario: A constraint with no twin
+
+- **WHEN** a type parameter is constrained to an interface, to `struct`, `class`, `new()` or `notnull`
+- **THEN** its class header declares it unconstrained, as before
 
 ### Requirement: A component's store a property guards with field starts as C# starts it
 

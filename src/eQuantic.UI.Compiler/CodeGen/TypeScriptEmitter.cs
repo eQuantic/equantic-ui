@@ -61,16 +61,14 @@ public class TypeScriptEmitter
     private JsStatement Contents(BlockSyntax block) =>
         JsStatement.Sequence(((JsBlock)_converter.ConvertBlockIr(block)).Statements);
 
-    /// <summary>The model that can answer for THIS node's tree — a component and the types it
-    /// references may live in different files of one compilation, and Roslyn throws for a node
-    /// from another tree.</summary>
     /// <summary>A type parameter's constraint as its class header writes it (#1854): a class that is not generic and has a
-    /// twin, named as any reference to it is (<see cref="DeclaredType"/>), and null for any other one, which leaves the
-    /// parameter unconstrained.</summary>
+    /// twin, as a downcast asks it (<see cref="Strategies.Expressions.CastExpressionStrategy.NamesATwin"/>), named as any
+    /// reference to it is (<see cref="DeclaredType"/>), and null for any other one, which leaves the parameter
+    /// unconstrained. A class the server keeps has no twin to import.</summary>
     private string? ConstraintType(TypeSyntax type)
     {
         if (ModelFor(type)?.GetTypeInfo(type).Type is not INamedTypeSymbol { TypeKind: TypeKind.Class, IsGenericType: false } bound
-            || !(bound.Locations.Any(location => location.IsInSource) || bound.IsRuntimeProvided()))
+            || !Strategies.Expressions.CastExpressionStrategy.NamesATwin(bound))
             return null;
         var name = DeclaredType(type);
         // Imported as any other name the module writes: the scan of a class's references reads its members, never its
@@ -80,6 +78,9 @@ public class TypeScriptEmitter
         return name;
     }
 
+    /// <summary>The model that can answer for THIS node's tree — a component and the types it
+    /// references may live in different files of one compilation, and Roslyn throws for a node
+    /// from another tree.</summary>
     private SemanticModel? ModelFor(SyntaxNode node)
     {
         if (_converter.Model is not { } model) return null;
