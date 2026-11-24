@@ -543,10 +543,18 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// reads it. `new Positioned(x, bottom: 0, start: 0) { … }` met it first, and `new TextRun(code,
     /// Mono: true) { … }` lost its initializer to it on the vocabulary's own path (#1756). The one rule for
     /// every construction that hands an initializer to the twin as its config.
+    /// <para>
+    /// Counted over the parameters the twin's constructor HAS, too: a component's dependencies leave its signature
+    /// (<see cref="LeavesOut"/>), and counted over the C# ones `new Quark(clock, mood: "x") { Size = 3 }` put one
+    /// default too many before the config, past the twin's last parameter, and `new Quark(clock) { … }` handed
+    /// `mood` the clock's default, <c>null</c> (#1827).
+    /// </para>
     /// </summary>
     private static void FillToArity(List<JsExpr> parts, IMethodSymbol ctor, ConversionContext context)
     {
-        for (var i = parts.Count; i < ctor.Parameters.Length; i++) parts.Add(DefaultOf(ctor.Parameters[i], context));
+        var declares = DeclaresDependency(ctor);
+        var kept = ctor.Parameters.Where(parameter => !LeavesOut(parameter, declares)).ToList();
+        for (var i = parts.Count; i < kept.Count; i++) parts.Add(DefaultOf(kept[i], context));
     }
 
     /// <summary>A parameter's C# default as the literal a skipped argument is filled with
@@ -708,7 +716,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // A dependency slot is not filled with a default — it is REMOVED, because the parameter
         // it stood in front of is gone from the emitted signature too.
         var keep = Enumerable.Range(0, places.Length)
-            .Where(i => !(dropping && CapabilityRule.IsDependency(ctor.Parameters[i].Type)))
+            .Where(i => !LeavesOut(ctor.Parameters[i], dropping))
             .ToList();
 
         var lastSet = keep.FindLastIndex(i => places[i] != null);
@@ -723,6 +731,15 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// </summary>
     private static bool DeclaresDependency(IMethodSymbol ctor) =>
         IsComponent(ctor.ContainingType) && ctor.Parameters.Any(p => CapabilityRule.IsDependency(p.Type));
+
+    /// <summary>
+    /// Whether the twin's constructor leaves this parameter out of its signature: a dependency, when its constructor
+    /// is a component's that declares one (<see cref="DeclaresDependency"/>, asked once per construction), which the
+    /// twin resolves in its body from the container. The one rule both the arguments a call passes and the defaults
+    /// before its config are counted by.
+    /// </summary>
+    private static bool LeavesOut(IParameterSymbol parameter, bool declaresDependency) =>
+        declaresDependency && CapabilityRule.IsDependency(parameter.Type);
 
     private static bool IsComponent(INamedTypeSymbol? symbol)
     {
