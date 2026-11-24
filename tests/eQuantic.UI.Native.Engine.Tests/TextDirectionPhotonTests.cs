@@ -52,7 +52,9 @@ public class TextDirectionPhotonTests
             log.Clear();
             holder.Flip();
             Frame(host);
-            log.Should().Contain("inside RightToLeft", "the frame after the change builds what read it")
+            // Photon builds every frame, so this proves the next frame reads the new direction. That only
+            // what read it rebuilds is the web's to prove, and text-direction.spec.ts proves it.
+            log.Should().Contain("inside RightToLeft", "the frame after the change reads the new direction")
                 .And.NotContain("inside LeftToRight");
         }
         finally

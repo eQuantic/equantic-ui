@@ -45,9 +45,9 @@ public sealed class Positioned : SingleChildNode
 
     /// <summary>
     /// Moves the placed child toward the END by this fraction of its OWN width (toward the start when
-    /// negative): right where text runs left to right, left where it runs right to left (#1568), so -0.5
-    /// centres it on a start anchor in both. Applied after the edges, on both targets as layout (the hit
-    /// region follows the drawn box).
+    /// negative): right where text runs left to right, left where it runs right to left on the web (#1568),
+    /// so -0.5 centres it on a start anchor in both. Photon lays out left to right until it mirrors too.
+    /// Applied after the edges, on both targets as layout (the hit region follows the drawn box).
     /// </summary>
     public float ShiftX { get; init; }
 
