@@ -30,7 +30,12 @@ public class DateOrderConformanceTests
         "2024-01-15 10:00 PM Monday", "2024-01-15 10:00Z Monday", "2024-01-15 10:00 Mon", "Monday 10:00 2024-01-15",
         "10:00 Monday 2024-01-15", "2024-01-15 10:00 Monday Monday", "10:00 Monday Monday 2024-01-15", "Monday 2024-01-15 Monday",
         "2024-01-15 Monday 10:00", "2024-01-15 Monday 10:00 Tuesday", "Mon 10:00 2024-01-15", "2024-01-15 Tuesday junk",
-        "Tuesday junk 2024-01-15", "2024-01-15 junk Tuesday"
+        "Tuesday junk 2024-01-15", "2024-01-15 junk Tuesday",
+        // A clock or a day that does not exist is refused before the day's name is asked.
+        "2024-01-15 25:00 Tuesday", "Tuesday 2024-01-15 25:00", "2024-02-30 10:00 Tuesday", "25:00 Tuesday",
+        // No date: the day's name is asked of today, which exactly one of these names.
+        "10:00 Sunday", "10:00 Monday", "10:00 Tuesday", "10:00 Wednesday", "10:00 Thursday", "10:00 Friday",
+        "10:00 Saturday"
     ];
 
     private static readonly string[] Years =

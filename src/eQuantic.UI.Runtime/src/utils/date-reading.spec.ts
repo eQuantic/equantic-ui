@@ -337,6 +337,14 @@ describe('readMoment: a day’s name once, anywhere (#1842)', () => {
     expect(read('2024-01-15 10:00 PM Monday', 'invariant')).toBe('2024-01-15 22:00:00');
     expect(read('2024-01-15 10:00 Tuesday', 'invariant')).toBe('weekday');
     expect(read('2024-01-15 Tuesday junk', 'invariant')).toBe('word at 19');
+    expect(read('2024-01-15 25:00 Tuesday', 'invariant')).toBe('clock');
+  });
+
+  it('asks it of today where the text names no date', () => {
+    const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const today = new Date().getDay();
+    expect(read(`10:00 ${names[today]}`, 'invariant')).toBe('10:00:00');
+    expect(read(`10:00 ${names[(today + 1) % 7]}`, 'invariant')).toBe('weekday');
   });
 
   it('refuses a second day’s name or a second zone plainly', () => {
