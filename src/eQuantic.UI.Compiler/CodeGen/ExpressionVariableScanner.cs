@@ -123,11 +123,14 @@ public static class ExpressionVariableScanner
             if ((TsNamedType.For(declared, context) ?? Strategies.Statements.LocalDeclarationStrategy.ListType(declared, context))
                 is not { } type || type == "any")
                 continue;
-            // Whether it holds a null is the PARAMETER's to say, not the local's: Roslyn annotates every `var` local
-            // nullable and keeps its null-state in the flow. `out Shape? found` admits a null a later `found = null`
-            // writes, and TryGetValue's `out TValue`, [MaybeNullWhen(false)], does not.
-            var admitsNull = context.SemanticHelper.GetOperation(argument) is Microsoft.CodeAnalysis.Operations.IArgumentOperation
-                { Parameter.Type.NullableAnnotation: NullableAnnotation.Annotated };
+            // Whether it holds a null is said by the type the declaration writes, and by the parameter. A `var` local
+            // says nothing, since Roslyn annotates every one nullable and keeps its null-state in the flow, so the
+            // parameter decides it: `out Shape? found` admits a null a later `found = null` writes, and TryGetValue's
+            // `out TValue`, [MaybeNullWhen(false)], does not. A type written nullable (`out Shape? seen` against that
+            // same TryGetValue) admits one whatever the parameter says.
+            var admitsNull = (!declaration.Type.IsVar && local.Type.NullableAnnotation == NullableAnnotation.Annotated)
+                || context.SemanticHelper.GetOperation(argument) is Microsoft.CodeAnalysis.Operations.IArgumentOperation
+                    { Parameter.Type.NullableAnnotation: NullableAnnotation.Annotated };
             typed.TryAdd(single.Identifier.ValueText.ToJsIdentifier(), admitsNull ? TypeScriptEmitter.OrNull(type) : type);
         }
         return typed;

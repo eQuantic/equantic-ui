@@ -371,6 +371,15 @@ public class SharedComponentTranspilationTests
                     foreach (var route in routed) total += route.Members.Count;
                 return total;
             }
+
+            public int Drop(int pointer)
+            {
+                if (_arenas.TryGetValue(pointer, out EmittedPointer? seen)) seen = null;
+                return seen == null ? 0 : 1;
+            }
+
+            private EmittedPointer? _last;
+            public bool Remember(int pointer) => _arenas.TryGetValue(pointer, out _last);
         }
         """;
 

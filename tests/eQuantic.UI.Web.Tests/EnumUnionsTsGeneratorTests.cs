@@ -69,7 +69,7 @@ public class EnumUnionsTsGeneratorTests
 
     /// <summary>An internal enum a twin names gets its union too, as a public one does (#1859): a twin imports the union
     /// of whatever enum its C# names, and the internal <c>GestureArenaPhase</c> was imported as a union nothing
-    /// declared. A nested enum is its owner's.</summary>
+    /// declared. A nested enum is its owner's, and a <c>file</c> enum's metadata name is no TypeScript name.</summary>
     [Fact]
     public void AnInternalEnumHasAUnion_ANestedOneDoesNot()
     {
@@ -77,6 +77,8 @@ public class EnumUnionsTsGeneratorTests
 
         unions.Should().Contain(typeof(UnionProbePhase), "an internal enum a twin names needs its union");
         unions.Should().NotContain(typeof(UnionProbeOwner.Nested), "a nested enum is its owner's");
+        unions.Should().NotContain(typeof(UnionProbeFileLocal), "a file enum's metadata name is no TypeScript name");
+        typeof(UnionProbeFileLocal).Name.Should().Contain("<", "the probe stands for a name no code can say");
     }
 }
 
@@ -88,3 +90,6 @@ internal static class UnionProbeOwner
 {
     public enum Nested { One }
 }
+
+/// <summary>A <c>file</c> enum, whose metadata name is one no code can say.</summary>
+file enum UnionProbeFileLocal { One }

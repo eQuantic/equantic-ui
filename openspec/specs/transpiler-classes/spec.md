@@ -788,7 +788,7 @@ A vocabulary enum's union SHALL be named, in every module eqc writes, with a cha
 (`$DensityValue` for `Density`), so a type of any name an app or the vocabulary declares beside the enum
 SHALL be that type, imported from its own module, and never taken for the union. Every top-level non-flags enum
 of the vocabulary's assemblies SHALL have its union, an internal one included, since a twin imports the union of
-whatever enum its C# names.
+whatever enum its C# names. A `file` enum, whose metadata name no code can say, SHALL have none.
 
 #### Scenario: An app's record named like the union
 
@@ -799,8 +799,8 @@ whatever enum its C# names.
 
 #### Scenario: An internal enum has its union
 
-- **WHEN** an assembly holds an internal top-level enum and a public class with a nested enum
-- **THEN** the generator's list of unions holds the internal enum and not the nested one
+- **WHEN** an assembly holds an internal top-level enum, a `file` enum and a public class with a nested enum
+- **THEN** the generator's list of unions holds the internal enum, and neither the `file` one nor the nested one
 
 ### Requirement: A named argument and an initializer both reach the twin
 

@@ -5,10 +5,12 @@ export class EmittedArena {
     constructor() {
         this._arenas = $eq.collections.dictionary();
         this._routes = $eq.collections.dictionary();
+        this._last = null;
     }
 
     _arenas!: any;
     _routes!: any;
+    _last!: EmittedPointer | null;
 
     count(pointer: number) {
         let arena!: EmittedPointer; 
@@ -39,6 +41,16 @@ export class EmittedArena {
         let routed!: EmittedPointer[]; 
         if ((($0) => ($0.has(pointer) ? ((routed = $0.get(pointer)), true) : ((routed = null!), false)))(this._routes)) for (const route of $eq.collections.listWalk(routed)) total = total + route.members.length | 0;
         return total;
+    }
+
+    drop(pointer: number) {
+        let seen!: EmittedPointer | null; 
+        if ((($0) => ($0.has(pointer) ? ((seen = $0.get(pointer)), true) : ((seen = null!), false)))(this._arenas)) seen = null;
+        return seen == null ? 0 : 1;
+    }
+
+    remember(pointer: number) {
+        return (($0) => ($0.has(pointer) ? ((this._last = $0.get(pointer)), true) : ((this._last = null!), false)))(this._arenas);
     }
 
     toJSON() {
