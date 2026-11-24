@@ -182,13 +182,27 @@ queue_checkout() {
     return 1
   fi
 
-  local branch merged="" seen=$'\n'
+  local branch merged="" seen=$'\n' now home
+  home=$(git -C "$destination" rev-parse --abbrev-ref HEAD)
   while IFS= read -r branch; do
     has_branch "$heads" "$branch" || continue
     case "$seen" in *$'\n'"$branch"$'\n'*) continue ;; esac
     seen="$seen$branch"$'\n'
-    if ! git -C "$destination" fetch --quiet origin "refs/heads/$branch" \
-      || ! git -C "$destination" merge --quiet --no-edit --no-ff FETCH_HEAD > /dev/null; then
+    if ! git -C "$destination" fetch --quiet origin "refs/heads/$branch" 2> /dev/null; then
+      # Listed, then gone (#1862). The step after a pull request lands merges its wiki branch into master and
+      # deletes it, and it may do so between the listing above and this fetch: the pages are master's then, so
+      # master is read again, and the run goes on. Only a branch that is still there and cannot be fetched fails.
+      if now=$(git ls-remote --heads "$url") && ! has_branch "$now" "$branch" \
+        && git -C "$destination" fetch --quiet origin "refs/heads/$home" \
+        && git -C "$destination" merge --quiet --no-edit --no-ff FETCH_HEAD > /dev/null; then
+        merged="$merged '$branch' (on $home since the listing)"
+        continue
+      fi
+      echo "::error::The wiki branch '$branch' does not merge with master and the ones before it." >&2
+      rm -rf "$destination"
+      return 1
+    fi
+    if ! git -C "$destination" merge --quiet --no-edit --no-ff FETCH_HEAD > /dev/null; then
       echo "::error::The wiki branch '$branch' does not merge with master and the ones before it." >&2
       rm -rf "$destination"
       return 1
@@ -436,6 +450,42 @@ STUB
   pull 5 eQuantic/equantic-ui feat/conflict
   queue "two wiki branches that conflict fail, and leave nothing behind" \
     "refs/heads/gh-readonly-queue/main/pr-5-abc123" "(fails)"
+
+  # A waiting branch the step after its pull request landed merged into master and deleted between the listing
+  # and its fetch (#1862): a `git` that does exactly that on the first fetch of it stands in for the race. Its
+  # pages are master's, so the run reads master again and goes on. The fixture is put back afterwards.
+  local master_before landed_before
+  master_before=$(git -C "$fixture" rev-parse master)
+  landed_before=$(git -C "$fixture" rev-parse feat/landed)
+  mkdir -p "$work/racegit"
+  printf '#!/usr/bin/env bash\nif [ "$1" = -C ] && [ "$3" = fetch ] && [ "${!#}" = refs/heads/feat/landed ] && "%s" -C "%s" rev-parse --verify --quiet feat/landed > /dev/null; then\n  "%s" -C "%s" merge --quiet --no-edit --no-ff feat/landed > /dev/null && "%s" -C "%s" branch --quiet -D feat/landed\nfi\nexec "%s" "$@"\n' \
+    "$(command -v git)" "$fixture" "$(command -v git)" "$fixture" "$(command -v git)" "$fixture" "$(command -v git)" > "$work/racegit/git"
+  chmod +x "$work/racegit/git"
+  answers "✨ feat: the second (#2)"
+  printf '%s\t%s\n' "eQuantic/equantic-ui" "feat/landed" > "$work/answers/landed"
+  EQ_FAKE_GIT="$work/racegit" queue "a waiting branch merged into master and deleted after the listing is read from master" \
+    "refs/heads/gh-readonly-queue/main/pr-2-abc123" "master" "second" "landed"
+  git -C "$fixture" reset --quiet --hard "$master_before"
+  git -C "$fixture" branch --quiet -f feat/landed "$landed_before"
+
+  # A waiting branch already merged into master and kept, as the step after its pull request lands may leave it:
+  # its merge brings nothing, and the run goes on.
+  git -C "$fixture" merge --quiet --no-edit --no-ff feat/landed > /dev/null
+  answers "✨ feat: the second (#2)"
+  printf '%s\t%s\n' "eQuantic/equantic-ui" "feat/landed" > "$work/answers/landed"
+  queue "a waiting branch master already holds merges as nothing" \
+    "refs/heads/gh-readonly-queue/main/pr-2-abc123" "master" "second" "landed"
+  git -C "$fixture" reset --quiet --hard "$master_before"
+
+  # And a branch that is still there but cannot be fetched still fails: only a branch gone from the wiki is
+  # read as merged already.
+  mkdir -p "$work/stuckgit"
+  printf '#!/usr/bin/env bash\nif [ "$1" = -C ] && [ "$3" = fetch ] && [ "${!#}" = refs/heads/feat/second ]; then exit 1; fi\nexec "%s" "$@"\n' \
+    "$(command -v git)" > "$work/stuckgit/git"
+  chmod +x "$work/stuckgit/git"
+  answers "✨ feat: the second (#2)"
+  EQ_FAKE_GIT="$work/stuckgit" queue "a branch still in the wiki that cannot be fetched fails, and leaves nothing behind" \
+    "refs/heads/gh-readonly-queue/main/pr-2-abc123" "(fails)"
 
   # A wiki that cannot be reached fails, and leaves nothing behind that a guard could read as master.
   runs=$((runs + 1))
