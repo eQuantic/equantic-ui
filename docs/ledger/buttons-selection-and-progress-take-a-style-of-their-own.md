@@ -1,4 +1,4 @@
-- **2026-11-18 · Buttons, selection controls and progress take a style of their own**: `Button`, `FormSubmit`,
+- **2026-11-24 · Buttons, selection controls and progress take a style of their own**: `Button`, `FormSubmit`,
   `IconButton`, `Chip`, `Checkbox`, `RadioGroup`, `Switch`, `Slider`, `ProgressBar`, `PullToRefresh` and `Skeleton`
   take their family's slot record as `style:`, laid over the theme's slot member by member, on the web, in the
   browser's twin and on Photon, and a `RadioGroup` draws its options with an `optionBuilder` while each option's
