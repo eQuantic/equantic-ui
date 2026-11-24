@@ -48,6 +48,26 @@ public class ChildProcessTests
         output.Trim().Should().Be("done", "three seconds of waiting spend none of the second of work it was given");
     }
 
+    /// <summary>
+    /// A processor time that cannot be read leaves the wait to the clock, and never fails the run. On Linux a
+    /// process that exits between the check for its exit and the read takes its <c>/proc</c> entry with it,
+    /// and the read answers a <see cref="System.ComponentModel.Win32Exception"/>: a conformance case on CI
+    /// answered with that exception's message (#1850). The read here fails that way on every slice, for a
+    /// program that exits after half a second: the wait answers that it exited.
+    /// </summary>
+    [UnixFact]
+    public void AProcessorTimeThatCannotBeRead_LeavesTheWaitToTheClock()
+    {
+        using var process = ChildProcess.Started("/bin/sh", ["-c", "sleep 0.5"]);
+        var late = ChildProcess.WaitForExit(process, System.Diagnostics.Stopwatch.GetTimestamp(), TimeSpan.FromMinutes(1),
+            TimeSpan.FromMilliseconds(100),
+            _ => throw new System.ComponentModel.Win32Exception(
+                "Unable to retrieve the specified information about the process or thread. It may have exited or may be privileged."));
+
+        late.Should().BeNull("the program exited, and a time that could not be read is no reason to fail its run");
+        process.HasExited.Should().BeTrue();
+    }
+
     /// <summary>A program that never stops working is killed once it has used its work, long before its clock
     /// deadline: the loop a bad translation writes still fails, on a loaded machine as on an idle one.</summary>
     [UnixFact]
