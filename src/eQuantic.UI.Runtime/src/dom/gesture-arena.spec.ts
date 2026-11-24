@@ -12,7 +12,7 @@ import { GestureRecognizer } from '../shared/components/GestureRecognizer';
 import { GestureRecognizerFactoryWithHandlers } from '../shared/components/GestureRecognizerFactoryWithHandlers';
 import { photonTheme } from '../shared/design-system.generated';
 import { setPhotonTheme } from '../shared/photon-context';
-import type { PointerEvent as HeardPointer } from '../shared/value-types';
+import { Point, type PointerEvent as HeardPointer } from '../shared/value-types';
 import { Box, BoxStyle, Pressable, RawGestureDetector, TableViewCell, TableViewport, Text } from '../shared/vocabulary';
 import { lowerVisualNode, type LoweringContext } from '../shared/lowering';
 import { commitTableViewports } from '../shared/table-viewports';
@@ -32,7 +32,7 @@ class Probe extends GestureRecognizer {
 
   constructor(
     private readonly log: string[],
-    private readonly rules: { deadlineMs?: number; acceptOnMove?: boolean; primaryOnly?: boolean } = {},
+    private readonly rules: { deadlineMs?: number; acceptOnMove?: boolean; primaryOnly?: boolean; rejectOnAdd?: boolean; acceptOnAdd?: boolean } = {},
   ) {
     super();
   }
@@ -44,6 +44,8 @@ class Probe extends GestureRecognizer {
   addAllowedPointer(down: HeardPointer): void {
     this.log.push(`add ${down.position.x},${down.position.y}`);
     if (this.rules.deadlineMs !== undefined) this.startDeadline(this.rules.deadlineMs);
+    if (this.rules.rejectOnAdd) this.resolve('rejected');
+    if (this.rules.acceptOnAdd) this.resolve('accepted');
   }
 
   handleEvent(ev: HeardPointer): void {
@@ -437,6 +439,27 @@ describe('the gesture arena, in the browser', () => {
     expect(outerLog).toEqual(['add 10,10', 'up 10,10', 'reject']);
   });
 
+  it('holds nothing when every recognizer lets the pointer go and nothing else was in its arena', () => {
+    const card = document.createElement('div');
+    card.textContent = 'A card';
+    const d = detector([factoryOf(() => new Probe(log, { rejectOnAdd: true }))], card);
+    document.body.appendChild(d);
+    placeAt(d, 0, 0);
+    under(card, d);
+
+    pointer(card, 'pointerdown', 10, 10);
+    const select = new Event('selectstart', { bubbles: true, cancelable: true });
+    card.dispatchEvent(select);
+    const menu = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+    card.dispatchEvent(menu);
+
+    expect(log).toEqual(['add 10,10', 'reject']);
+    expect(select.defaultPrevented).toBe(false);
+    expect(menu.defaultPrevented).toBe(false);
+    expect(document.documentElement.style.userSelect).toBe('');
+    pointer(document, 'pointerup', 10, 10);
+  });
+
   it('puts a press around a detector after it: the recognizer takes the tap, and the click presses nothing', () => {
     const card = document.createElement('div');
     card.textContent = 'A card';
@@ -572,6 +595,22 @@ describe("a table's pan in the arena", () => {
 
     expect(log).toEqual([`add ${thumb.x + 4},${thumb.y + 4}`, 'reject']);
     expect(scroll.offset.down + scroll.viewport.height).toBe(1_000 * 28);
+  });
+
+  it("cancels the scroll a scrollbar's press took when a recognizer that accepted at its down wins the pointer", () => {
+    const log: string[] = [];
+    const { scroll, view } = tableUnderADetector(log, { acceptOnAdd: true });
+    const thumb = scroll.thumbOf('vertical')!;
+
+    pointer(view, 'pointerdown', thumb.x + 4, thumb.y + 4, { pointerId: 3 });
+    pointer(view, 'pointermove', thumb.x + 4, 5000, { pointerId: 3 });
+    pointer(view, 'pointerup', thumb.x + 4, 5000, { pointerId: 3 });
+
+    expect(log).toEqual([`add ${thumb.x + 4},${thumb.y + 4}`, 'accept', `move ${thumb.x + 4},5000`, `up ${thumb.x + 4},5000`]);
+    expect(scroll.offset.down).toBe(0);
+    // The bar let go of its thumb: a drag the scroll hears later moves nothing.
+    scroll.pointer('move', new Point(thumb.x + 4, 5000), 'mouse', performance.now());
+    expect(scroll.offset.down).toBe(0);
   });
 });
 

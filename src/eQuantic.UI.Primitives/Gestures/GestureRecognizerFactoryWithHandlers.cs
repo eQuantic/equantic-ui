@@ -17,7 +17,9 @@ public sealed class GestureRecognizerFactoryWithHandlers<T> : GestureRecognizerF
     private readonly Action<T> _initialize;
 
     /// <param name="create">Makes the recognizer, once for the detector's place.</param>
-    /// <param name="initialize">Hands the kept recognizer what the latest build wrote, at every build.</param>
+    /// <param name="initialize">Hands the kept recognizer what the latest build wrote. It runs at every build, and a
+    /// realizer may run it again before the recognizer hears a pointer (Photon at every frame, the browser at every
+    /// pointer event), so it hands callbacks and settings and does nothing that counts how often it ran.</param>
     public GestureRecognizerFactoryWithHandlers(Func<T> create, Action<T> initialize)
     {
         _create = create;

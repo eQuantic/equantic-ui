@@ -125,6 +125,8 @@ interface Arena {
   contested: boolean;
   /** Whether a recognizer won it. */
   won: boolean;
+  /** The recognizers that joined it at its close. */
+  recognizers: GestureRecognizer[];
   /** Whether it holds the page's selection, which it gives back once at its end. */
   holding: boolean;
   /** Stops swallowing the click of the press that lost, or null. */
@@ -196,6 +198,7 @@ function onDown(event: PointerEvent): void {
     closed: false,
     contested: false,
     won: false,
+    recognizers: [],
     holding: false,
     unswallow: null,
   };
@@ -279,6 +282,8 @@ function close(arena: Arena): void {
   const members = slots.flatMap((slot) => slot.members);
   const entries = theRouter().down(heard('down', arena.down, null), members, inBox('down', arena.down));
   arena.contested = members.some((member, i) => recognizers.has(member as GestureRecognizer) && entries[i] !== null);
+  arena.recognizers = members.filter((member, i): member is GestureRecognizer =>
+    recognizers.has(member as GestureRecognizer) && entries[i] !== null);
   members.forEach((member, i) => {
     if (member instanceof BuiltIn) member.close(entries[i] ?? null, arena.contested);
   });
@@ -382,14 +387,15 @@ function passed(due: number): void {
 }
 
 /**
- * A recognizer won a pointer when its arena is decided and no built-in won it: from then on the browser's pan, the
- * selection and the menu are held off for that pointer. (An arena every member left is decided with no winner;
- * none of the built-ins that keep it open, the press and the scroll, ever leaves.)
+ * A recognizer won a pointer when its arena is decided, no built-in won it, and one of its recognizers still follows
+ * the pointer, which a recognizer that lost stops doing: from then on the browser's pan, the selection and the menu
+ * are held off for that pointer. An arena every member left is decided with no winner, and holds nothing.
  */
 function noteWinners(): void {
   for (const arena of arenas.values()) {
     if (!arena.closed || !arena.contested || arena.won || theRouter().arena.isOpen(arena.pointerId)) continue;
     if (arena.builtIns.some((builtIn) => builtIn.outcome === 'accepted')) continue;
+    if (!arena.recognizers.some((recognizer) => recognizer.tracks(arena.pointerId))) continue;
     arena.won = true;
     arena.holding = true;
     holdSelection(arena.down.target instanceof Node ? arena.down.target.ownerDocument ?? document : document);
