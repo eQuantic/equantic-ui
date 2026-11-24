@@ -2174,7 +2174,7 @@ export class CodeEditorController {
     undo() {
         if (this.readOnly) return false;
         this.endComposition();
-        let selections: any; let made: any; 
+        let selections!: CodeRange[]; let made!: CodeEdit[]; 
         if (($o => (selections = $o.selections, made = $o.made, $o.$))(this.history.undo(this._document)) == null) return false;
         this.snippet.end();
         this.replay(made, selections);
@@ -2184,7 +2184,7 @@ export class CodeEditorController {
     redo() {
         if (this.readOnly) return false;
         this.endComposition();
-        let selections: any; let made: any; 
+        let selections!: CodeRange[]; let made!: CodeEdit[]; 
         if (($o => (selections = $o.selections, made = $o.made, $o.$))(this.history.redo(this._document)) == null) return false;
         this.snippet.end();
         this.replay(made, selections);

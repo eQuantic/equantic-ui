@@ -333,6 +333,15 @@ public class SharedComponentTranspilationTests
                 foreach (var member in arena.Members) total += member.Length;
                 return total;
             }
+
+            private readonly Dictionary<int, List<EmittedPointer>> _routes = new();
+            public int Routed(int pointer)
+            {
+                var total = 0;
+                if (_routes.TryGetValue(pointer, out var routed))
+                    foreach (var route in routed) total += route.Members.Count;
+                return total;
+            }
         }
         """;
 

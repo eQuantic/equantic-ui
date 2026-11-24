@@ -102,8 +102,8 @@ public static class ExpressionVariableScanner
     }
 
     /// <summary>The TypeScript type of each <c>out var</c> <paramref name="expression"/> declares outside a lambda, by
-    /// its name, where the type has a name to say there (<see cref="TsNamedType.For"/>): a primitive's and a generic's
-    /// are left out, and keep <c>any</c>.</summary>
+    /// its name, where the type has one to say there: a named type (<see cref="TsNamedType.For"/>), or a list or an
+    /// array of a named item (<c>GestureRecognizer[]</c>). Any other one keeps <c>any</c>.</summary>
     private static Dictionary<string, string> OutVariableTypes(ExpressionSyntax? expression, ConversionContext context)
     {
         var typed = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -115,7 +115,8 @@ public static class ExpressionVariableScanner
             if (declaration is not { Designation: SingleVariableDesignationSyntax single, Parent: ArgumentSyntax argument }
                 || !argument.RefKindKeyword.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.OutKeyword)
                 || context.SemanticHelper.GetDeclaredSymbol(single) is not ILocalSymbol local
-                || TsNamedType.For(local.Type, context) is not { } type || type == "any")
+                || (TsNamedType.For(local.Type, context) ?? Strategies.Statements.LocalDeclarationStrategy.ListType(local.Type, context))
+                    is not { } type || type == "any")
                 continue;
             typed.TryAdd(single.Identifier.ValueText.ToJsIdentifier(), type);
         }

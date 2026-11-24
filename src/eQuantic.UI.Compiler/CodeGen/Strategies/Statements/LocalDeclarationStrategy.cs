@@ -266,6 +266,14 @@ public class LocalDeclarationStrategy : IStatementStrategy
         return ts;
     }
 
+    /// <summary>
+    /// A list's or an array's TypeScript type, <c>GestureRecognizer[]</c>, where its item has a name to say
+    /// (<see cref="ListedItem"/>, <see cref="SimpleItemName"/>), or null. What an <c>out var</c> holding one is declared
+    /// as (#1858): left <c>any</c>, a walk of it inferred <c>unknown</c> elements.
+    /// </summary>
+    internal static string? ListType(ITypeSymbol? type, ConversionContext context) =>
+        ListedItem(type) is { } item && SimpleItemName(item, context) is { } name ? ArrayOf(name) : null;
+
     /// <summary>An array of <paramref name="item"/>, a union parenthesised: <c>string | null[]</c> is a string
     /// or an array of nulls.</summary>
     private static string ArrayOf(string item) =>

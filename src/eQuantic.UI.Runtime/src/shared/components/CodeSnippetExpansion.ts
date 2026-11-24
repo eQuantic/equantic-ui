@@ -113,7 +113,7 @@ export class CodeSnippetExpansion {
                 continue;
             }
             let index = this.indexOf(part);
-            if (index >= 0) text.append(this.defaultOf(index)); else { let value: any; let nested: any; if ((value = ($o => (nested = $o.nested, $o.$))(this.variableText(part))) != null) text.append(value); else if (!(nested == null)) text.append(this.plain(nested)); }
+            if (index >= 0) text.append(this.defaultOf(index)); else { let value: any; let nested!: CodeSnippetPart[]; if ((value = ($o => (nested = $o.nested, $o.$))(this.variableText(part))) != null) text.append(value); else if (!(nested == null)) text.append(this.plain(nested)); }
         }
         return text.toString();
     }
@@ -138,7 +138,7 @@ export class CodeSnippetExpansion {
             }
             let index = this.indexOf(part);
             if (index < 0) {
-                let value: any; let nested: any; 
+                let value: any; let nested!: CodeSnippetPart[]; 
                 if ((value = ($o => (nested = $o.nested, $o.$))(this.variableText(part))) != null) this.append(value); else if (!(nested == null)) this.write(nested);
                 continue;
             }
