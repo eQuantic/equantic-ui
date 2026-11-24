@@ -10,6 +10,6 @@
   every `touchmove` cancelable and the list still, and a swipe at once fired `pointercancel` at 16 px. Each
   pointer event now carries its time, `PointerEvent.TimeMs`. The dashboard's `/gestures` screen and its own
   `HoldThenDrag` show it on both targets. On the web, a detector whose factory changes type at the same place
-  keeps its recognizer until an app's construction of a framework generic carries its type argument (#1846)
+  keeps its recognizer until an app's construction of a framework generic carries its type argument (#1863)
   ([#1563](https://github.com/eQuantic/equantic-ui/issues/1563)). Proposed and archived through OpenSpec
   (`openspec/specs/gesture-recognizers`).

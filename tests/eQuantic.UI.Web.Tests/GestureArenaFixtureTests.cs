@@ -51,7 +51,7 @@ public class GestureArenaFixtureTests
     /// Flutter's <c>canUpdate</c>: a place whose factory changes type gets a new recognizer, made and initialized by the
     /// new factory, and the old one is never handed to it. This is the C# answer, which Photon runs, and
     /// <c>gesture-arena.spec.ts</c> runs the same code transpiled, where the construction carries its type argument.
-    /// An app's does not yet (#1846, pinned by <c>AGestureRecognizerOfTheAppsOwnTests</c>).
+    /// An app's does not yet (#1863, pinned by <c>AGestureRecognizerOfTheAppsOwnTests</c>).
     /// </summary>
     [Fact]
     public void APlaceWhoseFactoryChangesType_GetsANewRecognizer() =>

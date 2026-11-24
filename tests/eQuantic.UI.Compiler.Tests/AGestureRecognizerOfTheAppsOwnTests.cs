@@ -59,11 +59,11 @@ public class AGestureRecognizerOfTheAppsOwnTests
     }
 
     /// <summary>
-    /// TODAY'S ANSWER, pinned on purpose (#1846). An app reads the framework from metadata, and eqc marks a generic
+    /// TODAY'S ANSWER, pinned on purpose (#1863). An app reads the framework from metadata, and eqc marks a generic
     /// construction with its type arguments only for a type the source declares, so the factory crosses unmarked: in
     /// the browser <c>GestureRecognizerFactoryWithHandlers&lt;A&gt;</c> and <c>&lt;B&gt;</c> are one runtime type, and a
     /// detector whose factory changes type at the same place keeps its old recognizer there. Photon makes a new one,
-    /// and so does the twin once the construction is marked (<c>gesture-arena.spec.ts</c>). When #1846 marks it, this
+    /// and so does the twin once the construction is marked (<c>gesture-arena.spec.ts</c>). When #1863 marks it, this
     /// fails: flip it, and mark that case of the <c>RawGestureDetector</c> row in <c>docs/FLUTTER-PARITY.md</c> SAME.
     /// </summary>
     [Fact]

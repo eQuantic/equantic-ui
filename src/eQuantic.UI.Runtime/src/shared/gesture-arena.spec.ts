@@ -188,7 +188,7 @@ describe('a place whose factory changes type', () => {
   // The twin compares the factories' runtime types, which in the browser are the type arguments the construction
   // was marked with: this suite compiles the framework from source, so eqc marks GestureRecognizerFactoryWithHandlers
   // <ArenaProbe> and <HoldThenDrag>. An app reads the framework from metadata, and its construction goes unmarked
-  // until #1846: AGestureRecognizerOfTheAppsOwnTests pins that, and docs/FLUTTER-PARITY.md names the difference.
+  // until #1863: AGestureRecognizerOfTheAppsOwnTests pins that, and docs/FLUTTER-PARITY.md names the difference.
   it('makes a new recognizer, and never hands the old one to the new initialize', () => {
     expect(FactoryTypeChange.run()).toEqual(['probe.create', 'probe.initialize', 'drag.create', 'drag.initialize its own', 'made new']);
   });

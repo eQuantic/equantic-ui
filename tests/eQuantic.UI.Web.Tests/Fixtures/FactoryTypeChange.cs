@@ -9,7 +9,7 @@ namespace eQuantic.UI.Web.Tests.Fixtures;
 /// <c>canUpdate</c> makes a new recognizer then, and so does the router, which compares the factories' types.
 /// Run in C# by <c>GestureArenaFixtureTests</c> and transpiled for <c>gesture-arena.spec.ts</c>. That suite compiles the
 /// framework from source, so eqc marks each construction with its type argument and the browser answers as C# does;
-/// an app's construction of the framework's factory goes unmarked until #1846 (<c>AGestureRecognizerOfTheAppsOwnTests</c>).
+/// an app's construction of the framework's factory goes unmarked until #1863 (<c>AGestureRecognizerOfTheAppsOwnTests</c>).
 /// </summary>
 public static class FactoryTypeChange
 {

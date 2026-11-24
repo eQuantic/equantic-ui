@@ -151,7 +151,7 @@ translates and its Conformance suite runs. One gap is left, on the web only. A g
 the app is not marked with its type arguments when the app constructs it (`ObjectCreationStrategy.ClosureOf`
 marks only a type the source declares). So until eqc marks it, `GestureRecognizerFactoryWithHandlers<A>` and
 `<B>` compare as one type in the browser, and a place handed a factory of another recognizer type keeps the one
-it has there. Photon answers it as .NET does. The gap is eqc's, on #1846, and the change's spec scenario for it
+it has there. Photon answers it as .NET does. The gap is eqc's, on #1863, and the change's spec scenario for it
 is proved on Photon and waits on the web.
 
 ### 3. One arena and one router, written once in C# and transpiled
