@@ -182,13 +182,13 @@ queue_checkout() {
     return 1
   fi
 
-  local branch merged="" seen=$'\n' now home
+  local branch merged="" seen=$'\n' now home fetched
   home=$(git -C "$destination" rev-parse --abbrev-ref HEAD)
   while IFS= read -r branch; do
     has_branch "$heads" "$branch" || continue
     case "$seen" in *$'\n'"$branch"$'\n'*) continue ;; esac
     seen="$seen$branch"$'\n'
-    if ! git -C "$destination" fetch --quiet origin "refs/heads/$branch" 2> /dev/null; then
+    if ! fetched=$(git -C "$destination" fetch --quiet origin "refs/heads/$branch" 2>&1); then
       # Listed, then gone (#1862). The step after a pull request lands merges its wiki branch into master and
       # deletes it, and it may do so between the listing above and this fetch: the pages are master's then, so
       # master is read again, and the run goes on. Only a branch that is still there and cannot be fetched fails.
@@ -198,6 +198,7 @@ queue_checkout() {
         merged="$merged '$branch' (on $home since the listing)"
         continue
       fi
+      [ -z "$fetched" ] || printf '%s\n' "$fetched" >&2
       echo "::error::The wiki branch '$branch' does not merge with master and the ones before it." >&2
       rm -rf "$destination"
       return 1
