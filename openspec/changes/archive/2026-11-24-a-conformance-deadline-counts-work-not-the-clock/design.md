@@ -4,7 +4,7 @@ Every process a test starts goes through `tests/Shared/ChildProcess.cs`, and the
 
 ## Decisions
 
-**A deadline on work, read from the process's own processor time.** `Process.TotalProcessorTime` counts every thread of the process, which is where Bun does a case's work. The wait is taken on the clock in slices of the work still left, since a process cannot spend more of a processor's time than passes, and the time is read only when a slice ends, so a run that ends quickly costs one read.
+**A deadline on work, read from the process's own processor time.** `Process.TotalProcessorTime` counts every thread of the process, which is where Bun does a case's work. The wait is taken on the clock in slices of the work still left, a whole millisecond at least, and the time is read only when a slice ends, so a run that ends quickly costs one read. A process of several busy threads may spend a multiple of a slice before it is read, which a deadline allows.
 
 **Opt-in, and taken by the conformance runner.** A `dotnet` a test starts does its work in worker processes, whose time its own process does not count, so a work deadline would never run out for a build. Those callers keep the clock, and `JsExecutor` hands its timeout as work.
 

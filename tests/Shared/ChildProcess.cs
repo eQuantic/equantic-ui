@@ -119,8 +119,10 @@ internal static class ChildProcess
     /// <summary>
     /// Waits for <paramref name="process"/> to exit, and answers null when it did, or what it ran out of:
     /// <paramref name="deadline"/> on the clock, or <paramref name="work"/> of its own processor time. The
-    /// wait for the work is taken on the clock in slices of the work still left, since a process cannot
-    /// spend more of a processor's time than passes, and its time is read only when a slice ends.
+    /// wait for the work is taken on the clock in slices of the work still left, and the time is read only
+    /// when a slice ends: a process of one busy thread spends at most the slice, and one of several may
+    /// spend a multiple of it before it is read, which a deadline allows. A slice is a whole millisecond
+    /// at least, as the wait counts in milliseconds and would not wait at all for less.
     /// </summary>
     private static string? WaitForExit(Process process, long started, TimeSpan deadline, TimeSpan? work)
     {
@@ -133,7 +135,8 @@ internal static class ChildProcess
             if (used is null) return process.WaitForExit(clockLeft) ? null : $"{deadline}";
             var workLeft = budget - used.Value;
             if (workLeft <= TimeSpan.Zero) return process.WaitForExit(0) ? null : $"{budget} of its own processor time";
-            if (process.WaitForExit(workLeft < clockLeft ? workLeft : clockLeft)) return null;
+            var slice = workLeft < clockLeft ? workLeft : clockLeft;
+            if (process.WaitForExit(TimeSpan.FromMilliseconds(Math.Ceiling(slice.TotalMilliseconds)))) return null;
         }
     }
 
