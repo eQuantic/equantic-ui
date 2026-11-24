@@ -446,14 +446,15 @@ public class ComponentCompiler
             // a call abandoned at once or a request held open for an hour.
             foreach (var action in component.ServerActions.Where(a => a.TimeoutArgument is not null && !Honoured(a.TimeoutSeconds)))
             {
-                var at = action.TimeoutArgument!.GetLocation().GetLineSpan().StartLinePosition;
+                // The argument's own file: a partial method's defining half may be written in another one.
+                var span = action.TimeoutArgument!.GetLocation().GetLineSpan();
                 result.Success = false;
                 result.Errors.Add(new CompilationError
                 {
                     Code = "EQ2017",
-                    SourcePath = component.SourcePath,
-                    Line = at.Line + 1,
-                    Column = at.Character + 1,
+                    SourcePath = string.IsNullOrEmpty(span.Path) ? component.SourcePath : span.Path,
+                    Line = span.StartLinePosition.Line + 1,
+                    Column = span.StartLinePosition.Character + 1,
                     Message = $"'{component.Name}.{action.MethodName}' states [ServerAction({action.TimeoutArgument})], "
                         + (action.TimeoutSeconds is { } seconds
                             ? $"{seconds} seconds, outside 0 to {LongestServerActionTimeout}. "

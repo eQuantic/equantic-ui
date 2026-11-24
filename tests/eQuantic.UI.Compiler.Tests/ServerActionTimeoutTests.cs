@@ -92,4 +92,33 @@ public class ServerActionTimeoutTests
         // The line of the attribute's argument, so the editor points at what to change.
         Assert.Equal(9, error.Line);
     }
+
+    [Fact]
+    public void ATimeoutThroughAnAlias_OrOnAPartialMethodsDefiningHalf_IsHandedToTheStub()
+    {
+        const string source = """
+            using System.Threading.Tasks;
+            using eQuantic.UI.Primitives;
+            using Rpc = eQuantic.UI.Primitives.ServerActionAttribute;
+
+            [Page("/report")]
+            public sealed partial class Report : StatefulComponent
+            {
+                [Rpc(TimeoutSeconds = 90)]
+                public Task<string> Run() => Task.FromResult("done");
+
+                [ServerAction(TimeoutSeconds = 45)]
+                public partial Task<string> Load();
+
+                public partial Task<string> Load() => Task.FromResult("done");
+
+                public override VisualNode Build(ComponentContext context) => new Text("r");
+            }
+            """;
+        var report = new ComponentCompiler().CompileSource(source, "Report.cs").Single(r => r.ComponentName == "Report");
+
+        Assert.True(report.Success, string.Join("; ", report.Errors.Select(e => e.Message)));
+        Assert.Contains("invoke('Report/Run', [], { timeoutMs: 90000 })", report.TypeScript);
+        Assert.Contains("invoke('Report/Load', [], { timeoutMs: 45000 })", report.TypeScript);
+    }
 }
