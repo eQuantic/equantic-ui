@@ -33,12 +33,12 @@
 ## 5. The sample and its proof
 
 - [x] 5.1 `samples/DefaultUIDashboard/Gestures/HoldThenDrag.cs`, the sample's own recognizer: accepts when its pointer held still for `ContextTarget.HoldMs`, rejects when it travels past `Touch.PressCancelSlop` first, then reports each move and the release
-- [ ] 5.2 The dashboard's gestures screen (`/gestures`): a `ScrollView` of cards, each wrapped in a `RawGestureDetector` with `HoldThenDrag` that moves the card sideways, each card holding a `Button`; its navigation entry; if `assets/readme/captures.json` names a file this touches, the picture is taken again as CLAUDE.md says
+- [x] 5.2 The dashboard's gestures screen (`/gestures`): a `ScrollView` of cards, each wrapped in a `RawGestureDetector` with `HoldThenDrag` that moves the card sideways, each card holding a `Button`; its navigation entry; if `assets/readme/captures.json` names a file this touches, the picture is taken again as CLAUDE.md says. Done: the four web pictures that name `ConsoleLayout.cs` were taken again; the new entry is below their frame, so each came out byte for byte as it was, and the sources were recorded
 - [ ] 5.3 Check against the real thing: the dashboard built and run, the screen used by hand in Chromium with touch emulation and with a mouse, and the e2e of 3.6 and the host test of 4.4 green
 
 ## 6. Docs
 
-- [ ] 6.1 `docs/FLUTTER-PARITY.md` §5: `RawGestureDetector` from GAP to DIFFERENT with the browser's scroll as the trade, `GestureArena` rewritten for the arena that exists; their probes in `FlutterParityPinTests` (`Has("RawGestureDetector") && Has("GestureRecognizer") && Has("GestureArena")`)
+- [x] 6.1 `docs/FLUTTER-PARITY.md` §5: `RawGestureDetector` from GAP to DIFFERENT with the browser's scroll as the trade, `GestureArena` rewritten for the arena that exists; their probes in `FlutterParityPinTests` (`Has("RawGestureDetector") && Has("GestureRecognizer") && Has("GestureArena")`). Done: `GestureArena` reads PARTIAL (no hold, one pointer, the text surfaces are not members), and the web's type-change difference (#1846) is named in the `RawGestureDetector` row
 - [ ] 6.2 The wiki's Components page, in every language it is written in, on a wiki branch named like this change's branch: the recognizer, the detector, the arena rule per target
-- [ ] 6.3 A ledger entry under `docs/ledger/` citing #1563
+- [x] 6.3 A ledger entry under `docs/ledger/` citing #1563
 - [ ] 6.4 Check against the real thing: `FlutterParityPinTests`, the wiki guards with `EQ_WIKI_DIR` on the wiki branch, `./scripts/check-openspec.sh`; then `openspec archive a-gesture-of-the-apps-own-is-recognized --yes` before the merge
