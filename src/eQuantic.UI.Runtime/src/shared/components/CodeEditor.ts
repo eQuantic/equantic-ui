@@ -1,4 +1,4 @@
-import { $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeFold, CodeGoToView, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeyBinding, CodeKeywordCompletionProvider, CodeLanguages, CodeLocation, CodeNoteBuilder, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Rect, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeFold, CodeGoToView, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeyBinding, CodeKeywordCompletionProvider, CodeLanguages, CodeLocation, CodeNoteBuilder, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, Directionality, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Rect, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeEditor extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeEditor';
@@ -238,7 +238,7 @@ export class CodeEditor extends StatefulComponent {
         keyed = new Shortcut(keyed, new KeyChord('F4', 1), () => this.setState(() => goTo.previousPlace()), { focusScoped: true, enabled: placesShown });
         let closable = new Shortcut(keyed, KeyChord.escape, () => this.closeFind(editor), { focusScoped: true, enabled: this._findOpen });
         let findable = new Shortcut(closable, new KeyChord('f', 4), () => this.setState(() => this._findOpen = true), { focusScoped: true });
-        return new Box(new BoxStyle({ width: SizeValue.fill, height: this.height, maxHeight: capped ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), findable);
+        return new Directionality('leftToRight', new Box(new BoxStyle({ width: SizeValue.fill, height: this.height, maxHeight: capped ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), findable));
     }
 
     create() {

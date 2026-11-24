@@ -6,7 +6,7 @@
 <div class="eq-17a2pwz eq-1857hro eq-1eb13m5 eq-1su9m49 eq-bo3n4y eq-e3wn64 eq-g7fowl">
 </div>
 </div>
-<div class="eq-1dcee87 eq-1p2uoqo eq-3imi0j eq-mfc69x">
+<div class="eq-1c5nux6 eq-1p2uoqo eq-3imi0j eq-mfc69x">
 <div class="eq-11kg7e8 eq-17a2pwz eq-1afasck eq-1amv73n eq-1eb13m5 eq-1eviv88 eq-1pwthtl eq-5hocaj eq-bo3n4y eq-d7k4c7 eq-g7fowl" data-eq-drag="x" data-eq-drag-min="0" data-eq-drag-max="20" data-eq-drag-rest="0">
 </div>
 </div>
@@ -21,7 +21,7 @@
 .eq-1afasck{transition:translate 200ms}
 .eq-1amv73n{width:26px}
 .eq-1avhl7d{display:grid}
-.eq-1dcee87{left:3px}
+.eq-1c5nux6{inset-inline-start:3px}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1esejbi{font-family:inherit}
 .eq-1etnzxl{border:none}
@@ -64,7 +64,7 @@ Switch 0 0 52x32
 <div class="eq-11kg7e8 eq-17a2pwz eq-1857hro eq-1eb13m5 eq-1efxekf eq-bo3n4y eq-g7fowl">
 </div>
 </div>
-<div class="eq-1dcee87 eq-1p2uoqo eq-3imi0j eq-mfc69x">
+<div class="eq-1c5nux6 eq-1p2uoqo eq-3imi0j eq-mfc69x">
 <div class="eq-17a2pwz eq-1afasck eq-1eb13m5 eq-1eviv88 eq-1pwthtl eq-5hocaj eq-96qelu eq-bo3n4y eq-d7k4c7 eq-g7fowl eq-i95eb9" data-eq-drag="x" data-eq-drag-min="0" data-eq-drag-max="18" data-eq-drag-rest="0">
 </div>
 </div>
@@ -78,7 +78,7 @@ Switch 0 0 52x32
 .eq-19zfii6{grid-area:1 / 1}
 .eq-1afasck{transition:translate 200ms}
 .eq-1avhl7d{display:grid}
-.eq-1dcee87{left:3px}
+.eq-1c5nux6{inset-inline-start:3px}
 .eq-1eb13m5{box-sizing:border-box}
 .eq-1efxekf{width:44px}
 .eq-1esejbi{font-family:inherit}

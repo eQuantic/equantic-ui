@@ -2,7 +2,7 @@
 ### web
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
-<div class="eq-1ogof62 eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1mjhwhb eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-8y94ea eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-spinner eq-13zzdqz eq-96qelu eq-i95eb9" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
 <rect class="eq-153eepm" x="7" y="0" width="2" height="5" rx="1" transform="rotate(0 8 8)">
@@ -44,7 +44,7 @@
 .eq-1fgorjw{background-color:var(--eq-color-background, light-dark(#f5f6f8, #0c0f13))}
 .eq-1jjc6f6{height:100%}
 .eq-1lc4svq{animation-delay:-400ms}
-.eq-1ogof62{left:0}
+.eq-1mjhwhb{inset-inline-start:0}
 .eq-1p2uoqo{z-index:2}
 .eq-1pwthtl{z-index:1}
 .eq-1rys0p3{animation-delay:-300ms}
@@ -65,11 +65,11 @@
 .eq-g7fowl{pointer-events:auto}
 .eq-i95eb9{width:20px}
 .eq-kngwsg{pointer-events:none}
+.eq-lgyrlq{inset-inline-end:0}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
 .eq-mc2xdp{justify-content:flex-start}
 .eq-mfc69x{position:absolute}
-.eq-z6eb5z{right:0}
 ### semantics
 StaticText "x"
 ### photon
@@ -87,7 +87,7 @@ PullToRefresh 0 0 480x24
 ### web
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-1avhl7d eq-1eviv88">
-<div class="eq-1ogof62 eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1mjhwhb eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-8y94ea eq-akjizx eq-bo3n4y eq-ewlixa eq-kngwsg eq-m92pvu">
 <svg class="eq-spinner eq-13zzdqz eq-96qelu eq-i95eb9" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
 <rect class="eq-153eepm" x="7" y="0" width="2" height="5" rx="1" transform="rotate(0 8 8)">
@@ -129,7 +129,7 @@ PullToRefresh 0 0 480x24
 .eq-1fgorjw{background-color:var(--eq-color-background, light-dark(#f5f6f8, #0c0f13))}
 .eq-1jjc6f6{height:100%}
 .eq-1lc4svq{animation-delay:-400ms}
-.eq-1ogof62{left:0}
+.eq-1mjhwhb{inset-inline-start:0}
 .eq-1p2uoqo{z-index:2}
 .eq-1pwthtl{z-index:1}
 .eq-1rys0p3{animation-delay:-300ms}
@@ -150,11 +150,11 @@ PullToRefresh 0 0 480x24
 .eq-g7fowl{pointer-events:auto}
 .eq-i95eb9{width:20px}
 .eq-kngwsg{pointer-events:none}
+.eq-lgyrlq{inset-inline-end:0}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
 .eq-mc2xdp{justify-content:flex-start}
 .eq-mfc69x{position:absolute}
-.eq-z6eb5z{right:0}
 ### semantics
 StaticText "x"
 ### photon

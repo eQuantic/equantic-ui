@@ -1,4 +1,4 @@
-import { $CodeDecorationKindValue, $CodeGutterKindValue, $CodeTokenKindValue, $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDocument, CodeFold, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, ColorToken, Column, ControlMetrics, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
+import { $CodeDecorationKindValue, $CodeGutterKindValue, $CodeTokenKindValue, $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDocument, CodeFold, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, ColorToken, Column, ControlMetrics, CornerRadii, Directionality, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
@@ -203,7 +203,7 @@ export class CodeBlock extends StatelessComponent {
             content = layered;
         }
         let body: VisualNode = new Box(new BoxStyle({ width: SizeValue.fixed(width) }), content);
-        if (!this.standalone) return body;
+        if (!this.standalone) return new Directionality('leftToRight', body);
         body = new ScrollView(body, 'horizontal', { width: SizeValue.fill });
         if (this.showLineNumbers) {
             let withGutter = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'start' });
@@ -216,11 +216,11 @@ export class CodeBlock extends StatelessComponent {
         }
         let slab = new Box(new BoxStyle({ width: SizeValue.fill, background: surface, cornerRadius: new CornerRadii(theme.shape('medium')), clip: true }), body);
         let corner: any; 
-        if (!((corner = CodeBlock.corner(this.caption, this.onCopy, this.inverse, theme)) != null)) return slab;
+        if (!((corner = CodeBlock.corner(this.caption, this.onCopy, this.inverse, theme)) != null)) return new Directionality('leftToRight', slab);
         let layers = new Stack('topStart', { width: SizeValue.fill });
         layers.add(slab);
         layers.add(corner);
-        return layers;
+        return new Directionality('leftToRight', layers);
     }
 
     static of(document: CodeDocument, language: any) {

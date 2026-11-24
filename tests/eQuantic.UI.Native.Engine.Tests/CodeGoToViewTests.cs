@@ -51,6 +51,7 @@ public class CodeGoToViewTests : IDisposable
         Anchored anchored => [anchored.Anchor, anchored.Panel],
         CodeSurface surface => [surface.Child],
         SingleChildNode single => [single.Child],
+        InheritedComponent inherited => [inherited.Child],
         _ => [],
     };
 

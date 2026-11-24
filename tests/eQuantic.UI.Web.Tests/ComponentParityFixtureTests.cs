@@ -166,6 +166,14 @@ public class ComponentParityFixtureTests
             Width = 40, Height = 40, Elevation = 2,
             Hover = new StyleDiff { Elevation = 0 },
         }), NoPresses),
+        // A subtree that reads RIGHT TO LEFT (#1568): its host draws no box and says dir, a padding larger at
+        // its start and a border at its start alone are written as logical CSS, a symmetric one keeps the
+        // physical shorthand, and a child positioned at its start is measured from the inline start.
+        ("directionality-rtl", new Directionality(TextDirection.RightToLeft, StartAndEnd()), NoPresses),
+        ("directionality-ltr", new Directionality(TextDirection.LeftToRight, StartAndEnd()), NoPresses),
+        // A child centred by a start at half the stack and a shift of half itself back: the shift moves
+        // toward the end through the token sheet's --eq-inline, so it stays centred in both directions.
+        ("shifted-centre", ShiftedCentre(), NoPresses),
 
         // A BROAD sweep of the library. Every one of these has a twin whose constructor mirrors
         // the C# one parameter for parameter, so the same arguments build the same component on
@@ -476,6 +484,33 @@ public class ComponentParityFixtureTests
         },
         Focus = new StyleDiff { Elevation = 0, Transform = Transform2D.Scale(1) },
     });
+
+    /// <summary>The stack of the directionality cases: a box with more padding at its start and a border at its
+    /// start, a box padded alike on both sides, and a child positioned at the start.</summary>
+    private static Primitives.Stack StartAndEnd()
+    {
+        var stack = new Primitives.Stack();
+        stack.Add(new Box(new BoxStyle
+        {
+            Width = 200, Height = 100, Padding = new EdgeInsets(24, 8, 8, 4),
+            BorderWidth = 2, BorderColor = Theme.Border, BorderSides = BorderSides.Start,
+        }, new Box(new BoxStyle { Width = 40, Height = 40, Padding = new EdgeInsets(8, 4, 8, 4) })));
+        stack.Add(new Positioned(new Text("start", TypeRole.BodyM, Theme.TextPrimary), top: 8, start: 16));
+        return stack;
+    }
+
+    /// <summary>The stack of the shifted-centre case: a child at half the stack's width, moved back half its own.</summary>
+    private static Primitives.Stack ShiftedCentre()
+    {
+        var stack = new Primitives.Stack();
+        stack.Add(new Box(new BoxStyle { Width = 200, Height = 100 }));
+        stack.Add(new Positioned(new Text("centre", TypeRole.BodyM, Theme.TextPrimary), top: 8)
+        {
+            StartFraction = 0.5f,
+            ShiftX = -0.5f,
+        });
+        return stack;
+    }
 
     /// <summary>The card of the pressable-through-wrappers case.</summary>
     private static Box LiftCard() => new(new BoxStyle { Width = 40, Height = 40, Background = Theme.Surface });
