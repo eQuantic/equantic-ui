@@ -147,10 +147,13 @@ describe('adjustable lowering (C# cross-pin)', () => {
           valued ? { now: 0.5, min: 0, max: 1 } : undefined,
         );
         const keydown = html.events['keydown'] as unknown as (e: KeyboardEvent) => void;
-        keydown({ key, preventDefault: () => {} } as unknown as KeyboardEvent);
+        let prevented = false;
+        keydown({ key, preventDefault: () => (prevented = true) } as unknown as KeyboardEvent);
         expect(seen, `${key} on a ${role} must step the same on both halves`).toEqual(
           expected === null ? [] : [expected],
         );
+        // An arrow that steps is kept from scrolling the page, and a key that does not reaches the page whole.
+        expect(prevented, `${key} on a ${role}: the default is taken only when the key steps`).toBe(expected !== null);
       }
     }
   });
