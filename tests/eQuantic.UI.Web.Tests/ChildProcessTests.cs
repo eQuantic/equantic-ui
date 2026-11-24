@@ -33,6 +33,71 @@ public class ChildProcessTests
     }
 
     /// <summary>
+    /// A deadline on WORK (#1850): a program that waits three seconds doing nothing, as one waiting for a
+    /// processor on a loaded machine does, finishes under a work budget of one second, which a deadline on
+    /// the clock of one second would have killed. A conformance case at a load of 160 over 14 cores did
+    /// exactly that, and failed with nothing wrong with it.
+    /// </summary>
+    [UnixFact]
+    public void AProgramThatWaitsWithoutWorking_IsNotHeldToItsWork()
+    {
+        var (exitCode, output, _) = ChildProcess.Run("/bin/sh", ["-c", "sleep 3; echo done"], TimeSpan.FromMinutes(1),
+            work: TimeSpan.FromSeconds(1));
+
+        exitCode.Should().Be(0);
+        output.Trim().Should().Be("done", "three seconds of waiting spend none of the second of work it was given");
+    }
+
+    /// <summary>
+    /// A processor time that cannot be read leaves the wait to the clock, and never fails the run. On Linux a
+    /// process that exits between the check for its exit and the read takes its <c>/proc</c> entry with it,
+    /// and the read answers a <see cref="System.ComponentModel.Win32Exception"/>: a conformance case on CI
+    /// answered with that exception's message (#1850). The read here fails that way on every slice, for a
+    /// program that exits after half a second: the wait answers that it exited.
+    /// </summary>
+    [UnixFact]
+    public void AProcessorTimeThatCannotBeRead_LeavesTheWaitToTheClock()
+    {
+        using var process = ChildProcess.Started("/bin/sh", ["-c", "sleep 0.5"]);
+        var late = ChildProcess.WaitForExit(process, System.Diagnostics.Stopwatch.GetTimestamp(), TimeSpan.FromMinutes(1),
+            TimeSpan.FromMilliseconds(100),
+            _ => throw new System.ComponentModel.Win32Exception(
+                "Unable to retrieve the specified information about the process or thread. It may have exited or may be privileged."));
+
+        late.Should().BeNull("the program exited, and a time that could not be read is no reason to fail its run");
+        process.HasExited.Should().BeTrue();
+    }
+
+    /// <summary>A program that never stops working is killed once it has used its work, long before its clock
+    /// deadline: the loop a bad translation writes still fails, on a loaded machine as on an idle one.</summary>
+    [UnixFact]
+    public void AProgramThatNeverStopsWorking_IsKilledAtItsWork()
+    {
+        var run = Task.Run(() => ChildProcess.Run("/bin/sh", ["-c", "while :; do :; done"], TimeSpan.FromMinutes(10),
+            work: TimeSpan.FromSeconds(1)));
+
+        Task.WaitAny([run], TimeSpan.FromMinutes(2)).Should().Be(0,
+            "a second of a processor's time passes within two minutes on any machine this runs on, and the clock "
+            + "deadline is ten");
+        (run.Exception?.InnerException).Should().BeOfType<TimeoutException>()
+            .Which.Message.Should().Contain("of its own processor time", "the failure says what ran out");
+    }
+
+    /// <summary>A program that waits without working is still killed at its clock deadline: the work budget
+    /// never runs out for it, and the clock is what holds it.</summary>
+    [UnixFact]
+    public void AProgramThatWaitsPastItsClock_IsKilledAtTheClock()
+    {
+        var run = Task.Run(() => ChildProcess.Run("/bin/sh", ["-c", "sleep 30"], TimeSpan.FromSeconds(2),
+            work: TimeSpan.FromSeconds(1)));
+
+        Task.WaitAny([run], TimeSpan.FromSeconds(20)).Should().Be(0,
+            "the clock deadline is two seconds, and a run still waiting after twenty is waiting for the sleep");
+        (run.Exception?.InnerException).Should().BeOfType<TimeoutException>()
+            .Which.Message.Should().Contain("00:00:02", "the clock ran out, not the work");
+    }
+
+    /// <summary>
     /// The build the suite hung in, under the conditions that made it hang, on every run rather than on
     /// about every other one. <c>dotnet test</c> hands the test host
     /// <c>MSBUILDENSURESTDOUTFORTASKPROCESSES</c>, given here as well so the case does not depend on
