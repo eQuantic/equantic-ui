@@ -169,7 +169,8 @@ export type SemanticRoleValue =
   'staticText' | 'button' | 'link' | 'textField' | 'codeField' | 'slider' | 'image' | 'checkbox'
   | 'switch' | 'gridCell' | 'progressIndicator' | 'group' | 'radio' | 'tab' | 'menuItem' | 'option'
   | 'destination' | 'tabBar' | 'radioGroup' | 'comboBox' | 'dialog' | 'alertDialog' | 'table'
-  | 'grid' | 'cell' | 'columnHeader' | 'rowHeader' | 'tree' | 'treeItem' | 'splitter';
+  | 'grid' | 'cell' | 'columnHeader' | 'rowHeader' | 'tree' | 'treeItem' | 'splitter'
+  | 'editableComboBox';
 
 export type ServerConnectionStateValue =
   'disconnected' | 'connecting' | 'connected' | 'reconnecting';

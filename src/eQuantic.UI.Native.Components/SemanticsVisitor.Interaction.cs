@@ -30,14 +30,16 @@ internal sealed partial class SemanticsVisitor
         // is whether the list is open, never a check or a pick. Until #501 a Select's field reached
         // every bridge as a button that happened to expand.
         //
-        // Its NAME is the author's label where there is one, and then what the field SHOWS is its
-        // value, as a select-only combobox's content is on the web: "Country, Brazil". With no label,
-        // what it shows is the name, the way a Select's own field reads.
-        if (AnchorsAListbox(laidOut))
+        // Its NAME is the author's label, and none without one, and what the field SHOWS is always its
+        // value, the choice or the placeholder: "Country, Brazil". That is the web's reading, where a
+        // combobox is never named from its content (accname) and a select-only combobox's content is
+        // its value. With no label, what the field showed was the name here until #1328, so a reader heard
+        // the option where the field's name belongs; a labelled one already read as it does now.
+        if (ListboxAnchoredBy(laidOut) is not null)
         {
             var shown = TextWithin(laidOut);
             return Announce(new(SemanticRole.ComboBox, IdOf(laidOut), laidOut.Bounds,
-                node.Label ?? shown, node.Label is null || shown.Length == 0 ? null : shown,
+                node.Label ?? "", shown.Length == 0 ? null : shown,
                 node.Disabled, Expanded: node.Expanded));
         }
 
@@ -105,15 +107,16 @@ internal sealed partial class SemanticsVisitor
     /// this one sits inside the anchor rather than being it, and nothing in there is the combobox.
     /// </para>
     /// </summary>
-    private static bool AnchorsAListbox(LayoutNode laidOut)
+    /// <returns>The <see cref="Anchored"/> whose listbox hangs from this control, or null.</returns>
+    private static Anchored? ListboxAnchoredBy(LayoutNode laidOut)
     {
         for (var node = laidOut; node.Parent is { } parent; node = parent)
         {
             if (parent.Source is Anchored { PanelRole: not AnchorPanelRole.None } anchored)
-                return anchored.PanelRole == AnchorPanelRole.Listbox;
-            if (parent.Children.Count != 1) return false;
+                return anchored.PanelRole == AnchorPanelRole.Listbox ? anchored : null;
+            if (parent.Children.Count != 1) return null;
         }
-        return false;
+        return null;
     }
 
     /// <summary>One stop, named by the author or derived from the words inside it — the same rule
