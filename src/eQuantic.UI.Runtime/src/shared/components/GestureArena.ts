@@ -54,7 +54,7 @@ export class GestureArena {
             $eq.collections.listRemoveAt(arena.members, at);
             if ((arena.eagerWinner === member)) arena.eagerWinner = null;
             member.rejectGesture(arena.pointer);
-            if (arena.phase !== 'open') this.tryToDecide(arena);
+            if (arena.phase === 'closed') this.tryToDecide(arena);
             return;
         }
         if (arena.phase === 'open') {

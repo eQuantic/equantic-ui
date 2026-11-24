@@ -35,8 +35,7 @@ public sealed class GesturesScreen : StatefulComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        var cards = new Column(gap: Space.S2) { Width = SizeValue.Fill };
-        foreach (var card in Cards) cards.Add(Card(context, card));
+        var cards = Column(gap: Space.S2, width: SizeValue.Fill, children: [.. Cards.Select(card => Card(context, card))]);
 
         return Box(new BoxStyle
         {

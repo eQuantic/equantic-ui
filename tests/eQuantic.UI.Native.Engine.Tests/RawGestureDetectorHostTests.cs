@@ -27,6 +27,9 @@ public class RawGestureDetectorHostTests
         public List<PointerEvent> Events { get; } = [];
         public double? Deadline { get; set; }
 
+        /// <summary>A deadline it asks for on its first move, rather than at the down.</summary>
+        public double? DeadlineOnMove { get; set; }
+
         protected override void AddAllowedPointer(PointerEvent down)
         {
             Heard.Add("down");
@@ -38,6 +41,11 @@ public class RawGestureDetectorHostTests
         {
             Heard.Add(ev.Phase.ToString().ToLowerInvariant());
             Events.Add(ev);
+            if (ev.Phase == PointerPhase.Move && DeadlineOnMove is { } wait)
+            {
+                DeadlineOnMove = null;
+                StartDeadline(wait);
+            }
         }
 
         public override void AcceptGesture(int pointer) => Heard.Add("accept");
@@ -299,6 +307,30 @@ public class RawGestureDetectorHostTests
     }
 
     [Fact]
+    public void APressAroundADetectorAroundADraggable_ReadsInHitOrder_TheDraggableFirstAndThePressLast()
+    {
+        var probe = new Probe();
+        var page = new Page(p => new Draggable(Filled(200, 100), travel => p.Dragged.Add($"released {travel}"))
+            {
+                Axis = DragAxis.Horizontal,
+                Min = -200,
+                Max = 200,
+            },
+            _ => [new GestureRecognizerFactoryWithHandlers<Probe>(() => probe, _ => { })]);
+        var pressed = new List<string>();
+        var host = Open(new Switch(() => new Pressable(page, () => pressed.Add("press"))));
+        var box = Detector(host);
+
+        host.PressDown(box.X + 20, box.Y + 20, kind: PointerKind.Touch);
+        host.PressUp(box.X + 20, box.Y + 20, PointerKind.Touch);
+
+        // [Draggable, recognizer, Pressable]: at the up the sweep gives the tap to the innermost, the draggable, which
+        // takes nothing from the press around it, and the recognizer between them hears its rejection.
+        probe.Heard.Should().Equal("down", "up", "reject");
+        pressed.Should().Equal("press");
+    }
+
+    [Fact]
     public void ARecognizerThatNeverAsks_LeavesTheButtonItsPress()
     {
         var probe = new Probe { Deadline = 500 };
@@ -448,6 +480,29 @@ public class RawGestureDetectorHostTests
         host.IsFrameDue(600).Should().BeTrue();
         host.RenderFrame(new DisplayListBuilder(), 600);
         probe.Heard.Should().Equal("down", "accept", "deadline");
+    }
+
+    [Fact]
+    public void ADeadlineAskedForOnAMove_AsksAnIdleShellForTheFrameItCountsFrom_AndPassesOnTheFramesThatFollow()
+    {
+        var probe = new Probe { DeadlineOnMove = 300 };
+        var page = new Page(_ => Filled(200, 100), _ => [new GestureRecognizerFactoryWithHandlers<Probe>(() => probe, _ => { })]);
+        var host = Open(page);
+        var box = Detector(host);
+
+        host.PressDown(box.X + 20, box.Y + 20, kind: PointerKind.Touch);
+        host.RenderFrame(new DisplayListBuilder(), 100);
+        host.NeedsRender.Should().BeFalse("nothing is due once the press was drawn");
+
+        host.PointerMove(box.X + 22, box.Y + 20, PointerKind.Touch);
+        host.NeedsRender.Should().BeTrue("the deadline the move asked for counts from the first frame after it");
+        host.RenderFrame(new DisplayListBuilder(), 200);
+
+        host.IsFrameDue(499).Should().BeFalse();
+        host.IsFrameDue(500).Should().BeTrue();
+        host.RenderFrame(new DisplayListBuilder(), 500);
+        probe.Heard.Should().Equal("down", "accept", "move", "deadline");
+        host.PressUp(box.X + 22, box.Y + 20, PointerKind.Touch);
     }
 
     [Fact]

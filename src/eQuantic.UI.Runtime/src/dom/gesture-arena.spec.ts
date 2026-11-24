@@ -385,6 +385,23 @@ describe('the gesture arena, in the browser', () => {
     expect(log).toEqual(['add 10,10']);
   });
 
+  it('drops the recognizers of a detector that left the document with no pointer event after: its deadline never passes', () => {
+    vi.useFakeTimers();
+    const card = document.createElement('div');
+    card.textContent = 'A card';
+    const d = detector([factoryOf(() => new Probe(log, { deadlineMs: 500 }))], card);
+    document.body.appendChild(d);
+    placeAt(d, 0, 0);
+    under(card, d);
+
+    pointer(card, 'pointerdown', 10, 10, { pointerType: 'touch' });
+    d.remove();
+    vi.advanceTimersByTime(600);
+
+    expect(log).toEqual(['add 10,10']);
+    pointer(document, 'pointerup', 10, 10, { pointerType: 'touch' });
+  });
+
   it('leaves the menu of a finger alone while no recognizer has won it', () => {
     const card = document.createElement('div');
     card.textContent = 'A card';

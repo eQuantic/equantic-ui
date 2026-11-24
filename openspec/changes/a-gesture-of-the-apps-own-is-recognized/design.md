@@ -92,7 +92,7 @@ arming logic, which stays as it is and only reports to the arena.
 | `protected void Resolve(GestureDisposition)` / `ResolvePointer(int, GestureDisposition)` | the recognizer | asks for, or lets go of, every pointer it tracks, or one |
 | `virtual void AcceptGesture(int pointer)` / `RejectGesture(int pointer)` | arena | the outcome |
 | `protected void StopTrackingPointer(int pointer)` | the recognizer | hears that pointer no more |
-| `protected void StartDeadline(float milliseconds)` / `virtual void DidExceedDeadline(int pointer)` | the recognizer / router | a time it waits for, counted by the realizer's clock |
+| `protected void StartDeadline(double milliseconds)` / `virtual void DidExceedDeadline(int pointer)` | the recognizer / router | a time it waits for, counted by the realizer's clock, for its primary pointer: the last one it allowed, as Flutter's primary-pointer deadline is |
 
 Every name is Flutter's and none would be missing if the web did not exist ("would this word exist if the
 web did not?": recognizer, arena, gesture, deadline all would). `GestureDisposition` is Flutter's enum,
@@ -229,7 +229,9 @@ The arena's down opens in a capture-phase `pointerdown` on the document (before 
 delegate, so the built-ins join an open arena) and closes in a bubble-phase `pointerdown` on the `window`,
 which runs after every document listener. Not a microtask: the HTML spec runs a microtask checkpoint after
 each listener of a user-initiated event, so one queued at the capture would close the arena before the
-built-ins joined (from the spec, not measured here).
+built-ins joined (from the spec, not measured here). A listener that stops the down's propagation keeps it from
+the window, so the capture also queues a 0 ms timer that closes the arena after the down's task, when the window
+never heard it; closing twice changes nothing.
 
 **Measured (task 3.5)**, in Chromium's headless shell 145.0.7632.6 under Playwright 1.58.1, on a context with
 touch, the finger driven by `Input.dispatchTouchEvent` on the dashboard's `/gestures` screen (a 360 px

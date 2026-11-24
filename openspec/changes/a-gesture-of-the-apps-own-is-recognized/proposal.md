@@ -63,8 +63,8 @@ never joins the arena.
 
 - **Vocabulary** (`eQuantic.UI.Primitives`, contract): `GestureRecognizer`, `GestureRecognizerFactory`,
   `GestureRecognizerFactoryWithHandlers<T>`, `GestureDisposition`, `GestureArena`, `IGestureArenaMember`, `GestureRouter`,
-  `RawGestureDetector`, one visitor member. Additions only, in `PublicAPI.Unshipped.txt`. Each new type joins
-  `primitives-types.fixture.json`, the runtime's exports. The node coverage suites grow by one node.
+  `RawGestureDetector`, one visitor member. Additions only, in the change's `PublicAPI.Unshipped.<branch>.txt`.
+  Each new type joins `primitives-types.fixture.json`, the runtime's exports. The node coverage suites grow by one node.
 - **Components** (contract): the `UI.RawGestureDetector` factory.
 - **eqc**: no new strategy is expected; an app's subclass of `GestureRecognizer` is a client class like any
   other. Whether every construct the base class uses transpiles is the first check of the tasks.

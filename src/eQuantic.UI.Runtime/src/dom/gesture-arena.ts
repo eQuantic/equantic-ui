@@ -127,8 +127,8 @@ interface Arena {
   won: boolean;
   /** The recognizers that joined it at its close. */
   recognizers: GestureRecognizer[];
-  /** Whether it holds the page's selection, which it gives back once at its end. */
-  holding: boolean;
+  /** The document whose selection it holds, which it gives back once at its end, or null. */
+  heldOn: Document | null;
   /** Stops swallowing the click of the press that lost, or null. */
   unswallow: (() => void) | null;
 }
@@ -158,7 +158,12 @@ export function installGestureArena(): void {
 export function resetGestureArena(): void {
   if (typeof document === 'undefined') return;
   installed = false;
-  for (const arena of [...arenas.values()]) end(arena);
+  for (const arena of [...arenas.values()]) {
+    // No click listener outlives a reset: what the arena swallows stops now, not after the timer of its up.
+    arena.unswallow?.();
+    arena.unswallow = null;
+    end(arena);
+  }
   arenas.clear();
   known.clear();
   router = null;
@@ -199,7 +204,7 @@ function onDown(event: PointerEvent): void {
     contested: false,
     won: false,
     recognizers: [],
-    holding: false,
+    heldOn: null,
     unswallow: null,
   };
   arenas.set(event.pointerId, arena);
@@ -375,6 +380,8 @@ function wait(): void {
 /** A deadline is due: the recognizers that wait for it hear it with what their latest build wrote. */
 function passed(due: number): void {
   deadline = null;
+  // A detector that left the document while nothing else happened lets its recognizers go before any deadline passes.
+  forgetLeft();
   if (!router) return;
   for (const arena of arenas.values()) {
     if (!arena.contested) continue;
@@ -397,17 +404,17 @@ function noteWinners(): void {
     if (arena.builtIns.some((builtIn) => builtIn.outcome === 'accepted')) continue;
     if (!arena.recognizers.some((recognizer) => recognizer.tracks(arena.pointerId))) continue;
     arena.won = true;
-    arena.holding = true;
-    holdSelection(arena.down.target instanceof Node ? arena.down.target.ownerDocument ?? document : document);
+    arena.heldOn = arena.down.target instanceof Node ? arena.down.target.ownerDocument ?? document : document;
+    holdSelection(arena.heldOn);
   }
 }
 
 /** The arena is over: what it held is given back. */
 function end(arena: Arena): void {
   if (arenas.get(arena.pointerId) === arena) arenas.delete(arena.pointerId);
-  const host = arena.down.target instanceof Node ? arena.down.target.ownerDocument : null;
-  if (arena.holding && host) releaseSelection(host);
-  arena.holding = false;
+  const heldOn = arena.heldOn;
+  arena.heldOn = null;
+  if (heldOn) releaseSelection(heldOn);
   const unswallow = arena.unswallow;
   arena.unswallow = null;
   if (unswallow) setTimeout(unswallow, CLICK_AFTER_UP_MS);

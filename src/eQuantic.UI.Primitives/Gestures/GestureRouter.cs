@@ -10,7 +10,8 @@ namespace eQuantic.UI.Primitives;
 /// first, each recognizer only if it allows the pointer, and the arena closes.</item>
 /// <item><see cref="Route"/>: a move, an up or a cancel reaches every recognizer tracking the pointer, in its
 /// detector's box; an up then sweeps the arena, and a cancel takes the pointer from every member.</item>
-/// <item><see cref="Tick"/> and <see cref="NextDeadlineMs"/>: the recognizers' deadlines, on the realizer's clock.</item>
+/// <item><see cref="Tick"/>, <see cref="NextDeadlineMs"/> and <see cref="DeadlineAsked"/>: the recognizers' deadlines,
+/// on the realizer's clock.</item>
 /// </list>
 /// </summary>
 public sealed class GestureRouter
@@ -149,21 +150,36 @@ public sealed class GestureRouter
     /// <summary>
     /// The realizer's clock reads <paramref name="nowMs"/>: a deadline asked for since the last tick is due its
     /// length from now, and every deadline due by now passes, the earliest first, each one heard by its recognizer.
+    /// A deadline asked for while one passes (by the recognizer that heard it, or by one the outcome it settled
+    /// reached) counts from now too, and passes at a later tick.
     /// </summary>
     public void Tick(double nowMs)
     {
-        foreach (var deadline in _deadlines) deadline.DueMs ??= nowMs + deadline.Milliseconds;
+        StartCounting(nowMs);
         while (Earliest() is { } due && due.DueMs <= nowMs)
         {
             _deadlines.Remove(due);
             due.Recognizer.Exceed(due.Pointer);
         }
+        StartCounting(nowMs);
     }
 
     /// <summary>When the next deadline is due on the realizer's clock, or null when none is counting: a deadline
-    /// asked for since the last tick counts from the next one, which the pointer's own event asks the realizer
-    /// for.</summary>
+    /// asked for since the last tick counts from the next one, which <see cref="DeadlineAsked"/> tells the realizer
+    /// to give.</summary>
     public double? NextDeadlineMs => Earliest()?.DueMs;
+
+    /// <summary>Whether a deadline was asked for that no tick has started counting yet: the realizer owes the router
+    /// a tick, its next frame, for that deadline to have a time to be due at.</summary>
+    public bool DeadlineAsked
+    {
+        get
+        {
+            foreach (var deadline in _deadlines)
+                if (deadline.DueMs is null) return true;
+            return false;
+        }
+    }
 
     /// <summary><paramref name="recognizer"/> waits <paramref name="milliseconds"/> for <paramref name="pointer"/>,
     /// in place of any deadline it waited for before.</summary>
@@ -176,6 +192,12 @@ public sealed class GestureRouter
     /// <summary><paramref name="recognizer"/> no longer waits for <paramref name="pointer"/>.</summary>
     internal void DropDeadline(GestureRecognizer recognizer, int pointer) =>
         _deadlines.RemoveAll(deadline => ReferenceEquals(deadline.Recognizer, recognizer) && deadline.Pointer == pointer);
+
+    /// <summary>Every deadline asked for that is not counting yet starts counting at <paramref name="nowMs"/>.</summary>
+    private void StartCounting(double nowMs)
+    {
+        foreach (var deadline in _deadlines) deadline.DueMs ??= nowMs + deadline.Milliseconds;
+    }
 
     /// <summary>The counting deadline due first, the earliest asked among equals, or null.</summary>
     private GestureDeadline? Earliest()

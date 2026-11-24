@@ -48,6 +48,8 @@ export class HoldThenDrag extends GestureRecognizer {
                 this.onMoved?.(offset);
             } else if (($s === 'move' && (!this._heldLongEnough && offset.length() > 12))) {
                 this.resolve('rejected');
+                this.stopTrackingPointer(ev.pointer);
+                this.finish();
             } else if ($s === 'up') {
                 if (this._dragging) this.onReleased?.(offset);
                 this.finish();

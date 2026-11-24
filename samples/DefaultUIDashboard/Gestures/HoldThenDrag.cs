@@ -67,8 +67,11 @@ public sealed class HoldThenDrag : GestureRecognizer
                 OnMoved?.Invoke(offset);
                 break;
             case PointerPhase.Move when !_heldLongEnough && offset.Length() > Touch.PressCancelSlop:
-                // It travelled before the hold: a scroll's or a swipe's, never this gesture.
+                // It travelled before the hold: a scroll's or a swipe's, never this gesture. It lets go even of a
+                // pointer the arena already gave it (it was alone under the press), whose deadline then never passes.
                 Resolve(GestureDisposition.Rejected);
+                StopTrackingPointer(ev.Pointer);
+                Finish();
                 break;
             case PointerPhase.Up:
                 if (_dragging) OnReleased?.Invoke(offset);

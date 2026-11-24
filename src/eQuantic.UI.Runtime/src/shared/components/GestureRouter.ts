@@ -19,6 +19,11 @@ export class GestureRouter {
         return (this.earliest()?.dueMs ?? null);
     }
 
+    get deadlineAsked(): boolean {
+        for (const deadline of $eq.collections.listWalk(this._deadlines)) if (deadline.dueMs == null) return true;
+        return false;
+    }
+
     recognizers(position: any, gestures: GestureRecognizerFactory[]) {
         let kept: any; let makers: any; 
         if (!(($0) => ($0.has(position) ? ((kept = $0.get(position)), true) : ((kept = null), false)))(this._kept) || !(($0) => ($0.has(position) ? ((makers = $0.get(position)), true) : ((makers = null), false)))(this._makers)) {
@@ -91,11 +96,12 @@ export class GestureRouter {
     }
 
     tick(nowMs: number) {
-        for (const deadline of $eq.collections.listWalk(this._deadlines)) deadline.dueMs ?? (deadline.dueMs = nowMs + deadline.milliseconds);
+        this.startCounting(nowMs);
         for (let due: any; (due = this.earliest()) != null && $eq.nullable.cmp(due.dueMs, nowMs, ($a, $b) => $a <= $b);) {
             $eq.collections.remove(this._deadlines, due, 'item');
             due.recognizer.exceed(due.pointer);
         }
+        this.startCounting(nowMs);
     }
 
     startDeadline(recognizer: GestureRecognizer, pointer: number, milliseconds: number) {
@@ -105,6 +111,10 @@ export class GestureRouter {
 
     dropDeadline(recognizer: GestureRecognizer, pointer: number) {
         return $eq.collections.removeAll(this._deadlines, (deadline) => (deadline.recognizer === recognizer) && deadline.pointer === pointer);
+    }
+
+    startCounting(nowMs: number) {
+        for (const deadline of $eq.collections.listWalk(this._deadlines)) deadline.dueMs ?? (deadline.dueMs = nowMs + deadline.milliseconds);
     }
 
     earliest() {

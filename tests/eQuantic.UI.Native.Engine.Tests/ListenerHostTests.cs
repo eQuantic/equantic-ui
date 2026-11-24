@@ -234,13 +234,14 @@ public class ListenerHostTests
 
         host.PressDown(box.X + 10, box.Y + 6);
         host.PointerMove(box.X + 20, box.Y + 6);
-        Thread.Sleep(20);
+        Thread.Sleep(40);
         host.PointerMove(box.X + 30, box.Y + 6);
         host.PointerCancel();
 
         var times = page.Heard.Select(h => h.Event.TimeMs).ToList();
         times.Should().HaveCount(4).And.BeInAscendingOrder().And.OnlyContain(time => time >= 0);
-        (times[2] - times[1]).Should().BeGreaterThanOrEqualTo(20, "the clock counts milliseconds, and 20 of them passed");
+        // 40 slept, and at least 15 counted: a timer may wake a tick early on Windows, whose tick is 15.6 ms.
+        (times[2] - times[1]).Should().BeGreaterThanOrEqualTo(15, "the clock counts milliseconds, and about 40 of them passed");
     }
 
     [Fact]

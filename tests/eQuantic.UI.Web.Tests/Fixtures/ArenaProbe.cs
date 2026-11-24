@@ -18,6 +18,7 @@ public sealed class ArenaProbe : GestureRecognizer
     private readonly GestureDisposition? _onAdd;
     private readonly bool _primaryOnly;
     private GestureDisposition? _onMove;
+    private double _thenDeadlineMs;
 
     /// <param name="name">How it signs what it hears.</param>
     /// <param name="heard">Where it writes what it hears.</param>
@@ -26,8 +27,10 @@ public sealed class ArenaProbe : GestureRecognizer
     /// <param name="onAdd">What it says as soon as it joins, or nothing.</param>
     /// <param name="onMove">What it says on its first move, or nothing.</param>
     /// <param name="primaryOnly">Whether it allows only a pointer that holds the primary button.</param>
+    /// <param name="thenDeadlineMs">The second deadline it asks for when its first one passes, or 0 for none.</param>
     public ArenaProbe(string name, List<string> heard, double deadlineMs = 0, GestureDisposition? atDeadline = null,
-        GestureDisposition? onAdd = null, GestureDisposition? onMove = null, bool primaryOnly = false)
+        GestureDisposition? onAdd = null, GestureDisposition? onMove = null, bool primaryOnly = false,
+        double thenDeadlineMs = 0)
     {
         _name = name;
         _heard = heard;
@@ -36,6 +39,7 @@ public sealed class ArenaProbe : GestureRecognizer
         _onAdd = onAdd;
         _onMove = onMove;
         _primaryOnly = primaryOnly;
+        _thenDeadlineMs = thenDeadlineMs;
     }
 
     /// <summary>What the latest build asked to hear when the deadline passes: the callback a rebuild hands the kept
@@ -70,6 +74,12 @@ public sealed class ArenaProbe : GestureRecognizer
     {
         Write($"deadline {pointer} tracking {TrackedPointers.Count}");
         OnDeadline?.Invoke(_name);
+        if (_thenDeadlineMs > 0)
+        {
+            var then = _thenDeadlineMs;
+            _thenDeadlineMs = 0;
+            StartDeadline(then);
+        }
         if (_atDeadline is { } disposition) Resolve(disposition);
     }
 

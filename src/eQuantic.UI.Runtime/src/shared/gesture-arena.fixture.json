@@ -160,6 +160,19 @@
       ]
     },
     {
+      "name": "a deadline a recognizer asks for while its first one passes counts from that tick",
+      "members": [{ "name": "press", "plain": true }, { "name": "probe", "deadline": 500, "thenDeadline": 300 }],
+      "built": ["probe.create"],
+      "steps": [
+        { "down": [10, 6], "heard": ["probe.add 1 10,6"] },
+        { "tick": 1000, "heard": [], "next": 1500 },
+        { "tick": 1500, "heard": ["probe.deadline 1 tracking 1", "probe.called by build 1"], "next": 1800 },
+        { "tick": 1799, "heard": [], "next": 1800 },
+        { "tick": 1800, "heard": ["probe.deadline 1 tracking 1", "probe.called by build 1"], "next": null },
+        { "up": [10, 6], "heard": ["probe.up 1 10,6", "press.accept 1", "probe.reject 1"] }
+      ]
+    },
+    {
       "name": "the dashboard's hold then drag, alone, lifts at the hold, drags and lands",
       "members": [{ "name": "card", "sample": true }],
       "built": ["card.create"],
@@ -181,6 +194,19 @@
         { "move": [10, 30], "heard": ["pan.accept 1"], "next": null },
         { "tick": 1500, "heard": [], "next": null },
         { "up": [10, 30], "heard": [] }
+      ]
+    },
+    {
+      "name": "the dashboard's hold then drag, alone, lets go of a pointer that travels before the hold and never lifts",
+      "members": [{ "name": "card", "sample": true }],
+      "built": ["card.create"],
+      "steps": [
+        { "down": [10, 10], "heard": [] },
+        { "tick": 1000, "heard": [], "next": 1500 },
+        { "move": [10, 30], "heard": [], "next": null },
+        { "tick": 1500, "heard": [], "next": null },
+        { "move": [40, 30], "heard": [] },
+        { "up": [40, 30], "heard": [] }
       ]
     },
     {

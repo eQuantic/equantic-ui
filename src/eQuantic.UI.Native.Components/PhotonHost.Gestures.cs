@@ -110,7 +110,9 @@ public sealed partial class PhotonHost
         return joined;
     }
 
-    /// <summary>The host's gestures the press armed, in the order it armed them.</summary>
+    /// <summary>The host's gestures the press armed, in hit order: the innermost first, by containment, and in the
+    /// order the press armed them between nodes that do not hold each other. The detectors are then placed among
+    /// them (<see cref="PlaceDetectors"/>), which reads this order.</summary>
     private void JoinBuiltIns(PointerKind kind)
     {
         if (_pressed is not null && _pressedAt is { } pressedAt) Join(BuiltInGestureKind.Press, pressedAt, kind);
@@ -122,8 +124,19 @@ public sealed partial class PhotonHost
         else if (_pan is { } pan) Join(BuiltInGestureKind.Pan, pan.Element, kind);
     }
 
-    private void Join(BuiltInGestureKind kind, Element at, PointerKind pointer) =>
-        _gestures.Add(new BuiltInGesture(kind, at, pointer, Lost));
+    /// <summary>A gesture of the host's joins before the first one already joined whose node holds its node, which
+    /// keeps the list innermost first: one inside it is already before that one.</summary>
+    private void Join(BuiltInGestureKind kind, Element at, PointerKind pointer)
+    {
+        var place = _gestures.Count;
+        for (var i = 0; i < _gestures.Count; i++)
+        {
+            if (_gestures[i].At is not { } other || ReferenceEquals(other, at) || !Encloses(other, at)) continue;
+            place = i;
+            break;
+        }
+        _gestures.Insert(place, new BuiltInGesture(kind, at, pointer, Lost));
+    }
 
     /// <summary>
     /// The detectors under <paramref name="point"/> by the listeners' rule, the innermost and topmost first, each with
@@ -203,6 +216,9 @@ public sealed partial class PhotonHost
         {
             _cancelling = false;
         }
+        // A deadline a recognizer asked for while it heard this event counts from the next frame, which an idle shell
+        // gives only when asked: until a tick stamps it, it has no time to be due at.
+        if (_router.DeadlineAsked) NeedsRender = true;
     }
 
     /// <summary>The host's gesture of <paramref name="kind"/> armed: it asks for the pointer, and every other member

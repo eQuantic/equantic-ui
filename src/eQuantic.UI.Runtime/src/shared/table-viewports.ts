@@ -562,8 +562,9 @@ function listen(view: TableElement): void {
       if (!scroll.pointer('down', at, kind, performance.now())) return;
       const member = joinGestureArena(event, view, lost(event.pointerId));
       press = { id: event.pointerId, start: at, client, kind, time: performance.now(), active: true, member };
-      // The bar's scroll is the pointer's from the start.
+      // The bar's scroll is the pointer's from the start; a member that won it already has dropped this press.
       member?.accept();
+      if (!press) return;
       capture(view, event.pointerId, 'take');
       event.preventDefault();
       paint(view);

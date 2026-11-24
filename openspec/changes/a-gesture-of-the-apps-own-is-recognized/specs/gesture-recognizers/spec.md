@@ -37,8 +37,11 @@ the app.
 A `RawGestureDetector` SHALL keep one recognizer per place in its `gestures` list for as long as its position
 lives: `create` SHALL run once for a place, `initialize` SHALL run on the kept recognizer with every build that
 hands the position a new detector, and a place handed a factory of another type than the one before SHALL
-create a new one. A recognizer in the middle of a gesture SHALL go on with the callbacks the latest build gave
-it. A recognizer SHALL be dropped when its position leaves the tree.
+create a new one, except in an app on the web, where the place SHALL keep the recognizer it has until #1863:
+an app's construction of a framework generic carries no type argument there, so two factories of
+`GestureRecognizerFactoryWithHandlers<T>` compare as one type. A recognizer in the middle of a gesture SHALL
+go on with the callbacks the latest build gave it. A recognizer SHALL be dropped when its position leaves the
+tree.
 
 #### Scenario: A rebuild during a long press
 
@@ -49,8 +52,10 @@ it. A recognizer SHALL be dropped when its position leaves the tree.
 #### Scenario: A place that changes its type
 
 - **WHEN** a build replaces the factory at a place with one of another recognizer type
-- **THEN** the next press is offered to a newly created recognizer of the new type, and the old one hears
-  nothing more
+- **THEN** on Photon, and wherever the construction carries its type argument, the next press is offered to a
+  newly created recognizer of the new type, and the old one hears nothing more
+- **AND** in an app on the web, until #1863, the place keeps its old recognizer, as
+  `docs/FLUTTER-PARITY.md`'s `RawGestureDetector` row says
 
 ### Requirement: Recognizers compete for a pointer in one arena
 

@@ -3,7 +3,7 @@ import { $eq, $GestureDispositionValue, $PointerPhaseValue, GestureRecognizer, P
 export class ArenaProbe extends GestureRecognizer {
     static $interfaces = ['eQuantic.UI.Primitives.IGestureArenaMember'];
 
-    constructor(name: string, heard: string[], deadlineMs: number = 0, atDeadline: $GestureDispositionValue | null = null, onAdd: $GestureDispositionValue | null = null, onMove: $GestureDispositionValue | null = null, primaryOnly: boolean = false) {
+    constructor(name: string, heard: string[], deadlineMs: number = 0, atDeadline: $GestureDispositionValue | null = null, onAdd: $GestureDispositionValue | null = null, onMove: $GestureDispositionValue | null = null, primaryOnly: boolean = false, thenDeadlineMs: number = 0) {
         super();
         this._name = null!;
         this._heard = null!;
@@ -12,6 +12,7 @@ export class ArenaProbe extends GestureRecognizer {
         this._onAdd = null;
         this._primaryOnly = false;
         this._onMove = null;
+        this._thenDeadlineMs = 0;
         this.onDeadline = null;
         this._name = name;
         this._heard = heard;
@@ -20,6 +21,7 @@ export class ArenaProbe extends GestureRecognizer {
         this._onAdd = onAdd;
         this._onMove = onMove;
         this._primaryOnly = primaryOnly;
+        this._thenDeadlineMs = thenDeadlineMs;
     }
 
     _name!: string;
@@ -29,6 +31,7 @@ export class ArenaProbe extends GestureRecognizer {
     _onAdd!: $GestureDispositionValue | null;
     _primaryOnly!: boolean;
     _onMove!: $GestureDispositionValue | null;
+    _thenDeadlineMs!: number;
     onDeadline!: ((string: string) => void) | null;
 
     isPointerAllowed(down: PointerEvent) {
@@ -62,6 +65,11 @@ export class ArenaProbe extends GestureRecognizer {
     didExceedDeadline(pointer: number) {
         this.write(`deadline ${$eq.text.format(pointer, null, undefined, undefined, 'int32')} tracking ${$eq.text.format($eq.collections.count(this.trackedPointers), null, undefined, undefined, 'int32')}`);
         this.onDeadline?.(this._name);
+        if (this._thenDeadlineMs > 0) {
+            let then = this._thenDeadlineMs;
+            this._thenDeadlineMs = 0;
+            this.startDeadline(then);
+        }
         let disposition: any; 
         if ((disposition = this._atDeadline) != null) this.resolve(disposition);
     }

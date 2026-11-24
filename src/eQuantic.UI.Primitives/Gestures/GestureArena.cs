@@ -83,7 +83,8 @@ public sealed class GestureArena
             arena.Members.RemoveAt(at);
             if (ReferenceEquals(arena.EagerWinner, member)) arena.EagerWinner = null;
             member.RejectGesture(arena.Pointer);
-            if (arena.Phase != GestureArenaPhase.Open) TryToDecide(arena);
+            // Only a closed arena decides here: the member's rejection may have decided it already, re-entrantly.
+            if (arena.Phase == GestureArenaPhase.Closed) TryToDecide(arena);
             return;
         }
         if (arena.Phase == GestureArenaPhase.Open)

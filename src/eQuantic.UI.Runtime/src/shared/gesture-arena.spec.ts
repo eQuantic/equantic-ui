@@ -34,6 +34,7 @@ interface MemberSpec {
   onAdd?: Disposition;
   onMove?: Disposition;
   primaryOnly?: boolean;
+  thenDeadline?: number;
 }
 
 interface StepSpec {
@@ -112,6 +113,7 @@ class Run {
             member.onAdd ?? null,
             member.onMove ?? null,
             member.primaryOnly ?? false,
+            member.thenDeadline ?? 0,
           );
         },
         (probe: ArenaProbe) => {
@@ -150,7 +152,7 @@ class Run {
   }
 
   private route(phase: PointerPhaseValue, at: number[], buttons: number): void {
-    this.router.route(event(phase, at[0], at[1], buttons), this.inBox(phase, at, 0));
+    this.router.route(event(phase, at[0], at[1], buttons), this.inBox(phase, at, buttons));
   }
 
   /** The event in a detector's box: the detector is named like its probe, and its box starts at its origin. */

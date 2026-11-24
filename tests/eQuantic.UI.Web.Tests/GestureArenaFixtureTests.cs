@@ -94,7 +94,8 @@ public class GestureArenaFixtureTests
         public void Step(JsonElement step)
         {
             if (step.TryGetProperty("down", out var down)) Down(step, At(down));
-            else if (step.TryGetProperty("move", out var move)) Router.Route(Event(PointerPhase.Move, At(move), 1), InBox(PointerPhase.Move, At(move)));
+            else if (step.TryGetProperty("move", out var move))
+                Router.Route(Event(PointerPhase.Move, At(move), 1), InBox(PointerPhase.Move, At(move), PointerButtons.Primary));
             else if (step.TryGetProperty("up", out var up)) Router.Route(Event(PointerPhase.Up, At(up), 0), InBox(PointerPhase.Up, At(up)));
             else if (step.TryGetProperty("cancel", out var cancel)) Router.Route(Event(PointerPhase.Cancel, At(cancel), 0), InBox(PointerPhase.Cancel, At(cancel)));
             else if (step.TryGetProperty("tick", out var tick)) Router.Tick(tick.GetDouble());
@@ -182,7 +183,8 @@ public class GestureArenaFixtureTests
             atDeadline: spec.TryGetProperty("atDeadline", out var atDeadline) ? Disposition(atDeadline) : null,
             onAdd: spec.TryGetProperty("onAdd", out var onAdd) ? Disposition(onAdd) : null,
             onMove: spec.TryGetProperty("onMove", out var onMove) ? Disposition(onMove) : null,
-            primaryOnly: spec.TryGetProperty("primaryOnly", out var primaryOnly) && primaryOnly.GetBoolean());
+            primaryOnly: spec.TryGetProperty("primaryOnly", out var primaryOnly) && primaryOnly.GetBoolean(),
+            thenDeadlineMs: spec.TryGetProperty("thenDeadline", out var thenDeadline) ? thenDeadline.GetDouble() : 0);
     }
 
     private static GestureDisposition Disposition(JsonElement value) =>
@@ -192,8 +194,11 @@ public class GestureArenaFixtureTests
 
     private static IEnumerable<string> Strings(JsonElement array) => array.EnumerateArray().Select(item => item.GetString()!);
 
-    private static JsonElement Fixture() =>
-        JsonDocument.Parse(File.ReadAllText(FixturePath())).RootElement;
+    private static JsonElement Fixture()
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(FixturePath()));
+        return document.RootElement.Clone();
+    }
 
     private static string FixturePath([CallerFilePath] string here = "") =>
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(here)!, "..", "..", "src", "eQuantic.UI.Runtime", "src",
