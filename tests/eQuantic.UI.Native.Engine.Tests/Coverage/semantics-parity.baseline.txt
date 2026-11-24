@@ -5,8 +5,6 @@
 # This list may ONLY SHRINK. An entry is written BY HAND, with its reason after two spaces.
 # Regenerate with EQ_UPDATE_SEMANTICS_PARITY_BASELINE=1 after a REMOVAL: it keeps every reason
 # already written and never adds an entry.
-case date-picker opened: Button "Dismiss" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
-case date-picker opened: Button "Dismiss" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 case date-picker opened: ColumnHeader "Fri" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 case date-picker opened: ColumnHeader "Mon" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 case date-picker opened: ColumnHeader "Sat" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
@@ -15,8 +13,6 @@ case date-picker opened: ColumnHeader "Thu" is announced on the web only  waits 
 case date-picker opened: ColumnHeader "Tue" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 case date-picker opened: ColumnHeader "Wed" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 case date-picker opened: Grid "July 2026" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
-case date-picker opened: Group "" is announced on Photon only  waits on #1330: opened from a DatePicker, the calendar is read inside its field on the web and after it on Photon, so the field's message line falls on either side of it, as the dismiss button does
-case date-picker opened: Group "" is announced on the web only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 case date-picker opened: Group "July 2026" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 case date-picker opened: StaticText "Fri" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
 case date-picker opened: StaticText "Mon" is announced on Photon only  waits on #1330: a calendar's month is a grid with column headers on the web and a group of plain text on Photon
