@@ -431,7 +431,14 @@ describe('TableViewport on the web', () => {
 
   // #1876: the click guard a pan arms is the table's, and leaves with it. Its 400 ms timer outlived the table and
   // fired after a spec's teardown, against a page that was gone, failing the runtime suite now and then.
-  it("lets go of a pan's click guard when its table leaves, and its timer touches nothing after", async () => {
+  // Where nothing observes a table's size, the table is still the one it leaves with: it was watched only
+  // through its ResizeObserver, so without one an unmount never reached the guard.
+  it.each([
+    ['a ResizeObserver', true],
+    ['no ResizeObserver', false],
+  ])("lets go of a pan's click guard when its table leaves, with %s, and its timer touches nothing after", async (_, observed) => {
+    const original = globalThis.ResizeObserver;
+    if (!observed) (globalThis as { ResizeObserver?: unknown }).ResizeObserver = undefined;
     vi.useFakeTimers();
     try {
       const { view } = build();
@@ -451,6 +458,7 @@ describe('TableViewport on the web', () => {
       expect(vi.getTimerCount(), 'no timer of the table is left to fire against a page that may be gone').toBe(0);
     } finally {
       vi.useRealTimers();
+      globalThis.ResizeObserver = original;
     }
   });
 

@@ -156,6 +156,8 @@ export function commitTableViewports(): void {
     // A drag the composing component holds past the edge scrolls on the clock, which a pass can start
     // without any event of this viewport's own; with nothing moving, the first frame ends it.
     animate(view);
+    // Watched whether or not it is observed: what it holds (a pan's click guard, a frame) leaves with it.
+    watched.add(view);
     if (typeof ResizeObserver === 'function' && !view.__eqTableObserver) {
       // A resize is answered without touching the element's own size: re-deciding it here resized
       // what is being observed inside its own notification, which the browser reports as a loop.
@@ -166,7 +168,6 @@ export function commitTableViewports(): void {
       });
       observer.observe(view);
       view.__eqTableObserver = observer;
-      watched.add(view);
     }
     // A viewport that took its scroller's extent follows that scroller's size, which is what changes
     // when the window does.
@@ -812,11 +813,12 @@ const PRESS_SLOP = 12;
 
 /**
  * The click a browser sends where a pan ended was no click: it is stopped once, before anything under the
- * finger hears it, and the guard goes with it. A pan whose lift sends no click must not eat the next real one,
- * so the guard goes after 400 ms otherwise. It is the TABLE's (#1876): kept on its element and let go at once when the table stops being
- * watched (`stopWatching`, which an unmount and a disposed position both reach), so its timer never runs
- * after the table left. It ran on a bare timer, which fired after a spec's teardown against a page that was
- * gone and failed the runtime suite now and then, and kept the guard alive in an app for its 400 ms.
+ * finger hears it, and the guard goes with it. A pan whose lift sends no click must not eat the next real
+ * one, so the guard goes after 400 ms otherwise. It is the TABLE's (#1876): kept on its element and let go
+ * at once when the table stops being watched (`stopWatching`, which an unmount and a disposed position both
+ * reach), so its timer never runs after the table left. It ran on a bare timer, which fired after a spec's
+ * teardown against a page that was gone and failed the runtime suite now and then, and kept the guard
+ * alive in an app for its 400 ms.
  */
 function swallowNextClick(view: TableElement): void {
   view.__eqTableClickGuard?.();
