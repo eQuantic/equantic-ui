@@ -37,12 +37,25 @@ namespace eQuantic.UI.Native.Components;
 /// </para>
 /// </para>
 /// </summary>
-internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
+internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes,
+    IReadOnlyDictionary<Element, LayoutNode>? panels = null)
     : IVisualNodeVisitor<LayoutNode, bool>
 {
     /// <summary>The frame's semantic nodes, in reading order — fixed for the pass, so it lives here
     /// rather than travelling down with each visit.</summary>
     private readonly List<SemanticNode> _nodes = nodes;
+
+    /// <summary>The layer each anchored node's panel was laid out in, by the anchored node's position: read
+    /// in place, right after the anchor (#1868). Empty for a walk over one subtree.</summary>
+    private readonly IReadOnlyDictionary<Element, LayoutNode> _panels =
+        panels ?? new Dictionary<Element, LayoutNode>();
+
+    /// <summary>The layers this walk read in place, which the frame's walk does not read again after the
+    /// page.</summary>
+    private readonly HashSet<LayoutNode> _readInPlace = [];
+
+    /// <summary>Whether this walk read <paramref name="layer"/> in place, after its anchor.</summary>
+    internal bool ReadInPlace(LayoutNode layer) => _readInPlace.Contains(layer);
 
     /// <summary>The id a bridge names a node by: its position's. Every node the build made has one,
     /// and a node a reader can land on that has none is the engine gone wrong, refused here as the
