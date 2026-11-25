@@ -71,5 +71,5 @@ function onPointerDown(down: PointerEvent): void {
       glideBack();
     },
     cancel: glideBack,
-  });
+  }, delegate.guards);
 }

@@ -116,7 +116,7 @@ function onPointerDown(down: Event): void {
     cancel: () => {
       if (follows) handBack(surface);
     },
-  });
+  }, delegate.guards);
 }
 
 /**
