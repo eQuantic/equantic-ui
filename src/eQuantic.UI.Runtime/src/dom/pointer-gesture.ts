@@ -72,7 +72,11 @@ export function pointerDownDelegate(onDown: (down: PointerEvent) => void): {
 
 /** Follows one pointer from its press: see {@link PointerGesture} for what each moment means. The guard on
  * the click an armed release ends in is armed in `guards`, its owner's. */
-export function followPointer(down: PointerEvent, gesture: PointerGesture, guards: ClickGuards): FollowedPointer {
+export function followPointer(
+  down: PointerEvent,
+  gesture: PointerGesture,
+  guards: ClickGuards,
+): FollowedPointer {
   // Listeners and timers hold the DOCUMENT they registered on rather than reading the global when they
   // fire: a torn-down test environment removed the global while a cleanup was pending, and the callback
   // threw `document is not defined` where nothing could catch it.
