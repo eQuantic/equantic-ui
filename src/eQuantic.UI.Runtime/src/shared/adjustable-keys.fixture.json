@@ -1,0 +1,38 @@
+{
+  "radiogroup": {
+    " ": null,
+    "ArrowDown": 1,
+    "ArrowLeft": -1,
+    "ArrowRight": 1,
+    "ArrowUp": -1,
+    "Home": null,
+    "Tab": null
+  },
+  "separator": {
+    " ": null,
+    "ArrowDown": -1,
+    "ArrowLeft": -1,
+    "ArrowRight": 1,
+    "ArrowUp": 1,
+    "Home": null,
+    "Tab": null
+  },
+  "slider": {
+    " ": null,
+    "ArrowDown": -1,
+    "ArrowLeft": -1,
+    "ArrowRight": 1,
+    "ArrowUp": 1,
+    "Home": null,
+    "Tab": null
+  },
+  "tablist": {
+    " ": null,
+    "ArrowDown": 1,
+    "ArrowLeft": -1,
+    "ArrowRight": 1,
+    "ArrowUp": -1,
+    "Home": null,
+    "Tab": null
+  }
+}
