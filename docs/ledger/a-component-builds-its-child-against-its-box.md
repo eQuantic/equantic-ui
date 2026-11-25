@@ -1,4 +1,4 @@
-- **2026-11-16 · A component builds its child against the box its parent gives it**: the vocabulary
+- **2026-11-25 · A component builds its child against the box its parent gives it**: the vocabulary
   gains `BoxConstraints`, the room a box may take (Flutter's value by name and shape), and
   `LayoutBuilder`, a node whose child is what its builder answers for the constraints its own box has;
   `eQuantic.UI.Components` gains `ConstrainedBox`, which applies constraints an author holds. Until now
@@ -9,4 +9,4 @@
   that must render on the server stays with `AdaptiveNode`. Email refuses a `LayoutBuilder`. Everything
   is added and nothing breaks, so there is no Upgrading entry
   ([#1555](https://github.com/eQuantic/equantic-ui/issues/1555)). Proposed and archived through
-  OpenSpec (`openspec/changes/a-component-builds-its-child-against-its-box`).
+  OpenSpec (`openspec/specs/layout`).

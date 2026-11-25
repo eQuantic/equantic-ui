@@ -448,6 +448,12 @@ export class BoxConstraints {
   }
 
   enforce(parent: BoxConstraints): BoxConstraints {
+    // As the C# method refuses it, before it reads a bound.
+    if (parent == null)
+      throw exception(
+        'System.ArgumentNullException',
+        "Value cannot be null. (Parameter 'parent')",
+      );
     return new BoxConstraints(
       clampBound(this.minWidth, parent.minWidth, parent.maxWidth),
       clampBound(this.maxWidth, parent.minWidth, parent.maxWidth),

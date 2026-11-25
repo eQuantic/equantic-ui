@@ -60,7 +60,7 @@ None.
 ## Impact
 
 - **Vocabulary**: `Layout/BoxConstraints.cs`, `Nodes/LayoutBuilder.cs`, `IVisualNodeVisitor` (one visit),
-  `Elements/ChildSlots.cs` (a deferred slot). `PublicAPI.Unshipped.txt`, additions only.
+  `Elements/ChildSlots.cs` (a deferred slot). `PublicAPI.Unshipped.<branch>.txt`, additions only.
 - **Components**: `ConstrainedBox.cs`, `UI.cs` (two factories). Additions only.
 - **Photon** (`Native.Framework`, `Native.Components`): the measure door, the intrinsics and the fill reading;
   emit and semantics pass through. No public surface moves.

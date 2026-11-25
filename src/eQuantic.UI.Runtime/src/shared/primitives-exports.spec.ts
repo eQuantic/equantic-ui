@@ -316,6 +316,10 @@ describe('BoxConstraints answers what .NET answers (#1555)', () => {
     expect(BoxConstraints.loose(new Size(1, 2)).hasBoundedHeight).toBe(pinned.looseHasBoundedHeight);
   });
 
+  it('refuses a null parent to enforce, as the C# method does', () => {
+    expect(() => BoxConstraints.unbounded.enforce(null as never)).toThrow(pinned.enforceNull);
+  });
+
   it('refuses a minimum above its maximum, as the C# constructor does', () => {
     expect(() => new BoxConstraints(10, 5)).toThrow(/Parameter 'maxWidth'/);
     expect(() => new BoxConstraints(-1)).toThrow(/Parameter 'minWidth'/);

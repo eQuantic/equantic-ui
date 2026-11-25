@@ -103,6 +103,10 @@ export class LayoutBuilderState implements NodeState {
   }
 
   dispose(): void {
+    // A position that leaves before the pass's commit reads it is not measured: the commit would
+    // observe a box for a state nothing disposes again.
+    const id = this.position ? String(this.position.id) : null;
+    if (id !== null && declared.get(id) === this) declared.delete(id);
     this.letGo();
     this.room = null;
     this.built = null;

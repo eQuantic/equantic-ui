@@ -46,7 +46,9 @@ internal sealed partial class MeasureVisitor
         var firstRoom = firstThisFrame ? room : last!.FirstRoom;
 
         BuiltFor now;
-        if (sameNode && (last!.Room == room || last.SettledFrom == room))
+        // The settled child stands in for the first room only as a frame's first measurement: a later
+        // measurement of the same frame in that room is the one the frame settles on, and gets its own.
+        if (sameNode && (last!.Room == room || (firstThisFrame && last.SettledFrom == room)))
             now = last with { Frame = ctx, FirstRoom = firstRoom };
         else
             now = new BuiltFor(builder, room, builder.Builder(room), ctx, firstRoom,

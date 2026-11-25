@@ -82,11 +82,16 @@ public sealed record BoxConstraints
     /// These constraints, kept inside <paramref name="parent"/>'s: each bound moved into the parent's
     /// range on its axis, so what the parent allows always wins.
     /// </summary>
-    public BoxConstraints Enforce(BoxConstraints parent) => new(
-        Clamp(MinWidth, parent.MinWidth, parent.MaxWidth),
-        Clamp(MaxWidth, parent.MinWidth, parent.MaxWidth),
-        Clamp(MinHeight, parent.MinHeight, parent.MaxHeight),
-        Clamp(MaxHeight, parent.MinHeight, parent.MaxHeight));
+    /// <exception cref="ArgumentNullException"><paramref name="parent"/> is null.</exception>
+    public BoxConstraints Enforce(BoxConstraints parent)
+    {
+        ArgumentNullException.ThrowIfNull(parent);
+        return new BoxConstraints(
+            Clamp(MinWidth, parent.MinWidth, parent.MaxWidth),
+            Clamp(MaxWidth, parent.MinWidth, parent.MaxWidth),
+            Clamp(MinHeight, parent.MinHeight, parent.MaxHeight),
+            Clamp(MaxHeight, parent.MinHeight, parent.MaxHeight));
+    }
 
     /// <summary>The same maximums, with no minimum.</summary>
     public BoxConstraints Loosen() => new(0, MaxWidth, 0, MaxHeight);

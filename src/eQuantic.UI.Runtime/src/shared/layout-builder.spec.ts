@@ -10,6 +10,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StatefulComponent } from '../core/component';
 import { Column, LayoutBuilder, Pressable, Row, Text } from './vocabulary';
 import type { BoxConstraints } from './value-types';
+import type { Element as Position } from './runtime-exports';
+import { commitLayoutBuilders, declareLayoutBuilder } from './layout-builders';
 import type { VisualNodeValue } from './nodes';
 
 const nextFrame = () =>
@@ -179,6 +181,26 @@ describe('a LayoutBuilder in the browser', () => {
     await settle();
 
     expect(told[told.length - 1]).toMatchObject({ maxWidth: 0, maxHeight: Infinity });
+  });
+
+  it('measures no box for a position that left before the commit', () => {
+    const position = {
+      id: 9001,
+      state: null,
+      parent: null,
+      configuration: {},
+    } as unknown as Position;
+    const { id, state } = declareLayoutBuilder(position);
+    const box = document.createElement('div');
+    box.setAttribute('data-eq-layout-builder', id);
+    document.body.appendChild(box);
+
+    state.dispose();
+    commitLayoutBuilders();
+
+    expect(state.view).toBeNull();
+    expect(state.observer).toBeUndefined();
+    expect(observers).toHaveLength(0);
   });
 
   it('runs the builder again only when the room changes', async () => {

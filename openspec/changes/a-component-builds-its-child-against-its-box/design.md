@@ -61,7 +61,7 @@ it in the build phase. The measure door does five things, in order:
 
 1. projects `BoxConstraints` from the engine's constraints, by the rule above;
 2. asks the builder for the child, unless the node and the constraints are the ones it last built for. The
-   last child it built is kept on the position's `State`;
+   last child it built is kept on the position's `State`, beside the frame it was last measured in;
 3. shows that child in the slot (`NodeElement.ShowDeferred`), which builds its components and the dirty
    positions under it;
 4. measures the child as a filling box's child is measured, through `MeasureBox`, which now takes the box's
@@ -69,7 +69,14 @@ it in the build phase. The measure door does five things, in order:
 5. shows the slot every frame, built again or not, because a slot not shown in a frame is taken out when the
    frame ends.
 
-A container that measures the node twice under different constraints builds twice, which Flutter does too.
+A container that measures the node twice in one frame under different constraints (a box whose minimum or
+maximum bites measures its child again at the size it settled on) builds for both the first time, as Flutter
+would. Flutter keeps a layout until something changes, though, and Photon lays out in every frame, so the
+pair would build two children in every frame and the slot would take one's components out and put the
+other's in, twice a frame. So when a later measurement of a frame builds another child, the frame's first
+room is kept beside the room that child was built for, and the next frame's first measurement in that first
+room shows the settled child. A later measurement of a frame in that room is the one the frame settles on,
+and gets its own child. Each room is built once, and the child stays from the second frame on.
 Intrinsic sizing reads the child the slot holds, and nothing before its first build. Every place the engine
 asks whether a child fills (`FillsOf`, `DeclaredSizeKind`, the fill height of an intrinsic) answers for the
 node as it answers for a `Box` with `Fill` on both axes. Emit and semantics pass through.

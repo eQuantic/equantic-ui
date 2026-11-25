@@ -15,7 +15,6 @@ namespace eQuantic.UI.Web.Tests;
 /// </summary>
 public class PrimitiveValueFixtureTests
 {
-    /// <summary>A box as its four numbers, so a mismatch says WHICH edge moved.</summary>
     /// <summary>A constraint's four bounds, an unbounded maximum as null, each the single C# holds.</summary>
     private static object Bounds(BoxConstraints c) => new
     {
@@ -32,6 +31,22 @@ public class PrimitiveValueFixtureTests
         height = float.IsPositiveInfinity(size.Height) ? (double?)null : size.Height,
     };
 
+    /// <summary>What a call that refuses its arguments says, the exception's message as .NET writes it.</summary>
+    private static string Refusal(Action call)
+    {
+        try
+        {
+            call();
+        }
+        catch (ArgumentException refused)
+        {
+            return refused.Message;
+        }
+
+        throw new InvalidOperationException("The call was expected to refuse its arguments.");
+    }
+
+    /// <summary>A box as its four numbers, so a mismatch says WHICH edge moved.</summary>
     private static object Corners(Rect rect) =>
         new { x = rect.X, y = rect.Y, width = rect.Width, height = rect.Height };
 
@@ -193,6 +208,7 @@ public class PrimitiveValueFixtureTests
                 looseIsTight = BoxConstraints.Loose(new Size(1, 2)).IsTight,
                 unboundedHasBoundedWidth = BoxConstraints.Unbounded.HasBoundedWidth,
                 looseHasBoundedHeight = BoxConstraints.Loose(new Size(1, 2)).HasBoundedHeight,
+                enforceNull = Refusal(() => BoxConstraints.Unbounded.Enforce(null!)),
             },
         };
 

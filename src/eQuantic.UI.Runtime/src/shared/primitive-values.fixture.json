@@ -194,6 +194,7 @@
     "tightIsTight": true,
     "looseIsTight": false,
     "unboundedHasBoundedWidth": false,
-    "looseHasBoundedHeight": true
+    "looseHasBoundedHeight": true,
+    "enforceNull": "Value cannot be null. (Parameter 'parent')"
   }
 }
