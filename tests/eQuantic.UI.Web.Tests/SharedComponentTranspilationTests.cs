@@ -354,6 +354,12 @@ public class SharedComponentTranspilationTests
             private readonly Action<T> _use;
             public EmittedHandler(Action<T> use) { _use = use; }
             public void Give(EmittedShapeBase shape) => _use((T)shape);
+            public static EmittedShapeBase Unbox(object value) => (T)value;
+            public EmittedShapeBase Same(object value)
+            {
+                static TOut Cast<TOut>(object held) => (TOut)held;
+                return Cast<EmittedShapeBase>(value);
+            }
         }
 
         public sealed class EmittedPointer

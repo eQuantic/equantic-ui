@@ -145,12 +145,32 @@ public class CastExpressionStrategy : IExpressionIrStrategy
         // read the operand's own type where it takes a T, which tsc refused (#1860). Nothing is checked, as a downcast
         // checks nothing.
         if (operation.Type is ITypeParameterSymbol parameter && !conversion.IsImplicit)
-            return JsExpr.Template("({0} as " + parameter.Name.ToJsIdentifier() + ")", value);
+            return InScope(parameter, operation)
+                ? JsExpr.Template("({0} as " + parameter.Name.ToJsIdentifier() + ")", value)
+                : value;
         if (!conversion.IsReference || conversion.IsImplicit) return value;
         if (operation.Type is not INamedTypeSymbol { TypeKind: TypeKind.Class, IsGenericType: false } target
             || !NamesATwin(target))
             return value;
         return JsExpr.Template("({0} as " + target.IntroduceTwin(context) + ")", value);
+    }
+
+    /// <summary>
+    /// Whether TypeScript has <paramref name="parameter"/> in scope where <paramref name="operation"/> stands, so an
+    /// assertion may name it: a method's own, which its signature declares (<c>also&lt;T&gt;(node: T)</c>), and a class's,
+    /// in an instance member. A local function is an arrow that declares none, and TypeScript forbids a static member to
+    /// read a class's type parameters (TS2302): there a cast writes the value alone, as it did, rather than name a
+    /// parameter tsc cannot find.
+    /// </summary>
+    private static bool InScope(ITypeParameterSymbol parameter, IOperation operation)
+    {
+        if (parameter.TypeParameterKind == TypeParameterKind.Method)
+            return parameter.DeclaringMethod is not { MethodKind: MethodKind.LocalFunction };
+        if (parameter.TypeParameterKind != TypeParameterKind.Type) return false;
+        var member = operation.SemanticModel?.GetEnclosingSymbol(operation.Syntax.SpanStart);
+        while (member is IMethodSymbol { MethodKind: MethodKind.AnonymousFunction or MethodKind.LocalFunction })
+            member = member.ContainingSymbol;
+        return member is { IsStatic: false };
     }
 
     /// <summary>

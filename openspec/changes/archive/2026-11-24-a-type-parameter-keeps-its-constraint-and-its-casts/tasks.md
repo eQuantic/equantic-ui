@@ -8,6 +8,7 @@
 ## 2. The cast
 
 - [x] 2.1 Assert a cast to a type parameter in TypeScript, `(value as T)`. Verify `EmittedHandler` is refused on main (TS2345) and taken with the fix, and that plain JavaScript is unchanged.
+- [x] 2.2 Assert it only where TypeScript has the parameter in scope. Verify `EmittedHandler.Unbox` (a static member) and `Same`'s generic local function are refused when every cast is asserted (TS2302, TS2304) and taken with the rule.
 
 ## 3. The record
 

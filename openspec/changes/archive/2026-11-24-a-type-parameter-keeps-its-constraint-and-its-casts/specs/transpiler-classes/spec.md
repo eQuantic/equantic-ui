@@ -13,7 +13,9 @@ component, SHALL declare its type parameters in TypeScript and none in plain Jav
 SHALL name its own type by its closure. A type parameter constrained to a class that is not generic and has a twin
 SHALL be declared `T extends` that class, the class imported; any other constraint, an interface's included, since
 an interface has no twin, SHALL leave it unconstrained. A cast
-to a type parameter SHALL assert it in TypeScript, `(value as T)`, checking nothing, as a downcast checks nothing.
+to a type parameter SHALL assert it in TypeScript, `(value as T)`, checking nothing, as a downcast checks nothing,
+where TypeScript has the parameter in scope: a method's own, and a class's in an instance member. A local function's
+own, and a class's in a static member, which TypeScript forbids to read it, SHALL write the value alone, as before.
 
 #### Scenario: A base calls its abstract members
 
@@ -69,6 +71,12 @@ to a type parameter SHALL assert it in TypeScript, `(value as T)`, checking noth
 
 - **WHEN** `class Handler<T> where T : ShapeBase` holds an `Action<T>` and calls it with `(T)shape` for a `ShapeBase`
 - **THEN** the twin writes `(shape as T)`, and `tsc` takes the call; it refused it with TS2345
+
+#### Scenario: A cast to a type parameter TypeScript cannot see
+
+- **WHEN** the same class's static member returns `(T)value`, and an instance member's local function
+  `static TOut Cast<TOut>(object held) => (TOut)held` casts to its own parameter
+- **THEN** both write the value alone, and `tsc` takes them; asserted, it refused them with TS2302 and TS2304
 
 #### Scenario: A constraint with no twin
 

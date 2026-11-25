@@ -13,6 +13,17 @@ export class EmittedHandler<T extends EmittedShapeBase> {
         return this._use((shape as T));
     }
 
+    static unbox(value: any) {
+        return value;
+    }
+
+    same(value: any) {
+        const cast = (held: any) => {
+            return held;
+        };
+        return cast(value);
+    }
+
     toJSON() {
         return $eq.json(this, []);
     }

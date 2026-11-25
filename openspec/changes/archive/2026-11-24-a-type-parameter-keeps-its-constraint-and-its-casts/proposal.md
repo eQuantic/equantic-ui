@@ -22,8 +22,10 @@ library still fail the runtime's `tsc`:
   which the client fence refuses before either is asked (EQ2010). Any other constraint (an
   interface, which has no twin, a generic class, `struct`, `class`, `new()`, `notnull`) leaves the parameter
   unconstrained, as before. A member still names the class's own closure by the names alone.
-- A cast to a type parameter is asserted in TypeScript, `(value as T)`, checking nothing, as a downcast checks nothing.
-  Plain JavaScript writes the value alone, as it did.
+- A cast to a type parameter is asserted in TypeScript, `(value as T)`, checking nothing, as a downcast checks nothing,
+  where TypeScript has the parameter in scope: a method's own, and a class's in an instance member. A generic local
+  function's arrow declares no type parameter, and a static member cannot read the class's (TS2302), so there the value
+  stays alone. Plain JavaScript writes the value alone, as it did.
 
 Nothing an app writes moves, and no module's JavaScript changes.
 
