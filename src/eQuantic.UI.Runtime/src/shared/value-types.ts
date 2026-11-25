@@ -1107,6 +1107,7 @@ hashesByValue(
   Point,
   Size,
   Rect,
+  BoxConstraints,
   Transform2D,
   CornerRadii,
   TypeStyle,
