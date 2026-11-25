@@ -28,6 +28,7 @@ import {
   BoxStyle,
   Column,
   ContextTarget,
+  Directionality,
   Listener,
   Sortable,
   SortableItem,
@@ -63,7 +64,7 @@ import {
   VectorPaint,
   VectorShape,
 } from './vocabulary';
-import { Point, SizeValue, SortAnnouncements, StyleChannels, TableRange, Transform2D } from './value-types';
+import { EdgeInsets, Point, SizeValue, SortAnnouncements, StyleChannels, TableRange, Transform2D } from './value-types';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
 import { ContextMenu } from './components/ContextMenu';
@@ -805,6 +806,19 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         200,
       ),
     ),
+    // A subtree that reads right to left (C# twin, #1568).
+    'directionality-rtl': still(new Directionality('rightToLeft', startAndEnd())),
+    'directionality-ltr': still(new Directionality('leftToRight', startAndEnd())),
+    'shifted-centre': still(
+      new Stack()
+        .with(new Box(new BoxStyle({ width: 200, height: 100 })))
+        .with(
+          new Positioned(new Text('centre', 'bodyM', photonTheme.textPrimary), 8, null, null, null, {
+            startFraction: 0.5,
+            shiftX: -0.5,
+          }),
+        ),
+    ),
     'adaptive-positioned-in-stack': still(
       new Stack()
         .with(new Box(new BoxStyle({ width: 400, height: 300, background: photonTheme.surface })))
@@ -818,6 +832,25 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         ),
     ),
   };
+}
+
+/** The stack of the directionality cases (C# twin: `StartAndEnd`). */
+function startAndEnd(): Stack {
+  return new Stack()
+    .with(
+      new Box(
+        new BoxStyle({
+          width: 200,
+          height: 100,
+          padding: new EdgeInsets(24, 8, 8, 4),
+          borderWidth: 2,
+          borderColor: photonTheme.border,
+          borderSides: 8, // BorderSides.Start
+        }),
+        new Box(new BoxStyle({ width: 40, height: 40, padding: new EdgeInsets(8, 4, 8, 4) })),
+      ),
+    )
+    .with(new Positioned(new Text('start', 'bodyM', photonTheme.textPrimary), 8, null, null, 16));
 }
 
 /**

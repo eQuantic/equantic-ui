@@ -387,7 +387,10 @@ public class FlutterParityPinTests
         ["MergeSemantics"] = () => Has("MergeSemantics") && Has("ExcludeSemantics")
             && WebRealizerCode().Contains("\"aria-labelledby\"", StringComparison.Ordinal),
         ["Localizations"] = () => Has("ICultureController") && Nothing("LocalizationsDelegate"),
-        ["TextDirection.ltr/rtl"] = () => Nothing("TextDirection"),
+        // The enum, the inherited node that sets it for a subtree, and the context member that reads it;
+        // the web's half (the shell's dir, the logical CSS) is held by the Web and Server suites (#1568).
+        ["TextDirection.ltr/rtl"] = () => Has("TextDirection") && Has("Directionality")
+            && HasMember("ComponentContext", "TextDirection"),
         ["ThemeData"] = () => Has("IAppTheme") && Has("Density") && Nothing("CupertinoThemeData"),
         ["MediaQuery"] = () => Has("SafeArea") && Nothing("MediaQuery"),
         ["MediaQuery.viewInsets"] = () => HasMember("PhotonHost", "ViewInsets"),

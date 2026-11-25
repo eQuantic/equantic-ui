@@ -33,7 +33,7 @@ builder.Services.AddUI(options =>
            // the query and the cookie (below), so the alternates carry it the same way — a site
            // serving each language on its own path says PathPrefix() instead, and one whose
            // translations are separate pages answers with its own lambda.
-           .UseAlternateLinks(AlternateUrls.QueryString(), "en", "pt-BR", "es")
+           .UseAlternateLinks(AlternateUrls.QueryString(), "en", "pt-BR", "es", "ar")
            // What the server publishes, heard by the live screen: the topics a page may subscribe
            // to, each with who may hear it. Anyone may hear the console's quotes.
            .UseServerEvents(events => events.Topic("console:{feed}", rule => rule.AllowAnonymous()))
@@ -66,8 +66,9 @@ var app = builder.Build();
 // next request — the SDK invents no transport of its own.
 app.UseRequestLocalization(options =>
 {
-    options.AddSupportedUICultures("en", "pt-BR", "es");
-    options.AddSupportedCultures("en", "pt-BR", "es");
+    // Arabic reads right to left: the shell says dir="rtl" from .NET's TextInfo, and the pages mirror.
+    options.AddSupportedUICultures("en", "pt-BR", "es", "ar");
+    options.AddSupportedCultures("en", "pt-BR", "es", "ar");
 });
 
 // Serve static files (including compiled JS)

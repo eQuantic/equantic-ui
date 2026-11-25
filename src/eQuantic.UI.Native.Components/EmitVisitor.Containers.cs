@@ -113,7 +113,15 @@ internal sealed partial class EmitVisitor
             // rebuild its own opening causes.
             hoverOpen = s.Press.IsHovered(s.Node, anchored);
         }
-        if (!anchored.Open && !hoverOpen) return;
+        // A text field a listbox hangs from is an editable combobox, whose list says the option the keyboard is
+        // on from the field (#1088); a closed list says nothing, so its option is news when it opens.
+        var comboField = anchored.PanelRole == AnchorPanelRole.Listbox ? ComboAnnouncement.FieldOf(s.Node)?.Element : null;
+        if (!anchored.Open && !hoverOpen)
+        {
+            if (comboField is not null)
+                s.Input.Add(ComboAnnouncement.Silent(PositionOf(s.Node), comboField, s.Node));
+            return;
+        }
 
         // Mega-menu dimming: ScrimStyle paints the outside-tap scrim (a full Box — veil
         // gradient, backdrop blur) instead of the invisible filler.
@@ -169,8 +177,10 @@ internal sealed partial class EmitVisitor
         // always was, so a component in an open menu keeps its state from frame to frame and one in a
         // closed menu leaves the tree.
         s.Overlays.Add(new QueuedLayer(new Overlay(layer) { Modal = anchored.PanelRole == AnchorPanelRole.Dialog },
-            s.Node.Element as NodeElement, s.Press.InScrolledHeader, s.Content));
+            s.Node.Element as NodeElement, s.Press.InScrolledHeader, s.Content,
+            comboField is null ? null : new ComboAnnouncement(PositionOf(s.Node), comboField, s.Node, anchored.ActiveIndex)));
     }
+
 
     // Loop motion: translate the subtree by the frame-clock offset (spec §06 transform-only).
     // Offsets are fractions of the node's OWN laid-out width — parity with CSS translateX(%).

@@ -289,7 +289,11 @@ is not the owner's.
    ("Auto merge is not allowed for this repository"). The queue runs CI on it together with every
    pull request ahead of it, merges it
    with a squash when that run is green, and nobody merges `main` into a pull request only to bring
-   it up to date. A pull request's own run skips the four macOS jobs, which hold the scarcest
+   it up to date. The ruleset also requires one approving review, so that a contributor's pull
+   request waits for the owner's: the owner's own pull requests, every session's included, are
+   approved by `.github/workflows/approve-owner-pull-requests.yml` (#1847), which runs on
+   `pull_request_target` as `main` holds it and approves only when the author, the actor of the event and
+   every commit are the owner's account. A pull request's own run skips the four macOS jobs, which hold the scarcest
    runners and report as skipped, satisfying their checks: the queue's run is the one that runs them
    (#1385), and a pull request that changes the Apple track asks for them on its branch first with
    `gh workflow run ci.yml --ref <branch>`. Until the queue is on, when `main` moved after the CI ran, merge `main` into the

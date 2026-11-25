@@ -1,0 +1,3 @@
+import { $eq } from "@equantic/runtime";
+
+export class EmittedPair<TKey> { declare key: TKey; declare rank: number; constructor(key: any = null, rank: any = 0) {this.key = key;this.rank = rank;} equals(o: unknown) { return o instanceof EmittedPair && o.constructor === this.constructor && $eq.sameClosure(this, o) && $eq.collections.sameGeneric(this.key, o.key) && $eq.equals(this.rank, o.rank); } with(patch: any): EmittedPair<TKey> { return $eq.withPatch(this, patch); } static $record = true; getHashCode(): number { return $eq.hash.combine(this.key, this.rank); } toString() { return $eq.text.record(this, 'EmittedPair', ['Key', ['Rank', 'int32']]); } }

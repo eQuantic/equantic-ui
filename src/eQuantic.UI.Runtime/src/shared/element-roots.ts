@@ -24,6 +24,7 @@ import type { HtmlNode } from '../core/types';
 import type { VisualNodeValue } from './nodes';
 import { commitShortcuts, type ShortcutDeclarer } from '../dom/shortcuts';
 import { commitFocusTraps } from '../dom/focus-trap';
+import { afterWrite } from './after-write';
 import { installHoverRevealSuppression } from '../dom/hover-reveal';
 import { attachCameraStreams } from './devices/camera';
 import { scheduleScrollViewportCommit } from './scroll-viewports';
@@ -183,13 +184,13 @@ export function exitPass(shortcutsDeclaredBy?: ShortcutDeclarer): void {
   // re-lowered drop out, which is how unmounting unsubscribes. A pass that lowered some components
   // alone replaces only the bindings they declared (#1455).
   commitShortcuts(shortcutsDeclaredBy);
-  // §10: the same moment reconciles the modal focus traps against the DOM the pass just produced —
+  // §10: the modal focus traps are reconciled against the DOM the pass produced once it is written —
   // a layer that appeared takes focus (recording its invoker), one that vanished gives it back.
-  commitFocusTraps();
+  afterWrite(commitFocusTraps);
   installHoverRevealSuppression();
-  // A CameraPreview lowered this pass has a fresh <video>; the stream re-attaches here, the same
-  // after-the-pass moment the shortcut set commits.
-  attachCameraStreams();
+  // A CameraPreview lowered this pass has a fresh <video>, which exists once the pass is written: the
+  // stream attaches then, at the moment the traps reconcile (#1830).
+  afterWrite(attachCameraStreams);
   // Scroll views measure their viewport (and adopt an initial offset) once the pass is WRITTEN —
   // a windowed list is (offset, viewport), and neither is knowable before the pass has mounted.
   // Measured here, it was the tree before this one (see scroll-viewports.ts).

@@ -114,8 +114,8 @@ public class PositionedSpanTests
     {
         var css = Css(Corner(FillingRow()));
 
-        css.Should().Contain("left:0", "the opposite edge is what gives it a definite width");
-        css.Should().Contain("right:0");
+        css.Should().Contain("inset-inline-start:0", "the opposite edge is what gives it a definite width");
+        css.Should().Contain("inset-inline-end:0");
     }
 
     /// <summary>A child that does NOT fill still shrink-wraps — pinning both edges on a plain badge
@@ -125,7 +125,7 @@ public class PositionedSpanTests
     {
         var css = Css(Corner(new Primitives.Box(new BoxStyle { Width = 32, Height = 32 })));
 
-        css.Should().NotContain("left:0");
+        css.Should().NotContain("inset-inline-start:0");
     }
 
     /// <summary>Both edges given explicitly is the author saying it already — nothing to infer.</summary>
@@ -135,7 +135,7 @@ public class PositionedSpanTests
         var stack = new Stack { Width = SizeValue.Fill };
         stack.Add(new Positioned(FillingRow(), top: 0, start: 8, end: 8));
 
-        Css(stack).Should().Contain("left:8px").And.Contain("right:8px");
+        Css(stack).Should().Contain("inset-inline-start:8px").And.Contain("inset-inline-end:8px");
     }
 
     /// <summary>
@@ -154,9 +154,9 @@ public class PositionedSpanTests
             ShiftY = -1f,
         });
 
-        Css(stack).Should().Contain("left:50%")
+        Css(stack).Should().Contain("inset-inline-start:50%")
             .And.Contain("top:calc(25% - 16px)")
-            .And.Contain("transform:translate(-50%, -100%)");
+            .And.Contain("transform:translate(calc(var(--eq-inline, 1) * -50%), -100%)");
     }
 
     /// <summary>
@@ -171,7 +171,7 @@ public class PositionedSpanTests
         stack.Add(new Positioned(new Pressable(new Drawing(art, SizeValue.Fill), () => { })) { StartFraction = 0.5f });
 
         var css = Css(stack);
-        css.Should().Contain("left:50%").And.Contain("right:0");
+        css.Should().Contain("inset-inline-start:50%").And.Contain("inset-inline-end:0");
     }
 
     /// <summary>
@@ -185,7 +185,7 @@ public class PositionedSpanTests
         stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 100, Height = 30 }), start: 10, end: 10) { ShiftX = -0.5f });
 
         var css = Css(stack);
-        css.Should().Contain("width:fit-content").And.Contain("transform:translate(-50%, 0)");
+        css.Should().Contain("width:fit-content").And.Contain("transform:translate(calc(var(--eq-inline, 1) * -50%), 0)");
     }
 
     /// <summary>A fraction alone on the end edge, and no shift means no transform.</summary>
@@ -196,7 +196,7 @@ public class PositionedSpanTests
         stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 40, Height = 20 })) { EndFraction = 0.1f });
 
         var css = Css(stack);
-        css.Should().Contain("right:10%");
+        css.Should().Contain("inset-inline-end:10%");
         css.Should().NotContain("translate(");
     }
 }

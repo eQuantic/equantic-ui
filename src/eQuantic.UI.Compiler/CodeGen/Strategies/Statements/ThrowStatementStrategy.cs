@@ -21,7 +21,7 @@ public class ThrowStatementStrategy : IStatementStrategy
         var throwStmt = (ThrowStatementSyntax)node;
         if (throwStmt.Expression == null) return JsStatement.Throw(JsExpr.Identifier(TryStatementStrategy.Caught));
         // What the expression declares is hoisted in front, as a return's is (enclosing block).
-        var declared = ExpressionVariableScanner.InFrontOf(throwStmt, throwStmt.Expression, context.TypeAnnotations);
+        var declared = ExpressionVariableScanner.InFrontOf(throwStmt, throwStmt.Expression, context);
         var exception = context.Converter.ConvertIr(throwStmt.Expression);
         // An exception that may be null is thrown as the NullReferenceException the CLR throws in its
         // place, so a typed catch sees one: a creation never is null, and neither is what the

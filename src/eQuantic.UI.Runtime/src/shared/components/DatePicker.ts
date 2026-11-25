@@ -121,8 +121,8 @@ export class DatePicker extends StatefulComponent {
     }
 
     static parse(text: string) {
-        let day: any; 
-        return ((day = $eq.time.dateOnly.tryParse(text)) !== undefined || ((day = $eq.time.dateOnly.minValue()), false)) ? day : null;
+        let day!: DateOnly; 
+        return ((day = ($eq.time.dateOnly.tryParse(text))!) !== undefined || ((day = $eq.time.dateOnly.minValue()), false)) ? day : null;
     }
 }
 

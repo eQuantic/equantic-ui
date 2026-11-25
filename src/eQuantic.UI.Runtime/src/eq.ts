@@ -95,7 +95,10 @@ import {
   integerFromDouble,
   integerFromObject,
   realFromObject,
+  truncatedFromDecimal,
 } from './utils/number-convert';
+import { clamp as decClamp } from './utils/decimal-math';
+import { clamp, clampLong } from './utils/clamp';
 import {
   intConvert,
   intParse,
@@ -437,6 +440,12 @@ export const $eq = {
     integerFromDouble,
     integerFromDecimal,
     integerFromObject,
+    /** A decimal cast to an integer or a char, toward zero from its own digits, and its Clamp (#1766, #1767). */
+    truncatedFromDecimal,
+    decClamp,
+    /** A number's and a long's Clamp, in .NET's order, refusing a minimum above the maximum (#1824). */
+    clamp,
+    clampLong,
     realFromObject,
     charFrom,
     charFromText,

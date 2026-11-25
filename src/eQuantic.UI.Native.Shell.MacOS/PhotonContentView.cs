@@ -40,6 +40,8 @@ internal static class PhotonContentView
     private static ReturnsBool? _acceptsFirstResponder;
     private static ReturnsPtr? _axChildren;
     private static ReturnsPtr? _axRole;
+    private static ReturnsBool? _axIsElement;
+    private static ReturnsPtr? _axFocused;
     private static InsertTextDelegate? _insertText;
     private static SetMarkedTextDelegate? _setMarkedText;
     private static VoidDelegate? _unmarkText;
@@ -191,6 +193,17 @@ internal static class PhotonContentView
         _axRole = (_, _) => NSString("AXGroup");
         class_addMethod(_cls, sel_registerName("accessibilityRole"),
             Marshal.GetFunctionPointerForDelegate(_axRole), "@@:");
+        // An ELEMENT, the group the window lists (#1111): each element names this view its parent, and a
+        // view that is not an element is skipped, so the window listed the elements while each named a
+        // parent nothing listed, and VoiceOver's walk had no way down from the window.
+        _axIsElement = (_, _) => true;
+        class_addMethod(_cls, sel_registerName("isAccessibilityElement"),
+            Marshal.GetFunctionPointerForDelegate(_axIsElement), "B@:");
+        // Where the keyboard is: AppKit asks the first responder, which is this view, and the element of the
+        // node holding the keyboard answers, or the view when none does.
+        _axFocused = (self, _) => PhotonAccessibility.FocusedElement(self);
+        class_addMethod(_cls, sel_registerName("accessibilityFocusedUIElement"),
+            Marshal.GetFunctionPointerForDelegate(_axFocused), "@@:");
 
         objc_registerClassPair(_cls);
         return _cls;

@@ -1,9 +1,9 @@
 ## Comfortable
 ### web
 <div data-eq-unmeasured="" class="eq-1aoicmy eq-1eb13m5 eq-g7fowl eq-mbtjfn">
-<div class="eq-sheet-surface eq-1eviv88 eq-1jjc6f6 eq-a486u3 eq-akjizx eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" class="eq-sheet-surface eq-1eviv88 eq-1jjc6f6 eq-a486u3 eq-akjizx eq-g7fowl eq-gzfd3n eq-olitnf">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-5ew4ww eq-akjizx eq-g7fowl">
-<div class="eq-182ppyb eq-18plna0 eq-1eviv88 eq-1gudvpj eq-1jjc6f6 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn" role="grid" aria-rowcount="1001" aria-colcount="27" aria-multiselectable="true" aria-label="Spreadsheet">
+<div dir="ltr" class="eq-182ppyb eq-18plna0 eq-1eviv88 eq-1gudvpj eq-1jjc6f6 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn" role="grid" aria-rowcount="1001" aria-colcount="27" aria-multiselectable="true" aria-label="Spreadsheet">
 <div role="none" class="eq-1l557cm eq-4xxlvk eq-mbtjfn eq-mfc69x eq-up7gwa eq-z6eb5z">
 <div role="none" class="eq-1ogof62 eq-1xlbso6 eq-mfc69x">
 <div id="eq-tcell-sudlea-1-1" role="gridcell" aria-colindex="2" aria-current="true" aria-selected="true" class="eq-1avhl7d eq-1fo26cq eq-1ogof62 eq-1xlbso6 eq-1yxcnfo eq-mfc69x">
@@ -1699,7 +1699,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1714,7 +1714,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1729,7 +1729,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1744,7 +1744,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1759,7 +1759,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1774,7 +1774,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1789,7 +1789,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1804,7 +1804,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1819,7 +1819,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1834,7 +1834,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1849,7 +1849,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1864,7 +1864,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1879,7 +1879,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1894,7 +1894,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1909,7 +1909,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1924,7 +1924,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1939,7 +1939,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1954,7 +1954,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1969,7 +1969,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1984,7 +1984,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -1999,7 +1999,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2014,7 +2014,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2029,7 +2029,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2044,7 +2044,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2059,7 +2059,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2074,7 +2074,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2089,7 +2089,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2104,7 +2104,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2119,7 +2119,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2134,7 +2134,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2153,7 +2153,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2168,7 +2168,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2183,7 +2183,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2198,7 +2198,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2213,7 +2213,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2228,7 +2228,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2243,7 +2243,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2258,7 +2258,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2273,7 +2273,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2288,7 +2288,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2303,7 +2303,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2318,7 +2318,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2333,7 +2333,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2348,7 +2348,7 @@
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -2376,7 +2376,7 @@
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-5ew4ww eq-akjizx eq-kngwsg">
 </div>
 </div>
-<div class="eq-1p2uoqo eq-1s8kvmy eq-kk3vxf eq-mfc69x">
+<div class="eq-1p2uoqo eq-1s8kvmy eq-1w0n04k eq-mfc69x">
 <div class="eq-1857hro eq-1eb13m5 eq-1vuy4hj eq-1ykgip9 eq-ag9ghs eq-bo3n4y eq-g7fowl">
 </div>
 </div>
@@ -2512,6 +2512,7 @@
 .eq-1lstts8{top:420px}
 .eq-1m34oxc{top:280px}
 .eq-1mdpkvr{top:252px}
+.eq-1mjhwhb{inset-inline-start:0}
 .eq-1ogof62{left:0}
 .eq-1ozgst9{top:812px}
 .eq-1p2kalc{top:756px}
@@ -2525,6 +2526,7 @@
 .eq-1u8iaqr{top:784px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1vuy4hj{border:1px solid var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-1w0n04k{inset-inline-end:-1px}
 .eq-1w1wt6p{align-items:flex-start}
 .eq-1wl4hkl{top:140px}
 .eq-1xh7zsz{top:616px}
@@ -2558,12 +2560,12 @@
 .eq-gzfd3n{user-select:none}
 .eq-kcsn8q{top:336px}
 .eq-kj7rdn{top:476px}
-.eq-kk3vxf{right:-1px}
 .eq-kngwsg{pointer-events:none}
 .eq-kqfmnh{border:2px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
 .eq-l4l1jc{left:1056px}
 .eq-le3too{height:0}
 .eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-lgyrlq{inset-inline-end:0}
 .eq-lkokns{border:0.5px solid var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}
@@ -4263,9 +4265,9 @@ Spreadsheet 0 0 480x800
 ## Compact
 ### web
 <div data-eq-unmeasured="" class="eq-1aoicmy eq-1eb13m5 eq-g7fowl eq-mbtjfn">
-<div class="eq-sheet-surface eq-1eviv88 eq-1jjc6f6 eq-a486u3 eq-akjizx eq-g7fowl eq-gzfd3n eq-olitnf">
+<div dir="ltr" class="eq-sheet-surface eq-1eviv88 eq-1jjc6f6 eq-a486u3 eq-akjizx eq-g7fowl eq-gzfd3n eq-olitnf">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-5ew4ww eq-akjizx eq-g7fowl">
-<div class="eq-182ppyb eq-18plna0 eq-1eviv88 eq-1gudvpj eq-1jjc6f6 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn" role="grid" aria-rowcount="1001" aria-colcount="27" aria-multiselectable="true" aria-label="Spreadsheet">
+<div dir="ltr" class="eq-182ppyb eq-18plna0 eq-1eviv88 eq-1gudvpj eq-1jjc6f6 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn" role="grid" aria-rowcount="1001" aria-colcount="27" aria-multiselectable="true" aria-label="Spreadsheet">
 <div role="none" class="eq-1l557cm eq-4xxlvk eq-mbtjfn eq-mfc69x eq-up7gwa eq-z6eb5z">
 <div role="none" class="eq-1ogof62 eq-1xlbso6 eq-mfc69x">
 <div id="eq-tcell-sudlea-1-1" role="gridcell" aria-colindex="2" aria-current="true" aria-selected="true" class="eq-1avhl7d eq-1fo26cq eq-1ogof62 eq-1xlbso6 eq-1yxcnfo eq-mfc69x">
@@ -5961,7 +5963,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -5976,7 +5978,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -5991,7 +5993,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6006,7 +6008,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6021,7 +6023,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6036,7 +6038,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6051,7 +6053,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6066,7 +6068,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6081,7 +6083,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6096,7 +6098,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6111,7 +6113,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6126,7 +6128,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6141,7 +6143,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6156,7 +6158,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6171,7 +6173,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6186,7 +6188,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6201,7 +6203,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6216,7 +6218,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6231,7 +6233,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6246,7 +6248,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6261,7 +6263,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6276,7 +6278,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6291,7 +6293,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6306,7 +6308,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6321,7 +6323,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6336,7 +6338,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6351,7 +6353,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6366,7 +6368,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6381,7 +6383,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6396,7 +6398,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1ogof62 eq-1pwthtl eq-4xxlvk eq-mfc69x">
+<div class="eq-1mjhwhb eq-1pwthtl eq-4xxlvk eq-mfc69x">
 <div class="eq-1371iuq eq-1eb13m5 eq-1efxekf eq-1q16ui0 eq-bo3n4y eq-g7fowl" data-eq-drag="y" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6415,7 +6417,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6430,7 +6432,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6445,7 +6447,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6460,7 +6462,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6475,7 +6477,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6490,7 +6492,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6505,7 +6507,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6520,7 +6522,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6535,7 +6537,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6550,7 +6552,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6565,7 +6567,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6580,7 +6582,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6595,7 +6597,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6610,7 +6612,7 @@ Spreadsheet 0 0 480x800
 </div>
 </div>
 </div>
-<div class="eq-1pwthtl eq-1xlbso6 eq-mfc69x eq-z6eb5z">
+<div class="eq-1pwthtl eq-1xlbso6 eq-lgyrlq eq-mfc69x">
 <div class="eq-11kg7e8 eq-154xbjv eq-1eb13m5 eq-1fsdgqa eq-bo3n4y eq-g7fowl" data-eq-drag="x" data-eq-drag-min="-4000" data-eq-drag-max="4000" data-eq-drag-rest="0" data-eq-drag-follows="0" data-eq-drag-moves="1">
 </div>
 </div>
@@ -6638,7 +6640,7 @@ Spreadsheet 0 0 480x800
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-5ew4ww eq-akjizx eq-kngwsg">
 </div>
 </div>
-<div class="eq-1p2uoqo eq-1s8kvmy eq-kk3vxf eq-mfc69x">
+<div class="eq-1p2uoqo eq-1s8kvmy eq-1w0n04k eq-mfc69x">
 <div class="eq-1857hro eq-1eb13m5 eq-1vuy4hj eq-1ykgip9 eq-ag9ghs eq-bo3n4y eq-g7fowl">
 </div>
 </div>
@@ -6774,6 +6776,7 @@ Spreadsheet 0 0 480x800
 .eq-1lstts8{top:420px}
 .eq-1m34oxc{top:280px}
 .eq-1mdpkvr{top:252px}
+.eq-1mjhwhb{inset-inline-start:0}
 .eq-1ogof62{left:0}
 .eq-1ozgst9{top:812px}
 .eq-1p2kalc{top:756px}
@@ -6787,6 +6790,7 @@ Spreadsheet 0 0 480x800
 .eq-1u8iaqr{top:784px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1vuy4hj{border:1px solid var(--eq-color-surface, light-dark(#ffffff, #14181e))}
+.eq-1w0n04k{inset-inline-end:-1px}
 .eq-1w1wt6p{align-items:flex-start}
 .eq-1wl4hkl{top:140px}
 .eq-1xh7zsz{top:616px}
@@ -6820,12 +6824,12 @@ Spreadsheet 0 0 480x800
 .eq-gzfd3n{user-select:none}
 .eq-kcsn8q{top:336px}
 .eq-kj7rdn{top:476px}
-.eq-kk3vxf{right:-1px}
 .eq-kngwsg{pointer-events:none}
 .eq-kqfmnh{border:2px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))}
 .eq-l4l1jc{left:1056px}
 .eq-le3too{height:0}
 .eq-lgp7n6{color:var(--eq-color-text-muted, light-dark(#5f6b7a, #acb7c5))}
+.eq-lgyrlq{inset-inline-end:0}
 .eq-lkokns{border:0.5px solid var(--eq-color-border, light-dark(#e2e5ea, #2a323d))}
 .eq-m92pvu{display:flex}
 .eq-mbtjfn{overflow:hidden}

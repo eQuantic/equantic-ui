@@ -42,10 +42,36 @@ internal sealed partial class SemanticsVisitor
     /// The explicit Label names the field; the placeholder is only the fallback name (visually it
     /// vanishes under text). The VALUE is what the field holds, which is what its position keeps
     /// (<see cref="FieldText"/>): a reader hears the text the field draws.
+    /// <para>
+    /// A field a listbox hangs from is an EDITABLE COMBOBOX (#1088), named and valued the same way, with
+    /// whether its list is open: the web's text control under that anchor carries <c>role="combobox"</c>
+    /// and the list's active option (#1083), and a reader typing into the code editor's go-to field heard
+    /// a plain text field here. The option the keyboard is on is announced from the field as it changes
+    /// (<see cref="ComboAnnouncement"/>).
+    /// </para>
     /// </summary>
-    public bool Visit(TextEntry node, LayoutNode laidOut) =>
-        Announce(new(SemanticRole.TextField, IdOf(laidOut), laidOut.Bounds,
-            node.Label ?? node.Placeholder ?? "", FieldText.Of(laidOut.Element, node), node.Disabled));
+    public bool Visit(TextEntry node, LayoutNode laidOut)
+    {
+        var listbox = ListboxFieldOf(laidOut);
+        return Announce(new(listbox is null ? SemanticRole.TextField : SemanticRole.EditableComboBox,
+            IdOf(laidOut), laidOut.Bounds, node.Label ?? node.Placeholder ?? "", FieldText.Of(laidOut.Element, node),
+            node.Disabled, Expanded: listbox?.Open));
+    }
+
+    /// <summary>The <see cref="Anchored"/> whose listbox this text entry is the field of, or null: the nearest
+    /// anchored node above it with a panel role, when that role is a listbox and this is the first text entry of
+    /// its anchor (<see cref="ComboAnnouncement.FieldOf"/>), as the web keys one text control per anchor.</summary>
+    private static Anchored? ListboxFieldOf(LayoutNode laidOut)
+    {
+        for (var node = laidOut; node.Parent is { } parent; node = parent)
+        {
+            if (parent.Source is Anchored { PanelRole: not AnchorPanelRole.None } anchored)
+                return anchored.PanelRole == AnchorPanelRole.Listbox && ReferenceEquals(ComboAnnouncement.FieldOf(parent), laidOut)
+                    ? anchored
+                    : null;
+        }
+        return null;
+    }
 
     /// <summary>
     /// A multiline editable code surface — a text area to a screen reader, whose VALUE is what the model

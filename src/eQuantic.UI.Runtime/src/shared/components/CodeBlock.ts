@@ -1,4 +1,4 @@
-import { $CodeDecorationKindValue, $CodeGutterKindValue, $CodeTokenKindValue, $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDocument, CodeFold, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, ColorToken, Column, ControlMetrics, CornerRadii, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
+import { $CodeDecorationKindValue, $CodeGutterKindValue, $CodeTokenKindValue, $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, CodeBlock$CodeMetrics, CodeDecoration, CodeDocument, CodeFold, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeRange, CodeRow, ColorToken, Column, ControlMetrics, CornerRadii, Directionality, Drawing, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, Spacer, Stack, StatelessComponent, Text, TypeStyle, VectorDrawing, VectorPaint, VectorShape, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
@@ -203,7 +203,7 @@ export class CodeBlock extends StatelessComponent {
             content = layered;
         }
         let body: VisualNode = new Box(new BoxStyle({ width: SizeValue.fixed(width) }), content);
-        if (!this.standalone) return body;
+        if (!this.standalone) return new Directionality('leftToRight', body);
         body = new ScrollView(body, 'horizontal', { width: SizeValue.fill });
         if (this.showLineNumbers) {
             let withGutter = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'start' });
@@ -216,11 +216,11 @@ export class CodeBlock extends StatelessComponent {
         }
         let slab = new Box(new BoxStyle({ width: SizeValue.fill, background: surface, cornerRadius: new CornerRadii(theme.shape('medium')), clip: true }), body);
         let corner: any; 
-        if (!((corner = CodeBlock.corner(this.caption, this.onCopy, this.inverse, theme)) != null)) return slab;
+        if (!((corner = CodeBlock.corner(this.caption, this.onCopy, this.inverse, theme)) != null)) return new Directionality('leftToRight', slab);
         let layers = new Stack('topStart', { width: SizeValue.fill });
         layers.add(slab);
         layers.add(corner);
-        return layers;
+        return new Directionality('leftToRight', layers);
     }
 
     static of(document: CodeDocument, language: any) {
@@ -300,8 +300,8 @@ export class CodeBlock extends StatelessComponent {
             this._foldsByHeader = $eq.collections.dictionary();
             for (const fold of $eq.collections.sequenceWalk(this.folds)) $eq.mapSet(this._foldsByHeader, fold.startLine, fold);
         }
-        let found: any; 
-        return (($0) => ($0.has(line) ? ((found = $0.get(line)), true) : ((found = null), false)))(this._foldsByHeader) ? found : null;
+        let found!: CodeFold; 
+        return (($0) => ($0.has(line) ? ((found = $0.get(line)), true) : ((found = null!), false)))(this._foldsByHeader) ? found : null;
     }
 
     isFolded(line: number) {
@@ -373,8 +373,8 @@ export class CodeBlock extends StatelessComponent {
         let [selected, selectedInk] = this.selectedOn(selectable, index, text.length, ink, theme);
         let at = 0;
         for (const token of $eq.collections.sequenceWalk(tokens)) {
-            let start = Math.min(Math.max(token.start, at), text.length);
-            let end = Math.min(Math.max(token.end, start), text.length);
+            let start = $eq.num.clamp(token.start, at, text.length, 'int32');
+            let end = $eq.num.clamp(token.end, start, text.length, 'int32');
             if (start > at) CodeBlock.addSpans(code, cells, at, start, ink, style, columnWidth, selected, selectedInk);
             CodeBlock.addSpans(code, cells, start, end, this.inverse ? CodeBlock.inverseCode(token.kind, theme) : theme.code(token.kind), style, columnWidth, selected, selectedInk);
             at = end;
@@ -388,16 +388,16 @@ export class CodeBlock extends StatelessComponent {
     }
 
     cellsOf(line: number) {
-        let cells: any; 
-        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._cells)) return cells;
+        let cells!: CodeLineCells; 
+        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null!), false)))(this._cells)) return cells;
         cells = new CodeLineCells(this.document.line(line), this.tabSize);
         $eq.mapSet(this._cells, line, cells);
         return cells;
     }
 
     fillerCellsOf(line: number) {
-        let cells: any; 
-        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._fillerCells)) return cells;
+        let cells!: CodeLineCells; 
+        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null!), false)))(this._fillerCells)) return cells;
         cells = new CodeLineCells((this.fillerDocument!).line(line), this.tabSize);
         $eq.mapSet(this._fillerCells, line, cells);
         return cells;
@@ -544,8 +544,8 @@ export class CodeBlock extends StatelessComponent {
     static addSpans(code: Row, cells: CodeLineCells, from: number, to: number, color: ColorToken, style: TypeStyle, columnWidth: number, selected: any[], selectedInk: ColorToken) {
         let at = from;
         for (const stretch of $eq.collections.listWalk(selected)) {
-            let inFrom = Math.min(Math.max(stretch[0], at), to);
-            let inTo = Math.min(Math.max(stretch[1], inFrom), to);
+            let inFrom = $eq.num.clamp(stretch[0], at, to, 'int32');
+            let inTo = $eq.num.clamp(stretch[1], inFrom, to, 'int32');
             if (inTo <= inFrom) continue;
             CodeBlock.addSpan(code, cells, at, inFrom, color, style, columnWidth);
             CodeBlock.addSpan(code, cells, inFrom, inTo, selectedInk, style, columnWidth);

@@ -436,6 +436,20 @@ public static class PatternConverter
         if (context.SemanticHelper.GetSymbol(typeSyntax) is INamedTypeSymbol { TypeKind: TypeKind.Interface } contract)
             return InterfaceTests.Test(contract, access, typeSyntax, context);
 
+        // A TYPE PARAMETER: the browser carries no type arguments at run time. A closed construction is marked with
+        // them as text ($eq.closing), and "is a T" takes a subclass, which no text answers. So nothing can say what T
+        // is, and the test fell to the line below, true for any value that is not null: a factory of one recognizer
+        // said it made every one (#1846). A construct the model cannot answer is a build error, never a guess.
+        if (context.SemanticHelper.GetSymbol(typeSyntax) is ITypeParameterSymbol parameter)
+        {
+            context.Report(typeSyntax, ConversionSeverity.Error, "EQ2016",
+                $"A type test against the type parameter '{parameter.Name}' has no JavaScript translation: the browser "
+                + "carries no type arguments at run time, so nothing says what "
+                + $"'{parameter.Name}' is. Pass the test in (a Func<object, bool>, or the Type to compare), or test for a "
+                + "class the value is.");
+            return "false";
+        }
+
         return $"{access} != null";
     }
 

@@ -21,4 +21,7 @@ namespace eQuantic.UI.Native.Components;
 /// <param name="Content">The look in effect where the node that queued the layer stands
 /// (<see cref="EmitState.Content"/>, #1577): the layer is laid out and painted under it, so a panel
 /// shown in a layer of its own looks as it would in place, where the web lowers it.</param>
-internal readonly record struct QueuedLayer(Overlay Layer, NodeElement? Holder, bool InScrolledHeader, ContentStyle? Content);
+/// <param name="Combo">What the layer's listbox says, when a text field it hangs from makes it an editable
+/// combobox's, or null: the option the keyboard is on is said from that field as it changes (#1088).</param>
+internal readonly record struct QueuedLayer(Overlay Layer, NodeElement? Holder, bool InScrolledHeader,
+    ContentStyle? Content, ComboAnnouncement? Combo = null);

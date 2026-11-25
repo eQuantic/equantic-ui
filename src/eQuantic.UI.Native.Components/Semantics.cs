@@ -26,10 +26,17 @@ public static class SemanticsTree
     public static IReadOnlyList<SemanticNode> Collect(RealizeResult frame)
     {
         var nodes = new List<SemanticNode>();
-        var visitor = new SemanticsVisitor(nodes);
+        // An anchored node's panel is laid out in a layer built in the anchored node's own deferred slot, so
+        // the layer's root names that node's position as its parent: read in place by the walk (#1868).
+        var panels = new Dictionary<Element, LayoutNode>();
+        foreach (var layer in frame.OverlayRoots)
+            if (layer.Element?.Parent is NodeElement { Configuration: Anchored } holder)
+                panels[holder] = layer;
+        var visitor = new SemanticsVisitor(nodes, panels);
         Walk(frame.Root, visitor);
         for (var i = 0; i < frame.OverlayRoots.Count; i++)
         {
+            if (visitor.ReadInPlace(frame.OverlayRoots[i])) continue;
             // The LAYER's own stop comes first and belongs to the layer, not to the placeholder the
             // page flow keeps: announced here it carries the overlay root's bounds and sits
             // immediately before its own descendants, which is the whole of what a group means.

@@ -517,6 +517,46 @@ public class ConstructorInjectionTests
     }
 
     /// <summary>
+    /// The same drop beside an object initializer, whose config rides the twin's trailing slot (#1827). The defaults
+    /// before it are counted over the parameters the twin keeps: counted over the C# ones, the dependency included,
+    /// one default too many went before the config, which landed past the twin's last parameter, and with no argument
+    /// after the dependency the first data parameter took the dependency's default.
+    /// </summary>
+    [Theory]
+    [InlineData("new Quark(null!, mood: \"x\") { Size = 3 }", "new Quark('x', { size: 3 })")]
+    [InlineData("new Quark(null!, \"y\") { Size = 4 }", "new Quark('y', { size: 4 })")]
+    [InlineData("new Quark(null!) { Size = 5 }", "new Quark('calm', { size: 5 })")]
+    [InlineData("new Middle(\"a\", null!) { Tone = \"warm\" }", "new Middle('a', 3, { tone: 'warm' })")]
+    public void AConstructionWithADependency_PutsTheInitializerInTheTwinsTrailingSlot(string written, string expected)
+    {
+        var section = TranspileAll($$"""
+            using eQuantic.UI.Components;
+            using eQuantic.UI.Primitives;
+
+            namespace eQuantic.UI.Web.Tests.Fixtures;
+
+            public sealed class Quark(IClock clock, string mood = "calm") : StatelessComponent
+            {
+                public int Size { get; init; }
+                public override VisualNode Build(ComponentContext context) => new Button(title: mood + Size);
+            }
+
+            public sealed class Middle(string before, IClock clock, int after = 3) : StatelessComponent
+            {
+                public string Tone { get; init; } = "plain";
+                public override VisualNode Build(ComponentContext context) => new Button(title: before + after + Tone);
+            }
+
+            public sealed class Host : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => {{written}};
+            }
+            """);
+
+        section.Should().Contain(expected);
+    }
+
+    /// <summary>
     /// The STATIC resolver, written by hand. It is public API in Primitives — a component reaches
     /// for it where it has neither a context nor a constructor to take one through — and it names a
     /// class the browser has never heard of, so without a mapping the module fails to load whole.

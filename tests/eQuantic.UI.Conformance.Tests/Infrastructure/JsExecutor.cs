@@ -187,12 +187,24 @@ public static class JsExecutor
     /// <summary>Runs a process to its end and answers what it wrote, through
     /// <see cref="ChildProcess.Run"/>: one that outlives <paramref name="timeoutMs"/> is killed with
     /// every process it started, rather than left running past the test that started it, and one whose
-    /// output a process it left behind still holds fails at the same deadline rather than holding the
+    /// output a process it left behind still holds fails at the clock's deadline rather than holding the
     /// test host (#971). What it wrote is read as UTF-8, which is what Bun and Node write: left to the
     /// default, Windows decodes a redirected stream with its OEM code page, and the one conformance case
-    /// printing a character past ASCII (`¤`) read two characters there and failed on Windows alone.</summary>
+    /// printing a character past ASCII (`¤`) read two characters there and failed on Windows alone.
+    /// <para>
+    /// <paramref name="timeoutMs"/> is WORK, the engine's own processor time, not the clock (#1850): a case
+    /// on a machine at a load of 160 over 14 cores got a ninth of a core, and the heaviest walk, three
+    /// seconds alone, ran past a twenty-second clock and failed with nothing wrong with it. A translation
+    /// that loops for ever still spends the work and is killed. The clock holds only a run that waits
+    /// without working, at <see cref="WaitingDeadline"/>.
+    /// </para></summary>
     internal static (int exitCode, string stdout, string stderr) RunProcess(string fileName, string[] args, int timeoutMs) =>
-        ChildProcess.Run(fileName, args, TimeSpan.FromMilliseconds(timeoutMs), encoding: System.Text.Encoding.UTF8);
+        ChildProcess.Run(fileName, args, WaitingDeadline, encoding: System.Text.Encoding.UTF8,
+            work: TimeSpan.FromMilliseconds(timeoutMs));
+
+    /// <summary>How long a run may wait without working: under CI's hang timeout (`--blame-hang-timeout
+    /// 15m`), so the run fails naming its command before the host is taken down for it.</summary>
+    private static readonly TimeSpan WaitingDeadline = TimeSpan.FromMinutes(10);
 
     private static InvalidOperationException Failure(string engine, int code, string program, string stdout, string stderr) =>
         new($"{engine} exited with code {code}.\nProgram:\n{program}\nstderr:\n{stderr}\nstdout:\n{stdout}");

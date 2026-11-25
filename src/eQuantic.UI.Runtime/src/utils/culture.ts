@@ -5,10 +5,12 @@
  *
  * A LEAF module on purpose: `eq.ts` and `utils/format.ts` read it, and a store any deeper in the
  * graph would close an eval-time cycle — the module-cycle law this tree already enforces twice.
- * Its one import is GENERATED DATA (no imports of its own), so the leaf stays a leaf.
+ * Its imports are GENERATED: data with no imports of its own, and a type the compiler erases, so the
+ * leaf stays a leaf.
  */
 
 import { sdkNeutralStrings } from '../shared/sdk-strings.generated';
+import type { TextDirectionValue } from '../shared/enums.generated';
 
 /** The catalog id the SDK's own strings live under — the class name eqc rewrites against. */
 const SDK_RESOURCE_ID = 'SdkResources';
@@ -253,6 +255,17 @@ let writtenCatalogs: ReadonlyMap<string, string> | null = null;
 /** Format data already in memory, by FORMAT culture name. */
 const formats = new Map<string, CultureFormat>();
 
+/** Which way the UI culture's text runs: left to right until the server says otherwise, as the
+ * invariant culture's does. */
+let activeDirection: TextDirectionValue = 'leftToRight';
+
+/** Which way a culture's text runs, by name, as the server said it (.NET's `TextInfo.IsRightToLeft`):
+ * the browser keeps no list of languages of its own, which would be a second answer that drifts from ICU. */
+const directions = new Map<string, TextDirectionValue>();
+
+/** The cultures whose document was asked for, answered or not: a switch asks the server once. */
+const askedForDirection = new Set<string>();
+
 /** What re-renders the mounted tree after a swap. Registered by boot rather than imported: this
  * module is a LEAF, and reaching the component tree from here would close an eval-time cycle —
  * the same inversion the runtime already uses twice. */
@@ -280,6 +293,8 @@ async function defaultLoader(culture: string): Promise<Record<string, string> | 
  * page boots in, for one it switches to. */
 export interface CultureFormatDocument {
   format: CultureFormat;
+  /** Whether the culture's text runs right to left (.NET's `TextInfo.IsRightToLeft`). */
+  rightToLeft?: boolean;
 }
 
 /** Where a format culture's data is fetched from: the server, which writes it from .NET as it
@@ -315,8 +330,13 @@ export function installCulture(
   strings: Record<string, string>,
   formatData?: CultureFormat | null,
   written?: readonly string[],
+  /** Whether the UI culture's text runs right to left, as the server said; null or absent where it did
+   * not say, and then the direction the culture was last said to have stands, or the one in force. */
+  rightToLeft?: boolean | null,
 ): void {
   active = { ui, format };
+  if (typeof rightToLeft === 'boolean') directions.set(ui, rightToLeft ? 'rightToLeft' : 'leftToRight');
+  activeDirection = directions.get(ui) ?? (ui.length === 0 ? 'leftToRight' : activeDirection);
   activeStrings = strings;
   // What was installed is what a page was handed, until a switch says it fetched the whole (#1782).
   whole.delete(ui);
@@ -334,6 +354,12 @@ export function installCulture(
   // single point where the active culture changes, so no caller has to remember it.
   if (ui.length > 0 && typeof document !== 'undefined' && document.documentElement) {
     document.documentElement.lang = ui;
+  }
+  // And which way it reads, beside the language and for the same reason: the server stamps
+  // `<html dir>` from the culture, and a switch to Arabic that left `ltr` there laid the page out as
+  // English. Every start and end the lowering writes is logical CSS, so this one attribute mirrors them.
+  if (typeof document !== 'undefined' && document.documentElement) {
+    document.documentElement.dir = activeDirection === 'rightToLeft' ? 'rtl' : 'ltr';
   }
 }
 
@@ -414,10 +440,31 @@ export async function setCulture(ui: string, format?: string): Promise<void> {
   const formatName = format ?? ui;
   if (ui === active.ui && formatName === active.format) return;
 
-  const [found, data] = await Promise.all([catalogFor(ui), formatFor(formatName)]);
-  installCulture(ui, formatName, found?.strings ?? activeStrings, data);
+  const formatting = formatFor(formatName);
+  // The UI culture's direction, beside the rest: the format culture's document says it when the two are
+  // one, so it is read after that document arrives rather than asked for twice.
+  const direction = ui === formatName ? formatting.then(() => rightToLeftOf(ui)) : rightToLeftOf(ui);
+  const [found, data, rightToLeft] = await Promise.all([catalogFor(ui), formatting, direction]);
+  installCulture(ui, formatName, found?.strings ?? activeStrings, data, undefined, rightToLeft);
   if (found?.whole) whole.add(ui);
   invalidate?.();
+}
+
+/** Whether `ui`'s text runs right to left, from memory or from the server's document for it, or null
+ * when neither says (a switch with no server to ask). */
+async function rightToLeftOf(ui: string): Promise<boolean | null> {
+  if (ui.length === 0) return false;
+  if (!directions.has(ui) && !askedForDirection.has(ui)) rememberDirection(ui, await loadFormat(ui));
+  const known = directions.get(ui);
+  return known === undefined ? null : known === 'rightToLeft';
+}
+
+/** Records which way a culture's text runs, when its document says, and that it was asked. */
+function rememberDirection(culture: string, answer: CultureFormatDocument | null): void {
+  askedForDirection.add(culture);
+  if (typeof answer?.rightToLeft === 'boolean') {
+    directions.set(culture, answer.rightToLeft ? 'rightToLeft' : 'leftToRight');
+  }
 }
 
 /** The UI culture's catalog, from memory or by the server's walk, and whether it is the whole one, or
@@ -444,7 +491,12 @@ function catalogToAskFor(culture: string): string | null {
 /** The format culture's data, from memory or from the server, or null when neither has it. */
 async function formatFor(format: string): Promise<CultureFormat | null> {
   if (format.length === 0) return null;
-  return formats.get(format) ?? (await loadFormat(format))?.format ?? null;
+  const known = formats.get(format);
+  if (known !== undefined) return known;
+  const answer = await loadFormat(format);
+  // The same document says which way the culture reads, which a switch to it as the UI culture reads.
+  rememberDirection(format, answer);
+  return answer?.format ?? null;
 }
 
 /** `pt-BR` → [`pt-BR`, `pt`]. The .NET parent walk, by name, with no CultureInfo to consult. */
@@ -458,6 +510,14 @@ function parentChain(culture: string): string[] {
     name = name.slice(0, cut);
   }
   return chain;
+}
+
+/**
+ * Which way the UI culture's text runs: what a component reads as its `textDirection` when no
+ * `Directionality` stands above it (the C# `CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft`).
+ */
+export function activeTextDirection(): TextDirectionValue {
+  return activeDirection;
 }
 
 /** The pair in force — `str` reads ui, every D7 formatter reads format. */

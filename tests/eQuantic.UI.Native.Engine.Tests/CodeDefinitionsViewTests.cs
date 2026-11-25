@@ -87,6 +87,7 @@ public class CodeDefinitionsViewTests : IDisposable
         // What a surface draws over its code, a card among it, beside the code it draws.
         CodeSurface surface => [surface.Child, .. surface.Notes.Select(note => note.Child)],
         SingleChildNode single => [single.Child],
+        InheritedComponent inherited => [inherited.Child],
         _ => [],
     };
 
