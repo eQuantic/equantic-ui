@@ -29,6 +29,7 @@
 
 import type { Element as Position } from './runtime-exports';
 import { DISPOSABLE, nodeStateFor, type NodeState } from './node-states';
+import { readsRightToLeft } from '../dom/reading-direction';
 
 export interface ScrollViewportDeclaration {
   horizontal: boolean;
@@ -131,9 +132,22 @@ export function releaseDetachedScrollViewports(): void {
   for (const state of [...watched]) if (!state.view?.isConnected) state.stopWatching();
 }
 
+/**
+ * Where a scroll view is on its axis, counted from the READING START (#1569): the distance toward the end, in
+ * both directions, as Flutter's `ScrollPosition.pixels` is. A horizontal view that reads right to left has its
+ * `scrollLeft` at 0 at the start and negative toward the end (CSSOM View), so the offset is its negation.
+ * Read where the view sits, at the read: the nearest `[dir]` is the page's to rewrite, never a lowering's.
+ */
+export function scrollOffsetOf(view: HTMLElement, horizontal: boolean): number {
+  if (!horizontal) return view.scrollTop;
+  // `0 -` rather than a unary minus: the start is 0, not -0, which a caller comparing with Object.is would see.
+  return readsRightToLeft(view) ? 0 - view.scrollLeft : view.scrollLeft;
+}
+
+/** Scrolls a view to an offset counted from the reading start, the inverse of `scrollOffsetOf`. */
 function scrollTo(view: HTMLElement, horizontal: boolean, offset: number): void {
-  if (horizontal) view.scrollLeft = offset;
-  else view.scrollTop = offset;
+  if (!horizontal) view.scrollTop = offset;
+  else view.scrollLeft = readsRightToLeft(view) ? 0 - offset : offset;
 }
 
 /** Whether a commit is already waiting for the write. */

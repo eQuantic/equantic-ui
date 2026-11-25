@@ -148,10 +148,11 @@ import type {
   TableViewportNode,
   VisualNodeValue,
 } from './nodes';
-import type { KeyboardConventionValue, TextEntryKindValue } from './enums.generated';
+import type { KeyboardConventionValue, TextDirectionValue, TextEntryKindValue } from './enums.generated';
+import { readsRightToLeft } from '../dom/reading-direction';
 import { declareShortcut, shortcutMark, TAKES_KEY_FIRST } from '../dom/shortcuts';
 import { installScrolledController } from './scrolled-pinned';
-import { declareScrollViewport } from './scroll-viewports';
+import { declareScrollViewport, scrollOffsetOf } from './scroll-viewports';
 import { declareTableViewport, tableCellPlace } from './table-viewports';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
@@ -1823,7 +1824,10 @@ function lowerDraggable(
   if (node.follows !== false) {
     // A NORMALIZED rest is a fraction of the surface's own extent, which a percentage of its own box is.
     const offset = node.normalized ? `${num(rest * 100)}%` : px(rest);
-    if (rest !== 0) mergeAtomicDeclaration(child, 'translate', horizontal ? offset : `0 ${offset}`);
+    // Horizontal travel is toward the END (Draggable.Axis), so a horizontal rest is written through
+    // --eq-inline and mirrors under rtl; the controller negates the finger's travel by the same
+    // direction. A vertical rest is physical, as it always was (C# twin: TokenCss.TowardEnd).
+    if (rest !== 0) mergeAtomicDeclaration(child, 'translate', horizontal ? towardEnd(offset) : `0 ${offset}`);
     const glide = `translate ${Motion.baseMs}ms`;
     const own = atomicDeclaration(child, 'transition');
     replaceAtomicDeclaration(child, 'transition', own ? `${own}, ${glide}` : glide);
@@ -2145,7 +2149,13 @@ function edge(point: number | null | undefined, fraction: number | null | undefi
 function shift(x: number, y: number): string | undefined {
   return x === 0 && y === 0
     ? undefined
-    : `translate(${x === 0 ? '0' : `calc(var(--eq-inline, 1) * ${pct(x)})`}, ${y === 0 ? '0' : pct(y)})`;
+    : `translate(${x === 0 ? '0' : towardEnd(pct(x))}, ${y === 0 ? '0' : pct(y)})`;
+}
+
+/** A horizontal length measured toward the END of the direction where its element sits (C# TokenCss.TowardEnd twin):
+ * `--eq-inline` is 1 under `ltr` and -1 under `rtl`, so the same string follows a direction that changes. */
+function towardEnd(length: string): string {
+  return `calc(var(--eq-inline, 1) * ${length})`;
 }
 
 /** Spec §06 mirror: the generated eq-slide-x keyframes animate the wrapper; endpoints ride custom
@@ -2813,7 +2823,9 @@ function lowerScrollView(
       const target = event.target as HTMLElement;
       // C# declares the offset a float, and a HiDPI scroll offset is fractional: it enters as a
       // single, as every float-typed seam does (float-seams.spec.ts).
-      onScrolled(Math.fround(horizontal ? target.scrollLeft : target.scrollTop));
+      // Counted from the reading start, so a horizontal view that reads right to left reports the distance
+      // toward its end as a positive number, where its `scrollLeft` is negative (scrollOffsetOf).
+      onScrolled(Math.fround(scrollOffsetOf(target, horizontal)));
     }) as EventHandler;
   }
   if (node.onViewportChanged || node.offset || node.request) {
@@ -3077,6 +3089,11 @@ function lowerGlyph(
       width: px(width),
       height: px(height),
       color: color ? tokenValue(color) : undefined,
+      // A glyph that points along the reading turns where its element reads right to left (C# twin,
+      // #1569): the sign is `--eq-inline`, inherited from the nearest [dir], so it stays put inside a
+      // dir="ltr" surface and follows a culture switch with no new build. The individual `scale`
+      // property composes with any `transform` the glyph's author or parent writes.
+      scale: glyph.matchTextDirection ? 'var(--eq-inline, 1) 1' : undefined,
     }),
     viewBox: glyph.viewBox ?? '0 0 24 24',
   };
@@ -5301,11 +5318,19 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
     // READING ORDER (down is next) — WAI-ARIA's own split, one mapping per role family.
     const downIsNext = !valued;
     host.events['keydown'] = ((event: KeyboardEvent) => {
+      // The horizontal arrows are next and previous in the direction the element reads in, read from the
+      // nearest [dir] at the key (C# twin: the direction the visitor lowered under). ArrowUp and ArrowDown
+      // do not depend on it.
+      const reversed = readsRightToLeft(event.currentTarget as Element | null);
       const direction =
         event.key === 'ArrowRight'
-          ? 1
-          : event.key === 'ArrowLeft'
+          ? reversed
             ? -1
+            : 1
+          : event.key === 'ArrowLeft'
+            ? reversed
+              ? 1
+              : -1
             : event.key === 'ArrowUp'
               ? downIsNext
                 ? -1
@@ -5360,12 +5385,15 @@ function navigableCellId(scope: string, row: number, item: number): string {
  * this composite does not claim — which must then reach the page untouched, or an inline grid
  * would eat the browser's own Home/End.
  */
-function navigableMove(event: KeyboardEvent): NavigableMoveValue | null {
+function navigableMove(event: KeyboardEvent, direction: TextDirectionValue): NavigableMoveValue | null {
+  const rightToLeft = direction === 'rightToLeft';
   switch (event.key) {
+    // The horizontal arrows are the next and the previous item ALONG THE READING, so what each means
+    // depends on the direction; every other key means the same in both (C# twin: NavigableKeys.Move).
     case 'ArrowLeft':
-      return 'previousItem';
+      return rightToLeft ? 'nextItem' : 'previousItem';
     case 'ArrowRight':
-      return 'nextItem';
+      return rightToLeft ? 'previousItem' : 'nextItem';
     case 'ArrowUp':
       return 'previousRow';
     case 'ArrowDown':
@@ -5430,7 +5458,9 @@ function lowerNavigable(node: NavigableNode, context: LoweringContext, path: str
       // moves its caret and a letter is typed, and neither moves the composite. Only a FIELD: a grid's
       // cell a press focused still sends its keys up to the composite, as it always did.
       if (typedIntoAField(event)) return;
-      const which = navigableMove(event);
+      // Read where the composite sits, at the key: a Directionality that changed under a kept position
+      // rewrote one attribute, not this handler.
+      const which = navigableMove(event, readsRightToLeft(event.currentTarget as Element | null) ? 'rightToLeft' : 'leftToRight');
       if (which !== null) {
         // An arrow that also scrolls the page is two answers to one key.
         event.preventDefault();

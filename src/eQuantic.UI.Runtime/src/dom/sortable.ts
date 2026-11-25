@@ -16,6 +16,13 @@
  * In a list whose items have depths (`data-eq-sort-indent`, #1594) an item carries the deeper items right after it,
  * and a place between two items says the depth the item takes there: the pointer asks for one per indent it travelled
  * across, the keyboard's cross arrows step it, and `SortPlacement.depths` gives the order the guard is asked in.
+ *
+ * What is horizontal reads in the READING order, where each list sits (#1569), read when the pointer or the key
+ * arrives and never earlier (`reading-direction.ts` says why): a horizontal list under `rtl` hands
+ * `SortPlacement.place` each item's start measured from the right and the pointer the same, so the starts ascend in
+ * reading order as `Place` assumes; a vertical list's depth travel and the keyboard's cross arrows count toward the
+ * reading end as deeper; the keyboard's arrows along a horizontal list swap. The carried copy's position, its lean and
+ * the edge scroll stay physical on purpose: they follow the finger on the screen.
  */
 import { SortPlacement } from '../shared/components/SortPlacement';
 import { SortWords } from '../shared/components/SortWords';
@@ -25,6 +32,7 @@ import { getPhotonTheme } from '../shared/photon-context';
 import { num, tokenValue } from '../shared/css-values';
 import { activeItemOf } from './active-item';
 import { followPointer, pointerDownDelegate } from './pointer-gesture';
+import { readsRightToLeft } from './reading-direction';
 import { holdShortcuts } from './shortcuts';
 
 const delegate = pointerDownDelegate(onPointerDown);
@@ -173,7 +181,8 @@ function onPointerDown(down: PointerEvent): void {
     if (list) {
       const vertical = list.getAttribute('data-eq-sort-axis') !== 'x';
       // The depth the pointer asks for, from its travel across since it picked the item up (#1594).
-      const travelled = vertical ? pointer.x - down.clientX : pointer.y - down.clientY;
+      // Toward the reading end of the list it is over, which is leftwards where that list reads right to left.
+      const travelled = vertical ? (readsRightToLeft(list) ? -1 : 1) * (pointer.x - down.clientX) : pointer.y - down.clientY;
       const wants = SortPlacement.wanted(ownDepth, travelled, indentOf(list));
       const others = othersOf(list, item);
       const [index, into] = spotIn(list, others, pointer.x, pointer.y);
@@ -364,10 +373,13 @@ function spotIn(list: HTMLElement, others: HTMLElement[], x: number, y: number):
   const vertical = list.getAttribute('data-eq-sort-axis') !== 'x';
   const nests = list.getAttribute('data-eq-sort-nests') === '1';
   const boxes = others.map((other) => other.getBoundingClientRect());
+  // `Place` reads starts that ascend in reading order. A horizontal list under rtl reads from its right edge, so
+  // each start is the distance from the right and the pointer is measured the same way; the extents are the same.
+  const reversed = !vertical && readsRightToLeft(list);
   const [index, into] = SortPlacement.place(
-    boxes.map((box) => (vertical ? box.top : box.left)),
+    boxes.map((box) => (vertical ? box.top : reversed ? -box.right : box.left)),
     boxes.map((box) => (vertical ? box.height : box.width)),
-    vertical ? y : x,
+    vertical ? y : reversed ? -x : x,
     nests,
   );
   return [index, into];
@@ -675,10 +687,13 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement, fromComposite: 
 
   function key(ev: KeyboardEvent): void {
     const vertical = list.getAttribute('data-eq-sort-axis') !== 'x';
-    const next = vertical ? 'ArrowDown' : 'ArrowRight';
-    const previous = vertical ? 'ArrowUp' : 'ArrowLeft';
-    const across = vertical ? 'ArrowRight' : 'ArrowDown';
-    const back = vertical ? 'ArrowLeft' : 'ArrowUp';
+    // The horizontal arrows are toward the reading end and toward its start, so they swap where the list reads
+    // right to left: along a horizontal list (next and previous) and across a vertical one (deeper and shallower).
+    const [toEnd, toStart] = readsRightToLeft(list) ? ['ArrowLeft', 'ArrowRight'] : ['ArrowRight', 'ArrowLeft'];
+    const next = vertical ? 'ArrowDown' : toEnd;
+    const previous = vertical ? 'ArrowUp' : toStart;
+    const across = vertical ? toEnd : 'ArrowDown';
+    const back = vertical ? toStart : 'ArrowUp';
     switch (ev.key) {
       case next:
         stepAlong(1);
