@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Button, CornerRadii, Motion, Pressable, Row, SizeValue, StatelessComponent, StyleDiff, Text, TransitionSpec } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, Button, CornerRadii, Motion, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, StyleDiff, Text, TransitionSpec } from "../runtime-exports";
 
 export class Pagination extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Pagination';
@@ -33,9 +33,9 @@ export class Pagination extends StatelessComponent {
             previous = page;
         }
         let row = new Row(slot?.paginationGap ?? 8, 'start', 'center', false, null, null, { cross: 'center' });
-        row.add(Pagination.step('Previous', current > 1, () => this.onChanged?.(current - 1 | 0)));
+        row.add(Pagination.step(SdkStrings.previousPage, current > 1, () => this.onChanged?.(current - 1 | 0)));
         row.add(numbers);
-        row.add(Pagination.step('Next', current < this.pageCount, () => this.onChanged?.(current + 1 | 0)));
+        row.add(Pagination.step(SdkStrings.nextPage, current < this.pageCount, () => this.onChanged?.(current + 1 | 0)));
         return row;
     }
 
@@ -61,7 +61,7 @@ export class Pagination extends StatelessComponent {
         let centered = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center' });
         centered.add(new Text($eq.text.format(page, null, undefined, undefined, 'int32'), 'caption', current ? theme.colors('primary').onBase : slot?.pageColor ?? theme.textSecondary, 1, 'start', false, false, null, 0, { tabular: true }));
         let box = new Box(new BoxStyle({ width: cell, height: cell, background: current ? theme.colors('primary').base : null, cornerRadius: new CornerRadii(slot?.pageRadius ?? theme.shape('small')), hover: current ? null : new StyleDiff({ background: slot?.quietFill ?? theme.surfaceSubtle }), transition: TransitionSpec.of(1, Motion.press) }), centered);
-        return new Pressable(box, current ? null : () => this.onChanged?.(page), { label: `Page ${$eq.text.format(page, null, undefined, undefined, 'int32')}`, selected: current });
+        return new Pressable(box, current ? null : () => this.onChanged?.(page), { label: SdkStrings.pageNumbered(page), selected: current });
     }
 
     static ellipsis(theme: any) {
