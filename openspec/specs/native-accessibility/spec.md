@@ -94,9 +94,10 @@ saying whether its list is open, the rule the web applies to the anchor's root. 
 author's label, and by nothing without one, and what its field shows SHALL be its value, as the web reads a
 select-only combobox, which is never named from its content. A menu's trigger SHALL
 stay a button. An open modal layer SHALL reach the tree as a `Dialog` named by its label, or as an
-`AlertDialog` when it interrupts, as the web's `role="dialog"` and `role="alertdialog"` do. The layer
-Photon opens for an anchored panel SHALL be a dialog only when its panel is one, and no stop at all for
-a menu, a listbox or a tooltip.
+`AlertDialog` when it interrupts, as the web's `role="dialog"` and `role="alertdialog"` do. An anchored
+panel SHALL be a dialog only when it is one, and its stop SHALL be the panel itself, after the scrim's
+dismiss button, as the web's `role="dialog"` is the panel and its scrim stands outside it. A menu's, a
+listbox's or a tooltip's panel SHALL be no stop at all.
 
 #### Scenario: A select, closed and then open
 
@@ -113,7 +114,8 @@ a menu, a listbox or a tooltip.
 #### Scenario: A date picker's calendar
 
 - **WHEN** a `DatePicker`'s calendar is opened
-- **THEN** the tree holds one `Dialog`, followed by the calendar's days, and the opener stays a button
+- **THEN** the opener stays a button, followed by the scrim's dismiss button, one `Dialog`, and the calendar's
+  days
 
 #### Scenario: A labelled combobox
 
@@ -345,3 +347,28 @@ and the grid's other rows SHALL be read as they are.
 
 - **WHEN** a `Calendar`, and a `DatePicker` with its calendar open, are lowered to the DOM and laid out on Photon
 - **THEN** the grid, its column headers and its cells are the same roles and names on both targets
+
+### Requirement: An anchored panel is read right after its anchor
+
+On Photon, the stops of an open anchored panel (a menu, a select's list, an editable combobox's list, a date
+picker's calendar) SHALL follow its anchor's stops, before whatever follows the anchored node on the page, as the
+web lowers the panel inside the anchor's markup and as Flutter attaches an `OverlayPortal`'s child to the portal's
+semantics. An anchored node the walk does not reach SHALL have its panel read after the page, as before.
+
+#### Scenario: An open menu in the middle of a page
+
+- **WHEN** a text "Before", a menu triggered by "More" holding "Rename" and "Delete" and open, and a text "After"
+  are laid out on Photon
+- **THEN** the reader hears "Before", the "More" button, the "Rename" and "Delete" menu items, then "After"
+
+#### Scenario: A dialog panel
+
+- **WHEN** a dismissible anchored dialog panel holding "July 2026" hangs from a "Pick" button between "Before" and
+  "After", open
+- **THEN** the reader hears "Before", "Pick", the "Dismiss" button, a `Dialog`, "July 2026", then "After"
+
+#### Scenario: The web and Photon agree on an open date picker
+
+- **WHEN** a `DatePicker` with its calendar open is lowered to the DOM and laid out on Photon
+- **THEN** both read the field, the opener, the dismiss button, the dialog, the calendar and then the field's
+  message line, in that order

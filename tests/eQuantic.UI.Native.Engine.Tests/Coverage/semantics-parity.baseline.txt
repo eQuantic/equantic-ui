@@ -5,10 +5,6 @@
 # This list may ONLY SHRINK. An entry is written BY HAND, with its reason after two spaces.
 # Regenerate with EQ_UPDATE_SEMANTICS_PARITY_BASELINE=1 after a REMOVAL: it keeps every reason
 # already written and never adds an entry.
-case date-picker opened: Button "Dismiss" is announced on Photon only  waits on #1868: the web reads the scrim's dismiss button before a dialog panel, and Photon inside the dialog, whose stop is the whole layer
-case date-picker opened: Button "Dismiss" is announced on the web only  waits on #1868: the web reads the scrim's dismiss button before a dialog panel, and Photon inside the dialog, whose stop is the whole layer
-case date-picker opened: Group "" is announced on Photon only  waits on #1868: the web reads the calendar in place inside its field, and Photon after the page, so the field's message line falls on either side of it
-case date-picker opened: Group "" is announced on the web only  waits on #1868: the web reads the calendar in place inside its field, and Photon after the page, so the field's message line falls on either side of it
 eQuantic.UI.Spreadsheets.Spreadsheet: Group "" is announced on the web only  waits on #1444: a spreadsheet's moves are announced by a status region of their own on the web and by the field itself on Photon
 eQuantic.UI.Spreadsheets.Spreadsheet: StaticText "A1, blank" is announced on the web only  waits on #1444: a spreadsheet's moves are announced by a status region of their own on the web and by the field itself on Photon
 eQuantic.UI.Spreadsheets.Spreadsheet: TextField "Spreadsheet" is announced on Photon only  waits on #1444: a spreadsheet's moves are announced by a status region of their own on the web and by the field itself on Photon
