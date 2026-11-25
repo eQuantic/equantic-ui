@@ -1,291 +1,194 @@
-using System.Collections.Concurrent;
 using System.Net;
-using System.Text.Json;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using tusdotnet.Stores;
 
 namespace eQuantic.UI.Server;
 
 /// <summary>
-/// The uploads the server keeps, in one folder: each one's bytes, kept by the tus engine's disk store,
-/// and its record (<see cref="UploadRecord"/>) beside them as <c>&lt;id&gt;.upload.json</c>. The
-/// records are read back the first time the server is asked about an upload, so an upload cut off by a
-/// restart or a deploy can still be continued, and received, by its owner and nobody else.
-/// <para>
-/// The records are held in memory once read, so the store serves ONE instance of the app: several
-/// instances behind a balancer each know only the uploads they received, and a part sent to another
-/// one is refused as an upload it never saw.
-/// </para>
+/// The uploads, as the endpoint, the Server Actions and the cleaner see them: kept by the app's
+/// <see cref="IUploadStorage"/>, which this asks for every answer instead of holding any in memory, so
+/// several instances over one storage answer as one. It hands the storage only the ids the server gives,
+/// counts the limits from what the storage keeps, and holds, in this instance's memory, the places the
+/// creations it accepted hold until their records are written.
 /// </summary>
 internal sealed class UploadStore
 {
-    private const string RecordSuffix = ".upload.json";
-
-    /// <summary>
-    /// Guards what the limits read: the records, which of them are finished, the places creations hold,
-    /// and the tallies kept of all three. One lock over them, so a record that is written and the place
-    /// it held that is given back are one step to every count.
-    /// </summary>
+    /// <summary>The places held, read and changed under it.</summary>
     private readonly object _gate = new();
-    private readonly ConcurrentDictionary<string, UploadRecord> _records = new(StringComparer.Ordinal);
-    private readonly HashSet<string> _finished = new(StringComparer.Ordinal);
-    /// <summary>Each owner's uploads, counted as they come and go: a count of the records under the lock on
-    /// every creation grew with every upload the store kept (#1287).</summary>
-    private readonly Dictionary<string, Tally> _owners = new(StringComparer.Ordinal);
-    private readonly Tally _total = new();
-    private readonly UploadsOptions _options;
-    private readonly Lazy<Task> _loaded;
-    private readonly ILogger<UploadStore> _logger;
-
-    public UploadStore(IOptions<UploadsOptions> options, IHostEnvironment environment, ILogger<UploadStore> logger)
-    {
-        _logger = logger;
-        _options = options.Value;
-        Folder = FolderOf(options.Value, environment);
-        Directory.CreateDirectory(Folder);
-        logger.LogInformation("Uploads are kept in {Folder}", Folder);
-        Tus = new TusDiskStore(Folder);
-        _loaded = new Lazy<Task>(LoadAsync);
-    }
-
-    /// <summary>The folder the uploads are kept in.</summary>
-    public string Folder { get; }
-
-    /// <summary>The tus engine's store of the uploads' bytes, in <see cref="Folder"/>.</summary>
-    public TusDiskStore Tus { get; }
-
-    /// <summary>The record of the upload <paramref name="id"/>, or null when the server keeps none.</summary>
-    public async Task<UploadRecord?> FindAsync(string id)
-    {
-        await _loaded.Value;
-        return _records.GetValueOrDefault(id);
-    }
+    private readonly List<UploadReservation> _held = [];
 
     /// <summary>
-    /// Records an upload that started, on disk first, so a record the server answers by is one a
-    /// restart reads back, and gives back the place its creation held in the same step.
+    /// One creation weighed at a time on this instance: the listing, the check and the place it takes are
+    /// one step, so twelve creations sent at once cannot each count the uploads before the others' places.
     /// </summary>
-    public async Task AddAsync(UploadRecord record, UploadReservation? reservation, CancellationToken cancellationToken)
+    private readonly SemaphoreSlim _creations = new(1, 1);
+
+    private readonly UploadsOptions _options;
+
+    public UploadStore(IUploadStorage storage, IOptions<UploadsOptions> options)
     {
-        await _loaded.Value;
-        await File.WriteAllTextAsync(RecordPath(record.Id), JsonSerializer.Serialize(record), cancellationToken);
-        lock (_gate)
-        {
-            _records[record.Id] = record;
-            // One finished in its own creation (an empty file) was marked before its record was written.
-            Count(record, +1, unfinished: !_finished.Contains(record.Id));
-            if (reservation is not null && reservation.Take()) Unreserve(reservation);
-        }
+        Storage = storage;
+        _options = options.Value;
     }
 
-    /// <summary>Notes that the last byte of an upload arrived, so it no longer counts as unfinished. It
-    /// still counts as one of its owner's uploads, and its bytes as theirs, until it expires.</summary>
-    public async Task FinishAsync(string id)
-    {
-        await _loaded.Value;
-        lock (_gate)
-        {
-            if (_finished.Add(id) && _records.TryGetValue(id, out var record)) Count(record, 0, unfinished: true, finishing: true);
-        }
-    }
+    /// <summary>Where the uploads are kept.</summary>
+    public IUploadStorage Storage { get; }
 
-    /// <summary>Forgets an upload whose bytes are gone.</summary>
-    public async Task ForgetAsync(string id)
-    {
-        await _loaded.Value;
-        Forget(id);
-    }
+    /// <summary>
+    /// Whether <paramref name="id"/> is one the server gives: 32 lowercase hexadecimal digits. Any other is
+    /// answered as an upload that does not exist, without asking the storage, so a request cannot lead a
+    /// storage over a folder or a key space anywhere with a path.
+    /// </summary>
+    internal static bool IsId(string? id) =>
+        id is { Length: 32 } && id.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f');
+
+    /// <summary>A new upload's id.</summary>
+    public static string NewId() => Guid.NewGuid().ToString("N");
+
+    /// <summary>The record of the upload <paramref name="id"/>, or null when the storage keeps none.</summary>
+    public async Task<StoredUpload?> FindAsync(string id, CancellationToken cancellationToken = default) =>
+        IsId(id) ? await Storage.FindAsync(id, cancellationToken) : null;
+
+    /// <summary>How many of the upload's bytes the storage keeps.</summary>
+    public async Task<long> LengthAsync(string id, CancellationToken cancellationToken = default) =>
+        IsId(id) ? await Storage.LengthAsync(id, cancellationToken) : 0;
 
     /// <summary>Whether every byte of the upload has arrived.</summary>
-    public async Task<bool> IsCompleteAsync(UploadRecord record, CancellationToken cancellationToken) =>
-        await Tus.FileExistAsync(record.Id, cancellationToken)
-        && await Tus.GetUploadOffsetAsync(record.Id, cancellationToken) == record.Size;
+    public async Task<bool> IsCompleteAsync(StoredUpload record, CancellationToken cancellationToken) =>
+        await Storage.LengthAsync(record.Id, cancellationToken) == record.Size;
+
+    /// <summary>
+    /// Keeps the record of an upload that started, and gives back the place its creation held once the
+    /// storage holds it: until then the place counts it, and after, the record does.
+    /// </summary>
+    public async Task AddAsync(StoredUpload record, UploadReservation? reservation, CancellationToken cancellationToken)
+    {
+        // The place knows its upload's id before the record is written, so a creation weighed in between
+        // counts the two as the one upload they are.
+        if (reservation is not null)
+            lock (_gate) reservation.Id = record.Id;
+        await Storage.CreateAsync(record, cancellationToken);
+        if (reservation is not null && reservation.Take()) Release(reservation);
+    }
 
     /// <summary>
     /// Holds a place for an upload of <paramref name="size"/> bytes that <paramref name="owner"/> is
     /// creating, or answers the limit it would pass: the owner's unfinished uploads, the uploads and the
-    /// bytes the owner keeps, finished or not, and the uploads and the bytes the store keeps, everyone's
+    /// bytes the owner keeps, finished or not, and the uploads and the bytes the storage keeps, everyone's
     /// together. The places other creations hold count as uploads already made. A limit on uploads answers
-    /// 429, a limit on bytes 413, each naming the limit.
+    /// 429, a limit on bytes 413, each naming the limit; the owner's unfinished limit is the one that frees
+    /// itself, as those uploads finish.
     /// </summary>
-    public async Task<(UploadReservation? Reservation, HttpStatusCode Status, string? Refusal)> ReserveAsync(string owner, long size)
+    public async Task<UploadPlace> ReserveAsync(string owner, long size, CancellationToken cancellationToken = default)
     {
-        await _loaded.Value;
-        lock (_gate)
+        await _creations.WaitAsync(cancellationToken);
+        try
         {
-            var mine = _owners.GetValueOrDefault(owner) ?? new Tally();
-            if (mine.Unfinished + mine.ReservedUploads >= _options.MaxUnfinished)
-                return (null, HttpStatusCode.TooManyRequests, $"At most {_options.MaxUnfinished} uploads may be unfinished at a time.");
-            if (mine.Uploads + mine.ReservedUploads >= _options.MaxUploadsPerOwner)
-                return (null, HttpStatusCode.TooManyRequests, $"At most {_options.MaxUploadsPerOwner} uploads may be kept at a time.");
-            if (mine.Bytes + mine.ReservedBytes + size > _options.MaxBytesPerOwner)
-                return (null, HttpStatusCode.RequestEntityTooLarge, $"Your uploads may take at most {_options.MaxBytesPerOwner} bytes.");
-            if (_total.Uploads + _total.ReservedUploads >= _options.MaxTotalUploads)
-                return (null, HttpStatusCode.TooManyRequests, $"The server keeps at most {_options.MaxTotalUploads} uploads at a time: try again later.");
-            if (_total.Bytes + _total.ReservedBytes + size > _options.MaxTotalBytes)
-                return (null, HttpStatusCode.RequestEntityTooLarge, $"The server's uploads may take at most {_options.MaxTotalBytes} bytes: try again later.");
+            List<(string Owner, long Size, string? Id)> held;
+            lock (_gate) held = _held.Select(place => (place.Owner, place.Size, place.Id)).ToList();
+            var heldIds = held.Where(place => place.Id is not null).Select(place => place.Id!).ToHashSet(StringComparer.Ordinal);
 
-            foreach (var tally in new[] { TallyOf(owner), _total })
+            var mine = new Tally();
+            var all = new Tally();
+            await foreach (var upload in Storage.ListAsync(cancellationToken))
             {
-                tally.ReservedUploads++;
-                tally.ReservedBytes += size;
+                if (heldIds.Contains(upload.Id)) continue;
+                all.Add(upload.Size, unfinished: false);
+                if (string.Equals(upload.Owner, owner, StringComparison.Ordinal))
+                    mine.Add(upload.Size, unfinished: await Storage.LengthAsync(upload.Id, cancellationToken) < upload.Size);
             }
-        }
 
-        return (new UploadReservation(this, owner, size), HttpStatusCode.Created, null);
+            foreach (var place in held)
+            {
+                all.Add(place.Size, unfinished: true);
+                if (string.Equals(place.Owner, owner, StringComparison.Ordinal)) mine.Add(place.Size, unfinished: true);
+            }
+
+            if (mine.Unfinished >= _options.MaxUnfinished)
+                return UploadPlace.Refused(HttpStatusCode.TooManyRequests,
+                    $"At most {_options.MaxUnfinished} uploads may be unfinished at a time.", freesItself: true);
+            if (mine.Uploads >= _options.MaxUploadsPerOwner)
+                return UploadPlace.Refused(HttpStatusCode.TooManyRequests, $"At most {_options.MaxUploadsPerOwner} uploads may be kept at a time.");
+            if (mine.Bytes + size > _options.MaxBytesPerOwner)
+                return UploadPlace.Refused(HttpStatusCode.RequestEntityTooLarge, $"Your uploads may take at most {_options.MaxBytesPerOwner} bytes.");
+            if (all.Uploads >= _options.MaxTotalUploads)
+                return UploadPlace.Refused(HttpStatusCode.TooManyRequests,
+                    $"The server keeps at most {_options.MaxTotalUploads} uploads at a time: try again later.");
+            if (all.Bytes + size > _options.MaxTotalBytes)
+                return UploadPlace.Refused(HttpStatusCode.RequestEntityTooLarge,
+                    $"The server's uploads may take at most {_options.MaxTotalBytes} bytes: try again later.");
+
+            var reservation = new UploadReservation(this, owner, size);
+            lock (_gate) _held.Add(reservation);
+            return new UploadPlace(reservation, HttpStatusCode.Created, null, false);
+        }
+        finally
+        {
+            _creations.Release();
+        }
     }
 
-    /// <summary>Gives back a place <see cref="ReserveAsync"/> held, for a creation that wrote no record.</summary>
+    /// <summary>Gives back a place <see cref="ReserveAsync"/> held.</summary>
     internal void Release(UploadReservation reservation)
     {
-        lock (_gate) Unreserve(reservation);
+        lock (_gate) _held.Remove(reservation);
     }
 
-    private void Unreserve(UploadReservation reservation)
+    /// <summary>The upload's content, read from where it is kept.</summary>
+    public async Task<Stream> OpenReadAsync(string id, CancellationToken cancellationToken) =>
+        IsId(id)
+            ? await Storage.OpenReadAsync(id, cancellationToken)
+            : throw new FileNotFoundException("The upload's content is gone: it was deleted, or it expired.", id);
+
+    /// <summary>Removes an upload, its bytes and its record.</summary>
+    public async Task DeleteAsync(string id, CancellationToken cancellationToken)
     {
-        foreach (var tally in new[] { TallyOf(reservation.Owner), _total })
-        {
-            tally.ReservedUploads--;
-            tally.ReservedBytes -= reservation.Size;
-        }
-        DropIfEmpty(reservation.Owner);
+        if (IsId(id)) await Storage.DeleteAsync(id, cancellationToken);
     }
 
-    /// <summary>Counts a record in or out (<paramref name="sign"/>), or, <paramref name="finishing"/>, counts
-    /// it out of the unfinished only. Called under the lock.</summary>
-    private void Count(UploadRecord record, int sign, bool unfinished, bool finishing = false)
+    /// <summary>The ids of the uploads past their expiry at <paramref name="now"/>, finished or not.</summary>
+    public async Task<IReadOnlyList<string>> ExpiredAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
-        foreach (var tally in new[] { TallyOf(record.Owner), _total })
-        {
-            if (finishing)
-            {
-                tally.Unfinished--;
-                continue;
-            }
-            tally.Uploads += sign;
-            tally.Bytes += sign * record.Size;
-            if (unfinished) tally.Unfinished += sign;
-        }
-        DropIfEmpty(record.Owner);
+        var expired = new List<string>();
+        await foreach (var upload in Storage.ListAsync(cancellationToken))
+            if (upload.Expires <= now) expired.Add(upload.Id);
+        return expired;
     }
 
-    private Tally TallyOf(string owner)
+    /// <summary>
+    /// Removes every upload past its expiry at <paramref name="now"/>, finished or not, its bytes and its
+    /// record, and answers how many were removed.
+    /// </summary>
+    public async Task<int> RemoveExpiredAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
-        if (!_owners.TryGetValue(owner, out var tally)) _owners[owner] = tally = new Tally();
-        return tally;
+        // Listed whole before anything is removed: a storage need not let its listing change under it.
+        var expired = await ExpiredAsync(now, cancellationToken);
+        foreach (var id in expired) await DeleteAsync(id, cancellationToken);
+        return expired.Count;
     }
 
-    private void DropIfEmpty(string owner)
-    {
-        if (_owners.TryGetValue(owner, out var tally) && tally is { Uploads: 0, ReservedUploads: 0 }) _owners.Remove(owner);
-    }
-
-    /// <summary>What an owner, or the whole store, keeps and holds places for.</summary>
+    /// <summary>What an owner, or the whole storage, keeps and holds places for.</summary>
     private sealed class Tally
     {
         public int Uploads;
         public long Bytes;
         public int Unfinished;
-        public int ReservedUploads;
-        public long ReservedBytes;
-    }
 
-    /// <summary>The upload's content, read from the disk a part at a time.</summary>
-    public async Task<Stream> OpenReadAsync(string id, CancellationToken cancellationToken)
-    {
-        var file = await Tus.GetFileAsync(id, cancellationToken)
-                   ?? throw new FileNotFoundException("The upload's content is gone: it was deleted, or it expired.", id);
-        return await file.GetContentAsync(cancellationToken);
-    }
-
-    /// <summary>Removes an upload, its bytes and its record.</summary>
-    public async Task DeleteAsync(string id, CancellationToken cancellationToken)
-    {
-        await _loaded.Value;
-        await Tus.DeleteFileAsync(id, cancellationToken);
-        Forget(id);
-    }
-
-    /// <summary>
-    /// Removes every upload past its expiry at <paramref name="now"/>, finished or not, its bytes and its
-    /// record; then the bytes the tus engine's own expiry removes, an upload whose creation stopped
-    /// before its record was written among them; then the records whose bytes are gone. Answers how
-    /// many uploads were removed.
-    /// </summary>
-    public async Task<int> RemoveExpiredAsync(DateTimeOffset now, CancellationToken cancellationToken)
-    {
-        await _loaded.Value;
-        var removed = 0;
-        foreach (var record in _records.Values.Where(record => record.Expires <= now).ToList())
+        public void Add(long size, bool unfinished)
         {
-            await DeleteAsync(record.Id, cancellationToken);
-            removed++;
-        }
-
-        removed += await Tus.RemoveExpiredFilesAsync(cancellationToken);
-        foreach (var record in _records.Values.ToList())
-            if (!await Tus.FileExistAsync(record.Id, cancellationToken)) Forget(record.Id);
-        return removed;
-    }
-
-    private void Forget(string id)
-    {
-        lock (_gate)
-        {
-            if (_records.TryRemove(id, out var record)) Count(record, -1, unfinished: !_finished.Contains(id));
-            _finished.Remove(id);
-        }
-
-        File.Delete(RecordPath(id));
-    }
-
-    private async Task LoadAsync()
-    {
-        foreach (var path in Directory.EnumerateFiles(Folder, "*" + RecordSuffix))
-        {
-            var id = Path.GetFileName(path)[..^RecordSuffix.Length];
-            try
-            {
-                var record = JsonSerializer.Deserialize<UploadRecord>(await File.ReadAllTextAsync(path));
-                // A record names the bytes of its own file name and no other, and a record whose bytes
-                // are gone (removed while the server was down) is forgotten.
-                if (record is not null && record.Id == id && await Tus.FileExistAsync(id, CancellationToken.None))
-                {
-                    var finished = await IsCompleteAsync(record, CancellationToken.None);
-                    lock (_gate)
-                    {
-                        _records[id] = record;
-                        if (finished) _finished.Add(id);
-                        Count(record, +1, unfinished: !finished);
-                    }
-                }
-                else
-                {
-                    File.Delete(path);
-                }
-            }
-            catch (Exception exception) when (exception is IOException or JsonException or UnauthorizedAccessException)
-            {
-                _logger.LogWarning(exception, "Skipped the unreadable upload record {File}", path);
-            }
+            Uploads++;
+            Bytes += size;
+            if (unfinished) Unfinished++;
         }
     }
+}
 
-    private string RecordPath(string id) => Path.Combine(Folder, id + RecordSuffix);
-
-    /// <summary>
-    /// The folder the options name, under the app's content root when relative, or else one of the
-    /// app's own under the system's temporary folder: two apps on one machine never share uploads they
-    /// did not choose to share.
-    /// </summary>
-    internal static string FolderOf(UploadsOptions options, IHostEnvironment environment)
-    {
-        if (!string.IsNullOrWhiteSpace(options.Folder))
-            return Path.GetFullPath(options.Folder, environment.ContentRootPath);
-        var invalid = Path.GetInvalidFileNameChars();
-        var app = new string(environment.ApplicationName.Select(c => invalid.Contains(c) ? '-' : c).ToArray());
-        return Path.Combine(Path.GetTempPath(), "equantic-uploads", app.Length > 0 ? app : "app");
-    }
+/// <summary>
+/// What weighing a creation answered: the place it holds, or the status and the reason it is refused
+/// with, and whether the limit it met frees itself (the owner's unfinished uploads), so a page may wait
+/// for it instead of failing.
+/// </summary>
+internal readonly record struct UploadPlace(UploadReservation? Reservation, HttpStatusCode Status, string? Refusal, bool FreesItself)
+{
+    public static UploadPlace Refused(HttpStatusCode status, string refusal, bool freesItself = false) =>
+        new(null, status, refusal, freesItself);
 }

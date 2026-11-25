@@ -57,4 +57,47 @@ public sealed class UploadsWikiTests
         upload.Result.Should().BeNull();
         await app.StopAsync();
     }
+
+    /// <summary>The app's own storage, as the page's section on several instances writes one: here over
+    /// the shared backing the instances' tests use.</summary>
+    private sealed class BucketUploadStorage(SharedUploads bucket) : IUploadStorage
+    {
+        private readonly SharedUploadStorage _keeps = new(bucket);
+
+        public ValueTask CreateAsync(StoredUpload upload, CancellationToken cancellationToken = default) => _keeps.CreateAsync(upload, cancellationToken);
+        public ValueTask<StoredUpload?> FindAsync(string id, CancellationToken cancellationToken = default) => _keeps.FindAsync(id, cancellationToken);
+        public ValueTask<long> LengthAsync(string id, CancellationToken cancellationToken = default) => _keeps.LengthAsync(id, cancellationToken);
+
+        public ValueTask<long> AppendAsync(string id, long offset, Stream content, CancellationToken cancellationToken = default) =>
+            _keeps.AppendAsync(id, offset, content, cancellationToken);
+
+        public ValueTask<Stream> OpenReadAsync(string id, CancellationToken cancellationToken = default) => _keeps.OpenReadAsync(id, cancellationToken);
+        public ValueTask DeleteAsync(string id, CancellationToken cancellationToken = default) => _keeps.DeleteAsync(id, cancellationToken);
+        public IAsyncEnumerable<StoredUpload> ListAsync(CancellationToken cancellationToken = default) => _keeps.ListAsync(cancellationToken);
+    }
+
+    [Fact]
+    public async Task TheStorageLineTheWikiWrites_KeepsTheUploadsInTheAppsStorage()
+    {
+        var bucket = new SharedUploads();
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            WebRootPath = Directory.CreateTempSubdirectory("eq-uploads-wiki-").FullName,
+        });
+        builder.WebHost.UseTestServer();
+        builder.Services.AddSingleton(bucket);
+        builder.Services.AddUI(ui => ui.UseUploads(uploads => uploads
+            .Accept(Uploads.Models)
+            .UseStorage<BucketUploadStorage>()));
+        await using var app = builder.Build();
+        app.MapUI();
+        await app.StartAsync();
+
+        var browser = new TusBrowser(app.GetTestClient());
+        var location = await browser.UploadAsync([1, 2, 3], "bracket.stl", "models", partSize: 3);
+
+        app.Services.GetRequiredService<IUploadStorage>().Should().BeOfType<BucketUploadStorage>();
+        lock (bucket.Gate) bucket.Bytes[TusBrowser.IdOf(location)].Should().Equal(1, 2, 3);
+        await app.StopAsync();
+    }
 }

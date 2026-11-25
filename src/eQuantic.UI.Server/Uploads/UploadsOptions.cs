@@ -16,7 +16,8 @@ public sealed class UploadsOptions
     public const string SectionName = "EQuantic:Uploads";
 
     /// <summary>
-    /// The folder the uploads are kept in, a relative one under the app's content root. By default a
+    /// The folder the uploads are kept in, a relative one under the app's content root, when the app
+    /// registers no storage of its own (<see cref="UploadsBuilder.UseStorage{TStorage}"/>). By default a
     /// folder of the app's own under the system's temporary folder; the server logs the one it uses
     /// when it starts.
     /// </summary>

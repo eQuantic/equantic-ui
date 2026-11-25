@@ -13,6 +13,7 @@ public sealed class UploadsBuilder
 {
     private readonly Dictionary<string, UploadPolicy> _policies = new(StringComparer.Ordinal);
     private readonly List<Action<UploadsOptions>> _configurations = [];
+    private Type? _storage;
 
     internal UploadsBuilder()
     {
@@ -40,6 +41,17 @@ public sealed class UploadsBuilder
         return this;
     }
 
+    /// <summary>
+    /// Keeps the uploads in <typeparamref name="TStorage"/>, registered as a singleton, instead of the
+    /// folder of this instance's disk: an app that runs several instances gives them a storage they all
+    /// reach, so every part of an upload, and the Server Action that receives it, may reach any of them.
+    /// </summary>
+    public UploadsBuilder UseStorage<TStorage>() where TStorage : class, IUploadStorage
+    {
+        _storage = typeof(TStorage);
+        return this;
+    }
+
     /// <summary>Overrides the settings read from <c>EQuantic:Uploads</c>.</summary>
     public UploadsBuilder Configure(Action<UploadsOptions> configure)
     {
@@ -60,7 +72,10 @@ public sealed class UploadsBuilder
         services.TryAddSingleton(TimeProvider.System);
         // Read when the first upload arrives, after every Accept the app's AddUI made.
         services.TryAddSingleton(_ => new UploadPolicies(_policies.Values));
+        if (_storage is null) services.TryAddSingleton<IUploadStorage, FolderUploadStorage>();
+        else services.Replace(ServiceDescriptor.Singleton(typeof(IUploadStorage), _storage));
         services.TryAddSingleton<UploadStore>();
+        services.TryAddSingleton<TusStorageAdapter>();
         services.TryAddSingleton<UploadProtocol>();
         services.AddHostedService<ExpiredUploadsCleaner>();
     }
