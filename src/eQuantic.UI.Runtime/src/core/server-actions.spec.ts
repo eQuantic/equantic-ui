@@ -61,3 +61,60 @@ describe('a server action carries the culture of its page', () => {
     expect(addresses).toEqual(['/custom/actions?tenant=a&culture=fr&ui-culture=fr']);
   });
 });
+
+/**
+ * How long the page waits for an action is the action's to say (#1881): the stub the compiler writes
+ * hands `invoke` the `timeoutMs` that `[ServerAction(TimeoutSeconds = …)]` states, and one that states
+ * none waits the default 30 seconds. Past it the request is abandoned and the call throws, naming the
+ * time it waited.
+ */
+describe('a server action waits as long as it states', () => {
+  let signals: AbortSignal[];
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    signals = [];
+    // A server that never answers: only the timeout ends the call.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, init: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            const signal = init.signal as AbortSignal;
+            signals.push(signal);
+            signal.addEventListener('abort', () =>
+              reject(new DOMException('aborted', 'AbortError')),
+            );
+          }),
+      ),
+    );
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('gives up at the timeout the action states, and not before', async () => {
+    const call = new ServerActionsClient().invoke('Report/Run', [], { timeoutMs: 120_000 });
+    const failed = expect(call).rejects.toThrow(
+      'Server action timed out after 120000ms: Report/Run',
+    );
+
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(signals[0].aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(90_000);
+    await failed;
+    expect(signals[0].aborted).toBe(true);
+  });
+
+  it('gives up at 30 seconds when the action states nothing', async () => {
+    const call = new ServerActionsClient().invoke('Report/Load');
+    const failed = expect(call).rejects.toThrow(
+      'Server action timed out after 30000ms: Report/Load',
+    );
+
+    await vi.advanceTimersByTimeAsync(30_000);
+    await failed;
+  });
+});

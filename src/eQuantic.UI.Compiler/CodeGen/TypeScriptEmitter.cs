@@ -866,7 +866,12 @@ public class TypeScriptEmitter
                     // The action's RESULT crosses the typed boundary too: a Task<decimal> arrives
                     // as a string, a Task<List<Todo>> as plain objects — hydrated ONCE here, by
                     // the spec of the C# return type, so the caller computes with runtime types.
-                    var invoke = $"getServerActionsClient().invoke('{action.ActionId}', [{argsList}])";
+                    // An action that states how long the browser waits for it hands the runtime its
+                    // own timeout; one that states none keeps the runtime's default, and its old shape.
+                    var options = action.TimeoutSeconds is > 0 and var seconds
+                        ? $", {{ timeoutMs: {seconds * 1000} }}"
+                        : "";
+                    var invoke = $"getServerActionsClient().invoke('{action.ActionId}', [{argsList}]{options})";
                     var resultSpec = HydrationSpec.Of(ActionValueType(action.SyntaxNode), _hydrationReferences, _hydrationRuntimeReferences);
                     if (resultSpec is not null) component.UsedHelpers.Add(Eq.Import);
 
