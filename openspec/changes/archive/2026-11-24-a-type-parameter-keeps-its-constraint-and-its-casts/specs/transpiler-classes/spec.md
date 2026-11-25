@@ -11,11 +11,13 @@ value a derived type evaluates before its base's constructor, and a primary cons
 null SHALL each hold the type C# declares for it. A generic class, a plain one, a record, a struct or a
 component, SHALL declare its type parameters in TypeScript and none in plain JavaScript, and a record's members
 SHALL name its own type by its closure. A type parameter constrained to a class that is not generic and has a twin
-SHALL be declared `T extends` that class, the class imported; any other constraint, an interface's included, since
+SHALL be declared `T extends` that class, the class imported, a nullable one (`ShapeBase?`) by its class, in TypeScript
+only; any other constraint, an interface's included, since
 an interface has no twin, SHALL leave it unconstrained. A cast
 to a type parameter SHALL assert it in TypeScript, `(value as T)`, checking nothing, as a downcast checks nothing,
-where TypeScript has the parameter in scope: a method's own, and a class's in an instance member. A local function's
-own, and a class's in a static member, which TypeScript forbids to read it, SHALL write the value alone, as before.
+where TypeScript has the parameter in scope: a method's own, and a class's in an instance member of that class. A
+local function's own, a class's in a static member, which TypeScript forbids to read it, and a class's in a type nested
+in it, which is a module of its own, SHALL write the value alone, as before.
 
 #### Scenario: A base calls its abstract members
 
@@ -77,6 +79,13 @@ own, and a class's in a static member, which TypeScript forbids to read it, SHAL
 - **WHEN** the same class's static member returns `(T)value`, and an instance member's local function
   `static TOut Cast<TOut>(object held) => (TOut)held` casts to its own parameter
 - **THEN** both write the value alone, and `tsc` takes them; asserted, it refused them with TS2302 and TS2304
+
+#### Scenario: A nullable class constraint and a type nested in a generic one
+
+- **WHEN** `class Maybe<T> where T : ShapeBase?` reads `_shape?.Area`, and `class Owner<T>` declares a nested `class Held`
+  whose instance member returns `(T)value`
+- **THEN** `Maybe`'s header is `Maybe<T extends ShapeBase>` and imports `ShapeBase`, `Held` writes the value alone, plain
+  JavaScript imports no class only a constraint names, and `tsc` takes them
 
 #### Scenario: A constraint with no twin
 

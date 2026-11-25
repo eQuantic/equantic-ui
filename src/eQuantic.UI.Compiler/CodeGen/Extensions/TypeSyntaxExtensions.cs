@@ -39,8 +39,9 @@ internal static class TypeSyntaxExtensions
     /// names alone, a member call on a <c>T</c> constrained to a class was refused (<c>Property 'area' does not exist
     /// on type 'T'</c>), and so was an override answering <c>T</c> where its base answers the class (#1854). A
     /// constraint the writer has no name for (<c>class</c>, <c>new()</c>, an interface, a generic) leaves the parameter
-    /// unconstrained, as it was. A member's annotation names the type by <see cref="TwinTypeParameters(TypeDeclarationSyntax)"/>,
-    /// the names alone.
+    /// unconstrained, as it was. A nullable class constraint (<c>where T : ShapeBase?</c>) is named by its class, since
+    /// the namer imports what it names and <c>ShapeBase | null</c> is no name to import. A member's annotation names the
+    /// type by <see cref="TwinTypeParameters(TypeDeclarationSyntax)"/>, the names alone.
     /// </summary>
     internal static IReadOnlyList<string> TwinTypeParameters(this TypeDeclarationSyntax declaration, Func<TypeSyntax, string?> constraint) =>
         declaration.TypeParameterList?.Parameters.Select(parameter =>
@@ -49,7 +50,7 @@ internal static class TypeSyntaxExtensions
             var bounds = declaration.ConstraintClauses
                 .Where(clause => clause.Name.Identifier.ValueText == parameter.Identifier.ValueText)
                 .SelectMany(clause => clause.Constraints.OfType<TypeConstraintSyntax>())
-                .Select(bound => constraint(bound.Type))
+                .Select(bound => constraint(bound.Type is NullableTypeSyntax nullable ? nullable.ElementType : bound.Type))
                 .OfType<string>()
                 .ToList();
             return bounds.Count == 0 ? name : $"{name} extends {string.Join(" & ", bounds)}";

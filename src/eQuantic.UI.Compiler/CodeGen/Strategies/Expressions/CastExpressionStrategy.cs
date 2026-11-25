@@ -158,9 +158,10 @@ public class CastExpressionStrategy : IExpressionIrStrategy
     /// <summary>
     /// Whether TypeScript has <paramref name="parameter"/> in scope where <paramref name="operation"/> stands, so an
     /// assertion may name it: a method's own, which its signature declares (<c>also&lt;T&gt;(node: T)</c>), and a class's,
-    /// in an instance member. A local function is an arrow that declares none, and TypeScript forbids a static member to
-    /// read a class's type parameters (TS2302): there a cast writes the value alone, as it did, rather than name a
-    /// parameter tsc cannot find.
+    /// in an instance member of that class. A local function is an arrow that declares none, TypeScript forbids a static
+    /// member to read a class's type parameters (TS2302), and a type nested in a generic one is a module of its own that
+    /// declares none of its owner's: there a cast writes the value alone, as it did, rather than name a parameter tsc
+    /// cannot find.
     /// </summary>
     private static bool InScope(ITypeParameterSymbol parameter, IOperation operation)
     {
@@ -170,7 +171,8 @@ public class CastExpressionStrategy : IExpressionIrStrategy
         var member = operation.SemanticModel?.GetEnclosingSymbol(operation.Syntax.SpanStart);
         while (member is IMethodSymbol { MethodKind: MethodKind.AnonymousFunction or MethodKind.LocalFunction })
             member = member.ContainingSymbol;
-        return member is { IsStatic: false };
+        return member is { IsStatic: false, ContainingType: { } owner }
+            && SymbolEqualityComparer.Default.Equals(parameter.ContainingSymbol, owner.OriginalDefinition);
     }
 
     /// <summary>
