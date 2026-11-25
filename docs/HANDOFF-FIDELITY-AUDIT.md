@@ -1876,11 +1876,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Checkbox.cs`
 - **Handoff**: "inline links inside the label keep their own hit rects" (the specimen's "I agree to the / terms of service")
-- **Code**: The label slot is a plain string rendered as one Text node, so a label cannot contain an inline link at all — there is no rich-label/child slot on the component. Checkbox.cs:24 + Checkbox.cs:62-63.
+- **Code**: The label slot is a plain string rendered as one Text node, so a label cannot contain an inline link at all — there is no rich-label/child slot on the component.
 - **Evidence**:
 
   ```
-  Checkbox.cs:24 — `public string? Label { get; init; }`; Checkbox.cs:63 — `row.Add(new Text(label, TypeRole.BodyM, Disabled ? theme.TextMuted : theme.TextPrimary, maxLines: 2));`
+  src/eQuantic.UI.Components/Checkbox.cs  public string? Label { get; init; }
+  src/eQuantic.UI.Components/Checkbox.cs  VisualNode text = new Text(label, TypeRole.BodyM, Disabled ? theme.TextMuted : theme.TextPrimary);
   ```
 
 ### B12 Switch · missing-feature · **unverified**
@@ -3255,11 +3256,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Checkbox.cs`
 - **Handoff**: the specimen strip lists a "disabled" state alongside unchecked / checked / mixed / error
-- **Code**: Disabled affects only the label's colour; the box keeps its full-strength Primary fill and BorderStrong border, so a label-less disabled checkbox is pixel-identical to an enabled one. Compare the sibling Switch, which does dim (Switch.cs:38 `if (Disabled) trackFill = trackFill.WithOpacity(theme.DisabledOpacity);`). Checkbox.cs:50-58 has no Disabled branch.
+- **Code**: Disabled affects only the label's colour; the box keeps its full-strength Primary fill and BorderStrong border, so a label-less disabled checkbox is pixel-identical to an enabled one. Compare the sibling Switch, which does dim (Switch.cs:38 `if (Disabled) trackFill = trackFill.WithOpacity(theme.DisabledOpacity);`). The box's style in Checkbox.cs has no Disabled branch: the label's colour is the only use of Disabled in the visual tree.
 - **Evidence**:
 
   ```
-  Checkbox.cs:63 — `row.Add(new Text(label, TypeRole.BodyM, Disabled ? theme.TextMuted : theme.TextPrimary, maxLines: 2));` (the only use of Disabled in the visual tree)
+  src/eQuantic.UI.Components/Checkbox.cs  VisualNode text = new Text(label, TypeRole.BodyM, Disabled ? theme.TextMuted : theme.TextPrimary);
   ```
 
 ### B11 Checkbox · semantics · **unverified**

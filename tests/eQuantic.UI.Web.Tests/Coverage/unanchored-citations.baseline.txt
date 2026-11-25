@@ -23,7 +23,7 @@ docs/HANDOFF-FIDELITY-AUDIT.md BottomNavigation.cs 9
 docs/HANDOFF-FIDELITY-AUDIT.md BottomSheet.cs 10
 docs/HANDOFF-FIDELITY-AUDIT.md Button.cs 2
 docs/HANDOFF-FIDELITY-AUDIT.md Card.cs 2
-docs/HANDOFF-FIDELITY-AUDIT.md Checkbox.cs 10
+docs/HANDOFF-FIDELITY-AUDIT.md Checkbox.cs 7
 docs/HANDOFF-FIDELITY-AUDIT.md Chip.cs 10
 docs/HANDOFF-FIDELITY-AUDIT.md ColorToken.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md CoreTextService.cs 2
