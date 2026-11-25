@@ -17,10 +17,13 @@ app, a table unmounted within 400 ms of a pan kept its guard alive until the tim
   table stops being watched: an unmount and a disposed position both reach that point (`stopWatching`).
 - **The click it waited for takes it.** When the guard stops the click it was armed for, it goes with its timer, so
   no timer of it is left waiting.
-- **The table spec lets go of what each case leaves**: its tables, and with them their guards.
+- **Every table the commit adopts is watched**, whether or not a `ResizeObserver` follows its size: it was watched
+  only through its observer, so where there is none an unmount never reached the guard.
+- **The specs let go of what they leave**: the table spec after each case, and the runtime's spec setup after each
+  file (`test-runtime.ts`), so a file whose last case pans a table leaves no timer behind it.
 
 A developer writes nothing different. No public surface and no developer surface moves.
 
 ## Impact
 
-- `eQuantic.UI.Runtime`: `table-viewports.ts` and its spec.
+- `eQuantic.UI.Runtime`: `table-viewports.ts`, its spec and the spec setup (`test-runtime.ts`).
