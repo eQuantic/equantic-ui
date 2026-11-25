@@ -2,7 +2,7 @@
 ### web
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl">
 <div role="tree" tabindex="0" aria-label="Files">
-<div id="eq-cell-r7b7st-0-0" tabindex="-1" role="treeitem" aria-expanded="true" aria-label="src" aria-selected="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="1" aria-posinset="1" aria-setsize="2">
+<div id="eq-cell-1ea4rf1-0-0" tabindex="-1" role="treeitem" aria-expanded="true" aria-label="src" aria-selected="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="1" aria-posinset="1" aria-setsize="2">
 <div class="eq-18tlusk eq-1eb13m5 eq-1su9m49 eq-1yf2q3w eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-96qelu eq-bo3n4y eq-g7fowl eq-i95eb9">
@@ -17,8 +17,8 @@
 </div>
 </div>
 </div>
-<div id="eq-cell-r7b7st-1-0" tabindex="-1" role="treeitem" aria-label="App.cs" aria-selected="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="2" aria-posinset="1" aria-setsize="2">
-<div class="eq-18tlusk eq-1eb13m5 eq-1su9m49 eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-n7cy6y eq-a51p1u eq-teoc5m">
+<div id="eq-cell-1ea4rf1-1-0" tabindex="-1" role="treeitem" aria-label="App.cs" aria-selected="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="2" aria-posinset="1" aria-setsize="2">
+<div class="eq-18tlusk eq-1eb13m5 eq-1p0bb5o eq-1su9m49 eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-txhpo8 eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-96qelu eq-bo3n4y eq-i95eb9 eq-kngwsg">
 </div>
@@ -28,8 +28,8 @@
 </div>
 </div>
 </div>
-<div id="eq-cell-r7b7st-2-0" tabindex="-1" role="treeitem" aria-label="Ui.cs" aria-selected="true" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="2" aria-posinset="2" aria-setsize="2">
-<div class="eq-18tlusk eq-1eb13m5 eq-1su9m49 eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-n7cy6y eq-p7ntc">
+<div id="eq-cell-1ea4rf1-2-0" tabindex="-1" role="treeitem" aria-label="Ui.cs" aria-selected="true" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="2" aria-posinset="2" aria-setsize="2">
+<div class="eq-18tlusk eq-1eb13m5 eq-1p0bb5o eq-1su9m49 eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-p7ntc eq-txhpo8">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-96qelu eq-bo3n4y eq-i95eb9 eq-kngwsg">
 </div>
@@ -39,7 +39,7 @@
 </div>
 </div>
 </div>
-<div id="eq-cell-r7b7st-3-0" tabindex="-1" role="treeitem" aria-expanded="false" aria-label="docs" aria-selected="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="1" aria-posinset="2" aria-setsize="2">
+<div id="eq-cell-1ea4rf1-3-0" tabindex="-1" role="treeitem" aria-expanded="false" aria-label="docs" aria-selected="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="1" aria-posinset="2" aria-setsize="2">
 <div class="eq-18tlusk eq-1eb13m5 eq-1su9m49 eq-1yf2q3w eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-96qelu eq-bo3n4y eq-g7fowl eq-i95eb9">
@@ -69,6 +69,7 @@
 .eq-1gudvpj{min-height:0}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
+.eq-1p0bb5o{padding-block:0}
 .eq-1su9m49{height:32px}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
@@ -90,11 +91,11 @@
 .eq-mbtjfn{overflow:hidden}
 .eq-mc2xdp{justify-content:flex-start}
 .eq-mxt4wl{border:2px solid #00000000}
-.eq-n7cy6y{padding:0 8px 0 24px}
 .eq-p7nbpw{text-align:start}
 .eq-p7ntc{background-color:var(--eq-color-primary-subtle, light-dark(#e8f1fa, #0f2740))}
 @media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
 }
+.eq-txhpo8{padding-inline:24px 8px}
 ### semantics
 Tree "Files"
 TreeItem "src" (level 1, 1 of 2, not selected, expanded)
@@ -105,39 +106,43 @@ TreeItem "docs" (level 1, 2 of 2, not selected, collapsed)
 TreeView 0 0 480x128
   Box 0 0 480x128
     Shortcut 0 0 480x128
-      Navigable 0 0 480x128
-        Pressable 0 0 480x32
-          Box 0 0 480x32
-            Row 10 2 460x28
-              Box 10 6 20x20
-                Icon 10 6 20x20
-              Flexible 34 6 436x20
-                Text 34 6 436x20 1 line(s)
-        Pressable 0 32 480x32
-          Box 0 32 480x32
-            Row 26 34 444x28
-              Box 26 38 20x20
-              Flexible 50 38 420x20
-                Text 50 38 420x20 1 line(s)
-        Pressable 0 64 480x32
-          Box 0 64 480x32
-            Row 26 66 444x28
-              Box 26 70 20x20
-              Flexible 50 70 420x20
-                Text 50 70 420x20 1 line(s)
-        Pressable 0 96 480x32
-          Box 0 96 480x32
-            Row 10 98 460x28
-              Box 10 102 20x20
-                Icon 10 102 20x20
-              Flexible 34 102 436x20
-                Text 34 102 436x20 1 line(s)
+      Shortcut 0 0 480x128
+        Shortcut 0 0 480x128
+          Shortcut 0 0 480x128
+            Shortcut 0 0 480x128
+              Navigable 0 0 480x128
+                Pressable 0 0 480x32
+                  Box 0 0 480x32
+                    Row 10 2 460x28
+                      Box 10 6 20x20
+                        Icon 10 6 20x20
+                      Flexible 34 6 436x20
+                        Text 34 6 436x20 1 line(s)
+                Pressable 0 32 480x32
+                  Box 0 32 480x32
+                    Row 26 34 444x28
+                      Box 26 38 20x20
+                      Flexible 50 38 420x20
+                        Text 50 38 420x20 1 line(s)
+                Pressable 0 64 480x32
+                  Box 0 64 480x32
+                    Row 26 66 444x28
+                      Box 26 70 20x20
+                      Flexible 50 70 420x20
+                        Text 50 70 420x20 1 line(s)
+                Pressable 0 96 480x32
+                  Box 0 96 480x32
+                    Row 10 98 460x28
+                      Box 10 102 20x20
+                        Icon 10 102 20x20
+                      Flexible 34 102 436x20
+                        Text 34 102 436x20 1 line(s)
 
 ## Compact
 ### web
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl">
 <div role="tree" tabindex="0" aria-label="Files">
-<div id="eq-cell-r7b7st-0-0" tabindex="-1" role="treeitem" aria-expanded="true" aria-label="src" aria-selected="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="1" aria-posinset="1" aria-setsize="2">
+<div id="eq-cell-1ea4rf1-0-0" tabindex="-1" role="treeitem" aria-expanded="true" aria-label="src" aria-selected="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="1" aria-posinset="1" aria-setsize="2">
 <div class="eq-11kg7e8 eq-18tlusk eq-1eb13m5 eq-1yf2q3w eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-96qelu eq-bo3n4y eq-g7fowl eq-i95eb9">
@@ -152,8 +157,8 @@ TreeView 0 0 480x128
 </div>
 </div>
 </div>
-<div id="eq-cell-r7b7st-1-0" tabindex="-1" role="treeitem" aria-label="App.cs" aria-selected="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="2" aria-posinset="1" aria-setsize="2">
-<div class="eq-11kg7e8 eq-18tlusk eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-n7cy6y eq-a51p1u eq-teoc5m">
+<div id="eq-cell-1ea4rf1-1-0" tabindex="-1" role="treeitem" aria-label="App.cs" aria-selected="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="2" aria-posinset="1" aria-setsize="2">
+<div class="eq-11kg7e8 eq-18tlusk eq-1eb13m5 eq-1p0bb5o eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-txhpo8 eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-96qelu eq-bo3n4y eq-i95eb9 eq-kngwsg">
 </div>
@@ -163,8 +168,8 @@ TreeView 0 0 480x128
 </div>
 </div>
 </div>
-<div id="eq-cell-r7b7st-2-0" tabindex="-1" role="treeitem" aria-label="Ui.cs" aria-selected="true" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="2" aria-posinset="2" aria-setsize="2">
-<div class="eq-11kg7e8 eq-18tlusk eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-n7cy6y eq-p7ntc">
+<div id="eq-cell-1ea4rf1-2-0" tabindex="-1" role="treeitem" aria-label="Ui.cs" aria-selected="true" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="2" aria-posinset="2" aria-setsize="2">
+<div class="eq-11kg7e8 eq-18tlusk eq-1eb13m5 eq-1p0bb5o eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-p7ntc eq-txhpo8">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-96qelu eq-bo3n4y eq-i95eb9 eq-kngwsg">
 </div>
@@ -174,7 +179,7 @@ TreeView 0 0 480x128
 </div>
 </div>
 </div>
-<div id="eq-cell-r7b7st-3-0" tabindex="-1" role="treeitem" aria-expanded="false" aria-label="docs" aria-selected="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="1" aria-posinset="2" aria-setsize="2">
+<div id="eq-cell-1ea4rf1-3-0" tabindex="-1" role="treeitem" aria-expanded="false" aria-label="docs" aria-selected="false" class="eq-pressable eq-14ehxct eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-akjizx eq-byqqyj eq-g7fowl eq-p7nbpw" aria-level="1" aria-posinset="2" aria-setsize="2">
 <div class="eq-11kg7e8 eq-18tlusk eq-1eb13m5 eq-1yf2q3w eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl eq-mxt4wl eq-a51p1u eq-teoc5m">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m7pi4h eq-m92pvu eq-mc2xdp">
 <div class="eq-1eb13m5 eq-96qelu eq-bo3n4y eq-g7fowl eq-i95eb9">
@@ -205,6 +210,7 @@ TreeView 0 0 480x128
 .eq-1gudvpj{min-height:0}
 .eq-1imlfss{cursor:pointer}
 .eq-1jjc6f6{height:100%}
+.eq-1p0bb5o{padding-block:0}
 .eq-1uhnwvg{flex-direction:row}
 .eq-1uykvw{padding:0}
 .eq-1yf2q3w{padding:0 8px 0 8px}
@@ -225,11 +231,11 @@ TreeView 0 0 480x128
 .eq-mbtjfn{overflow:hidden}
 .eq-mc2xdp{justify-content:flex-start}
 .eq-mxt4wl{border:2px solid #00000000}
-.eq-n7cy6y{padding:0 8px 0 24px}
 .eq-p7nbpw{text-align:start}
 .eq-p7ntc{background-color:var(--eq-color-primary-subtle, light-dark(#e8f1fa, #0f2740))}
 @media (hover: hover){:where(.eq-pressable:hover) .eq-teoc5m.eq-teoc5m:not(:where(.eq-pressable:not(:hover) .eq-teoc5m)){background-color:var(--eq-color-surface-subtle, light-dark(#eff1f4, #1c232b))}
 }
+.eq-txhpo8{padding-inline:24px 8px}
 ### semantics
 Tree "Files"
 TreeItem "src" (level 1, 1 of 2, not selected, expanded)
@@ -240,31 +246,35 @@ TreeItem "docs" (level 1, 2 of 2, not selected, collapsed)
 TreeView 0 0 480x104
   Box 0 0 480x104
     Shortcut 0 0 480x104
-      Navigable 0 0 480x104
-        Pressable 0 0 480x26
-          Box 0 0 480x26
-            Row 10 2 460x22
-              Box 10 3 20x20
-                Icon 10 3 20x20
-              Flexible 34 3 436x20
-                Text 34 3 436x20 1 line(s)
-        Pressable 0 26 480x26
-          Box 0 26 480x26
-            Row 26 28 444x22
-              Box 26 29 20x20
-              Flexible 50 29 420x20
-                Text 50 29 420x20 1 line(s)
-        Pressable 0 52 480x26
-          Box 0 52 480x26
-            Row 26 54 444x22
-              Box 26 55 20x20
-              Flexible 50 55 420x20
-                Text 50 55 420x20 1 line(s)
-        Pressable 0 78 480x26
-          Box 0 78 480x26
-            Row 10 80 460x22
-              Box 10 81 20x20
-                Icon 10 81 20x20
-              Flexible 34 81 436x20
-                Text 34 81 436x20 1 line(s)
+      Shortcut 0 0 480x104
+        Shortcut 0 0 480x104
+          Shortcut 0 0 480x104
+            Shortcut 0 0 480x104
+              Navigable 0 0 480x104
+                Pressable 0 0 480x26
+                  Box 0 0 480x26
+                    Row 10 2 460x22
+                      Box 10 3 20x20
+                        Icon 10 3 20x20
+                      Flexible 34 3 436x20
+                        Text 34 3 436x20 1 line(s)
+                Pressable 0 26 480x26
+                  Box 0 26 480x26
+                    Row 26 28 444x22
+                      Box 26 29 20x20
+                      Flexible 50 29 420x20
+                        Text 50 29 420x20 1 line(s)
+                Pressable 0 52 480x26
+                  Box 0 52 480x26
+                    Row 26 54 444x22
+                      Box 26 55 20x20
+                      Flexible 50 55 420x20
+                        Text 50 55 420x20 1 line(s)
+                Pressable 0 78 480x26
+                  Box 0 78 480x26
+                    Row 10 80 460x22
+                      Box 10 81 20x20
+                        Icon 10 81 20x20
+                      Flexible 34 81 436x20
+                        Text 34 81 436x20 1 line(s)
 

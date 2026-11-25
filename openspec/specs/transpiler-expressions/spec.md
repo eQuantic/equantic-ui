@@ -64,12 +64,20 @@ written as escapes, and a well-formed surrogate pair SHALL stay one code point.
 ### Requirement: Plain JavaScript carries no annotation
 
 A module eqc writes without type annotations, as the design host asks, SHALL hold no TypeScript
-syntax, a local's declared type included.
+syntax, a local's declared type and a component's constructor parameters included.
 
 #### Scenario: A local that starts null
 
 - **WHEN** `string? label = null;` is compiled with type annotations off
 - **THEN** it is written `let label = null;`, and with them on `let label: string | null = null;`
+
+#### Scenario: A component that takes its parameters through its constructor
+
+- **WHEN** `Tally(string tag, int size = 2, params int[] items)`, a component, is compiled with type
+  annotations off
+- **THEN** its twin's constructor is written `constructor(tag, size = 2, items, props)`, bun loads the
+  module, and `new Tally("t")` reads an empty `items` as .NET does; with them on it is written
+  `constructor(tag?: any, size: any = 2, items?: any, props?: any)`
 
 ### Requirement: A char literal is its value
 
@@ -166,7 +174,9 @@ the transpiler writes around them. `Trim` of no characters SHALL trim white spac
 A type pattern with nothing bound (`o is int`, `int => …`, `case int:`, either side of `or` and
 `and`) SHALL test the value's type as a declaration pattern does, read off the type's symbol: a
 string, a bool, a long as a BigInt, an integral type as a whole number, a real as a number, and a
-decimal and the dates as the runtime's classes.
+decimal and the dates as the runtime's classes. A type test against a type parameter (`x is T`, `x as T`,
+a type pattern `T t`, a `catch (T e)`) SHALL be refused with EQ2016, which names the parameter, since the browser
+carries no type arguments at run time, and SHALL never be answered as a null check.
 
 #### Scenario: A long among ints
 
@@ -177,6 +187,16 @@ decimal and the dates as the runtime's classes.
 
 - **WHEN** a switch statement over an `object` holding `5` has `case long:` and then `case int:`
 - **THEN** the `int` section runs, as in .NET
+
+#### Scenario: A test against a type parameter is refused
+
+- **WHEN** a generic class's method tests `value is T`, `value as T` or a switch arm `T made`
+- **THEN** the build fails with EQ2016, naming `T`, once per test
+
+#### Scenario: A test against a class still compiles
+
+- **WHEN** the same class's method tests `value is Shape`, where `Shape` is a class
+- **THEN** no EQ2016 is reported
 
 ### Requirement: A named constant in an is test compares with its value
 
@@ -1059,3 +1079,38 @@ has the same members.
 
 - **WHEN** browser-side code runs `Color.White.Equals((object)new { R = (byte)255, G = (byte)255, B = (byte)255, A = (byte)255 })`
 - **THEN** it answers false, as in .NET; it answered true
+
+### Requirement: An int and a long wrap in the default context as .NET wraps them
+
+This requirement covers an `int`, `long`, `uint` and `ulong` result of `+`, `-`, `*` or `<<`, of a
+negation, increment or decrement, and of a compound assignment.
+- In C#'s default context such a result SHALL wrap to its type's width, as it does in `unchecked` and
+  as .NET wraps it.
+- In a `checked` context it SHALL throw `OverflowException`.
+- A constant C#'s compiler folded outside `unchecked` SHALL be written as the operation, without a
+  wrap, since it is in range.
+
+#### Scenario: An int past its maximum
+
+- **WHEN** `int m = int.MaxValue; return m + 1;` runs
+- **THEN** it answers -2147483648, as .NET does; it answered 2147483648
+
+#### Scenario: A hash written without unchecked
+
+- **WHEN** `int h = 17; foreach (var c in "eQuantic") h = h * 31 + c; return h;` runs
+- **THEN** it answers what .NET answers, the product's low bits included
+
+#### Scenario: A long past its maximum
+
+- **WHEN** `long l = long.MaxValue; return (l + 1).ToString();` runs
+- **THEN** it answers "-9223372036854775808", as .NET does
+
+#### Scenario: A step a void lambda holds
+
+- **WHEN** `int c = int.MaxValue; Action step = () => c++; step(); return c;` runs
+- **THEN** it answers -2147483648, and the module writes the step as an assignment
+
+#### Scenario: A folded constant
+
+- **WHEN** `var r = -5;` is compiled
+- **THEN** the module writes `let r = -5;`

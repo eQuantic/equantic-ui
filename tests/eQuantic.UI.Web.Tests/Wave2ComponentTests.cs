@@ -70,10 +70,10 @@ public class Wave2ComponentTests
         var on = Render(new Switch(true, () => { }));
         var stack = on.Children[0];
         stack.Children[0].Children[0].Attributes["style"].Should().Contain("width: 52px");
-        stack.Children[1].Attributes["style"].Should().Contain("right: 3px", "on anchors the thumb at the end");
+        stack.Children[1].Attributes["style"].Should().Contain("inset-inline-end: 3px", "on anchors the thumb at the end");
 
         Render(new Switch(false, () => { })).Children[0].Children[1]
-            .Attributes["style"].Should().Contain("left: 3px");
+            .Attributes["style"].Should().Contain("inset-inline-start: 3px");
     }
 
     [Fact]

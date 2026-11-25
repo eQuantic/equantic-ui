@@ -20,6 +20,7 @@ import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { measurePhotonText, setPhotonTheme } from './photon-context';
 import type { HtmlNode } from '../core/types';
+import { TAKES_KEY_FIRST } from '../dom/shortcuts';
 import {
   AdaptiveNode,
   Anchored,
@@ -27,6 +28,8 @@ import {
   BoxStyle,
   Column,
   ContextTarget,
+  Directionality,
+  Listener,
   Sortable,
   SortableItem,
   Draggable,
@@ -41,6 +44,8 @@ import {
   InView,
   LinearGradient,
   Link,
+  MergeSemantics,
+  ExcludeSemantics,
   Pinned,
   Positioned,
   Pressable,
@@ -59,7 +64,7 @@ import {
   VectorPaint,
   VectorShape,
 } from './vocabulary';
-import { Point, SizeValue, StyleChannels, TableRange, Transform2D } from './value-types';
+import { EdgeInsets, Point, SizeValue, SortAnnouncements, StyleChannels, TableRange, Transform2D } from './value-types';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
 import { ContextMenu } from './components/ContextMenu';
@@ -79,6 +84,9 @@ import { Tooltip } from './components/Tooltip';
 import { Tabs } from './components/Tabs';
 import { SearchField } from './components/SearchField';
 import { TextInput } from './components/TextInput';
+import { Currency } from './components/Currency';
+import { MoneyInput } from './components/MoneyInput';
+import { NumberInput } from './components/NumberInput';
 import { RadioGroup } from './components/RadioGroup';
 import { EmptyState } from './components/EmptyState';
 import { Menu } from './components/Menu';
@@ -116,6 +124,7 @@ import { dateOnly } from '../utils/datetime';
 import { installCulture } from '../utils/culture';
 import { calendarFormat } from './__fixtures__/calendar-format';
 import calendarNames from './calendar-names.fixture.json';
+import { SortableTheme } from './theme-slots';
 
 setPhotonTheme(photonTheme);
 
@@ -356,6 +365,9 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'context-target-disabled': still(
       new ContextTarget(new Box(new BoxStyle({ height: 40 })), () => {}, { enabled: false }),
     ),
+    listener: still(new Listener(new Box(new BoxStyle({ width: SizeValue.fill, height: 40 })))),
+    'listener-opaque': still(new Listener(new Box(new BoxStyle({ height: 40 })), { behavior: 'opaque' })),
+    'listener-translucent': still(new Listener(new Box(new BoxStyle({ height: 40 })), { behavior: 'translucent' })),
     'anchored-at': still(
       new Anchored(new Box(new BoxStyle({ width: 200, height: 40 })), new Box(new BoxStyle({ width: 120, height: 80 })), {
         at: new Point(120, 30),
@@ -377,6 +389,30 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         }),
         transition: new TransitionSpec(StyleChannels.colors),
       }),
+    ),
+    'header-scrolled-boxes': still(
+      new Pinned(
+        column(
+          0,
+          new Box(
+            new BoxStyle({
+              width: 96,
+              height: 96,
+              transition: new TransitionSpec(StyleChannels.opacity | StyleChannels.transform),
+              scrolled: new StyleDiff({ opacity: 0, transform: Transform2D.scale(0.6) }),
+            }),
+          ),
+          new Box(
+            new BoxStyle({
+              width: 80,
+              height: 32,
+              background: photonTheme.surfaceSubtle,
+              scrolled: new StyleDiff({ background: photonTheme.surface }),
+              hover: new StyleDiff({ background: photonTheme.surfaceHighlight }),
+            }),
+          ),
+        ),
+      ),
     ),
     'box-hover-border-edge': still(
       new Box(
@@ -425,6 +461,11 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     tabs: still(new Tabs(['One', 'Two', 'Three'], 1)),
     'search-field': still(new SearchField('term')),
     'text-input': still(new TextInput('value', null, 'Label')),
+    'text-input-kind': still(
+      new TextInput('a@b', null, 'E-mail', null, 'Where the receipt goes', null, null, 'large', null, 'email', 'to', '@work'),
+    ),
+    'money-input': still(new MoneyInput(123450n, null, 'Price', Currency.euro, null, null, null, 'VAT included')),
+    'number-input': still(new NumberInput(3, null, 'Lead time', 'days', 1, 30, null, 'Working days')),
     'radio-group': still(new RadioGroup(['a', 'b'], 0)),
     'empty-state': still(new EmptyState(new Icon(IconGlyph.fromIcons('search')), 'Nothing here', 'Try another term')),
     'menu-closed': still(new Menu(new Button('Open'), [new MenuItem('One'), new MenuItem('Two')])),
@@ -469,6 +510,21 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
             new Text('1', 'bodyM', photonTheme.textPrimary),
           ]),
         ],
+      ),
+    ),
+    'data-table-columns': still(
+      new DataTable(
+        [
+          new DataColumn('Name', GridTrack.flex()),
+          new DataColumn('Size', GridTrack.fixed(80), 'end'),
+        ],
+        [
+          new DataRow('a', [
+            new Text('alpha', 'bodyM', photonTheme.textPrimary),
+            new Text('1', 'bodyM', photonTheme.textPrimary),
+          ]),
+        ],
+        { columnOrder: [1, 0], onColumnsReordered: () => undefined, onColumnResized: () => undefined },
       ),
     ),
     'table-view': still(
@@ -531,6 +587,31 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
       node: new Select(['Lisboa'], 0, null, null, [new OptionGroup('A seguir', ['Braga', 'Faro'])]),
       presses: [0],
     },
+    'merge-a-checkbox-and-its-description': still(
+      new MergeSemantics(
+        line(false, new Checkbox(true, null, 'Agree'), new Text('to the terms', 'bodyM', photonTheme.textPrimary)),
+      ),
+    ),
+    'merge-read-content': still(
+      new MergeSemantics(
+        line(
+          false,
+          new Text('Total', 'bodyM', photonTheme.textPrimary),
+          new ExcludeSemantics(new Text('JD', 'bodyM', photonTheme.textPrimary)),
+          new Text('42 EUR', 'bodyM', photonTheme.textPrimary),
+        ),
+      ),
+    ),
+    'exclude-a-subtree': still(
+      line(
+        false,
+        new ExcludeSemantics(new Text('Decoration', 'bodyM', photonTheme.textPrimary)),
+        new Text('Shown', 'bodyM', photonTheme.textPrimary),
+      ),
+    ),
+    'exclude-not-excluding': still(
+      new ExcludeSemantics(new Text('Read', 'bodyM', photonTheme.textPrimary), { excluding: false }),
+    ),
     'sortable-column': still(
       new Sortable(
         column(
@@ -540,7 +621,28 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         ),
         'todo',
         () => undefined,
+        new SortAnnouncements(
+          'Pressione Espaço & solte "já".',
+          'Took {0}.',
+          '{0} now {1}/{2} in {3}.',
+          '{0} in {1}.',
+          'Not there.',
+          'Left {0} at {1}.',
+          'Left {0} in {1}.',
+          'Back <{0}>.',
+        ),
+        null,
         { group: 'board', onHovered: () => undefined },
+      ),
+    ),
+    // A list with a look of its own (#1602): each member it sets on its element, for the controller.
+    'sortable-styled': still(
+      new Sortable(
+        column(0, new SortableItem(new Text('a', 'bodyM', photonTheme.textPrimary), 'a')),
+        'todo',
+        () => undefined,
+        null,
+        new SortableTheme({ liftedOpacity: 0.25, copyElevation: 5, maxLean: 0 }),
       ),
     ),
     'tree-opens': {
@@ -560,6 +662,18 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         { label: 'Files' },
       ),
       presses: [0, 1],
+    },
+    'tree-moves': {
+      node: Object.assign(
+        new TreeView([
+          Object.assign(new TreeNode('src', 'src'), {
+            children: [Object.assign(new TreeNode('src/App.cs', 'App.cs'), { isLeaf: true })],
+          }),
+          Object.assign(new TreeNode('README.md', 'README.md'), { isLeaf: true }),
+        ]),
+        { label: 'Files', expandedKeys: ['src'], onMoved: async () => undefined },
+      ),
+      presses: [],
     },
     'accordion-switches': {
       node: new Accordion(
@@ -692,6 +806,19 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         200,
       ),
     ),
+    // A subtree that reads right to left (C# twin, #1568).
+    'directionality-rtl': still(new Directionality('rightToLeft', startAndEnd())),
+    'directionality-ltr': still(new Directionality('leftToRight', startAndEnd())),
+    'shifted-centre': still(
+      new Stack()
+        .with(new Box(new BoxStyle({ width: 200, height: 100 })))
+        .with(
+          new Positioned(new Text('centre', 'bodyM', photonTheme.textPrimary), 8, null, null, null, {
+            startFraction: 0.5,
+            shiftX: -0.5,
+          }),
+        ),
+    ),
     'adaptive-positioned-in-stack': still(
       new Stack()
         .with(new Box(new BoxStyle({ width: 400, height: 300, background: photonTheme.surface })))
@@ -705,6 +832,25 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         ),
     ),
   };
+}
+
+/** The stack of the directionality cases (C# twin: `StartAndEnd`). */
+function startAndEnd(): Stack {
+  return new Stack()
+    .with(
+      new Box(
+        new BoxStyle({
+          width: 200,
+          height: 100,
+          padding: new EdgeInsets(24, 8, 8, 4),
+          borderWidth: 2,
+          borderColor: photonTheme.border,
+          borderSides: 8, // BorderSides.Start
+        }),
+        new Box(new BoxStyle({ width: 40, height: 40, padding: new EdgeInsets(8, 4, 8, 4) })),
+      ),
+    )
+    .with(new Positioned(new Text('start', 'bodyM', photonTheme.textPrimary), 8, null, null, 16));
 }
 
 /**
@@ -807,9 +953,10 @@ function frames(node: unknown, presses: number[]): unknown[] {
  * Scoped to the entry's own tag on purpose. Other components attach the same NAMES for their own
  * reasons — a table viewport listens for keydown — and filtering globally would hide a real
  * regression the day one of those joins the fixture. The spreadsheet's door is a textarea, an entry
- * of this kind: its keydown, clipboard trio and focus are the client's alone too.
+ * of this kind: its keydown, clipboard trio and focus are the client's alone too, and so is its answer to
+ * the question the client's shortcut controller asks before a binding fires (TAKES_KEY_FIRST, #1181).
  */
-const CLIENT_ONLY_EVENTS = new Set(['focus', 'blur', 'input', 'keydown', 'paste', 'cut', 'copy']);
+const CLIENT_ONLY_EVENTS = new Set(['focus', 'blur', 'input', 'keydown', 'paste', 'cut', 'copy', TAKES_KEY_FIRST]);
 const ENTRY_TAGS = new Set(['input', 'textarea']);
 
 function canonical(node: HtmlNode): unknown {
@@ -847,9 +994,16 @@ function canonical(node: HtmlNode): unknown {
   // it emits neither the channel key nor the listener that reports back through it. Recognised by
   // the key itself rather than by tag, and only there — a scroll handler anywhere else still counts.
   const scrollView = 'data-eq-scroll' in (node.attributes ?? {});
+  // A COMPOSITE's mount hook is the client's alone: it keeps the host it gives the keyboard back to
+  // (Navigable.FocusVersion, #1532), and the server has no keyboard to give. Recognised by the composite's
+  // own role, and only there: a mount hook anywhere else still counts.
+  const composite = node.attributes?.role === 'tree' || node.attributes?.role === 'grid';
   result.events = Object.keys(node.events ?? {})
     .filter(
-      (name) => !(entry && CLIENT_ONLY_EVENTS.has(name)) && !(scrollView && name === 'scroll'),
+      (name) =>
+        !(entry && CLIENT_ONLY_EVENTS.has(name)) &&
+        !(scrollView && name === 'scroll') &&
+        !(composite && name === 'eq:mounted'),
     )
     .sort();
   result.children = (node.children ?? []).map(canonical);

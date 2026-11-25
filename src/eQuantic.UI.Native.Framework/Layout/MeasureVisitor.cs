@@ -101,7 +101,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     // (LaidOutChildren); every other parent measures the node through this door, a Stack included,
     // which reads the arm off the node it measured (PositionedOf).
     public LayoutNode Visit(AdaptiveNode node, MeasureState s) =>
-        Measure(_ctx.ArmOf(node), s.Constraints, _ctx, s.At?.ChildAt(0));
+        Measure(_ctx.ArmOf(node), s.Constraints, _ctx, s.At?.ChildAt(_ctx.ArmSlotOf(node)));
 
     // Spec S7: Pinned renders IN FLOW on native until engine scrolling lands (correct at scroll
     // offset 0); the pinning joins the scroll compositor (fence on the node's doc).
@@ -221,6 +221,10 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(ContextTarget node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
+    // A listener only hears the pointer over its child (#1562): the child's box is its box.
+    public LayoutNode Visit(Listener node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
+
     // A simulated state changes only what is DRAWN, so it takes no space of its own.
     public LayoutNode Visit(Simulated node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
@@ -251,6 +255,14 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     // gives the host `fit-content` when the child does not ask to fill, and the box a reader outlines
     // has to be the box Photon lays out.
     public LayoutNode Visit(Group node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
+
+    // The two semantics wrappers emit a host of their own on the web for the Group's reason: it takes
+    // `fit-content` when the child does not ask to fill, and Photon lays out the box the web sizes.
+    public LayoutNode Visit(MergeSemantics node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
+
+    public LayoutNode Visit(ExcludeSemantics node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.At);
 
     // INLINED like the three wrappers above it, and the reason this comment once said otherwise is

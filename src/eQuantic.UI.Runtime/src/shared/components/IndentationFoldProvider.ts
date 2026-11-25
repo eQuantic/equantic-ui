@@ -20,18 +20,18 @@ export class IndentationFoldProvider {
 
     foldsOf(document: CodeDocument) {
         let folds: CodeFold[] = [];
-        for (let line = 0; line < document.lineCount - 1; line++) {
+        for (let line = 0; line < (document.lineCount - 1 | 0); line = line + 1 | 0) {
             let text = document.line(line);
             if ($eq.text.trim(text).length === 0) continue;
             let indent = this.depthOf(document, line);
             let last = line;
-            for (let next = line + 1; next < document.lineCount; next++) {
+            for (let next = line + 1 | 0; next < document.lineCount; next = next + 1 | 0) {
                 let candidate = document.line(next);
                 if ($eq.text.trim(candidate).length === 0) continue;
                 if (this.depthOf(document, next) <= indent) break;
                 last = next;
             }
-            if (last > line) folds.push(new CodeFold(line, last));
+            if (last > line) $eq.collections.listAdd(folds, new CodeFold(line, last));
         }
         return folds;
     }

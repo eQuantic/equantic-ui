@@ -164,6 +164,7 @@ export class RenderManager {
         success: false,
         attachedListeners: 0,
         warnings: [...result.warnings, 'Fell back to full re-render'],
+        differences: result.differences,
       };
     }
 

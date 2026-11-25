@@ -311,6 +311,12 @@
   <data name="SortDropped" xml:space="preserve">
     <value>{0} solto na posição {1} de {2} em {3}.</value>
   </data>
+  <data name="SortMovedInto" xml:space="preserve">
+    <value>{0} está dentro de {1}.</value>
+  </data>
+  <data name="SortDroppedInto" xml:space="preserve">
+    <value>{0} solto dentro de {1}.</value>
+  </data>
   <data name="SortCancelled" xml:space="preserve">
     <value>{0} voltou para onde estava.</value>
   </data>
@@ -319,5 +325,38 @@
   </data>
   <data name="TreeLoadFailed" xml:space="preserve">
     <value>Não foi possível carregar. Tentar de novo</value>
+  </data>
+  <data name="TreeItemName" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="SortByColumn" xml:space="preserve">
+    <value>Ordenar por {0}</value>
+  </data>
+  <data name="ResizeColumn" xml:space="preserve">
+    <value>Redimensionar {0}</value>
+  </data>
+  <data name="TableColumns" xml:space="preserve">
+    <value>Colunas</value>
+  </data>
+  <data name="AmountExpected" xml:space="preserve">
+    <value>Digite um valor, como {0}</value>
+  </data>
+  <data name="WholeNumberExpected" xml:space="preserve">
+    <value>Digite um número inteiro, como {0}</value>
+  </data>
+  <data name="ValueBetween" xml:space="preserve">
+    <value>Digite um valor entre {0} e {1}</value>
+  </data>
+  <data name="ValueAtLeast" xml:space="preserve">
+    <value>Digite pelo menos {0}</value>
+  </data>
+  <data name="ValueAtMost" xml:space="preserve">
+    <value>Digite no máximo {0}</value>
+  </data>
+  <data name="NamedWithAffixes" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+  <data name="ValueWithUnit" xml:space="preserve">
+    <value>{0} {1}</value>
   </data>
 </root>

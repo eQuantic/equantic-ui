@@ -107,6 +107,11 @@ public class ComponentParityFixtureTests
         // declared by the server and attached by the client; and a panel opened at a point of its anchor.
         ("context-target", new ContextTarget(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), _ => { }), NoPresses),
         ("context-target-disabled", new ContextTarget(new Box(new BoxStyle { Height = 40 }), _ => { }) { Enabled = false }, NoPresses),
+        // What hears the raw pointer (#1562): the same transparent div, marked with its behaviour, with the pointer's
+        // event declared by the server and attached by the client.
+        ("listener", new Listener(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 })), NoPresses),
+        ("listener-opaque", new Listener(new Box(new BoxStyle { Height = 40 })) { Behavior = HitTestBehavior.Opaque }, NoPresses),
+        ("listener-translucent", new Listener(new Box(new BoxStyle { Height = 40 })) { Behavior = HitTestBehavior.Translucent }, NoPresses),
         ("anchored-at", new Anchored(new Box(new BoxStyle { Width = 200, Height = 40 }), new Box(new BoxStyle { Width = 120, Height = 80 }))
         {
             At = new Point(120, 30),
@@ -124,6 +129,21 @@ public class ComponentParityFixtureTests
             },
             Transition = new TransitionSpec(StyleChannels.Colors),
         }, NoPresses),
+        // The boxes inside a header follow its scroll (#1769), on a header with no scrolled style of
+        // its own: the header-scrolled family, beside a hover on the same fill.
+        ("header-scrolled-boxes", new Pinned(Stack(0,
+            new Box(new BoxStyle
+            {
+                Width = 96, Height = 96,
+                Transition = new TransitionSpec(StyleChannels.Opacity | StyleChannels.Transform),
+                Scrolled = new StyleDiff { Opacity = 0, Transform = Transform2D.Scale(0.6f) },
+            }),
+            new Box(new BoxStyle
+            {
+                Width = 80, Height = 32, Background = Theme.SurfaceSubtle,
+                Scrolled = new StyleDiff { Background = Theme.Surface },
+                Hover = new StyleDiff { Background = Theme.SurfaceHighlight },
+            }))), NoPresses),
         // The same builder writes a hover border along the edges the box draws, and a width alone
         // in the base's colour, as Photon draws them (#506).
         ("box-hover-border-edge", new Box(new BoxStyle
@@ -146,6 +166,14 @@ public class ComponentParityFixtureTests
             Width = 40, Height = 40, Elevation = 2,
             Hover = new StyleDiff { Elevation = 0 },
         }), NoPresses),
+        // A subtree that reads RIGHT TO LEFT (#1568): its host draws no box and says dir, a padding larger at
+        // its start and a border at its start alone are written as logical CSS, a symmetric one keeps the
+        // physical shorthand, and a child positioned at its start is measured from the inline start.
+        ("directionality-rtl", new Directionality(TextDirection.RightToLeft, StartAndEnd()), NoPresses),
+        ("directionality-ltr", new Directionality(TextDirection.LeftToRight, StartAndEnd()), NoPresses),
+        // A child centred by a start at half the stack and a shift of half itself back: the shift moves
+        // toward the end through the token sheet's --eq-inline, so it stays centred in both directions.
+        ("shifted-centre", ShiftedCentre(), NoPresses),
 
         // A BROAD sweep of the library. Every one of these has a twin whose constructor mirrors
         // the C# one parameter for parameter, so the same arguments build the same component on
@@ -172,6 +200,12 @@ public class ComponentParityFixtureTests
         ("tabs", new Tabs(["One", "Two", "Three"], 1), NoPresses),
         ("search-field", new SearchField("term"), NoPresses),
         ("text-input", new TextInput("value", null, "Label"), NoPresses),
+        // A kind and the affixes beside the entry (#1761), and the two fields built on them (#1764). Each with a
+        // helper, so the line under it is not the empty one `text-input` is a known divergence for.
+        ("text-input-kind", new TextInput("a@b", null, "E-mail", helper: "Where the receipt goes",
+            kind: TextEntryKind.Email, prefix: "to", suffix: "@work"), NoPresses),
+        ("money-input", new MoneyInput(123450, null, "Price", Currency.Euro, helper: "VAT included"), NoPresses),
+        ("number-input", new NumberInput(3, null, "Lead time", "days", 1, 30, helper: "Working days"), NoPresses),
         ("radio-group", new RadioGroup(["a", "b"], 0), NoPresses),
         ("empty-state", new EmptyState(new Icon(Icons.Search), "Nothing here", "Try another term"), NoPresses),
 
@@ -191,6 +225,18 @@ public class ComponentParityFixtureTests
             [new DataColumn("Name", GridTrack.Flex()), new DataColumn("Size", GridTrack.Fixed(80), TextAlignment.End)],
             [new DataRow("a", [new Text("alpha", TypeRole.BodyM, Theme.TextPrimary),
                                new Text("1", TypeRole.BodyM, Theme.TextPrimary)])]), NoPresses),
+        // A table whose app keeps its columns' order and widths (#1538): the columns drawn in the app's order and
+        // the cells under them, the header a horizontal sortable of its headings in the SDK's words, and a
+        // separator around a draggable edge at the fixed column's heading, beside its item.
+        ("data-table-columns", new DataTable(
+            [new DataColumn("Name", GridTrack.Flex()), new DataColumn("Size", GridTrack.Fixed(80), TextAlignment.End)],
+            [new DataRow("a", [new Text("alpha", TypeRole.BodyM, Theme.TextPrimary),
+                               new Text("1", TypeRole.BodyM, Theme.TextPrimary)])])
+        {
+            ColumnOrder = [1, 0],
+            OnColumnsReordered = _ => { },
+            OnColumnResized = (_, _) => { },
+        }, NoPresses),
         // A TABLE VIEW at offset zero (#982): the four bands of cells, the four of marks and both
         // scrollbars, each cell placed in its band, and a mark over the corner cut into one piece per
         // band it reaches. The after-pass moves the layers by transform; what both sides write is the
@@ -241,14 +287,34 @@ public class ComponentParityFixtureTests
         // A grouped Select opened (#677): the listbox holds the ungrouped option, then the labelled
         // group with its heading and its options, numbered across the group on both producers.
         ("select-grouped-opens", new Select(["Lisboa"], 0, groups: [new OptionGroup("A seguir", ["Braga", "Faro"])]), [0]),
+        // A subtree heard as one stop, or passed over (#1567): the parts a merge hides and the ids its stop is
+        // named by, and the host an exclusion marks, written alike by both producers.
+        ("merge-a-checkbox-and-its-description", new MergeSemantics(Line(false,
+            new Checkbox(true, label: "Agree"), new Text("to the terms", TypeRole.BodyM, Theme.TextPrimary))), NoPresses),
+        ("merge-read-content", new MergeSemantics(Line(false,
+            new Text("Total", TypeRole.BodyM, Theme.TextPrimary),
+            new ExcludeSemantics(new Text("JD", TypeRole.BodyM, Theme.TextPrimary)),
+            new Text("42 EUR", TypeRole.BodyM, Theme.TextPrimary))), NoPresses),
+        ("exclude-a-subtree", Line(false,
+            new ExcludeSemantics(new Text("Decoration", TypeRole.BodyM, Theme.TextPrimary)),
+            new Text("Shown", TypeRole.BodyM, Theme.TextPrimary)), NoPresses),
+        ("exclude-not-excluding",
+            new ExcludeSemantics(new Text("Read", TypeRole.BodyM, Theme.TextPrimary)) { Excluding = false }, NoPresses),
         // A LIST A POINTER SORTS (#1535): no element of its own, its column marked, and the reports the
-        // browser's controller dispatches declared by the server.
+        // browser's controller dispatches declared by the server. Its words (#1564) are attributes both sides
+        // write, escaped alike.
         ("sortable-column", new Sortable(Stack(0, new SortableItem(new Text("a", TypeRole.BodyM, Theme.TextPrimary), "a"),
-            new SortableItem(new Text("b", TypeRole.BodyM, Theme.TextPrimary), "b")), "todo", _ => { })
+            new SortableItem(new Text("b", TypeRole.BodyM, Theme.TextPrimary), "b")), "todo", _ => { },
+            new SortAnnouncements("Pressione Espaço & solte \"já\".", "Took {0}.", "{0} now {1}/{2} in {3}.", "{0} in {1}.",
+                "Not there.", "Left {0} at {1}.", "Left {0} in {1}.", "Back <{0}>."))
         {
             Group = "board",
             OnHovered = _ => { },
         }, NoPresses),
+        // A list with a look of its own (#1602): each member it sets on its element, for the controller to lay over
+        // the browser's theme.
+        ("sortable-styled", new Sortable(Stack(0, new SortableItem(new Text("a", TypeRole.BodyM, Theme.TextPrimary), "a")),
+            "todo", _ => { }, style: new SortableTheme { LiftedOpacity = 0.25f, CopyElevation = 5, MaxLean = 0 }), NoPresses),
         ("accordion-switches", new Accordion([
             new AccordionItem("One") { Content = new Text("body one", TypeRole.BodyM, Theme.TextPrimary) },
             new AccordionItem("Two") { Content = new Text("body two", TypeRole.BodyM, Theme.TextPrimary) },
@@ -263,6 +329,15 @@ public class ComponentParityFixtureTests
             },
             new TreeNode("README.md", "README.md") { IsLeaf = true },
         ], "src/Ui.cs") { Label = "Files" }, [0, 1]),
+        // A tree that moves its nodes (#1533): a nesting sortable around the composite, and each node row an item,
+        // marked the same on both sides (the list's id, axis and nesting, each row's id), and keyed by its node.
+        ("tree-moves", new TreeView([
+            new TreeNode("src", "src")
+            {
+                Children = [new TreeNode("src/App.cs", "App.cs") { IsLeaf = true }],
+            },
+            new TreeNode("README.md", "README.md") { IsLeaf = true },
+        ]) { Label = "Files", ExpandedKeys = ["src"], OnMoved = _ => Task.CompletedTask }, NoPresses),
 
         // A COMPOSITE, and the first case here whose tree is a grid: 31 cells, seven column
         // headers, a roving tab order, and a selection stated as an attribute. Pinned under a
@@ -409,6 +484,33 @@ public class ComponentParityFixtureTests
         },
         Focus = new StyleDiff { Elevation = 0, Transform = Transform2D.Scale(1) },
     });
+
+    /// <summary>The stack of the directionality cases: a box with more padding at its start and a border at its
+    /// start, a box padded alike on both sides, and a child positioned at the start.</summary>
+    private static Primitives.Stack StartAndEnd()
+    {
+        var stack = new Primitives.Stack();
+        stack.Add(new Box(new BoxStyle
+        {
+            Width = 200, Height = 100, Padding = new EdgeInsets(24, 8, 8, 4),
+            BorderWidth = 2, BorderColor = Theme.Border, BorderSides = BorderSides.Start,
+        }, new Box(new BoxStyle { Width = 40, Height = 40, Padding = new EdgeInsets(8, 4, 8, 4) })));
+        stack.Add(new Positioned(new Text("start", TypeRole.BodyM, Theme.TextPrimary), top: 8, start: 16));
+        return stack;
+    }
+
+    /// <summary>The stack of the shifted-centre case: a child at half the stack's width, moved back half its own.</summary>
+    private static Primitives.Stack ShiftedCentre()
+    {
+        var stack = new Primitives.Stack();
+        stack.Add(new Box(new BoxStyle { Width = 200, Height = 100 }));
+        stack.Add(new Positioned(new Text("centre", TypeRole.BodyM, Theme.TextPrimary), top: 8)
+        {
+            StartFraction = 0.5f,
+            ShiftX = -0.5f,
+        });
+        return stack;
+    }
 
     /// <summary>The card of the pressable-through-wrappers case.</summary>
     private static Box LiftCard() => new(new BoxStyle { Width = 40, Height = 40, Background = Theme.Surface });

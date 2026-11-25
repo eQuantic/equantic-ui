@@ -61,6 +61,35 @@ an HTML element?* If yes, the target's word IS the right word.
 The tell that a borrowed name is wrong is usually already in the tree: `CameraPreview.Alt` lowered
 to `aria-label` and never to `alt`, and `KeyModifiers.Alt` — the KEY — carried the same word.
 
+### Every component is composed, and takes the developer's content, builders and style
+
+A complex component is built from the base ones by WRAPPING: a capability is a node around any
+child (`Pressable`, `Draggable`, `Hoverable`, `ContextTarget`, `Sortable`), never a flag on one
+component, and no realizer knows a component of the catalog
+(`ARealizer_NeverReferencesTheLibraryItRealizes`), so each one is drawn from the vocabulary an app has. And every ready-made component goes further than
+its selectors, as Flutter's do:
+
+- **Content is a node.** Where a component draws what the developer gives it, the parameter is a
+  `VisualNode`, named as Flutter names it: `child`, `leading`, `title`, `subtitle`, `trailing`,
+  `content`, `actions`. A `string` converts to one, so `Button("Save")` still reads that way, and the
+  component hands its content the type, colour and icon size it resolved (Flutter's `DefaultTextStyle`
+  and `IconTheme`: the colour is `BoxStyle.Foreground`, the rest is #1577). `Label` is never content:
+  in this vocabulary it is the accessible name, a string.
+- **What a component repeats has a builder**: an option, a tab, a destination, a row or a cell is drawn
+  by `<part>Builder`, a `Func<int, VisualNode>`, as `ListView`'s `itemBuilder` already is. A part with a
+  name keeps the name as a string, because it is the part's accessible name, its typeahead key and the
+  closed field's text, and the component draws the name when no builder is given.
+- **The instance has a style**: `style:` takes the family's slot record (`ButtonTheme`, `InputTheme`…),
+  laid over the theme's with its `Merge`, as `Markdown.Style` already is. The record IS the whole
+  instance style: a look an instance needs and the record lacks is added to the record, where a theme
+  can set it for a subtree too, never as a knob of one component.
+- **All of it is a constructor parameter**, so the factory, which mirrors the constructor, reaches it.
+
+`CatalogCustomizationTests` holds it: a member of the catalog that carries text and a component with
+no style of its own fail unless their family's file under
+`tests/eQuantic.UI.Web.Tests/Coverage/catalog-customization/` lists them with a reason, and that list
+only shrinks. The design, and why each rule beat its alternative, is #1546's OpenSpec change.
+
 ### What the developer's csproj says
 
 `<Project Sdk="eQuantic.UI.Sdk">` and nothing else. No `PackageReference` — the SDK adds
@@ -122,7 +151,7 @@ leaves only in a major, after at least one minor carrying `[Obsolete(message, Di
 UrlFormat = …)]` whose URL says what to write instead and whose message names the major it is
 removed in, and the removal itself is made in
 that major's preview, where this rule holds again. Three guards switch on the version by themselves:
-the build of a contract project refuses a `*REMOVED*` line in its `PublicAPI.Unshipped.txt` at any
+the build of a contract project refuses a `*REMOVED*` line in any of its `PublicAPI.Unshipped` files at any
 stable version but a major's first, `x.0.0`, where the removals ship
 (`EqStableVersionRemovesNoContractMember`, `Directory.Build.targets`), `NoOldShapeSurvivesTests`
 reads the source of every contract project and refuses an `[Obsolete]` that does not say all three, and `DeveloperSurfaceContractTests` refuses a
@@ -260,7 +289,11 @@ is not the owner's.
    ("Auto merge is not allowed for this repository"). The queue runs CI on it together with every
    pull request ahead of it, merges it
    with a squash when that run is green, and nobody merges `main` into a pull request only to bring
-   it up to date. A pull request's own run skips the four macOS jobs, which hold the scarcest
+   it up to date. The ruleset also requires one approving review, so that a contributor's pull
+   request waits for the owner's: the owner's own pull requests, every session's included, are
+   approved by `.github/workflows/approve-owner-pull-requests.yml` (#1847), which runs on
+   `pull_request_target` as `main` holds it and approves only when the author, the actor of the event and
+   every commit are the owner's account. A pull request's own run skips the four macOS jobs, which hold the scarcest
    runners and report as skipped, satisfying their checks: the queue's run is the one that runs them
    (#1385), and a pull request that changes the Apple track asks for them on its branch first with
    `gh workflow run ci.yml --ref <branch>`. Until the queue is on, when `main` moved after the CI ran, merge `main` into the
@@ -309,7 +342,12 @@ file of its own under `docs/ledger/`, never into `docs/LEDGER.md`: every pull re
 its line at the chronology's end, so any two open ones conflicted there on every merge, and a merge
 GitHub performs reads no `.gitattributes` that could resolve it (#892). A release folds the files
 into the chronology (`./scripts/fold-ledger.sh`), and `LedgerTests` fails on a file that is not one
-dated entry and on a chronology no fold wrote.
+dated entry and on a chronology no fold wrote. Two more files had that shape and take that cure
+(#1489): a change declares its public API in `PublicAPI.Unshipped.<branch>.txt` beside each project,
+the file `./scripts/public-api.sh update` writes, and a change that moves the served runtime past
+its budget writes its own delta under `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime/`, and
+a release folds both. A third rewrote itself whenever a cited line moved: a citation in the audits
+names the file and the code, never the line, and `DocsIndexTests` finds the code.
 
 The pictures in the root `README.md` are captures of the samples, and a picture is taken again when
 the screen it shows changes. `assets/readme/captures.json` names the files each picture's screen is
@@ -614,9 +652,10 @@ translation change must execute identically on both sides.
 
 **Supported C# Features:**
 - Expressions: Arithmetic, Logical, Ternary, Null-coalescing (`??`)
-- Fixed-width integers settle by RESULT type (`IntegerWidth`): byte/sbyte/short/ushort/uint always
-  wrap, int/long wrap only under explicit `unchecked`, a `checked` context throws (read from the
-  bound tree's `IsChecked` — the first IOperation use). A `float` is a single wherever it is
+- Fixed-width integers settle by RESULT type (`IntegerWidth`): every width wraps where C# wraps,
+  int and long in the default context included (#1807), a `checked` context throws (read from the
+  bound tree's `IsChecked` — the first IOperation use), and a constant C#'s compiler folded is left
+  as written (`ArithmeticContext.ProvedInRange`). A `float` is a single wherever it is
   PRODUCED (`SinglePrecision`) — every `+ - * /`, increment and compound, an int past 2^24 on its
   way in, every float answer of the numeric table, a float constant, a hydrated value — because
   RyuJIT rounds each operation; it prints via `$eq.num.single`. What the BROWSER produces enters
@@ -672,8 +711,9 @@ src/
 ### Bundle Strategy
 
 What a build actually writes under `wwwroot/_equantic/` (sizes are not quoted here: the served
-runtime's is recorded in `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime.json`, which the
-suite compares, and CI reports the page modules' on every pull request):
+runtime's is recorded as a base in `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime.json` and a
+delta per change beside it, which the suite compares, and CI reports the page modules' on every pull
+request):
 
 1. **runtime.js** — virtual DOM, events, state, the server-actions bridge AND the shared component
    library, whose transpiled modules ship INSIDE it (`[RuntimeProvided]`); eqc routes
@@ -743,7 +783,9 @@ screen composes both identically.
   (two components share a name).
 - A factory SHADOWS its type for types reached by `using` (the framework's, not the app's own):
   `Spacer.Fixed(34)` → use `Gap(34)`, `Badge.AsDot(v)` → `DotBadge(v)`. A conformance test fails
-  naming any new one.
+  naming any new one. An app's component that declares a static member gets a `global using` alias
+  from the generator, so `ProductEditor.Toggled(…)` reads from any namespace (#1781), except where a
+  file imports another type of its name, which the alias would capture.
 - eqc reads FILES, so generated sources must be on disk (`EmitCompilerGeneratedFiles`) and scoped
   to the configuration being built (`--generated`), or types arrive twice and resolve to neither.
   eqc takes that list from `ProjectCompilationHelper.GetCompilationUnits` and walks for nothing
@@ -778,6 +820,16 @@ public class TodoList : StatefulComponent
 async loadTodos() {
     return await this._serverActions.invoke("MyApp.Pages.TodoList/LoadTodos", []);
 }
+```
+
+**How long the browser waits:** 30 seconds, then the call is abandoned and the page's `await` throws.
+A slow but bounded action states its own, read at build time as a constant and handed to the stub
+(#1881); 0 or none keeps the 30, and a value below 0 or above 600 is EQ2017:
+
+```csharp
+[ServerAction(TimeoutSeconds = 120)]
+public async Task<Report> BuildReport(int year) { ... }
+// → invoke("MyApp.Pages.Reports/BuildReport", [year], { timeoutMs: 120000 })
 ```
 
 **Security:**
@@ -903,8 +955,9 @@ the bump and before the tag, is:
 ./scripts/public-api.sh ship
 ```
 
-which folds each project's `PublicAPI.Unshipped.txt` into its `Shipped.txt` — an addition moves
-across, a `*REMOVED*` line cancels the entry it names. THOSE `*REMOVED*` LINES ARE THE BREAKS, and
+which folds every `PublicAPI.Unshipped*.txt` of each project, its own and each change's (#1489), into
+its `Shipped.txt`, and removes the changes' files — an addition moves across, a `*REMOVED*` line
+cancels the entry it names. THOSE `*REMOVED*` LINES ARE THE BREAKS, and
 `git diff v<previous>..v<this> -- '**/PublicAPI.Shipped.txt'` is the whole change of surface,
 retirements and additions together. Copy them into the annotated tag's message and the wiki's
 [Upgrading](https://github.com/eQuantic/equantic-ui/wiki/Upgrading) page (both languages); write
@@ -933,6 +986,17 @@ writes every waiting entry into the chronology of `docs/LEDGER.md`, in order of 
 file and records the chronology in `docs/ledger/folded.json`. It writes nothing when one file is
 not an entry. The line that says the release happened is an event like another: a file, written
 after the tag, that the next release folds.
+
+**And the served runtime's budget.** A change that moved the served runtime past its budget wrote a
+delta of its own under `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime/`, saying what its
+bytes bought (#1489), and the release folds them into the base in the same commit:
+
+```bash
+./scripts/fold-runtime-budget.sh
+```
+
+prints each delta with what it bought, for the notes, writes the sum into `served-runtime.json` and
+removes the deltas. It writes nothing when one file is not a delta.
 
 ## Compiler Boundaries (Server vs Client)
 

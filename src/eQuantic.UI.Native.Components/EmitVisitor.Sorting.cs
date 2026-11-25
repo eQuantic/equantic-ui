@@ -13,7 +13,14 @@ internal sealed partial class EmitVisitor
 {
     private void EmitSortable(Sortable node, EmitState s)
     {
-        if (s.Node.Element is { } at) s.Input.Add(new SortRegion(s.Node.Bounds, s.Node.Bounds, at, node));
+        if (s.Node.Element is { } at)
+        {
+            s.Input.Add(new SortRegion(s.Node.Bounds, s.Node.Bounds, at, node, s.Node));
+            // What the keyboard's carry last said in this list's words (#1564) is a polite live region's text,
+            // recorded here because this walk runs once a frame, as a spreadsheet's moves are (#1081).
+            if (NodeStates.Find<LiveRegionState>(at) is { Words: { } words })
+                s.Input.Add(new LiveRegionMark(at, "", LiveRegionUrgency.Polite, s.Node, words));
+        }
         Descend(s);
     }
 
@@ -24,14 +31,14 @@ internal sealed partial class EmitVisitor
             Descend(s);
             return;
         }
-        s.Input.Add(new SortRegion(s.Node.Bounds, s.Node.Bounds, at, node));
+        s.Input.Add(new SortRegion(s.Node.Bounds, s.Node.Bounds, at, node, s.Node));
         if (NodeStates.Find<SortLiftState>(at) is not { Lifted: true } lift)
         {
             Descend(s);
             return;
         }
         if (lift is { Follows: true, Copy: null }) RecordCopy(lift, s);
-        s.Builder.PushLayer((float)SortPlacement.LiftedOpacity);
+        s.Builder.PushLayer(lift.LiftedOpacity);
         Descend(s);
         s.Builder.PopLayer();
     }
@@ -53,8 +60,10 @@ internal sealed partial class EmitVisitor
         var bounds = s.Node.Bounds;
         var copy = new DisplayListBuilder();
         copy.PushTransform(transform);
-        copy.ShadowRRect(new RRect(bounds, CornerOf(s.Node)), SortPlacement.CopyShadowOffsetY,
-            SortPlacement.CopyShadowBlur, 0, new Color(0, 0, 0, (byte)Math.Round(SortPlacement.CopyShadowAlpha * 255)));
+        // The shadow of the source list's look (#1602): the theme's for its elevation level, in this frame's mode.
+        if (lift.CopyShadow is { IsNone: false } shadow)
+            copy.ShadowRRect(new RRect(bounds, CornerOf(s.Node)), shadow.OffsetY, shadow.Blur, shadow.Spread,
+                shadow.Color.Resolve(s.Mode, s.Contrast));
         var still = s with
         {
             Input = new InputSink(new FrameRegions()),

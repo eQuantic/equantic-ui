@@ -180,6 +180,10 @@ public class RecordTypeEmitter
         // rest, kept only where the emitted text names it (TypeScriptEmitter.Annotate is the class
         // path's twin).
         runtimeProvided.Add(TypeScriptEmitter.Decimal);
+        // The .NET-compat value types the runtime exports by .NET's names, as the class path takes them:
+        // the scan above routes by namespace and never buckets one, and a record's method that takes a
+        // culture's NumberFormatInfo annotated a name it never imported (#1765).
+        runtimeProvided.UnionWith(TypeScriptEmitter.RuntimeValueTypes);
         // A vocabulary enum member is annotated with its UNION, a name that exists only in the
         // emitted TypeScript — the scanner above walks C# syntax and could never have seen it.
         TypeScriptEmitter.SeedEnumUnions(body, ModelFor(type)?.Compilation, runtimeProvided);
@@ -300,7 +304,15 @@ public class RecordTypeEmitter
         var (baseName, clause) = BaseInfo(type);
 
         var sb = new StringBuilder();
-        sb.Append($"class {name}{(baseName != null ? $" extends {baseName}" : "")} {{ ");
+        // Its type parameters, in TypeScript only, from the list every class's module reads (#1845): the members name
+        // them, and a class that declares none is one the runtime's tsc refuses.
+        var classTypeParameters = _annotations ? type.TwinTypeParameters() : [];
+        var generics = classTypeParameters.Count > 0 ? $"<{string.Join(", ", classTypeParameters)}>" : "";
+        // What a member's annotation names the type by: the instance's own closure, and on a static member, which
+        // TypeScript forbids to read a class's type parameters, every one of them open.
+        var instanceType = name + generics;
+        var staticType = classTypeParameters.Count > 0 ? $"{name}<{string.Join(", ", classTypeParameters.Select(_ => "any"))}>" : name;
+        sb.Append($"class {name}{generics}{(baseName != null ? $" extends {baseName}" : "")} {{ ");
 
         // TYPE-ONLY member declarations: they restore checking on `record.x` without emitting any runtime
         // code (the constructor below does the assigning). Only OWN members are declared — a positional
@@ -405,12 +417,12 @@ public class RecordTypeEmitter
                 && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol copied && ChainDeclaresCopy(copied))
             {
                 sb.Append(tsTypeDeclarations
-                    ? $"with(patch: any): {name} {{ const $copied: any = {Closed("Object.create(Object.getPrototypeOf(this))")}; $copied.$copy(this); return Object.assign($copied, patch); }} "
+                    ? $"with(patch: any): {instanceType} {{ const $copied: any = {Closed("Object.create(Object.getPrototypeOf(this))")}; $copied.$copy(this); return Object.assign($copied, patch); }} "
                     : $"with(patch) {{ const $copied = {Closed("Object.create(Object.getPrototypeOf(this))")}; $copied.$copy(this); return Object.assign($copied, patch); }} ");
                 _converter.InFileOf(record, () => sb.Append(Written(CopyStep(copied, members, baseName is not null))));
             }
             else
-                sb.Append(tsTypeDeclarations ? $"with(patch: any): {name} {{ return {Eq.With}(this, patch); }} "
+                sb.Append(tsTypeDeclarations ? $"with(patch: any): {instanceType} {{ return {Eq.With}(this, patch); }} "
                     : $"with(patch) {{ return {Eq.With}(this, patch); }} ");
 
             // The twin of a record or a struct SAYS so, which no method can: `with` and `equals` are
@@ -454,7 +466,7 @@ public class RecordTypeEmitter
                 && Strategies.ValueCopies.IsMutableValue(valueType))
             {
                 sb.Append(tsTypeDeclarations
-                    ? $"$clone(): {name} {{ const $copied: any = {Closed($"Object.create({name}.prototype)")}; "
+                    ? $"$clone(): {instanceType} {{ const $copied: any = {Closed($"Object.create({name}.prototype)")}; "
                     : $"$clone() {{ const $copied = {Closed($"Object.create({name}.prototype)")}; ");
                 foreach (var m in members) sb.Append($"$copied.{m.Store} = this.{m.Store}; ");
                 sb.Append("return $copied; } ");
@@ -466,7 +478,7 @@ public class RecordTypeEmitter
                 var zeros = string.Join(", ", typeParameters.Select(parameter =>
                     $"$z{parameter}{(tsTypeDeclarations ? ": any" : "")} = null"));
                 sb.Append(tsTypeDeclarations
-                    ? $"static $zero({zeros}): {name} {{ const $self: any = Object.create({name}.prototype); "
+                    ? $"static $zero({zeros}): {staticType} {{ const $self: any = Object.create({name}.prototype); "
                     : $"static $zero({zeros}) {{ const $self = Object.create({name}.prototype); ");
                 foreach (var m in members)
                     sb.Append($"$self.{m.Store} = {ZeroOf(m, typeParameters.Count == 0 ? null : parameter => typeParameters.Contains(parameter.Name) && parameter.TypeParameterKind == TypeParameterKind.Type ? $"$z{parameter.Name}" : null)}; ");

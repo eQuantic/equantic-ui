@@ -12,11 +12,20 @@
  * The lists and the items are found by the marks the lowering writes (`data-eq-sort*`), and every report
  * is a custom event on the list's element, which the lowering turns into the C# callback. The controller
  * never applies a drop: the list is the app's, and the next build shows where the item went.
+ *
+ * In a list whose items have depths (`data-eq-sort-indent`, #1594) an item carries the deeper items right after it,
+ * and a place between two items says the depth the item takes there: the pointer asks for one per indent it travelled
+ * across, the keyboard's cross arrows step it, and `SortPlacement.depths` gives the order the guard is asked in.
  */
 import { SortPlacement } from '../shared/components/SortPlacement';
-import { SortDrop } from '../shared/value-types';
-import { str } from '../utils/culture';
+import { SortWords } from '../shared/components/SortWords';
+import { SortAnnouncements, SortDrop } from '../shared/value-types';
+import { SortableTheme } from '../shared/theme-slots';
+import { getPhotonTheme } from '../shared/photon-context';
+import { num, tokenValue } from '../shared/css-values';
+import { activeItemOf } from './active-item';
 import { followPointer, pointerDownDelegate } from './pointer-gesture';
+import { holdShortcuts } from './shortcuts';
 
 const delegate = pointerDownDelegate(onPointerDown);
 let keyboardInstalled = false;
@@ -54,6 +63,74 @@ function itemsOf(list: HTMLElement): HTMLElement[] {
   );
 }
 
+/** How far across the axis one depth of a list's items is indented, or 0 for a list without depths (#1594). */
+function indentOf(list: HTMLElement): number {
+  const indent = Number(list.getAttribute('data-eq-sort-indent') ?? '0');
+  return SortPlacement.hasDepths(indent) ? indent : 0;
+}
+
+/** An item's depth in a list whose items have depths; 0 for one that says none. */
+function depthOf(item: HTMLElement): number {
+  const depth = Number(item.getAttribute('data-eq-sort-depth') ?? '0');
+  return Number.isInteger(depth) && depth > 0 ? depth : 0;
+}
+
+/** The items of a list a carried one is placed among: the carried one left out, and in a list with depths the deeper
+ * items right after it too, its subtree, which it carries (#1594). C# twin: `PhotonHost.ItemsOf`. */
+function othersOf(list: HTMLElement, carried: HTMLElement): HTMLElement[] {
+  const items = itemsOf(list);
+  const at = items.indexOf(carried);
+  if (at < 0) return items;
+  let end = at + 1;
+  if (indentOf(list) > 0) {
+    const depth = depthOf(carried);
+    while (end < items.length && depthOf(items[end]) > depth) end++;
+  }
+  return [...items.slice(0, at), ...items.slice(end)];
+}
+
+/** The drop a place means, among `others`: the item it lands inside named, and its depth when it has one. */
+function dropFor(
+  list: HTMLElement,
+  id: string,
+  from: string,
+  others: HTMLElement[],
+  index: number,
+  into: number,
+  depth: number | null,
+): SortDrop {
+  const to = list.getAttribute('data-eq-sort-id') ?? '';
+  const config: { into?: string | null; depth?: number | null } = {};
+  if (into >= 0) config.into = others[into].getAttribute('data-eq-sort-item');
+  if (depth !== null) config.depth = depth;
+  return new SortDrop(id, from, to, index, config);
+}
+
+/**
+ * The drops a spot of a list may mean, in the order the list's guard is asked (#1594): the spot itself, or in a list
+ * with depths, at a spot between two items, one for each depth `SortPlacement.depths` gives from the one `wants`.
+ */
+function placesAt(
+  list: HTMLElement,
+  id: string,
+  from: string,
+  others: HTMLElement[],
+  index: number,
+  into: number,
+  wants: number,
+): SortDrop[] {
+  if (into >= 0 || indentOf(list) === 0) return [dropFor(list, id, from, others, index, into, null)];
+  const above = index > 0 ? depthOf(others[index - 1]) : null;
+  const below = index < others.length ? depthOf(others[index]) : null;
+  return SortPlacement.depths(wants, above, below).map((depth) => dropFor(list, id, from, others, index, -1, depth));
+}
+
+/** The first of the drops the list's guard accepts, or null when it refuses them all. */
+function firstAccepted(list: HTMLElement, drops: SortDrop[]): SortDrop | null {
+  for (const drop of drops) if (accepts(list, drop)) return drop;
+  return null;
+}
+
 /** What can hold a field the item's own pointer belongs to. */
 const FIELD = 'input, textarea, select, [contenteditable="true"], [contenteditable=""]';
 
@@ -75,23 +152,37 @@ function onPointerDown(down: PointerEvent): void {
   let frame = 0;
   let movedAt = performance.now();
   const leans = !prefersReducedMotion();
+  // One carry, one look: the item is carried as the list it was picked up from says, over every list of the group.
+  const look = lookOf(source);
 
   const report = (list: HTMLElement, drop: SortDrop | null): void => {
     list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: drop }));
   };
 
-  // The guard is asked once per place, not once per move: a tree's walks its subtree.
-  let asked: { list: HTMLElement; drop: SortDrop; accepted: boolean } | null = null;
+  // The guard is asked once per place and depth asked for, not once per move: a tree's walks its subtree. A place is
+  // its list, its index and item inside, the items around it (rows that open above shift what an index means) and the
+  // depth asked for.
+  let asked: { list: HTMLElement; key: string; drop: SortDrop | null } | null = null;
   const scrollers = new Map<HTMLElement, HTMLElement | null>();
+  const ownDepth = depthOf(item);
 
   /** Where the item would land under the pointer, offered to the list's guard, and reported when it moves. */
   const place = (): void => {
     const list = listUnder(pointer.x, pointer.y, group, source, item);
-    const drop = list ? dropIn(list, id, from, pointer.x, pointer.y, item) : null;
-    if (list && drop && !(asked && asked.list === list && same(asked.drop, drop)))
-      asked = { list, drop, accepted: accepts(list, drop) };
-    const accepted = list !== null && drop !== null && asked !== null && asked.accepted;
-    const next = accepted ? { list: list!, drop: drop! } : null;
+    let next: { list: HTMLElement; drop: SortDrop } | null = null;
+    if (list) {
+      const vertical = list.getAttribute('data-eq-sort-axis') !== 'x';
+      // The depth the pointer asks for, from its travel across since it picked the item up (#1594).
+      const travelled = vertical ? pointer.x - down.clientX : pointer.y - down.clientY;
+      const wants = SortPlacement.wanted(ownDepth, travelled, indentOf(list));
+      const others = othersOf(list, item);
+      const [index, into] = spotIn(list, others, pointer.x, pointer.y);
+      const around = [others[index - 1], others[index]].map((at) => at?.getAttribute('data-eq-sort-item') ?? '');
+      const key = JSON.stringify([index, into, wants, ...around]);
+      if (!(asked && asked.list === list && asked.key === key))
+        asked = { list, key, drop: firstAccepted(list, placesAt(list, id, from, others, index, into, wants)) };
+      next = asked.drop ? { list, drop: asked.drop } : null;
+    }
     if (landing && (!next || next.list !== landing.list)) report(landing.list, null);
     if (next && (!landing || landing.list !== next.list || !same(landing.drop, next.drop))) report(next.list, next.drop);
     landing = next;
@@ -122,9 +213,13 @@ function onPointerDown(down: PointerEvent): void {
     gesture.cancel();
   };
 
+  // The keys are the carry's while the item is carried: an app's chord sits them out.
+  let releaseShortcuts = (): void => undefined;
+
   const end = (): void => {
     cancelAnimationFrame(frame);
     host.removeEventListener('keydown', escape, true);
+    releaseShortcuts();
     copy?.remove();
     copy = null;
     item.style.removeProperty('opacity');
@@ -139,7 +234,8 @@ function onPointerDown(down: PointerEvent): void {
         : (ev) => Math.hypot(ev.clientX - down.clientX, ev.clientY - down.clientY) > SortPlacement.pickUpTravel,
     holdMs: down.pointerType === 'touch' ? SortPlacement.holdMs : undefined,
     armed: () => {
-      copy = lift(item);
+      copy = lift(item, look);
+      releaseShortcuts = holdShortcuts();
       host.addEventListener('keydown', escape, true);
       frame = requestAnimationFrame(scroll);
       place();
@@ -149,7 +245,7 @@ function onPointerDown(down: PointerEvent): void {
       if (copy) {
         copy.style.transform = `translate(${ev.clientX - down.clientX}px, ${ev.clientY - down.clientY}px)`;
         if (leans) {
-          const angle = SortPlacement.tilt(ev.clientX - pointer.x, now - movedAt);
+          const angle = SortPlacement.tilt(ev.clientX - pointer.x, now - movedAt, look.maxLean ?? SortPlacement.tiltMax);
           if (angle !== null) copy.style.setProperty('rotate', `${angle}deg`);
         }
       }
@@ -170,8 +266,40 @@ function onPointerDown(down: PointerEvent): void {
   });
 }
 
-/** The copy that follows the pointer, laid over the item where it stands, and the item dimmed under it. */
-function lift(item: HTMLElement): HTMLElement {
+/** The list's own look of a carried item (#1602), each member its lowering wrote; null for a list with none. */
+function ownLookOf(list: HTMLElement): SortableTheme | null {
+  // A member it does not say, or says as no number, is the theme's.
+  const read = (name: string): number | null => {
+    const value = list.getAttribute(name)?.trim();
+    const number = value ? Number(value) : Number.NaN;
+    return Number.isFinite(number) ? number : null;
+  };
+  const liftedOpacity = read('data-eq-sort-look-lifted');
+  const copyOpacity = read('data-eq-sort-look-copy-opacity');
+  const copyElevation = read('data-eq-sort-look-copy-elevation');
+  const maxLean = read('data-eq-sort-look-lean');
+  return liftedOpacity === null && copyOpacity === null && copyElevation === null && maxLean === null
+    ? null
+    : new SortableTheme({ liftedOpacity, copyOpacity, copyElevation, maxLean });
+}
+
+/** The look of an item carried from a list (#1602): the browser's theme's, the list's own over it, and the defaults
+ * where neither says, by the arithmetic both targets run. Every member of the answer is set. */
+function lookOf(list: HTMLElement): SortableTheme {
+  return SortPlacement.look(getPhotonTheme().sortable ?? null, ownLookOf(list));
+}
+
+/** The copy's shadow: the theme's for the look's elevation level, in the C# `TokenCss.Shadow` spelling. */
+function shadowOf(level: number): string {
+  const spec = getPhotonTheme().elevation(level);
+  return spec.blur === 0 && spec.offsetY === 0 && spec.spread === 0
+    ? 'none'
+    : `0 ${num(spec.offsetY)}px ${num(spec.blur)}px ${num(spec.spread)}px ${tokenValue(spec.color)}`;
+}
+
+/** The copy that follows the pointer, laid over the item where it stands, and the item dimmed under it, as the
+ * look says. */
+function lift(item: HTMLElement, look: SortableTheme): HTMLElement {
   const box = item.getBoundingClientRect();
   const copy = item.cloneNode(true) as HTMLElement;
   // A copy is a picture: no id answers twice, and nothing in it is a list or an item of its own.
@@ -195,15 +323,15 @@ function lift(item: HTMLElement): HTMLElement {
     margin: '0',
     pointerEvents: 'none',
     zIndex: '2147483000',
-    opacity: String(SortPlacement.copyOpacity),
-    boxShadow: `0 ${SortPlacement.copyShadowOffsetY}px ${SortPlacement.copyShadowBlur}px rgba(0, 0, 0, ${SortPlacement.copyShadowAlpha})`,
+    opacity: num(look.copyOpacity ?? SortPlacement.copyOpacity),
+    boxShadow: shadowOf(look.copyElevation ?? SortPlacement.copyElevation),
     cursor: 'grabbing',
     // The lean is the individual `rotate`, apart from the `transform` that places the copy, so easing it
     // never makes the copy trail the pointer.
     transition: 'rotate 0.1s ease-out',
   });
   item.ownerDocument.body.appendChild(copy);
-  item.style.opacity = String(SortPlacement.liftedOpacity);
+  item.style.opacity = num(look.liftedOpacity ?? SortPlacement.liftedOpacity);
   item.setAttribute('data-eq-sort-lifted', '');
   return copy;
 }
@@ -228,14 +356,13 @@ function listUnder(x: number, y: number, group: string, source: HTMLElement, car
 }
 
 /**
- * Where an item lands in a list, by the arithmetic every realizer shares (`SortPlacement.Place`): this
- * reads the other items' boxes along the list's axis and hands them over.
+ * Where an item lands among a list's `others`, by the arithmetic every realizer shares (`SortPlacement.Place`):
+ * this reads their boxes along the list's axis and hands them over. The index it lands at, and the item it lands
+ * inside or -1.
  */
-function dropIn(list: HTMLElement, id: string, from: string, x: number, y: number, carried: HTMLElement): SortDrop {
+function spotIn(list: HTMLElement, others: HTMLElement[], x: number, y: number): [number, number] {
   const vertical = list.getAttribute('data-eq-sort-axis') !== 'x';
   const nests = list.getAttribute('data-eq-sort-nests') === '1';
-  const to = list.getAttribute('data-eq-sort-id') ?? '';
-  const others = itemsOf(list).filter((other) => other !== carried);
   const boxes = others.map((other) => other.getBoundingClientRect());
   const [index, into] = SortPlacement.place(
     boxes.map((box) => (vertical ? box.top : box.left)),
@@ -243,9 +370,7 @@ function dropIn(list: HTMLElement, id: string, from: string, x: number, y: numbe
     vertical ? y : x,
     nests,
   );
-  return into >= 0
-    ? new SortDrop(id, from, to, index, { into: others[into].getAttribute('data-eq-sort-item') })
-    : new SortDrop(id, from, to, index);
+  return [index, into];
 }
 
 /** The list's guard, asked through its element: the lowering answers in the event's detail. */
@@ -256,7 +381,7 @@ function accepts(list: HTMLElement, drop: SortDrop): boolean {
 }
 
 function same(a: SortDrop, b: SortDrop): boolean {
-  return a.to === b.to && a.index === b.index && a.into === b.into;
+  return a.to === b.to && a.index === b.index && a.into === b.into && a.depth === b.depth;
 }
 
 /** The nearest element at or above a list that scrolls. */
@@ -272,21 +397,44 @@ function scrollerOf(list: HTMLElement): HTMLElement | null {
 
 // ---- The keyboard (#1536) ------------------------------------------------------------------------------
 //
-// With the focus on an item or inside it, Space picks it up; the arrows along the list's axis move it one
-// place, the cross arrows to the neighbouring list of its group; Space or Enter drops it; Escape, Tab or a
-// press puts it back. Every place is offered to the list's guard and reported as a pointer's are, and each
-// step is said through one polite live region, in the reader's language, from the SDK's own strings.
+// With the focus on an item or inside it, or on a composite whose active item it is (a tree's host, #1533),
+// Space picks it up; the arrows along the list's axis move it one place (in a list that nests, through the
+// places inside the items too), the cross arrows to the neighbouring list of its group, in a list whose items have
+// depths stepping the depth first while the place offers another (#1594); Space or Enter drops
+// it; Escape, Tab or a press puts it back. Every place is offered to the list's guard and reported as a pointer's are, and each
+// step is said through one polite live region, in the words of the list the item was picked up from (#1564): the node's
+// `Announcements`, which the lowering writes on the list's element, the SDK's in the reader's language unless the app
+// gave its own. A list with none says nothing.
 
-/** The SDK's words for a step, with its holes filled. */
-function say(key: string, ...holes: (string | number)[]): string {
-  return str('SdkResources', key).replace(/\{(\d+)\}/g, (_, at: string) => String(holes[Number(at)] ?? ''));
+/** The words a list was given, built back from its element, or null for a list given none. */
+function wordsOf(list: HTMLElement | null): SortAnnouncements | null {
+  const say = (step: string): string | null => list?.getAttribute(`data-eq-sort-say-${step}`) ?? null;
+  const pickedUp = say('picked-up');
+  if (pickedUp === null) return null;
+  return new SortAnnouncements(
+    say('instructions') ?? '',
+    pickedUp,
+    say('moved') ?? '',
+    say('moved-into') ?? '',
+    say('refused') ?? '',
+    say('dropped') ?? '',
+    say('dropped-into') ?? '',
+    say('put-back') ?? '',
+  );
+}
+
+/** A step's words with its holes filled, by the rule written once (C# twin: `SortWords.Fill`, which Photon runs). */
+function fill(text: string, ...holes: (string | number)[]): string {
+  return SortWords.fill(text, holes.map(String));
 }
 
 let announcer: HTMLElement | null = null;
 let instructions: HTMLElement | null = null;
 
-/** Said once through the one live region, visually hidden (`eq-announcement`, as a spreadsheet's). */
+/** Said once through the one live region, visually hidden (`eq-announcement`, as a spreadsheet's). Words left
+ * empty say nothing. */
 function announce(text: string): void {
+  if (text === '') return;
   if (!announcer || !announcer.isConnected) {
     announcer = document.createElement('div');
     announcer.className = 'eq-announcement';
@@ -299,26 +447,32 @@ function announce(text: string): void {
   announcer.textContent = text;
 }
 
-/** The focused control of an item says how to sort it: its description names the keys. */
+/** The focused control of an item says how to sort it: its description names the keys, in its list's words. */
 function describe(ev: FocusEvent): void {
   const focused = ev.target as HTMLElement | null;
-  const item = focused?.closest?.('[data-eq-sort-item]');
+  const item = (activeItemOf(focused) ?? focused)?.closest?.('[data-eq-sort-item]');
   if (!focused || !item || item.hasAttribute('data-eq-sort-off') || focused.closest(FIELD)) return;
+  const said = wordsOf(listOf(item))?.instructions ?? '';
+  if (said === '') return;
   if (!instructions || !instructions.isConnected) {
     instructions = document.createElement('div');
     instructions.id = 'eq-sort-instructions';
     instructions.hidden = true;
     document.body.appendChild(instructions);
   }
-  instructions.textContent = say('SortInstructions');
+  instructions.textContent = said;
   const described = (focused.getAttribute('aria-describedby') ?? '').split(' ').filter(Boolean);
   if (!described.includes(instructions.id))
     focused.setAttribute('aria-describedby', [...described, instructions.id].join(' '));
 }
 
-/** What a reader hears an item called: its own accessible name, or its words. */
+/** What a reader hears an item called: the name it was given for the steps (#1538), its own accessible name,
+ * or its words. */
 function nameOf(item: HTMLElement): string {
-  const named = item.getAttribute('aria-label') ?? item.querySelector('[aria-label]')?.getAttribute('aria-label');
+  const named =
+    item.getAttribute('data-eq-sort-name') ??
+    item.getAttribute('aria-label') ??
+    item.querySelector('[aria-label]')?.getAttribute('aria-label');
   return (named ?? item.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
@@ -341,46 +495,125 @@ let carrying: { cancel(): void } | null = null;
 function onKeyDown(ev: KeyboardEvent): void {
   if (carrying || ev.key !== ' ' || ev.ctrlKey || ev.metaKey || ev.altKey || ev.shiftKey) return;
   const target = ev.target as Element | null;
-  const item = target?.closest?.('[data-eq-sort-item]') as HTMLElement | null;
-  if (!item || item.hasAttribute('data-eq-sort-off') || target?.closest(FIELD)) return;
+  if (target?.closest?.(FIELD)) return;
+  // A composite keeps the focus on its one stop and names its active item: the item is that one.
+  const active = activeItemOf(target);
+  const item = (active ?? target)?.closest?.('[data-eq-sort-item]') as HTMLElement | null;
+  if (!item || item.hasAttribute('data-eq-sort-off')) return;
   const source = listOf(item);
   if (!source || source.hasAttribute('data-eq-sort-off')) return;
   // Space is the sort's here, not the button's: the press it would make on its release is held off too.
   ev.preventDefault();
   ev.stopImmediatePropagation();
-  carryByKeyboard(item, source);
+  carryByKeyboard(item, source, active !== null);
 }
 
-function carryByKeyboard(item: HTMLElement, source: HTMLElement): void {
+/** The item a place lands inside, among the items a carried one is placed among. */
+function intoItem(list: HTMLElement, carried: HTMLElement, into: number): HTMLElement | null {
+  return into < 0 ? null : (othersOf(list, carried)[into] ?? null);
+}
+
+function carryByKeyboard(item: HTMLElement, source: HTMLElement, fromComposite: boolean): void {
   const host = document;
   const id = item.getAttribute('data-eq-sort-item') ?? '';
   const from = source.getAttribute('data-eq-sort-id') ?? '';
   const group = source.getAttribute('data-eq-sort') ?? '';
   const name = nameOf(item);
+  // One carry, one voice: every step is said in the words of the list the item was picked up from.
+  const words = wordsOf(source);
+  const say = (text: string | undefined, ...holes: (string | number)[]): string =>
+    words && text ? fill(text, ...holes) : '';
   let list = source;
   let index = itemsOf(source).indexOf(item);
+  let into = -1;
+  // In a list whose items have depths, the depth the place holds, and the one the keyboard last asked for, which the
+  // item keeps as it moves along, as a pointer keeps its travel across (#1594).
+  let depth: number | null = null;
+  let wants = depthOf(item);
 
-  const countIn = (target: HTMLElement): number => itemsOf(target).filter((other) => other !== item).length + 1;
-  const dropAt = (target: HTMLElement, at: number): SortDrop =>
-    new SortDrop(id, from, target.getAttribute('data-eq-sort-id') ?? '', at);
+  const othersIn = (target: HTMLElement): HTMLElement[] => othersOf(target, item);
+  const countIn = (target: HTMLElement): number => othersIn(target).length + 1;
+  /** The drop a spot means, offered to the guard: in a list with depths, at a spot between items, each depth from
+   * the one asked for. Null when the list refuses them all. */
+  const offer = (target: HTMLElement, at: number, inside: number, wanted = wants): SortDrop | null =>
+    firstAccepted(target, placesAt(target, id, from, othersIn(target), at, inside, wanted));
+  /** What a reader hears for a place: its position, the count and the list, or in a list with depths the position and
+   * the count among the items at its depth under the same holder and the holder's name (#1594); or the item it is
+   * inside. */
+  const sayPlace = (moved: string | undefined, inside: string | undefined): string => {
+    const holder = intoItem(list, item, into);
+    if (holder) return say(inside, name, nameOf(holder));
+    if (depth === null) return say(moved, name, index + 1, countIn(list), labelOf(list));
+    const others = othersIn(list);
+    const [at, position, count] = SortPlacement.siblings(others.map(depthOf), index, depth);
+    return say(moved, name, position, count, at >= 0 ? nameOf(others[at]) : labelOf(list));
+  };
 
-  item.style.opacity = String(SortPlacement.liftedOpacity);
+  // The keyboard's carry dims the item as the list it was picked up from says, and draws no copy.
+  item.style.opacity = num(lookOf(source).liftedOpacity ?? SortPlacement.liftedOpacity);
   item.setAttribute('data-eq-sort-lifted', '');
-  list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: dropAt(list, index) }));
-  announce(say('SortPickedUp', name, index + 1, countIn(list), labelOf(list)));
+  // Its own place, which no guard is asked about: in a list with depths its own depth is always one the place allows.
+  const picked = placesAt(list, id, from, othersIn(list), index, -1, wants)[0];
+  depth = picked.depth;
+  list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: picked }));
+  announce(sayPlace(words?.pickedUp, words?.pickedUp));
 
-  const moveTo = (target: HTMLElement, at: number): void => {
+  const moveTo = (target: HTMLElement, at: number, inside = -1, wanted = wants): void => {
     const clamped = SortPlacement.step(at, 0, countIn(target));
-    const drop = dropAt(target, clamped);
-    if (!accepts(target, drop)) {
-      announce(say('SortRefused', name));
+    const drop = offer(target, clamped, inside, wanted);
+    if (!drop) {
+      announce(say(words?.refused, name));
       return;
     }
     if (target !== list) list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: null }));
     list = target;
     index = clamped;
+    into = inside;
+    depth = drop.depth;
     list.dispatchEvent(new CustomEvent('eq-sort-hovered', { detail: drop }));
-    announce(say('SortMoved', name, index + 1, countIn(list), labelOf(list)));
+    announce(sayPlace(words?.moved, words?.movedInto));
+  };
+
+  /** One depth deeper or shallower at the place the item holds, in a list whose items have depths (C# twin:
+   * `SortPlacement.KeyDepth`, which Photon runs too), passing over the depths the list refuses (#1594). Answers whether
+   * the place offered a depth that way: the cross arrow moves to the neighbouring list only when it offered none. */
+  const stepDepth = (step: number): boolean => {
+    if (depth === null || into >= 0) return false;
+    const others = othersIn(list);
+    const above = index > 0 ? depthOf(others[index - 1]) : null;
+    const below = index < others.length ? depthOf(others[index]) : null;
+    let next: number = depth;
+    for (;;) {
+      const further = SortPlacement.keyDepth(next, step, above, below);
+      if (further === next) break;
+      next = further;
+      if (accepts(list, dropFor(list, id, from, others, index, -1, next))) {
+        wants = next;
+        moveTo(list, index, -1, next);
+        return true;
+      }
+    }
+    if (next === depth) return false;
+    announce(say(words?.refused, name));
+    return true;
+  };
+
+  /** One place along the list, through the places inside the items when the list nests (C# twin:
+   * `SortPlacement.KeyStep`, which Photon runs too), passing over the places the list refuses, as a pointer
+   * passes over them: a refused folder never stops the keyboard. At the end it says the place it holds. */
+  const stepAlong = (step: number): void => {
+    const nests = list.getAttribute('data-eq-sort-nests') === '1';
+    const others = countIn(list) - 1;
+    let at = index;
+    let inside = into;
+    for (;;) {
+      const [nextAt, nextInside] = SortPlacement.keyStep(at, inside, step, others, nests);
+      if (nextAt === at && nextInside === inside) break;
+      at = nextAt;
+      inside = nextInside;
+      if (offer(list, at, inside)) break;
+    }
+    moveTo(list, at, inside);
   };
 
   const neighbour = (step: number): HTMLElement | null => {
@@ -399,7 +632,11 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement): void {
     }
   };
 
+  // The keys are the carry's while the item is carried: an app's chord (a tree's Enter) sits them out.
+  const releaseShortcuts = holdShortcuts();
+
   const end = (): void => {
+    releaseShortcuts();
     host.removeEventListener('keydown', key, true);
     host.removeEventListener('pointerdown', cancel, true);
     item.style.removeProperty('opacity');
@@ -410,16 +647,18 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement): void {
 
   function cancel(): void {
     end();
-    announce(say('SortCancelled', name));
+    announce(say(words?.putBack, name));
   }
 
   const drop = (): void => {
-    const landed = dropAt(list, index);
+    const landed = dropFor(list, id, from, othersIn(list), index, into, depth);
     const at = list;
-    const said = say('SortDropped', name, index + 1, countIn(list), labelOf(list));
+    const said = sayPlace(words?.dropped, words?.droppedInto);
     end();
     at.dispatchEvent(new CustomEvent('eq-sort-dropped', { detail: landed }));
     announce(said);
+    // A composite keeps the focus on its one stop, and follows its moved item itself.
+    if (fromComposite) return;
     // The app builds the item where it went, perhaps as a new element: the keyboard follows it there.
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
@@ -442,14 +681,16 @@ function carryByKeyboard(item: HTMLElement, source: HTMLElement): void {
     const back = vertical ? 'ArrowLeft' : 'ArrowUp';
     switch (ev.key) {
       case next:
-        moveTo(list, index + 1);
+        stepAlong(1);
         break;
       case previous:
-        moveTo(list, index - 1);
+        stepAlong(-1);
         break;
       case across:
       case back: {
-        const target = neighbour(ev.key === across ? 1 : -1);
+        const step = ev.key === across ? 1 : -1;
+        if (stepDepth(step)) break;
+        const target = neighbour(step);
         if (target) moveTo(target, index);
         break;
       }

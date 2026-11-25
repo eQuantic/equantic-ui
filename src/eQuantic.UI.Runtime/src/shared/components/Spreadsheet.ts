@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, EntryLines, LeadingSpans, Motion, Point, Positioned, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetGrid, SheetPalette, SheetRange, SheetSurface, Size, SizeValue, Stack, StatefulComponent, TableOffset, TableRange, TableScroll, TableScrollRequest, TableView, TableViewCell, Text, TypeRoleValue, UiComponent, VisualNode, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, $SheetAxisValue, $TypeRoleValue, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, EntryLines, LeadingSpans, Motion, Point, Positioned, SdkStrings, SheetController, SheetDocument, SheetGrid, SheetPalette, SheetRange, SheetSurface, Size, SizeValue, Stack, StatefulComponent, TableOffset, TableRange, TableScroll, TableScrollRequest, TableView, TableViewCell, Text, UiComponent, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Spreadsheet extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.Spreadsheet';
@@ -14,7 +14,7 @@ export class Spreadsheet extends StatefulComponent {
     static headerWidth: number = 44;
     static headerHeight: number = 26;
     static numberPadding: number = 8;
-    static cellType: TypeRoleValue = 'bodyM';
+    static cellType: $TypeRoleValue = 'bodyM';
     static minColWidth: number = 24;
     static minRowHeight: number = 14;
     static grip: number = 6;
@@ -57,7 +57,7 @@ export class Spreadsheet extends StatefulComponent {
         let revealed = this.controller.revealCell;
         let ranges = this.controller.ranges;
         let active = this.controller.activeCell;
-        let table = new TableView(this._rows, this._columns, (row: number, column: number) => this.cell(row, column, document, palette, numbers), { pinnedRows: 1, pinnedColumns: 1, overscan: this._config.overscan, width: SizeValue.fill, height: SizeValue.fill, scroll: this._scroll, marks: this.marks(palette), request: new TableScrollRequest(this.controller.revealVersion, { reveal: new TableRange(revealed.row + 1, revealed.col + 1) }), onScrolled: $eq.delegates.bound(this, this.scrolled).bind(this), onViewportChanged: $eq.delegates.bound(this, this.viewportChanged).bind(this), canRequestFocus: false, role: 'grid', label: SdkStrings.spreadsheet, cellRole: (row: number, column: number) => Spreadsheet.cellRoleAt(row, column), selected: (row: number, column: number) => row > 0 && column > 0 && Spreadsheet.inAny(ranges, new CellRef(row - 1, column - 1)), current: new TableRange(active.row + 1, active.col + 1) });
+        let table = new TableView(this._rows, this._columns, (row: number, column: number) => this.cell(row, column, document, palette, numbers), { pinnedRows: 1, pinnedColumns: 1, overscan: this._config.overscan, width: SizeValue.fill, height: SizeValue.fill, scroll: this._scroll, marks: this.marks(palette), request: new TableScrollRequest(this.controller.revealVersion, { reveal: new TableRange(revealed.row + 1 | 0, revealed.col + 1 | 0) }), onScrolled: $eq.delegates.bound(this, this.scrolled).bind(this), onViewportChanged: $eq.delegates.bound(this, this.viewportChanged).bind(this), canRequestFocus: false, role: 'grid', label: SdkStrings.spreadsheet, cellRole: (row: number, column: number) => Spreadsheet.cellRoleAt(row, column), selected: (row: number, column: number) => row > 0 && column > 0 && Spreadsheet.inAny(ranges, new CellRef(row - 1 | 0, column - 1 | 0)), current: new TableRange(active.row + 1 | 0, active.col + 1 | 0) });
         return new Box(new BoxStyle({ width: this._config.width, height: this._config.height, borderColor: palette.gridline, borderWidth: 1, clip: true }), new SheetSurface(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill }), table), this.controller, { onChanged: () => this.controller.refresh(), label: SdkStrings.spreadsheet, caretColor: palette.cellText, announcement: this.announcement(document) }));
     }
 
@@ -89,7 +89,7 @@ export class Spreadsheet extends StatefulComponent {
     }
 
     static inAny(ranges: SheetRange[], cell: CellRef) {
-        for (let i = 0; i < $eq.collections.count(ranges); i++) if ($eq.collections.item(ranges, i).contains(cell)) return true;
+        for (let i = 0; i < $eq.collections.count(ranges); i = i + 1 | 0) if ($eq.collections.item(ranges, i).contains(cell)) return true;
         return false;
     }
 
@@ -103,7 +103,7 @@ export class Spreadsheet extends StatefulComponent {
 
     digitsShown(document: SheetDocument) {
         let height = this._scroll.viewport.height > 0 ? this._scroll.viewport.height : Spreadsheet.firstGuess;
-        let last = document.rowSpans.indexAt(this._scroll.offset.down + height) + 1;
+        let last = document.rowSpans.indexAt(this._scroll.offset.down + height) + 1 | 0;
         return $eq.text.format(last, null, undefined, undefined, 'int32').length;
     }
 
@@ -117,9 +117,9 @@ export class Spreadsheet extends StatefulComponent {
 
     cell(row: number, column: number, document: SheetDocument, palette: SheetPalette, numbers: number) {
         if (row === 0 && column === 0) return Spreadsheet.headerCell('', palette);
-        if (row === 0) return this.columnHeader(column - 1, palette);
-        if (column === 0) return this.rowHeader(row - 1, palette, numbers);
-        return Spreadsheet.sheetCell(new CellRef(row - 1, column - 1), document, palette);
+        if (row === 0) return this.columnHeader(column - 1 | 0, palette);
+        if (column === 0) return this.rowHeader(row - 1 | 0, palette, numbers);
+        return Spreadsheet.sheetCell(new CellRef(row - 1 | 0, column - 1 | 0), document, palette);
     }
 
     static headerCell(label: string, palette: SheetPalette, selected: boolean = false, whole: boolean = false) {
@@ -142,15 +142,15 @@ export class Spreadsheet extends StatefulComponent {
         let row = r;
         let [inBand, whole] = this.rowEmphasis(r);
         let stack = new Stack();
-        stack.add(Spreadsheet.headerCell(`${$eq.text.format(r + 1, null, undefined, undefined, 'int32')}`, palette, inBand, whole));
+        stack.add(Spreadsheet.headerCell(`${$eq.text.format(r + 1 | 0, null, undefined, undefined, 'int32')}`, palette, inBand, whole));
         stack.add(new Positioned(new Draggable(new Box(new BoxStyle({ width: SizeValue.fixed(width), height: SizeValue.fixed(Spreadsheet.grip), cursor: 'rowResize' })), null, { axis: 'vertical', min: -4000, max: 4000, follows: false, onMoved: (delta: number) => this.previewResize('rows', row, delta), onReleased: (delta: number) => this.commitResize('rows', row, delta) }), null, null, 0, 0, { layer: 1 }));
         return stack;
     }
 
     columnEmphasis(col: number): [boolean, boolean] {
         let inBand = false;
-        let lastRow = this.controller.document.rows - 1;
-        for (const range of this.controller.ranges) {
+        let lastRow = this.controller.document.rows - 1 | 0;
+        for (const range of $eq.collections.sequenceWalk(this.controller.ranges)) {
             if (col < range.leftCol || col > range.rightCol) continue;
             if (range.topRow === 0 && range.bottomRow === lastRow) return [true, true];
             inBand = true;
@@ -160,8 +160,8 @@ export class Spreadsheet extends StatefulComponent {
 
     rowEmphasis(row: number): [boolean, boolean] {
         let inBand = false;
-        let lastCol = this.controller.document.cols - 1;
-        for (const range of this.controller.ranges) {
+        let lastCol = this.controller.document.cols - 1 | 0;
+        for (const range of $eq.collections.sequenceWalk(this.controller.ranges)) {
             if (row < range.topRow || row > range.bottomRow) continue;
             if (range.leftCol === 0 && range.rightCol === lastCol) return [true, true];
             inBand = true;
@@ -169,7 +169,7 @@ export class Spreadsheet extends StatefulComponent {
         return [inBand, false];
     }
 
-    previewResize(axis: SheetAxisValue, index: number, delta: number) {
+    previewResize(axis: $SheetAxisValue, index: number, delta: number) {
         let document = this.controller.document;
         if (this._resizeBase < 0) this._resizeBase = axis === 'cols' ? document.colWidth(index) : document.rowHeight(index);
         let floor = axis === 'cols' ? Spreadsheet.minColWidth : Spreadsheet.minRowHeight;
@@ -179,7 +179,7 @@ export class Spreadsheet extends StatefulComponent {
         });
     }
 
-    commitResize(axis: SheetAxisValue, index: number, delta: number) {
+    commitResize(axis: $SheetAxisValue, index: number, delta: number) {
         if (this._resizeBase < 0) return;
         let document = this.controller.document;
         let floor = axis === 'cols' ? Spreadsheet.minColWidth : Spreadsheet.minRowHeight;
@@ -210,26 +210,26 @@ export class Spreadsheet extends StatefulComponent {
         let fill = focused ? palette.rangeFill : palette.dimmedRangeFill;
         let outline = focused ? palette.rangeOutline : palette.dimmedOutline;
         let ranges = this.controller.ranges;
-        for (let i = 0; i < $eq.collections.count(ranges); i++) {
+        for (let i = 0; i < $eq.collections.count(ranges); i = i + 1 | 0) {
             let range = $eq.collections.item(ranges, i);
-            let active = i === $eq.collections.count(ranges) - 1;
+            let active = i === ($eq.collections.count(ranges) - 1 | 0);
             if (active && range.isSingleCell) continue;
-            for (const piece of Spreadsheet.around(range, active ? this.controller.activeCell : null)) marks.push(Spreadsheet.mark(piece, new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: fill }))));
-            marks.push(Spreadsheet.mark(range, new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, borderColor: outline, borderWidth: 1.5 }))));
+            for (const piece of $eq.collections.listWalk(Spreadsheet.around(range, active ? this.controller.activeCell : null))) $eq.collections.listAdd(marks, Spreadsheet.mark(piece, new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, background: fill }))));
+            $eq.collections.listAdd(marks, Spreadsheet.mark(range, new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, borderColor: outline, borderWidth: 1.5 }))));
         }
         let preview: any; 
         if ((preview = this.controller.fillTarget) != null) {
-            marks.push(Spreadsheet.mark(preview, new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, borderColor: palette.fillPreview, borderWidth: 1.5 }))));
+            $eq.collections.listAdd(marks, Spreadsheet.mark(preview, new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, borderColor: palette.fillPreview, borderWidth: 1.5 }))));
         }
         if (this.controller.editing) {
-            marks.push(Spreadsheet.mark(this.controller.editorRange, this.editor(palette)));
+            $eq.collections.listAdd(marks, Spreadsheet.mark(this.controller.editorRange, this.editor(palette)));
             return marks;
         }
-        marks.push(Spreadsheet.mark(new SheetRange(this.controller.activeCell), new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, borderColor: focused ? palette.activeOutline : palette.dimmedOutline, borderWidth: 2 })), Spreadsheet.cursorKey, Motion.state));
+        $eq.collections.listAdd(marks, Spreadsheet.mark(new SheetRange(this.controller.activeCell), new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill, borderColor: focused ? palette.activeOutline : palette.dimmedOutline, borderWidth: 2 })), Spreadsheet.cursorKey, Motion.state));
         let corner = new Stack();
         corner.add(new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill })));
         corner.add(new Positioned(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.fillHandle), height: SizeValue.fixed(Spreadsheet.fillHandle), background: focused ? palette.fillHandle : palette.dimmedOutline, borderColor: palette.cellBackground, borderWidth: 1 })), null, -1, -1));
-        marks.push(Spreadsheet.mark(new SheetRange(new CellRef(selection.bottomRow, selection.rightCol)), corner));
+        $eq.collections.listAdd(marks, Spreadsheet.mark(new SheetRange(new CellRef(selection.bottomRow, selection.rightCol)), corner));
         return marks;
     }
 
@@ -243,15 +243,15 @@ export class Spreadsheet extends StatefulComponent {
         let cell: any; 
         if (!((cell = hole) != null) || !range.contains(cell)) return [range];
         let pieces: SheetRange[] = [];
-        if (cell.row > range.topRow) pieces.push(new SheetRange(new CellRef(range.topRow, range.leftCol), new CellRef(cell.row - 1, range.rightCol)));
-        if (cell.row < range.bottomRow) pieces.push(new SheetRange(new CellRef(cell.row + 1, range.leftCol), new CellRef(range.bottomRow, range.rightCol)));
-        if (cell.col > range.leftCol) pieces.push(new SheetRange(new CellRef(cell.row, range.leftCol), new CellRef(cell.row, cell.col - 1)));
-        if (cell.col < range.rightCol) pieces.push(new SheetRange(new CellRef(cell.row, cell.col + 1), new CellRef(cell.row, range.rightCol)));
+        if (cell.row > range.topRow) $eq.collections.listAdd(pieces, new SheetRange(new CellRef(range.topRow, range.leftCol), new CellRef(cell.row - 1 | 0, range.rightCol)));
+        if (cell.row < range.bottomRow) $eq.collections.listAdd(pieces, new SheetRange(new CellRef(cell.row + 1 | 0, range.leftCol), new CellRef(range.bottomRow, range.rightCol)));
+        if (cell.col > range.leftCol) $eq.collections.listAdd(pieces, new SheetRange(new CellRef(cell.row, range.leftCol), new CellRef(cell.row, cell.col - 1 | 0)));
+        if (cell.col < range.rightCol) $eq.collections.listAdd(pieces, new SheetRange(new CellRef(cell.row, cell.col + 1 | 0), new CellRef(cell.row, range.rightCol)));
         return pieces;
     }
 
     static mark(range: SheetRange, child: VisualNode, key: any = null, glide: any = null) {
-        return new TableViewCell(range.topRow + 1, range.leftCol + 1, child, true, { rows: range.bottomRow - range.topRow + 1, columns: range.rightCol - range.leftCol + 1, key: key, glide: glide });
+        return new TableViewCell(range.topRow + 1 | 0, range.leftCol + 1 | 0, child, true, { rows: (range.bottomRow - range.topRow | 0) + 1 | 0, columns: (range.rightCol - range.leftCol | 0) + 1 | 0, key: key, glide: glide });
     }
 }
 

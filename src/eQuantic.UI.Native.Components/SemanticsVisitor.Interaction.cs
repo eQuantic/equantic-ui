@@ -30,14 +30,16 @@ internal sealed partial class SemanticsVisitor
         // is whether the list is open, never a check or a pick. Until #501 a Select's field reached
         // every bridge as a button that happened to expand.
         //
-        // Its NAME is the author's label where there is one, and then what the field SHOWS is its
-        // value, as a select-only combobox's content is on the web: "Country, Brazil". With no label,
-        // what it shows is the name, the way a Select's own field reads.
-        if (AnchorsAListbox(laidOut))
+        // Its NAME is the author's label, and none without one, and what the field SHOWS is always its
+        // value, the choice or the placeholder: "Country, Brazil". That is the web's reading, where a
+        // combobox is never named from its content (accname) and a select-only combobox's content is
+        // its value. With no label, what the field showed was the name here until #1328, so a reader heard
+        // the option where the field's name belongs; a labelled one already read as it does now.
+        if (ListboxAnchoredBy(laidOut) is not null)
         {
             var shown = TextWithin(laidOut);
             return Announce(new(SemanticRole.ComboBox, IdOf(laidOut), laidOut.Bounds,
-                node.Label ?? shown, node.Label is null || shown.Length == 0 ? null : shown,
+                node.Label ?? "", shown.Length == 0 ? null : shown,
                 node.Disabled, Expanded: node.Expanded));
         }
 
@@ -105,15 +107,16 @@ internal sealed partial class SemanticsVisitor
     /// this one sits inside the anchor rather than being it, and nothing in there is the combobox.
     /// </para>
     /// </summary>
-    private static bool AnchorsAListbox(LayoutNode laidOut)
+    /// <returns>The <see cref="Anchored"/> whose listbox hangs from this control, or null.</returns>
+    private static Anchored? ListboxAnchoredBy(LayoutNode laidOut)
     {
         for (var node = laidOut; node.Parent is { } parent; node = parent)
         {
             if (parent.Source is Anchored { PanelRole: not AnchorPanelRole.None } anchored)
-                return anchored.PanelRole == AnchorPanelRole.Listbox;
-            if (parent.Children.Count != 1) return false;
+                return anchored.PanelRole == AnchorPanelRole.Listbox ? anchored : null;
+            if (parent.Children.Count != 1) return null;
         }
-        return false;
+        return null;
     }
 
     /// <summary>One stop, named by the author or derived from the words inside it — the same rule
@@ -164,6 +167,10 @@ internal sealed partial class SemanticsVisitor
             laidOut.Bounds, node.Label, null, false)),
         AdjustableRole.Radiogroup => AnnounceGroup(new(SemanticRole.RadioGroup, IdOf(laidOut),
             laidOut.Bounds, node.Label, null, false)),
+        // A separator a reader moves is a splitter, one stop whose value and range ride beside its
+        // words as a slider's do (#1538).
+        AdjustableRole.Separator => Announce(new(SemanticRole.Splitter, IdOf(laidOut), laidOut.Bounds,
+            node.Label, node.Spoken, false, Range: node.Value)),
     };
 #pragma warning restore CS8524
 
@@ -185,13 +192,35 @@ internal sealed partial class SemanticsVisitor
             node.Label, node.Spoken, false, Range: node.Value));
 
     /// <summary>
-    /// A navigable region is a GROUP: the reader names it and then walks its rows. Consuming it —
-    /// the only shape available before <see cref="SemanticRole.Group"/> (#187) — would have hidden
-    /// every row inside, which is why this declined while the web honoured it.
+    /// A navigable region is a TREE or a GRID, named by its label, which the reader names and then walks
+    /// (web twin: <c>LowerNavigable</c>, whose host is <c>role="tree"</c> or <c>role="grid"</c>). A grid that
+    /// says its first row heads the columns (<see cref="Navigable.HasHeaderRow"/>) reads that row's cells as
+    /// COLUMN HEADERS, each named by the words in it: the row content's direct children, one per column, the
+    /// cells the web marks <c>columnheader</c>. Its other rows are walked as they are, so its days stay the
+    /// grid cells they say they are.
+    /// <para>
+    /// A grid was read as a group until #1330, its weekdays as plain text, so a reader on Photon lost the
+    /// grid's rows and columns and the header that says which weekday a day falls on.
+    /// </para>
     /// </summary>
-    public bool Visit(Navigable node, LayoutNode laidOut) =>
-        AnnounceGroup(new(node.Role == NavigableRole.Tree ? SemanticRole.Tree : SemanticRole.Group,
-            IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
+    public bool Visit(Navigable node, LayoutNode laidOut)
+    {
+        if (node.Role == NavigableRole.Tree)
+            return AnnounceGroup(new(SemanticRole.Tree, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
+        _nodes.Add(new(SemanticRole.Grid, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
+        for (var index = 0; index < laidOut.Children.Count; index++)
+        {
+            var row = laidOut.Children[index];
+            if (node.HasHeaderRow && index == 0)
+            {
+                foreach (var header in row)
+                    Announce(new(SemanticRole.ColumnHeader, IdOf(header), header.Bounds, TextWithin(header), null, false));
+                continue;
+            }
+            SemanticsTree.Walk(row, this);
+        }
+        return Consumed;
+    }
 
     /// <summary>
     /// A table viewport is a GROUP named by its label, over the cells it holds in view: a reader walks
@@ -297,12 +326,22 @@ internal sealed partial class SemanticsVisitor
     public bool Visit(ContextTarget node, LayoutNode laidOut) => Wraps;
 
     /// <inheritdoc cref="Wraps"/>
+    public bool Visit(Listener node, LayoutNode laidOut) => Wraps;
+
+    /// <inheritdoc cref="Wraps"/>
     public bool Visit(DropTarget node, LayoutNode laidOut) => Wraps;
     /// <summary>A named list is a labelled GROUP, read and then walked into, as the web's role=group says it
-    /// (#1536); an unnamed one wraps its child and says nothing of its own.</summary>
-    public bool Visit(Sortable node, LayoutNode laidOut) => node.Label.Length == 0
-        ? Wraps
-        : AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
+    /// (#1536); an unnamed one wraps its child and says nothing of its own. Once the keyboard's carry has
+    /// spoken in it (#1564), the list is the polite live region a shell marks, a group with no name when it has
+    /// none, so Android has the node TalkBack reads the step from.</summary>
+    public bool Visit(Sortable node, LayoutNode laidOut)
+    {
+        var speaks = NodeStates.Find<LiveRegionState>(laidOut.Element) is { Words: not null };
+        return node.Label.Length == 0 && !speaks
+            ? Wraps
+            : AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false,
+                Live: speaks ? LiveRegionUrgency.Polite : null));
+    }
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(SortableItem node, LayoutNode laidOut) => Wraps;
 

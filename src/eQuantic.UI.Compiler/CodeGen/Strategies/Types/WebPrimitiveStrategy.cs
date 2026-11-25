@@ -4,10 +4,12 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 /// <summary>
-/// .NET APIs whose behaviour the BROWSER already has natively, under another name — URL escaping and
-/// UTF-8 byte counting. There is nothing to reimplement here: <c>Uri.EscapeDataString</c> IS
-/// <c>encodeURIComponent</c>, and <c>Encoding.UTF8</c> IS <c>TextEncoder</c>. Left untranslated they
-/// reached the browser as <c>Uri.escapeDataString(…)</c> and threw.
+/// .NET's URL escaping and UTF-8 byte counting. <c>Encoding.UTF8</c> IS <c>TextEncoder</c>. URL escaping is
+/// the runtime's (<c>$eq.uri</c>): the browser's <c>encodeURIComponent</c>, <c>encodeURI</c> and
+/// <c>decodeURIComponent</c> escape other characters than <c>Uri.EscapeDataString</c>,
+/// <c>EscapeUriString</c> and <c>UnescapeDataString</c>, and throw where .NET answers, so a link a component
+/// built changed once the page hydrated (#1805). Left untranslated they reached the browser as
+/// <c>Uri.escapeDataString(…)</c> and threw.
 /// </summary>
 public class WebPrimitiveStrategy : IConversionStrategy
 {
@@ -18,7 +20,7 @@ public class WebPrimitiveStrategy : IConversionStrategy
 
         var name = memberAccess.Name.Identifier.ValueText;
 
-        if (name is "EscapeDataString" or "UnescapeDataString" or "EscapeUriString" or "UnescapeUriString")
+        if (name is "EscapeDataString" or "UnescapeDataString" or "EscapeUriString")
         {
             return context.ReceiverIsType(memberAccess.Expression,
                 named => named.ToDisplayString() == "System.Uri",
@@ -52,10 +54,9 @@ public class WebPrimitiveStrategy : IConversionStrategy
 
         return name switch
         {
-            "EscapeDataString" => $"encodeURIComponent({arg})",
-            "UnescapeDataString" => $"decodeURIComponent({arg})",
-            "EscapeUriString" => $"encodeURI({arg})",
-            _ => $"decodeURI({arg})",
+            "EscapeDataString" => $"$eq.uri.escapeData({arg})",
+            "EscapeUriString" => $"$eq.uri.escapeUri({arg})",
+            _ => $"$eq.uri.unescapeData({arg})",
         };
     }
 

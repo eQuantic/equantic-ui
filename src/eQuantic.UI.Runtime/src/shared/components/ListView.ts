@@ -55,8 +55,8 @@ export class ListView extends StatefulComponent {
         [this._first, this._last] = this.windowFor(this._offset, viewport);
         let rows = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         if (this._first > 0) rows.add(Spacer.fixed(Math.fround(Math.fround(this._first) * this.itemExtent)));
-        for (let i = this._first; i <= this._last; i++) rows.add(this.itemBuilder(i));
-        if (this._last < this.count - 1) rows.add(Spacer.fixed(Math.fround(Math.fround(this.count - 1 - this._last) * this.itemExtent)));
+        for (let i = this._first; i <= this._last; i = i + 1 | 0) rows.add(this.itemBuilder(i));
+        if (this._last < (this.count - 1 | 0)) rows.add(Spacer.fixed(Math.fround(Math.fround((this.count - 1 | 0) - this._last | 0) * this.itemExtent)));
         return new ScrollView(rows, 'vertical', { width: this.width, height: this.height, onScrolled: $eq.delegates.bound(this, this.onScrolled).bind(this), onViewportChanged: $eq.delegates.bound(this, this.onViewportChanged).bind(this) });
     }
 
@@ -73,8 +73,8 @@ export class ListView extends StatefulComponent {
 
     windowFor(offset: number, viewport: number): [number, number] {
         if (this.count === 0 || this.itemExtent <= 0) return [0, -1];
-        let first = Math.max(0, $eq.num.saturate(Math.floor(Math.fround(offset / this.itemExtent))) - this.overscan);
-        let last = Math.min(this.count - 1, $eq.num.saturate(Math.ceil(Math.fround(Math.fround(offset + viewport) / this.itemExtent))) + this.overscan);
+        let first = Math.max(0, $eq.num.saturate(Math.floor(Math.fround(offset / this.itemExtent))) - this.overscan | 0);
+        let last = Math.min(this.count - 1 | 0, $eq.num.saturate(Math.ceil(Math.fround(Math.fround(offset + viewport) / this.itemExtent))) + this.overscan | 0);
         return [first, last];
     }
 

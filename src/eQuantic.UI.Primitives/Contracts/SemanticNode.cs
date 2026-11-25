@@ -177,6 +177,26 @@ public enum SemanticRole : byte
     /// infer either. Appended (#1529), by the rule above.
     /// </summary>
     TreeItem,
+
+    /// <summary>
+    /// The boundary between two things, which a reader moves as a slider: a table's column edge, a split
+    /// view's divider. Its value and range ride <see cref="SemanticNode.Range"/> as a slider's do. AppKit
+    /// has a role for it (<c>AXSplitter</c>); iOS and Android have none, and offer it as an adjustable
+    /// element. Appended (#1538), by the rule above.
+    /// </summary>
+    Splitter,
+
+    /// <summary>
+    /// A text field with a list of choices under it, which a reader types into while the arrows walk
+    /// the list: the web's <c>&lt;input role="combobox"&gt;</c>, Core-AAM's editable combobox
+    /// (<c>AXComboBox</c>, <c>android.widget.EditText</c>). Its name is its label, or its placeholder
+    /// without one, its value the text it holds, and whether its list is open rides
+    /// <see cref="SemanticNode.Expanded"/>. The host announces the option the arrows reach from it as it
+    /// changes, as the web's reader follows <c>aria-activedescendant</c>; the Apple shells speak it, and
+    /// Android does not yet. A <see cref="ComboBox"/> is the select-only
+    /// one, a field that only opens the list. Appended (#1088), by the rule above.
+    /// </summary>
+    EditableComboBox,
 }
 
 /// <summary>A check's state, in ARIA's own three words. Mixed exists for checkboxes and nothing

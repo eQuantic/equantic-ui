@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Button, CodeBlock, CodeDecoration, CodeDiffLayout, CodeDiffSource, CodeEditorController, CodeGrid, CodeLanguages, CodeLineChange, CodePatchFile, CodePosition, CodeRange, CodeRow, CodeSurface, ColorToken, Column, CornerRadii, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, StatefulComponent, Text, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, Button, CodeBlock, CodeDecoration, CodeDiffLayout, CodeDiffSource, CodeEditorController, CodeGrid, CodeLanguages, CodeLineChange, CodePatchFile, CodePosition, CodeRange, CodeRow, CodeSurface, ColorToken, Column, CornerRadii, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, StatefulComponent, Text, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeDiff extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeDiff';
@@ -30,7 +30,7 @@ export class CodeDiff extends StatefulComponent {
     declare onChanged: ((string: string) => void) | null;
     declare height: SizeValue;
     declare maxHeight: number;
-    declare size: SizeVariantValue;
+    declare size: $SizeVariantValue;
     declare inverse: boolean;
     declare originalCaption: any;
     declare modifiedCaption: any;
@@ -88,7 +88,7 @@ export class CodeDiff extends StatefulComponent {
         }
         if (opened) layout = this.layoutOf(source, inline);
         this._layout = layout;
-        let lastNumber = Math.max(source.originalLineCount > 0 ? source.originalNumber(source.originalLineCount - 1) : 1, source.modifiedLineCount > 0 ? source.modifiedNumber(source.modifiedLineCount - 1) : 1);
+        let lastNumber = Math.max(source.originalLineCount > 0 ? source.originalNumber(source.originalLineCount - 1 | 0) : 1, source.modifiedLineCount > 0 ? source.modifiedNumber(source.modifiedLineCount - 1 | 0) : 1);
         let metrics = CodeBlock.metricsFor(context, this.size, true, lastNumber);
         let origin = new Point(metrics.contentLeft, metrics.contentTop);
         let cell = new Size(metrics.columnWidth, metrics.lineHeight);
@@ -235,8 +235,8 @@ export class CodeDiff extends StatefulComponent {
     startAtTheFirstChange(source: CodeDiffSource) {
         if ($eq.collections.count(source.changes) === 0) return;
         let change = $eq.collections.item(source.changes, 0);
-        (this._modified!).selection = new CodeRange(new CodePosition(Math.min(change.modifiedStart, this._modified.document.lineCount - 1), 0));
-        (this._original!).selection = new CodeRange(new CodePosition(Math.min(change.originalStart, this._original.document.lineCount - 1), 0));
+        (this._modified!).selection = new CodeRange(new CodePosition(Math.min(change.modifiedStart, this._modified.document.lineCount - 1 | 0), 0));
+        (this._original!).selection = new CodeRange(new CodePosition(Math.min(change.originalStart, this._original.document.lineCount - 1 | 0), 0));
     }
 
     layoutOf(source: CodeDiffSource, inline: boolean) {
@@ -253,9 +253,9 @@ export class CodeDiff extends StatefulComponent {
     toolbar(theme: any, source: CodeDiffSource, inline: boolean) {
         let addedLines = 0;
         let removedLines = 0;
-        for (const change of source.changes) {
-            addedLines += change.modifiedCount;
-            removedLines += change.originalCount;
+        for (const change of $eq.collections.sequenceWalk(source.changes)) {
+            addedLines = addedLines + change.modifiedCount | 0;
+            removedLines = removedLines + change.originalCount | 0;
         }
         let bar = new Row(8, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center' });
         let title = this.modifiedCaption ?? this.originalCaption;
@@ -274,20 +274,20 @@ export class CodeDiff extends StatefulComponent {
 
     stepTo(forward: boolean) {
         const lineOf = (change: CodeLineChange) => {
-            return Math.min(change.modifiedStart, modified.document.lineCount - 1);
+            return Math.min(change.modifiedStart, modified.document.lineCount - 1 | 0);
         };
         let source: any; let modified: any; let original: any; 
         if ((($0) => !((($0 != null && $0.changes != null && $eq.collections.count($0.changes) > 0) && (source = $0, true))))(this._source) || !((modified = this._modified) != null) || !((original = this._original) != null)) return;
         let caret = modified.caret.line;
-        let target = forward ? $eq.collections.item(source.changes, 0) : $eq.collections.item(source.changes, $eq.collections.count(source.changes) - 1);
+        let target = forward ? $eq.collections.item(source.changes, 0) : $eq.collections.item(source.changes, $eq.collections.count(source.changes) - 1 | 0);
         if (forward) {
-            for (const change of source.changes) {
+            for (const change of $eq.collections.sequenceWalk(source.changes)) {
                 if (lineOf(change) <= caret) continue;
                 target = change;
                 break;
             }
         } else {
-            for (let i = $eq.collections.count(source.changes) - 1; i >= 0; i--) {
+            for (let i = $eq.collections.count(source.changes) - 1 | 0; i >= 0; i = i - 1 | 0) {
                 if (lineOf($eq.collections.item(source.changes, i)) >= caret) continue;
                 target = $eq.collections.item(source.changes, i);
                 break;
@@ -295,7 +295,7 @@ export class CodeDiff extends StatefulComponent {
         }
         this.setState(() => {
             modified.selection = new CodeRange(new CodePosition(lineOf(target), 0));
-            original.selection = new CodeRange(new CodePosition(Math.min(target.originalStart, original.document.lineCount - 1), 0));
+            original.selection = new CodeRange(new CodePosition(Math.min(target.originalStart, original.document.lineCount - 1 | 0), 0));
         });
     }
 
@@ -311,20 +311,20 @@ export class CodeDiff extends StatefulComponent {
     static marksOf(source: CodeDiffSource, modifiedSide: boolean, first: number, last: number, line: ColorToken, word: ColorToken, composition: any) {
         let marks: CodeDecoration[] = [];
         let document = modifiedSide ? source.modified : source.original;
-        for (const change of source.changes) {
+        for (const change of $eq.collections.sequenceWalk(source.changes)) {
             let start = modifiedSide ? change.modifiedStart : change.originalStart;
             let count = modifiedSide ? change.modifiedCount : change.originalCount;
-            if (count === 0 || start + count - 1 < first || start > last) continue;
-            let end = Math.min(start + count - 1, document.lineCount - 1);
+            if (count === 0 || ((start + count | 0) - 1 | 0) < first || start > last) continue;
+            let end = Math.min((start + count | 0) - 1 | 0, document.lineCount - 1 | 0);
             let $n5: CodeDecoration; 
-            marks.push(($n5 = new CodeDecoration(new CodeRange(new CodePosition(start, 0), new CodePosition(end, document.line(end).length)), 'line'), $n5.color = line, $n5));
-            for (const inner of change.inner) {
+            $eq.collections.listAdd(marks, ($n5 = new CodeDecoration(new CodeRange(new CodePosition(start, 0), new CodePosition(end, document.line(end).length)), 'line'), $n5.color = line, $n5));
+            for (const inner of $eq.collections.sequenceWalk(change.inner)) {
                 let $n6: CodeDecoration; 
-                marks.push(($n6 = new CodeDecoration(modifiedSide ? inner.modified : inner.original), $n6.color = word, $n6));
+                $eq.collections.listAdd(marks, ($n6 = new CodeDecoration(modifiedSide ? inner.modified : inner.original), $n6.color = word, $n6));
             }
         }
         let composing: any; 
-        if ((composing = composition) != null) marks.push(new CodeDecoration(composing, 'underline'));
+        if ((composing = composition) != null) $eq.collections.listAdd(marks, new CodeDecoration(composing, 'underline'));
         return marks;
     }
 

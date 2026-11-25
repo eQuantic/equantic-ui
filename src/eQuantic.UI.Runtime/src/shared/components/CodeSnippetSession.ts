@@ -31,8 +31,8 @@ export class CodeSnippetSession {
     next() {
         if (this._stops == null) return false;
         this.leaving();
-        let next = this._current + 1;
-        while (next < this._stops.length - 1 && CodeSnippetSession.skipped(this._stops[next])) next++;
+        let next = this._current + 1 | 0;
+        while (next < (this._stops.length - 1 | 0) && CodeSnippetSession.skipped(this._stops[next])) next = next + 1 | 0;
         this.reach(next);
         return true;
     }
@@ -54,11 +54,11 @@ export class CodeSnippetSession {
     placeholdersIn(first: number, last: number) {
         let placeholders: CodeRange[] = [];
         if (this._stops == null) return placeholders;
-        for (const stop of this._stops) {
+        for (const stop of $eq.collections.listWalk(this._stops)) {
             if (stop.final || stop.dropped) continue;
-            for (const range of stop.ranges) {
+            for (const range of $eq.collections.listWalk(stop.ranges)) {
                 if (range.isEmpty || range.end.line < first || range.start.line > last) continue;
-                placeholders.push(range);
+                $eq.collections.listAdd(placeholders, range);
             }
         }
         return placeholders;
@@ -94,7 +94,7 @@ export class CodeSnippetSession {
 
     previousOf(index: number) {
         if (this._stops == null) return -1;
-        for (let i = index - 1; i >= 0; i--) if (!CodeSnippetSession.skipped(this._stops[i])) return i;
+        for (let i = index - 1 | 0; i >= 0; i = i - 1 | 0) if (!CodeSnippetSession.skipped(this._stops[i])) return i;
         return -1;
     }
 
@@ -131,9 +131,9 @@ export class CodeSnippetSession {
         if (this._stops == null) return;
         let leaving = this._stops[this._current];
         if (this.textOf(leaving) === this._reached) return;
-        for (const stop of this._stops) {
+        for (const stop of $eq.collections.listWalk(this._stops)) {
             if (stop.final || (stop === leaving)) continue;
-            for (let i = stop.ranges.length - 1; i >= 0; i--) if (stop.enclosing[i].includes(leaving.index)) stop.removeAt(i);
+            for (let i = stop.ranges.length - 1 | 0; i >= 0; i = i - 1 | 0) if (stop.enclosing[i].includes(leaving.index)) stop.removeAt(i);
             if (stop.ranges.length === 0) stop.dropped = true;
         }
     }
@@ -150,16 +150,16 @@ export class CodeSnippetSession {
         }
         if ($eq.collections.count(change.edits) === 0) return;
         let growing = this.growing();
-        for (const edit of change.edits) {
-            for (let s = 0; s < this._stops.length; s++) {
+        for (const edit of $eq.collections.sequenceWalk(change.edits)) {
+            for (let s = 0; s < this._stops.length; s = s + 1 | 0) {
                 let ranges = this._stops[s].ranges;
-                for (let i = 0; i < ranges.length; i++) {
+                for (let i = 0; i < ranges.length; i = i + 1 | 0) {
                     let range = ranges[i];
-                    ranges[i] = growing[s] ? new CodeRange(edit.carryAnchor(range.start), edit.carryReach(range.end)) : edit.carry(range);
+                    $eq.collections.listSet(ranges, i, growing[s] ? new CodeRange(edit.carryAnchor(range.start), edit.carryReach(range.end)) : edit.carry(range));
                 }
             }
         }
-        for (let s = 0; s < this._stops.length; s++) if (growing[s]) CodeSnippetSession.separate(this._stops[s].ranges);
+        for (let s = 0; s < this._stops.length; s = s + 1 | 0) if (growing[s]) CodeSnippetSession.separate(this._stops[s].ranges);
     }
 
     growing() {
@@ -167,19 +167,19 @@ export class CodeSnippetSession {
         if (this._stops == null || this._current < 0) return growing;
         growing[this._current] = true;
         let current = this._stops[this._current];
-        for (let s = 0; s < this._stops.length; s++) if (!this._stops[s].final && current.nestedIn(this._stops[s].index)) growing[s] = true;
+        for (let s = 0; s < this._stops.length; s = s + 1 | 0) if (!this._stops[s].final && current.nestedIn(this._stops[s].index)) growing[s] = true;
         return growing;
     }
 
     static separate(ranges: CodeRange[]) {
         if (ranges.length < 2) return;
         let order: number[] = [];
-        for (let i = 0; i < ranges.length; i++) order.push(i);
+        for (let i = 0; i < ranges.length; i = i + 1 | 0) $eq.collections.listAdd(order, i);
         $eq.collections.listSortBy(order, (a: number, b: number) => ranges[a].start.compareTo(ranges[b].start), 'System.Comparison`1[System.Int32]');
-        for (let k = 1; k < order.length; k++) {
-            let before = ranges[order[k - 1]];
+        for (let k = 1; k < order.length; k = k + 1 | 0) {
+            let before = ranges[order[k - 1 | 0]];
             let range = ranges[order[k]];
-            if (CodePosition.opLessThan(before.start, range.start) && CodePosition.opLessThan(range.start, before.end)) ranges[order[k]] = new CodeRange(CodePosition.opLessThan(before.end, range.end) ? before.end : range.end, range.end);
+            if (CodePosition.opLessThan(before.start, range.start) && CodePosition.opLessThan(range.start, before.end)) $eq.collections.listSet(ranges, order[k], new CodeRange(CodePosition.opLessThan(before.end, range.end) ? before.end : range.end, range.end));
         }
     }
 
@@ -199,15 +199,15 @@ export class CodeSnippetSession {
     stopWithin() {
         if (this._stops == null) return -1;
         if (this.holds(this._stops[this._current])) return this._current;
-        for (let s = 0; s < this._stops.length; s++) if (this.holds(this._stops[s])) return s;
+        for (let s = 0; s < this._stops.length; s = s + 1 | 0) if (this.holds(this._stops[s])) return s;
         return -1;
     }
 
     holds(stop: CodeSnippetStop) {
         if (stop.final || stop.dropped) return false;
-        for (const selection of this._editor.selections) {
+        for (const selection of $eq.collections.sequenceWalk(this._editor.selections)) {
             let inside = false;
-            for (const range of stop.ranges) if (CodePosition.opGreaterOrEqual(selection.start, range.start) && CodePosition.opLessOrEqual(selection.end, range.end)) inside = true;
+            for (const range of $eq.collections.listWalk(stop.ranges)) if (CodePosition.opGreaterOrEqual(selection.start, range.start) && CodePosition.opLessOrEqual(selection.end, range.end)) inside = true;
             if (!inside) return false;
         }
         return true;

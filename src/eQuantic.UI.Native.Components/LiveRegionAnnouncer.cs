@@ -83,7 +83,8 @@ internal sealed class LiveRegionAnnouncer
             var mark = marks[i];
             if (NodeStates.For<LiveRegionState>(mark.Element) is not { } region) continue;
             var text = TextOf(mark);
-            _current[mark.Element.Id] = text;
+            var id = (mark.SaidFrom ?? mark.Element).Id;
+            _current[id] = text;
             // A REGION THAT APPEARS **IS** THE EVENT — on any frame but the first. That is the case
             // `LiveRegion` was added for: a Banner that appears announced nothing (B18) and a Toast
             // lowered to a non-modal Overlay announced nothing (C4), and treating arrival as "no
@@ -117,7 +118,7 @@ internal sealed class LiveRegionAnnouncer
             if (text.Length == 0) continue;               // emptied, not said
             region.SpokeAtMs = timeMs;
             if (_pending.Count == MaxPending) _pending.RemoveAt(0);
-            _pending.Add(new LiveAnnouncement(mark.Element.Id, mark.Label, text, mark.Urgency));
+            _pending.Add(new LiveAnnouncement(id, mark.Label, text, mark.Urgency));
         }
 
         _seenAFrame = true;

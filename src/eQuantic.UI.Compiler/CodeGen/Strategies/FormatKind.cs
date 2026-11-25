@@ -21,7 +21,10 @@ internal static class FormatKind
 {
     /// <summary>The kind for <paramref name="type"/>, or null for anything that is not a number of
     /// these types.</summary>
-    public static string? Of(ITypeSymbol? type) => type.UnwrapNullable()?.SpecialType switch
+    public static string? Of(ITypeSymbol? type) => type.UnwrapNullable()?.SpecialType is { } special ? Of(special) : null;
+
+    /// <summary>The kind for a number of the special type <paramref name="special"/>, or null for any other.</summary>
+    public static string? Of(SpecialType special) => special switch
     {
         SpecialType.System_Double => "double",
         SpecialType.System_Single => "single",

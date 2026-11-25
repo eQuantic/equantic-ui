@@ -16,34 +16,34 @@
     "web-dashboard.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "3a204335356eef857c702dfc57e49f879f208302935965c569d759a380fa89aa",
-        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "a9dda13a46c79bda5f05d0fb31955416bcbd6d79dc9c82e2a488cba66d893632",
+        "samples/DefaultUIDashboard/Program.cs": "4ef2e83b6e34bfc2847e1e71abb0703e4e1e40b8a7890753e690c0f9857bd0b0",
+        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "afe2ac0f4e93f016f50436c9ba6571af1885dadcb38494d3b2b91329b7038125",
         "samples/DefaultUIDashboard/Screens/ConsoleData.cs": "abcb0a957c3823167118ea3f6ea2f100dc9e0aab969910388f3e3d4c4c91403e",
-        "samples/DefaultUIDashboard/Screens/PaymentsPage.cs": "af0ee5ec77e5408eca09194c5199be79f3176af773e5424abeea3b92c625330d"
+        "samples/DefaultUIDashboard/Screens/PaymentsPage.cs": "212049d3c5d2179818a879addd880a35b5aaaf230d7a804189c0d704186a270a"
       }
     },
     "web-charts.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "3a204335356eef857c702dfc57e49f879f208302935965c569d759a380fa89aa",
-        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "a9dda13a46c79bda5f05d0fb31955416bcbd6d79dc9c82e2a488cba66d893632",
+        "samples/DefaultUIDashboard/Program.cs": "4ef2e83b6e34bfc2847e1e71abb0703e4e1e40b8a7890753e690c0f9857bd0b0",
+        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "afe2ac0f4e93f016f50436c9ba6571af1885dadcb38494d3b2b91329b7038125",
         "samples/DefaultUIDashboard/Screens/ChartsScreen.cs": "991dc99192c2e18b181424fbe3e260262387b8e02ed84d50cb120aeef8ad01c3"
       }
     },
     "web-code-diff.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "3a204335356eef857c702dfc57e49f879f208302935965c569d759a380fa89aa",
-        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "a9dda13a46c79bda5f05d0fb31955416bcbd6d79dc9c82e2a488cba66d893632",
+        "samples/DefaultUIDashboard/Program.cs": "4ef2e83b6e34bfc2847e1e71abb0703e4e1e40b8a7890753e690c0f9857bd0b0",
+        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "afe2ac0f4e93f016f50436c9ba6571af1885dadcb38494d3b2b91329b7038125",
         "samples/DefaultUIDashboard/Screens/DiffScreen.cs": "8ee387b084e99ddb898598abc65794f79642dcf15b5cc255e3bdc162a4805afe"
       }
     },
     "web-forms.png": {
       "target": "web",
       "sources": {
-        "samples/DefaultUIDashboard/Program.cs": "3a204335356eef857c702dfc57e49f879f208302935965c569d759a380fa89aa",
-        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "a9dda13a46c79bda5f05d0fb31955416bcbd6d79dc9c82e2a488cba66d893632",
-        "samples/DefaultUIDashboard/Screens/FormScreen.cs": "ccb663dd0d83cde8325f4183b6e5e01f5b4888cf5472c16aedaadd3dd60d7b07"
+        "samples/DefaultUIDashboard/Program.cs": "4ef2e83b6e34bfc2847e1e71abb0703e4e1e40b8a7890753e690c0f9857bd0b0",
+        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "afe2ac0f4e93f016f50436c9ba6571af1885dadcb38494d3b2b91329b7038125",
+        "samples/DefaultUIDashboard/Screens/FormScreen.cs": "d8cf114470cec1a12818c58cc0a66efe65675d1697274222263d2b5ecc3e6f04"
       }
     },
     "desktop-gallery.png": {
@@ -51,7 +51,7 @@
       "sources": {
         "samples/PhotonDesktop/Program.cs": "972c1b415b814a300974f6d32b4857d0990f8d64be15cadbad8e9a77128f1d6d",
         "samples/PhotonDesktop/Studio/StudioShell.cs": "eec5d744926b4732b69e0e8ddc8062a43b2810008349bbed282445c059580beb",
-        "samples/PhotonDesktop/Studio/Gallery.cs": "fb0eb2e1eae5db594c9afed710a21604caa6e165cc9fa47fc77dc1d376c3ca70"
+        "samples/PhotonDesktop/Studio/Gallery.cs": "0ba5d1cb6980be78502d5f7571882e3be4bde515bb71b859043fc60143cd8f6f"
       }
     },
     "desktop-gallery-light.png": {
@@ -59,7 +59,7 @@
       "sources": {
         "samples/PhotonDesktop/Program.cs": "972c1b415b814a300974f6d32b4857d0990f8d64be15cadbad8e9a77128f1d6d",
         "samples/PhotonDesktop/Studio/StudioShell.cs": "eec5d744926b4732b69e0e8ddc8062a43b2810008349bbed282445c059580beb",
-        "samples/PhotonDesktop/Studio/Gallery.cs": "fb0eb2e1eae5db594c9afed710a21604caa6e165cc9fa47fc77dc1d376c3ca70"
+        "samples/PhotonDesktop/Studio/Gallery.cs": "0ba5d1cb6980be78502d5f7571882e3be4bde515bb71b859043fc60143cd8f6f"
       }
     },
     "ios-home.png": {

@@ -140,7 +140,11 @@ is not the owner's.
    ("Auto merge is not allowed for this repository"). The queue runs CI on it together with every
    pull request ahead of it, merges it
    with a squash when that run is green, and nobody merges `main` into a pull request only to bring
-   it up to date. A pull request's own run skips the four macOS jobs, which hold the scarcest
+   it up to date. The ruleset also requires one approving review, so that a contributor's pull
+   request waits for the owner's: the owner's own pull requests, every session's included, are
+   approved by `.github/workflows/approve-owner-pull-requests.yml` (#1847), which runs on
+   `pull_request_target` as `main` holds it and approves only when the author, the actor of the event and
+   every commit are the owner's account. A pull request's own run skips the four macOS jobs, which hold the scarcest
    runners and report as skipped, satisfying their checks: the queue's run is the one that runs them
    (#1385), and a pull request that changes the Apple track asks for them on its branch first with
    `gh workflow run ci.yml --ref <branch>`. Until the queue is on, when `main` moved after the CI ran, merge `main` into the
@@ -189,7 +193,12 @@ file of its own under `docs/ledger/`, never into `docs/LEDGER.md`: every pull re
 its line at the chronology's end, so any two open ones conflicted there on every merge, and a merge
 GitHub performs reads no `.gitattributes` that could resolve it (#892). A release folds the files
 into the chronology (`./scripts/fold-ledger.sh`), and `LedgerTests` fails on a file that is not one
-dated entry and on a chronology no fold wrote.
+dated entry and on a chronology no fold wrote. Two more files had that shape and take that cure
+(#1489): a change declares its public API in `PublicAPI.Unshipped.<branch>.txt` beside each project,
+the file `./scripts/public-api.sh update` writes, and a change that moves the served runtime past
+its budget writes its own delta under `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime/`, and
+a release folds both. A third rewrote itself whenever a cited line moved: a citation in the audits
+names the file and the code, never the line, and `DocsIndexTests` finds the code.
 
 The pictures in the root `README.md` are captures of the samples, and a picture is taken again when
 the screen it shows changes. `assets/readme/captures.json` names the files each picture's screen is

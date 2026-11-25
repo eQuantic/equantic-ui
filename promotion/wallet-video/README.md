@@ -1,6 +1,6 @@
 # The Wallet video
 
-Thirty seconds, two formats (4:5 for the feed, 9:16 for stories): the same screens of the Wallet
+Thirty seconds, three formats (4:5 for the feed, 9:16 for stories, 16:9 for YouTube and an article's embed): the same screens of the Wallet
 sample, written once in C#, running at the same moment in Chrome, the iPhone simulator, the Android
 emulator and a native macOS window. A camera flies from device to device in one continuous move,
 each device is labelled with what it does not need (Swift, Kotlin, JavaScript, Electron), and the
@@ -24,10 +24,10 @@ The project's paths are relative to the project, so it opens from any checkout. 
 
 | Composition | Role |
 |---|---|
-| `Wallet Agency 4x5`, `Wallet Agency 9x16` | The cuts: the hook, the 3D scene, the end card and the score |
-| `SF Hook`, `SF Hook 9x16` | "Write it once." over the code card; its first frame is the cover a feed shows |
-| `Hero 3D`, `Hero 3D 9x16` | The four devices as 3D objects, the camera move, the labels, the closing title |
-| `SF End`, `SF End 9x16` | The logo, the site and the repository |
+| `Wallet Agency 4x5`, `Wallet Agency 9x16`, `Wallet Agency 16x9` | The cuts: the hook, the 3D scene, the end card and the score |
+| `SF Hook`, `SF Hook 9x16`, `SF Hook 16x9` | "Write it once." over the code card; its first frame is the cover a feed shows |
+| `Hero 3D`, `Hero 3D 9x16`, `Hero 3D 16x9` | The four devices as 3D objects, the camera move, the labels, the closing title |
+| `SF End`, `SF End 9x16`, `SF End 16x9` | The logo, the site and the repository |
 | `Device iPhone`, `Device Android`, `Device Browser`, `Device Mac` | Each recording in its frame |
 | `Screen Monitor`, `Screen Laptop`, `Laptop Deck` | What the monitor and the laptop show, and the laptop's keyboard |
 | `Code Card` | The code card |
@@ -103,9 +103,20 @@ the loudness over time, to check the mix against the cut without listening to it
 
 ### 5. Render
 
-Open `effectcraft/wallet.ecproj` and render the queue. It holds the two cuts, written to
+Open `effectcraft/wallet.ecproj` and render the queue. It holds the three cuts, written to
 `effectcraft/out/`. The 3D scenes use Advanced 3D with depth of field and take about five minutes a cut on
 the CPU.
+
+The 16:9 comps are the 4:5 ones made wider, not a new scene. Each is a duplicate at 1920x1080 with every
+unparented layer moved by half the change of size (420 right, 135 up), cameras' and lights' points of
+interest with them. In `Hero 3D 16x9` the camera's zoom is 1200 where the 4:5 has 1500, so the phones keep
+the height they fill in the taller frame and the extra width shows more of the scene, and the 2D labels
+sit at 0.8 of their distance from the centre to follow it. In `Wallet Agency 16x9`, each precomp layer's
+anchor is the new centre, 960x540: a replaced source keeps the anchor of the comp it replaced.
+
+EffectCraft writes every path absolute when it saves. After a save, strip the project folder's own path
+from the project (`footage/…`, `models/…` and `out/…` are what is left), then run `tools/relocate.py`,
+which fails while an absolute path remains.
 
 To bring the project back into the repository after working on it elsewhere, use EffectCraft's
 File > Dependencies > Collect Files into `effectcraft/`, then `python3 tools/relocate.py effectcraft`.

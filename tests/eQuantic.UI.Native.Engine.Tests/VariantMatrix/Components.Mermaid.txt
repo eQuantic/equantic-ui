@@ -1,6 +1,6 @@
 ## Comfortable
 ### web
-<div data-eq-unmeasured="" class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div data-eq-unmeasured="" dir="ltr" class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
 <div class="eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
@@ -57,19 +57,20 @@ StaticText "x"
 ### photon
 Mermaid 0 0 480x42
   CodeBlock 0 0 480x42
-    Box 0 0 480x42
-      ScrollView 0 0 480x42
-        Box 0 0 13.52x42
+    Directionality 0 0 480x42
+      Box 0 0 480x42
+        ScrollView 0 0 480x42
           Box 0 0 13.52x42
-            Column 0 12 13.52x18
-              Row 0 12 13.52x18
-                Box 0 13 24x16
-                  Row 12 13 0x16
-                    Text 12 13 0x16 1 line(s)
+            Box 0 0 13.52x42
+              Column 0 12 13.52x18
+                Row 0 12 13.52x18
+                  Box 0 13 24x16
+                    Row 12 13 0x16
+                      Text 12 13 0x16 1 line(s)
 
 ## Compact
 ### web
-<div data-eq-unmeasured="" class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
+<div data-eq-unmeasured="" dir="ltr" class="eq-12ve49g eq-1eb13m5 eq-1o1uad7 eq-5ew4ww eq-akjizx eq-g7fowl eq-mbtjfn">
 <div class="eq-18plna0 eq-1gudvpj eq-1jjc6f6 eq-372o7v eq-5ew4ww eq-akjizx eq-g7fowl eq-iwaszp eq-jzi5e5">
 <div class="eq-1eb13m5 eq-2l5nkt eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-5ew4ww eq-akjizx eq-g7fowl eq-q6da9m">
@@ -126,13 +127,14 @@ StaticText "x"
 ### photon
 Mermaid 0 0 480x41
   CodeBlock 0 0 480x41
-    Box 0 0 480x41
-      ScrollView 0 0 480x41
-        Box 0 0 11.96x41
+    Directionality 0 0 480x41
+      Box 0 0 480x41
+        ScrollView 0 0 480x41
           Box 0 0 11.96x41
-            Column 0 12 11.96x17
-              Row 0 12 11.96x17
-                Box 0 13.25 24x14.5
-                  Row 12 13.25 0x14.5
-                    Text 12 13.25 0x14.5 1 line(s)
+            Box 0 0 11.96x41
+              Column 0 12 11.96x17
+                Row 0 12 11.96x17
+                  Box 0 13.25 24x14.5
+                    Row 12 13.25 0x14.5
+                      Text 12 13.25 0x14.5 1 line(s)
 

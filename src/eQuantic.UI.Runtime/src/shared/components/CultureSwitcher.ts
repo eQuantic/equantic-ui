@@ -1,9 +1,9 @@
-import { $eq, Box, BuildContext, Button, CultureOption, Menu, MenuItem, SegmentedControl, SizeVariantValue, StatelessComponent } from "../runtime-exports";
+import { $eq, $SizeVariantValue, Box, BuildContext, Button, CultureOption, Menu, MenuItem, SegmentedControl, StatelessComponent } from "../runtime-exports";
 
 export class CultureSwitcher extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CultureSwitcher';
     declare options: CultureOption[];
-    declare size: SizeVariantValue;
+    declare size: $SizeVariantValue;
     declare shape: string;
     declare icon: any;
     declare onChanged: ((string: string) => void) | null;
@@ -22,7 +22,7 @@ export class CultureSwitcher extends StatelessComponent {
         let controller = context.getService('ICultureController');
         let current = controller?.uICulture ?? '';
         let selected = 0;
-        for (let i = 0; i < $eq.collections.count(this.options); i++) {
+        for (let i = 0; i < $eq.collections.count(this.options); i = i + 1 | 0) {
             if ($eq.collections.item(this.options, i).name === current) {
                 selected = i;
                 break;
@@ -31,13 +31,13 @@ export class CultureSwitcher extends StatelessComponent {
         }
         if (this.shape !== 'menu' && (this.shape === 'segments' || $eq.collections.count(this.options) <= 3)) {
             let labels: string[] = [];
-            for (const option of this.options) labels.push(option.label);
+            for (const option of $eq.collections.sequenceWalk(this.options)) $eq.collections.listAdd(labels, option.label);
             return new SegmentedControl(labels, selected, (index: number) => this.switch(controller, index), { size: this.size, stretch: false });
         }
         let items: MenuItem[] = [];
-        for (const option of this.options) {
+        for (const option of $eq.collections.sequenceWalk(this.options)) {
             let flag: any; 
-            items.push(new MenuItem((($0) => (($0 != null && $0.length > 0) && (flag = $0, true)))(option.flag) ? `${flag}  ${option.label}` : option.label));
+            $eq.collections.listAdd(items, new MenuItem((($0) => (($0 != null && $0.length > 0) && (flag = $0, true)))(option.flag) ? `${flag}  ${option.label}` : option.label));
         }
         let chosen = $eq.collections.item(this.options, selected);
         let code: any; 

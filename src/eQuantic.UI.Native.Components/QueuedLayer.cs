@@ -15,4 +15,10 @@ namespace eQuantic.UI.Native.Components;
 /// <param name="Layer">What the pass lays out against the viewport and paints above the page.</param>
 /// <param name="Holder">The position whose deferred slot holds the layer's content. Never null for
 /// a node the layout measured; the pass refuses one that is.</param>
-internal readonly record struct QueuedLayer(Overlay Layer, NodeElement? Holder);
+/// <param name="InScrolledHeader">Whether the layer was found inside a scrolled pinned header: its
+/// boxes show their <c>Scrolled</c> diff, as the web's do, whose layer is an element inside the
+/// header's (#1769).</param>
+/// <param name="Combo">What the layer's listbox says, when a text field it hangs from makes it an editable
+/// combobox's, or null: the option the keyboard is on is said from that field as it changes (#1088).</param>
+internal readonly record struct QueuedLayer(Overlay Layer, NodeElement? Holder, bool InScrolledHeader,
+    ComboAnnouncement? Combo = null);

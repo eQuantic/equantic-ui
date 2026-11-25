@@ -158,12 +158,39 @@ component.
 
 An `Overlay`'s child and an `Anchored` panel SHALL be built when their layer is realized in a frame,
 and a layer that is not realized in a frame (an overlay closed with motion, a panel closed or no
-longer hovered) SHALL unmount what it holds.
+longer hovered) SHALL unmount what it holds. A frame whose realizer drew only parts of the tree
+(`BuildOwner.DrewOnly`) SHALL judge only the layers inside those parts: a layer outside them SHALL keep
+what it holds, and a frame whose realizer says nothing SHALL have drawn the whole tree.
+`BuildOwner.WaitsForALayer` SHALL answer whether a marked position waits for its layer to be shown.
 
 #### Scenario: A menu closes
 
 - **WHEN** an anchored panel holding a stateful component is open for a frame and closed in the next
 - **THEN** the component mounted in the first frame and unmounted in the second
+
+#### Scenario: A patch render elsewhere on the page
+
+- **WHEN** a page holds a counter and an open non-modal overlay over another counter, and the first
+  counter is pressed twice in the browser, then the second
+- **THEN** no counter unmounts, and the second reads `b: 1`
+
+#### Scenario: A panel closed in a patch render
+
+- **WHEN** a component holding an open anchored panel over a counter closes it with its own `SetState`,
+  and the browser lowers that component alone
+- **THEN** the panel's counter unmounts
+
+#### Scenario: A frame that drew one part
+
+- **WHEN** an owner's frame says it drew only a counter's position, and an open overlay beside it was
+  not shown
+- **THEN** the overlay keeps what it holds, and a later frame that says nothing takes it out
+
+#### Scenario: Photon draws every frame whole
+
+- **WHEN** a Photon host draws two frames after a `SetState` outside an open overlay and an open
+  anchored panel, then one after a `SetState` inside the overlay
+- **THEN** neither layer's component unmounts, and the one inside the overlay builds in the third frame
 
 ### Requirement: A position keeps its node's state
 
@@ -377,7 +404,9 @@ containment and its depth bound unchanged.
 
 A `MarkupHost` SHALL lower the tree its `BuildOwner` has just built, between its `Build` and its
 `EndFrame`. A component SHALL be lowered from what its position built in that frame, by the
-instance the position keeps, never built again. A layer the web lowers (an overlay's child, an
+instance the position keeps, never built again. A component SHALL be found inside the component
+position whose build is being lowered, so a lowering descends the positions the engine built, even
+where one instance holds several of them. A layer the web lowers (an overlay's child, an
 anchored panel, one kept mounted while closed for its motion included) SHALL be shown in its
 position's deferred slot before it lowers; a layer the web does not lower SHALL leave the tree when
 the frame ends. Of an adaptive node, the arm its element holds SHALL lower from its positions and the
@@ -386,7 +415,7 @@ position for SHALL be refused with an exception. The host's components SHALL bui
 boundary with a measurer that has no font, and the host SHALL note which build asked it, so a
 component whose build asked is marked for hydration as a tree drawn once marks it. The first frame
 SHALL be the markup `WebRealizer.Lower` writes for the same tree, byte for byte, hydration's
-unmeasured mark included.
+unmeasured mark included. The browser's lowering SHALL find a component the same way.
 
 #### Scenario: The second frame of a nested stateful component
 
@@ -417,6 +446,25 @@ unmeasured mark included.
 - **WHEN** the server's expansion scope is armed while a frame is lowered in which a page hands a
   stateful child's position a fresh instance
 - **THEN** the scope names the instance the position keeps, not the fresh one
+
+#### Scenario: A component that builds itself, drawn through a host
+
+- **WHEN** a row holding a component whose `Build` returns itself is drawn through
+  `MarkupHost.Structural` and through `MarkupHost.ForPage`, and alone, and inside a stack
+- **THEN** the row's other children are drawn, the component's place shows the boundary's surface, and
+  the boundary reports it once
+
+#### Scenario: A component that builds a box around itself
+
+- **WHEN** a component whose `Build` returns a box holding the component itself is drawn through a host
+- **THEN** its place shows the boundary's surface
+
+#### Scenario: The browser lowers the same chain
+
+- **WHEN** the browser's lowering lowers a row holding a component whose build returns itself, and a
+  stack holding it and one that builds a box around itself
+- **THEN** it returns, the row's other children are drawn, the surface is drawn, and the chain is
+  reported once
 
 ### Requirement: An element hands its children to a visitor
 
@@ -673,16 +721,16 @@ data for a component SHALL reach every fresh instance at its position before tha
 
 ### Requirement: Every arm of an adaptive node is a position on the web
 
-An owner the web makes SHALL hold every arm an adaptive node declares, compact at slot 0, medium at
-slot 1 and expanded at slot 2, rather than the arm a window size class resolves, since the web draws
-every arm behind its own media gate. No window size class SHALL decide an arm on the web, and a resize
-SHALL need no build for the arm on screen to be one an element holds. An owner that draws one arm
-(Photon's) SHALL keep resolving it.
+An owner the server makes, and an owner of the browser's until the page it draws has hydrated, SHALL hold
+every arm an adaptive node declares, compact at slot 0, medium at slot 1 and expanded at slot 2, rather than
+the arm a window resolves, since the served page draws every arm behind its own media gate. An owner that
+draws one arm (Photon's, and the browser's once the page has hydrated) SHALL resolve it, and hold it at its
+own slot. An owner that lays a tree out once and draws it no more SHALL hold every arm.
 
 #### Scenario: The arm on screen is held at any width
 
-- **WHEN** a page with an adaptive node holding a stateful component in each arm is drawn, and the window
-  crosses the node's threshold
+- **WHEN** a page with an adaptive node holding a stateful component in each arm is drawn with every arm,
+  and the window crosses the node's threshold
 - **THEN** the component in the arm now shown keeps its instance and answers a press without a build
 
 ### Requirement: Server data is keyed by a component's position
@@ -860,3 +908,62 @@ with the app's report and read its tally beside its frame summary.
 
 - **WHEN** a write-once bridge inside an escape-hatch page contains a failure while the server renders it
 - **THEN** it is reported through the request's boundary, as a failure in a write-once page is
+
+### Requirement: While the server loads a page's data, only what loads keeps its instance
+
+While `ServerDataRounds` runs, a position SHALL keep the stateful instance it holds when its parent's
+build hands it a fresh one only if that instance loads data (`IServerPrefetch`); any other stateful
+instance SHALL give the position to the fresh one, which leaves the old instance's position and enters
+the new one's as a first build does. `BuildOwner.KeepsInstance` SHALL say which instances a position
+keeps; the rounds SHALL arm it and put back what it held when they end, and a tree drawn for a person
+SHALL leave it null, which keeps every instance.
+
+#### Scenario: A stateful section handed what its page loads
+
+- **WHEN** a page whose prefetch loads `675617` builds a stateful section that loads nothing, handing it
+  the loaded value through its constructor, and the server renders the page
+- **THEN** the served HTML shows `Section: 675617`, not the page's default
+
+#### Scenario: A stateful loader under a page that loads
+
+- **WHEN** a page that loads composes a stateful component that loads too
+- **THEN** each is asked once, and the component draws what it loaded
+
+#### Scenario: Once the page has loaded
+
+- **WHEN** the tester pumps a page through its rounds and then pumps the page again with a fresh instance
+- **THEN** the stateful section keeps its instance, and nothing mounts or unmounts
+
+### Requirement: A global key carries its position across parents
+
+A node that carries a `GlobalKey` and is placed, in one build, under another parent than the one its
+position stood under SHALL take that position along, with every stateful instance below it, whether the
+build reaches the new place before or after the old one; no component below it SHALL unmount or mount for
+the move. A component moved under another inherited value SHALL read the value above its new place and
+SHALL hear that its dependencies changed. A position of a key that no node takes in the build SHALL leave
+at the frame's end. Where one arm is held, a key placed at two positions in one frame SHALL fill both,
+SHALL start one of them again, and SHALL tell the developer; where every arm is held, each arm's position of
+the key SHALL be its own.
+
+#### Scenario: A screen in both arms of the drawer template
+
+- **WHEN** the drawer shell of `dotnet new equantic-native`, its activity screen keyed, counts to 2 at 400 dp,
+  and the window widens to 1000 dp and narrows back to 400 dp
+- **THEN** the activity screen is the same instance at each width, and its count is 2
+
+#### Scenario: A key moving to a branch the build reaches first
+
+- **WHEN** a keyed counter pressed once moves from the second of two columns in a row to the first
+- **THEN** it keeps its instance and its count, it neither unmounts nor mounts, and the second column holds
+  nothing
+
+#### Scenario: A key placed twice
+
+- **WHEN** one frame places two nodes of one key in a row where one arm is held
+- **THEN** both slots hold a position, each with its own instance, and the developer is told the key is
+  placed at two positions in one frame
+
+#### Scenario: The same on the browser's engine
+
+- **WHEN** the screen case runs on the transpiled engine the served runtime exports
+- **THEN** its trace equals the .NET engine's

@@ -145,10 +145,22 @@ public class SdkStringsLocalizationTests
 
         foreach (var culture in new[] { "en", "pt-BR", "pt", "pt-PT", "es" })
         foreach (var property in properties)
+        foreach (var (name, value) in Texts(property.Name, InCulture(culture, () => property.GetValue(null))))
         {
-            var value = InCulture(culture, () => (string?)property.GetValue(null));
-            value.Should().NotBeNullOrWhiteSpace(
-                $"SdkStrings.{property.Name} must resolve in '{culture}'");
+            value.Should().NotBeNullOrWhiteSpace($"SdkStrings.{name} must resolve in '{culture}'");
         }
+    }
+
+    /// <summary>The texts a property of the seam holds: itself when it is one, or each text of the record it is, as
+    /// the sort's words are one record of eight (#1564).</summary>
+    private static IEnumerable<(string Name, string? Value)> Texts(string name, object? value)
+    {
+        if (value is string or null)
+        {
+            yield return (name, (string?)value);
+            yield break;
+        }
+        foreach (var member in value.GetType().GetProperties().Where(member => member.PropertyType == typeof(string)))
+            yield return ($"{name}.{member.Name}", (string?)member.GetValue(value));
     }
 }

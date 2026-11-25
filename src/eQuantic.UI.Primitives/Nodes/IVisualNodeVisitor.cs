@@ -88,6 +88,8 @@ public interface IVisualNodeVisitor<in TState, out TResult>
 
     TResult Visit(ContextTarget node, TState state);
 
+    TResult Visit(Listener node, TState state);
+
     TResult Visit(Flexible node, TState state);
 
     TResult Visit(Grid node, TState state);
@@ -115,6 +117,10 @@ public interface IVisualNodeVisitor<in TState, out TResult>
     TResult Visit(LiveRegion node, TState state);
 
     TResult Visit(Group node, TState state);
+
+    TResult Visit(MergeSemantics node, TState state);
+
+    TResult Visit(ExcludeSemantics node, TState state);
 
     TResult Visit(Positioned node, TState state);
 

@@ -237,6 +237,8 @@ public sealed class PhotonWindow
             // VoiceOver's moments rather than the content's. The host has already decided whether
             // there is anything to say — this loop pays one empty-list check when there is not.
             PhotonAnnouncements.Post(window, host.TakeAnnouncements());
+            // Where the keyboard went, if it moved: an event too, told once the frame that moved it drew.
+            PhotonAccessibility.FocusMoved(contentView);
             backend.RenderToDrawable(builder.Build(), Send(drawable, Sel("texture")),
                 MetalBackend.PixelFormatBgra8UnormSrgb, drawable);
             FramesPresented++;
@@ -287,6 +289,7 @@ public sealed class PhotonWindow
             host.CaretRect() is { } rect ? (rect.X, rect.Y, rect.Width, rect.Height) : null;
 
         PhotonAccessibility.Source = host.Semantics;
+        PhotonAccessibility.FocusedId = () => host.FocusedId;
         PhotonAccessibility.OnActivate = id =>
         {
             var handled = host.Activate(id);
@@ -500,7 +503,8 @@ public sealed class PhotonWindow
                 var modifiers = MacKeys.ModifiersOf(SendULong(e, Sel("modifierFlags")));
                 // A Control-click is a Mac's secondary click (#1531). Answered, the release that follows it is the
                 // menu's, not a press's; answered by nothing, it presses as it always did.
-                if (modifiers == KeyModifiers.Control && host.ContextRequest(x, y))
+                if (modifiers == KeyModifiers.Control
+                    && host.ContextRequest(x, y, buttons: PointerButtons.Primary, modifiers: KeyModifiers.Control))
                 {
                     _contextClickHeld = true;
                     break;
@@ -512,7 +516,9 @@ public sealed class PhotonWindow
             case EventTypeLeftMouseUp:
                 if (_contextClickHeld)
                 {
+                    // The release is the menu's, not a press's: the host hears the button let go, and nothing pressed.
                     _contextClickHeld = false;
+                    host.PointerCancel();
                     break;
                 }
                 host.PressUp(x, y);

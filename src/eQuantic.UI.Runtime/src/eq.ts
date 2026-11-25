@@ -15,6 +15,8 @@ import {
   removeDelegate,
   removeFromEvent,
 } from './utils/delegates';
+import { listAdd, listClear, listForEach, listSet, listWalk, sequenceWalk } from './utils/list-version';
+import * as query from './utils/query';
 import { hydrate } from './utils/hydrate';
 import { twinJson } from './utils/twin-json';
 import { long } from './utils/long';
@@ -54,7 +56,13 @@ import {
   log2Of64,
 } from './utils/bits';
 import {
+  abs,
+  absLong,
+  addInt,
+  addLong,
   checked,
+  copySign,
+  copySignLong,
   mapGet,
   mapSet,
   divRem,
@@ -87,7 +95,10 @@ import {
   integerFromDouble,
   integerFromObject,
   realFromObject,
+  truncatedFromDecimal,
 } from './utils/number-convert';
+import { clamp as decClamp } from './utils/decimal-math';
+import { clamp, clampLong } from './utils/clamp';
 import {
   intConvert,
   intParse,
@@ -136,6 +147,7 @@ import {
 import {
   asNumber,
   format,
+  numberFormatInfo,
   recordText,
   recordTextGroup,
   stringFormat,
@@ -150,6 +162,7 @@ import { nextTextElementLength, textElementStarts } from './utils/text-elements'
 import { unicodeCategory } from './utils/unicode-category';
 import { hasNonWhiteSpace, isWhiteSpace, trim, trimEnd, trimStart } from './utils/white-space';
 import { toLower, toUpper } from './utils/casing';
+import { escapeData, escapeUri, unescapeData } from './utils/uri-escaping';
 import { split, splitAny } from './utils/string-split';
 import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
@@ -370,6 +383,9 @@ export const $eq = {
    * the overloads a sibling's lowering mistook: Average by its element type, FirstOrDefault,
    * LastOrDefault and SingleOrDefault with a default value, SequenceEqual by the default equality, and
    * Zip's tuples. */
+  /** LINQ's operators as .NET runs them, each reading its source one element at a time when it is
+   * walked (#685) — see utils/query. */
+  query,
   linq: {
     average,
     enumerable,
@@ -424,6 +440,12 @@ export const $eq = {
     integerFromDouble,
     integerFromDecimal,
     integerFromObject,
+    /** A decimal cast to an integer or a char, toward zero from its own digits, and its Clamp (#1766, #1767). */
+    truncatedFromDecimal,
+    decClamp,
+    /** A number's and a long's Clamp, in .NET's order, refusing a minimum above the maximum (#1824). */
+    clamp,
+    clampLong,
     realFromObject,
     charFrom,
     charFromText,
@@ -440,6 +462,14 @@ export const $eq = {
     intRem,
     longDiv,
     longRem,
+    /** An int and a long added as Enumerable.Sum adds them, checked whatever the context (#1808). */
+    addInt,
+    addLong,
+    /** A signed integer's Abs and CopySign, which throw for its MinValue's magnitude (#1808). */
+    abs,
+    absLong,
+    copySign,
+    copySignLong,
     single,
     double,
     singleFromLong,
@@ -486,6 +516,8 @@ export const $eq = {
     trailingZeroCount64,
     log2Of64,
   },
+  /** `Uri.EscapeDataString`, `EscapeUriString` and `UnescapeDataString` as .NET escapes and unescapes (#1805). */
+  uri: { escapeData, escapeUri, unescapeData },
   /** Text: number/string formatting, StringBuilder, StringInfo's text elements (grapheme clusters,
    * from the platform's segmenter), a character's general category, string's comparisons and
    * ranged join, a string's own searches by a comparison, its split, .NET's white space, and its
@@ -538,6 +570,8 @@ export const $eq = {
     /** A text's case and a char's, as .NET changes them, in the page's culture or the invariant one. */
     toUpper,
     toLower,
+    /** `NumberFormatInfo`: the page's culture's, or the invariant one's, as .NET's own object (#1765). */
+    numberFormat: numberFormatInfo,
   },
   /** A dictionary's indexer read, which fails on a missing key the way .NET does, and its write,
    * which answers the value written as C#'s assignment does. */
@@ -608,6 +642,13 @@ export const $eq = {
     addRange,
     insertRange,
     /** `List<T>.Insert`, `RemoveAt`, `RemoveRange` and `GetRange`, each position checked as .NET checks it (#1160). */
+    /** A `List<T>`'s version, moved by every change and compared at every step of a walk (#863). */
+    listWalk,
+    sequenceWalk,
+    listAdd,
+    listClear,
+    listSet,
+    listForEach,
     listInsert,
     listRemoveAt,
     listRemoveRange,

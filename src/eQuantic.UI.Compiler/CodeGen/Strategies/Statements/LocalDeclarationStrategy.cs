@@ -27,7 +27,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
             // A reserved JS word takes a trailing underscore — declaration and references go
             // through the same rule, so `var package = …` stays one identifier on both sides.
             var name = variable.Identifier.ValueText.ToJsIdentifier();
-            var declared = ExpressionVariableScanner.InFrontOf(decl, variable.Initializer?.Value, context.TypeAnnotations);
+            var declared = ExpressionVariableScanner.InFrontOf(decl, variable.Initializer?.Value, context);
             var init = variable.Initializer != null
                 ? context.Converter.ConvertIr(variable.Initializer.Value)
                 : JsExpr.Literal("null");
@@ -98,10 +98,11 @@ public class LocalDeclarationStrategy : IStatementStrategy
                     && collection.Name == "List"
                     && SimpleItemName(inner.TypeArguments[0], context) is { } innerName)
                     return $": {ArrayOf(ArrayOf(innerName))}";
-                // A GENERIC item (KeyValuePair<,>) has no TS name to annotate with — its bare C# name
-                // names nothing over there. Inference from the initializer is right. A tuple has one
-                // (see SimpleItemName).
-                if (SimpleItemName(item, context) is not { } itemName) return "";
+                // A GENERIC item (KeyValuePair<,>, Task<T>) has no TS name to annotate with — its bare C#
+                // name names nothing over there. A tuple has one (see SimpleItemName). A list of one is
+                // `any[]`: an empty `[]` evolved its type through `push`, and a list is added to through
+                // the runtime's `listAdd`, which moves its version (#863) and evolves nothing.
+                if (SimpleItemName(item, context) is not { } itemName) return collection.Name == "List" ? ": any[]" : "";
                 return collection.Name == "HashSet" ? $": Set<{itemName}>" : $": {ArrayOf(itemName)}";
             }
 
@@ -264,6 +265,14 @@ public class LocalDeclarationStrategy : IStatementStrategy
         if (ts == "Decimal") context.UsedRuntimeTypes.Add("Decimal");
         return ts;
     }
+
+    /// <summary>
+    /// A list's or an array's TypeScript type, <c>GestureRecognizer[]</c>, where its item has a name to say
+    /// (<see cref="ListedItem"/>, <see cref="SimpleItemName"/>), or null. What an <c>out var</c> holding one is declared
+    /// as (#1858): left <c>any</c>, a walk of it inferred <c>unknown</c> elements.
+    /// </summary>
+    internal static string? ListType(ITypeSymbol? type, ConversionContext context) =>
+        ListedItem(type) is { } item && SimpleItemName(item, context) is { } name ? ArrayOf(name) : null;
 
     /// <summary>An array of <paramref name="item"/>, a union parenthesised: <c>string | null[]</c> is a string
     /// or an array of nulls.</summary>

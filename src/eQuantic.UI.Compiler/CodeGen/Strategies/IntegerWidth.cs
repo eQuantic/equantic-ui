@@ -5,12 +5,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 
 /// <summary>
 /// What a fixed-width integer result becomes in JavaScript, decided by the RESULT TYPE of the
-/// operation — the one thing the syntax does not say and the bound tree does. A C# `byte` past
-/// 255 wraps; a JavaScript number keeps counting. Sub-int widths and <c>uint</c> always wrap
-/// (packed values and hashes rely on it, and the cost is one mask); <c>int</c> and <c>long</c>
-/// wrap where the author wrote <c>unchecked</c>, because every plain `i + 1` in a UI would
-/// otherwise carry a `| 0` for an overflow that is a bug anywhere else; and a <c>checked</c>
-/// context throws, at run time, exactly where C# throws.
+/// operation, the one thing the syntax does not say and the bound tree does. A C# `int` past
+/// int.MaxValue wraps to int.MinValue; a JavaScript number keeps counting, and a BigInt never wraps
+/// at all. So every width wraps where C# wraps, in its default context, `int` and `long` included
+/// (#1807): a rule ported from the server that leans on the wrap (a hash, a packed value) answers in
+/// the browser what it answers there. A <c>checked</c> context throws, at run time, exactly where C#
+/// throws, and a value C#'s compiler folded and proved in range is left as written
+/// (<see cref="ArithmeticContext.ProvedInRange"/>).
 /// </summary>
 public static class IntegerWidth
 {
@@ -32,14 +33,17 @@ public static class IntegerWidth
         _ => null,
     };
 
-    /// <summary>Whether an unchecked result of this type wraps in the emitted code: always for
-    /// widths below 32 and for uint; only under an explicit <c>unchecked</c> for int and long.</summary>
-    public static bool WrapsByDefault((int Bits, bool Unsigned) width) =>
-        width.Bits < 32 || (width.Bits == 32 && width.Unsigned);
-
-    /// <summary>The wrapped result: the JavaScript that brings a number back into the width.</summary>
+    /// <summary>The wrapped result: the JavaScript that brings a number back into the width. The two
+    /// 32-bit wraps are operators the writer places, so they carry parentheses only where their
+    /// neighbours need them (<c>let half = value + 7 | 0;</c>); text of unknown shape is fenced first,
+    /// since the writer cannot see inside it.</summary>
     public static JsExpr Wrap(JsExpr value, (int Bits, bool Unsigned) width)
     {
+        if (width.Bits == 32)
+        {
+            var operand = value.Precedence == JsPrecedence.Opaque ? JsExpr.Group(value) : value;
+            return JsExpr.Binary(operand, width.Unsigned ? ">>>" : "|", JsExpr.Literal("0"));
+        }
         var text = JsExprWriter.WriteIn(value, JsPrecedence.Shift);
         return width switch
         {
@@ -47,8 +51,6 @@ public static class IntegerWidth
             (8, true) => JsExpr.Callish($"({text} & 0xFF)"),
             (16, false) => JsExpr.Callish($"(({text} << 16) >> 16)"),
             (16, true) => JsExpr.Callish($"({text} & 0xFFFF)"),
-            (32, false) => JsExpr.Callish($"({text} | 0)"),
-            (32, true) => JsExpr.Callish($"({text} >>> 0)"),
             (64, false) => JsExpr.Callish($"BigInt.asIntN(64, {JsExprWriter.Write(value)})"),
             _ => JsExpr.Callish($"BigInt.asUintN(64, {JsExprWriter.Write(value)})"),
         };
@@ -120,13 +122,49 @@ public static class IntegerWidth
     }
 
     /// <summary>Brings an arithmetic result of a fixed-width type into C#'s semantics for the
-    /// context it sits in: checked → throws past the edge; unchecked → wraps where the width
-    /// wraps by default or the author asked for it; otherwise the value as computed.</summary>
-    public static JsExpr Settle(JsExpr value, ITypeSymbol? resultType, bool isChecked, bool explicitUnchecked,
+    /// context it sits in: a value C#'s compiler proved in range is the value as computed, a checked
+    /// context throws past the edge, and any other wraps, as C# wraps in its default context.</summary>
+    public static JsExpr Settle(JsExpr value, ITypeSymbol? resultType, ArithmeticContext arithmetic,
         ConversionContext context)
     {
-        if (Of(resultType) is not { } width) return value;
-        if (isChecked) return Checked(value, width, context);
-        return WrapsByDefault(width) || explicitUnchecked ? Wrap(value, width) : value;
+        if (Of(resultType) is not { } width || arithmetic.ProvedInRange) return value;
+        return arithmetic.IsChecked ? Checked(value, width, context) : Wrap(value, width);
+    }
+
+    /// <summary>
+    /// <c>+</c>, <c>-</c>, <c>*</c> or <c>&lt;&lt;</c> of two values whose result is in
+    /// <paramref name="width"/>, settled as <see cref="Settle"/> settles it. An int product goes through
+    /// <c>Math.imul</c>, which wraps exactly where a double past 2^53 would have lost the low bits, and an
+    /// int's <c>&lt;&lt;</c> is JavaScript's own, which already answers in signed 32 bits, as C# does.
+    /// A constant C# proved in range is the operator as written, which computes the same number, except a
+    /// uint's <c>&lt;&lt;</c>: JavaScript's answers SIGNED 32 bits, so <c>1u &lt;&lt; 31</c> came back
+    /// -2147483648 where C# folds 2147483648, and it goes back to its width like any other.
+    /// </summary>
+    public static JsExpr Arithmetic(string op, JsExpr left, JsExpr right, (int Bits, bool Unsigned) width,
+        ArithmeticContext arithmetic, ConversionContext context)
+    {
+        var plain = JsExpr.Binary(left, op, right);
+        if (arithmetic.ProvedInRange && !(op == "<<" && width is (32, true))) return plain;
+        if (arithmetic.IsChecked) return Checked(plain, width, context);
+        if (width.Bits == 32 && op == "*")
+        {
+            var product = JsExpr.Callish($"Math.imul({JsExprWriter.Write(left)}, {JsExprWriter.Write(right)})");
+            return width.Unsigned ? Wrap(product, width) : product;
+        }
+        return width is (32, false) && op == "<<" ? plain : Wrap(plain, width);
+    }
+
+    /// <summary>
+    /// A quotient or a remainder settled in <paramref name="resultType"/>: a checked context throws past
+    /// the edge, and otherwise it wraps where it can leave the width. One computed in int can leave a
+    /// narrower one (<c>sbyte s = -128; s /= -1</c> is -128), and one computed in a wider type a uint;
+    /// an int's and a long's stay in range, since <c>MinValue / -1</c> throws (<see cref="IntegerDivision"/>).
+    /// </summary>
+    public static JsExpr Quotient(JsExpr value, ITypeSymbol? resultType, ArithmeticContext arithmetic,
+        ConversionContext context)
+    {
+        if (Of(resultType) is not { } width || arithmetic.ProvedInRange) return value;
+        if (arithmetic.IsChecked) return Checked(value, width, context);
+        return width.Bits < 32 || width is (32, true) ? Wrap(value, width) : value;
     }
 }

@@ -22,12 +22,12 @@ export class CodeDocument {
 
     get length(): number {
         let total = 0;
-        for (let i = 0; i < this._lines.length; i++) total += this._lines[i].length + 1;
-        return total - 1;
+        for (let i = 0; i < this._lines.length; i = i + 1 | 0) total = total + (this._lines[i].length + 1 | 0) | 0;
+        return total - 1 | 0;
     }
 
     get end(): CodePosition {
-        return new CodePosition(this._lines.length - 1, (($0) => $0[$0.length - 1])(this._lines).length);
+        return new CodePosition(this._lines.length - 1 | 0, (($0) => $0[$0.length - 1])(this._lines).length);
     }
 
     static $slots: any = null;
@@ -63,22 +63,22 @@ export class CodeDocument {
     static fromText(text: string) {
         let lines: string[] = [];
         let current = $eq.text.stringBuilder();
-        for (let i = 0; i < text.length; i++) {
+        for (let i = 0; i < text.length; i = i + 1 | 0) {
             let c = text[i];
             if (c === '\r') {
-                if (i + 1 < text.length && text[i + 1] === '\n') i++;
-                lines.push(current.toString());
+                if ((i + 1 | 0) < text.length && text[i + 1 | 0] === '\n') i = i + 1 | 0;
+                $eq.collections.listAdd(lines, current.toString());
                 current.clear();
                 continue;
             }
             if (c === '\n') {
-                lines.push(current.toString());
+                $eq.collections.listAdd(lines, current.toString());
                 current.clear();
                 continue;
             }
             current.append(c);
         }
-        lines.push(current.toString());
+        $eq.collections.listAdd(lines, current.toString());
         return new CodeDocument(lines);
     }
 
@@ -87,25 +87,25 @@ export class CodeDocument {
     }
 
     clamp(position: CodePosition) {
-        let line = Math.min(Math.max(position.line, 0), this._lines.length - 1);
-        let column = Math.min(Math.max(position.column, 0), this._lines[line].length);
+        let line = $eq.num.clamp(position.line, 0, this._lines.length - 1 | 0, 'int32');
+        let column = $eq.num.clamp(position.column, 0, this._lines[line].length, 'int32');
         return new CodePosition(line, column);
     }
 
     offsetOf(position: CodePosition) {
         let clamped = this.clamp(position);
         let offset = 0;
-        for (let i = 0; i < clamped.line; i++) offset += this._lines[i].length + 1;
-        return offset + clamped.column;
+        for (let i = 0; i < clamped.line; i = i + 1 | 0) offset = offset + (this._lines[i].length + 1 | 0) | 0;
+        return offset + clamped.column | 0;
     }
 
     positionOf(offset: number) {
         if (offset <= 0) return CodePosition.start;
         let remaining = offset;
-        for (let line = 0; line < this._lines.length; line++) {
+        for (let line = 0; line < this._lines.length; line = line + 1 | 0) {
             let length = this._lines[line].length;
             if (remaining <= length) return new CodePosition(line, remaining);
-            remaining -= length + 1;
+            remaining = remaining - (length + 1 | 0) | 0;
         }
         return this.end;
     }
@@ -117,7 +117,7 @@ export class CodeDocument {
         if (start.line === end.line) return this._lines[start.line].slice(start.column, end.column);
         let text = $eq.text.stringBuilder();
         text.append(this._lines[start.line].slice(start.column));
-        for (let line = start.line + 1; line < end.line; line++) {
+        for (let line = start.line + 1 | 0; line < end.line; line = line + 1 | 0) {
             text.append('\n');
             text.append(this._lines[line]);
         }
@@ -132,21 +132,21 @@ export class CodeDocument {
             let start = this.clamp(range.start);
             let end = this.clamp(range.end);
             let inserted = CodeDocument.fromText(text);
-            let lines: string[] = ($eq.collections.listCapacity(this._lines.length + inserted.lineCount), []);
-            for (let i = 0; i < start.line; i++) lines.push(this._lines[i]);
+            let lines: string[] = ($eq.collections.listCapacity(this._lines.length + inserted.lineCount | 0), []);
+            for (let i = 0; i < start.line; i = i + 1 | 0) $eq.collections.listAdd(lines, this._lines[i]);
             let head = this._lines[start.line].slice(0, start.column);
             let tail = this._lines[end.line].slice(end.column);
             if (inserted.lineCount === 1) {
-                lines.push(head + inserted.line(0) + tail);
-                caret = new CodePosition(start.line, start.column + inserted.line(0).length);
+                $eq.collections.listAdd(lines, head + inserted.line(0) + tail);
+                caret = new CodePosition(start.line, start.column + inserted.line(0).length | 0);
             } else {
-                lines.push(head + inserted.line(0));
-                for (let i = 1; i < inserted.lineCount - 1; i++) lines.push(inserted.line(i));
-                let last = inserted.line(inserted.lineCount - 1);
-                lines.push(last + tail);
-                caret = new CodePosition(start.line + inserted.lineCount - 1, last.length);
+                $eq.collections.listAdd(lines, head + inserted.line(0));
+                for (let i = 1; i < (inserted.lineCount - 1 | 0); i = i + 1 | 0) $eq.collections.listAdd(lines, inserted.line(i));
+                let last = inserted.line(inserted.lineCount - 1 | 0);
+                $eq.collections.listAdd(lines, last + tail);
+                caret = new CodePosition((start.line + inserted.lineCount | 0) - 1 | 0, last.length);
             }
-            for (let i = end.line + 1; i < this._lines.length; i++) lines.push(this._lines[i]);
+            for (let i = end.line + 1 | 0; i < this._lines.length; i = i + 1 | 0) $eq.collections.listAdd(lines, this._lines[i]);
             return new CodeDocument(lines);
         })();
         return { $: $r, caret };
@@ -156,7 +156,7 @@ export class CodeDocument {
         let here = this.clamp(position);
         let line = this._lines[here.line];
         let indent = 0;
-        while (indent < line.length && (line[indent] === ' ' || line[indent] === '\t')) indent++;
+        while (indent < line.length && (line[indent] === ' ' || line[indent] === '\t')) indent = indent + 1 | 0;
         return $eq.withPatch(here, { column: here.column === indent ? 0 : indent });
     }
 
@@ -169,27 +169,27 @@ export class CodeDocument {
         let here = this.clamp(position);
         let line = this._lines[here.line];
         if (line.length === 0) return new CodeRange(here);
-        let index = Math.min(here.column, line.length - 1);
+        let index = Math.min(here.column, line.length - 1 | 0);
         if (!CodeDocument.isWordChar(line[index])) {
-            if (here.column > 0 && CodeDocument.isWordChar(line[here.column - 1])) index = here.column - 1; else {
+            if (here.column > 0 && CodeDocument.isWordChar(line[here.column - 1 | 0])) index = here.column - 1 | 0; else {
                 let symbolStart = index;
-                while (symbolStart > 0 && !CodeDocument.isWordChar(line[symbolStart - 1]) && !$eq.text.isWhiteSpace(line[symbolStart - 1])) symbolStart--;
+                while (symbolStart > 0 && !CodeDocument.isWordChar(line[symbolStart - 1 | 0]) && !$eq.text.isWhiteSpace(line[symbolStart - 1 | 0])) symbolStart = symbolStart - 1 | 0;
                 let symbolEnd = index;
-                while (symbolEnd < line.length && !CodeDocument.isWordChar(line[symbolEnd]) && !$eq.text.isWhiteSpace(line[symbolEnd])) symbolEnd++;
+                while (symbolEnd < line.length && !CodeDocument.isWordChar(line[symbolEnd]) && !$eq.text.isWhiteSpace(line[symbolEnd])) symbolEnd = symbolEnd + 1 | 0;
                 return new CodeRange($eq.withPatch(here, { column: symbolStart }), $eq.withPatch(here, { column: symbolEnd }));
             }
         }
         let start = index;
-        while (start > 0 && CodeDocument.isWordChar(line[start - 1])) start--;
+        while (start > 0 && CodeDocument.isWordChar(line[start - 1 | 0])) start = start - 1 | 0;
         let end = index;
-        while (end < line.length && CodeDocument.isWordChar(line[end])) end++;
+        while (end < line.length && CodeDocument.isWordChar(line[end])) end = end + 1 | 0;
         return new CodeRange($eq.withPatch(here, { column: start }), $eq.withPatch(here, { column: end }));
     }
 
     indentOf(line: number) {
         let text = this.line(line);
         let indent = 0;
-        while (indent < text.length && (text[indent] === ' ' || text[indent] === '\t')) indent++;
+        while (indent < text.length && (text[indent] === ' ' || text[indent] === '\t')) indent = indent + 1 | 0;
         return text.slice(0, indent);
     }
 

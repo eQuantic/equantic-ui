@@ -46,6 +46,21 @@ const CULTURES = {
     amDesignator: '오전',
     pmDesignator: '오후',
   }),
+  // Linux's ar-SA, whose ICU counts it in the Gregorian calendar: its era is spelled as its PM.
+  'ar-SA (Linux)': culture({
+    shortDatePattern: 'd/M/yyyy',
+    amDesignator: 'ص',
+    pmDesignator: 'م',
+    eraName: 'م',
+    abbreviatedEraName: 'م',
+  }),
+  // A culture of the Thai Buddhist calendar, whose era .NET reads beside a date.
+  'th-TH': culture({
+    shortDatePattern: 'd/M/yyyy',
+    eraName: 'พ.ศ.',
+    abbreviatedEraName: 'พ.ศ.',
+    calendar: { name: 'System.Globalization.ThaiBuddhistCalendar', twoDigitYearMax: 2572, yearOffset: 543 },
+  }),
 } satisfies Record<string, DateTimeFormatData>;
 
 type Culture = keyof typeof CULTURES;
@@ -243,5 +258,116 @@ describe('readMoment: the order of the parts', () => {
   it('reads a number of eight digits and refuses one of nine', () => {
     expect(read('1/1/00002024', 'invariant')).toBe('2024-01-01');
     expect(read('1/1/000002024', 'invariant')).toBe('format');
+  });
+});
+
+describe('readMoment: the era beside a date (#1191)', () => {
+  it('reads the era before and after a date, as often as it is written, in the culture\'s count', () => {
+    expect(read('15/1/2567 พ.ศ.', 'th-TH')).toBe('2024-01-15');
+    expect(read('พ.ศ. 15/1/2567', 'th-TH')).toBe('2024-01-15');
+    expect(read('พ.ศ. 15/1/2567 พ.ศ. พ.ศ.', 'th-TH')).toBe('2024-01-15');
+    expect(read('15/1/2567พ.ศ.', 'th-TH')).toBe('2024-01-15');
+    expect(read('1/15/2024 AD AD', 'en-US')).toBe('2024-01-15');
+  });
+
+  it('reads a designator beside a date with no clock as noon or midnight, and none alone', () => {
+    expect(read('1/15/2024 PM', 'en-US')).toBe('2024-01-15 12:00:00');
+    expect(read('1/15/2024 AM', 'en-US')).toBe('2024-01-15 00:00:00');
+    expect(read('PM 1/15/2024', 'en-US')).toBe('2024-01-15 12:00:00');
+    expect(read('1/15/2024PM', 'en-US')).toBe('2024-01-15 12:00:00');
+    expect(read('PM', 'en-US')).toBe('format');
+  });
+
+  it('reads an era spelled as a designator as the designator, as .NET does', () => {
+    expect(read('15/1/2024 م', 'ar-SA (Linux)')).toBe('2024-01-15 12:00:00');
+    expect(read('15/1/2024 ص', 'ar-SA (Linux)')).toBe('2024-01-15 00:00:00');
+    expect(read('15/1/2024 10:30 م', 'ar-SA (Linux)')).toBe('2024-01-15 22:30:00');
+    expect(read('م 15/1/2024', 'ar-SA (Linux)')).toBe('2024-01-15 12:00:00');
+  });
+});
+
+describe('readMoment: an ISO date that does not exist (#1616)', () => {
+  it('reads the ISO form through and refuses the day as a clock that does not exist is refused', () => {
+    expect(read('2024-02-30T10:00', 'invariant')).toBe('clock');
+    expect(read('2024-13-01T10:00:00.5Z', 'invariant')).toBe('clock');
+    expect(read('2024-02-30 T10:00', 'invariant')).toBe('clock');
+  });
+
+  it('refuses a malformed clock after the T, and a day that does not exist outside the ISO form, plainly', () => {
+    expect(read('2024-02-30Tjunk', 'invariant')).toBe('format');
+    expect(read('2024-02-30T10', 'invariant')).toBe('format');
+    expect(read('2024-02-30', 'invariant')).toBe('format');
+    expect(read('2024-02-30 10:00', 'invariant')).toBe('format');
+  });
+
+  it('reads a T before a clock only after the ISO form\'s date, and a T that starts a word as the word', () => {
+    expect(read('2024-02T10:00', 'invariant')).toBe('format');
+    expect(read('1/15/2024T10:00', 'invariant')).toBe('format');
+    expect(read('2024-01-15Tx', 'invariant')).toBe('word at 10');
+    expect(read('2024-02-30Tx', 'invariant')).toBe('format');
+  });
+
+  it('refuses an offset past fourteen hours last, after the rest of the text, the date and the clock', () => {
+    expect(read('2024-02-30T10:00+25:00', 'invariant')).toBe('clock');
+    expect(read('2024-01-15T25:00+15', 'invariant')).toBe('clock');
+    expect(read('2024-01-15T10:00+25:00 junk', 'invariant')).toBe('format');
+    expect(read('2024-01-15T10:00+15', 'invariant')).toBe('zone');
+  });
+});
+
+describe('readMoment: the ISO form after what came first (#1841)', () => {
+  it('reads it after a designator, a clock or a zone, its clock in their place', () => {
+    expect(read('PM 2024-01-15T10:00', 'invariant')).toBe('2024-01-15 10:00:00');
+    expect(read('10:00 PM 2024-01-15T11:00', 'invariant')).toBe('2024-01-15 11:00:00');
+    expect(read('10:00 Z 2024-01-15T11:00', 'invariant')).toBe('2024-01-15 11:00:00 Z');
+    expect(read('Z 2024-01-15T10:00+01:00', 'invariant')).toBe('2024-01-15 10:00:00 60min');
+    expect(read('PM 2024-02-30T10:00', 'invariant')).toBe('clock');
+  });
+
+  it('asks a day’s name beside it nothing, and refuses a T after another date plainly', () => {
+    expect(read('Tuesday 2024-01-15T10:00', 'invariant')).toBe('2024-01-15 10:00:00');
+    expect(read('10:00 1/15/2024T11:00', 'invariant')).toBe('format');
+  });
+});
+
+describe('readMoment: a day’s name once, anywhere (#1842)', () => {
+  it('reads it after the clock, the zone or the designator, and asks it of the date last', () => {
+    expect(read('2024-01-15 10:00 Monday', 'invariant')).toBe('2024-01-15 10:00:00');
+    expect(read('Monday 10:00 2024-01-15', 'invariant')).toBe('2024-01-15 10:00:00');
+    expect(read('2024-01-15 10:00 PM Monday', 'invariant')).toBe('2024-01-15 22:00:00');
+    expect(read('2024-01-15 10:00 Tuesday', 'invariant')).toBe('weekday');
+    expect(read('2024-01-15 Tuesday junk', 'invariant')).toBe('word at 19');
+    expect(read('2024-01-15 25:00 Tuesday', 'invariant')).toBe('clock');
+  });
+
+  it('asks it of today where the text names no date', () => {
+    const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const today = new Date().getDay();
+    expect(read(`10:00 ${names[today]}`, 'invariant')).toBe('10:00:00');
+    expect(read(`10:00 ${names[(today + 1) % 7]}`, 'invariant')).toBe('weekday');
+  });
+
+  it('refuses a second day’s name or a second zone plainly', () => {
+    expect(read('Monday 2024-01-15 Monday', 'invariant')).toBe('format');
+    expect(read('Z 2024-01-15 Z', 'invariant')).toBe('format');
+  });
+});
+
+describe('readMoment: an offset past fourteen hours is refused last', () => {
+  it('refuses the rest of the text, the date and the clock first, and gives way to an ISO zone', () => {
+    expect(read('+15:00 2024-01-15 junk', 'invariant')).toBe('word at 18');
+    expect(read('2024-01-15 25:00 +15:00', 'invariant')).toBe('clock');
+    expect(read('2024-01-15 10:00 +15:00', 'invariant')).toBe('zone');
+    expect(read('+15:00 2024-01-15T10:00Z', 'invariant')).toBe('2024-01-15 10:00:00 Z');
+    expect(read('+15:00 2024-01-15T10:00', 'invariant')).toBe('zone');
+  });
+});
+
+describe('readMoment: a date has one year (#1843)', () => {
+  it('refuses two numbers of three digits or more, and reads one', () => {
+    expect(read('2024-01-001', 'invariant')).toBe('format');
+    expect(read('1/001/2024', 'invariant')).toBe('format');
+    expect(read('2024-001', 'invariant')).toBe('format');
+    expect(read('001-01-15', 'invariant')).toBe('0001-01-15');
   });
 });

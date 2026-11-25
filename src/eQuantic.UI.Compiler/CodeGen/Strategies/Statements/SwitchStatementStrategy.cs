@@ -26,7 +26,7 @@ public class SwitchStatementStrategy : IStatementStrategy
         // What the governing expression declares lives on after the switch — Roslyn scopes it to
         // the enclosing block, like an if's condition — so it is declared in front, outside the
         // block the if-chain form opens.
-        var declared = ExpressionVariableScanner.InFrontOf(switchStmt, switchStmt.Expression, context.TypeAnnotations);
+        var declared = ExpressionVariableScanner.InFrontOf(switchStmt, switchStmt.Expression, context);
         var expr = context.Converter.ConvertIr(switchStmt.Expression);
         // A DECIMAL label takes the chain too: JavaScript's switch compares by `===`, which never
         // matches the runtime's Decimal, an object (PatternConverter.ConstantMatch).

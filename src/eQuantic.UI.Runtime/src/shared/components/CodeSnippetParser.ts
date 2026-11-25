@@ -26,20 +26,20 @@ export class CodeSnippetParser {
         let text = $eq.text.stringBuilder();
         while (this._at < this._source.length) {
             let c = this._source[this._at];
-            if (c === '\\' && this._at + 1 < this._source.length && CodeSnippetParser.isEscaped(this._source[this._at + 1])) {
-                text.append(this._source[this._at + 1]);
-                this._at += 2;
+            if (c === '\\' && (this._at + 1 | 0) < this._source.length && CodeSnippetParser.isEscaped(this._source[this._at + 1 | 0])) {
+                text.append(this._source[this._at + 1 | 0]);
+                this._at = this._at + 2 | 0;
                 continue;
             }
             if (inPlaceholder && c === '}') break;
             let part: any; 
             if (c === '$' && (part = this.construct()) != null) {
                 CodeSnippetParser.flush(text, parts);
-                parts.push(part);
+                $eq.collections.listAdd(parts, part);
                 continue;
             }
             text.append(c);
-            this._at++;
+            this._at = this._at + 1 | 0;
         }
         CodeSnippetParser.flush(text, parts);
         return parts;
@@ -51,14 +51,14 @@ export class CodeSnippetParser {
 
     static flush(text: StringBuilder, parts: CodeSnippetPart[]) {
         if (text.length === 0) return;
-        parts.push(new CodeSnippetPart(text.toString(), -1, false, null, null));
+        $eq.collections.listAdd(parts, new CodeSnippetPart(text.toString(), -1, false, null, null));
         text.clear();
     }
 
     construct() {
         let start = this._at;
-        let known: any; 
-        if ((($0) => ($0.has(start) ? ((known = $0.get(start)), true) : ((known = null), false)))(this._read)) {
+        let known!: CodeSnippetPart; 
+        if ((($0) => ($0.has(start) ? ((known = $0.get(start)), true) : ((known = null!), false)))(this._read)) {
             this._at = $eq.mapGet(this._readTo, start);
             return known;
         }
@@ -73,7 +73,7 @@ export class CodeSnippetParser {
 
     read() {
         let start = this._at;
-        this._at++;
+        this._at = this._at + 1 | 0;
         if (this._at < this._source.length && CodeSnippetParser.isDigit(this._source[this._at])) return CodeSnippetParser.stop(this.number(), null, null);
         if (this._at < this._source.length && CodeSnippetParser.isNameStart(this._source[this._at])) return CodeSnippetParser.variable(this.name(), null);
         if (this.eat('{')) {
@@ -113,14 +113,14 @@ export class CodeSnippetParser {
         let option = $eq.text.stringBuilder();
         while (this._at < this._source.length) {
             let c = this._source[this._at];
-            if (c === '\\' && this._at + 1 < this._source.length && (this._source[this._at + 1] === ',' || this._source[this._at + 1] === '|' || this._source[this._at + 1] === '\\')) {
-                option.append(this._source[this._at + 1]);
-                this._at += 2;
+            if (c === '\\' && (this._at + 1 | 0) < this._source.length && (this._source[this._at + 1 | 0] === ',' || this._source[this._at + 1 | 0] === '|' || this._source[this._at + 1 | 0] === '\\')) {
+                option.append(this._source[this._at + 1 | 0]);
+                this._at = this._at + 2 | 0;
                 continue;
             }
-            this._at++;
+            this._at = this._at + 1 | 0;
             if (c === ',' || c === '|') {
-                options.push(option.toString());
+                $eq.collections.listAdd(options, option.toString());
                 option.clear();
                 if (c === '|') return options;
                 continue;
@@ -133,24 +133,24 @@ export class CodeSnippetParser {
     transform() {
         if (!this.eat('/')) return false;
         if (!this.until('/', false) || !this.until('/', true)) return false;
-        while (this._at < this._source.length && CodeSnippetParser.isNameStart(this._source[this._at]) && this._source[this._at] !== '_') this._at++;
+        while (this._at < this._source.length && CodeSnippetParser.isNameStart(this._source[this._at]) && this._source[this._at] !== '_') this._at = this._at + 1 | 0;
         return true;
     }
 
     until(end: string, inFormat: boolean) {
         while (this._at < this._source.length) {
             let c = this._source[this._at];
-            if (c === '\\' && this._at + 1 < this._source.length) {
-                this._at += 2;
+            if (c === '\\' && (this._at + 1 | 0) < this._source.length) {
+                this._at = this._at + 2 | 0;
                 continue;
             }
-            if (inFormat && c === '$' && this._at + 1 < this._source.length && this._source[this._at + 1] === '{') {
+            if (inFormat && c === '$' && (this._at + 1 | 0) < this._source.length && this._source[this._at + 1 | 0] === '{') {
                 let close = $eq.text.indexOfChar(this._source, '}', this._at);
                 if (close < 0) return false;
-                this._at = close + 1;
+                this._at = close + 1 | 0;
                 continue;
             }
-            this._at++;
+            this._at = this._at + 1 | 0;
             if (c === end) return true;
         }
         return false;
@@ -158,15 +158,15 @@ export class CodeSnippetParser {
 
     eat(c: string) {
         if (this._at >= this._source.length || this._source[this._at] !== c) return false;
-        this._at++;
+        this._at = this._at + 1 | 0;
         return true;
     }
 
     number() {
         let value = 0;
         while (this._at < this._source.length && CodeSnippetParser.isDigit(this._source[this._at])) {
-            if (value < 100_000_000) value = value * 10 + (this._source[this._at].charCodeAt(0) - 48);
-            this._at++;
+            if (value < 100_000_000) value = Math.imul(value, 10) + (this._source[this._at].charCodeAt(0) - 48 | 0) | 0;
+            this._at = this._at + 1 | 0;
         }
         return value;
     }
@@ -181,8 +181,8 @@ export class CodeSnippetParser {
 
     name() {
         let start = this._at;
-        while (this._at < this._source.length && (CodeSnippetParser.isNameStart(this._source[this._at]) || CodeSnippetParser.isDigit(this._source[this._at]))) this._at++;
-        return $eq.text.substring(this._source, start, this._at - start);
+        while (this._at < this._source.length && (CodeSnippetParser.isNameStart(this._source[this._at]) || CodeSnippetParser.isDigit(this._source[this._at]))) this._at = this._at + 1 | 0;
+        return $eq.text.substring(this._source, start, this._at - start | 0);
     }
 
     toString(): string {

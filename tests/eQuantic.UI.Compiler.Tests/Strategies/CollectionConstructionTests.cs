@@ -30,7 +30,7 @@ public class CollectionConstructionTests
 
         // A capacity is a hint, not the contents, but C# evaluates it and the constructor refuses a negative
         // one, so one that is not a constant the list takes is handed to the runtime first.
-        js.Should().Contain("let sized: string[] = ($eq.collections.listCapacity(source.length + 1), []);",
+        js.Should().Contain("let sized: string[] = ($eq.collections.listCapacity(source.length + 1 | 0), []);",
             "a capacity is a hint, not the contents, and is evaluated and checked as the constructor does");
         js.Should().Contain("let fixedSize: string[] = [];", "a constant the list takes has nothing to evaluate or refuse");
     }
@@ -59,7 +59,8 @@ public class CollectionConstructionTests
         Convert("var pairs = new List<(int From, int To)>();").Should().Contain("let pairs: [number, number][] = [];");
         Convert("var named = new List<(string Name, bool On)>();").Should().Contain("let named: [string, boolean][] = [];");
         Convert("var keyed = new List<(KeyValuePair<string, int> Entry, int At)>();")
-            .Should().Contain("let keyed = [];", "an element with no TS name leaves the list to inference");
+            .Should().Contain("let keyed: any[] = [];",
+                "an element with no TS name annotates the list any[], since listAdd evolves no type (#863)");
     }
 
     /// <summary>
@@ -265,16 +266,17 @@ public class CollectionConstructionTests
     /// <summary>
     /// A task held as a value is a promise (Copilot on #1068): the mapper's <c>void</c> is what a method
     /// returning one is awaited to, and pushing <c>Promise.resolve()</c> into a <c>void</c> slot failed the
-    /// type check. A name nothing can verify, a Version's, leaves the list to inference, as a declared type
-    /// degrades to <c>any</c>.
+    /// type check. A name nothing can verify, a Version's, annotates the list <c>any[]</c>, as a declared type
+    /// degrades to <c>any</c>: left to inference, an empty <c>[]</c> evolved its type through <c>push</c>,
+    /// and <c>listAdd</c> evolves nothing (#863).
     /// </summary>
     [Fact]
-    public void ATaskIsAPromise_AndANameNothingVerifies_IsLeftToInference()
+    public void ATaskIsAPromise_AndANameNothingVerifies_IsAny()
     {
         Convert("var jobs = new List<(System.Threading.Tasks.Task Work, int At)>();")
             .Should().Contain("let jobs: [Promise<void>, number][] = [];");
         Convert("var tasks = new List<System.Threading.Tasks.Task>();").Should().Contain("let tasks: Promise<void>[] = [];");
-        Convert("var versions = new List<System.Version>();").Should().Contain("let versions = [];");
+        Convert("var versions = new List<System.Version>();").Should().Contain("let versions: any[] = [];");
     }
 
     private static string TypeScriptOf(string source, string type) =>

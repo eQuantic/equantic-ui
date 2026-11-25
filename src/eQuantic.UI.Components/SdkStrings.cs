@@ -168,6 +168,36 @@ public static class SdkStrings
     /// <summary>A time picker's accessible name when the app supplies none.</summary>
     public static string ChooseTime => SdkResources.ChooseTime;
 
+    // MoneyInput and NumberInput: what the field wants, when what was typed is not it.
+
+    /// <summary>What a money field says of text that is no amount, with one written as the field writes it.</summary>
+    public static string AmountExpected(string example) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.AmountExpected, example);
+
+    /// <summary>What a number field says of text that is no whole number, with one as the field writes it.</summary>
+    public static string WholeNumberExpected(string example) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.WholeNumberExpected, example);
+
+    /// <summary>What a field says of a value outside its range, its bounds written as the field writes them.</summary>
+    public static string ValueBetween(string least, string most) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ValueBetween, least, most);
+
+    /// <summary>What a field with only a least value says of one under it.</summary>
+    public static string ValueAtLeast(string least) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ValueAtLeast, least);
+
+    /// <summary>What a field with only a greatest value says of one over it.</summary>
+    public static string ValueAtMost(string most) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ValueAtMost, most);
+
+    /// <summary>A field's accessible name with what is drawn beside its text: <c>Price (€)</c>.</summary>
+    public static string NamedWithAffixes(string label, string affixes) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.NamedWithAffixes, label, affixes);
+
+    /// <summary>A number with its unit, in the language's order: <c>30 days</c>.</summary>
+    public static string ValueWithUnit(string number, string unit) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ValueWithUnit, number, unit);
+
     /// <summary>
     /// What shape the typed row expects: <c>MM/DD/YYYY</c> in the United States,
     /// <c>DD/MM/AAAA</c> in Brazil, <c>YYYY-MM-DD</c> in Sweden.
@@ -298,6 +328,35 @@ public static class SdkStrings
     // there when the load failed, whose press tries again (#1530).
     public static string TreeLoading => SdkResources.TreeLoading;
     public static string TreeLoadFailed => SdkResources.TreeLoadFailed;
+
+    /// <summary>The name a tree's rename or new-item field is read by.</summary>
+    public static string TreeItemName => SdkResources.TreeItemName;
+
+    // DataTable — the name a heading that sorts is read by, the name of a column's resize handle, and
+    // the name of the header row a person reorders the columns in (#1538).
+
+    /// <summary>A heading that sorts: "Sort by Amount".</summary>
+    public static string SortByColumn(string column) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.SortByColumn, column);
+
+    /// <summary>A column's resize handle: "Resize Amount".</summary>
+    public static string ResizeColumn(string column) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ResizeColumn, column);
+
+    /// <summary>The header row whose columns a person reorders, as the keyboard's steps name it.</summary>
+    public static string TableColumns => SdkResources.TableColumns;
+
+    /// <summary>What a reader hears while a sortable list's item is sorted by the keyboard, in the reader's
+    /// culture: the words <c>UI.Sortable</c> gives a list when the app gives none (#1564).</summary>
+    public static SortAnnouncements Sorting => new(
+        SdkResources.SortInstructions,
+        SdkResources.SortPickedUp,
+        SdkResources.SortMoved,
+        SdkResources.SortMovedInto,
+        SdkResources.SortRefused,
+        SdkResources.SortDropped,
+        SdkResources.SortDroppedInto,
+        SdkResources.SortCancelled);
 
     public static string UploadWaiting => SdkResources.UploadWaiting;
 

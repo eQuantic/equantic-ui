@@ -1,10 +1,10 @@
-import { Anchored, AnchorPlacementValue, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, StatelessComponent, Text, VisualNode } from "../runtime-exports";
+import { $AnchorPlacementValue, Anchored, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, StatelessComponent, Text, VisualNode } from "../runtime-exports";
 
 export class Tooltip extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Tooltip';
     declare child: VisualNode;
     declare text: string;
-    declare placement: AnchorPlacementValue;
+    declare placement: $AnchorPlacementValue;
 
     constructor(child?: any, text?: any, props?: any) {
         super();

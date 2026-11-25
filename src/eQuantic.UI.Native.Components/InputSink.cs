@@ -62,6 +62,22 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     /// </summary>
     public InputSink WithoutFocusStops() => new(regions, Clip, suppressFocusStops: true, Transform);
 
+    /// <summary>The frame's pointer targets, once its first listener started them (#1562), or null.</summary>
+    public PointerTargets? Targets => regions.Pointer;
+
+    /// <summary>Starts the frame's pointer targets, at its first listener.</summary>
+    public PointerTargets StartTargets() => regions.StartPointer();
+
+    /// <summary>Where <paramref name="rect"/>, laid out in this subtree, is drawn on screen, whole, and the part
+    /// of it the clips leave (empty when they leave nothing).</summary>
+    public (Rect Bounds, Rect Visible) Locate(Rect rect)
+    {
+        var placed = Place(rect);
+        var visible = !Visible(placed) ? placed with { Width = 0, Height = 0 }
+            : Clip is { } clip ? Intersect(clip, placed) : placed;
+        return (placed, visible);
+    }
+
     /// <summary>The box <paramref name="rect"/>, laid out in this subtree, is drawn in on screen: the
     /// box around its four corners under the transform, which is the rect itself where none is. A
     /// transform that collapses the subtree onto a line or a point draws nothing, since the renderer
@@ -115,6 +131,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
 
     public void Add(HitRegion region)
     {
+        regions.Pointer?.Answers();
         // A control with nothing to DO is not somewhere Tab should ever land — disabled, or a
         // handler-less pressable that only exists as another control's visual — and neither is one
         // that may not take the keyboard (Pressable.CanRequestFocus). Scrolled out of sight is NOT
@@ -146,6 +163,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
 
     public void Add(CanvasRegion region)
     {
+        regions.Pointer?.Answers();
         var placed = region with { Bounds = Place(region.Bounds) };
         if (!Visible(placed.Bounds)) return;
         Note(regions.Canvases, regions.Canvases.Count, region.Bounds, region.Bounds);
@@ -154,6 +172,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
 
     public void Add(ScrollRegion region)
     {
+        regions.Pointer?.Answers();
         var placed = region with { Bounds = Place(region.Bounds) };
         if (!Visible(placed.Bounds)) return;
         Note(regions.Scrolls, regions.Scrolls.Count, region.Bounds, region.Bounds);
@@ -194,6 +213,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
 
     public void Add(DragRegion region)
     {
+        regions.Pointer?.Answers();
         var placed = region with { Bounds = Place(region.Bounds) };
         if (!Visible(placed.Bounds)) return;
         Note(regions.Drags, regions.Drags.Count, region.Bounds, region.Bounds);
@@ -219,12 +239,14 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     /// </summary>
     public void Add(LinkRegion region)
     {
+        regions.Pointer?.Answers();
         Note(regions.Links, regions.Links.Count, region.Bounds, region.Bounds);
         regions.Links.Add(Clipped(region with { Bounds = Place(region.Bounds) }));
     }
 
     public void Add(TextRegion region)
     {
+        regions.Pointer?.Answers();
         var placed = region with { Bounds = Place(region.Bounds) };
         if (!suppressFocusStops && !region.Entry.Disabled)
             AddStop(new FocusStop(region.Element.Id, region.Element, null, region.Entry, placed.Bounds), region.Bounds);
@@ -235,6 +257,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
 
     public void Add(CodeRegion region)
     {
+        regions.Pointer?.Answers();
         var placed = region with
         {
             Bounds = Place(region.Bounds),
@@ -308,6 +331,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
 
     public void Add(SheetRegion region)
     {
+        regions.Pointer?.Answers();
         // The stop carries the SURFACE, like a text entry and a code surface carry theirs. It used
         // to carry nothing but a path, and every reader then had to work out what it was by
         // ELIMINATION — which is how a Navigable stop, added later and also carrying neither, fell
@@ -325,6 +349,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     /// cannot reach scrolls for nobody who only has a keyboard), and the keys it takes go to its scroll.</summary>
     public void Add(TableRegion region)
     {
+        regions.Pointer?.Answers();
         var placed = region with { Bounds = Place(region.Bounds) };
         if (!suppressFocusStops && region.Viewport.CanRequestFocus)
             AddStop(new FocusStop(region.Element.Id, region.Element, null, null, placed.Bounds, Table: region.Viewport),

@@ -29,6 +29,11 @@ public class SortableHostTests
         public Func<SortDrop, bool>? Guard { get; set; }
         public int Asked { get; set; }
         public float? ColumnHeight { get; set; }
+        public bool Nests { get; set; }
+        public SortAnnouncements? Words { get; set; }
+        public SortAnnouncements? DoingWords { get; set; }
+        public string[] Labels { get; set; } = ["", ""];
+        public SortableTheme? Style { get; set; }
 
         public override VisualNode Build(ComponentContext context)
         {
@@ -46,16 +51,19 @@ public class SortableHostTests
                             Width = SizeValue.Fill,
                             Height = CardHeight,
                             Background = context.Theme.Surface,
-                        }), () => Pressed.Add(name)),
+                        }), () => Pressed.Add(name)) { Label = name },
                         card));
                 }
                 VisualNode body = new Box(new BoxStyle { Width = ColumnWidth, MinHeight = 200 }, column);
                 // A column that scrolls is a list whose child is the scroll view, the element the web marks.
                 if (ColumnHeight is not null) body = new ScrollView(body);
                 var guard = Guard;
-                VisualNode list = new Sortable(body, id, Drop)
+                VisualNode list = new Sortable(body, id, Drop, c == 1 && DoingWords is not null ? DoingWords : Words,
+                    c == 0 ? Style : null)
                 {
                     Group = Group,
+                    Nests = Nests,
+                    Label = Labels[c],
                     OnHovered = drop => Hovered.Add((id, drop)),
                     Accepts = guard is null ? null : drop =>
                     {
@@ -83,10 +91,10 @@ public class SortableHostTests
         }
     }
 
-    private static (PhotonHost Host, Board Board) Open(Board? board = null)
+    private static (PhotonHost Host, Board Board) Open(Board? board = null, IAppTheme? theme = null)
     {
         board ??= new Board();
-        var host = new PhotonHost(board, PhotonTheme.Instance, ThemeMode.Light, 400, 600);
+        var host = new PhotonHost(board, theme ?? PhotonTheme.Instance, ThemeMode.Light, 400, 600);
         host.RenderFrame(new DisplayListBuilder(), 0);
         host.RenderFrame(new DisplayListBuilder(), 16);
         return (host, board);
@@ -284,6 +292,81 @@ public class SortableHostTests
         drawn.Should().Contain(c => c.Shape.Rect.Width > 0);
     }
 
+    /// <summary>Carries a1 fast to the right and draws the next frame: what it draws, from the dimmed card to the
+    /// copy's commands.</summary>
+    private static DrawCommand[] CarryFast(PhotonHost host)
+    {
+        var a1 = CardAt(host, "a1");
+        host.PressDown(a1.X, a1.Y);
+        host.PointerMove(a1.X + 10, a1.Y);
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        host.PointerMove(a1.X + 70, a1.Y);
+        host.RenderFrame(new DisplayListBuilder(), 48);
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, 64);
+        return builder.Build().Commands.ToArray();
+    }
+
+    /// <summary>The layer a carry opened at <paramref name="opacity"/>, last first: the copy's is drawn over the frame.</summary>
+    private static int LayerAt(DrawCommand[] commands, float opacity) =>
+        Array.FindLastIndex(commands, c => c.Kind == DrawCommandKind.BeginLayer && Math.Abs(c.StrokeWidth - opacity) < 0.001f);
+
+    [Fact]
+    public void TheLookOfACarriedCard_IsTheThemes_WithTheListsOwnLaidOverIt()
+    {
+        var theme = PhotonTheme.Instance.With(sortable: new SortableTheme
+        {
+            LiftedOpacity = 0.25f,
+            CopyOpacity = 0.7f,
+            CopyElevation = 5,
+            MaxLean = 6,
+        });
+        var (host, _) = Open(new Board { Style = new SortableTheme { CopyOpacity = 0.5f } }, theme);
+
+        var commands = CarryFast(host);
+
+        LayerAt(commands, 0.25f).Should().BeGreaterThan(-1, "the card is dimmed as the theme says");
+        LayerAt(commands, 0.7f).Should().Be(-1, "the list's own copy opacity comes first");
+        var copy = LayerAt(commands, 0.5f);
+        copy.Should().BeGreaterThan(0, "the copy is drawn at the list's own opacity");
+        var shadow = commands[(copy + 1)..].First(c => c.Kind == DrawCommandKind.ShadowRRect);
+        var level = theme.Elevation(5);
+        shadow.StrokeWidth.Should().Be(level.Blur, "the copy's shadow is the theme's for level 5");
+        var lean = commands[(copy + 1)..].First(c => c.Kind == DrawCommandKind.FillRRect).Transform.M12;
+        lean.Should().BeLessThan(0, "moving right still leans the copy back");
+        Math.Abs(lean).Should().BeLessThanOrEqualTo(MathF.Sin(6 * MathF.PI / 180) + 0.001f, "no further than the theme's most");
+    }
+
+    [Fact]
+    public void ACarriedCard_TakesTheDefaults_WhereNeitherSaysAndTheThemesLevelFourShadow()
+    {
+        var (host, _) = Open();
+
+        var commands = CarryFast(host);
+
+        LayerAt(commands, (float)SortPlacement.LiftedOpacity).Should().BeGreaterThan(-1);
+        var copy = LayerAt(commands, (float)SortPlacement.CopyOpacity);
+        copy.Should().BeGreaterThan(0);
+        var shadow = commands[(copy + 1)..].First(c => c.Kind == DrawCommandKind.ShadowRRect);
+        var level = PhotonTheme.Instance.Elevation(SortPlacement.CopyElevation);
+        shadow.StrokeWidth.Should().Be(level.Blur);
+        var card = commands[(copy + 1)..].First(c => c.Kind == DrawCommandKind.FillRRect).Shape.Rect;
+        shadow.Shape.Rect.Width.Should().BeApproximately(card.Width + 2 * level.Spread, 0.01f,
+            "the level's spread draws in, as the theme's shadow does");
+    }
+
+    [Fact]
+    public void AListWhoseLookLeansNoFurther_KeepsItsCopyUpright()
+    {
+        var (host, _) = Open(new Board { Style = new SortableTheme { MaxLean = 0 } });
+
+        var commands = CarryFast(host);
+
+        var copy = LayerAt(commands, (float)SortPlacement.CopyOpacity);
+        commands[(copy + 1)..].Where(c => c.Kind == DrawCommandKind.FillRRect)
+            .Should().OnlyContain(c => c.Transform.M12 == 0, "the list's most is 0");
+    }
+
     [Fact]
     public void TheCopy_StandsUpright_WhenThePersonAskedForLessMotion()
     {
@@ -368,5 +451,319 @@ public class SortableHostTests
         host.KeyDown("Tab").Should().BeTrue("Tab puts the card back and moves the focus on");
         board.Hovered[^1].Drop.Should().BeNull();
         board.Dropped.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void TheKeyboard_StepsThroughThePlacesInsideCards_InAListThatNests()
+    {
+        var (host, board) = Open(new Board { Nests = true });
+        host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder(), 32);
+
+        host.KeyDown(" ").Should().BeTrue();
+        // Below a1's own place comes the place inside a2, then the one after it (#1533).
+        host.KeyDown("ArrowDown").Should().BeTrue();
+        board.Hovered[^1].Should().Be(("todo", new SortDrop("a1", "todo", "todo", 0) { Into = "a2" }));
+        host.KeyDown("ArrowDown").Should().BeTrue();
+        board.Hovered[^1].Should().Be(("todo", new SortDrop("a1", "todo", "todo", 1)));
+        host.KeyDown("ArrowUp").Should().BeTrue();
+        host.KeyDown("Enter").Should().BeTrue();
+
+        board.Dropped.Should().ContainSingle().Which.Should().Be(new SortDrop("a1", "todo", "todo", 0) { Into = "a2" });
+    }
+
+    [Fact]
+    public void TheKeyboard_PassesOverAPlaceTheListRefuses_AsAPointerDoes()
+    {
+        var (host, board) = Open(new Board { Guard = drop => drop.Index != 1 });
+        host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder(), 32);
+
+        host.KeyDown(" ");
+        host.KeyDown("ArrowDown").Should().BeTrue();
+        board.Hovered[^1].Should().Be(("todo", new SortDrop("a1", "todo", "todo", 2)),
+            "the refused position 2 is passed over (#1533)");
+        // At the end, the card keeps the place it holds.
+        host.KeyDown("ArrowDown").Should().BeTrue();
+        board.Hovered[^1].Should().Be(("todo", new SortDrop("a1", "todo", "todo", 2)));
+    }
+
+    // ---- what a reader hears (#1564) --------------------------------------------------------------------------
+
+    /// <summary>An app's own words, with every hole a step has, so a test reads each step from them.</summary>
+    private static readonly SortAnnouncements OwnWords = new("Use Space.", "Took {0} ({1}/{2}, {3}).",
+        "{0} now {1}/{2} in {3}.", "{0} in {1}.", "{0}: not there.", "Left {0} at {1}/{2} in {3}.", "Left {0} in {1}.",
+        "{0} back.");
+
+    /// <summary>A key, then a frame a second and a little after the last, past the live region's quiet window, and
+    /// what the host has to say since.</summary>
+    private static IReadOnlyList<LiveAnnouncement> Step(PhotonHost host, string key, ref float time)
+    {
+        host.KeyDown(key).Should().BeTrue();
+        time += 1100;
+        host.RenderFrame(new DisplayListBuilder(), time);
+        return host.TakeAnnouncements();
+    }
+
+    private static int ListId(PhotonHost host, string id) =>
+        Walk(host.LastFrame!.Root).First(n => n.Source is Sortable { } s && s.Id == id).Element!.Id;
+
+    [Fact]
+    public void AKeyboardsCarry_SaysEachStep_InTheListsWords_ThroughItsLiveRegion()
+    {
+        var other = new SortAnnouncements("Other.", "Other.", "Other.", "Other.", "Other.", "Other.", "Other.", "Other.");
+        var (host, _) = Open(new Board { Words = OwnWords, DoingWords = other, Labels = ["To do", "Doing"] });
+        host.KeyDown("Tab");
+        var time = 32f;
+        host.RenderFrame(new DisplayListBuilder(), time);
+        host.TakeAnnouncements();
+
+        Step(host, " ", ref time).Select(said => said.Text).Should().Equal("Took a1 (1/3, To do).");
+        Step(host, "ArrowDown", ref time).Select(said => said.Text).Should().Equal("a1 now 2/3 in To do.");
+        // The next list of the group: the carry still speaks through the list it started from, in its words.
+        var across = Step(host, "ArrowRight", ref time);
+        across.Select(said => said.Text).Should().Equal("a1 now 2/3 in Doing.");
+        across[0].Id.Should().Be(ListId(host, "todo"));
+        across[0].Urgency.Should().Be(LiveRegionUrgency.Polite);
+        Step(host, "Enter", ref time).Select(said => said.Text).Should().Equal("Left a1 at 2/3 in Doing.");
+
+        // Android reads the step from the list's node, a polite live region holding the words.
+        var todo = host.Semantics().Single(node => node.Id == ListId(host, "todo"));
+        todo.Should().Match<SemanticNode>(node => node.Label == "To do" && node.Live == LiveRegionUrgency.Polite);
+        host.LiveRegionText(todo.Id).Should().Be("Left a1 at 2/3 in Doing.");
+    }
+
+    [Fact]
+    public void AKeyboardsCarry_SaysARefusalThePlacesInsideAndThePutBack()
+    {
+        var (host, _) = Open(new Board { Words = OwnWords, Nests = true, Guard = drop => drop.To != "doing" });
+        host.KeyDown("Tab");
+        var time = 32f;
+        host.RenderFrame(new DisplayListBuilder(), time);
+
+        Step(host, " ", ref time).Select(said => said.Text).Should().Equal(["Took a1 (1/3, todo)."],
+            "a list with no label is named by its id, as on the web");
+        Step(host, "ArrowRight", ref time).Select(said => said.Text).Should().Equal("a1: not there.");
+        Step(host, "ArrowDown", ref time).Select(said => said.Text).Should().Equal("a1 in a2.");
+        Step(host, "Escape", ref time).Select(said => said.Text).Should().Equal("a1 back.");
+
+        host.KeyDown(" ");
+        host.KeyDown("ArrowDown");
+        Step(host, "Enter", ref time).Select(said => said.Text).Should().Equal("Left a1 in a2.");
+    }
+
+    [Fact]
+    public void AListGivenNoWords_SaysNothing_AndItsSemanticsAreUnchanged()
+    {
+        var (host, board) = Open();
+        host.KeyDown("Tab");
+        var time = 32f;
+        host.RenderFrame(new DisplayListBuilder(), time);
+
+        Step(host, " ", ref time).Should().BeEmpty();
+        Step(host, "ArrowDown", ref time).Should().BeEmpty();
+        Step(host, "Enter", ref time).Should().BeEmpty();
+        board.Dropped.Should().ContainSingle();
+        host.Semantics().Should().NotContain(node => node.Live != null);
+    }
+
+    // ---- a list whose items have depths (#1594) ------------------------------------------------------------------
+
+    /// <summary>The outline <c>sortable.spec.ts</c> carries: src (0), App.cs (1), Program.cs (1), docs (0) and README.md
+    /// (0), 40 tall, one depth 16 across, in a list of a group beside a second list holding z.</summary>
+    private sealed class Outline : StatefulComponent
+    {
+        public List<SortDrop?> Hovered { get; } = [];
+        public List<SortDrop> Dropped { get; } = [];
+        public Func<SortDrop, bool>? Guard { get; init; }
+
+        /// <summary>The id the fourth row goes by, which a test changes while an item is carried over it.</summary>
+        private string _docs = "docs";
+
+        public void Rename(string id) => SetState(() => _docs = id);
+
+        private static SortableItem Item(string name, int depth) =>
+            new(new Pressable(new Box(new BoxStyle { Width = SizeValue.Fill, Height = CardHeight }), () => { }) { Label = name },
+                name) { Depth = depth };
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var files = new Column(gap: 0);
+            foreach (var (name, depth) in new[] { ("src", 0), ("App.cs", 1), ("Program.cs", 1), (_docs, 0), ("README.md", 0) })
+                files.Add(Item(name, depth));
+            var next = new Column(gap: 0);
+            next.Add(Item("z", 0));
+            var row = new Row(gap: 20);
+            row.Add(new Sortable(new Box(new BoxStyle { Width = ColumnWidth }, files), "files", Dropped.Add, OwnWords)
+            {
+                Group = "outline",
+                Nests = true,
+                Indent = 16,
+                Label = "Files",
+                OnHovered = Hovered.Add,
+                Accepts = Guard,
+            });
+            row.Add(new Sortable(new Box(new BoxStyle { Width = ColumnWidth }, next), "next", Dropped.Add, OwnWords)
+            {
+                Group = "outline",
+                Label = "Next",
+                OnHovered = Hovered.Add,
+            });
+            return row;
+        }
+    }
+
+    private static PhotonHost OpenOutline(Outline outline)
+    {
+        var host = new PhotonHost(outline, PhotonTheme.Instance, ThemeMode.Light, 400, 600);
+        host.RenderFrame(new DisplayListBuilder(), 0);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        return host;
+    }
+
+    private static Rect ItemBox(PhotonHost host, string id) =>
+        Walk(host.LastFrame!.Root).First(n => n.Source is SortableItem { } item && item.Id == id).Bounds;
+
+    /// <summary>A mouse picks README.md up and holds it over docs' top eighth, before docs, <paramref name="across"/>
+    /// points toward the end of the cross axis; the place last reported.</summary>
+    private static SortDrop? HoldBeforeDocs(PhotonHost host, Outline outline, float across)
+    {
+        var readme = CardAt(host, "README.md");
+        var docs = ItemBox(host, "docs");
+        host.PressDown(readme.X, readme.Y);
+        host.PointerMove(readme.X, readme.Y - 10);
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        host.PointerMove(readme.X + across, docs.Y + docs.Height / 8);
+        host.RenderFrame(new DisplayListBuilder(), 48);
+        return outline.Hovered[^1];
+    }
+
+    [Fact]
+    public void AListWithDepths_KeepsTheItemsOwnDepth_UntilThePointerTravelsAnIndentAcross()
+    {
+        var outline = new Outline();
+        var host = OpenOutline(outline);
+
+        HoldBeforeDocs(host, outline, 0).Should().Be(new SortDrop("README.md", "files", "files", 3) { Depth = 0 });
+        var y = ItemBox(host, "docs").Y + ItemBox(host, "docs").Height / 8;
+        var x = CardAt(host, "README.md").X;
+        host.PointerMove(x + 16, y);
+        outline.Hovered[^1].Should().Be(new SortDrop("README.md", "files", "files", 3) { Depth = 1 });
+        host.PointerMove(x + 32, y);
+        outline.Hovered[^1]!.Depth.Should().Be(2);
+        // Four indents across, still over the list (150 wide).
+        host.PointerMove(x + 60, y);
+        outline.Hovered[^1]!.Depth.Should().Be(2, "no deeper than one past Program.cs");
+        host.PointerMove(x + 16, y);
+        host.PressUp(x + 16, y);
+
+        outline.Dropped.Should().ContainSingle().Which.Should().Be(new SortDrop("README.md", "files", "files", 3) { Depth = 1 });
+    }
+
+    [Fact]
+    public void ThePlaceIsAskedAgain_WhenTheItemsAroundItChange_AtTheSameIndex()
+    {
+        var outline = new Outline();
+        var host = OpenOutline(outline);
+        var readme = CardAt(host, "README.md");
+        var docs = CardAt(host, "docs");
+        host.PressDown(readme.X, readme.Y);
+        host.PointerMove(readme.X, readme.Y - 10);
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        host.PointerMove(readme.X, docs.Y);
+        outline.Hovered[^1]!.Into.Should().Be("docs");
+
+        // The row under the pointer is another item now, at the same index.
+        outline.Rename("notes");
+        host.RenderFrame(new DisplayListBuilder(), 48);
+        host.PointerMove(readme.X, docs.Y + 1);
+
+        outline.Hovered[^1]!.Into.Should().Be("notes", "a place is the items around it, not only its index");
+        host.PointerCancel();
+    }
+
+    [Fact]
+    public void AListWithDepths_GivesARefusedDepthWayToAShallowerOne()
+    {
+        var outline = new Outline { Guard = drop => drop.Depth != 1 };
+        var host = OpenOutline(outline);
+
+        HoldBeforeDocs(host, outline, 16)!.Depth.Should().Be(0);
+    }
+
+    [Fact]
+    public void AListWithDepths_CarriesTheItemsSubtree_WhichIsNoPlaceOfItsOwn()
+    {
+        var outline = new Outline();
+        var host = OpenOutline(outline);
+        var src = CardAt(host, "src");
+        var program = CardAt(host, "Program.cs");
+
+        host.PressDown(src.X, src.Y);
+        host.PointerMove(src.X, src.Y + 10);
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        host.PointerMove(src.X, program.Y);
+        host.PressUp(src.X, program.Y);
+
+        outline.Hovered.Where(drop => drop is not null).Should().OnlyContain(drop => drop!.Index == 0);
+        outline.Dropped.Should().ContainSingle().Which.Should().Be(new SortDrop("src", "files", "files", 0) { Depth = 0 });
+    }
+
+    [Fact]
+    public void AListWithDepths_TheCrossArrowsStepTheDepth_AndAReaderHearsTheLevel()
+    {
+        var outline = new Outline();
+        var host = OpenOutline(outline);
+        for (var i = 0; i < 5; i++) host.KeyDown("Tab");
+        var time = 32f;
+        host.RenderFrame(new DisplayListBuilder(), time);
+        host.TakeAnnouncements();
+
+        Step(host, " ", ref time).Select(said => said.Text).Should().Equal("Took README.md (3/3, Files).");
+        // After docs, inside docs, before docs.
+        Step(host, "ArrowUp", ref time);
+        Step(host, "ArrowUp", ref time).Select(said => said.Text).Should().Equal("README.md now 2/3 in Files.");
+        Step(host, "ArrowRight", ref time).Select(said => said.Text).Should().Equal("README.md now 3/3 in src.");
+        Step(host, "ArrowRight", ref time).Select(said => said.Text).Should().Equal("README.md now 1/1 in Program.cs.");
+        Step(host, "ArrowLeft", ref time);
+        Step(host, "Enter", ref time).Select(said => said.Text).Should().Equal("Left README.md at 3/3 in src.");
+
+        outline.Dropped.Should().ContainSingle().Which.Should().Be(new SortDrop("README.md", "files", "files", 3) { Depth = 1 });
+    }
+
+    [Fact]
+    public void AListWithDepths_KeepsTheDepthTheKeyboardChose_AsTheItemMovesAlong()
+    {
+        var outline = new Outline();
+        var host = OpenOutline(outline);
+        for (var i = 0; i < 5; i++) host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder(), 32);
+
+        host.KeyDown(" ");
+        host.KeyDown("ArrowUp");
+        host.KeyDown("ArrowUp");
+        host.KeyDown("ArrowRight");
+        host.KeyDown("ArrowRight");
+        // Into Program.cs, then before it, where the place allows depths 1 and 2.
+        host.KeyDown("ArrowUp");
+        host.KeyDown("ArrowUp");
+
+        outline.Hovered[^1].Should().Be(new SortDrop("README.md", "files", "files", 2) { Depth = 2 },
+            "the 2 it chose, not its own 0 kept in range, which would be 1");
+        host.KeyDown("Escape");
+    }
+
+    [Fact]
+    public void AListWithDepths_TheCrossArrowMovesToTheNextList_OnceThePlaceOffersNoOtherDepth()
+    {
+        var outline = new Outline();
+        var host = OpenOutline(outline);
+        host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder(), 32);
+
+        host.KeyDown(" ").Should().BeTrue();
+        host.KeyDown("ArrowRight").Should().BeTrue();
+
+        outline.Hovered[^1]!.To.Should().Be("next");
     }
 }

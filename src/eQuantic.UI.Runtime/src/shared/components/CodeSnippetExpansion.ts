@@ -50,7 +50,7 @@ export class CodeSnippetExpansion {
 
     static of(snippet: CodeSnippet, variable: (value: string) => string | null, indent: string, step: string) {
         let expansion = new CodeSnippetExpansion(variable, indent, step);
-        expansion.number(snippet.parts, 1 + CodeSnippetExpansion.maxStop(snippet.parts));
+        expansion.number(snippet.parts, 1 + CodeSnippetExpansion.maxStop(snippet.parts) | 0);
         expansion.define(snippet.parts);
         expansion.write(snippet.parts);
         return expansion;
@@ -58,7 +58,7 @@ export class CodeSnippetExpansion {
 
     static maxStop(parts: CodeSnippetPart[]) {
         let max = 0;
-        for (const part of parts) {
+        for (const part of $eq.collections.sequenceWalk(parts)) {
             if (part.isStop && part.index > max) max = part.index;
             let children: any; 
             if ((children = part.children) != null) {
@@ -70,8 +70,8 @@ export class CodeSnippetExpansion {
     }
 
     number(parts: CodeSnippetPart[], next: number) {
-        for (const part of parts) {
-            if (part.variable && this._variable(part.text) == null && !this._unknown.has(part.text)) $eq.mapSet(this._unknown, part.text, next++);
+        for (const part of $eq.collections.sequenceWalk(parts)) {
+            if (part.variable && this._variable(part.text) == null && !this._unknown.has(part.text)) $eq.mapSet(this._unknown, part.text, (($old) => (next = $old + 1 | 0, $old))(next));
             let children: any; 
             if ((children = part.children) != null) next = this.number(children, next);
         }
@@ -79,7 +79,7 @@ export class CodeSnippetExpansion {
     }
 
     define(parts: CodeSnippetPart[]) {
-        for (const part of parts) {
+        for (const part of $eq.collections.sequenceWalk(parts)) {
             let index = this.indexOf(part);
             if (index >= 0 && !this._defining.has(index) && (!(part.children == null) || !(part.choices == null) || part.variable)) $eq.mapSet(this._defining, index, part);
             let children: any; 
@@ -94,10 +94,10 @@ export class CodeSnippetExpansion {
 
     defaultOf(index: number) {
         let known: any; 
-        if ((($0) => ($0.has(index) ? ((known = $0.get(index)), true) : ((known = null), false)))(this._defaults)) return known;
-        let defining: any; 
-        if (!(($0) => ($0.has(index) ? ((defining = $0.get(index)), true) : ((defining = null), false)))(this._defining) || this._resolving.includes(index)) return '';
-        this._resolving.push(index);
+        if ((($0) => ($0.has(index) ? ((known = $0.get(index)), true) : ((known = null!), false)))(this._defaults)) return known;
+        let defining!: CodeSnippetPart; 
+        if (!(($0) => ($0.has(index) ? ((defining = $0.get(index)), true) : ((defining = null!), false)))(this._defining) || this._resolving.includes(index)) return '';
+        $eq.collections.listAdd(this._resolving, index);
         let choices: any; let children: any; 
         let text = (($0) => (($0 != null && $eq.collections.count($0) > 0) && (choices = $0, true)))(defining.choices) ? $eq.collections.item(choices, 0) : (children = defining.children) != null ? this.plain(children) : defining.text;
         $eq.collections.remove(this._resolving, index);
@@ -107,13 +107,13 @@ export class CodeSnippetExpansion {
 
     plain(parts: CodeSnippetPart[]) {
         let text = $eq.text.stringBuilder();
-        for (const part of parts) {
+        for (const part of $eq.collections.sequenceWalk(parts)) {
             if (!part.isStop && !part.variable) {
                 text.append(part.text);
                 continue;
             }
             let index = this.indexOf(part);
-            if (index >= 0) text.append(this.defaultOf(index)); else { let value: any; let nested: any; if ((value = ($o => (nested = $o.nested, $o.$))(this.variableText(part))) != null) text.append(value); else if (!(nested == null)) text.append(this.plain(nested)); }
+            if (index >= 0) text.append(this.defaultOf(index)); else { let value: any; let nested!: CodeSnippetPart[] | null; if ((value = ($o => (nested = $o.nested, $o.$))(this.variableText(part))) != null) text.append(value); else if (!(nested == null)) text.append(this.plain(nested)); }
         }
         return text.toString();
     }
@@ -131,50 +131,50 @@ export class CodeSnippetExpansion {
     }
 
     write(parts: CodeSnippetPart[]) {
-        for (const part of parts) {
+        for (const part of $eq.collections.sequenceWalk(parts)) {
             if (!part.isStop && !part.variable) {
                 this.append(part.text);
                 continue;
             }
             let index = this.indexOf(part);
             if (index < 0) {
-                let value: any; let nested: any; 
+                let value: any; let nested!: CodeSnippetPart[] | null; 
                 if ((value = ($o => (nested = $o.nested, $o.$))(this.variableText(part))) != null) this.append(value); else if (!(nested == null)) this.write(nested);
                 continue;
             }
             let start = this.end;
-            let defining: any; let children: any; 
-            if ((($0) => ($0.has(index) ? ((defining = $0.get(index)), true) : ((defining = null), false)))(this._defining) && defining.choices == null && (children = defining.children) != null && !this._writing.includes(index)) {
-                this._writing.push(index);
-                this._enclosing.push(index);
+            let defining!: CodeSnippetPart; let children: any; 
+            if ((($0) => ($0.has(index) ? ((defining = $0.get(index)), true) : ((defining = null!), false)))(this._defining) && defining.choices == null && (children = defining.children) != null && !this._writing.includes(index)) {
+                $eq.collections.listAdd(this._writing, index);
+                $eq.collections.listAdd(this._enclosing, index);
                 this.write(children);
-                $eq.collections.listRemoveAt(this._enclosing, this._enclosing.length - 1);
+                $eq.collections.listRemoveAt(this._enclosing, this._enclosing.length - 1 | 0);
                 $eq.collections.remove(this._writing, index);
             } else this.append(this.defaultOf(index));
-            this._places.push(new CodeSnippetPlace(index, start, this.end, $eq.collections.listCopy(this._enclosing), part.choices));
+            $eq.collections.listAdd(this._places, new CodeSnippetPlace(index, start, this.end, $eq.collections.listCopy(this._enclosing), part.choices));
         }
     }
 
     append(text: string) {
-        for (let i = 0; i < text.length; i++) {
+        for (let i = 0; i < text.length; i = i + 1 | 0) {
             let c = text[i];
             if (c === '\r' || c === '\n') {
-                if (c === '\r' && i + 1 < text.length && text[i + 1] === '\n') i++;
+                if (c === '\r' && (i + 1 | 0) < text.length && text[i + 1 | 0] === '\n') i = i + 1 | 0;
                 this._text.append('\n');
                 this._text.append(this._indent);
-                this._line++;
+                this._line = this._line + 1 | 0;
                 this._column = this._indent.length;
                 this._lineStart = true;
                 continue;
             }
             if (this._lineStart && c === '\t') {
                 this._text.append(this._step);
-                this._column += this._step.length;
+                this._column = this._column + this._step.length | 0;
                 continue;
             }
             this._lineStart = false;
             this._text.append(c);
-            this._column++;
+            this._column = this._column + 1 | 0;
         }
     }
 

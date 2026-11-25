@@ -1,4 +1,4 @@
-import type { ContextRequest, FontFamily, Point, Rect, Size } from './value-types';
+import type { ContextRequest, FontFamily, Point, PointerEvent, Rect, Size } from './value-types';
 import type { PickedFile } from './picked-file';
 /**
  * The SHARED abstract vocabulary on the client (docs/SHARED-COMPONENTS-PLAN.md) — the JS shapes of
@@ -51,12 +51,15 @@ import type {
   MainAlignValue,
   NavigableMoveValue,
   PointerPhaseValue,
+  HitTestBehaviorValue,
   SizeKindValue,
   TableCellRoleValue,
   TableRoleValue,
+  TextEntryKindValue,
   VectorPaintKindValue,
 } from './enums.generated';
 import type { NodeKind } from './node-kinds.generated';
+import type { SortableTheme } from './theme-slots';
 
 export type { NodeKind } from './node-kinds.generated';
 
@@ -284,6 +287,8 @@ export interface BoxStyleValue {
   focus?: StyleDiffValue | null;
   /** Style diff while the control the box is inside is pressed (C# `BoxStyle.Pressed`). */
   pressed?: StyleDiffValue | null;
+  /** Style diff while the nearest pinned header around the box is scrolled (C# `BoxStyle.Scrolled`, #1769). */
+  scrolled?: StyleDiffValue | null;
   /** CSS cursor mirror — the C# PointerCursor member name in camelCase ('crosshair', 'colResize'). */
   cursor?: string;
 }
@@ -479,6 +484,19 @@ export interface ContextTargetNode extends VisualNodeValue {
   enabled?: boolean;
 }
 
+/** Wire shape of the C# `Listener` (#1562): what hears the raw pointer over its child. */
+export interface ListenerNode extends VisualNodeValue {
+  nodeKind: 'listener';
+  child: VisualNodeValue;
+  onPointerDown?: ((event: PointerEvent) => void) | null;
+  onPointerMove?: ((event: PointerEvent) => void) | null;
+  onPointerUp?: ((event: PointerEvent) => void) | null;
+  onPointerCancel?: ((event: PointerEvent) => void) | null;
+  onPointerHover?: ((event: PointerEvent) => void) | null;
+  onPointerScroll?: ((event: PointerEvent) => void) | null;
+  behavior?: HitTestBehaviorValue;
+}
+
 /** The value a C# `SortDrop` crosses as (value-types.ts `SortDrop`). */
 export interface SortDropValue {
   readonly item: string;
@@ -486,6 +504,20 @@ export interface SortDropValue {
   readonly to: string;
   readonly index: number;
   readonly into: string | null;
+  readonly depth: number | null;
+}
+
+/** The value a C# `SortAnnouncements` crosses as (#1564): the words a reader hears while the keyboard sorts,
+ * the record's transpiled twin (`components/SortAnnouncements`). */
+export interface SortAnnouncementsValue {
+  readonly instructions: string;
+  readonly pickedUp: string;
+  readonly moved: string;
+  readonly movedInto: string;
+  readonly refused: string;
+  readonly dropped: string;
+  readonly droppedInto: string;
+  readonly putBack: string;
 }
 
 /** Wire shape of the C# `Sortable` (#1535) — a list whose items a pointer puts in order. */
@@ -494,9 +526,14 @@ export interface SortableNode extends VisualNodeValue {
   child: VisualNodeValue;
   id: string;
   onDropped: (drop: SortDropValue) => void;
+  announcements?: SortAnnouncementsValue | null;
+  /** The list's own look of a carried item (C# `Sortable.Style`, #1602). */
+  style?: SortableTheme | null;
   group?: string;
   axis?: string;
   nests?: boolean;
+  /** How far across the axis one depth of the items is indented (C# `Sortable.Indent`, #1594); 0, no depths. */
+  indent?: number;
   label?: string;
   onHovered?: ((drop: SortDropValue | null) => void) | null;
   accepts?: ((drop: SortDropValue) => boolean) | null;
@@ -509,6 +546,10 @@ export interface SortableItemNode extends VisualNodeValue {
   child: VisualNodeValue;
   id: string;
   enabled?: boolean;
+  /** The name the keyboard's steps say (C# `SortableItem.Name`); empty, what the item's subtree says. */
+  name?: string;
+  /** The item's depth in a list whose items have depths (C# `SortableItem.Depth`, #1594). */
+  depth?: number;
 }
 
 /** Wire shape of the C# `Hoverable` — pointer-presence callback (S5 programmable hover). */
@@ -672,6 +713,8 @@ export interface LinkNode extends VisualNodeValue {
   keepsPosition?: boolean;
   /** This link points at the page the reader is ON — aria-current="page" (C# twin). */
   current?: boolean;
+  /** Opens the destination beside the page, in a new tab (C# `Link.OpensBeside`, #941). */
+  opensBeside?: boolean;
 }
 
 /** Gestures v2: vertical drag-to-dismiss — the child follows a downward drag; releasing past the
@@ -699,10 +742,15 @@ export interface TextEntryNode extends VisualNodeValue {
   onFocusChanged?: ((focused: boolean) => void) | null;
   disabled?: boolean;
   obscure?: boolean;
+  /** What the field takes (C# `TextEntryKind`): its keyboard, its autofill, and that a value is no prose. */
+  kind?: TextEntryKindValue;
   role: string;
   /** Takes focus on MOUNT (the command-palette contract) — the attribute alone only fires on the
    * initial document parse, so the client lowering focuses it too. */
   autofocus?: boolean;
+  /** Selects all of the text whenever the entry takes the keyboard, by autofocus or Tab; a press
+   * inside it still puts the caret where it pressed. */
+  selectOnFocus?: boolean;
   /** Line count: 1 (default) is the single-line input, more makes it a textarea that tall. */
   lines?: number;
 }
@@ -850,6 +898,9 @@ export interface SheetSurfaceModelLike {
   ): boolean;
   /** What the pointer looks like resting at a point: a PointerCursor member name ('crosshair'). */
   cursorAt(position: { x: number; y: number }): string;
+  /** Whether Escape pressed now would be the sheet's (an edit to cancel), asked before a binding of
+   * Escape around the sheet fires (#1181). */
+  claimsEscape(convention: KeyboardConventionValue): boolean;
 }
 
 /** Arrow-key adjustment semantics — one Tab stop wrapping a slider-like control. */
@@ -858,8 +909,11 @@ export interface AdjustableNode extends VisualNodeValue {
   child: VisualNodeValue;
   onAdjust?: (direction: number) => void;
   label?: string;
-  /** ARIA identity of the host — 'slider' (default), 'tablist' or 'radiogroup'. */
-  role?: 'slider' | 'tablist' | 'radiogroup';
+  /** ARIA identity of the host — 'slider' (default), 'tablist', 'radiogroup' or 'separator'. */
+  role?: 'slider' | 'tablist' | 'radiogroup' | 'separator';
+  /** The axis the value moves along (C# `Adjustable.Axis`), 'horizontal' unless said: what a reader
+   * hears as the orientation of a slider or a separator. */
+  axis?: 'vertical' | 'horizontal';
   /** Where the value sits, for a role that has one; absent on a tablist or a radiogroup. */
   value?: RangeValueValue | null;
   /** The value IN WORDS, said INSTEAD of the number — for a role that HAS one (#243). */
@@ -905,6 +959,20 @@ export interface GroupNode extends VisualNodeValue {
   label?: string;
 }
 
+/** A subtree a reader hears as one stop (C# twin: MergeSemantics). */
+export interface MergeSemanticsNode extends VisualNodeValue {
+  nodeKind: 'mergeSemantics';
+  child: VisualNodeValue;
+}
+
+/** A subtree a reader passes over (C# twin: ExcludeSemantics). */
+export interface ExcludeSemanticsNode extends VisualNodeValue {
+  nodeKind: 'excludeSemantics';
+  child: VisualNodeValue;
+  /** Whether it is passed over now; absent reads as true, the C# default. */
+  excluding?: boolean;
+}
+
 /**
  * Wire shape of the C# `RangeValue`: the trio ARIA calls now/min/max. One object rather than three
  * fields because `role="slider"` REQUIRES a now, and a now without its bounds is read against ARIA's
@@ -939,6 +1007,9 @@ export interface NavigableNode extends VisualNodeValue {
    * crosses as a plain array and the transpiler cannot promise its arity, so the type is what a
    * tuple actually becomes; the realizer reads exactly two entries. */
   activeCell?: readonly number[] | null;
+  /** A version higher than the last one built takes the keyboard to the composite's stop (C#
+   * `FocusVersion`); the first build only records it. */
+  focusVersion?: number;
 }
 
 /**
@@ -1022,6 +1093,9 @@ export interface CodeSurfaceModelLike {
   focusChanged(focused: boolean): void;
   /** What the pointer looks like resting at a point: a PointerCursor member name ('text', 'pointer'). */
   cursorAt(position: { x: number; y: number }): string;
+  /** Whether Escape pressed now would be the editor's (a list, a card, a snippet, a second caret to
+   * close), asked before a binding of Escape around the editor fires (#1181). */
+  claimsEscape(convention: KeyboardConventionValue): boolean;
 }
 
 /** A live camera surface — the session id names the MediaStream the runtime attaches. */
@@ -1062,6 +1136,11 @@ export interface ImageNode extends VisualNodeValue {
   fit: string;
   label: string;
   cornerRadius?: CornerRadiiValue;
+  /** C# `Image.FocalPoint`: the picture's point held at the same fraction of the box (#1785); the
+   * centre when absent. */
+  focalPoint?: Point | null;
+  /** C# `Image.Zoom`: how much closer than its fit, around the focal point; 1 when absent. */
+  zoom?: number;
 }
 
 /** Wire shape of the C# `IconGlyph`: target-neutral path data (any pack or the curated set). */

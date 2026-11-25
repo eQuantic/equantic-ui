@@ -28,6 +28,7 @@ import { installDraggableController } from '../dom/draggable';
 import { installSortableController } from '../dom/sortable';
 import { dropHandlers, installDropGuard } from '../dom/file-drop';
 import { installContextController } from '../dom/context-request';
+import { installPointerListener } from '../dom/pointer-listener';
 import { MOUNTED_HOOK, clickWithEvent } from '../dom/reconciler';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import {
@@ -36,14 +37,16 @@ import {
   setFailureRenderer,
 } from './component-boundary';
 import { getActivePass, setRootLowering, setRootRelowering, type Relowered, type SubtreePatch } from './element-roots';
-import { ElementFrame } from './element-frame';
+import { ElementFrame, type ComponentPosition } from './element-frame';
 // The engine's types through the barrel its own modules import from, for the reason
 // `element-frame.ts` gives; its classes through the seam the barrel registers them in.
 import type { BuildOwner, Element as Position } from './runtime-exports';
 import { liveOwner as makeLiveOwner, structuralOwner as makeStructuralOwner } from './element-engine';
+import { adaptiveWindowWidth, documentHoldsEveryArm, noteThreshold } from './adaptive-window';
 import type { VisualNode } from './vocabulary';
 import {
   ambientLoweringContext,
+  directionSetBy,
   getPhotonTheme,
   photonComponentContext,
 } from './photon-context';
@@ -58,6 +61,7 @@ import {
   CONTROL_FOCUS,
   CONTROL_HOVER,
   CONTROL_PRESSED,
+  HEADER_SCROLLED,
   ensureAdaptiveGate,
   gateCompactUntil,
   gateExpandedFrom,
@@ -87,6 +91,8 @@ import type {
   ProgressNode,
   LiveRegionNode,
   GroupNode,
+  MergeSemanticsNode,
+  ExcludeSemanticsNode,
   NavigableNode,
   NavigableMoveValue,
   CameraPreviewNode,
@@ -110,6 +116,7 @@ import type {
   HoverableNode,
   DropTargetNode,
   ContextTargetNode,
+  ListenerNode,
   SortableItemNode,
   SortDropValue,
   SortableNode,
@@ -141,14 +148,14 @@ import type {
   TableViewportNode,
   VisualNodeValue,
 } from './nodes';
-import type { KeyboardConventionValue } from './enums.generated';
-import { declareShortcut, shortcutMark } from '../dom/shortcuts';
+import type { KeyboardConventionValue, TextEntryKindValue } from './enums.generated';
+import { declareShortcut, shortcutMark, TAKES_KEY_FIRST } from '../dom/shortcuts';
 import { installScrolledController } from './scrolled-pinned';
 import { declareScrollViewport } from './scroll-viewports';
 import { declareTableViewport, tableCellPlace } from './table-viewports';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
-import type { ContextRequest } from './value-types';
+import type { ContextRequest, PointerEvent as HeardPointer } from './value-types';
 import { writtenDestination } from '../utils/link-scheme';
 import { declareFamily } from './face-declarations';
 import { DISPOSABLE, nodeStateFor, positionOf, type NodeState } from './node-states';
@@ -299,12 +306,15 @@ function structuralOwner(): BuildOwner {
  * only the marked ones in a render the page's owners asked for.
  */
 function buildTree(owner: BuildOwner, node: VisualNodeValue, context: LoweringContext): Position {
+  // A tree the page keeps holds what the document holds: every arm of an adaptive node until the page has
+  // hydrated, the one the window resolves after (#1783). A tree laid out once keeps every arm behind its
+  // gate, since nothing renders it again when the window changes.
+  if (owner.live) owner.holdsEveryArm = documentHoldsEveryArm();
   return owner.build(
     node as unknown as VisualNode,
     componentContextOf(context) as RenderContext,
-    // Never read: the browser's owners hold every arm of an adaptive node (`liveOwner`), as the web
-    // draws them all behind their gates, so no arm is resolved for a window's width.
-    Number.POSITIVE_INFINITY,
+    // Read only where one arm is held: an owner that holds every arm resolves none.
+    owner.holdsEveryArm ? Number.POSITIVE_INFINITY : adaptiveWindowWidth(),
     getActivePass()?.rebuildAll ?? true,
   );
 }
@@ -366,6 +376,14 @@ export function relowerBuilt(node: VisualNodeValue, context: LoweringContext): R
   const pass = getActivePass();
   if (!pass) return null;
   const root = pass.roots.nextRoot(liveOwner);
+  // The frame this render ends draws only the components lowered again, and the owner judges only the
+  // layers among them (`DrewOnly`): an open overlay elsewhere on the page stays as the page shows it.
+  // A render that falls back drew nothing here, and the whole render that follows draws the rest
+  // (#1575).
+  const drewNothing = (): null => {
+    root.owner.drewOnly([]);
+    return null;
+  };
   return runLoweringWalk(() => {
     const tree = nextTree();
     treeOfOwner.set(root.owner, tree);
@@ -373,7 +391,7 @@ export function relowerBuilt(node: VisualNodeValue, context: LoweringContext): R
     const records: LoweredRecord[] = [];
     for (const position of positions) {
       const record = patchableAt(position);
-      if (!record) return null;
+      if (!record) return drewNothing();
       if (!records.includes(record)) records.push(record);
     }
     const topmost = records.filter((record) => !records.some((other) => other !== record && isBelow(record, other)));
@@ -382,9 +400,13 @@ export function relowerBuilt(node: VisualNodeValue, context: LoweringContext): R
     for (const record of topmost) {
       const drawn = record.root!;
       const next = relowerRecord(record, frame);
-      if (next === undefined) return null;
+      if (next === undefined) return drewNothing();
       patches.push({ drawn, next });
     }
+    // A position marked inside a layer this render did not draw builds only when its layer is shown,
+    // which a whole render does.
+    if (root.owner.waitsForALayer) return drewNothing();
+    root.owner.drewOnly(topmost.map((record) => record.position));
     return { patches, declaredBy: (binding) => declarerAmong(topmost, binding.within) };
   });
 }
@@ -407,11 +429,15 @@ function relowerRecord(record: LoweredRecord, frame: ElementFrame): HtmlNode | n
   setWalkAmbients(inputs.ambients);
   try {
     const context: LoweringContext = { ...inputs.context, frame };
-    const fresh = lowerRecorded(
-      record.position,
-      inputs,
-      () => decorate(node, lowerNodeKind(node, context, inputs.horizontalAxis, inputs.path)),
-      record.parent,
+    // From the component position above the record's, where a lowering from the root stands when it
+    // reaches it, so the record's own position is the one found (#1544).
+    const fresh = frame.withinParentOf(record.position, () =>
+      lowerRecorded(
+        record.position,
+        inputs,
+        () => decorate(node, lowerNodeKind(node, context, inputs.horizontalAxis, inputs.path)),
+        record.parent,
+      ),
     );
     return replay(drawn, fresh);
   } finally {
@@ -442,11 +468,40 @@ function partialBorder(style: { borderWidth?: number; borderSides?: number }): b
   return (style.borderWidth ?? 0) > 0 && sides !== BORDER_ALL && sides !== 0;
 }
 
-/** `border-width` in CSS's own order — top, right, bottom, left — from the logical sides. */
+/**
+ * Whether a box draws its start or its end and not both (C# `DrawsOneInlineSide`): then its widths are
+ * `border-block-width` and `border-inline-width`, which mirror under `rtl`, and otherwise the physical
+ * `border-width`, which reads the same either way (#1568). End is bit 2 and Start bit 8.
+ */
+function drawsOneInlineSide(sides: number): boolean {
+  return ((sides & 8) !== 0) !== ((sides & 2) !== 0);
+}
+
+/** One side's width: the box's, or 0 where it draws none. */
+function sideWidth(width: number, sides: number, bit: number): string {
+  return (sides & bit) !== 0 ? px(width) : '0';
+}
+
+/** `border-width` in CSS's own order — top, right, bottom, left — from the logical sides, for a box
+ * whose start and end draw alike. */
 function sideWidths(width: number, sides: number): string {
-  const w = px(width);
-  const edge = (bit: number) => ((sides & bit) !== 0 ? w : '0');
-  return `${edge(1)} ${edge(2)} ${edge(4)} ${edge(8)}`;
+  return `${sideWidth(width, sides, 1)} ${sideWidth(width, sides, 2)} ${sideWidth(width, sides, 4)} ${sideWidth(width, sides, 8)}`;
+}
+
+/** The two sides of one axis as a logical shorthand writes them (C# `TokenCss.Pair`): one length when equal. */
+function pair(first: string, second: string): string {
+  return first === second ? first : `${first} ${second}`;
+}
+
+/** A partial border's widths in the shape that mirrors (C# twin: the base's three width members and
+ * `DiffDeclarations`): the physical shorthand, or the block and inline pairs when one inline side draws alone. */
+function borderWidthEntries(width: number, sides: number): Record<string, string> {
+  return drawsOneInlineSide(sides)
+    ? {
+        'border-block-width': pair(sideWidth(width, sides, 1), sideWidth(width, sides, 4)),
+        'border-inline-width': pair(sideWidth(width, sides, 8), sideWidth(width, sides, 2)),
+      }
+    : { 'border-width': sideWidths(width, sides) };
 }
 
 export function px(dp: number): string {
@@ -488,8 +543,21 @@ function radiusValue(radii: CornerRadiiValue): string {
     : `${px(topLeft)} ${px(topRight)} ${px(bottomRight)} ${px(bottomLeft)}`;
 }
 
-function paddingValue(insets: EdgeInsetsValue): string {
-  return `${px(insets.top)} ${px(insets.end)} ${px(insets.bottom)} ${px(insets.start)}`;
+/**
+ * A padding's declarations (C# `TokenCss.Padding`, `PaddingBlock`, `PaddingInline`): the physical
+ * shorthand when its start and end are equal, so it reads the same in both directions and the classes of
+ * a symmetric padding never move; `padding-block` and `padding-inline` when they differ, so it mirrors
+ * under `rtl` (#1568); nothing for none.
+ */
+function paddingEntries(insets: EdgeInsetsValue | null | undefined): Record<string, string | undefined> {
+  if (!insets || isZeroInsets(insets)) return {};
+  if (insets.start === insets.end) {
+    return { padding: `${px(insets.top)} ${px(insets.end)} ${px(insets.bottom)} ${px(insets.start)}` };
+  }
+  return {
+    'padding-block': pair(px(insets.top), px(insets.bottom)),
+    'padding-inline': pair(px(insets.start), px(insets.end)),
+  };
 }
 
 /**
@@ -675,8 +743,11 @@ function lowerNodeKind(
   if (rule) {
     if (foreign.nodeKind === 'adaptive') {
       placing = null;
-      return lowerAdaptive(node as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
-        placeChild(arm, armPath, context, rule),
+      return lowerAdaptive(
+        node as unknown as AdaptiveNodeValue,
+        path,
+        (arm, armPath) => placeChild(arm, armPath, context, rule),
+        context,
       );
     }
     if (!buildsItsOwnNode(node)) placing = null;
@@ -761,8 +832,11 @@ function lowerNodeKind(
     case 'adaptive':
       // Reached from a parent with no rule of its own for a direct child — the arms lower as the
       // node was asked to, on the same axis. A flex, a grid and a stack place them themselves.
-      return lowerAdaptive(node as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
-        lowerNode(arm, context, horizontalAxis, armPath),
+      return lowerAdaptive(
+        node as unknown as AdaptiveNodeValue,
+        path,
+        (arm, armPath) => lowerNode(arm, context, horizontalAxis, armPath),
+        context,
       );
     case 'shortcut':
       return lowerShortcut(node as unknown as ShortcutNode, context, horizontalAxis, path);
@@ -780,6 +854,10 @@ function lowerNodeKind(
       return lowerLiveRegion(node as unknown as LiveRegionNode, context, path);
     case 'group':
       return lowerGroup(node as unknown as GroupNode, context, path);
+    case 'mergeSemantics':
+      return lowerMergeSemantics(node as unknown as MergeSemanticsNode, context, path);
+    case 'excludeSemantics':
+      return lowerExcludeSemantics(node as unknown as ExcludeSemanticsNode, context, path);
     case 'navigable':
       return lowerNavigable(node as unknown as NavigableNode, context, path);
     case 'hoverable':
@@ -788,6 +866,8 @@ function lowerNodeKind(
       return lowerDropTarget(node as unknown as DropTargetNode, context, path);
     case 'contextTarget':
       return lowerContextTarget(node as unknown as ContextTargetNode, context, path);
+    case 'listener':
+      return lowerListener(node as unknown as ListenerNode, context, path);
     case 'sortable':
       return lowerSortable(node as unknown as SortableNode, context, horizontalAxis, path);
     case 'sortableItem':
@@ -800,7 +880,7 @@ function lowerNodeKind(
     // draws its child as if it were not there (the C# `WebLoweringVisitor`). Who depends on its value
     // is the element engine's to track, which drives the browser from E3b.
     case 'inherited':
-      return lowerNode((node as unknown as InheritedNode).child, context, horizontalAxis, path + '/0');
+      return lowerInherited(node as unknown as InheritedNode, context, horizontalAxis, path);
     case 'inView':
       return lowerInView(node as unknown as InViewNode, context, horizontalAxis, path);
     case 'positioned':
@@ -811,8 +891,14 @@ function lowerNodeKind(
       // data in front of it, with the instance its position keeps (C# `Visit(UiComponent)` with a
       // frame). What it built is lowered as it stands, one step down (path/~), a step the scope of a
       // grid's ids reads past (pathScope).
-      const { built } = frameOf(context).at(node);
-      return built ? lowerNode(built as unknown as VisualNodeValue, context, horizontalAxis, path + '/~') : null;
+      // Inside its position, so a component found there is the one the engine placed below this
+      // one, even when it is this same instance again (C# twin, #1544).
+      const frame = frameOf(context);
+      const { built, position } = frame.at(node);
+      if (!built) return null;
+      return frame.within(position, () =>
+        lowerNode(built as unknown as VisualNodeValue, context, horizontalAxis, path + '/~'),
+      );
     }
     // THE DOOR CLOSED. `nodeKind` is the generated NodeKind union, so this arm is unreachable for
     // every kind the vocabulary declares — and the day it declares one more, this line stops
@@ -920,6 +1006,8 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     [],
   );
   prependClass(surface, 'eq-code-surface');
+  // Code reads left to right in every language, and its carets and its door stand at physical x (C# twin, #1568).
+  surface.attributes['dir'] = 'ltr';
   // The surface's identity across rebuilds: its position's id, which it keeps while it lives and no
   // other node is ever given. Anything that has to find it AFTER the render (see revealCaret)
   // resolves by this, never by a reference.
@@ -1204,6 +1292,7 @@ interface TextDoorModel {
   cut(): string;
   paste(text: string): boolean;
   focusChanged(focused: boolean): void;
+  claimsEscape(convention: KeyboardConventionValue): boolean;
 }
 
 /**
@@ -1260,6 +1349,16 @@ function openTextDoor(
       event.preventDefault();
       changed();
     }
+  }) as unknown as EventHandler;
+
+  // What a binding of Escape around the surface asks before it fires (#1181; C# twin: PhotonHost.KeyDown,
+  // which asks its code and sheet targets): the door keeps the key while its model would claim it, so a
+  // dialog stays open over an open completion list or a cell being edited, and the keydown above takes it.
+  // Asked of Escape alone: an app's own chord, ⌘K, answers before the door as it always has.
+  input.events[TAKES_KEY_FIRST] = ((asked: CustomEvent<KeyboardEvent>) => {
+    const key = asked.detail;
+    if (key.key !== 'Escape' || key.shiftKey || key.altKey || key.ctrlKey || key.metaKey) return;
+    if (model.claimsEscape(convention)) asked.preventDefault();
   }) as unknown as EventHandler;
 
   input.events['beforeinput'] = ((event: InputEvent) => {
@@ -1675,6 +1774,11 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   if (destination !== null && warmsOnHover(destination)) anchor.attributes['data-prefetch'] = '';
   // The page you are ON (C# twin): only the current link says so.
   if (node.current === true) anchor.attributes['aria-current'] = 'page';
+  // Beside the page (C# twin, #941): a new tab, cut from this one; the router leaves it to the browser.
+  if (node.opensBeside === true) {
+    anchor.attributes['target'] = '_blank';
+    anchor.attributes['rel'] = 'noopener noreferrer';
+  }
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) anchor.children.push(child);
   return anchor;
@@ -1802,6 +1906,28 @@ function lowerOverlay(node: OverlayNode, context: LoweringContext, path: string)
   return layer;
 }
 
+/** Each kind's keyboard (`inputmode`) and autofill (`autocomplete`), `text` having neither (C# twin). */
+const ENTRY_KINDS: Readonly<Record<TextEntryKindValue, readonly [string | null, string | null]>> = {
+  text: [null, null],
+  email: ['email', 'email'],
+  phone: ['tel', 'tel'],
+  url: ['url', 'url'],
+  number: ['numeric', null],
+  decimal: ['decimal', null],
+};
+
+/** C# twin (`WriteKind`): what a single-line entry's kind says to the browser, in the server's order.
+ * `inputmode` and not `type`, but for the telephone: `type="email"` and `type="number"` refuse the
+ * selection API `caretAtEnd` and `selectAll` call, and a number input writes only the invariant point. */
+function writeKind(input: HtmlNode, kind: TextEntryKindValue, obscure: boolean): void {
+  const [mode, autofill] = ENTRY_KINDS[kind];
+  if (mode === null) return;
+  input.attributes['inputmode'] = mode;
+  if (autofill !== null && !obscure) input.attributes['autocomplete'] = autofill;
+  input.attributes['spellcheck'] = 'false';
+  input.attributes['autocapitalize'] = 'none';
+}
+
 /** Spec B9/B10 mirror: the REAL chrome-less <input> — identical DOM to the C# SSR realizer, plus
  * the client-only handlers (input → onChanged, Enter → onSubmit, focus/blur → onFocusChanged). */
 function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode {
@@ -1824,21 +1950,26 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
     input.attributes['rows'] = String(lines);
     if (node.value.length > 0) input.children = [textLeaf(node.value)];
   } else {
-    input.attributes['type'] = node.obscure === true ? 'password' : 'text';
+    const kind = node.kind ?? 'text';
+    input.attributes['type'] = node.obscure === true ? 'password' : kind === 'phone' ? 'tel' : 'text';
     input.attributes['value'] = node.value;
+    writeKind(input, kind, node.obscure === true);
   }
   if (node.placeholder != null) input.attributes['placeholder'] = node.placeholder;
   // The accessible NAME — a placeholder vanishes under text, so it never substitutes for one.
   if (node.label) input.attributes['aria-label'] = node.label;
   // C# twin: the attribute marks intent; the client also FOCUSES on mount — a dialog opened later
   // never gets the browser's parse-time autofocus.
+  const selectOnFocus = node.selectOnFocus === true;
   if (node.autofocus === true) {
     input.attributes['autofocus'] = '';
     // …with the caret at the end of what it holds, where Flutter's autofocused TextField and Photon's put
-    // it: the code editor's go-to field opens holding ":" and what is typed goes after it (#1083).
+    // it: the code editor's go-to field opens holding ":" and what is typed goes after it (#1083). An entry
+    // that selects on focus selects it all instead: a rename field opens with the name ready to replace.
     input.events['eq:mounted'] = ((element: HTMLInputElement) => {
       element.focus();
-      caretAtEnd(element);
+      if (selectOnFocus) selectAll(element);
+      else caretAtEnd(element);
     }) as unknown as EventHandler;
   }
   if (node.disabled === true) {
@@ -1857,9 +1988,17 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
       }) as unknown as EventHandler;
     }
     const onFocusChanged = node.onFocusChanged;
-    if (onFocusChanged) {
-      input.events['focus'] = (() => onFocusChanged(true)) as EventHandler;
-      input.events['blur'] = (() => onFocusChanged(false)) as EventHandler;
+    if (onFocusChanged || selectOnFocus) {
+      // A press inside the entry puts the caret where it pressed, as every platform's field does: only the
+      // keyboard arriving (Tab, a script's focus) selects it all.
+      let pressed = false;
+      if (selectOnFocus) input.events['pointerdown'] = (() => (pressed = true)) as EventHandler;
+      input.events['focus'] = ((event: FocusEvent) => {
+        if (selectOnFocus && !pressed) selectAll(event.target as HTMLInputElement);
+        pressed = false;
+        onFocusChanged?.(true);
+      }) as unknown as EventHandler;
+      if (onFocusChanged) input.events['blur'] = (() => onFocusChanged(false)) as EventHandler;
     }
   }
   if (node.invalid === true) input.attributes['aria-invalid'] = 'true';
@@ -2001,9 +2140,12 @@ function edge(point: number | null | undefined, fraction: number | null | undefi
   return `calc(${pct(fraction)} ${point < 0 ? '-' : '+'} ${px(Math.abs(point))})`;
 }
 
-/** A shift by fractions of the box's own size, or none (C# TokenCss.Shift twin). */
+/** A shift by fractions of the box's own size, or none (C# TokenCss.Shift twin): across, toward the END,
+ * through the `--eq-inline` the token sheet sets to 1 under `ltr` and -1 under `rtl` (#1568). */
 function shift(x: number, y: number): string | undefined {
-  return x === 0 && y === 0 ? undefined : `translate(${x === 0 ? '0' : pct(x)}, ${y === 0 ? '0' : pct(y)})`;
+  return x === 0 && y === 0
+    ? undefined
+    : `translate(${x === 0 ? '0' : `calc(var(--eq-inline, 1) * ${pct(x)})`}, ${y === 0 ? '0' : pct(y)})`;
 }
 
 /** Spec §06 mirror: the generated eq-slide-x keyframes animate the wrapper; endpoints ride custom
@@ -2065,6 +2207,8 @@ function lowerSheetSurface(
     child ? [child] : [],
   );
   prependClass(view, 'eq-sheet-surface');
+  // The door and the carets stand at the model's physical x: left to right in every language (C# twin, #1568).
+  view.attributes['dir'] = 'ltr';
   // No role of its own (#1081): the table it holds is the grid a reader walks, and the door is the field
   // that takes the sheet's keys, named as the sheet is.
   // The surface's identity across rebuilds, which a focus request finds it by after the render: its
@@ -2353,6 +2497,9 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
     children,
   );
   view.attributes['role'] = role;
+  // Its cells and bands stand at physical x and it scrolls by scrollLeft, whose origin moves under rtl:
+  // it lays out left to right in every language until a table mirrors (C# twin, #1568).
+  view.attributes['dir'] = 'ltr';
   if (semantics.rows) {
     // The whole grid's count, not the cells built: a reader is told where it is in a million rows.
     view.attributes['aria-rowcount'] = String(node.rows.count);
@@ -2785,19 +2932,48 @@ function lowerImage(node: ImageNode): HtmlNode {
   const hasRadius =
     !!radius &&
     (radius.topLeft > 0 || radius.topRight > 0 || radius.bottomRight > 0 || radius.bottomLeft > 0);
+  // The focal point and the zoom (C# twin, #1785): `object-position` holds the picture's point at the
+  // same fraction of the box, a scale around it zooms, and a zoomed picture is clipped by a frame of the
+  // box's size that carries the radius. Each fraction is the single product the server writes.
+  const focal = node.focalPoint ?? { x: 0.5, y: 0.5 };
+  const zoom = node.zoom ?? 1;
+  const zoomed = zoom !== 1;
+  const held = Math.fround(focal.x) !== 0.5 || Math.fround(focal.y) !== 0.5 || zoomed;
+  const origin = held ? `${num(Math.fround(focal.x) * 100)}% ${num(Math.fround(focal.y) * 100)}%` : undefined;
+  const radiusCss = hasRadius && radius ? radiusValue(radius) : undefined;
   const sizing = atomicAttrs({
     width: px(node.width),
     height: px(node.height),
-    'border-radius': hasRadius && radius ? radiusValue(radius) : undefined,
+    'border-radius': zoomed ? undefined : radiusCss,
     'object-fit': fit,
+    'object-position': origin,
+    transform: zoomed ? `scale(${num(zoom)})` : undefined,
+    'transform-origin': zoomed ? origin : undefined,
   });
+  const framed = (picture: HtmlNode): HtmlNode =>
+    zoomed
+      ? {
+          tag: 'span',
+          attributes: {
+            ...atomicAttrs({
+              display: 'inline-block',
+              width: px(node.width),
+              height: px(node.height),
+              overflow: 'hidden',
+              'border-radius': radiusCss,
+            }),
+          },
+          events: {},
+          children: [picture],
+        }
+      : picture;
   const light: HtmlNode = {
     tag: 'img',
     attributes: { ...sizing, src: node.source, alt: node.label ?? '' },
     events: {},
     children: [],
   };
-  if (!node.darkSource) return light;
+  if (!node.darkSource) return framed(light);
 
   // A PAIR of artworks (C# twin): both ship, the generated .eq-themed-* rules show one — the OS
   // preference by default, the app's forced data-theme when it set one.
@@ -2818,12 +2994,12 @@ function lowerImage(node: ImageNode): HtmlNode {
     events: {},
     children: [],
   };
-  return {
+  return framed({
     tag: 'span',
     attributes: { ...atomicAttrs({ display: 'contents' }) },
     events: {},
     children: [light, dark],
-  };
+  });
 }
 
 /** The one revolution the eight bars stagger over — the C# `Spinner.RevolutionMs`, which divides by
@@ -3080,6 +3256,8 @@ function lowerCanvas(node: CanvasNodeValue, context: LoweringContext): HtmlNode 
   const listens = Boolean(
     node.onPointerDown || node.onPointerMove || node.onPointerUp || node.onPointerLeave,
   );
+  // Handlers that follow a drag, a press and a move, claim the finger (C# twin, #1786).
+  const drags = Boolean(node.onPointerDown && node.onPointerMove);
 
   const attributes: Record<string, string | undefined> = {
     // DECLARATIONS, not a hand-built string: `atomicAttrs` hashes each (property, value) into the
@@ -3099,6 +3277,11 @@ function lowerCanvas(node: CanvasNodeValue, context: LoweringContext): HtmlNode 
       // registers a region per canvas and skips one with no handlers — so this is the same rule
       // said in the DOM's language. The C# realizer writes the identical pair.
       'pointer-events': listens ? 'auto' : 'none',
+      // A finger's drag is the canvas's, not the page's, when its handlers follow one (#1786): with
+      // the default `touch-action` a phone scrolled the sheet and cancelled the pointer stream they
+      // were following. A canvas that only hovers or only takes a press leaves the finger to the
+      // page. The C# realizer writes the same declaration.
+      'touch-action': drags ? 'none' : undefined,
     }),
   };
   // A viewBox only when the box is known: a filling canvas draws in the same coordinates the
@@ -3354,8 +3537,24 @@ function lowerLayer(
   // Through the COMPONENT to what it builds, exactly as the C# realizer does — `Positioned` is a
   // contract with the parent, and one returned by a component was not recognised. Read from the
   // frame, so what lowers here is what the instance its position keeps built.
-  const child = resolveStackChild(raw, context);
-  if (!child) return null;
+  const resolved = resolveStackChild(raw, context);
+  if (!resolved) return null;
+  // What the component built is lowered inside its position, as its own lowering lowers it.
+  return frameOf(context).within(resolved.position, () =>
+    lowerResolvedLayer(raw, resolved.node, depth, context, path, cellJustify, cellAlign),
+  );
+}
+
+/** A stack layer once its component, if it is one, is read through to what its position built. */
+function lowerResolvedLayer(
+  raw: VisualNodeValue,
+  child: VisualNodeValue,
+  depth: number,
+  context: LoweringContext,
+  path: string,
+  cellJustify: string,
+  cellAlign: string,
+): HtmlNode | null {
   // A component the stack expanded is decorated as the funnel decorates one, on the element of what
   // it built, after that node's own (C# twin, #940).
   const asComponent = (lowered: HtmlNode | null): HtmlNode | null =>
@@ -3396,9 +3595,10 @@ function lowerLayer(
         'z-index': `${(positioned.layer ?? 0) !== 0 ? positioned.layer : depth}`,
         // A point, a fraction of the stack, or both (C# TokenCss.Edge twin).
         top: edge(positioned.top, positioned.topFraction) ?? (spanY ? '0' : undefined),
-        right: edge(positioned.end, positioned.endFraction) ?? (spanX ? '0' : undefined),
+        // The start and the end from the side the text starts and ends on, so they mirror (C# twin, #1568).
+        'inset-inline-end': edge(positioned.end, positioned.endFraction) ?? (spanX ? '0' : undefined),
         bottom: edge(positioned.bottom, positioned.bottomFraction) ?? (spanY ? '0' : undefined),
-        left: edge(positioned.start, positioned.startFraction) ?? (spanX ? '0' : undefined),
+        'inset-inline-start': edge(positioned.start, positioned.startFraction) ?? (spanX ? '0' : undefined),
         transform: stretched ? undefined : shifted,
       },
       [
@@ -3582,8 +3782,7 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     // number: a hydration payload written before the cap became a SizeValue still says `620`.
     'max-width': sizeValue(asSize(style.maxWidth)),
     'max-height': sizeValue(asSize(style.maxHeight), true),
-    padding:
-      style.padding && !isZeroInsets(style.padding) ? paddingValue(style.padding) : undefined,
+    ...paddingEntries(style.padding),
     'background-color': style.background ? tokenValue(style.background) : undefined,
     // The foreground the text and icons inside inherit (C# twin, #614).
     color: style.foreground ? tokenValue(style.foreground) : undefined,
@@ -3607,10 +3806,10 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     // KEBAB, quoted, like every other multi-word property in this object: the key IS the CSS
     // property name. camelCase here made the browser drop the rule AND made the class hash differ
     // from the C# one, so a hydrated box got a different class than the server had given it.
-    'border-width':
-      style.borderWidth && style.borderWidth > 0 && !sidesAreAll(style)
-        ? sideWidths(style.borderWidth, style.borderSides ?? BORDER_ALL)
-        : undefined,
+    // Physical when the start and the end draw alike, logical when one of them draws alone (C# twin, #1568).
+    ...(style.borderWidth && style.borderWidth > 0 && !sidesAreAll(style)
+      ? borderWidthEntries(style.borderWidth, style.borderSides ?? BORDER_ALL)
+      : {}),
     'border-style': partialBorder(style) ? 'solid' : undefined,
     'border-color':
       partialBorder(style) && style.borderColor ? tokenValue(style.borderColor) : undefined,
@@ -3669,6 +3868,18 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
   if (focus && !(simulatedState & SIMULATED_FOCUSED)) appendDiff(result, CONTROL_FOCUS, focus, style);
   if (pressed && !(simulatedState & SIMULATED_PRESSED))
     appendDiff(result, CONTROL_PRESSED, pressed, style);
+  // The HEADER's scroll (C# twin, #1769): a rule on the nearest header's attribute, which the
+  // controller sets, so a header with no scrolled style of its own is tracked as soon as a box asks.
+  // A simulated state was written into the resting declarations, which the scrolled rule outweighs,
+  // so the state it pictures is laid over the scroll, in the order a real one wins (C# twin).
+  if (style.scrolled) {
+    let scrolled: StyleDiffValue = style.scrolled;
+    if (style.hover && simulatedState & SIMULATED_HOVERED) scrolled = laidOver(scrolled, style.hover);
+    if (focus && simulatedState & SIMULATED_FOCUSED) scrolled = laidOver(scrolled, focus);
+    if (pressed && simulatedState & SIMULATED_PRESSED) scrolled = laidOver(scrolled, pressed);
+    appendDiff(result, HEADER_SCROLLED, scrolled, style);
+    installScrolledController();
+  }
 
   if (box.child) {
     const child = lowerNode(box.child, context, null, path + '/0');
@@ -3776,6 +3987,13 @@ function applyDiff(
   Object.assign(entries, diffEntries(diff, style));
 }
 
+/** `over`'s members laid over `under`'s, each one it sets replacing the other's (C# `LaidOver`, #1769). */
+function laidOver(under: StyleDiffValue, over: StyleDiffValue): StyleDiffValue {
+  const laid: Record<string, unknown> = { ...under };
+  for (const [member, value] of Object.entries(over)) if (value !== undefined && value !== null) laid[member] = value;
+  return laid as StyleDiffValue;
+}
+
 /** Spec S5 mirror of the C# AppendDiff — identical declaration strings, pseudo-hashed classes. */
 function appendDiff(node: HtmlNode, pseudo: string, diff: StyleDiffValue, style: BoxStyleValue): void {
   const classes = atomizePseudo(pseudo, diffEntries(diff, style));
@@ -3805,7 +4023,7 @@ function diffEntries(diff: StyleDiffValue, style: BoxStyleValue): Record<string,
     if (sidesAreAll(style)) {
       entries['border'] = `${px(diff.borderWidth)} solid ${value}`;
     } else {
-      entries['border-width'] = sideWidths(diff.borderWidth, style.borderSides ?? BORDER_ALL);
+      Object.assign(entries, borderWidthEntries(diff.borderWidth, style.borderSides ?? BORDER_ALL));
       entries['border-style'] = 'solid';
       entries['border-color'] = value;
     }
@@ -3849,7 +4067,7 @@ function lowerFlex(flex: FlexNodeValue, context: LoweringContext, path: string):
     // OVERRIDES width, so long content grew a Fill row past its parent (C# twin).
     'min-width': flex.width?.kind === 'fill' ? '0' : undefined,
     'min-height': flex.height?.kind === 'fill' ? '0' : undefined,
-    padding: flex.padding && !isZeroInsets(flex.padding) ? paddingValue(flex.padding) : undefined,
+    ...paddingEntries(flex.padding),
     'background-color': flex.background ? tokenValue(flex.background) : undefined,
     // A layout node that PAINTS NOTHING is not a hit target — the C# twin, and the framework's
     // inspiration deciding it: Flutter's RenderBox.hitTestSelf answers false, so a Row is
@@ -3909,8 +4127,11 @@ function placeChild(
   if ((child as { nodeKind?: string }).nodeKind === 'adaptive') {
     return decorate(
       child,
-      lowerAdaptive(child as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
-        placeChild(arm, armPath, context, rule),
+      lowerAdaptive(
+        child as unknown as AdaptiveNodeValue,
+        path,
+        (arm, armPath) => placeChild(arm, armPath, context, rule),
+        context,
       ),
     );
   }
@@ -4178,12 +4399,15 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'hoverable':
     case 'dropTarget':
     case 'contextTarget':
+    case 'listener':
     case 'sortable':
     case 'sortableItem':
     case 'adjustable':
     case 'progress':
     case 'liveRegion':
     case 'group':
+    case 'mergeSemantics':
+    case 'excludeSemantics':
     case 'flexible':
     case 'loopMotion':
     case 'link':
@@ -4240,6 +4464,10 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as unknown as LiveRegionNode).child as VisualNodeValue);
     case 'group':
       return fills((node as unknown as GroupNode).child as VisualNodeValue);
+    case 'mergeSemantics':
+      return fills((node as unknown as MergeSemanticsNode).child as VisualNodeValue);
+    case 'excludeSemantics':
+      return fills((node as unknown as ExcludeSemanticsNode).child as VisualNodeValue);
     case 'navigable':
       // A grid host has ROWS, not one child: nothing to inherit a fill from.
       return { width: false, height: false };
@@ -4249,6 +4477,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as DropTargetNode).child);
     case 'contextTarget':
       return fills((node as ContextTargetNode).child);
+    case 'listener':
+      return fills((node as unknown as ListenerNode).child);
     case 'sortable':
       return fills((node as unknown as SortableNode).child);
     case 'sortableItem':
@@ -4417,6 +4647,9 @@ function lowerPressable(
     // A press keeps the keyboard on the TREE: the host is the one stop and the element
     // aria-activedescendant is read from, so the item's own focus is cancelled and the tree takes it.
     node.events['mousedown'] = ((event: MouseEvent) => {
+      // A press inside a field the item holds (its rename field) is the field's: the caret goes where it
+      // pressed, and the field keeps the keyboard.
+      if (typedIntoAField(event)) return;
       event.preventDefault();
       const host = (event.currentTarget as HTMLElement | null)?.closest('[role="tree"]');
       // Without scrolling: the host is the whole tree, whose top may be far above the row pressed.
@@ -4547,6 +4780,10 @@ function visualTextOf(node: VisualNodeValue): string {
       return visualTextOf((node as PressableNode).child);
     case 'group':
       return visualTextOf((node as unknown as GroupNode).child as VisualNodeValue);
+    case 'mergeSemantics':
+      return visualTextOf((node as unknown as MergeSemanticsNode).child as VisualNodeValue);
+    case 'excludeSemantics':
+      return visualTextOf((node as unknown as ExcludeSemanticsNode).child as VisualNodeValue);
     default:
       return '';
   }
@@ -4782,21 +5019,7 @@ function chordId(chord: KeyChordValue | undefined): string {
  * Two rules that look alike and are not, so they are written out rather than shared.
  */
 function lowerProgress(node: ProgressNode, context: LoweringContext, path: string): HtmlNode {
-  const fill = fills(node.child);
-  const cap = capsAt(node.child);
-  const host = element('div', {
-    // FIT-CONTENT, not nothing: this host CARRIES THE ROLE, so its box is the bounds a reader
-    // announces and a focus highlight draws. A bare block div stretches to the container while the
-    // bar stays its own width, and the two stop describing the same thing — on Photon
-    // `MeasureWrapper` gives the wrapper exactly the child's bounds.
-    width: fill.width ? '100%' : 'fit-content',
-    // The child's cap comes THROUGH (C# twin: LowerProgress) — a wrapper that takes the width and
-    // drops the maximum is the half-contract that made the Link diverge once already.
-    'max-width': sizeValue(cap),
-    height: fill.height ? '100%' : undefined,
-  });
-  host.attributes['role'] = 'progressbar';
-  if (node.label) host.attributes['aria-label'] = node.label;
+  const host = semanticsHost(node.child, { role: 'progressbar' }, node.label, false);
   const value = node.value;
   if (value) {
     host.attributes['aria-valuenow'] = num(value.now);
@@ -4821,22 +5044,15 @@ function lowerProgress(node: ProgressNode, context: LoweringContext, path: strin
  * added to the DOM after load is announced at all, so this states both rather than relying on it.
  */
 function lowerLiveRegion(node: LiveRegionNode, context: LoweringContext, path: string): HtmlNode {
-  const fill = fills(node.child);
-  const cap = capsAt(node.child);
   const assertive = node.urgency === 'assertive';
-  const host = element('div', {
-    // Same rule as lowerProgress: this host CARRIES THE ROLE, so its box is the bounds a reader
-    // announces — and the child's cap comes through with the 100%, never one without the other.
-    width: fill.width ? '100%' : 'fit-content',
-    'max-width': sizeValue(cap),
-    height: fill.height ? '100%' : undefined,
-  });
-  host.attributes['role'] = assertive ? 'alert' : 'status';
-  host.attributes['aria-live'] = assertive ? 'assertive' : 'polite';
-  // The region is announced as a WHOLE when any part of it changes. Without this a reader reads
-  // only the changed node, so a banner whose title and body both change is announced as a fragment.
-  host.attributes['aria-atomic'] = 'true';
-  if (node.label) host.attributes['aria-label'] = node.label;
+  // The region is announced as a WHOLE when any part of it changes (aria-atomic). Without this a reader
+  // reads only the changed node, so a banner whose title and body both change is announced as a fragment.
+  const host = semanticsHost(
+    node.child,
+    { role: assertive ? 'alert' : 'status', 'aria-live': assertive ? 'assertive' : 'polite', 'aria-atomic': 'true' },
+    node.label,
+    false,
+  );
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;
@@ -4848,18 +5064,196 @@ function lowerLiveRegion(node: LiveRegionNode, context: LoweringContext, path: s
  * host takes the child's fill and cap, as every role-bearing wrapper's does.
  */
 function lowerGroup(node: GroupNode, context: LoweringContext, path: string): HtmlNode {
-  const fill = fills(node.child);
-  const cap = capsAt(node.child);
-  const host = element('div', {
-    width: fill.width ? '100%' : 'fit-content',
-    'max-width': sizeValue(cap),
-    height: fill.height ? '100%' : undefined,
-  });
-  host.attributes['role'] = 'group';
-  if (node.label) host.attributes['aria-label'] = node.label;
+  const host = semanticsHost(node.child, { role: 'group' }, node.label, false);
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;
+}
+
+/**
+ * A SUBTREE HEARD AS ONE STOP (C# twin: LowerMergeSemantics): a host, and the child lowered inside it,
+ * then read by `mergeReading`, which names the one stop by the parts it hides. The host takes the
+ * child's fill and cap, as the group's does.
+ */
+function lowerMergeSemantics(node: MergeSemanticsNode, context: LoweringContext, path: string): HtmlNode {
+  const host = semanticsHost(node.child, {}, undefined, false);
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) {
+    host.children.push(child);
+    mergeReading(host, child, `eq-merge-${pathScope(path)}`);
+  }
+  return host;
+}
+
+/**
+ * A SUBTREE A READER PASSES OVER (C# twin: LowerExcludeSemantics): a host marked `aria-hidden` while it
+ * excludes, and a plain one when it does not, so the shape is the same either way.
+ */
+function lowerExcludeSemantics(node: ExcludeSemanticsNode, context: LoweringContext, path: string): HtmlNode {
+  const host = semanticsHost(node.child, {}, undefined, false);
+  if (node.excluding !== false) host.attributes['aria-hidden'] = 'true';
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
+/**
+ * THE ONE HOST of the six wrappers that put an element between a parent and its child to carry semantics
+ * (C# twin: SemanticsHost): progress, adjustable, liveRegion, group, mergeSemantics, excludeSemantics. It
+ * is the web's stand-in for Flutter's `Semantics` proxy box, which takes exactly its child's size, and it
+ * writes the rule once: the box a reader outlines is the box it names, so the host takes the child's width
+ * contract (`fit-content`, or `100%` when the child fills), the child's cap as `max-width` and `100%` height
+ * when the child fills down. A wrapper that took the width and dropped the rest is the half-contract that
+ * made the Link diverge (#239, #241, held by role-host-bounds.spec.ts).
+ *
+ * What differs is the role's `attributes` (none for the two that bear no role), the accessible `label`,
+ * written right after them when it is not empty, and whether the host `takesPointer` (`pointer-events:
+ * auto`, the adjustable's). The child is not lowered here. The style's keys are written in the
+ * order the adjustable's host always had (width, max-width, pointer-events, height), so the order
+ * the atomic rules are first registered in does not move.
+ */
+function semanticsHost(
+  child: VisualNodeValue,
+  attributes: Record<string, string>,
+  label: string | undefined,
+  takesPointer: boolean,
+): HtmlNode {
+  const fill = fills(child);
+  const cap = capsAt(child);
+  const host = element('div', {
+    width: fill.width ? '100%' : 'fit-content',
+    'max-width': sizeValue(cap),
+    'pointer-events': takesPointer ? 'auto' : undefined,
+    height: fill.height ? '100%' : undefined,
+  });
+  for (const [name, value] of Object.entries(attributes)) host.attributes[name] = value;
+  if (label) host.attributes['aria-label'] = label;
+  return host;
+}
+
+/** The ARIA roles of the controls a merge's stop becomes (C# twin: MergedReading's ControlRoles). */
+const MERGE_CONTROL_ROLES = new Set([
+  'button', 'link', 'textbox', 'searchbox', 'slider', 'checkbox', 'switch', 'gridcell', 'radio', 'tab',
+  'menuitem', 'menuitemcheckbox', 'menuitemradio', 'option', 'combobox', 'treeitem',
+]);
+
+/**
+ * How a merge is written into the markup it lowered (C# twin: MergedReading, whose summary says why).
+ * The subtree is cut into the parts a reader would have stopped on, a layout element walked into, so the
+ * parts of a row are named apart; each part with something to say is named by an id and hidden, and the first control, or the host as a group when there is none,
+ * names itself by them in reading order. Every element walked is REACHED INTO, so a component inside is
+ * never lowered again without the merge around it.
+ */
+function mergeReading(host: HtmlNode, child: HtmlNode, prefix: string): void {
+  const control = firstMergeControl(child);
+  const ids: string[] = [];
+  let next = 0;
+  const idOf = (node: HtmlNode, fresh: string): string => {
+    const id = node.attributes['id'];
+    if (id) return id;
+    node.attributes['id'] = fresh;
+    return fresh;
+  };
+  const collect = (node: HtmlNode): void => {
+    reachedInto(node);
+    if (node.tag === '#text' || mergeHidden(node)) return;
+    if (node === control) {
+      // A control an inner merge already named keeps the parts it was named by, its own id among them.
+      const inner = node.attributes['aria-labelledby'];
+      if (inner) ids.push(...inner.split(' ').filter((id) => id));
+      else ids.push(idOf(node, `${prefix}-c`));
+      return;
+    }
+    if (isMergeControl(node)) return;
+    const merged = node.attributes['aria-labelledby'];
+    if (merged) {
+      // An inner merge's group: its parts become this merge's, and the group is no stop of its own any more.
+      ids.push(...merged.split(' ').filter((id) => id));
+      delete node.attributes['aria-labelledby'];
+      delete node.attributes['role'];
+      return;
+    }
+    if (mergeHolds(node, control) || !readsAsOne(node)) {
+      for (const inner of node.children) collect(inner);
+      return;
+    }
+    if (!saysSomething(node)) return;
+    ids.push(idOf(node, `${prefix}-${next++}`));
+    node.attributes['aria-hidden'] = 'true';
+  };
+  collect(child);
+  if (control) {
+    // Only its own name: nothing to join, so the control is read as it was.
+    if (ids.length > 1) control.attributes['aria-labelledby'] = ids.join(' ');
+  } else if (ids.length > 0) {
+    host.attributes['role'] = 'group';
+    host.attributes['aria-labelledby'] = ids.join(' ');
+  }
+}
+
+/** An element a person operates: its written role is a control's, or, with none, its tag is one. */
+function isMergeControl(node: HtmlNode): boolean {
+  const role = node.attributes['role'];
+  if (role !== undefined) return MERGE_CONTROL_ROLES.has(role.split(' ').filter((token) => token)[0] ?? '');
+  switch (node.tag) {
+    case 'button':
+    case 'textarea':
+    case 'select':
+      return true;
+    case 'a':
+      return node.attributes['href'] !== undefined;
+    case 'input':
+      return node.attributes['type'] !== 'hidden';
+    default:
+      return false;
+  }
+}
+
+function mergeHidden(node: HtmlNode): boolean {
+  return node.attributes['aria-hidden'] === 'true' || node.attributes['hidden'] !== undefined;
+}
+
+function firstMergeControl(node: HtmlNode): HtmlNode | null {
+  if (node.tag === '#text' || mergeHidden(node)) return null;
+  if (isMergeControl(node)) return node;
+  for (const inner of node.children) {
+    const found = firstMergeControl(inner);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Whether an element must be walked into rather than be a part: it holds a control, which a hidden part
+ *  would hide with it, or something a reader already passes over (C# twin: Holds). */
+function mergeHolds(node: HtmlNode, control: HtmlNode | null): boolean {
+  return node.children.some(
+    (inner) =>
+      inner.tag !== '#text' &&
+      (inner === control || isMergeControl(inner) || mergeHidden(inner) || mergeHolds(inner, control)),
+  );
+}
+
+/** The roles that group what they hold, walked into like a layout element (C# twin: ContainerRoles). */
+const MERGE_CONTAINER_ROLES = new Set([
+  'group', 'status', 'log', 'alert', 'list', 'listbox', 'table', 'grid', 'row', 'rowgroup', 'tablist',
+  'radiogroup', 'dialog', 'alertdialog', 'tree', 'region', 'none', 'presentation',
+]);
+
+/** Whether an element is one part: it holds only text, it is named by a label, it is an image, or it has a
+ *  role of its own that does not group what it holds (C# twin: ReadsAsOne). */
+function readsAsOne(node: HtmlNode): boolean {
+  const role = node.attributes['role'];
+  if (role !== undefined) return !MERGE_CONTAINER_ROLES.has(role.split(' ').filter((token) => token)[0] ?? '');
+  if (node.attributes['aria-label'] || node.attributes['alt']) return true;
+  return node.tag === 'img' || (node.children.length > 0 && node.children.every((inner) => inner.tag === '#text'));
+}
+
+/** Whether a part has a word for a reader: text, or an element named by a label. */
+function saysSomething(node: HtmlNode): boolean {
+  if (node.tag === '#text') return (node.textContent ?? '').trim().length > 0;
+  if (mergeHidden(node)) return false;
+  if (node.attributes['aria-label'] || node.attributes['alt']) return true;
+  return node.children.some(saysSomething);
 }
 
 /**
@@ -4868,26 +5262,26 @@ function lowerGroup(node: GroupNode, context: LoweringContext, path: string): Ht
  * Tab stop, so the browser's own focus order matches the native one.
  */
 function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: string): HtmlNode {
-  const fill = fills(node.child);
-  const cap = capsAt(node.child);
-  const host = element('div', {
-    // Same rule as lowerProgress, and it bites harder here: this host is a TAB STOP, so a block div
-    // stretched to the container draws the focus ring around empty space beside the control.
-    width: fill.width ? '100%' : 'fit-content',
-    'max-width': sizeValue(cap),
-    'pointer-events': 'auto',
-    height: fill.height ? '100%' : undefined,
-  });
   const role = node.role ?? 'slider';
   // ARIA pairs the role with the value, so BOTH halves are derived here rather than copied (C# twin:
-  // WebLoweringVisitor's AriaRole). The value is the SLIDER role's and no other's, and a slider with
-  // no value is not one: role="slider" REQUIRES aria-valuenow, so it announces `group` — a focusable
+  // WebLoweringVisitor's AriaRole). The value is a SLIDER's or a SEPARATOR's and no other role's, and
+  // one with no value is neither: both REQUIRE aria-valuenow, so it announces `group` — a focusable
   // container the arrows adjust, with no position of its own. Deriving it here is what makes the
   // rule unoutrunnable, since the component library is not the only way an adjustable node is built.
-  const value = role === 'slider' ? node.value : undefined;
-  host.attributes['role'] = role === 'slider' && !value ? 'group' : role;
-  host.attributes['tabindex'] = '0';
-  if (node.label) host.attributes['aria-label'] = node.label;
+  const valued = role === 'slider' || role === 'separator';
+  const value = valued ? node.value : undefined;
+  const host = semanticsHost(
+    node.child,
+    { role: valued && !value ? 'group' : role, tabindex: '0' },
+    node.label,
+    true,
+  );
+  // The orientation a reader hears (C# twin: AriaOrientation), only on a host that IS a slider or a
+  // separator. A separator is the line between two things, across the axis it moves on, and ARIA's
+  // default for it is horizontal, so it is always written; a horizontal slider writes nothing.
+  const vertical = node.axis === 'vertical';
+  if (value && role === 'separator') host.attributes['aria-orientation'] = vertical ? 'horizontal' : 'vertical';
+  else if (value && vertical) host.attributes['aria-orientation'] = 'vertical';
   // The VALUE, for a role that has one (C# twin: LowerAdjustable). role="slider" REQUIRES
   // aria-valuenow, so the host emitted invalid ARIA until this existed — a name and no number. The
   // bounds go with it or the number is read against ARIA's own 0-100 default, which no slider here
@@ -4903,9 +5297,9 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
   }
   if (node.onAdjust) {
     const adjust = node.onAdjust;
-    // A slider's vertical axis is VALUE (up increases); a radiogroup's or tablist's is READING
-    // ORDER (down is next) — WAI-ARIA's own split, one mapping per role family.
-    const downIsNext = role !== 'slider';
+    // A slider's or a separator's vertical axis is VALUE (up increases); a radiogroup's or tablist's is
+    // READING ORDER (down is next) — WAI-ARIA's own split, one mapping per role family.
+    const downIsNext = !valued;
     host.events['keydown'] = ((event: KeyboardEvent) => {
       const direction =
         event.key === 'ArrowRight'
@@ -4929,6 +5323,30 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;
+}
+
+/** What a composite keeps between renders: the focus version it was last built with, and its host. */
+class CompositeFocusState implements NodeState {
+  /** Disposed when its position leaves the tree (`node-states.ts`). */
+  static readonly $interfaces = DISPOSABLE;
+
+  built: number | null = null;
+  host: HTMLElement | null = null;
+
+  dispose(): void {
+    this.host = null;
+  }
+}
+
+/** Gives a composite's host the keyboard once the render that asked for it is in the page: the field it
+ * replaces must be gone first, or its blur would answer after the focus moved. */
+function focusCompositeAfterRender(state: CompositeFocusState): void {
+  const focus = () => {
+    const host = state.host;
+    if (host?.isConnected && document.activeElement !== host) host.focus({ preventScroll: true });
+  };
+  if (typeof queueMicrotask === 'function') queueMicrotask(focus);
+  else setTimeout(focus, 0);
 }
 
 /** The id a cell answers to for aria-activedescendant — the C# twin builds the same string. */
@@ -4990,10 +5408,28 @@ function lowerNavigable(node: NavigableNode, context: LoweringContext, path: str
       node.activeCell[1],
     );
 
+  // The keyboard back to the composite's stop when a version higher than the one it was last built with
+  // arrives: a field inside it closed (C# twin: PhotonHost's focus versions). The first build only records
+  // the version, so a composite mounted with any version takes nothing.
+  if (typeof document !== 'undefined') {
+    const state = nodeStateFor(positionOf(context.frame, node), CompositeFocusState);
+    const version = node.focusVersion ?? 0;
+    const built = state.built;
+    state.built = version;
+    host.events['eq:mounted'] = ((element: HTMLElement) => {
+      state.host = element;
+    }) as unknown as EventHandler;
+    if (built !== null && version > built) focusCompositeAfterRender(state);
+  }
+
   if (node.onMove) {
     const move = node.onMove;
     const search = node.onTextSearch ?? null;
     host.events['keydown'] = ((event: KeyboardEvent) => {
+      // A key typed into a field inside the composite (a tree's rename field) is the field's: an arrow
+      // moves its caret and a letter is typed, and neither moves the composite. Only a FIELD: a grid's
+      // cell a press focused still sends its keys up to the composite, as it always did.
+      if (typedIntoAField(event)) return;
       const which = navigableMove(event);
       if (which !== null) {
         // An arrow that also scrolls the page is two answers to one key.
@@ -5049,6 +5485,15 @@ function numberCells(
     counter.next++;
   }
   for (const child of node.children ?? []) numberCells(child as HtmlNode, role, scope, row, counter);
+}
+
+/** Whether an event's target is a text field (or inside one): what it receives is the field's, never the
+ * composite's or the item's around it. */
+function typedIntoAField(event: Event): boolean {
+  const target = event.target as Element | null;
+  return (
+    target?.closest?.('input, textarea, select, [contenteditable="true"], [contenteditable=""]') != null
+  );
 }
 
 /** Whether a key press is a character a composite searches with (C# twin: `IsTextSearch`): one
@@ -5139,14 +5584,45 @@ function buildsItsOwnNode(node: unknown): boolean {
  * every component already, through the owner's boundary and its bound, so the walk ends wherever
  * the chain of components does.
  */
-function resolveStackChild(child: VisualNodeValue, context: LoweringContext): VisualNodeValue | null {
+function resolveStackChild(
+  child: VisualNodeValue,
+  context: LoweringContext,
+): { node: VisualNodeValue; position: Position | null } | null {
+  // Each step of a chain of components is read inside the position the step before it found, as a
+  // component's own lowering reads it, so the chain descends to where its engine stopped it, and what
+  // the last one built is lowered inside that last position (C# twin, #1544).
+  const frame = frameOf(context);
   let node = child;
+  let position: Position | null = null;
   while (buildsItsOwnNode(node)) {
-    const { built } = frameOf(context).at(node);
-    if (!built) return null;
-    node = built as unknown as VisualNodeValue;
+    const at: VisualNodeValue = node;
+    const step: ComponentPosition = frame.within(position, () => frame.at(at));
+    if (!step.built) return null;
+    node = step.built as unknown as VisualNodeValue;
+    position = step.position;
   }
-  return node;
+  return { node, position };
+}
+
+/**
+ * A value for a subtree, lowered as its child one step down (C# `Visit(InheritedComponent)`). A
+ * `Directionality` is the one the page itself hears (#1568): it writes `dir` on its child's own element,
+ * so every start and end the subtree writes as logical CSS mirrors under it, and a direction that changes
+ * rewrites one attribute. It adds no element, which would take what a parent writes on its child; an
+ * element that already says its direction keeps it, so the nearest `Directionality` wins.
+ */
+function lowerInherited(
+  node: InheritedNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode | null {
+  const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
+  const direction = directionSetBy(node);
+  if (direction !== null && child && child.tag !== '#text' && child.attributes['dir'] === undefined) {
+    child.attributes['dir'] = direction === 'rightToLeft' ? 'rtl' : 'ltr';
+  }
+  return child;
 }
 
 /**
@@ -5404,17 +5880,52 @@ function liveInEnclosingArms(): (() => boolean) | undefined {
 /**
  * Spec S6 mirror of the C# LowerAdaptive: every declared variant gated by the fixed media rules,
  * each arm lowered by `place` — the rule of the parent that lays it out.
+ *
+ * WHERE THE DOCUMENT HOLDS ONE ARM (#1783), the node's position holds the arm the window resolves and
+ * no other, and that arm is lowered alone, with no gate: the engine chose it for the window's width,
+ * and a gate whose media query disagreed by a fraction of a pixel would show nothing. Each arm's box is
+ * keyed by its index, the same in both cases, so the render after hydration keeps the shown arm's DOM
+ * and takes the others out, and a window crossing a threshold swaps one box for the other.
  */
 function lowerAdaptive(
   node: AdaptiveNodeValue,
   path: string,
   place: (arm: VisualNodeValue, path: string) => HtmlNode | null,
+  context: LoweringContext,
 ): HtmlNode {
   if (!node.medium && !node.expanded) {
     return place(node.compact, path + '/0') ?? element('div', { display: 'contents' });
   }
+  const mediumFrom = node.mediumFrom ?? 600;
+  const expandedFrom = node.expandedFrom ?? 840;
+  if (node.medium) noteThreshold(mediumFrom);
+  if (node.expanded) noteThreshold(expandedFrom);
   const wrapper = element('div', { display: 'contents' });
+  const position = context.frame?.elementAt(node) ?? null;
+  // Where every arm is held, each declared arm is lowered, and one the frame has no position for fails
+  // as any component the frame did not build does; only an owner holding one arm leaves arms out.
+  const holds = (index: number): boolean =>
+    position === null || position.owner.holdsEveryArm || position.childAt(index) !== null;
+  if (position !== null && !position.owner.holdsEveryArm) {
+    const arms = [node.compact, node.medium, node.expanded];
+    const held = [0, 1, 2].filter((index) => arms[index] && holds(index));
+    if (held.length === 1) {
+      const shown = held[0];
+      const lowered = place(arms[shown]!, `${path}/${shown}`);
+      if (lowered) {
+        const box = element('div', { display: 'contents' });
+        box.key = `arm${shown}`;
+        box.children.push(lowered);
+        wrapper.children.push(box);
+      }
+      return wrapper;
+    }
+  }
   const addVariant = (variant: VisualNodeValue, gate: string, index: number) => {
+    // A position that holds its arms one at a time is lowered above; one that still holds more (a render
+    // that rebuilt only what was marked, right after the document stopped holding every arm) draws the
+    // ones it holds, gated, until the page renders whole.
+    if (!holds(index)) return;
     // Every declared arm is MOUNTED and only one is shown, so what an arm subscribes to has to know
     // which gate it sits behind — Photon lays out the one arm, and nothing in the others exists.
     const outer = enclosingGates;
@@ -5429,6 +5940,7 @@ function lowerAdaptive(
     ensureAdaptiveGate(gate);
     wrapper.children.push({
       tag: 'div',
+      key: `arm${index}`,
       attributes: { class: gate },
       events: {},
       children: [lowered],
@@ -5436,8 +5948,6 @@ function lowerAdaptive(
   };
   // Ranges chain off the DECLARED variants and this node's thresholds (C# twin) — a design that
   // switches at 1024 gets 1024 gates, not the spec's 600/840.
-  const mediumFrom = node.mediumFrom ?? 600;
-  const expandedFrom = node.expandedFrom ?? 840;
   addVariant(node.compact, gateCompactUntil(node.medium ? mediumFrom : expandedFrom), 0);
   if (node.medium)
     addVariant(node.medium, gateMediumFrom(mediumFrom, node.expanded ? expandedFrom : 0), 1);
@@ -5472,7 +5982,7 @@ function lowerGrid(grid: GridNode, context: LoweringContext, path: string): Html
     width: sizeValue(grid.width),
     height: sizeValue(grid.height, true),
     'flex-shrink': rigid(grid.width, grid.height),
-    padding: grid.padding && !isZeroInsets(grid.padding) ? paddingValue(grid.padding) : undefined,
+    ...paddingEntries(grid.padding),
   });
   const item = (child: VisualNodeValue, childPath: string) =>
     lowerGridItem(child, context, childPath);
@@ -5542,6 +6052,15 @@ function textControlOf(node: HtmlNode): HtmlNode | null {
 }
 
 /** Puts the caret of a text control at the end of its text; a control with no selection keeps none. */
+/** Selects all of an entry's text, the caret at its end (`TextEntry.SelectOnFocus`). */
+function selectAll(element: HTMLInputElement | HTMLTextAreaElement): void {
+  try {
+    element.setSelectionRange(0, element.value.length);
+  } catch {
+    // An input whose type has no selection (a number, an email) throws, and has nothing to select.
+  }
+}
+
 function caretAtEnd(element: HTMLInputElement | HTMLTextAreaElement): void {
   const end = element.value.length;
   try {
@@ -5629,6 +6148,40 @@ function showCursorAfterRender(rest: CodeRest): void {
 }
 
 /**
+ * What hears the raw pointer over a subtree (#1562, the C# LowerListener twin): the same layout-transparent div as a
+ * context target, marked `data-eq-listener` with its behaviour, which the pointer controller (dom/pointer-listener.ts)
+ * hit-tests and tells as `eq-pointer`, turned here into the C# callback of the event's phase.
+ */
+function lowerListener(node: ListenerNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const cap = capsAt(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : undefined,
+    'max-width': sizeValue(cap),
+    'pointer-events': 'auto',
+    height: fill.height ? '100%' : undefined,
+  });
+  host.attributes['data-eq-listener'] =
+    node.behavior === 'opaque' ? 'opaque' : node.behavior === 'translucent' ? 'translucent' : 'defer';
+  const callbacks: Partial<Record<string, ((event: HeardPointer) => void) | null | undefined>> = {
+    down: node.onPointerDown,
+    move: node.onPointerMove,
+    up: node.onPointerUp,
+    cancel: node.onPointerCancel,
+    hover: node.onPointerHover,
+    scroll: node.onPointerScroll,
+  };
+  host.events['eq-pointer'] = ((ev: Event) => {
+    const heard = (ev as CustomEvent<HeardPointer>).detail;
+    callbacks[heard.phase]?.(heard);
+  }) as unknown as EventHandler;
+  installPointerListener();
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
+/**
  * What a person can ask the menu of (#1531, the C# LowerContextTarget twin): the same layout-transparent div as a
  * drop area, marked `data-eq-context`, whose request the context controller (dom/context-request.ts) dispatches as
  * `eq-context-requested`, turned here into the C# callback.
@@ -5700,7 +6253,33 @@ function lowerSortable(
     }
   }
   if (node.nests) child.attributes['data-eq-sort-nests'] = '1';
+  // A list whose items have depths (#1594): how far across the axis one depth is indented. C# twin: LowerSortable.
+  // A finite indent above 0, the rule SortPlacement.HasDepths states (the lowering cannot import the twin).
+  if (node.indent !== undefined && Number.isFinite(node.indent) && node.indent > 0)
+    child.attributes['data-eq-sort-indent'] = num(node.indent);
   if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
+  // The words a reader hears while the keyboard sorts (#1564), which the controller reads from the list the item
+  // was picked up from. A list with none says nothing. C# twin: LowerSortable.
+  const words = node.announcements;
+  if (words) {
+    child.attributes['data-eq-sort-say-instructions'] = words.instructions;
+    child.attributes['data-eq-sort-say-picked-up'] = words.pickedUp;
+    child.attributes['data-eq-sort-say-moved'] = words.moved;
+    child.attributes['data-eq-sort-say-moved-into'] = words.movedInto;
+    child.attributes['data-eq-sort-say-refused'] = words.refused;
+    child.attributes['data-eq-sort-say-dropped'] = words.dropped;
+    child.attributes['data-eq-sort-say-dropped-into'] = words.droppedInto;
+    child.attributes['data-eq-sort-say-put-back'] = words.putBack;
+  }
+  // The list's own look of a carried item (#1602), each member it sets, which the controller lays over the browser's
+  // theme when it lifts an item from this list. A list with no style of its own writes none. C# twin: LowerSortable.
+  const own = node.style;
+  if (own) {
+    if (own.liftedOpacity != null) child.attributes['data-eq-sort-look-lifted'] = num(own.liftedOpacity);
+    if (own.copyOpacity != null) child.attributes['data-eq-sort-look-copy-opacity'] = num(own.copyOpacity);
+    if (own.copyElevation != null) child.attributes['data-eq-sort-look-copy-elevation'] = String(own.copyElevation);
+    if (own.maxLean != null) child.attributes['data-eq-sort-look-lean'] = num(own.maxLean);
+  }
   const dropped = node.onDropped;
   child.events['eq-sort-dropped'] = ((ev: Event) =>
     dropped((ev as CustomEvent<SortDropValue>).detail)) as unknown as EventHandler;
@@ -5737,6 +6316,10 @@ function lowerSortableItem(
   if (!child) return null;
   replaceAtomicDeclaration(child, 'pointer-events', 'auto');
   child.attributes['data-eq-sort-item'] = node.id;
+  // The name the keyboard's steps say, when the item has one of its own (#1538; C# twin: LowerSortableItem).
+  if (node.name) child.attributes['data-eq-sort-name'] = node.name;
+  // The item's depth in a list whose items have depths (#1594); 0, the top, is written as nothing.
+  if (node.depth !== undefined && node.depth > 0) child.attributes['data-eq-sort-depth'] = String(node.depth);
   if (node.enabled === false) child.attributes['data-eq-sort-off'] = '1';
   // The keyboard sorts an item from its focus (#1536): one that takes none of its own becomes a Tab stop
   // (the C# twin decides by the same tags).

@@ -1,4 +1,4 @@
-import { $eq, CodeCommandValue, CodeEditorController, CodeKeyBinding, KeyboardConventionValue, KeyChord } from "../runtime-exports";
+import { $CodeCommandValue, $eq, $KeyboardConventionValue, CodeEditorController, CodeKeyBinding, KeyChord } from "../runtime-exports";
 
 export class CodeKeymap {
     static $slots: any = null;
@@ -37,15 +37,15 @@ export class CodeKeymap {
         CodeKeymap.$init().standardBindings = value;
     }
 
-    static defaults(convention: KeyboardConventionValue) {
+    static defaults(convention: $KeyboardConventionValue) {
         return [...CodeKeymap.table(convention)];
     }
 
-    static table(convention: KeyboardConventionValue) {
+    static table(convention: $KeyboardConventionValue) {
         return convention === 'apple' ? CodeKeymap.appleBindings : CodeKeymap.standardBindings;
     }
 
-    static handle(editor: CodeEditorController, key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any = null) {
+    static handle(editor: CodeEditorController, key: string, modifiers: number, convention: $KeyboardConventionValue, clipboard: any = null) {
         if (key !== 'Tab' && key !== 'Escape' && !CodeKeymap.isModifierKey(key)) editor.tabMovesFocus = false;
         if (CodeKeymap.isModifierKey(key)) return false;
         let first = editor.pendingChord;
@@ -55,7 +55,7 @@ export class CodeKeymap {
         let waited: any; 
         if ((waited = first) != null) {
             let completes = false;
-            for (const binding of bindings) {
+            for (const binding of $eq.collections.sequenceWalk(bindings)) {
                 let starts: any; 
                 if (!((starts = binding.first) != null) || !CodeKeymap.matches(starts, waited) || !CodeKeymap.matches(binding.chord, chord)) continue;
                 completes = true;
@@ -63,7 +63,7 @@ export class CodeKeymap {
             }
             if (completes) return true;
         }
-        for (const binding of bindings) {
+        for (const binding of $eq.collections.sequenceWalk(bindings)) {
             let starts: any; 
             if ((starts = binding.first) != null) {
                 if (!CodeKeymap.matches(starts, chord) || !editor.canExecute(binding.command)) continue;
@@ -75,14 +75,32 @@ export class CodeKeymap {
         return false;
     }
 
-    static bindings(editor: CodeEditorController, convention: KeyboardConventionValue) {
+    static claims(editor: CodeEditorController, chord: KeyChord, convention: $KeyboardConventionValue) {
+        if (CodeKeymap.isModifierKey(chord.key)) return false;
+        let bindings = CodeKeymap.bindings(editor, convention);
+        let waited: any; 
+        if ((waited = editor.pendingChord) != null) {
+            for (const binding of $eq.collections.sequenceWalk(bindings)) { let starts: any; if ((starts = binding.first) != null && CodeKeymap.matches(starts, waited) && CodeKeymap.matches(binding.chord, chord)) return true; }
+        }
+        for (const binding of $eq.collections.sequenceWalk(bindings)) {
+            let starts: any; 
+            if ((starts = binding.first) != null) {
+                if (CodeKeymap.matches(starts, chord) && editor.canExecute(binding.command)) return true;
+                continue;
+            }
+            if (CodeKeymap.matches(binding.chord, chord) && editor.canExecute(binding.command)) return true;
+        }
+        return false;
+    }
+
+    static bindings(editor: CodeEditorController, convention: $KeyboardConventionValue) {
         let defaults = CodeKeymap.table(convention);
         let own = editor.keyBindings;
         if ($eq.collections.count(own) === 0) return defaults;
         let bindings: CodeKeyBinding[] = $eq.collections.listCopy(own);
-        for (const binding of defaults) {
+        for (const binding of $eq.collections.listWalk(defaults)) {
             let named = false;
-            for (const mine of own) {
+            for (const mine of $eq.collections.sequenceWalk(own)) {
                 let sameChord = CodeKeymap.matches(mine.chord, binding.chord) && CodeKeymap.sameFirst(mine.first, binding.first);
                 let starts: any; 
                 let startsOnMine = mine.first == null && (starts = binding.first) != null && CodeKeymap.matches(mine.chord, starts);
@@ -90,7 +108,7 @@ export class CodeKeymap {
                 named = true;
                 break;
             }
-            if (!named) bindings.push(binding);
+            if (!named) $eq.collections.listAdd(bindings, binding);
         }
         return bindings;
     }
@@ -112,7 +130,7 @@ export class CodeKeymap {
         return (((((((key === 'Shift' || key === 'Control') || key === 'Alt') || key === 'Meta') || key === 'AltGraph') || key === 'CapsLock') || key === 'Fn') || key === 'OS');
     }
 
-    static bind(key: string, modifiers: number, command: CodeCommandValue) {
+    static bind(key: string, modifiers: number, command: $CodeCommandValue) {
         return new CodeKeyBinding(new KeyChord(key, modifiers), command);
     }
 
@@ -126,35 +144,35 @@ export class CodeKeymap {
         let $n0: CodeKeyBinding; let $n1: CodeKeyBinding; let $n2: CodeKeyBinding; let $n3: CodeKeyBinding; let $n4: CodeKeyBinding; let $n5: CodeKeyBinding; 
         let bindings = [CodeKeymap.bind('ArrowDown', none, 'completionNext'), CodeKeymap.bind('ArrowUp', none, 'completionPrevious'), CodeKeymap.bind('PageDown', none, 'completionNextPage'), CodeKeymap.bind('PageUp', none, 'completionPreviousPage'), CodeKeymap.bind('Tab', none, 'completionAccept'), CodeKeymap.bind('Enter', none, 'completionAcceptChangingText'), CodeKeymap.bind(' ', command, 'completionShow'), CodeKeymap.bind(' ', control, 'completionShow'), CodeKeymap.bind(' ', shift | command, 'signatureHelpShow'), CodeKeymap.bind(' ', shift | control, 'signatureHelpShow'), CodeKeymap.bind('ArrowDown', none, 'signatureHelpNext'), CodeKeymap.bind('ArrowUp', none, 'signatureHelpPrevious'), CodeKeymap.bind('ArrowDown', alt, 'signatureHelpNext'), CodeKeymap.bind('ArrowUp', alt, 'signatureHelpPrevious'), ($n0 = new CodeKeyBinding(new KeyChord('i', command), 'hoverShow'), $n0.first = new KeyChord('k', command), $n0), CodeKeymap.bind('F8', none, 'problemNext'), CodeKeymap.bind('F8', shift, 'problemPrevious'), CodeKeymap.bind('Escape', none, 'completionHide'), CodeKeymap.bind('Escape', none, 'hoverHide'), CodeKeymap.bind('Escape', none, 'signatureHelpHide'), CodeKeymap.bind('Escape', none, 'leaveSnippet'), CodeKeymap.bind('Escape', none, 'removeSecondaryCursors'), CodeKeymap.bind('Escape', none, 'releaseKeyboard'), CodeKeymap.bind('Escape', shift, 'completionHide'), CodeKeymap.bind('Escape', shift, 'hoverHide'), CodeKeymap.bind('Escape', shift, 'signatureHelpHide'), CodeKeymap.bind('Escape', shift, 'leaveSnippet'), CodeKeymap.bind('Escape', shift, 'removeSecondaryCursors'), CodeKeymap.bind('Escape', shift, 'releaseKeyboard'), CodeKeymap.bind('a', command, 'selectAll'), CodeKeymap.bind('z', command, 'undo'), CodeKeymap.bind('z', shift | command, 'redo'), CodeKeymap.bind('y', command, 'redo'), CodeKeymap.bind('c', command, 'copy'), CodeKeymap.bind('x', command, 'cut'), CodeKeymap.bind('v', command, 'paste'), CodeKeymap.bind('/', command, 'toggleLineComment'), CodeKeymap.bind('/', shift | command, 'toggleLineComment'), CodeKeymap.bind('Slash', command, 'toggleLineComment'), CodeKeymap.bind('Slash', shift | command, 'toggleLineComment'), CodeKeymap.bind('ArrowLeft', none, 'cursorLeft'), CodeKeymap.bind('ArrowLeft', shift, 'cursorLeftSelect'), CodeKeymap.bind('ArrowRight', none, 'cursorRight'), CodeKeymap.bind('ArrowRight', shift, 'cursorRightSelect'), CodeKeymap.bind('ArrowUp', none, 'cursorUp'), CodeKeymap.bind('ArrowUp', shift, 'cursorUpSelect'), CodeKeymap.bind('ArrowDown', none, 'cursorDown'), CodeKeymap.bind('ArrowDown', shift, 'cursorDownSelect'), CodeKeymap.bind('ArrowLeft', word, 'cursorWordLeft'), CodeKeymap.bind('ArrowLeft', shift | word, 'cursorWordLeftSelect'), CodeKeymap.bind('ArrowRight', word, 'cursorWordRight'), CodeKeymap.bind('ArrowRight', shift | word, 'cursorWordRightSelect'), CodeKeymap.bind('Home', none, 'cursorLineStart'), CodeKeymap.bind('Home', shift, 'cursorLineStartSelect'), CodeKeymap.bind('End', none, 'cursorLineEnd'), CodeKeymap.bind('End', shift, 'cursorLineEndSelect'), CodeKeymap.bind('Home', command, 'cursorDocumentStart'), CodeKeymap.bind('Home', shift | command, 'cursorDocumentStartSelect'), CodeKeymap.bind('End', command, 'cursorDocumentEnd'), CodeKeymap.bind('End', shift | command, 'cursorDocumentEndSelect'), CodeKeymap.bind('PageUp', none, 'cursorPageUp'), CodeKeymap.bind('PageUp', shift, 'cursorPageUpSelect'), CodeKeymap.bind('PageDown', none, 'cursorPageDown'), CodeKeymap.bind('PageDown', shift, 'cursorPageDownSelect'), CodeKeymap.bind('Enter', none, 'newLine'), CodeKeymap.bind('Enter', shift, 'newLine'), CodeKeymap.bind('Backspace', none, 'deleteLeft'), CodeKeymap.bind('Backspace', shift, 'deleteLeft'), CodeKeymap.bind('Backspace', word, 'deleteWordLeft'), CodeKeymap.bind('Delete', none, 'deleteRight'), CodeKeymap.bind('Delete', word, 'deleteWordRight'), CodeKeymap.bind('Tab', none, 'nextTabStop'), CodeKeymap.bind('Tab', shift, 'previousTabStop'), CodeKeymap.bind('Tab', none, 'indent'), CodeKeymap.bind('Tab', shift, 'outdent'), CodeKeymap.bind('ArrowUp', alt, 'moveLinesUp'), CodeKeymap.bind('ArrowDown', alt, 'moveLinesDown'), CodeKeymap.bind('ArrowUp', shift | alt, 'copyLinesUp'), CodeKeymap.bind('ArrowDown', shift | alt, 'copyLinesDown'), CodeKeymap.bind('k', shift | command, 'deleteLines'), CodeKeymap.bind('Enter', command, 'insertLineBelow'), CodeKeymap.bind('Enter', shift | command, 'insertLineAbove'), CodeKeymap.bind('ArrowUp', alt | command, 'addCursorAbove'), CodeKeymap.bind('ArrowDown', alt | command, 'addCursorBelow'), CodeKeymap.bind('d', command, 'addNextOccurrence'), CodeKeymap.bind('l', shift | command, 'selectAllOccurrences'), CodeKeymap.bind('o', shift | command, 'goToSymbol'), CodeKeymap.bind('F12', none, 'goToDefinition'), CodeKeymap.bind('F12', command, 'goToImplementation'), CodeKeymap.bind('F12', shift, 'findReferences'), CodeKeymap.bind('F4', none, 'nextReference'), CodeKeymap.bind('F4', shift, 'previousReference'), ($n1 = new CodeKeyBinding(new KeyChord('[', command), 'foldRecursively'), $n1.first = new KeyChord('k', command), $n1), ($n2 = new CodeKeyBinding(new KeyChord(']', command), 'unfoldRecursively'), $n2.first = new KeyChord('k', command), $n2), ($n3 = new CodeKeyBinding(new KeyChord('l', command), 'toggleFold'), $n3.first = new KeyChord('k', command), $n3), ($n4 = new CodeKeyBinding(new KeyChord('0', command), 'foldAll'), $n4.first = new KeyChord('k', command), $n4), ($n5 = new CodeKeyBinding(new KeyChord('j', command), 'unfoldAll'), $n5.first = new KeyChord('k', command), $n5)];
         if (apple) {
-            bindings.push(CodeKeymap.bind('g', control, 'goToLine'));
-            bindings.push(CodeKeymap.bind('-', control, 'navigateBack'));
-            bindings.push(CodeKeymap.bind('Minus', control, 'navigateBack'));
-            bindings.push(CodeKeymap.bind('-', shift | control, 'navigateForward'));
-            bindings.push(CodeKeymap.bind('_', shift | control, 'navigateForward'));
-            bindings.push(CodeKeymap.bind('Minus', shift | control, 'navigateForward'));
-            bindings.push(CodeKeymap.bind('ArrowLeft', command, 'cursorLineStart'));
-            bindings.push(CodeKeymap.bind('ArrowLeft', shift | command, 'cursorLineStartSelect'));
-            bindings.push(CodeKeymap.bind('ArrowRight', command, 'cursorLineEnd'));
-            bindings.push(CodeKeymap.bind('ArrowRight', shift | command, 'cursorLineEndSelect'));
-            bindings.push(CodeKeymap.bind('ArrowUp', command, 'cursorDocumentStart'));
-            bindings.push(CodeKeymap.bind('ArrowUp', shift | command, 'cursorDocumentStartSelect'));
-            bindings.push(CodeKeymap.bind('ArrowDown', command, 'cursorDocumentEnd'));
-            bindings.push(CodeKeymap.bind('ArrowDown', shift | command, 'cursorDocumentEndSelect'));
-            bindings.push(CodeKeymap.bind('Backspace', command, 'deleteToLineStart'));
-            bindings.push(CodeKeymap.bind('j', control, 'joinLines'));
-            bindings.push(CodeKeymap.bind('j', command, 'joinLines'));
-            bindings.push(CodeKeymap.bind('[', alt | command, 'fold'));
-            bindings.push(CodeKeymap.bind('“', alt | command, 'fold'));
-            bindings.push(CodeKeymap.bind(']', alt | command, 'unfold'));
-            bindings.push(CodeKeymap.bind('‘', alt | command, 'unfold'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('g', control, 'goToLine'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('-', control, 'navigateBack'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('Minus', control, 'navigateBack'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('-', shift | control, 'navigateForward'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('_', shift | control, 'navigateForward'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('Minus', shift | control, 'navigateForward'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('ArrowLeft', command, 'cursorLineStart'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('ArrowLeft', shift | command, 'cursorLineStartSelect'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('ArrowRight', command, 'cursorLineEnd'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('ArrowRight', shift | command, 'cursorLineEndSelect'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('ArrowUp', command, 'cursorDocumentStart'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('ArrowUp', shift | command, 'cursorDocumentStartSelect'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('ArrowDown', command, 'cursorDocumentEnd'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('ArrowDown', shift | command, 'cursorDocumentEndSelect'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('Backspace', command, 'deleteToLineStart'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('j', control, 'joinLines'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('j', command, 'joinLines'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('[', alt | command, 'fold'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('“', alt | command, 'fold'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind(']', alt | command, 'unfold'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('‘', alt | command, 'unfold'));
         } else {
-            bindings.push(CodeKeymap.bind('g', command, 'goToLine'));
-            bindings.push(CodeKeymap.bind('ArrowLeft', alt, 'navigateBack'));
-            bindings.push(CodeKeymap.bind('ArrowRight', alt, 'navigateForward'));
-            bindings.push(CodeKeymap.bind('[', shift | command, 'fold'));
-            bindings.push(CodeKeymap.bind('{', shift | command, 'fold'));
-            bindings.push(CodeKeymap.bind(']', shift | command, 'unfold'));
-            bindings.push(CodeKeymap.bind('}', shift | command, 'unfold'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('g', command, 'goToLine'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('ArrowLeft', alt, 'navigateBack'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('ArrowRight', alt, 'navigateForward'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('[', shift | command, 'fold'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('{', shift | command, 'fold'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind(']', shift | command, 'unfold'));
+            $eq.collections.listAdd(bindings, CodeKeymap.bind('}', shift | command, 'unfold'));
         }
         return bindings;
     }

@@ -423,7 +423,9 @@ public sealed partial class PhotonHost
         // Costs one length check in a frame with no live region, which is almost every frame.
         _announcer.Observe(_lastFrame, timeMs);
         AdoptAutofocus();
+        KeepModalFocus();
         AdoptFocusRequests();
+        AdoptCompositeFocus();
         // A subscribed frame ticker IS motion: frames keep flowing while anyone wants them, and the
         // loop goes idle the moment the last subscription is disposed. Motion builds nothing, as no
         // request does unless something marked a position. A position still waiting to build keeps
@@ -603,7 +605,8 @@ public sealed partial class PhotonHost
     /// <summary>
     /// Moves focus to the next ENABLED pressable in paint order (wrapping; spec: traversal = child
     /// order, depth-first — hit regions register in exactly that order). Returns false when the
-    /// frame has no focusable region.
+    /// frame has no focusable region. While a modal layer is shown, the walk stays inside the topmost
+    /// one and wraps there (#1066).
     /// </summary>
     public bool FocusNext() => MoveFocus(1);
 
@@ -630,11 +633,30 @@ public sealed partial class PhotonHost
             }
         }
 
+        // A modal layer holds the walk (#1066): the stops of the topmost one are the only ones Tab visits,
+        // and it wraps among them, as the web's focus trap cycles (focus-trap.ts). From a stop behind the
+        // layer, the walk goes on in paint order to the layer's first stop, or back to its last.
+        var trap = _lastFrame!.ModalLayerRoot();
         var start = current < 0 ? (step > 0 ? 0 : stops.Count - 1) : current + step;
-        var index = ((start % stops.Count) + stops.Count) % stops.Count;
-        var stop = stops[index];
+        for (var walked = 0; walked < stops.Count; walked++)
+        {
+            var index = (((start + walked * step) % stops.Count) + stops.Count) % stops.Count;
+            if (trap is null || Holds(trap, stops[index].Element)) return Land(stops[index]);
+        }
 
-        return Land(stop);
+        // A modal layer with nothing to stop on holds the keyboard all the same: nothing behind it takes
+        // the focus, as the web's trap focuses the layer itself.
+        EndEditing();
+        ClearFocus();
+        return true;
+    }
+
+    /// <summary>Whether <paramref name="element"/> is <paramref name="root"/> or under it.</summary>
+    private static bool Holds(Element root, Element element)
+    {
+        for (Element? at = element; at is not null && at.Depth >= root.Depth; at = at.Parent)
+            if (ReferenceEquals(at, root)) return true;
+        return false;
     }
 
     /// <summary>
@@ -1378,6 +1400,43 @@ public sealed partial class PhotonHost
     private readonly System.Runtime.CompilerServices.ConditionalWeakTable<ICodeSurfaceModel,
         System.Runtime.CompilerServices.StrongBox<int>> _focusRequests = new();
 
+    /// <summary>The focus version each composite's position was last built with (<see cref="Navigable.FocusVersion"/>).</summary>
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<Element,
+        System.Runtime.CompilerServices.StrongBox<int>> _compositeFocus = new();
+
+    /// <summary>
+    /// Gives a composite's one stop the keyboard when its <see cref="Navigable.FocusVersion"/> is higher than the
+    /// one its position was last built with: a field inside it closed, and the keyboard goes back where it came
+    /// from, as the web's host takes it. The first frame of a position only records the version. Nothing is
+    /// scrolled: the composite is where the person was.
+    /// </summary>
+    private void AdoptCompositeFocus()
+    {
+        if (_lastFrame is null) return;
+        var stops = _lastFrame.FocusStops;
+        for (var i = 0; i < stops.Count; i++)
+        {
+            var stop = stops[i];
+            if (stop.Grid is not { } grid) continue;
+            if (!_compositeFocus.TryGetValue(stop.Element, out var built))
+            {
+                _compositeFocus.Add(stop.Element, new System.Runtime.CompilerServices.StrongBox<int>(grid.FocusVersion));
+                continue;
+            }
+            if (grid.FocusVersion <= built.Value)
+            {
+                built.Value = grid.FocusVersion;
+                continue;
+            }
+            built.Value = grid.FocusVersion;
+            EndEditing();
+            _focused = null;
+            FocusOn(stop);
+            _focusVisible = true;
+            NeedsRender = true;
+        }
+    }
+
     private readonly System.Runtime.CompilerServices.ConditionalWeakTable<ISheetSurfaceModel,
         System.Runtime.CompilerServices.StrongBox<int>> _sheetFocusRequests = new();
 
@@ -1394,9 +1453,10 @@ public sealed partial class PhotonHost
         // a form where four boxes all look like the active one.
         if (changed) EndEditing();
         _textAt = field.Element;
-        // Where the pointer fell, or the end of the text when it arrived by Tab.
+        // Where the pointer fell, or the end of the text when it arrived by Tab — all of it selected when the
+        // field asks to be (TextEntry.SelectOnFocus), so what is typed first replaces it.
         Caret = caret ?? FieldText.Of(at, entry).Length;
-        _anchor = caret is null ? null : _caret;
+        _anchor = caret is null ? (entry.SelectOnFocus && _caret > 0 ? 0 : null) : _caret;
         _focused = null;
         ForgetFocus();
         if (changed) field.Entry.OnFocusChanged?.Invoke(true);
@@ -1989,6 +2049,7 @@ public sealed partial class PhotonHost
             for (var i = 0; i < links.Count; i++)
             {
                 if (links[i].Id != id) continue;
+                if (OpenedBeside(links[i])) return true;
                 if (_navigationRequested is null) return false;
                 _navigationRequested(links[i].Destination);
                 return true;
@@ -2092,6 +2153,8 @@ public sealed partial class PhotonHost
     public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse, KeyModifiers modifiers = KeyModifiers.None)
     {
         y += _lift;
+        // The listeners hear it beside everything below, which they change nothing of (#1562).
+        HearMove(new Point(x, y), kind, modifiers);
         MoveContext(new Point(x, y));
         // What the pointer holds is what a code surface hears with its hover (#1084): ⌘ over a name links it. Where it
         // is is kept through a drag, which hovers nothing, so a modifier changed after the release is heard there.
@@ -2352,6 +2415,8 @@ public sealed partial class PhotonHost
         y += _lift;
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
+        // The listeners under it hear the scroll, and the scroll views still take it (#1562).
+        HearScroll(point, across, down, modifiers);
         var leftAcross = across;
         var leftDown = down;
         var moved = false;
@@ -2621,6 +2686,8 @@ public sealed partial class PhotonHost
         _held = true;
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
+        // The listeners under the press hear it and follow it, beside the press itself (#1562).
+        HearDown(point, kind, PointerButtons.Primary, modifiers);
         // A press puts back an item the keyboard carries, wherever it lands (#1537).
         if (_sort is { ByKeyboard: true } carried) CancelSort(carried);
 
@@ -2884,6 +2951,7 @@ public sealed partial class PhotonHost
     /// </summary>
     public void PointerCancel(PointerKind kind = PointerKind.Mouse)
     {
+        HearCancel();
         // The press is over, released or not: the pointer moving next rests on the code again.
         _held = false;
         // The input sequence died with the finger still down — the finger is gone, so nothing
@@ -2974,6 +3042,7 @@ public sealed partial class PhotonHost
     public bool PressUp(float x, float y, PointerKind kind = PointerKind.Mouse)
     {
         y += _lift;
+        HearUp(new Point(x, y), _pointerModifiers);
         _held = false;
         _contextHold = null;
         // Where a drag ended is where the pointer is (#1084): ⌘ pressed next, with no move, is heard there.
@@ -3157,15 +3226,38 @@ public sealed partial class PhotonHost
     private bool ResolveLink(float x, float y)
     {
         var regions = _lastFrame?.LinkRegions;
-        if (regions is null || _navigationRequested is null) return false;
+        if (regions is null) return false;
         var point = new Point(x, y);
         for (var i = regions.Count - 1; i >= 0; i--)
         {
             if (!Covers(regions, i, regions[i].Bounds, point)) continue;
+            if (OpenedBeside(regions[i])) return true;
+            if (_navigationRequested is null) return false;
             _navigationRequested(regions[i].Destination);
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// A link that opens beside the page (<see cref="Link.OpensBeside"/>, #941), handed to the system
+    /// when its destination is an absolute <c>http</c> or <c>https</c> address and the shell opens
+    /// addresses (<see cref="IUrlLauncher"/>). False for an app's own route, which navigates in place.
+    /// The press is the link's once it is handed over, whatever the system answers, as a browser's
+    /// blocked tab still took the click; a launcher that fails says so through <see cref="Log"/>.
+    /// </summary>
+    private bool OpenedBeside(LinkRegion link)
+    {
+        if (!link.OpensBeside
+            || !Uri.TryCreate(link.Destination, UriKind.Absolute, out var url)
+            || url.Scheme is not ("http" or "https")
+            || CapabilityScope.Resolve<IUrlLauncher>() is not { } launcher)
+            return false;
+        var log = Log;
+        _ = launcher.OpenUrlAsync(url).AsTask().ContinueWith(
+            opening => log?.Invoke($"[eQuantic.UI] the system could not open '{url}': {opening.Exception?.GetBaseException().Message}"),
+            CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+        return true;
     }
 
     /// <summary>
@@ -3533,7 +3625,8 @@ public sealed partial class PhotonHost
     /// Spec S8 — a key press from the shell (desktop windows have a real keyboard): fires the LAST
     /// matching <see cref="Shortcut"/> of the current frame (the dialog on top wins the chord) and
     /// returns whether it was handled, so the shell can stop propagating it. Being on screen IS the
-    /// subscription — an unmounted dialog's Esc simply is not in the frame any more.
+    /// subscription — an unmounted dialog's Esc simply is not in the frame any more. Escape waits for the
+    /// code or sheet surface the keyboard is in while it would claim the key (#1181).
     /// <para>
     /// <paramref name="modifiers"/> carries <see cref="KeyModifiers.Command"/> for the PLATFORM's
     /// command key (⌘ on macOS, Ctrl elsewhere) — the shell resolves that, exactly like the browser
@@ -3550,13 +3643,9 @@ public sealed partial class PhotonHost
             return true;
         }
 
-        // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it.
-        if (BindingFor(key, modifiers) is { } binding)
-        {
-            binding.OnPressed();
-            NeedsRender = true;
-            return true;
-        }
+        // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it. Escape
+        // waits for the surface the keyboard is in, while the surface has something of its own to close.
+        if (BindingFor(key, modifiers) is { } binding && !SurfaceTakesFirst(key, modifiers)) return Fire(binding);
 
         // The menu key or Shift+F10 asks the target around the focus for its menu (#1531).
         if (RequestByKeyboard(key, modifiers)) return true;
@@ -3669,6 +3758,28 @@ public sealed partial class PhotonHost
         return false;
     }
 
+    /// <summary>
+    /// Whether the code or sheet surface the keyboard is in takes <paramref name="key"/> before a binding of
+    /// it fires (#1181; TS twin: the text door's answer to <c>TAKES_KEY_FIRST</c>, which shortcuts.ts asks the
+    /// focus): Escape, while the surface would claim it, so a dialog stays open over an open completion list
+    /// or a cell being edited, as Flutter dismisses a route only for an Escape nothing under the focus took.
+    /// <see cref="KeyDown"/>'s sheet or code branch then takes the key.
+    /// </summary>
+    private bool SurfaceTakesFirst(string key, KeyModifiers modifiers)
+    {
+        if (key != KeyChord.Escape.Key || modifiers != KeyChord.Escape.Modifiers) return false;
+        if (SheetTarget is { } sheet) return sheet.Model.ClaimsEscape(KeyboardConvention);
+        return CodeTarget is { } code && code.Model.ClaimsEscape(KeyboardConvention);
+    }
+
+    /// <summary>Runs a binding's action and asks for the frame that shows it.</summary>
+    private bool Fire(ShortcutBinding binding)
+    {
+        binding.OnPressed();
+        NeedsRender = true;
+        return true;
+    }
+
     /// <summary>The binding of THIS frame that answers a chord: the last one declared (the dialog on
     /// top wins), skipping a focus-scoped one whose subtree does not hold the focus.</summary>
     private ShortcutBinding? BindingFor(string key, KeyModifiers modifiers)
@@ -3703,7 +3814,8 @@ public sealed partial class PhotonHost
     /// The platform's back, Android's gesture and button: the layer on top (a dialog, a sheet, a
     /// drawer, a menu, a phone's detail pane) closes, through the Escape it already declares, because
     /// every layer back should close already answers to it. A field inside a dialog leaves with the
-    /// dialog, as a binding answers every key before the field does.
+    /// dialog: back fires the binding itself, where <see cref="KeyDown"/> lets a code or sheet surface with
+    /// something of its own to close take Escape first (#1181).
     /// <para>
     /// Unlike <see cref="KeyDown"/>, neither an edit nor a focus ring takes it, as a focused
     /// <c>TextField</c> never holds Flutter's back and an <c>EditText</c> never holds Android's. On a
@@ -3713,7 +3825,7 @@ public sealed partial class PhotonHost
     /// focused. Answers whether anything took it.
     /// </para>
     /// </summary>
-    public bool Back() => CanGoBack && KeyDown(KeyChord.Escape.Key, KeyChord.Escape.Modifiers);
+    public bool Back() => BindingFor(KeyChord.Escape.Key, KeyChord.Escape.Modifiers) is { } binding && Fire(binding);
 
     /// <summary>
     /// Takes the tree down: every component that mounted is told it left, the root among them.

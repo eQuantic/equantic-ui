@@ -24,6 +24,7 @@ import type {
   InputTheme,
   ListTheme,
   MarkdownTheme,
+  SortableTheme,
   MenuTheme,
   ModalTheme,
   NavigationTheme,
@@ -93,6 +94,8 @@ export const IAppTheme = {
   calendar: (_theme: AppTheme): CalendarTheme | null => null,
   /** `MarkdownTheme? Markdown => null;` — each component's own defaults. */
   markdown: (_theme: AppTheme): MarkdownTheme | null => null,
+  /** `SortableTheme? Sortable => null;` — `SortPlacement`'s defaults. */
+  sortable: (_theme: AppTheme): SortableTheme | null => null,
 };
 
 /** `ICodeLanguage`'s defaults. */

@@ -7,18 +7,20 @@ namespace eQuantic.UI.Compiler.Tests.Strategies;
 
 public class LinqStrategyTests
 {
+    /// <summary>A projection is the runtime's lazy query, read one element at a time when walked (#685).</summary>
     [Fact]
-    public void Select_MapsTo_Map()
+    public void Select_IsALazyQuery()
     {
         var result = TestHelper.ConvertExpression("list.Select(x => x.Id)");
-        result.Should().Be("this.list.map((x) => x.id)");
+        result.Should().Be("$eq.query.select(this.list, (x) => x.id)");
     }
 
+    /// <summary>A filter is the runtime's lazy query, read one element at a time when walked (#685).</summary>
     [Fact]
-    public void Where_MapsTo_Filter()
+    public void Where_IsALazyQuery()
     {
         var result = TestHelper.ConvertExpression("list.Where(x => x.Active)");
-        result.Should().Be("this.list.filter((x) => x.active)");
+        result.Should().Be("$eq.query.where(this.list, (x) => x.active)");
     }
 
     [Fact]
@@ -35,48 +37,50 @@ public class LinqStrategyTests
         result.Should().Be("this.list.find((x) => x.id === 1)");
     }
 
+    /// <summary>Any with no predicate is the runtime's walk, which stops at the first element (#685).</summary>
     [Fact]
-    public void Any_NoPredicate_MapsTo_LengthCheck()
+    public void Any_NoPredicate_StopsAtTheFirstElement()
     {
         var result = TestHelper.ConvertExpression("list.Any()");
-        result.Should().Be("(this.list.length > 0)");
+        result.Should().Be("$eq.query.any(this.list)");
     }
 
+    /// <summary>Any with a predicate is the runtime's walk, which stops at the first match (#685).</summary>
     [Fact]
-    public void Any_WithPredicate_MapsTo_Some()
+    public void Any_WithPredicate_StopsAtTheFirstMatch()
     {
         var result = TestHelper.ConvertExpression("list.Any(x => x.Active)");
-        result.Should().Be("this.list.some((x) => x.active)");
-    }
-    
-    [Fact]
-    public void All_MapsTo_Every()
-    {
-        var result = TestHelper.ConvertExpression("list.All(x => x.Active)");
-        result.Should().Be("this.list.every((x) => x.active)");
+        result.Should().Be("$eq.query.any(this.list, (x) => x.active)");
     }
 
+    /// <summary>All is the runtime's walk, which stops at the first element that fails (#685).</summary>
     [Fact]
-    public void OrderBy_MapsTo_Sort()
+    public void All_StopsAtTheFirstFailure()
     {
-        // Simple case: OrderBy generic
-        // We expect .sort((a, b) => ...) transformation
+        var result = TestHelper.ConvertExpression("list.All(x => x.Active)");
+        result.Should().Be("$eq.query.all(this.list, (x) => x.active)");
+    }
+
+    /// <summary>OrderBy sorts a COPY of its source (it is non-mutating in C#), when its query is walked (#685).</summary>
+    [Fact]
+    public void OrderBy_SortsACopyWhenWalked()
+    {
         var result = TestHelper.ConvertExpression("list.OrderBy(x => x.Id)");
-        // The implementation should produce a sort function over a COPY of the source
-        // (OrderBy is non-mutating in C#).
-        result.Should().Contain(".sort(");
-        result.Should().StartWith("[...this.list]");
+        result.Should().StartWith("$eq.query.defer(($src) => [...$src].sort(");
+        result.Should().Contain("const $k = ((x) => x.id);");
+        result.Should().EndWith(", this.list)");
     }
     [Fact]
     public void Chained_Calls_Respect_Order()
     {
         // list.Where(x => x.Active).OrderBy(x => x.Name).Select(x => x.Id)
         var result = TestHelper.ConvertExpression("list.Where(x => x.Active).OrderBy(x => x.Name).Select(x => x.Id)");
-        
-        // Check structural correctness of the chain (OrderBy copies the filtered source).
-        result.Should().StartWith("[...this.list.filter((x) => x.active)]");
-        result.Should().Contain(".sort(");
-        result.Should().EndWith(".map((x) => x.id)");
+
+        // Check structural correctness of the chain: each operator wraps the one before it, and
+        // OrderBy sorts a copy of the filtered query when it is walked (#685).
+        result.Should().StartWith("$eq.query.select($eq.query.defer(($src) => [...$src].sort(");
+        result.Should().Contain("const $k = ((x) => x.name);");
+        result.Should().EndWith("}), $eq.query.where(this.list, (x) => x.active)), (x) => x.id)");
     }
 
     [Fact]
@@ -88,7 +92,7 @@ public class LinqStrategyTests
         // This validates that the inner .Where() is correctly converted inside the .Select() callback.
         // o.Total is a decimal — a real Decimal in the typed world — so the > comparison routes
         // through compareTo, and the int literal converts at the bound tree's seam (ValueFlow).
-        result.Should().Be("this.list.map((u) => u.orders.filter((o) => (o.total.compareTo($eq.num.dec(100)) > 0)))");
+        result.Should().Be("$eq.query.select(this.list, (u) => $eq.query.where(u.orders, (o) => (o.total.compareTo($eq.num.dec(100)) > 0)))");
     }
 
     [Fact]
@@ -98,35 +102,38 @@ public class LinqStrategyTests
         var result = TestHelper.ConvertExpression("list.Where(x => x.Active && otherList.Any(y => y.Id == x.Id))");
 
         // This validates that variable 'x' from outer scope is accessible in inner 'Any'
-        result.Should().Be("this.list.filter((x) => x.active && this.otherList.some((y) => y.id === x.id))");
+        result.Should().Be("$eq.query.where(this.list, (x) => x.active && $eq.query.any(this.otherList, (y) => y.id === x.id))");
     }
 
+    /// <summary>Skip is the runtime's lazy query, which reads past the skipped elements when walked (#685).</summary>
     [Fact]
-    public void Skip_MapsTo_Slice()
+    public void Skip_WalksLazily()
     {
         var result = TestHelper.ConvertExpression("list.Skip(5)");
-        result.Should().Be("this.list.slice(5)");
+        result.Should().Be("$eq.query.skip(this.list, 5)");
     }
 
+    /// <summary>Take is the runtime's lazy query, whose walk stops once it has the count (#685).</summary>
     [Fact]
-    public void Take_MapsTo_Slice()
+    public void Take_WalksLazily()
     {
         var result = TestHelper.ConvertExpression("list.Take(10)");
-        result.Should().Be("this.list.slice(0, 10)");
+        result.Should().Be("$eq.query.take(this.list, 10)");
     }
 
     [Fact]
     public void Skip_Take_Chain_ForPagination()
     {
         var result = TestHelper.ConvertExpression("list.Skip(20).Take(10)");
-        result.Should().Be("this.list.slice(20).slice(0, 10)");
+        result.Should().Be("$eq.query.take($eq.query.skip(this.list, 20), 10)");
     }
 
+    /// <summary>Distinct spreads the runtime's set of the source when its query is walked (#685).</summary>
     [Fact]
-    public void Distinct_OfAClass_MapsTo_TheRuntimesSetSpread()
+    public void Distinct_OfAClass_DefersTheRuntimesSetSpread()
     {
         var result = TestHelper.ConvertExpression("list.Distinct()");
-        result.Should().Be("[...$eq.collections.hashSet('item', this.list)]");
+        result.Should().Be("$eq.query.defer(($src) => [...$eq.collections.hashSet('item', $src)], this.list)");
     }
 
     [Fact]
@@ -188,18 +195,21 @@ public class LinqStrategyTests
         result.Should().Be("(this.list.find((x) => x.id === 1))");
     }
 
+    /// <summary>SelectMany is the runtime's lazy query, flattening one element at a time when walked (#685).</summary>
     [Fact]
-    public void SelectMany_MapsToFlatMap()
+    public void SelectMany_IsALazyQuery()
     {
         var result = TestHelper.ConvertExpression("list.SelectMany(x => x.Items)");
-        result.Should().Be("this.list.flatMap((x) => x.items)");
+        result.Should().Be("$eq.query.selectMany(this.list, (x) => x.items)");
     }
 
+    /// <summary>An int's sum adds through the runtime's checked addition, which .NET's Sum is whatever the
+    /// context of the call (#1808).</summary>
     [Fact]
     public void Sum_NoPredicate_MapsToReduce()
     {
         var result = TestHelper.ConvertExpression("numbers.Sum()");
-        result.Should().Be("this.numbers.reduce(($a, $b) => $a + $b, 0)");
+        result.Should().Be("this.numbers.reduce(($a, $b) => $eq.num.addInt($a, $b), 0)");
     }
 
     [Fact]
@@ -215,9 +225,9 @@ public class LinqStrategyTests
     public void Sum_AndAverage_WithABlockSelector_CallTheLambda()
     {
         TestHelper.ConvertExpression("numbers.Sum(x => { return x * 2; })")
-            .Should().Contain("$sum + ((x) => {").And.Contain("return x * 2;");
+            .Should().Contain("$eq.num.addInt($sum, ((x) => {").And.Contain("return Math.imul(x, 2);");
         TestHelper.ConvertExpression("numbers.Average(x => { return x * 2; })")
-            .Should().Contain("$eq.linq.average(this.numbers, (x) => {").And.Contain("return x * 2;");
+            .Should().Contain("$eq.linq.average(this.numbers, (x) => {").And.Contain("return Math.imul(x, 2);");
     }
 
     /// <summary>The mean is the runtime's, told how the values add and whether they are nullable,

@@ -25,6 +25,10 @@ public static class Eq
     public const string Str = "$eq.str";
 
     public const string Dec = "$eq.num.dec";
+    /// <summary>An int added to <c>Enumerable.Sum</c>'s total, checked whatever the context of the call.</summary>
+    public const string AddInt = "$eq.num.addInt";
+    /// <summary>A long added to <c>Enumerable.Sum</c>'s total, checked whatever the context of the call.</summary>
+    public const string AddLong = "$eq.num.addLong";
     /// <summary><c>decimal.Parse</c>: the text read by .NET's grammar, under the NumberStyles the
     /// call names, and rounded as .NET's parser rounds it.</summary>
     public const string DecParse = "$eq.num.decParse";
@@ -67,6 +71,11 @@ public static class Eq
     public const string IntegerFromDouble = "$eq.num.integerFromDouble";
     /// <summary><c>Convert.To&lt;integer&gt;</c> of a decimal: <c>decimal.Round</c>, then the range.</summary>
     public const string IntegerFromDecimal = "$eq.num.integerFromDecimal";
+    /// <summary>A decimal cast to an integer or a char, and <c>decimal.ToInt32</c> and its siblings: toward zero
+    /// from its own digits, then the range, in .NET's words (#1766).</summary>
+    public const string TruncatedFromDecimal = "$eq.num.truncatedFromDecimal";
+    /// <summary><c>Math.Clamp</c> and <c>decimal.Clamp</c> over a decimal, a minimum above the maximum refused (#1767).</summary>
+    public const string DecClamp = "$eq.num.decClamp";
     /// <summary><c>Convert.To&lt;integer&gt;</c> of an <c>object</c>, by what it holds when the call runs.</summary>
     public const string IntegerFromObject = "$eq.num.integerFromObject";
     /// <summary><c>Convert.ToDouble</c> and <c>ToSingle</c> of an <c>object</c>, by what it holds when the call runs.</summary>
@@ -530,6 +539,23 @@ public static class Eq
     public const string ListAddRange = "$eq.collections.addRange";
     /// <summary><c>List&lt;T&gt;.InsertRange</c>: as <see cref="ListAddRange"/>, the index checked as .NET checks it.</summary>
     public const string ListInsertRange = "$eq.collections.insertRange";
+    /// <summary>LINQ's operators as .NET runs them (<c>utils/query.ts</c>): each checks its arguments when it is
+    /// called and reads its source one element at a time when it is walked (#685).</summary>
+    public const string Query = "$eq.query";
+    /// <summary>A walk over a <c>List&lt;T&gt;</c> that compares the list's version at every step, as .NET's
+    /// enumerator does (#863).</summary>
+    public const string ListWalk = "$eq.collections.listWalk";
+    /// <summary>The walk a <c>foreach</c> takes over a sequence held as an interface a list answers to, or as a
+    /// class derived from a list: a list's own walk when the value is one, the sequence as it is otherwise (#863).</summary>
+    public const string SequenceWalk = "$eq.collections.sequenceWalk";
+    /// <summary><c>List&lt;T&gt;.Add</c>: appends and moves the version.</summary>
+    public const string ListAdd = "$eq.collections.listAdd";
+    /// <summary><c>List&lt;T&gt;.Clear</c>: empties the list and moves the version.</summary>
+    public const string ListClear = "$eq.collections.listClear";
+    /// <summary><c>List&lt;T&gt;</c>'s indexer written: the index checked, the version moved.</summary>
+    public const string ListSet = "$eq.collections.listSet";
+    /// <summary><c>List&lt;T&gt;.ForEach</c>: refuses a change the action makes, as .NET's does.</summary>
+    public const string ListForEach = "$eq.collections.listForEach";
     /// <summary><c>List&lt;T&gt;.Insert</c> and <c>IList&lt;T&gt;.Insert</c>: the index checked as .NET checks it (#1160).</summary>
     public const string ListInsert = "$eq.collections.listInsert";
 
@@ -556,6 +582,10 @@ public static class Eq
 
     /// <summary><c>ICollection&lt;T&gt;.IsReadOnly</c>, of what the interface holds when the code runs.</summary>
     public const string CollectionIsReadOnly = "$eq.collections.isReadOnly";
+
+    /// <summary>A culture's <c>NumberFormatInfo</c>, the page's or (handed true) the invariant one's: the
+    /// object the culture travels as, under .NET's names (#1765).</summary>
+    public const string NumberFormat = "$eq.text.numberFormat";
     /// <summary><c>List&lt;T&gt;.RemoveAt</c> and <c>IList&lt;T&gt;.RemoveAt</c>: the index checked as .NET checks it (#1160).</summary>
     public const string ListRemoveAt = "$eq.collections.listRemoveAt";
     /// <summary><c>List&lt;T&gt;.RemoveRange</c>: the range checked as .NET checks it (#1160).</summary>

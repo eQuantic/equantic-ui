@@ -6,9 +6,9 @@ export class CodeChoiceProvider {
     constructor(options: string[]) {
         this._list = null!;
         let items: CodeCompletionItem[] = [];
-        for (let i = 0; i < $eq.collections.count(options); i++) {
+        for (let i = 0; i < $eq.collections.count(options); i = i + 1 | 0) {
             let $n0: CodeCompletionItem; 
-            items.push(($n0 = new CodeCompletionItem($eq.collections.item(options, i), 'value'), $n0.sortText = $eq.text.format(i, null, undefined, undefined, 'int32').padStart(6, '0'), $n0));
+            $eq.collections.listAdd(items, ($n0 = new CodeCompletionItem($eq.collections.item(options, i), 'value'), $n0.sortText = $eq.text.format(i, null, undefined, undefined, 'int32').padStart(6, '0'), $n0));
         }
         this._list = new CodeCompletionList(items);
     }

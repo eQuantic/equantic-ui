@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Button, Column, CornerRadii, DropTarget, EdgeInsets, Flexible, LiveRegion, PickedFile, ProgressBar, Row, SdkStrings, SizeValue, StatefulComponent, Text, UiComponent, Upload, UploadedFile, UploadPolicy, UploadStateValue } from "../runtime-exports";
+import { $eq, $UploadStateValue, Box, BoxStyle, BuildContext, Button, Column, CornerRadii, DropTarget, EdgeInsets, Flexible, LiveRegion, PickedFile, ProgressBar, Row, SdkStrings, SizeValue, StatefulComponent, Text, UiComponent, Upload, UploadedFile, UploadPolicy } from "../runtime-exports";
 
 export class FileUpload extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.FileUpload';
@@ -45,7 +45,7 @@ export class FileUpload extends StatefulComponent {
         let area = new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.all(24), background: this._over && enabled ? theme.colors('primary').subtle : theme.surfaceSubtle, borderWidth: this._over && enabled ? 2 : 1, borderColor: this._over && enabled ? theme.colors('primary').base : theme.borderStrong, cornerRadius: new CornerRadii(theme.shape('large')), opacity: enabled ? null : Math.fround(0.6) }), invitation);
         let column = new Column(12, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         column.add(new DropTarget(area, (files) => this.send(uploads, files), { onDragOverChanged: (over: boolean) => this.setState(() => this._over = over), enabled: enabled }));
-        for (const upload of this._uploads) column.add(this.rowOf(upload, theme));
+        for (const upload of $eq.collections.listWalk(this._uploads)) column.add(this.rowOf(upload, theme));
         column.add(new LiveRegion(new Text(this._announcement, 'caption', theme.textSecondary, 3)));
         return column;
     }
@@ -60,13 +60,13 @@ export class FileUpload extends StatefulComponent {
     }
 
     onUnmount() {
-        for (const subscription of this._subscriptions) subscription.dispose();
-        this._subscriptions.splice(0);
-        for (const upload of this._uploads) upload.pause();
+        for (const subscription of $eq.collections.listWalk(this._subscriptions)) subscription.dispose();
+        $eq.collections.listClear(this._subscriptions);
+        for (const upload of $eq.collections.listWalk(this._uploads)) upload.pause();
     }
 
     rowOf(upload: Upload, theme: any) {
-        let state: UploadStateValue = upload.state;
+        let state: $UploadStateValue = upload.state;
         let failed = state === 'failed';
         let heading = new Row(8, 'start', 'center', false, null, null, { width: SizeValue.fill });
         heading.add(new Flexible(new Text(upload.file.name, 'label', theme.textPrimary, 1)));
@@ -100,10 +100,10 @@ export class FileUpload extends StatefulComponent {
         let config = this._config;
         let count = config.multiple ? $eq.collections.count(files) : 1;
         this.setState(() => {
-            for (let i = 0; i < count; i++) {
+            for (let i = 0; i < count; i = i + 1 | 0) {
                 let upload = uploads.start($eq.collections.item(files, i), config.policy);
-                this._uploads.push(upload);
-                this._subscriptions.push(upload.subscribe($eq.delegates.bound(this, this.changed)));
+                $eq.collections.listAdd(this._uploads, upload);
+                $eq.collections.listAdd(this._subscriptions, upload.subscribe($eq.delegates.bound(this, this.changed)));
                 if (upload.state === 'failed') this._announcement = FileUpload.announcement(upload);
             }
         });
@@ -113,7 +113,7 @@ export class FileUpload extends StatefulComponent {
         let arrived = upload.state === 'completed' && !$eq.collections.contains(this._reported, upload, 'item');
         this.setState(() => {
             if (arrived) {
-                this._reported.push(upload);
+                $eq.collections.listAdd(this._reported, upload);
                 this._announcement = FileUpload.announcement(upload);
             } else if (upload.state === 'failed') {
                 this._announcement = FileUpload.announcement(upload);
@@ -137,10 +137,10 @@ export class FileUpload extends StatefulComponent {
 
     static accepted(policy: UploadPolicy) {
         let formats: string[] = [];
-        for (const filter of policy.filters) {
+        for (const filter of $eq.collections.sequenceWalk(policy.filters)) {
             for (const extension of filter.extensions) {
                 let format = $eq.text.toUpper($eq.text.trimStart(extension, '.'), true);
-                if (format.length > 0 && !formats.includes(format)) formats.push(format);
+                if (format.length > 0 && !formats.includes(format)) $eq.collections.listAdd(formats, format);
             }
         }
         let size = FileUpload.sizeText(policy.maxSize);

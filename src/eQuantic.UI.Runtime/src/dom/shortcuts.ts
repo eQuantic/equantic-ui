@@ -4,7 +4,8 @@
  * Mounting IS the subscription: every lowering pass re-declares the bindings that are live, so an
  * unmounted subtree's chord simply stops being registered — app code never adds or removes
  * listeners. One capture-phase keydown listener serves the whole page; a matching chord gets
- * `preventDefault()` so ⌘K never reaches the browser's own search.
+ * `preventDefault()` so ⌘K never reaches the browser's own search. Before it fires, the focus is asked
+ * whether it takes the key first (see {@link TAKES_KEY_FIRST}).
  */
 
 import { openRecord } from '../shared/lowered-records';
@@ -34,6 +35,24 @@ const claimed = new WeakSet<Event>();
 /** Bindings the last COMPLETED pass declared — what the listener dispatches to. */
 let active: ShortcutBinding[] = [];
 let installed = false;
+
+/**
+ * The question a binding puts to the focus before it fires (#1181), as an event of the runtime's own on the
+ * element the key is for: an element that cancels it keeps the key, which then goes on to the element's own
+ * keydown as if no binding matched. A text door keeps Escape while its model would claim it, so a dialog's
+ * Escape waits while the code editor or the sheet in it has something nearer the keyboard to close, as
+ * Flutter dismisses a route only for an Escape nothing under the focus took (C# twin: PhotonHost.KeyDown,
+ * which asks its code and sheet targets). Every other element lets the question pass, and the binding
+ * answers first, as it always has: an app's ⌘K is the app's.
+ */
+export const TAKES_KEY_FIRST = 'eq:takes-key-first';
+
+/** Whether the element a key is for takes it before the binding that matched it (see {@link TAKES_KEY_FIRST}). */
+function focusTakesFirst(event: KeyboardEvent): boolean {
+  const focus = event.target;
+  if (typeof Element === 'undefined' || !(focus instanceof Element)) return false;
+  return !focus.dispatchEvent(new CustomEvent<KeyboardEvent>(TAKES_KEY_FIRST, { cancelable: true, detail: event }));
+}
 
 /**
  * Where a binding declared now would be listed. A `Shortcut` asks before its child lowers and
@@ -137,13 +156,32 @@ function candidates(event: KeyboardEvent): string[] {
   return out;
 }
 
+/** How many gestures own the keyboard right now: while one does, no chord fires. */
+let holds = 0;
+
+/**
+ * Holds every chord off while a gesture owns the keyboard (an item carried by a sortable, #1533), and answers how
+ * to let them go again, once. The C# twin asks the carry first and stops there (PhotonHost.KeyDown, #1537): a
+ * carried item's Enter drops it and its Escape puts it back, and neither reaches an app's chord, a tree's Enter or
+ * a dialog's Escape.
+ */
+export function holdShortcuts(): () => void {
+  holds++;
+  let held = true;
+  return () => {
+    if (!held) return;
+    held = false;
+    holds--;
+  };
+}
+
 function install(): void {
   if (installed || typeof window === 'undefined') return;
   installed = true;
   window.addEventListener(
     'keydown',
     (event: KeyboardEvent) => {
-      if (active.length === 0) return;
+      if (active.length === 0 || holds > 0) return;
       const spellings = candidates(event);
       let handled = false;
       // A LIFO walk: the last binding listed wins the chord, among the ones on screen: of two
@@ -154,6 +192,8 @@ function install(): void {
         const binding = active[i];
         if (!spellings.includes(binding.chord)) continue;
         if (binding.live && !binding.live()) continue;
+        // A key the focus takes first is no binding's (a text door's Escape, #1181).
+        if (focusTakesFirst(event)) return;
         handled = true;
         binding.handler();
         break;
@@ -181,4 +221,5 @@ export function claimedByShortcut(event: Event): boolean {
 export function resetShortcuts(): void {
   pending = [];
   active = [];
+  holds = 0;
 }

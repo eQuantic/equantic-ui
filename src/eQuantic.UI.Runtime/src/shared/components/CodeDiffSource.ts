@@ -31,12 +31,12 @@ export class CodeDiffSource {
 
     originalNumber(line: number) {
         let numbers: any; 
-        return (numbers = this._originalNumbers) != null ? $eq.collections.item(numbers, line) : line + 1;
+        return (numbers = this._originalNumbers) != null ? $eq.collections.item(numbers, line) : line + 1 | 0;
     }
 
     modifiedNumber(line: number) {
         let numbers: any; 
-        return (numbers = this._modifiedNumbers) != null ? $eq.collections.item(numbers, line) : line + 1;
+        return (numbers = this._modifiedNumbers) != null ? $eq.collections.item(numbers, line) : line + 1 | 0;
     }
 
     static fromTexts(original: string, modified: string) {
@@ -49,19 +49,19 @@ export class CodeDiffSource {
 
     originalLineOf(modifiedLine: number) {
         let low = 0;
-        let high = $eq.collections.count(this.changes) - 1;
+        let high = $eq.collections.count(this.changes) - 1 | 0;
         let found = -1;
         while (low <= high) {
-            let middle = Math.trunc((low + high) / 2);
+            let middle = Math.trunc((low + high | 0) / 2);
             if ($eq.collections.item(this.changes, middle).modifiedStart <= modifiedLine) {
                 found = middle;
-                low = middle + 1;
-            } else high = middle - 1;
+                low = middle + 1 | 0;
+            } else high = middle - 1 | 0;
         }
         if (found < 0) return modifiedLine;
         let change = $eq.collections.item(this.changes, found);
-        if (modifiedLine < change.modifiedStart + change.modifiedCount) return -1;
-        return change.originalStart + change.originalCount + (modifiedLine - change.modifiedStart - change.modifiedCount);
+        if (modifiedLine < (change.modifiedStart + change.modifiedCount | 0)) return -1;
+        return (change.originalStart + change.originalCount | 0) + ((modifiedLine - change.modifiedStart | 0) - change.modifiedCount | 0) | 0;
     }
 
     static fromPatch(file: CodePatchFile) {
@@ -73,40 +73,40 @@ export class CodeDiffSource {
         let gaps: CodeDiffGap[] = [];
         let originalEnd = 0;
         let modifiedEnd = 0;
-        for (const hunk of file.hunks) {
-            let skippedOriginal = hunk.originalStart - originalEnd;
-            let skippedModified = hunk.modifiedStart - modifiedEnd;
-            if (skippedOriginal > 0 || skippedModified > 0) gaps.push(new CodeDiffGap(originalLines.length, modifiedLines.length, skippedOriginal, skippedModified, hunk.header));
+        for (const hunk of $eq.collections.sequenceWalk(file.hunks)) {
+            let skippedOriginal = hunk.originalStart - originalEnd | 0;
+            let skippedModified = hunk.modifiedStart - modifiedEnd | 0;
+            if (skippedOriginal > 0 || skippedModified > 0) $eq.collections.listAdd(gaps, new CodeDiffGap(originalLines.length, modifiedLines.length, skippedOriginal, skippedModified, hunk.header));
             let originalNumber = hunk.originalStart;
             let modifiedNumber = hunk.modifiedStart;
             let i = 0;
             while (i < $eq.collections.count(hunk.lines)) {
                 if ($eq.collections.item(hunk.lines, i).kind === 'context') {
-                    originalLines.push($eq.collections.item(hunk.lines, i).text);
-                    originalNumbers.push(++originalNumber);
-                    modifiedLines.push($eq.collections.item(hunk.lines, i).text);
-                    modifiedNumbers.push(++modifiedNumber);
-                    i++;
+                    $eq.collections.listAdd(originalLines, $eq.collections.item(hunk.lines, i).text);
+                    $eq.collections.listAdd(originalNumbers, originalNumber = originalNumber + 1 | 0);
+                    $eq.collections.listAdd(modifiedLines, $eq.collections.item(hunk.lines, i).text);
+                    $eq.collections.listAdd(modifiedNumbers, modifiedNumber = modifiedNumber + 1 | 0);
+                    i = i + 1 | 0;
                     continue;
                 }
                 let originalStart = originalLines.length;
                 let modifiedStart = modifiedLines.length;
                 while (i < $eq.collections.count(hunk.lines) && $eq.collections.item(hunk.lines, i).kind !== 'context') {
                     if ($eq.collections.item(hunk.lines, i).kind === 'removed') {
-                        originalLines.push($eq.collections.item(hunk.lines, i).text);
-                        originalNumbers.push(++originalNumber);
+                        $eq.collections.listAdd(originalLines, $eq.collections.item(hunk.lines, i).text);
+                        $eq.collections.listAdd(originalNumbers, originalNumber = originalNumber + 1 | 0);
                     } else {
-                        modifiedLines.push($eq.collections.item(hunk.lines, i).text);
-                        modifiedNumbers.push(++modifiedNumber);
+                        $eq.collections.listAdd(modifiedLines, $eq.collections.item(hunk.lines, i).text);
+                        $eq.collections.listAdd(modifiedNumbers, modifiedNumber = modifiedNumber + 1 | 0);
                     }
-                    i++;
+                    i = i + 1 | 0;
                 }
-                let originalCount = originalLines.length - originalStart;
-                let modifiedCount = modifiedLines.length - modifiedStart;
-                changes.push(new CodeLineChange(originalStart, originalCount, modifiedStart, modifiedCount, CodeDiffer.innerChanges(originalLines, originalStart, originalCount, modifiedLines, modifiedStart, modifiedCount)));
+                let originalCount = originalLines.length - originalStart | 0;
+                let modifiedCount = modifiedLines.length - modifiedStart | 0;
+                $eq.collections.listAdd(changes, new CodeLineChange(originalStart, originalCount, modifiedStart, modifiedCount, CodeDiffer.innerChanges(originalLines, originalStart, originalCount, modifiedLines, modifiedStart, modifiedCount)));
             }
-            originalEnd = hunk.originalStart + hunk.originalCount;
-            modifiedEnd = hunk.modifiedStart + hunk.modifiedCount;
+            originalEnd = hunk.originalStart + hunk.originalCount | 0;
+            modifiedEnd = hunk.modifiedStart + hunk.modifiedCount | 0;
         }
         return new CodeDiffSource(CodeDocument.fromLines(originalLines), originalLines.length, CodeDocument.fromLines(modifiedLines), modifiedLines.length, changes, originalNumbers, modifiedNumbers, gaps);
     }

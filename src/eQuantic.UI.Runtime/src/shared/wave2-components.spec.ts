@@ -27,9 +27,9 @@ describe('wave-2 transpiled components (real eqc output)', () => {
 
   it('Switch anchors the thumb by state (on=end, off=start)', () => {
     const on = new Switch(true, () => {}).render();
-    expect(effectiveStyle(on.children[0].children[1])).toContain('right: 3px');
+    expect(effectiveStyle(on.children[0].children[1])).toContain('inset-inline-end: 3px');
     const off = new Switch(false, () => {}).render();
-    expect(effectiveStyle(off.children[0].children[1])).toContain('left: 3px');
+    expect(effectiveStyle(off.children[0].children[1])).toContain('inset-inline-start: 3px');
   });
 
   it('IconButton fires and renders the 40dp default', () => {

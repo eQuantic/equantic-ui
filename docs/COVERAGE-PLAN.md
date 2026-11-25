@@ -17,13 +17,13 @@ paragraph remembers:
 |---|---|---|---|
 | Strategies still emitting text (no writer guarantees) | 111 | **92** | 26 Expressions, 23 LINQ, 21 Types, 8 Primitives, 6 Invocation, 4 Special, 3 UI, 1 Async |
 | BCL members fenced (a build error today) | 99 | **32** | 23 EQ2004 (extension methods declared outside the compilation), 6 EQ1001, 3 EQ1004 |
-| Conversion divergences | 2 | **4** | the two `unchecked` limits, plus two found by widening the instrument: array index out of range (×2). `m[k]++`/`++m[k]`/`--m[k]` on a missing key, three more it found, now read through the guard (#372) |
+| Conversion divergences | 2 | **2** | two found by widening the instrument: array index out of range (×2). The two `unchecked` limits closed with #1807, and `m[k]++`/`++m[k]`/`--m[k]` on a missing key, three more it found, now read through the guard (#372) |
 
 The divergence row went up before it came down, and both were the phase working. Two divergences
 were all the generator could see at the start. The other five were always there, in a grammar that
 had never written an array index or a step through a dictionary key, and widening it put the row at
-seven. The three dictionary steps are closed since (#372), which leaves the two `unchecked` limits and
-the two array-index reads.
+seven. The three dictionary steps are closed since (#372), and the two `unchecked` limits since
+#1807 (the default context wraps as .NET does), which leaves the two array-index reads.
 
 Both remaining pockets are CONCENTRATED and REGULAR, which is what makes them derivable rather
 than writable. That is the whole thesis of this phase.
@@ -81,6 +81,7 @@ A plan without a stop condition chases an ideal forever. Three numbers end it:
 
    - `~` and `>>>` put a value at 2^31 from small operands, and the fold reached the
      default-context int overflow this instrument exists not to hunt.
+     Since #1807 that overflow wraps as .NET's does, and the fold reaches it on purpose.
    - A `StringBuilder` named `sb0` shadowed the `sbyte sb0`, so the fold added the builder and the
      program died in the JS engine — which reads exactly like a compiler bug.
    - Widening the statement switch DILUTED every case, and `Math.Round` fell below the noise of a

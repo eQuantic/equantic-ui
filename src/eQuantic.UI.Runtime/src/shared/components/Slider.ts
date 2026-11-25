@@ -1,4 +1,4 @@
-import { $eq, Adjustable, Box, BoxStyle, BuildContext, ColorToken, Column, CornerRadii, Draggable, Flexible, Motion, Pressable, RangeValue, Row, SizeValue, StatelessComponent, TransitionSpec, VariantValue } from "../runtime-exports";
+import { $eq, $VariantValue, Adjustable, Box, BoxStyle, BuildContext, ColorToken, Column, CornerRadii, Draggable, Flexible, Motion, Pressable, RangeValue, Row, SizeValue, StatelessComponent, TransitionSpec } from "../runtime-exports";
 
 export class Slider extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Slider';
@@ -11,7 +11,7 @@ export class Slider extends StatelessComponent {
     declare max: number;
     declare step: number;
     declare disabled: boolean;
-    declare variant: VariantValue;
+    declare variant: $VariantValue;
     declare label: string;
     declare valueText: any;
 
@@ -34,8 +34,8 @@ export class Slider extends StatelessComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let span = Math.fround(this.max - this.min);
-        let fraction = span <= 0 ? 0 : Math.min(Math.max(Math.fround(Math.fround(this.value - this.min) / span), 0), 1);
-        let announced = span <= 0 ? new RangeValue(this.min, this.min, this.min) : new RangeValue(Math.min(Math.max(this.value, this.min), this.max), this.min, this.max);
+        let fraction = span <= 0 ? 0 : $eq.num.clamp(Math.fround(Math.fround(this.value - this.min) / span), 0, 1, 'single');
+        let announced = span <= 0 ? new RangeValue(this.min, this.min, this.min) : new RangeValue($eq.num.clamp(this.value, this.min, this.max, 'single'), this.min, this.max);
         let step = this.step > 0 ? this.step : Math.fround(span / 10);
         let accent = theme.colors(this.variant).base;
         let fill = this.disabled ? theme.borderStrong : accent;
@@ -53,7 +53,7 @@ export class Slider extends StatelessComponent {
     }
 
     quantize(value: number, step: number) {
-        return Math.min(Math.max(this.step > 0 ? Math.fround(this.min + Math.fround($eq.math.roundSingle(Math.fround(Math.fround(value - this.min) / step)) * step)) : value, this.min), this.max);
+        return $eq.num.clamp(this.step > 0 ? Math.fround(this.min + Math.fround($eq.math.roundSingle(Math.fround(Math.fround(value - this.min) / step)) * step)) : value, this.min, this.max, 'single');
     }
 
     static weight(fraction: number) {

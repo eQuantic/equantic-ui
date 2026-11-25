@@ -40,7 +40,7 @@ export class SheetEntryLanguage {
     }
 
     tokenize(line: string, _state: number, into: CodeToken[]) {
-        if (line.length > 0) into.push(new CodeToken(0, line.length, 'plain'));
+        if (line.length > 0) $eq.collections.listAdd(into, new CodeToken(0, line.length, 'plain'));
         return 0;
     }
 

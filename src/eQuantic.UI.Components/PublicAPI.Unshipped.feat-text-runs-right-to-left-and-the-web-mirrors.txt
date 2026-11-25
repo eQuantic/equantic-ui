@@ -1,0 +1,2 @@
+#nullable enable
+static eQuantic.UI.Components.UI.Directionality(eQuantic.UI.Primitives.TextDirection direction, eQuantic.UI.Primitives.VisualNode! child) -> eQuantic.UI.Primitives.Directionality!

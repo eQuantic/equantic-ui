@@ -487,6 +487,16 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("SortDropped", Culture)!; }
         }
 
+        internal static string SortMovedInto
+        {
+            get { return ResourceManager.GetString("SortMovedInto", Culture)!; }
+        }
+
+        internal static string SortDroppedInto
+        {
+            get { return ResourceManager.GetString("SortDroppedInto", Culture)!; }
+        }
+
         internal static string SortCancelled
         {
             get { return ResourceManager.GetString("SortCancelled", Culture)!; }
@@ -500,6 +510,11 @@ namespace eQuantic.UI.Components
         internal static string TreeLoadFailed
         {
             get { return ResourceManager.GetString("TreeLoadFailed", Culture)!; }
+        }
+
+        internal static string TreeItemName
+        {
+            get { return ResourceManager.GetString("TreeItemName", Culture)!; }
         }
 
         internal static string UploadWaiting
@@ -556,5 +571,55 @@ namespace eQuantic.UI.Components
         {
             get { return ResourceManager.GetString("UploadAnnounceFailed", Culture)!; }
         }
-}
+
+        internal static string SortByColumn
+        {
+            get { return ResourceManager.GetString("SortByColumn", Culture)!; }
+        }
+
+        internal static string ResizeColumn
+        {
+            get { return ResourceManager.GetString("ResizeColumn", Culture)!; }
+        }
+
+        internal static string TableColumns
+        {
+            get { return ResourceManager.GetString("TableColumns", Culture)!; }
+        }
+
+        internal static string AmountExpected
+        {
+            get { return ResourceManager.GetString("AmountExpected", Culture)!; }
+        }
+
+        internal static string WholeNumberExpected
+        {
+            get { return ResourceManager.GetString("WholeNumberExpected", Culture)!; }
+        }
+
+        internal static string ValueBetween
+        {
+            get { return ResourceManager.GetString("ValueBetween", Culture)!; }
+        }
+
+        internal static string ValueAtLeast
+        {
+            get { return ResourceManager.GetString("ValueAtLeast", Culture)!; }
+        }
+
+        internal static string ValueAtMost
+        {
+            get { return ResourceManager.GetString("ValueAtMost", Culture)!; }
+        }
+
+        internal static string NamedWithAffixes
+        {
+            get { return ResourceManager.GetString("NamedWithAffixes", Culture)!; }
+        }
+
+        internal static string ValueWithUnit
+        {
+            get { return ResourceManager.GetString("ValueWithUnit", Culture)!; }
+        }
+    }
 }

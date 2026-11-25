@@ -28,10 +28,16 @@ import type {
   ProgressTheme,
   SegmentedTheme,
   SelectionControlsTheme,
+  SortableTheme,
   TableTheme,
 } from './theme-slots';
 import { hashesByValue } from '../utils/hash';
-import { FontWeightNumbers, type FontWeightValue } from './enums.generated';
+import {
+  FontWeightNumbers,
+  type FontWeightValue,
+  type PointerKindValue,
+  type PointerPhaseValue,
+} from './enums.generated';
 
 /**
  * Companion of the C# `Color` struct — the statics transpiled code references. The surface must
@@ -248,6 +254,40 @@ export class ContextRequest {
 
   constructor(at: Point | null = null) {
     this.at = at;
+  }
+}
+
+/**
+ * Mirror of the C# `PointerEvent` record (#1562): what a `Listener` hears of a pointer, in its own coordinates. The
+ * DOM's own `PointerEvent` is a different thing, and this one shadows it only where it is imported.
+ */
+export class PointerEvent {
+  readonly phase: PointerPhaseValue;
+  readonly position: Point;
+  readonly kind: PointerKindValue;
+  /** The C# `[Flags] PointerButtons`, numeric: Flutter's constants, which are also the DOM's `buttons` bits. */
+  readonly buttons: number;
+  /** The C# `[Flags] KeyModifiers`, numeric. */
+  readonly modifiers: number;
+  readonly pointer: number;
+  readonly scrollDelta: Point;
+
+  constructor(
+    phase: PointerPhaseValue,
+    position: Point,
+    kind: PointerKindValue,
+    buttons: number,
+    modifiers: number,
+    pointer: number,
+    scrollDelta: Point,
+  ) {
+    this.phase = phase;
+    this.position = position;
+    this.kind = kind;
+    this.buttons = buttons;
+    this.modifiers = modifiers;
+    this.pointer = pointer;
+    this.scrollDelta = scrollDelta;
   }
 }
 
@@ -668,6 +708,8 @@ export interface AppTheme {
   calendar?: CalendarTheme | null;
   /** The rendered document's slot (C# `IAppTheme.Markdown`), absent or null for each component's own defaults. */
   markdown?: MarkdownTheme | null;
+  /** The look of an item carried in a sortable list (#1602); null, `SortPlacement`'s defaults. */
+  sortable?: SortableTheme | null;
   disabledOpacity: number;
   /**
    * The face this theme sets CODE in (C# `IAppTheme.MonoFamily`), or undefined for the platform's
@@ -826,13 +868,55 @@ export class SortDrop {
   readonly to: string;
   readonly index: number;
   readonly into: string | null = null;
+  /** The depth the carried item takes, in a list whose items have depths (C# `SortDrop.Depth`, #1594). */
+  readonly depth: number | null = null;
 
-  constructor(item = '', from = '', to = '', index = 0, config?: { into?: string | null }) {
+  constructor(
+    item = '',
+    from = '',
+    to = '',
+    index = 0,
+    // The positional four too: an initializer that sets one reaches the config (#1823).
+    config?: { item?: string; from?: string; to?: string; index?: number; into?: string | null; depth?: number | null },
+  ) {
     this.item = item;
     this.from = from;
     this.to = to;
     this.index = index;
     if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `SortAnnouncements` (#1564): what a reader hears while a sortable list's item is sorted by the
+ * keyboard, the instructions and each step's words with their numbered holes (`SortWords.fill` fills them). */
+export class SortAnnouncements {
+  readonly instructions: string;
+  readonly pickedUp: string;
+  readonly moved: string;
+  readonly movedInto: string;
+  readonly refused: string;
+  readonly dropped: string;
+  readonly droppedInto: string;
+  readonly putBack: string;
+
+  constructor(
+    instructions = '',
+    pickedUp = '',
+    moved = '',
+    movedInto = '',
+    refused = '',
+    dropped = '',
+    droppedInto = '',
+    putBack = '',
+  ) {
+    this.instructions = instructions;
+    this.pickedUp = pickedUp;
+    this.moved = moved;
+    this.movedInto = movedInto;
+    this.refused = refused;
+    this.dropped = dropped;
+    this.droppedInto = droppedInto;
+    this.putBack = putBack;
   }
 }
 
@@ -858,7 +942,7 @@ export class TableScrollRequest {
   readonly offset: TableOffset | null = null;
   readonly reveal: TableRange | null = null;
 
-  constructor(version = 0, config?: { offset?: TableOffset | null; reveal?: TableRange | null }) {
+  constructor(version = 0, config?: { version?: number; offset?: TableOffset | null; reveal?: TableRange | null }) {
     this.version = version;
     if (config) Object.assign(this, config);
   }
@@ -884,7 +968,7 @@ export class ScrollRequest {
   readonly version: number;
   readonly offset: number = 0;
 
-  constructor(version = 0, config?: { offset?: number }) {
+  constructor(version = 0, config?: { version?: number; offset?: number }) {
     this.version = version;
     if (config) Object.assign(this, config);
   }
@@ -895,6 +979,8 @@ export class ScrollRequest {
 hashesByValue(
   ColorToken,
   ContextRequest,
+  PointerEvent,
+  SortAnnouncements,
   SortDrop,
   TableOffset,
   TableRange,

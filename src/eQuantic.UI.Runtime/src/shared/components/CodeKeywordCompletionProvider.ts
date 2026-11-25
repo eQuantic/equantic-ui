@@ -1,4 +1,4 @@
-import { CancellationToken, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeDocument, CodePosition } from "../runtime-exports";
+import { $eq, CancellationToken, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeDocument, CodePosition } from "../runtime-exports";
 
 export class CodeKeywordCompletionProvider {
     static $interfaces = ['eQuantic.UI.Code.ICodeCompletionProvider'];
@@ -8,10 +8,10 @@ export class CodeKeywordCompletionProvider {
     async completeAsync(document: CodeDocument, position: CodePosition, context: CodeCompletionContext, _cancellation: CancellationToken) {
         let line = document.line(position.line);
         let start = position.column;
-        while (start > 0 && CodeDocument.isWordChar(line[start - 1])) start--;
-        if (start > 0 && line[start - 1] === '.') return Promise.resolve(CodeCompletionList.empty);
+        while (start > 0 && CodeDocument.isWordChar(line[start - 1 | 0])) start = start - 1 | 0;
+        if (start > 0 && line[start - 1 | 0] === '.') return Promise.resolve(CodeCompletionList.empty);
         let items: CodeCompletionItem[] = [];
-        for (const keyword of context.language.keywords) items.push(new CodeCompletionItem(keyword, 'keyword'));
+        for (const keyword of $eq.collections.sequenceWalk(context.language.keywords)) $eq.collections.listAdd(items, new CodeCompletionItem(keyword, 'keyword'));
         return Promise.resolve(new CodeCompletionList(items));
     }
 

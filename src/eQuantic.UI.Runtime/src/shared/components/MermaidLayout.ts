@@ -16,14 +16,14 @@ export class MermaidLayout {
     }
 
     static labelWidth(label: string, pad: number, min: number, max: number) {
-        let w = Math.fround(Math.fround(label.length * 8) + pad);
+        let w = Math.fround(Math.fround(Math.imul(label.length, 8)) + pad);
         if (w < min) return min;
         if (w > max) return max;
         return w;
     }
 
     static labelChipWidth(text: string) {
-        return Math.fround(text.length * 7 + 20);
+        return Math.fround(Math.imul(text.length, 7) + 20 | 0);
     }
 
     static nodeWidth(node: MermaidNode) {
@@ -49,52 +49,52 @@ export class MermaidLayout {
     static solveFlowchart(graph: MermaidGraph) {
         let count = graph.nodes.length;
         let index: any = $eq.collections.dictionary();
-        for (let i = 0; i < count; i++) $eq.mapSet(index, graph.nodes[i].id, i);
+        for (let i = 0; i < count; i = i + 1 | 0) $eq.mapSet(index, graph.nodes[i].id, i);
         let back = MermaidLayout.markBackEdges(graph, index, count);
         let rank = new Array(count).fill(0);
-        for (let pass = 0; pass < count; pass++) {
+        for (let pass = 0; pass < count; pass = pass + 1 | 0) {
             let changed = false;
-            for (let e = 0; e < graph.edges.length; e++) {
+            for (let e = 0; e < graph.edges.length; e = e + 1 | 0) {
                 if (back[e]) continue;
                 let edge = graph.edges[e];
                 let from = $eq.mapGet(index, edge.from);
                 let to = $eq.mapGet(index, edge.to);
                 if (from === to) continue;
-                if (rank[to] < rank[from] + 1) {
-                    rank[to] = rank[from] + 1;
+                if (rank[to] < (rank[from] + 1 | 0)) {
+                    rank[to] = rank[from] + 1 | 0;
                     changed = true;
                 }
             }
             if (!changed) break;
         }
         let rankCount = 0;
-        for (let i = 0; i < count; i++) if (rank[i] + 1 > rankCount) rankCount = rank[i] + 1;
+        for (let i = 0; i < count; i = i + 1 | 0) if ((rank[i] + 1 | 0) > rankCount) rankCount = rank[i] + 1 | 0;
         let order: number[][] = [];
-        for (let r = 0; r < rankCount; r++) order.push([]);
-        for (let i = 0; i < count; i++) order[rank[i]].push(i);
+        for (let r = 0; r < rankCount; r = r + 1 | 0) $eq.collections.listAdd(order, []);
+        for (let i = 0; i < count; i = i + 1 | 0) $eq.collections.listAdd(order[rank[i]], i);
         let position = new Array(count).fill(0);
-        for (let r = 0; r < rankCount; r++) MermaidLayout.reposition(order[r], position);
-        for (let r = 1; r < rankCount; r++) {
+        for (let r = 0; r < rankCount; r = r + 1 | 0) MermaidLayout.reposition(order[r], position);
+        for (let r = 1; r < rankCount; r = r + 1 | 0) {
             MermaidLayout.sortByNeighbors(order[r], graph, index, position, true);
             MermaidLayout.reposition(order[r], position);
         }
-        for (let r = rankCount - 2; r >= 0; r--) {
+        for (let r = rankCount - 2 | 0; r >= 0; r = r - 1 | 0) {
             MermaidLayout.sortByNeighbors(order[r], graph, index, position, false);
             MermaidLayout.reposition(order[r], position);
         }
         let mainSize = new Array(count).fill(0);
         let crossSize = new Array(count).fill(0);
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < count; i = i + 1 | 0) {
             let node = graph.nodes[i];
             mainSize[i] = graph.vertical ? MermaidLayout.nodeHeightOf(node) : MermaidLayout.nodeWidth(node);
             crossSize[i] = graph.vertical ? MermaidLayout.nodeWidth(node) : MermaidLayout.nodeHeightOf(node);
         }
         let rankSpan = new Array(rankCount).fill(0);
         let rankThickness = new Array(rankCount).fill(0);
-        for (let r = 0; r < rankCount; r++) {
+        for (let r = 0; r < rankCount; r = r + 1 | 0) {
             let span = 0;
             let thick = 0;
-            for (const i of order[r]) {
+            for (const i of $eq.collections.listWalk(order[r])) {
                 span = Math.fround(span + Math.fround(crossSize[i] + (span > 0 ? MermaidLayout.siblingGap : 0)));
                 if (mainSize[i] > thick) thick = mainSize[i];
             }
@@ -102,11 +102,11 @@ export class MermaidLayout {
             rankThickness[r] = thick;
         }
         let maxSpan = 0;
-        for (let r = 0; r < rankCount; r++) if (rankSpan[r] > maxSpan) maxSpan = rankSpan[r];
+        for (let r = 0; r < rankCount; r = r + 1 | 0) if (rankSpan[r] > maxSpan) maxSpan = rankSpan[r];
         let gapAfter = new Array(rankCount).fill(0);
-        for (let r = 0; r < rankCount; r++) gapAfter[r] = MermaidLayout.rankGap;
+        for (let r = 0; r < rankCount; r = r + 1 | 0) gapAfter[r] = MermaidLayout.rankGap;
         if (!graph.vertical) {
-            for (const edge of graph.edges) {
+            for (const edge of $eq.collections.listWalk(graph.edges)) {
                 if (edge.label.length === 0) continue;
                 let fromRank = rank[$eq.mapGet(index, edge.from)];
                 let toRank = rank[$eq.mapGet(index, edge.to)];
@@ -117,36 +117,36 @@ export class MermaidLayout {
         }
         let mainStart = new Array(rankCount).fill(0);
         let cursor = MermaidLayout.margin;
-        for (let r = 0; r < rankCount; r++) {
+        for (let r = 0; r < rankCount; r = r + 1 | 0) {
             mainStart[r] = cursor;
             cursor = Math.fround(cursor + Math.fround(rankThickness[r] + gapAfter[r]));
         }
         let crossCenter = new Array(count).fill(0);
         let mainCenter = new Array(count).fill(0);
-        for (let r = 0; r < rankCount; r++) {
+        for (let r = 0; r < rankCount; r = r + 1 | 0) {
             let at = Math.fround(MermaidLayout.margin + Math.fround(Math.fround(maxSpan - rankSpan[r]) / 2));
-            for (const i of order[r]) {
+            for (const i of $eq.collections.listWalk(order[r])) {
                 crossCenter[i] = Math.fround(at + Math.fround(crossSize[i] / 2));
                 at = Math.fround(at + Math.fround(crossSize[i] + MermaidLayout.siblingGap));
                 mainCenter[i] = Math.fround(mainStart[rank[i]] + Math.fround(rankThickness[rank[i]] / 2));
             }
         }
         let scene = new MermaidScene();
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < count; i = i + 1 | 0) {
             let node = graph.nodes[i];
             let w = MermaidLayout.nodeWidth(node);
             let h = MermaidLayout.nodeHeightOf(node);
             let x = Math.fround((graph.vertical ? crossCenter[i] : mainCenter[i]) - Math.fround(w / 2));
             let y = Math.fround((graph.vertical ? mainCenter[i] : crossCenter[i]) - Math.fround(h / 2));
             let $n0: MermaidPlacedNode; 
-            scene.nodes.push(($n0 = new MermaidPlacedNode(), $n0.node = node, $n0.x = x, $n0.y = y, $n0.w = w, $n0.h = h, $n0));
+            $eq.collections.listAdd(scene.nodes, ($n0 = new MermaidPlacedNode(), $n0.node = node, $n0.x = x, $n0.y = y, $n0.w = w, $n0.h = h, $n0));
         }
-        for (const edge of graph.edges) {
+        for (const edge of $eq.collections.listWalk(graph.edges)) {
             let from = scene.nodes[$eq.mapGet(index, edge.from)];
             let to = scene.nodes[$eq.mapGet(index, edge.to)];
             MermaidLayout.routeFlowEdge(scene, graph.vertical, from, to, edge);
         }
-        let mainExtent = Math.fround(Math.fround(cursor - gapAfter[rankCount - 1]) + MermaidLayout.margin);
+        let mainExtent = Math.fround(Math.fround(cursor - gapAfter[rankCount - 1 | 0]) + MermaidLayout.margin);
         scene.width = graph.vertical ? Math.fround(maxSpan + Math.fround(MermaidLayout.margin * 2)) : mainExtent;
         scene.height = graph.vertical ? mainExtent : Math.fround(maxSpan + Math.fround(MermaidLayout.margin * 2));
         return scene;
@@ -155,36 +155,36 @@ export class MermaidLayout {
     static markBackEdges(graph: MermaidGraph, index: any, count: number) {
         let back = new Array(graph.edges.length).fill(false);
         let outgoing: number[][] = [];
-        for (let i = 0; i < count; i++) outgoing.push([]);
-        for (let e = 0; e < graph.edges.length; e++) {
+        for (let i = 0; i < count; i = i + 1 | 0) $eq.collections.listAdd(outgoing, []);
+        for (let e = 0; e < graph.edges.length; e = e + 1 | 0) {
             let edge = graph.edges[e];
             let from = $eq.mapGet(index, edge.from);
-            if (from === $eq.mapGet(index, edge.to)) back[e] = true; else outgoing[from].push(e);
+            if (from === $eq.mapGet(index, edge.to)) back[e] = true; else $eq.collections.listAdd(outgoing[from], e);
         }
         let state = new Array(count).fill(0);
         let stackNode: number[] = [];
         let stackNext: number[] = [];
-        for (let root = 0; root < count; root++) {
+        for (let root = 0; root < count; root = root + 1 | 0) {
             if (state[root] !== 0) continue;
             state[root] = 1;
-            stackNode.push(root);
-            stackNext.push(0);
+            $eq.collections.listAdd(stackNode, root);
+            $eq.collections.listAdd(stackNext, 0);
             while (stackNode.length > 0) {
-                let node = stackNode[stackNode.length - 1];
-                let next = stackNext[stackNext.length - 1];
+                let node = stackNode[stackNode.length - 1 | 0];
+                let next = stackNext[stackNext.length - 1 | 0];
                 if (next >= outgoing[node].length) {
                     state[node] = 2;
-                    $eq.collections.listRemoveAt(stackNode, stackNode.length - 1);
-                    $eq.collections.listRemoveAt(stackNext, stackNext.length - 1);
+                    $eq.collections.listRemoveAt(stackNode, stackNode.length - 1 | 0);
+                    $eq.collections.listRemoveAt(stackNext, stackNext.length - 1 | 0);
                     continue;
                 }
-                stackNext[stackNext.length - 1] = next + 1;
+                $eq.collections.listSet(stackNext, stackNext.length - 1 | 0, next + 1 | 0);
                 let e = outgoing[node][next];
                 let to = $eq.mapGet(index, graph.edges[e].to);
                 if (state[to] === 1) back[e] = true; else if (state[to] === 0) {
                     state[to] = 1;
-                    stackNode.push(to);
-                    stackNext.push(0);
+                    $eq.collections.listAdd(stackNode, to);
+                    $eq.collections.listAdd(stackNext, 0);
                 }
             }
         }
@@ -192,43 +192,43 @@ export class MermaidLayout {
     }
 
     static reposition(rankOrder: number[], position: number[]) {
-        for (let k = 0; k < rankOrder.length; k++) position[rankOrder[k]] = k;
+        for (let k = 0; k < rankOrder.length; k = k + 1 | 0) position[rankOrder[k]] = k;
     }
 
     static sortByNeighbors(rankOrder: number[], graph: MermaidGraph, index: any, position: number[], byPredecessors: boolean) {
         let sums = new Array(rankOrder.length).fill(0);
         let counts = new Array(rankOrder.length).fill(0);
-        for (let k = 0; k < rankOrder.length; k++) {
+        for (let k = 0; k < rankOrder.length; k = k + 1 | 0) {
             let node = rankOrder[k];
             let sum = 0;
             let n = 0;
-            for (const edge of graph.edges) {
+            for (const edge of $eq.collections.listWalk(graph.edges)) {
                 let from = $eq.mapGet(index, edge.from);
                 let to = $eq.mapGet(index, edge.to);
                 let neighbor = -1;
                 if (byPredecessors && to === node) neighbor = from;
                 if (!byPredecessors && from === node) neighbor = to;
                 if (neighbor < 0) continue;
-                sum += position[neighbor];
-                n++;
+                sum = sum + position[neighbor] | 0;
+                n = n + 1 | 0;
             }
             sums[k] = n === 0 ? position[node] : sum;
             counts[k] = n === 0 ? 1 : n;
         }
-        for (let k = 1; k < rankOrder.length; k++) {
+        for (let k = 1; k < rankOrder.length; k = k + 1 | 0) {
             let node = rankOrder[k];
             let sum = sums[k];
             let n = counts[k];
-            let j = k - 1;
-            while (j >= 0 && sums[j] * n > sum * counts[j]) {
-                rankOrder[j + 1] = rankOrder[j];
-                sums[j + 1] = sums[j];
-                counts[j + 1] = counts[j];
-                j--;
+            let j = k - 1 | 0;
+            while (j >= 0 && Math.imul(sums[j], n) > Math.imul(sum, counts[j])) {
+                $eq.collections.listSet(rankOrder, j + 1 | 0, rankOrder[j]);
+                sums[j + 1 | 0] = sums[j];
+                counts[j + 1 | 0] = counts[j];
+                j = j - 1 | 0;
             }
-            rankOrder[j + 1] = node;
-            sums[j + 1] = sum;
-            counts[j + 1] = n;
+            $eq.collections.listSet(rankOrder, j + 1 | 0, node);
+            sums[j + 1 | 0] = sum;
+            counts[j + 1 | 0] = n;
         }
     }
 
@@ -253,21 +253,21 @@ export class MermaidLayout {
             MermaidLayout.addCurve(scene, x0, y0, x0, mid, x1, mid, x1, y1);
             if (edge.arrow) {
                 let $n1: MermaidArrowhead; 
-                scene.arrows.push(($n1 = new MermaidArrowhead(), $n1.x = x1, $n1.y = y1, $n1.direction = y1 >= mid ? 0 : 2, $n1));
+                $eq.collections.listAdd(scene.arrows, ($n1 = new MermaidArrowhead(), $n1.x = x1, $n1.y = y1, $n1.direction = y1 >= mid ? 0 : 2, $n1));
             }
             if (edge.label.length > 0) {
                 let $n2: MermaidLabel; 
-                scene.labels.push(($n2 = new MermaidLabel(), $n2.text = edge.label, $n2.x = Math.fround(Math.fround(x0 + x1) / 2), $n2.y = mid, $n2));
+                $eq.collections.listAdd(scene.labels, ($n2 = new MermaidLabel(), $n2.text = edge.label, $n2.x = Math.fround(Math.fround(x0 + x1) / 2), $n2.y = mid, $n2));
             }
         } else {
             MermaidLayout.addCurve(scene, x0, y0, mid, y0, mid, y1, x1, y1);
             if (edge.arrow) {
                 let $n3: MermaidArrowhead; 
-                scene.arrows.push(($n3 = new MermaidArrowhead(), $n3.x = x1, $n3.y = y1, $n3.direction = x1 >= mid ? 1 : 3, $n3));
+                $eq.collections.listAdd(scene.arrows, ($n3 = new MermaidArrowhead(), $n3.x = x1, $n3.y = y1, $n3.direction = x1 >= mid ? 1 : 3, $n3));
             }
             if (edge.label.length > 0) {
                 let $n4: MermaidLabel; 
-                scene.labels.push(($n4 = new MermaidLabel(), $n4.text = edge.label, $n4.x = mid, $n4.y = Math.fround(Math.fround(y0 + y1) / 2), $n4));
+                $eq.collections.listAdd(scene.labels, ($n4 = new MermaidLabel(), $n4.text = edge.label, $n4.x = mid, $n4.y = Math.fround(Math.fround(y0 + y1) / 2), $n4));
             }
         }
     }
@@ -281,12 +281,12 @@ export class MermaidLayout {
         let k2y = MermaidLayout.whole(c2y);
         let ex = MermaidLayout.whole(x1);
         let ey = MermaidLayout.whole(y1);
-        let minX = MermaidLayout.min4(sx, k1x, k2x, ex) - MermaidLayout.curvePad;
-        let maxX = MermaidLayout.max4(sx, k1x, k2x, ex) + MermaidLayout.curvePad;
-        let minY = MermaidLayout.min4(sy, k1y, k2y, ey) - MermaidLayout.curvePad;
-        let maxY = MermaidLayout.max4(sy, k1y, k2y, ey) + MermaidLayout.curvePad;
+        let minX = MermaidLayout.min4(sx, k1x, k2x, ex) - MermaidLayout.curvePad | 0;
+        let maxX = MermaidLayout.max4(sx, k1x, k2x, ex) + MermaidLayout.curvePad | 0;
+        let minY = MermaidLayout.min4(sy, k1y, k2y, ey) - MermaidLayout.curvePad | 0;
+        let maxY = MermaidLayout.max4(sy, k1y, k2y, ey) + MermaidLayout.curvePad | 0;
         let $n5: MermaidCurve; 
-        scene.curves.push(($n5 = new MermaidCurve(), $n5.x = Math.fround(minX), $n5.y = Math.fround(minY), $n5.w = Math.fround(maxX - minX), $n5.h = Math.fround(maxY - minY), $n5.path = $eq.text.stringFormatInvariant('M {0} {1} C {2} {3}, {4} {5}, {6} {7}', $eq.text.asNumber(sx, 'int32'), $eq.text.asNumber(sy, 'int32'), $eq.text.asNumber(k1x, 'int32'), $eq.text.asNumber(k1y, 'int32'), $eq.text.asNumber(k2x, 'int32'), $eq.text.asNumber(k2y, 'int32'), $eq.text.asNumber(ex, 'int32'), $eq.text.asNumber(ey, 'int32')), $n5.viewBox = $eq.text.stringFormatInvariant('{0} {1} {2} {3}', $eq.text.asNumber(minX, 'int32'), $eq.text.asNumber(minY, 'int32'), $eq.text.asNumber(maxX - minX, 'int32'), $eq.text.asNumber(maxY - minY, 'int32')), $n5));
+        $eq.collections.listAdd(scene.curves, ($n5 = new MermaidCurve(), $n5.x = Math.fround(minX), $n5.y = Math.fround(minY), $n5.w = Math.fround(maxX - minX | 0), $n5.h = Math.fround(maxY - minY | 0), $n5.path = $eq.text.stringFormatInvariant('M {0} {1} C {2} {3}, {4} {5}, {6} {7}', $eq.text.asNumber(sx, 'int32'), $eq.text.asNumber(sy, 'int32'), $eq.text.asNumber(k1x, 'int32'), $eq.text.asNumber(k1y, 'int32'), $eq.text.asNumber(k2x, 'int32'), $eq.text.asNumber(k2y, 'int32'), $eq.text.asNumber(ex, 'int32'), $eq.text.asNumber(ey, 'int32')), $n5.viewBox = $eq.text.stringFormatInvariant('{0} {1} {2} {3}', $eq.text.asNumber(minX, 'int32'), $eq.text.asNumber(minY, 'int32'), $eq.text.asNumber(maxX - minX | 0, 'int32'), $eq.text.asNumber(maxY - minY | 0, 'int32')), $n5));
     }
 
     static whole(v: number) {
@@ -311,33 +311,33 @@ export class MermaidLayout {
             let top = y0 < y1 ? y0 : y1;
             let h = y0 < y1 ? Math.fround(y1 - y0) : Math.fround(y0 - y1);
             let $n6: MermaidSegment; 
-            scene.segments.push(($n6 = new MermaidSegment(), $n6.x = Math.fround(x0 - Math.fround(MermaidLayout.lineThickness / 2)), $n6.y = top, $n6.w = MermaidLayout.lineThickness, $n6.h = h, $n6));
+            $eq.collections.listAdd(scene.segments, ($n6 = new MermaidSegment(), $n6.x = Math.fround(x0 - Math.fround(MermaidLayout.lineThickness / 2)), $n6.y = top, $n6.w = MermaidLayout.lineThickness, $n6.h = h, $n6));
             return;
         }
         let left = x0 < x1 ? x0 : x1;
         let w = x0 < x1 ? Math.fround(x1 - x0) : Math.fround(x0 - x1);
         let $n7: MermaidSegment; 
-        scene.segments.push(($n7 = new MermaidSegment(), $n7.x = left, $n7.y = Math.fround(y0 - Math.fround(MermaidLayout.lineThickness / 2)), $n7.w = w, $n7.h = MermaidLayout.lineThickness, $n7));
+        $eq.collections.listAdd(scene.segments, ($n7 = new MermaidSegment(), $n7.x = left, $n7.y = Math.fround(y0 - Math.fround(MermaidLayout.lineThickness / 2)), $n7.w = w, $n7.h = MermaidLayout.lineThickness, $n7));
     }
 
     static solveSequence(graph: MermaidGraph) {
         let scene = new MermaidScene();
         let centers: any = $eq.collections.dictionary();
         let at = MermaidLayout.margin;
-        for (const participant of graph.nodes) {
+        for (const participant of $eq.collections.listWalk(graph.nodes)) {
             let w = MermaidLayout.labelWidth(participant.label, 28, 80, 220);
             let $n8: MermaidPlacedNode; 
-            scene.nodes.push(($n8 = new MermaidPlacedNode(), $n8.node = participant, $n8.x = at, $n8.y = MermaidLayout.margin, $n8.w = w, $n8.h = MermaidLayout.nodeHeight, $n8));
+            $eq.collections.listAdd(scene.nodes, ($n8 = new MermaidPlacedNode(), $n8.node = participant, $n8.x = at, $n8.y = MermaidLayout.margin, $n8.w = w, $n8.h = MermaidLayout.nodeHeight, $n8));
             $eq.mapSet(centers, participant.id, Math.fround(at + Math.fround(w / 2)));
             at = Math.fround(at + Math.fround(w + MermaidLayout.participantGap));
         }
         let bottom = Math.fround(Math.fround(Math.fround(MermaidLayout.margin + MermaidLayout.lifelineTop) + Math.fround(Math.fround(graph.messages.length) * MermaidLayout.messageGap)) + MermaidLayout.margin);
-        for (const placed of scene.nodes) {
+        for (const placed of $eq.collections.listWalk(scene.nodes)) {
             let x = Math.fround(placed.x + Math.fround(placed.w / 2));
             MermaidLayout.addSegment(scene, x, Math.fround(placed.y + placed.h), x, Math.fround(bottom - MermaidLayout.margin));
         }
         let y = Math.fround(Math.fround(MermaidLayout.margin + MermaidLayout.lifelineTop) + Math.fround(MermaidLayout.messageGap / 2));
-        for (const message of graph.messages) {
+        for (const message of $eq.collections.listWalk(graph.messages)) {
             let x0 = $eq.mapGet(centers, message.from);
             let x1 = $eq.mapGet(centers, message.to);
             if (x0 === x1) {
@@ -345,18 +345,18 @@ export class MermaidLayout {
                 MermaidLayout.addSegment(scene, Math.fround(x0 + 36), Math.fround(y - 12), Math.fround(x0 + 36), y);
                 MermaidLayout.addSegment(scene, Math.fround(x0 + 36), y, x0, y);
                 let $n9: MermaidArrowhead; 
-                scene.arrows.push(($n9 = new MermaidArrowhead(), $n9.x = x0, $n9.y = y, $n9.direction = 3, $n9));
+                $eq.collections.listAdd(scene.arrows, ($n9 = new MermaidArrowhead(), $n9.x = x0, $n9.y = y, $n9.direction = 3, $n9));
                 if (message.label.length > 0) {
                     let $n10: MermaidLabel; 
-                    scene.labels.push(($n10 = new MermaidLabel(), $n10.text = message.label, $n10.x = Math.fround(Math.fround(x0 + 36) + 12), $n10.y = Math.fround(y - 12), $n10));
+                    $eq.collections.listAdd(scene.labels, ($n10 = new MermaidLabel(), $n10.text = message.label, $n10.x = Math.fround(Math.fround(x0 + 36) + 12), $n10.y = Math.fround(y - 12), $n10));
                 }
             } else {
                 MermaidLayout.addSegment(scene, x0, y, x1, y);
                 let $n11: MermaidArrowhead; 
-                scene.arrows.push(($n11 = new MermaidArrowhead(), $n11.x = x1, $n11.y = y, $n11.direction = x1 > x0 ? 1 : 3, $n11));
+                $eq.collections.listAdd(scene.arrows, ($n11 = new MermaidArrowhead(), $n11.x = x1, $n11.y = y, $n11.direction = x1 > x0 ? 1 : 3, $n11));
                 if (message.label.length > 0) {
                     let $n12: MermaidLabel; 
-                    scene.labels.push(($n12 = new MermaidLabel(), $n12.text = message.label, $n12.x = Math.fround(Math.fround(x0 + x1) / 2), $n12.y = Math.fround(y - 12), $n12));
+                    $eq.collections.listAdd(scene.labels, ($n12 = new MermaidLabel(), $n12.text = message.label, $n12.x = Math.fround(Math.fround(x0 + x1) / 2), $n12.y = Math.fround(y - 12), $n12));
                 }
             }
             y = Math.fround(y + MermaidLayout.messageGap);

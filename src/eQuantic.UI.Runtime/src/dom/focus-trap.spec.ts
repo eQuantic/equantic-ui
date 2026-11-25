@@ -7,6 +7,9 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { activeFocusTraps, commitFocusTraps, resetFocusTraps } from './focus-trap';
+import { StatefulComponent } from '../core/component';
+import { Column, Overlay, Pressable, Stack, Text } from '../shared/vocabulary';
+import { gateCompactUntil, gateExpandedFrom } from '../shared/style-atomizer';
 
 /** A modal layer as the lowerings emit it: the marker plus the dialog semantics. */
 function layer(...focusables: HTMLElement[]): HTMLElement {
@@ -218,5 +221,399 @@ describe('§10 preferred initial focus', () => {
     commitFocusTraps();
 
     expect(document.activeElement).toBe(first);
+  });
+});
+
+/**
+ * Two layers kept mounted for their exit lose their markers in one pass: the focus is in the inner one, so
+ * it is given back from the outer one's opener rather than left where a removed layer's focus would go.
+ */
+describe('§10 two layers that stop being traps together, kept mounted for their exit', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    resetFocusTraps();
+  });
+
+  it('give the focus to the outermost one opener, from inside the inner one', () => {
+    const settingsButton = button('Settings');
+    document.body.appendChild(settingsButton);
+    settingsButton.focus();
+    const reset = button('Reset');
+    const settings = layer(reset, button('Close'));
+    document.body.appendChild(settings);
+    commitFocusTraps();
+    reset.focus();
+    const keep = button('Keep');
+    const confirm = layer(keep, button('Discard'));
+    document.body.appendChild(confirm);
+    commitFocusTraps();
+    keep.focus();
+
+    // Both close with motion: they stay in the document, sibling layers, and only lose their markers.
+    confirm.removeAttribute('data-eq-trap');
+    settings.removeAttribute('data-eq-trap');
+    commitFocusTraps();
+
+    expect(document.activeElement, 'the focus left the closing confirm for the settings dialog opener').toBe(settingsButton);
+  });
+});
+
+/**
+ * #1811: the invoker gone is no reason to drop the focus. The control now at its place among the
+ * controls Tab reaches takes it, which is the same control of the next row when a dialog deleted the
+ * row that opened it. Photon's twin is ModalFocusReturnTests, over the same rows.
+ */
+describe('§10 the focus goes to the control in the invoker place when the invoker is gone', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    resetFocusTraps();
+  });
+
+  /** Rows with an Edit and a Delete each, in a list on the page. */
+  function rows(...names: string[]): Map<string, HTMLElement> {
+    const list = document.createElement('div');
+    const byName = new Map<string, HTMLElement>();
+    for (const name of names) {
+      const row = document.createElement('div');
+      row.appendChild(button(`Edit ${name}`));
+      row.appendChild(button(`Delete ${name}`));
+      list.appendChild(row);
+      byName.set(name, row);
+    }
+    document.body.appendChild(list);
+    return byName;
+  }
+
+  const deleteOf = (row: HTMLElement) => row.querySelectorAll('button')[1] as HTMLElement;
+
+  /** The confirm dialog opened from `opener`, with the focus inside it as the rAF hop leaves it. */
+  function confirmFrom(opener: HTMLElement): HTMLElement {
+    opener.focus();
+    const confirm = button('Delete');
+    const dialog = layer(confirm, button('Cancel'));
+    document.body.appendChild(dialog);
+    commitFocusTraps();
+    confirm.focus();
+    return dialog;
+  }
+
+  it('a row the dialog deleted hands the focus to the same control of the next row', () => {
+    const list = rows('one', 'two', 'three');
+    const dialog = confirmFrom(deleteOf(list.get('two')!));
+
+    list.get('two')!.remove();
+    dialog.remove();
+    commitFocusTraps();
+
+    expect(document.activeElement?.textContent).toBe('Delete three');
+  });
+
+  it('the last row deleted hands the focus to the row before it', () => {
+    const list = rows('one', 'two', 'three');
+    const dialog = confirmFrom(deleteOf(list.get('three')!));
+
+    list.get('three')!.remove();
+    dialog.remove();
+    commitFocusTraps();
+
+    expect(document.activeElement?.textContent).toBe('Delete two');
+  });
+
+  it('a control inside a lower dialog is the place, when the dialog over it closes', () => {
+    const lower = layer(button('Keep'), button('Remove'), button('Close'));
+    document.body.appendChild(lower);
+    commitFocusTraps();
+    const remove = lower.querySelectorAll('button')[1] as HTMLElement;
+    const upper = confirmFrom(remove);
+
+    remove.remove();
+    upper.remove();
+    commitFocusTraps();
+
+    expect(document.activeElement?.textContent, 'inside the dialog still open, never the page').toBe('Close');
+  });
+
+  it('a row removed after the dialog closed hands the focus to the next row', () => {
+    const list = rows('one', 'two', 'three');
+    const dialog = confirmFrom(deleteOf(list.get('two')!));
+    dialog.remove();
+    commitFocusTraps();
+    expect(document.activeElement?.textContent, 'the row is still there').toBe('Delete two');
+
+    // The server answered: the row goes in a later pass.
+    list.get('two')!.remove();
+    commitFocusTraps();
+
+    expect(document.activeElement?.textContent).toBe('Delete three');
+  });
+
+  it('a row removed later leaves a focus the user moved where it is', () => {
+    const list = rows('one', 'two', 'three');
+    const dialog = confirmFrom(deleteOf(list.get('two')!));
+    dialog.remove();
+    commitFocusTraps();
+    const moved = list.get('three')!.querySelector('button') as HTMLElement;
+    moved.focus();
+    commitFocusTraps();
+
+    list.get('two')!.remove();
+    commitFocusTraps();
+
+    expect(document.activeElement).toBe(moved);
+  });
+
+  it('two dialogs closing together give the focus to the outermost one opener', () => {
+    // A control before the opener: the confirm's opener sat first in its dialog, and the page's first
+    // control is not the settings dialog's opener, so a place taken across scopes shows.
+    document.body.appendChild(button('Before'));
+    const settingsButton = button('Settings');
+    document.body.appendChild(settingsButton);
+    settingsButton.focus();
+    const reset = button('Reset');
+    const settings = layer(reset, button('Close'));
+    document.body.appendChild(settings);
+    commitFocusTraps();
+    const confirm = confirmFrom(reset);
+
+    confirm.remove();
+    settings.remove();
+    commitFocusTraps();
+
+    expect(document.activeElement).toBe(settingsButton);
+  });
+});
+
+/**
+ * A layer in an adaptive arm the window hides lets go of the keyboard (#1185). The web mounts every arm and
+ * its CSS shows one, so a drawer left open in the compact arm kept its marker when the window widened, and
+ * held the keyboard in a layer nobody could see. The controller asks the arms' gates when the Tab or the
+ * focus arrives, from the same media conditions the gates' CSS applies.
+ */
+describe('§10 a layer in a hidden adaptive arm', () => {
+  let width = 700;
+  const matches = (media: string): boolean => {
+    const min = /min-width:\s*([\d.]+)px/.exec(media);
+    const max = /max-width:\s*([\d.]+)px/.exec(media);
+    return (!min || width >= Number(min[1])) && (!max || width <= Number(max[1]));
+  };
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    resetFocusTraps();
+    width = 700;
+    vi.stubGlobal('matchMedia', (media: string) => ({
+      matches: matches(media),
+      media,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    resetFocusTraps();
+  });
+
+  /** An arm behind `gate`, holding `children`, as the lowerings wrap one. */
+  function arm(gate: string, ...children: HTMLElement[]): HTMLElement {
+    const el = document.createElement('div');
+    el.className = gate;
+    for (const child of children) el.appendChild(child);
+    document.body.appendChild(el);
+    return el;
+  }
+
+  it('a drawer in the compact arm cycles Tab at 700, lets go of it at 1024, and holds it again back at 700', () => {
+    const page = button('Page');
+    document.body.appendChild(page);
+    const home = button('Home');
+    const settings = button('Settings');
+    arm(gateCompactUntil(840), layer(home, settings));
+    const sidebar = button('Sidebar');
+    arm(gateExpandedFrom(840), sidebar);
+    page.focus();
+    commitFocusTraps();
+    settings.focus();
+
+    expect(tab().defaultPrevented, 'at 700 the drawer is on screen and cycles Tab').toBe(true);
+    expect(document.activeElement).toBe(home);
+
+    width = 1024;
+    expect(tab().defaultPrevented, 'at 1024 the drawer is hidden, and Tab walks the page').toBe(false);
+    sidebar.focus();
+    expect(document.activeElement, 'a focus outside the hidden drawer stays where it went').toBe(sidebar);
+
+    width = 700;
+    expect(tab().defaultPrevented, 'back at 700 the drawer holds Tab again').toBe(true);
+    expect(document.activeElement).toBe(home);
+  });
+
+  it('a layer outside every arm holds the keyboard at every width', () => {
+    const cancel = button('Cancel');
+    const dialog = layer(cancel, button('Delete'));
+    document.body.appendChild(dialog);
+    commitFocusTraps();
+    cancel.focus();
+
+    for (const at of [500, 700, 1024]) {
+      width = at;
+      const outside = button(`Behind ${at}`);
+      document.body.appendChild(outside);
+      outside.focus();
+      expect(dialog.contains(document.activeElement), `at ${at} the focus is pulled back into the dialog`).toBe(true);
+    }
+  });
+
+  it('a layer that opens in an arm already hidden takes no focus and traps nothing', () => {
+    // A served page carries every arm, and a dialog open from the start in the compact arm reaches a wide
+    // window behind its gate.
+    width = 1024;
+    const page = button('Page');
+    document.body.appendChild(page);
+    page.focus();
+    arm(gateCompactUntil(840), layer(button('Accept'), button('Decline')));
+    // The initial focus waits a frame; run it now, so a focus scheduled into the hidden layer shows.
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      callback(0);
+      return 0;
+    });
+    commitFocusTraps();
+
+    expect(document.activeElement, 'a hidden layer takes no initial focus').toBe(page);
+    expect(tab().defaultPrevented, 'Tab walks the page').toBe(false);
+  });
+
+  it('a hidden drawer that closes leaves the focus where the user moved it', () => {
+    const menu = button('Menu');
+    arm(gateCompactUntil(840), menu);
+    menu.focus();
+    const drawer = layer(button('Home'), button('Settings'));
+    const compact = arm(gateCompactUntil(840), drawer);
+    commitFocusTraps();
+    // Two controls in the wide arm, and the user picks the second: the one a place taken for the menu
+    // would not pick, so a restore over the user's choice shows.
+    const sidebar = button('Sidebar');
+    const search = button('Search');
+    arm(gateExpandedFrom(840), sidebar, search);
+
+    width = 1024;
+    search.focus();
+    compact.remove();
+    commitFocusTraps();
+
+    expect(document.activeElement, 'the closed drawer gave nothing back over the user’s choice').toBe(search);
+  });
+
+  it('a hidden layer and one on screen closing together give the focus to the opener on screen', () => {
+    // A drawer opens from the compact arm's menu, and the window then widens: its arm hides with it open.
+    const menu = button('Menu');
+    const compact = arm(gateCompactUntil(840), menu);
+    menu.focus();
+    const drawer = layer(button('Home'), button('Settings'));
+    compact.appendChild(drawer);
+    commitFocusTraps();
+    width = 1024;
+    // On screen, a dialog opens from the second control of the wide arm: the first is where the drawer's
+    // place, taken for the menu, would put the focus.
+    const sidebar = button('Sidebar');
+    const share = button('Share');
+    const wide = arm(gateExpandedFrom(840), sidebar, share);
+    share.focus();
+    const copy = button('Copy link');
+    const dialog = layer(copy, button('Close'));
+    wide.appendChild(dialog);
+    commitFocusTraps();
+    copy.focus();
+
+    // One pass closes both, the drawer first in the document.
+    drawer.remove();
+    dialog.remove();
+    commitFocusTraps();
+
+    expect(document.activeElement, 'the opener on screen takes the focus back, not the hidden menu’s place').toBe(share);
+  });
+
+  it('under a hidden layer, the layer on screen owns the keyboard', () => {
+    const keep = button('Keep');
+    const discard = button('Discard');
+    const dialog = layer(keep, discard);
+    document.body.appendChild(dialog);
+    commitFocusTraps();
+    const home = button('Home');
+    arm(gateCompactUntil(840), layer(home, button('Settings')));
+    commitFocusTraps();
+
+    width = 1024;
+    discard.focus();
+    expect(tab().defaultPrevented, 'the dialog on screen cycles Tab').toBe(true);
+    expect(document.activeElement).toBe(keep);
+  });
+});
+
+/**
+ * The same contract through the pipeline a page runs, not a commit called by hand: a render's pass ends,
+ * the render manager writes the tree, and only then are the traps reconciled. The commit ran at the end
+ * of the pass, before the write, and read the DOM the pass before had written, so a dialog a render
+ * opened took no focus and recorded no opener until some later pass came; the cases above, which call
+ * `commitFocusTraps` themselves, could not see the order (#1812).
+ */
+describe('§10 through a page’s own render and write', () => {
+  /** A row's Delete that opens the confirm, its Cancel the safe action that takes the focus first. */
+  class ConfirmPage extends StatefulComponent {
+    asking = false;
+
+    build(): never {
+      const page = new Stack();
+      page.add(
+        new Pressable(new Text('Delete one', 'bodyM'), () => this.setState(() => (this.asking = true)), {
+          label: 'Delete one',
+        }) as never,
+      );
+      if (this.asking) {
+        const actions = new Column(4);
+        actions.add(
+          new Pressable(new Text('Cancel', 'bodyM'), () => this.setState(() => (this.asking = false)), {
+            label: 'Cancel',
+            initialFocus: true,
+          }) as never,
+        );
+        page.add(new Overlay(actions, { label: 'Delete the row?' }) as never);
+      }
+      return page as never;
+    }
+  }
+
+  const nextFrame = () =>
+    new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+  const labelled = (label: string) => document.querySelector(`[aria-label="${label}"]`) as HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    resetFocusTraps();
+  });
+
+  afterEach(() => resetFocusTraps());
+
+  it('a dialog a render opens takes the focus, and gives it back to its opener when it closes', async () => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    new ConfirmPage().mount(host);
+    await nextFrame();
+
+    labelled('Delete one').focus();
+    labelled('Delete one').click();
+    await nextFrame();
+    await nextFrame();
+
+    expect(activeFocusTraps(), 'the dialog is trapped in the pass that wrote it').toHaveLength(1);
+    expect(document.activeElement).toBe(labelled('Cancel'));
+
+    labelled('Cancel').click();
+    await nextFrame();
+    await nextFrame();
+
+    expect(activeFocusTraps()).toHaveLength(0);
+    expect(document.activeElement).toBe(labelled('Delete one'));
   });
 });

@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CodeBlock, ColorToken, CornerRadii, EdgeInsets, IconGlyph, MermaidArrowhead, MermaidLayout, MermaidParser, MermaidPlacedNode, Positioned, ScrollView, SizeValue, Stack, StatelessComponent, Text, Vector, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, ColorToken, CornerRadii, Directionality, EdgeInsets, IconGlyph, MermaidArrowhead, MermaidLayout, MermaidParser, MermaidPlacedNode, Positioned, ScrollView, SizeValue, Stack, StatelessComponent, Text, Vector, VisualNodeExtensions } from "../runtime-exports";
 
 export class Mermaid extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Mermaid';
@@ -20,15 +20,15 @@ export class Mermaid extends StatelessComponent {
         let scene = MermaidLayout.solve(graph);
         let canvas = new Stack('topStart', { width: scene.width, height: scene.height });
         let ink = theme.borderStrong;
-        for (const curve of scene.curves) canvas.add(new Positioned(new Vector(new IconGlyph('edge', curve.path, 'stroke', curve.viewBox, Mermaid.edgeWidth), curve.w, ink, null, curve.h), curve.y, null, null, curve.x));
-        for (const segment of scene.segments) canvas.add(new Positioned(new Box(new BoxStyle({ width: segment.w, height: segment.h, background: ink })), segment.y, null, null, segment.x));
-        for (const arrow of scene.arrows) canvas.add(Mermaid.placeArrowhead(arrow, ink));
-        for (const label of scene.labels) {
+        for (const curve of $eq.collections.listWalk(scene.curves)) canvas.add(new Positioned(new Vector(new IconGlyph('edge', curve.path, 'stroke', curve.viewBox, Mermaid.edgeWidth), curve.w, ink, null, curve.h), curve.y, null, null, curve.x));
+        for (const segment of $eq.collections.listWalk(scene.segments)) canvas.add(new Positioned(new Box(new BoxStyle({ width: segment.w, height: segment.h, background: ink })), segment.y, null, null, segment.x));
+        for (const arrow of $eq.collections.listWalk(scene.arrows)) canvas.add(Mermaid.placeArrowhead(arrow, ink));
+        for (const label of $eq.collections.listWalk(scene.labels)) {
             let width = MermaidLayout.labelChipWidth(label.text);
             canvas.add(new Positioned(new Box(new BoxStyle({ padding: new EdgeInsets(6, 1, 6, 1), background: theme.background, borderColor: theme.border, borderWidth: 1, cornerRadius: new CornerRadii(6) }), new Text(label.text, 'caption', theme.textMuted, 1)), Math.fround(label.y - 10), null, null, Math.fround(label.x - Math.fround(width / 2))));
         }
-        for (const placed of scene.nodes) canvas.add(new Positioned(Mermaid.nodeView(placed, theme), placed.y, null, null, placed.x));
-        return new ScrollView(canvas, 'horizontal', { width: SizeValue.fill });
+        for (const placed of $eq.collections.listWalk(scene.nodes)) canvas.add(new Positioned(Mermaid.nodeView(placed, theme), placed.y, null, null, placed.x));
+        return new Directionality('leftToRight', new ScrollView(canvas, 'horizontal', { width: SizeValue.fill }));
     }
 
     static nodeView(placed: MermaidPlacedNode, theme: any) {

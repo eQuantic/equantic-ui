@@ -7,7 +7,7 @@ export class EmittedChain {
 
     depth() {
         let depth = 0;
-        for (let at: EmittedChain | null = this; at != null; at = at.parent) depth++;
+        for (let at: EmittedChain | null = this; at != null; at = at.parent) depth = depth + 1 | 0;
         return depth;
     }
 

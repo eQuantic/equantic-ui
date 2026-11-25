@@ -10,9 +10,10 @@
 
 export type NodeKind =
   'adaptive' | 'adjustable' | 'anchored' | 'box' | 'cameraPreview' | 'canvas' | 'codeSurface'
-  | 'column' | 'contextTarget' | 'dragDismiss' | 'draggable' | 'drawing' | 'dropTarget' | 'flexible'
-  | 'grid' | 'group' | 'hoverable' | 'icon' | 'image' | 'inFlow' | 'inView' | 'link' | 'liveRegion'
-  | 'loopMotion' | 'navigable' | 'overlay' | 'pinned' | 'positioned' | 'presence' | 'pressable'
-  | 'progress' | 'row' | 'safeArea' | 'scrollView' | 'sheetSurface' | 'shortcut' | 'simulated'
-  | 'sortable' | 'sortableItem' | 'spacer' | 'spinner' | 'stack' | 'tableViewCell' | 'tableViewport'
-  | 'text' | 'textEntry' | 'vector' | 'webFrame' | 'component' | 'inherited';
+  | 'column' | 'contextTarget' | 'dragDismiss' | 'draggable' | 'drawing' | 'dropTarget'
+  | 'excludeSemantics' | 'flexible' | 'grid' | 'group' | 'hoverable' | 'icon' | 'image' | 'inFlow'
+  | 'inView' | 'link' | 'listener' | 'liveRegion' | 'loopMotion' | 'mergeSemantics' | 'navigable'
+  | 'overlay' | 'pinned' | 'positioned' | 'presence' | 'pressable' | 'progress' | 'row' | 'safeArea'
+  | 'scrollView' | 'sheetSurface' | 'shortcut' | 'simulated' | 'sortable' | 'sortableItem'
+  | 'spacer' | 'spinner' | 'stack' | 'tableViewCell' | 'tableViewport' | 'text' | 'textEntry'
+  | 'vector' | 'webFrame' | 'component' | 'inherited';

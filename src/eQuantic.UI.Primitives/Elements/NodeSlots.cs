@@ -43,7 +43,7 @@ internal readonly struct NodeSlots
     /// <summary>Two slots, the second one possibly empty.</summary>
     internal static NodeSlots Two(VisualNode first, VisualNode? second) => new(null, 2, first, second, null, -1);
 
-    internal static NodeSlots Three(VisualNode first, VisualNode? second, VisualNode? third) =>
+    internal static NodeSlots Three(VisualNode? first, VisualNode? second, VisualNode? third) =>
         new(null, 3, first, second, third, -1);
 
     /// <summary>Fixed slots of which <paramref name="slot"/> is built when the realizer shows it.</summary>

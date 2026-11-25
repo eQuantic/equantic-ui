@@ -164,7 +164,7 @@ public class QueueStackStrategy : IExpressionIrStrategy
             : JsExpr.Call(JsExpr.Member(target, name), context.Converter.ConvertIr(input.Expression));
         var outType = method.Parameters.First(parameter => parameter.RefKind == RefKind.Out).Type;
         var answer = JsExpr.Callish(OutArgument.TryAnswer(result, input?.SpanStart ?? invocation.SpanStart, read,
-            DefaultValue.Of(outType, context), context));
+            OutArgument.Missed(outType, context), context));
         return placeFirst ? JsExpr.Call(JsExpr.Arrow("$receiver", answer), receiver) : answer;
     }
 

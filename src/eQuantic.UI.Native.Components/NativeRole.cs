@@ -254,10 +254,18 @@ public readonly record struct NativeRole(
         // TalkBack names "drop-down list" and which is the class Chrome gives the web half of this
         // very component (a combobox that is not a text field). UIKit has no trait for it: a menu
         // button reports the button trait, and whether the list is open rides the expanded status
-        // the bridge already sets. An editable combobox, a text field with the list under it, would
-        // take Core-AAM's own pair, and nothing in the library builds one.
+        // the bridge already sets. An editable combobox, a text field with the list under it, takes
+        // Core-AAM's own pair: the row below.
         SemanticRole.ComboBox =>
             new("AXPopUpButton", "android.widget.Spinner", UIKitTrait.Button,
+                Activatable: true, Adjustable: false),
+
+        // A text field with the list under it (#1088), the code editor's go-to field: Core-AAM's own
+        // pair for an editable combobox, NSComboBox's AXComboBox on the Mac and, on Android, the
+        // field TalkBack calls an edit box and offers to type into. UIKit has no trait for it: a text
+        // field reports none, and whether its list is open rides the expanded status the bridge sets.
+        SemanticRole.EditableComboBox =>
+            new("AXComboBox", "android.widget.EditText", UIKitTrait.None,
                 Activatable: true, Adjustable: false),
 
         // A layer that holds the screen until it is answered: AXGroup with the AXApplicationDialog
@@ -328,6 +336,15 @@ public readonly record struct NativeRole(
         SemanticRole.TreeItem =>
             new("AXRow", "android.view.View", UIKitTrait.Button,
                 Activatable: true, Adjustable: false, AppKitSubrole: "AXOutlineRow"),
+
+        // A SPLITTER (#1538), the focusable separator the web half writes: Core-AAM gives ARIA's
+        // separator AXSplitter on AppKit, which VoiceOver moves with its adjust keys as it moves a
+        // slider, and the value rides AXValue with AXMinValue and AXMaxValue as a slider's does. UIKit
+        // and Android have no splitter, so it is what each offers for a value a reader moves: the
+        // adjustable trait, and the SeekBar class whose RangeInfo carries the range.
+        SemanticRole.Splitter =>
+            new("AXSplitter", "android.widget.SeekBar", UIKitTrait.Adjustable,
+                Activatable: false, Adjustable: true),
     };
 #pragma warning restore CS8524
 }

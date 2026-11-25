@@ -7,7 +7,8 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
 /// <summary><c>foreach (var x in xs)</c> → <c>for (const x of xs)</c>; <c>await foreach</c> →
-/// <c>for await</c>. A dictionary is iterable as it is, its runtime class enumerating its pairs.</summary>
+/// <c>for await</c>. A dictionary is iterable as it is, its runtime class enumerating its pairs, and a
+/// <c>List&lt;T&gt;</c> is walked through its version (<see cref="Walked"/>).</summary>
 public class ForEachStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
@@ -19,7 +20,7 @@ public class ForEachStatementStrategy : IStatementStrategy
     {
         var foreachStmt = (ForEachStatementSyntax)node;
         var item = foreachStmt.Identifier.ValueText.ToJsIdentifier();
-        var declared = ExpressionVariableScanner.Declarations(foreachStmt.Expression, context.TypeAnnotations);
+        var declared = ExpressionVariableScanner.Declarations(foreachStmt.Expression, context);
         // A string enumerates its chars, the UTF-16 code units, where JavaScript's iterator gives code
         // points: `foreach (var c in "a😀b")` counted three where .NET counts four (#524). A type that
         // may hold one (`object`, `IEnumerable`, `IEnumerable<char>`) asks the value what it is.
@@ -36,7 +37,7 @@ public class ForEachStatementStrategy : IStatementStrategy
             _ when bound is not null => bound,
             { SpecialType: SpecialType.System_String } => JsExpr.Call(JsExpr.Member(source, "split"), JsExpr.Literal("''")),
             _ when MayHoldAString(sourceType) => Enumerable(source, context),
-            _ => source,
+            _ => Walked(source, sourceType, context),
         });
 
         var body = context.Converter.ConvertStatementIr(foreachStmt.Statement);
@@ -64,6 +65,40 @@ public class ForEachStatementStrategy : IStatementStrategy
         // and a block around the loop is where it is declared. The collection is read once, so one
         // variable per loop is .NET's answer too.
         return declared.Length == 0 ? loop : JsStatement.Block([JsStatement.Raw(declared.TrimEnd()), loop]);
+    }
+
+    /// <summary>
+    /// What a loop walks: a <c>List&lt;T&gt;</c> through the runtime's <c>listWalk</c>, which compares the
+    /// list's version at every step and refuses a change, as .NET's enumerator does (#863), where the
+    /// array's own iterator walked on over what the body added. A sequence held as an interface a list
+    /// answers to, or as a class derived from a list, may be one: <c>sequenceWalk</c> walks a list through its
+    /// version and anything else as it is, since .NET's list enumerator refuses the change through every face.
+    /// Anything else is walked as it is.
+    /// </summary>
+    internal static JsExpr Walked(JsExpr source, ITypeSymbol? sourceType, ConversionContext context)
+    {
+        if (sourceType?.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>")
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Call(JsExpr.Identifier(Eq.ListWalk), source);
+        }
+        if (!MayHoldAList(sourceType)) return source;
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Call(JsExpr.Identifier(Eq.SequenceWalk), source);
+    }
+
+    /// <summary>The faces a <c>List&lt;T&gt;</c> answers to, and a class derived from one.</summary>
+    private static bool MayHoldAList(ITypeSymbol? type)
+    {
+        if (type is null) return false;
+        if (type.OriginalDefinition.ToDisplayString() is "System.Collections.Generic.IEnumerable<T>"
+            or "System.Collections.Generic.ICollection<T>" or "System.Collections.Generic.IList<T>"
+            or "System.Collections.Generic.IReadOnlyCollection<T>" or "System.Collections.Generic.IReadOnlyList<T>"
+            or "System.Collections.IEnumerable" or "System.Collections.ICollection" or "System.Collections.IList")
+            return true;
+        for (var at = type.BaseType; at is not null; at = at.BaseType)
+            if (at.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>") return true;
+        return false;
     }
 
     private static JsExpr? ElementConversion(ForEachStatementSyntax foreachStmt, string item, ConversionContext context)

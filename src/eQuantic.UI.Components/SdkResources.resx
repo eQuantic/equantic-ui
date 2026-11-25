@@ -319,6 +319,12 @@
   <data name="SortDropped" xml:space="preserve">
     <value>Dropped {0} at position {1} of {2} in {3}.</value>
   </data>
+  <data name="SortMovedInto" xml:space="preserve">
+    <value>{0} is inside {1}.</value>
+  </data>
+  <data name="SortDroppedInto" xml:space="preserve">
+    <value>Dropped {0} inside {1}.</value>
+  </data>
   <data name="SortCancelled" xml:space="preserve">
     <value>Put {0} back where it was.</value>
   </data>
@@ -327,5 +333,38 @@
   </data>
   <data name="TreeLoadFailed" xml:space="preserve">
     <value>Could not load. Try again</value>
+  </data>
+  <data name="TreeItemName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="SortByColumn" xml:space="preserve">
+    <value>Sort by {0}</value>
+  </data>
+  <data name="ResizeColumn" xml:space="preserve">
+    <value>Resize {0}</value>
+  </data>
+  <data name="TableColumns" xml:space="preserve">
+    <value>Columns</value>
+  </data>
+  <data name="AmountExpected" xml:space="preserve">
+    <value>Enter an amount, such as {0}</value>
+  </data>
+  <data name="WholeNumberExpected" xml:space="preserve">
+    <value>Enter a whole number, such as {0}</value>
+  </data>
+  <data name="ValueBetween" xml:space="preserve">
+    <value>Enter a value from {0} to {1}</value>
+  </data>
+  <data name="ValueAtLeast" xml:space="preserve">
+    <value>Enter at least {0}</value>
+  </data>
+  <data name="ValueAtMost" xml:space="preserve">
+    <value>Enter at most {0}</value>
+  </data>
+  <data name="NamedWithAffixes" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+  <data name="ValueWithUnit" xml:space="preserve">
+    <value>{0} {1}</value>
   </data>
 </root>

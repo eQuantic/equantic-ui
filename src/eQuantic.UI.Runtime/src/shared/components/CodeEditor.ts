@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeFold, CodeGoToView, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeyBinding, CodeKeywordCompletionProvider, CodeLanguages, CodeLocation, CodeNoteBuilder, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Rect, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeDiagnostic, CodeEditorController, CodeFold, CodeGoToView, CodeGrid, CodeGutterMarker, CodeHoverCard, CodeKeyBinding, CodeKeywordCompletionProvider, CodeLanguages, CodeLocation, CodeNoteBuilder, CodeRange, CodeSignatureCard, CodeSurface, CodeWordCompletionProvider, CornerRadii, Directionality, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Rect, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeEditor extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeEditor';
@@ -39,7 +39,7 @@ export class CodeEditor extends StatefulComponent {
     declare firstLineNumber: number;
     declare height: SizeValue;
     declare maxHeight: number;
-    declare size: SizeVariantValue;
+    declare size: $SizeVariantValue;
     declare inverse: boolean;
     declare readOnly: boolean;
     declare autofocus: boolean;
@@ -105,7 +105,7 @@ export class CodeEditor extends StatefulComponent {
         this.handIntelligence(editor);
         this.handKeyBindings(editor);
         let highlighter = editor.highlighter;
-        let metrics = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + editor.document.lineCount - 1);
+        let metrics = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, (this.firstLineNumber + editor.document.lineCount | 0) - 1 | 0);
         let folds = editor.folding.regions;
         if (this.showLineNumbers) metrics = metrics.with({ gutterWidth: Math.fround(metrics.gutterWidth + 20) });
         editor.grid = new CodeGrid(new Point(metrics.contentLeft, metrics.contentTop), new Size(metrics.columnWidth, metrics.lineHeight));
@@ -145,12 +145,12 @@ export class CodeEditor extends StatefulComponent {
             let [x, y, rows, above, documentationShown] = CodeCompletionView.place(metrics, editor.caretRect(completion.start), viewTop, viewBottom, this._scrollX, this._viewportWidth, Math.min(12, $eq.collections.count(items)), width, documentationLines, CodeCompletionView.documentationLineOf(context, metrics));
             let selected = completion.selected;
             if (selected < this._listTop) this._listTop = selected;
-            if (selected >= this._listTop + rows) this._listTop = selected - rows + 1;
-            this._listTop = Math.max(0, Math.min(this._listTop, $eq.collections.count(items) - rows));
+            if (selected >= (this._listTop + rows | 0)) this._listTop = (selected - rows | 0) + 1 | 0;
+            this._listTop = Math.max(0, Math.min(this._listTop, $eq.collections.count(items) - rows | 0));
             completion.pageSize = rows;
             offered = CodeCompletionView.build(context, completion, metrics, this._listTop, rows, width, above, documentation, documentationShown, (index: number) => this.pick(editor, index));
             offeredAt = new Point(x, y);
-            highlighted = selected - this._listTop;
+            highlighted = selected - this._listTop | 0;
             listAbove = above;
         } else {
             this._listTop = 0;
@@ -162,19 +162,19 @@ export class CodeEditor extends StatefulComponent {
         if (hover.isOpen && offered == null) {
             let [card, cardWidth, cardHeight] = CodeHoverCard.build(context, hover, metrics, this._viewportWidth);
             let at: any; 
-            if ((at = CodeNoteBuilder.place(editor.caretRect(hover.range.start), viewTop, viewBottom, this._scrollX, this._viewportWidth, cardWidth, cardHeight, null)) != null) notes.push(new Positioned(card, at.y, null, null, at.x));
+            if ((at = CodeNoteBuilder.place(editor.caretRect(hover.range.start), viewTop, viewBottom, this._scrollX, this._viewportWidth, cardWidth, cardHeight, null)) != null) $eq.collections.listAdd(notes, new Positioned(card, at.y, null, null, at.x));
         }
         let nothing: any; 
         if ((nothing = editor.goTo.notFound) != null && !hover.isOpen && offered == null) {
             let [said, saidWidth, saidHeight] = CodeHoverCard.message(context, metrics, CodeGoToView.notFoundText(nothing), this._viewportWidth);
             let at: any; 
-            if ((at = CodeNoteBuilder.place(editor.caretRect(nothing.at), viewTop, viewBottom, this._scrollX, this._viewportWidth, saidWidth, saidHeight, null)) != null) notes.push(new Positioned(said, at.y, null, null, at.x));
+            if ((at = CodeNoteBuilder.place(editor.caretRect(nothing.at), viewTop, viewBottom, this._scrollX, this._viewportWidth, saidWidth, saidHeight, null)) != null) $eq.collections.listAdd(notes, new Positioned(said, at.y, null, null, at.x));
         }
         let signatures = editor.signatureHelp;
         if (signatures.isOpen && !(signatures.signature == null) && !hover.isOpen) {
             let [panel, panelWidth, panelHeight] = CodeSignatureCard.build(context, signatures, metrics, this._viewportWidth);
             let at: any; 
-            if ((at = CodeNoteBuilder.place(editor.caretRect(editor.caret), viewTop, viewBottom, this._scrollX, this._viewportWidth, panelWidth, panelHeight, listAbove)) != null) notes.push(new Positioned(panel, at.y, null, null, at.x));
+            if ((at = CodeNoteBuilder.place(editor.caretRect(editor.caret), viewTop, viewBottom, this._scrollX, this._viewportWidth, panelWidth, panelHeight, listAbove)) != null) $eq.collections.listAdd(notes, new Positioned(panel, at.y, null, null, at.x));
         }
         let surface: VisualNode = new CodeSurface(block, editor, { autofocus: this.autofocus, label: this.caption ?? SdkStrings.codeEditor, caretColor: CodeBlock.inkFor(this.inverse, context.theme), onChanged: () => this.setState(() => this.notify(editor)), options: offered, optionsOrigin: offeredAt, highlightedOption: highlighted, notes: notes });
         let viewport: VisualNode = new ScrollView(surface, 'horizontal', { width: SizeValue.fill, fillViewport: true, onViewportChanged: (width: number) => {
@@ -214,9 +214,9 @@ export class CodeEditor extends StatefulComponent {
             let width = this._viewportWidth > 0 ? Math.min(560, Math.max(Math.fround(16 * 12), Math.fround(this._viewportWidth - Math.fround(2 * 16)))) : 560;
             if (goTo.selected >= 0) {
                 if (goTo.selected < this._goToTop) this._goToTop = goTo.selected;
-                if (goTo.selected >= this._goToTop + 10) this._goToTop = goTo.selected - 10 + 1;
+                if (goTo.selected >= (this._goToTop + 10 | 0)) this._goToTop = (goTo.selected - 10 | 0) + 1 | 0;
             }
-            this._goToTop = Math.max(0, Math.min(this._goToTop, $eq.collections.count(goTo.entries) - 10));
+            this._goToTop = Math.max(0, Math.min(this._goToTop, $eq.collections.count(goTo.entries) - 10 | 0));
             goTo.pageSize = 10;
             let centred = new Row(0, 'center', 'center', false, null, null, { width: SizeValue.fill });
             centred.add(CodeGoToView.build(context, editor, metrics, width, this._goToTop, (typed: string) => this.setState(() => goTo.query = typed), () => this.setState(() => {
@@ -238,7 +238,7 @@ export class CodeEditor extends StatefulComponent {
         keyed = new Shortcut(keyed, new KeyChord('F4', 1), () => this.setState(() => goTo.previousPlace()), { focusScoped: true, enabled: placesShown });
         let closable = new Shortcut(keyed, KeyChord.escape, () => this.closeFind(editor), { focusScoped: true, enabled: this._findOpen });
         let findable = new Shortcut(closable, new KeyChord('f', 4), () => this.setState(() => this._findOpen = true), { focusScoped: true });
-        return new Box(new BoxStyle({ width: SizeValue.fill, height: this.height, maxHeight: capped ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), findable);
+        return new Directionality('leftToRight', new Box(new BoxStyle({ width: SizeValue.fill, height: this.height, maxHeight: capped ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), findable));
     }
 
     create() {
@@ -270,64 +270,64 @@ export class CodeEditor extends StatefulComponent {
             editor.diagnostics.report(this._reported);
         }
         if (!CodeEditor.sameProviders(this.diagnosticProviders, this._diagnosers)) {
-            for (const provider of this._diagnosers) {
+            for (const provider of $eq.collections.listWalk(this._diagnosers)) {
                 let at = CodeEditor.indexOfInstance(editor.diagnostics.providers, provider);
                 if (at >= 0) $eq.collections.listRemoveAt(editor.diagnostics.providers, at);
             }
             this._diagnosers = [...this.diagnosticProviders];
-            for (const provider of this._diagnosers) $eq.collections.add(editor.diagnostics.providers, provider);
+            for (const provider of $eq.collections.listWalk(this._diagnosers)) $eq.collections.add(editor.diagnostics.providers, provider);
             editor.diagnostics.check();
         }
         if (!CodeEditor.sameProviders(this.hoverProviders, this._explainers)) {
-            for (const provider of this._explainers) {
+            for (const provider of $eq.collections.listWalk(this._explainers)) {
                 let at = CodeEditor.indexOfInstance(editor.hover.providers, provider);
                 if (at >= 0) $eq.collections.listRemoveAt(editor.hover.providers, at);
             }
             this._explainers = [...this.hoverProviders];
-            for (const provider of this._explainers) $eq.collections.add(editor.hover.providers, provider);
+            for (const provider of $eq.collections.listWalk(this._explainers)) $eq.collections.add(editor.hover.providers, provider);
             editor.hover.dismiss();
         }
         if (!CodeEditor.sameProviders(this.signatureProviders, this._signers)) {
-            for (const provider of this._signers) {
+            for (const provider of $eq.collections.listWalk(this._signers)) {
                 let at = CodeEditor.indexOfInstance(editor.signatureHelp.providers, provider);
                 if (at >= 0) $eq.collections.listRemoveAt(editor.signatureHelp.providers, at);
             }
             this._signers = [...this.signatureProviders];
-            for (const provider of this._signers) $eq.collections.add(editor.signatureHelp.providers, provider);
+            for (const provider of $eq.collections.listWalk(this._signers)) $eq.collections.add(editor.signatureHelp.providers, provider);
             editor.signatureHelp.dismiss();
         }
         if (!CodeEditor.sameProviders(this.symbolProviders, this._declarers)) {
-            for (const provider of this._declarers) {
+            for (const provider of $eq.collections.listWalk(this._declarers)) {
                 let at = CodeEditor.indexOfInstance(editor.symbols.providers, provider);
                 if (at >= 0) $eq.collections.listRemoveAt(editor.symbols.providers, at);
             }
             this._declarers = [...this.symbolProviders];
-            for (const provider of this._declarers) $eq.collections.add(editor.symbols.providers, provider);
+            for (const provider of $eq.collections.listWalk(this._declarers)) $eq.collections.add(editor.symbols.providers, provider);
         }
         if (!CodeEditor.sameProviders(this.definitionProviders, this._definers)) {
-            for (const provider of this._definers) {
+            for (const provider of $eq.collections.listWalk(this._definers)) {
                 let at = CodeEditor.indexOfInstance(editor.definitions.providers, provider);
                 if (at >= 0) $eq.collections.listRemoveAt(editor.definitions.providers, at);
             }
             this._definers = [...this.definitionProviders];
-            for (const provider of this._definers) $eq.collections.add(editor.definitions.providers, provider);
+            for (const provider of $eq.collections.listWalk(this._definers)) $eq.collections.add(editor.definitions.providers, provider);
             editor.definitions.clearLink();
         }
         if (!CodeEditor.sameProviders(this.referenceProviders, this._referrers)) {
-            for (const provider of this._referrers) {
+            for (const provider of $eq.collections.listWalk(this._referrers)) {
                 let at = CodeEditor.indexOfInstance(editor.references.providers, provider);
                 if (at >= 0) $eq.collections.listRemoveAt(editor.references.providers, at);
             }
             this._referrers = [...this.referenceProviders];
-            for (const provider of this._referrers) $eq.collections.add(editor.references.providers, provider);
+            for (const provider of $eq.collections.listWalk(this._referrers)) $eq.collections.add(editor.references.providers, provider);
         }
         if (!CodeEditor.sameProviders(this.foldProviders, this._folders)) {
-            for (const provider of this._folders) {
+            for (const provider of $eq.collections.listWalk(this._folders)) {
                 let at = CodeEditor.indexOfInstance(editor.folding.providers, provider);
                 if (at >= 0) $eq.collections.listRemoveAt(editor.folding.providers, at);
             }
             this._folders = [...this.foldProviders];
-            for (const provider of this._folders) $eq.collections.add(editor.folding.providers, provider);
+            for (const provider of $eq.collections.listWalk(this._folders)) $eq.collections.add(editor.folding.providers, provider);
             editor.folding.check();
         }
     }
@@ -337,35 +337,35 @@ export class CodeEditor extends StatefulComponent {
         let list = editor.keyBindings;
         let at = CodeEditor.lastBlockAt(list, this._bindings);
         if (at >= 0) {
-            for (let i = 0; i < this._bindings.length; i++) $eq.collections.listRemoveAt(list, at);
+            for (let i = 0; i < this._bindings.length; i = i + 1 | 0) $eq.collections.listRemoveAt(list, at);
         } else {
-            for (let i = this._bindings.length - 1; i >= 0; i--) {
+            for (let i = this._bindings.length - 1 | 0; i >= 0; i = i - 1 | 0) {
                 let last = CodeEditor.lastIndexOf(list, this._bindings[i]);
                 if (last >= 0) $eq.collections.listRemoveAt(list, last);
             }
         }
         this._bindings = [...this.keyBindings];
-        for (const binding of this._bindings) $eq.collections.add(list, binding);
+        for (const binding of $eq.collections.listWalk(this._bindings)) $eq.collections.add(list, binding);
     }
 
     static lastBlockAt(list: CodeKeyBinding[], block: CodeKeyBinding[]) {
         if (block.length === 0) return -1;
-        for (let at = $eq.collections.count(list) - block.length; at >= 0; at--) {
+        for (let at = $eq.collections.count(list) - block.length | 0; at >= 0; at = at - 1 | 0) {
             if (CodeEditor.holds(list, block, at)) return at;
         }
         return -1;
     }
 
     static holds(list: CodeKeyBinding[], block: CodeKeyBinding[], at: number) {
-        if (at < 0 || at + block.length > $eq.collections.count(list)) return false;
-        for (let i = 0; i < block.length; i++) {
-            if (!$eq.equals($eq.collections.item(list, at + i), block[i])) return false;
+        if (at < 0 || (at + block.length | 0) > $eq.collections.count(list)) return false;
+        for (let i = 0; i < block.length; i = i + 1 | 0) {
+            if (!$eq.equals($eq.collections.item(list, at + i | 0), block[i])) return false;
         }
         return true;
     }
 
     static lastIndexOf(list: CodeKeyBinding[], binding: CodeKeyBinding) {
-        for (let i = $eq.collections.count(list) - 1; i >= 0; i--) {
+        for (let i = $eq.collections.count(list) - 1 | 0; i >= 0; i = i - 1 | 0) {
             if ($eq.equals($eq.collections.item(list, i), binding)) return i;
         }
         return -1;
@@ -373,13 +373,13 @@ export class CodeEditor extends StatefulComponent {
 
     static sameBindings(one: CodeKeyBinding[], other: CodeKeyBinding[]) {
         if ($eq.collections.count(one) !== $eq.collections.count(other)) return false;
-        for (let i = 0; i < $eq.collections.count(one); i++) if (!$eq.equals($eq.collections.item(one, i), $eq.collections.item(other, i))) return false;
+        for (let i = 0; i < $eq.collections.count(one); i = i + 1 | 0) if (!$eq.equals($eq.collections.item(one, i), $eq.collections.item(other, i))) return false;
         return true;
     }
 
     static sameProblems(one: CodeDiagnostic[], other: CodeDiagnostic[]) {
         if ($eq.collections.count(one) !== $eq.collections.count(other)) return false;
-        for (let i = 0; i < $eq.collections.count(one); i++) if (!$eq.equalsInstance($eq.collections.item(one, i), $eq.collections.item(other, i))) return false;
+        for (let i = 0; i < $eq.collections.count(one); i = i + 1 | 0) if (!$eq.equalsInstance($eq.collections.item(one, i), $eq.collections.item(other, i))) return false;
         return true;
     }
 
@@ -387,20 +387,20 @@ export class CodeEditor extends StatefulComponent {
         if (this._handedAny && CodeEditor.sameProviders(this.completions, this._handed)) return;
         this._handedAny = true;
         let providers = completion.providers;
-        for (const provider of this._put) {
+        for (const provider of $eq.collections.listWalk(this._put)) {
             let at = CodeEditor.indexOfInstance(providers, provider);
             if (at >= 0) $eq.collections.listRemoveAt(providers, at);
         }
         this._put = this.completions == null ? [new CodeKeywordCompletionProvider(), new CodeWordCompletionProvider()] : [...this.completions];
         this._handed = this.completions == null ? null : this._put;
-        for (const provider of this._put) $eq.collections.add(providers, provider);
+        for (const provider of $eq.collections.listWalk(this._put)) $eq.collections.add(providers, provider);
     }
 
     static indexOfInstance(providers: any[], provider: any) {
         let at = 0;
-        for (const held of providers) {
+        for (const held of $eq.collections.sequenceWalk(providers)) {
             if ((held === provider)) return at;
-            at++;
+            at = at + 1 | 0;
         }
         return -1;
     }
@@ -408,7 +408,7 @@ export class CodeEditor extends StatefulComponent {
     static sameProviders(one: any, other: any) {
         if (one == null || other == null) return one == null && other == null;
         if ($eq.collections.count(one) !== $eq.collections.count(other)) return false;
-        for (let i = 0; i < $eq.collections.count(one); i++) {
+        for (let i = 0; i < $eq.collections.count(one); i = i + 1 | 0) {
             if (!($eq.collections.item(one, i) === $eq.collections.item(other, i))) return false;
         }
         return true;
@@ -431,7 +431,7 @@ export class CodeEditor extends StatefulComponent {
 
     static foldedLines(editor: CodeEditorController, folds: CodeFold[]) {
         let folded: number[] = [];
-        for (const fold of folds) if (editor.folding.isFolded(fold.startLine)) folded.push(fold.startLine);
+        for (const fold of $eq.collections.sequenceWalk(folds)) if (editor.folding.isFolded(fold.startLine)) $eq.collections.listAdd(folded, fold.startLine);
         return folded;
     }
 
@@ -445,7 +445,7 @@ export class CodeEditor extends StatefulComponent {
         let problems = editor.diagnostics.items;
         if ($eq.collections.count(problems) === 0) return this.gutterMarkers;
         let worst: any = $eq.collections.dictionary();
-        for (const problem of problems) {
+        for (const problem of $eq.collections.sequenceWalk(problems)) {
             let severity = (($0) => (({ 'hint': 0, 'information': 1, 'warning': 2, 'error': 3 })[$0] ?? $0))(problem.severity);
             if (severity < 2) continue;
             let line = problem.range.start.line;
@@ -456,8 +456,8 @@ export class CodeEditor extends StatefulComponent {
         if (worst.size === 0) return this.gutterMarkers;
         let markers: CodeGutterMarker[] = $eq.collections.listCopy(this.gutterMarkers);
         for (const entry of worst) {
-            if (markers.some((marker) => marker.line === entry.key)) continue;
-            markers.push(new CodeGutterMarker(entry.key, entry.value === 3 ? 'error' : 'warning'));
+            if ($eq.query.any(markers, (marker) => marker.line === entry.key)) continue;
+            $eq.collections.listAdd(markers, new CodeGutterMarker(entry.key, entry.value === 3 ? 'error' : 'warning'));
         }
         return markers;
     }
@@ -469,35 +469,35 @@ export class CodeEditor extends StatefulComponent {
         let previewed: any; 
         if ((previewed = editor.goTo.preview) != null && previewed.end.line >= first && previewed.start.line <= last) {
             let $n4: CodeDecoration; 
-            marks.push(($n4 = new CodeDecoration(previewed, 'line'), $n4.color = theme.colors('info').subtle, $n4));
+            $eq.collections.listAdd(marks, ($n4 = new CodeDecoration(previewed, 'line'), $n4.color = theme.colors('info').subtle, $n4));
         }
         let link: any; 
         if ((link = editor.definitions.link) != null && link.end.line >= first && link.start.line <= last) {
             let $n5: CodeDecoration; 
-            marks.push(($n5 = new CodeDecoration(link, 'underline'), $n5.color = theme.colors('primary').base, $n5));
+            $eq.collections.listAdd(marks, ($n5 = new CodeDecoration(link, 'underline'), $n5.color = theme.colors('primary').base, $n5));
         }
-        for (const placeholder of editor.snippet.placeholdersIn(first, last)) {
+        for (const placeholder of $eq.collections.sequenceWalk(editor.snippet.placeholdersIn(first, last))) {
             let $n6: CodeDecoration; 
-            marks.push(($n6 = new CodeDecoration(placeholder, 'highlight'), $n6.color = theme.colors('info').subtle, $n6));
+            $eq.collections.listAdd(marks, ($n6 = new CodeDecoration(placeholder, 'highlight'), $n6.color = theme.colors('info').subtle, $n6));
         }
-        for (const problem of problems) {
+        for (const problem of $eq.collections.sequenceWalk(problems)) {
             if (problem.range.end.line < first || problem.range.start.line > last) continue;
             let $n7: CodeDecoration; 
-            marks.push(($n7 = new CodeDecoration(problem.range, problem.severity === 'hint' ? 'dots' : 'squiggle'), $n7.color = CodeHoverCard.severityColor(theme, problem.severity), $n7));
+            $eq.collections.listAdd(marks, ($n7 = new CodeDecoration(problem.range, problem.severity === 'hint' ? 'dots' : 'squiggle'), $n7.color = CodeHoverCard.severityColor(theme, problem.severity), $n7));
         }
         let composition: any; 
-        if ((composition = editor.composition) != null) marks.push(new CodeDecoration(composition, 'underline'));
+        if ((composition = editor.composition) != null) $eq.collections.listAdd(marks, new CodeDecoration(composition, 'underline'));
         if ($eq.collections.count(matches) > 0) {
             let current = editor.selection;
-            for (let i = CodeEditor.firstEndingOnOrAfter(matches, first); i < $eq.collections.count(matches) && $eq.collections.item(matches, i).start.line <= last; i++) {
+            for (let i = CodeEditor.firstEndingOnOrAfter(matches, first); i < $eq.collections.count(matches) && $eq.collections.item(matches, i).start.line <= last; i = i + 1 | 0) {
                 let match = $eq.collections.item(matches, i);
-                marks.push(new CodeDecoration(match, $eq.equals(match.start, current.start) && $eq.equals(match.end, current.end) ? 'outline' : 'highlight'));
+                $eq.collections.listAdd(marks, new CodeDecoration(match, $eq.equals(match.start, current.start) && $eq.equals(match.end, current.end) ? 'outline' : 'highlight'));
             }
         }
         let pair: any; 
         if (this.matchBrackets && (pair = editor.bracketAtCaret()) != null) {
-            marks.push(new CodeDecoration(new CodeRange(pair[0], $eq.withPatch(pair[0], { column: pair[0].column + 1 })), 'outline'));
-            marks.push(new CodeDecoration(new CodeRange(pair[1], $eq.withPatch(pair[1], { column: pair[1].column + 1 })), 'outline'));
+            $eq.collections.listAdd(marks, new CodeDecoration(new CodeRange(pair[0], $eq.withPatch(pair[0], { column: pair[0].column + 1 | 0 })), 'outline'));
+            $eq.collections.listAdd(marks, new CodeDecoration(new CodeRange(pair[1], $eq.withPatch(pair[1], { column: pair[1].column + 1 | 0 })), 'outline'));
         }
         return marks;
     }
@@ -551,8 +551,8 @@ export class CodeEditor extends StatefulComponent {
         let low = 0;
         let high = $eq.collections.count(matches);
         while (low < high) {
-            let middle = Math.trunc((low + high) / 2);
-            if ($eq.collections.item(matches, middle).end.line < line) low = middle + 1; else high = middle;
+            let middle = Math.trunc((low + high | 0) / 2);
+            if ($eq.collections.item(matches, middle).end.line < line) low = middle + 1 | 0; else high = middle;
         }
         return low;
     }
@@ -589,10 +589,10 @@ export class CodeEditor extends StatefulComponent {
         let low = 0;
         let high = $eq.collections.count(matches);
         while (low < high) {
-            let middle = Math.trunc((low + high) / 2);
-            if ($eq.collections.item(matches, middle).start.compareTo(current) < 0) low = middle + 1; else high = middle;
+            let middle = Math.trunc((low + high | 0) / 2);
+            if ($eq.collections.item(matches, middle).start.compareTo(current) < 0) low = middle + 1 | 0; else high = middle;
         }
-        if (low < $eq.collections.count(matches) && $eq.equals($eq.collections.item(matches, low).start, current)) index = low + 1;
+        if (low < $eq.collections.count(matches) && $eq.equals($eq.collections.item(matches, low).start, current)) index = low + 1 | 0;
         let row = new Row(8, 'start', 'center', false, null, null, { cross: 'center' });
         row.add(new Box(new BoxStyle({ width: 168 }), new TextEntry(this._findText, (value: string) => this.setState(() => this._findText = value), { placeholder: SdkStrings.find, label: SdkStrings.find, autofocus: true, onSubmit: () => step(true) })));
         row.add(new Text($eq.collections.count(matches) === 0 ? this._findText.length === 0 ? '' : '0' : `${$eq.text.format(index, null, undefined, undefined, 'int32')}/${$eq.text.format($eq.collections.count(matches), null, undefined, undefined, 'int32')}`, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { tabular: true }));

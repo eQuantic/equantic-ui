@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
@@ -19,9 +21,17 @@ namespace eQuantic.UI.Native.Components;
 /// the list it lands in reports the drop. Escape puts it back.
 /// </para>
 /// <para>
+/// In a list whose items have depths (<see cref="Sortable.Indent"/>, #1594) an item carries the deeper items right
+/// after it, and a place between two items says the depth the item takes there, from the pointer's travel across or
+/// the keyboard's cross arrows, offered to the guard in the order <see cref="SortPlacement.Depths"/> gives.
+/// </para>
+/// <para>
 /// With the focus in an item, Space picks it up: the arrows along its list's axis move it a place, the cross
-/// arrows to the neighbouring list of its group, Space or Enter drops it, and Escape, Tab or a press puts it
-/// back. The host never applies a drop: the lists are the app's, and the next build shows where the item went.
+/// arrows to the neighbouring list of its group (in a list with depths, the depth first while the place offers
+/// another), Space or Enter drops it, and Escape, Tab or a press puts it
+/// back. Each step is said through the live region of the list the item was picked up from, in that list's
+/// <see cref="Sortable.Announcements"/> (#1564). The host never applies a drop: the lists are the app's, and the
+/// next build shows where the item went.
 /// </para>
 /// </summary>
 public sealed partial class PhotonHost
@@ -36,7 +46,9 @@ public sealed partial class PhotonHost
     private readonly List<float> _sortStarts = [];
     private readonly List<float> _sortExtents = [];
     private readonly List<string> _sortIds = [];
+    private readonly List<int> _sortDepths = [];
     private readonly List<Element> _sortNested = [];
+    private readonly List<SemanticNode> _sortNames = [];
 
     // ---- the pointer ------------------------------------------------------------------------------------------
 
@@ -125,6 +137,13 @@ public sealed partial class PhotonHost
         lift.Lifted = true;
         lift.Follows = !sort.ByKeyboard;
         lift.Copy = null;
+        // The look of the list the item was picked up from (#1602), kept for every list of the group it is carried
+        // over: the theme's with the list's own laid over it, and the defaults where neither says.
+        var look = SortPlacement.Look(_theme.Sortable, sort.SourceNode.Style);
+        lift.LiftedOpacity = look.LiftedOpacity!.Value;
+        lift.CopyOpacity = look.CopyOpacity!.Value;
+        lift.CopyShadow = _theme.Elevation(look.CopyElevation!.Value);
+        lift.MaxLean = look.MaxLean!.Value;
         sort.Lift = lift;
         sort.Active = true;
         sort.MovedAtMs = sort.TiltFromMs = _lastTimeMs;
@@ -160,7 +179,8 @@ public sealed partial class PhotonHost
     {
         sort.MovedAtMs = _lastTimeMs;
         if (ReducedMotion || _lastTimeMs <= sort.TiltFromMs) return;
-        if (SortPlacement.Tilt(sort.Pointer.X - sort.TiltFromX, _lastTimeMs - sort.TiltFromMs) is { } angle)
+        if (SortPlacement.Tilt(sort.Pointer.X - sort.TiltFromX, _lastTimeMs - sort.TiltFromMs,
+                sort.Lift?.MaxLean ?? SortPlacement.TiltMax) is { } angle)
             sort.Lean = angle;
         sort.TiltFromX = sort.Pointer.X;
         sort.TiltFromMs = _lastTimeMs;
@@ -179,10 +199,17 @@ public sealed partial class PhotonHost
         {
             var list = (Sortable)regions[target].Node;
             var at = regions[target].Element;
-            var drop = DropIn(regions, target, sort, sort.Pointer);
-            if (sort.Asked is not { } asked || !ReferenceEquals(asked.List, at) || !Same(asked.Drop, drop))
-                sort.Asked = (at, drop, list.Accepts?.Invoke(drop) ?? true);
-            if (sort.Asked.Value.Accepted) next = (at, list, drop);
+            var horizontal = list.Axis == DragAxis.Horizontal;
+            // The depth the pointer asks for, from its travel across since it picked the item up (#1594).
+            var travelled = horizontal ? sort.Pointer.Y - sort.Start.Y : sort.Pointer.X - sort.Start.X;
+            var wants = SortPlacement.Wanted(DepthOf(sort.ItemNode), travelled, list.Indent);
+            var (index, into) = SpotIn(regions, target, sort, sort.Pointer);
+            var before = index > 0 ? _sortIds[index - 1] : null;
+            var here = index < _sortIds.Count ? _sortIds[index] : null;
+            if (sort.Asked is not { } asked || !ReferenceEquals(asked.List, at) || asked.Index != index
+                || asked.Into != into || asked.Before != before || asked.At != here || asked.Wants != wants)
+                sort.Asked = (at, index, into, before, here, wants, FirstAccepted(sort, list, index, into, wants));
+            if (sort.Asked.Value.Drop is { } drop) next = (at, list, drop);
         }
         Report(sort, next);
     }
@@ -219,32 +246,67 @@ public sealed partial class PhotonHost
     }
 
     /// <summary>Where the item lands in the <paramref name="list"/>th region, by the arithmetic every realizer
-    /// shares: this reads the other items' boxes along the list's axis and hands them over.</summary>
-    private SortDrop DropIn(IReadOnlyList<SortRegion> regions, int list, SortGesture sort, Point point)
+    /// shares: this reads the other items' boxes along the list's axis and hands them over, leaving them in the reused
+    /// lists for <see cref="FirstAccepted"/>. The index it lands at, and the item it lands inside or -1.</summary>
+    private (int Index, int Into) SpotIn(IReadOnlyList<SortRegion> regions, int list, SortGesture sort, Point point)
     {
         var node = (Sortable)regions[list].Node;
         var horizontal = node.Axis == DragAxis.Horizontal;
         ItemsOf(regions, list, sort.Item);
-        var (index, into) = SortPlacement.Place(_sortStarts, _sortExtents, horizontal ? point.X : point.Y, node.Nests);
-        return new SortDrop(sort.ItemNode.Id, sort.SourceNode.Id, node.Id, index)
-        {
-            Into = into >= 0 ? _sortIds[into] : null,
-        };
+        return SortPlacement.Place(_sortStarts, _sortExtents, horizontal ? point.X : point.Y, node.Nests);
     }
 
     /// <summary>
-    /// The <paramref name="list"/>th region's own items, the carried one left out, into the reused lists: their
-    /// starts and extents along its axis and their ids, in order. An item of a list nested inside it (a tree's
-    /// children) belongs to that list, not this one.
+    /// The first drop a spot may mean that the list's guard accepts, or null when it refuses them all: the spot itself,
+    /// or in a list with depths, at a spot between two items, one for each depth <see cref="SortPlacement.Depths"/>
+    /// gives from the one <paramref name="wants"/> (#1594). Reads the items <see cref="ItemsOf"/> left in the reused
+    /// lists.
+    /// </summary>
+    private SortDrop? FirstAccepted(SortGesture sort, Sortable list, int index, int into, int wants)
+    {
+        if (into >= 0 || !SortPlacement.HasDepths(list.Indent))
+        {
+            var drop = PlaceDrop(sort, list, index, into, null);
+            return list.Accepts?.Invoke(drop) != false ? drop : null;
+        }
+        foreach (var depth in SortPlacement.Depths(wants, Above(index), Below(index)))
+        {
+            var drop = PlaceDrop(sort, list, index, -1, depth);
+            if (list.Accepts?.Invoke(drop) != false) return drop;
+        }
+        return null;
+    }
+
+    /// <summary>The depth of the item before <paramref name="index"/> among those <see cref="ItemsOf"/> left, and of the
+    /// item at it: null past either end.</summary>
+    private int? Above(int index) => index > 0 ? _sortDepths[index - 1] : null;
+    private int? Below(int index) => index < _sortDepths.Count ? _sortDepths[index] : null;
+
+    /// <summary>The drop a place means, its item inside named from the ids <see cref="ItemsOf"/> left in order.</summary>
+    private SortDrop PlaceDrop(SortGesture sort, Sortable list, int index, int into, int? depth) =>
+        new(sort.ItemNode.Id, sort.SourceNode.Id, list.Id, index)
+        {
+            Into = into >= 0 && into < _sortIds.Count ? _sortIds[into] : null,
+            Depth = depth,
+        };
+
+    /// <summary>
+    /// The <paramref name="list"/>th region's own items a carried one is placed among, into the reused lists: their
+    /// starts and extents along its axis, their ids and their depths, in order. The carried one is left out, and in a
+    /// list whose items have depths the deeper items right after it too, its subtree, which it carries (#1594; the web's
+    /// <c>othersOf</c>). An item of a list nested inside it (a tree's children) belongs to that list, not this one.
     /// </summary>
     private void ItemsOf(IReadOnlyList<SortRegion> regions, int list, Element carried)
     {
         _sortStarts.Clear();
         _sortExtents.Clear();
         _sortIds.Clear();
+        _sortDepths.Clear();
         _sortNested.Clear();
         var owner = regions[list].Element;
-        var horizontal = ((Sortable)regions[list].Node).Axis == DragAxis.Horizontal;
+        var node = (Sortable)regions[list].Node;
+        var horizontal = node.Axis == DragAxis.Horizontal;
+        int? carries = null;
         for (var i = list + 1; i < regions.Count; i++)
         {
             var at = regions[i].Element;
@@ -254,13 +316,24 @@ public sealed partial class PhotonHost
                 _sortNested.Add(at);
                 continue;
             }
-            if (ReferenceEquals(at, carried) || regions[i].Node is not SortableItem item) continue;
+            if (regions[i].Node is not SortableItem item) continue;
+            if (ReferenceEquals(at, carried))
+            {
+                if (SortPlacement.HasDepths(node.Indent)) carries = DepthOf(item);
+                continue;
+            }
+            if (carries is { } depth && DepthOf(item) > depth) continue;
+            carries = null;
             var box = regions[i].Bounds;
             _sortStarts.Add(horizontal ? box.X : box.Y);
             _sortExtents.Add(horizontal ? box.Width : box.Height);
             _sortIds.Add(item.Id);
+            _sortDepths.Add(DepthOf(item));
         }
     }
+
+    /// <summary>An item's depth as the web reads it: one below 0 is the top, as its lowering writes nothing for it.</summary>
+    private static int DepthOf(SortableItem item) => Math.Max(0, item.Depth);
 
     private static bool InsideAny(Element at, List<Element> lists)
     {
@@ -282,7 +355,8 @@ public sealed partial class PhotonHost
         return -1;
     }
 
-    private static bool Same(SortDrop a, SortDrop b) => a.To == b.To && a.Index == b.Index && a.Into == b.Into;
+    private static bool Same(SortDrop a, SortDrop b) =>
+        a.To == b.To && a.Index == b.Index && a.Into == b.Into && a.Depth == b.Depth;
 
     /// <summary>Whether a press lands in something that takes the pointer itself: a field, a code surface or a
     /// spreadsheet inside an item is pressed, not carried.</summary>
@@ -385,7 +459,7 @@ public sealed partial class PhotonHost
             ? Matrix2D.Translation(dx, dy)
             : Matrix2D.Translation(-center.X, -center.Y) * Matrix2D.Rotation(sort.Angle * MathF.PI / 180f)
                 * Matrix2D.Translation(center.X + dx, center.Y + dy);
-        builder.PushLayer((float)SortPlacement.CopyOpacity);
+        builder.PushLayer(lift.CopyOpacity);
         builder.DrawPicture(copy, offset);
         builder.PopLayer();
     }
@@ -420,12 +494,13 @@ public sealed partial class PhotonHost
         }
         if (sort.KeyList is not { } at) return false;
         var vertical = at.Node.Axis != DragAxis.Horizontal;
-        if (key == (vertical ? "ArrowDown" : "ArrowRight")) MoveKeyed(sort, at.List, at.Node, sort.KeyIndex + 1);
-        else if (key == (vertical ? "ArrowUp" : "ArrowLeft")) MoveKeyed(sort, at.List, at.Node, sort.KeyIndex - 1);
+        if (key == (vertical ? "ArrowDown" : "ArrowRight")) StepKeyed(sort, at.List, at.Node, 1);
+        else if (key == (vertical ? "ArrowUp" : "ArrowLeft")) StepKeyed(sort, at.List, at.Node, -1);
         else if (key == (vertical ? "ArrowRight" : "ArrowDown") || key == (vertical ? "ArrowLeft" : "ArrowUp"))
         {
             var step = key == (vertical ? "ArrowRight" : "ArrowDown") ? 1 : -1;
-            if (Neighbour(sort, at.List, step) is { } next) MoveKeyed(sort, next.List, next.Node, sort.KeyIndex);
+            if (!StepDepthKeyed(sort, at.List, at.Node, step) && Neighbour(sort, at.List, step) is { } next)
+                MoveKeyed(sort, next.List, next.Node, sort.KeyIndex);
         }
         else if (key is " " or "Space" or "Enter") DropKeyed(sort);
         else if (key == "Escape") CancelSort(sort);
@@ -440,12 +515,14 @@ public sealed partial class PhotonHost
         return true;
     }
 
-    /// <summary>Space on the focused item, or inside it, picks it up for the keyboard, when its list takes
-    /// sorting. Answers whether it did.</summary>
+    /// <summary>Space on the focused item, or inside it, or on a composite whose active item it is (a tree's
+    /// stop, #1533), picks it up for the keyboard, when its list takes sorting. Answers whether it did.</summary>
     private bool CarryByKeyboard()
     {
-        if (_sort is not null || _focusedAt is not { } focused || _textAt is not null
+        if (_sort is not null || _focusedAt is not { } stop || _textAt is not null
             || _lastFrame is not { SortRegions: { Count: > 0 } regions }) return false;
+        // A composite keeps the focus on its one stop and names its active item: the item is that one.
+        var focused = ActiveItemOf(stop) ?? stop;
         for (var i = regions.Count - 1; i >= 0; i--)
         {
             if (regions[i].Node is not SortableItem item) continue;
@@ -453,33 +530,108 @@ public sealed partial class PhotonHost
             if (!ReferenceEquals(at, focused) && !IsUnder(focused, at)) continue;
             var list = ListOf(regions, i);
             if (!item.Enabled || list < 0 || regions[list].Node is not Sortable { Enabled: true } sortable) return false;
-            var sort = new SortGesture(at, item, regions[list].Element, sortable) { ByKeyboard = true };
+            var sort = new SortGesture(at, item, regions[list].Element, sortable)
+            {
+                ByKeyboard = true,
+                Name = NameOf(item, regions[i].Layout),
+            };
             if (!LiftSort(sort)) return false;
             _sort = sort;
             sort.KeyList = (regions[list].Element, sortable);
             sort.KeyIndex = IndexIn(regions, list, at);
-            Report(sort, (regions[list].Element, sortable, new SortDrop(item.Id, sortable.Id, sortable.Id, sort.KeyIndex)));
+            sort.KeyWants = DepthOf(item);
+            // Its own place, which no guard is asked about: in a list with depths its own depth is always one the place
+            // allows (#1594).
+            CountIn(regions[list].Element, at);
+            var picked = PlaceDrop(sort, sortable, sort.KeyIndex, -1, SortPlacement.HasDepths(sortable.Indent)
+                ? SortPlacement.Depths(DepthOf(item), Above(sort.KeyIndex), Below(sort.KeyIndex))[0]
+                : null);
+            sort.KeyDepth = picked.Depth;
+            Report(sort, (regions[list].Element, sortable, picked));
+            SayPlace(sort, regions[list].Element, sortable, picked, words => words.PickedUp, words => words.PickedUp);
             return true;
         }
         return false;
     }
 
+    /// <summary>One place along the list, through the places inside the items when the list nests, by the
+    /// arithmetic the web runs too (<see cref="SortPlacement.KeyStep"/>), passing over the places the list
+    /// refuses, as a pointer passes over them. At the end the item keeps the place it holds.</summary>
+    private void StepKeyed(SortGesture sort, Element list, Sortable node, int step)
+    {
+        var others = CountIn(list, sort.Item);
+        var index = sort.KeyIndex;
+        var into = sort.KeyInto;
+        while (true)
+        {
+            var (nextIndex, nextInto) = SortPlacement.KeyStep(index, into, step, others, node.Nests);
+            if (nextIndex == index && nextInto == into) break;
+            index = nextIndex;
+            into = nextInto;
+            if (OfferKeyed(sort, list, node, index, into, sort.KeyWants) is not null) break;
+        }
+        MoveKeyed(sort, list, node, index, into);
+    }
+
+    /// <summary>The drop a keyboard's spot means, offered to the list's guard: in a list with depths, at a spot between
+    /// items, each depth from the one <paramref name="wants"/> (#1594). Null when the list refuses them all.</summary>
+    private SortDrop? OfferKeyed(SortGesture sort, Element list, Sortable node, int index, int into, int wants)
+    {
+        CountIn(list, sort.Item);
+        return FirstAccepted(sort, node, index, into, wants);
+    }
+
     /// <summary>The place a key asks for, kept inside the list and offered to its guard; a place it refuses
     /// leaves the item where it is.</summary>
-    private void MoveKeyed(SortGesture sort, Element list, Sortable node, int index)
+    private void MoveKeyed(SortGesture sort, Element list, Sortable node, int index, int into = -1, int? wants = null)
     {
         var count = CountIn(list, sort.Item) + 1;
         var place = SortPlacement.Step(index, 0, count);
-        var drop = new SortDrop(sort.ItemNode.Id, sort.SourceNode.Id, node.Id, place);
-        if (node.Accepts?.Invoke(drop) == false) return;
+        if (OfferKeyed(sort, list, node, place, into, wants ?? sort.KeyWants) is not { } drop)
+        {
+            if (sort.SourceNode.Announcements is { } words) Say(sort, SortWords.Fill(words.Refused, sort.Name));
+            return;
+        }
         sort.KeyList = (list, node);
         sort.KeyIndex = place;
+        sort.KeyInto = drop.Into is null ? -1 : into;
+        sort.KeyDepth = drop.Depth;
         Report(sort, (list, node, drop));
+        SayPlace(sort, list, node, drop, words => words.Moved, words => words.MovedInto);
+    }
+
+    /// <summary>
+    /// One depth deeper or shallower at the place a keyboard's carry holds, in a list whose items have depths, by the
+    /// arithmetic the web runs too (<see cref="SortPlacement.KeyDepth"/>), passing over the depths the list refuses
+    /// (#1594). Answers whether the place offered a depth that way: the cross arrow moves to the neighbouring list only
+    /// when it offered none.
+    /// </summary>
+    private bool StepDepthKeyed(SortGesture sort, Element list, Sortable node, int step)
+    {
+        if (sort.KeyDepth is not { } depth || sort.KeyInto >= 0) return false;
+        CountIn(list, sort.Item);
+        var above = Above(sort.KeyIndex);
+        var below = Below(sort.KeyIndex);
+        var next = depth;
+        while (true)
+        {
+            var further = SortPlacement.KeyDepth(next, step, above, below);
+            if (further == next) break;
+            next = further;
+            if (node.Accepts?.Invoke(PlaceDrop(sort, node, sort.KeyIndex, -1, next)) == false) continue;
+            sort.KeyWants = next;
+            MoveKeyed(sort, list, node, sort.KeyIndex, -1, next);
+            return true;
+        }
+        if (next == depth) return false;
+        if (sort.SourceNode.Announcements is { } words) Say(sort, SortWords.Fill(words.Refused, sort.Name));
+        return true;
     }
 
     private void DropKeyed(SortGesture sort)
     {
         var landed = sort.Landing;
+        if (landed is { } place) SayPlace(sort, place.List, place.Node, place.Drop, words => words.Dropped, words => words.DroppedInto);
         _sort = null;
         EndLift(sort);
         if (landed is not { } at) return;
@@ -491,6 +643,80 @@ public sealed partial class PhotonHost
     {
         _sort = null;
         EndLift(sort);
+        if (sort.ByKeyboard && sort.SourceNode.Announcements is { } words)
+            Say(sort, SortWords.Fill(words.PutBack, sort.Name));
+    }
+
+    // ---- what a reader hears (#1564) --------------------------------------------------------------------------
+
+    /// <summary>What a reader hears for a place of the keyboard's carry, in the words of the list it was picked up
+    /// from: <paramref name="at"/>'s text with the item's name, its position from one, the count and the list's
+    /// name (in a list with depths, among the items at its depth under the same holder, and the holder's name), or
+    /// <paramref name="inside"/>'s with the item it lands inside. A list given no words says nothing.</summary>
+    private void SayPlace(SortGesture sort, Element list, Sortable node, SortDrop drop,
+        Func<SortAnnouncements, string> at, Func<SortAnnouncements, string> inside)
+    {
+        if (sort.SourceNode.Announcements is not { } words) return;
+        if (drop.Into is { } into)
+        {
+            Say(sort, SortWords.Fill(inside(words), sort.Name, ItemName(list, into)));
+            return;
+        }
+        var others = CountIn(list, sort.Item);
+        var listName = node.Label.Length > 0 ? node.Label : node.Id;
+        if (drop.Depth is not { } depth)
+        {
+            Say(sort, SortWords.Fill(at(words), sort.Name, Number(drop.Index + 1), Number(others + 1), listName));
+            return;
+        }
+        // In a list with depths, among the items at its depth under the same holder, which names the place (#1594).
+        var (holder, position, count) = SortPlacement.Siblings(_sortDepths, drop.Index, depth);
+        var holderName = holder >= 0 ? ItemName(list, _sortIds[holder]) : listName;
+        Say(sort, SortWords.Fill(at(words), sort.Name, Number(position), Number(count), holderName));
+    }
+
+    /// <summary>Has the list the carry started in say <paramref name="text"/>: its position keeps the words, and the
+    /// next frame records it as a polite live region whose text they are (<c>EmitSortable</c>). One carry, one
+    /// voice, as the web's one region, whichever list of the group the item is in; the words stay after the drop,
+    /// so a step said inside the region's quiet window is still owed, and Android reads them from the node after
+    /// the event.</summary>
+    private static void Say(SortGesture sort, string text)
+    {
+        if (NodeStates.For<LiveRegionState>(sort.Source) is { } region) region.Words = text;
+    }
+
+    private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>What a reader hears an item called: the name it was given for the steps (#1538), or the labels of
+    /// what its subtree says, in reading order, as the web takes an item's accessible name or its text.</summary>
+    private string NameOf(SortableItem node, LayoutNode item)
+    {
+        if (node.Name.Length > 0) return node.Name;
+        _sortNames.Clear();
+        SemanticsTree.CollectChildren(item, _sortNames);
+        var name = new StringBuilder();
+        foreach (var said in _sortNames)
+        {
+            var label = said.Label.Trim();
+            if (label.Length == 0) continue;
+            if (name.Length > 0) name.Append(' ');
+            name.Append(label);
+        }
+        return name.ToString();
+    }
+
+    /// <summary>The name of the item of <paramref name="list"/> whose id is <paramref name="id"/>: the one a place
+    /// lands inside.</summary>
+    private string ItemName(Element list, string id)
+    {
+        if (_lastFrame is not { } frame) return id;
+        var regions = frame.SortRegions;
+        for (var i = 0; i < regions.Count; i++)
+        {
+            if (regions[i].Node is SortableItem item && item.Id == id && IsUnder(regions[i].Element, list))
+                return NameOf(item, regions[i].Layout);
+        }
+        return id;
     }
 
     /// <summary>The list before or after <paramref name="list"/> among those the item may be carried to: its

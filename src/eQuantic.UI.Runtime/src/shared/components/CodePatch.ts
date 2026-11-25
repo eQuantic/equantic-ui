@@ -5,7 +5,7 @@ export class CodePatch {
         const close = () => {
             if (open && (hunks.length > 0 || binary || !(originalPath == null) || !(modifiedPath == null))) {
                 let $n0: CodePatchFile; 
-                files.push(($n0 = new CodePatchFile(originalPath, modifiedPath, hunks), $n0.binary = binary, $n0));
+                $eq.collections.listAdd(files, ($n0 = new CodePatchFile(originalPath, modifiedPath, hunks), $n0.binary = binary, $n0));
             }
             originalPath = null;
             modifiedPath = null;
@@ -29,23 +29,23 @@ export class CodePatch {
                 let [a, b] = CodePatch.gitHeaderPaths(line.slice('diff --git '.length));
                 originalPath = a;
                 modifiedPath = b;
-                i++;
+                i = i + 1 | 0;
                 continue;
             }
-            if ($eq.text.startsWith(line, '--- ', 'ordinal') && i + 1 < lines.length && $eq.text.startsWith(lines[i + 1], '+++ ', 'ordinal')) {
+            if ($eq.text.startsWith(line, '--- ', 'ordinal') && (i + 1 | 0) < lines.length && $eq.text.startsWith(lines[i + 1 | 0], '+++ ', 'ordinal')) {
                 if (!open || hunks.length > 0) close();
                 open = true;
                 originalPath = CodePatch.pathOf(line.slice(4));
-                modifiedPath = CodePatch.pathOf(lines[i + 1].slice(4));
-                i += 2;
+                modifiedPath = CodePatch.pathOf(lines[i + 1 | 0].slice(4));
+                i = i + 2 | 0;
                 continue;
             }
             if ($eq.text.startsWith(line, 'rename from ', 'ordinal')) originalPath = line.slice('rename from '.length); else if ($eq.text.startsWith(line, 'rename to ', 'ordinal')) modifiedPath = line.slice('rename to '.length); else if ($eq.text.startsWith(line, 'Binary files ', 'ordinal')) binary = true; else { let header: any; if ($eq.text.startsWith(line, '@@ ', 'ordinal') && (header = CodePatch.header(line)) != null) {
                 open = true;
-                i = CodePatch.readHunk(lines, i + 1, header, line, hunks);
+                i = CodePatch.readHunk(lines, i + 1 | 0, header, line, hunks);
                 continue;
             } }
-            i++;
+            i = i + 1 | 0;
         }
         close();
         return files;
@@ -58,14 +58,14 @@ export class CodePatch {
         if (parts.length !== 2 || !parts[0].startsWith('-') || !parts[1].startsWith('+')) return null;
         let original: any; let modified: any; 
         if (!((original = CodePatch.range(parts[0].slice(1))) != null) || !((modified = CodePatch.range(parts[1].slice(1))) != null)) return null;
-        let section = close + 3 < line.length ? $eq.text.trimStart(line.slice(close + 3)) : '';
+        let section = (close + 3 | 0) < line.length ? $eq.text.trimStart(line.slice(close + 3 | 0)) : '';
         return [original[0], original[1], modified[0], modified[1], section];
     }
 
     static range(text: string): [number, number] | null {
         let comma = text.indexOf(',');
         let lineText = comma < 0 ? text : text.slice(0, comma);
-        let countText = comma < 0 ? '1' : text.slice(comma + 1);
+        let countText = comma < 0 ? '1' : text.slice(comma + 1 | 0);
         let line: any; let count: any; 
         if (!((line = $eq.num.intTryParse(lineText, 'int')) !== undefined || ((line = 0), false)) || !((count = $eq.num.intTryParse(countText, 'int')) !== undefined || ((count = 0), false))) return null;
         return [line, count];
@@ -79,27 +79,27 @@ export class CodePatch {
         while (i < lines.length && (original < header[1] || modified < header[3])) {
             let line = lines[i];
             if (line.startsWith('\\')) {
-                i++;
+                i = i + 1 | 0;
                 continue;
             }
             let mark = line.length > 0 ? line[0] : ' ';
             let content = line.length > 0 ? line.slice(1) : '';
             if (mark === '-') {
-                body.push(new CodePatchLine('removed', content));
-                original++;
+                $eq.collections.listAdd(body, new CodePatchLine('removed', content));
+                original = original + 1 | 0;
             } else if (mark === '+') {
-                body.push(new CodePatchLine('added', content));
-                modified++;
+                $eq.collections.listAdd(body, new CodePatchLine('added', content));
+                modified = modified + 1 | 0;
             } else if (mark === ' ') {
-                body.push(new CodePatchLine('context', content));
-                original++;
-                modified++;
+                $eq.collections.listAdd(body, new CodePatchLine('context', content));
+                original = original + 1 | 0;
+                modified = modified + 1 | 0;
             } else break;
-            i++;
+            i = i + 1 | 0;
         }
-        while (i < lines.length && lines[i].startsWith('\\')) i++;
+        while (i < lines.length && lines[i].startsWith('\\')) i = i + 1 | 0;
         let $n1: CodePatchHunk; 
-        hunks.push(($n1 = new CodePatchHunk(header[1] === 0 ? header[0] : header[0] - 1, header[1], header[3] === 0 ? header[2] : header[2] - 1, header[3], header[4], body), $n1.header = headerLine, $n1));
+        $eq.collections.listAdd(hunks, ($n1 = new CodePatchHunk(header[1] === 0 ? header[0] : header[0] - 1 | 0, header[1], header[3] === 0 ? header[2] : header[2] - 1 | 0, header[3], header[4], body), $n1.header = headerLine, $n1));
         return i;
     }
 
@@ -114,7 +114,7 @@ export class CodePatch {
     static gitHeaderPaths(text: string): [string | null, string | null] {
         let split = $eq.text.lastIndexOf(text, ' b/', 'ordinal');
         if (split < 0) return [null, null];
-        return [CodePatch.pathOf(text.slice(0, split)), CodePatch.pathOf(text.slice(split + 1))];
+        return [CodePatch.pathOf(text.slice(0, split)), CodePatch.pathOf(text.slice(split + 1 | 0))];
     }
 }
 

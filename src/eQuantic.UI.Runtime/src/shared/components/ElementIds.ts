@@ -6,7 +6,7 @@ export class ElementIds {
     _last!: number;
 
     next() {
-        return ++this._last;
+        return this._last = this._last + 1 | 0;
     }
 
     toString(): string {

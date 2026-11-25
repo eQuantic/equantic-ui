@@ -72,14 +72,17 @@ reported a place, and leave the item where it was.
 
 ### Requirement: A keyboard sorts an item and a reader hears each step
 
-With the focus on a `SortableItem` or inside it, Space SHALL pick the item up; an arrow along the list's axis
-SHALL move it one position in its list; an arrow across the axis SHALL move it to the previous or next list of
-its group in document order, at the same position or the last; Space or Enter SHALL drop it, reporting the
-`SortDrop` to the list it is in; Escape, Tab or a pointer's press SHALL put it back with no drop. Each place
-SHALL be offered to the list's `Accepts` first, a refused place SHALL NOT be taken, and the list SHALL report
-each place through `OnHovered` and `null` when the item leaves it. Each step SHALL be announced through one
-polite live region, from the SDK's strings in the reader's language, naming the item, its position, the count
-and the list's `Label`. After a drop the focus SHALL return to the item.
+With the focus on a `SortableItem` or inside it, or on a composite whose active item is a `SortableItem` or inside
+one (a tree's, a grid's), Space SHALL pick the item up; an arrow along the list's axis SHALL move it one place in its
+list; an arrow across the axis SHALL move it to the previous or next list of its group in document order, at the same
+position or the last; Space or Enter SHALL drop it, reporting the `SortDrop` to the list it is in; Escape, Tab or a
+pointer's press SHALL put it back with no drop. Each place SHALL be offered to the list's `Accepts` first and a
+refused place SHALL NOT be taken: an arrow along the axis SHALL pass over the places the list refuses to the next one
+it accepts, as a pointer passes over them, and keep the place it holds when none is left that way. The list SHALL
+report each place through `OnHovered` and `null` when the item leaves it.
+Each step SHALL be announced through one polite live region, in the words of the list the item was picked up from
+(its `Announcements`), naming the item, its position, the count and the list's `Label`. After a drop the focus SHALL
+return to the item, or stay on the composite whose active item it was.
 
 #### Scenario: A card moved to the next column by the keyboard
 
@@ -94,6 +97,18 @@ and the list's `Label`. After a drop the focus SHALL return to the item.
 - **WHEN** the person picks card `a` up with Space, presses ArrowDown and then Escape
 - **THEN** no `OnDropped` ran, the list last reported `null`, and the live region says `a` was put back
 
+#### Scenario: The keyboard passes over a refused place
+
+- **WHEN** a list holds `a`, `b` and `c`, its `Accepts` refuses position 2, and the person picks `c` up with Space
+  and presses ArrowUp
+- **THEN** `c` passes over position 2 to position 1, and the live region says that `c` is at position 1 of 3
+
+#### Scenario: A composite's active item is picked up
+
+- **WHEN** the focus is on a tree's host whose active item is `README.md`, a sortable item, and the person presses
+  Space, ArrowUp and Space
+- **THEN** the list's `OnDropped` runs for `README.md`, and the focus is still on the tree's host
+
 ### Requirement: Photon carries an item as the web does
 
 The Photon host SHALL carry a `SortableItem` by the same rules the web does: picked up by a mouse or a pen
@@ -101,8 +116,10 @@ that travels more than 5 px and by a finger held still for 250 ms, dimmed in pla
 the pointer and leans with its speed (upright when the person asked for less motion), placed by the same
 arithmetic, with the same guard, hover reports, drop and Escape; the scroll view of the list under the
 pointer SHALL scroll near its edge, and the place SHALL count the items scrolled out of sight. The keyboard
-SHALL carry an item as on the web, and the focus SHALL follow the dropped item. On Photon the steps SHALL NOT
-be spoken yet.
+SHALL carry an item as on the web, and the focus SHALL follow the dropped item. Each step of a keyboard's carry
+SHALL be said through the polite live region of the list the item was picked up from, in that list's words, which
+the macOS and iOS shells post as an announcement and the Android shell reads from the list's node, marked live while
+it holds words.
 
 #### Scenario: A card carried to the other column on Photon
 
@@ -116,3 +133,168 @@ be spoken yet.
 - **WHEN** column `doing` scrolls, holds eight cards, and the pointer carrying `a1` rests near the bottom edge of
   its scroll view for half a second before the release
 - **THEN** the column scrolled, and the drop's `Index` counts the cards scrolled out of sight above the pointer
+
+#### Scenario: Photon says a keyboard's steps
+
+- **WHEN** a list on Photon labelled `To do` holds `a`, `b` and `c`, and the person picks `a` up with Space, presses
+  ArrowDown and Space, a second apart
+- **THEN** the host's announcements say in turn that `a` was picked up at position 1 of 3 in To do, that it is at
+  position 2 of 3 in To do, and that it was dropped at position 2 of 3 in To do, and the list's semantic node is a
+  polite live region holding the last of them
+
+### Requirement: In a nesting list the keyboard steps through the places inside items
+
+In a `Sortable` that `Nests`, the arrows along the axis SHALL step the carried item through the places before each
+other item, inside it, and after the last, in that order (2n + 1 places for n other items), kept inside the list, by
+`SortPlacement.KeyStep` on both targets. A place inside an item SHALL be reported with `Into` naming it and announced
+with the item's name; a drop there SHALL be announced the same way.
+
+#### Scenario: Into the item above
+
+- **WHEN** a nesting list holds `docs` and `README.md`, and the person picks `README.md` up with Space and presses
+  ArrowUp and Space
+- **THEN** `OnDropped` receives a `SortDrop` whose `Item` is `README.md` and whose `Into` is `docs`, and the live region
+  said that `README.md` is inside `docs` and then that it was dropped inside `docs`
+
+### Requirement: A list says its steps in the words it is given
+
+`Sortable` SHALL carry what a reader hears while its items are sorted by the keyboard as `SortAnnouncements`: the
+instructions, and the texts for picked up, moved, moved inside, refused, dropped, dropped inside and put back, each
+with numbered holes filled by `SortWords.Fill` on both targets (`{0}` the item's name; for a place `{1}` its
+position from one, `{2}` the count and `{3}` the list's name; for a place inside `{1}` the item it lands inside).
+`UI.Sortable` SHALL fill them with the SDK's words in the reader's culture when the app gives none, and SHALL use
+the app's when it does. Both realizers SHALL read the words from the node, never from a catalog of their own, and a
+`Sortable` with none SHALL say nothing. On the web the focused item SHALL be described by its list's instructions.
+
+#### Scenario: An app's own words on the web
+
+- **WHEN** a list built with `UI.Sortable(…, announcements: new SortAnnouncements("Use Space.", "Took {0}.",
+  "{0} now {1}/{2}.", "{0} in {1}.", "Not there.", "Left {0} at {1}.", "Left {0} in {1}.", "Back."))` holds `a`, `b`
+  and `c`, and the person focuses `a`, presses Space, ArrowDown and Space
+- **THEN** `a` is described by "Use Space.", and the live region said in turn "Took a.", "a now 2/3." and
+  "Left a at 2."
+
+#### Scenario: An app's own words on Photon
+
+- **WHEN** the same list on Photon is sorted by the same keys, a second apart
+- **THEN** the host's announcements say "Took a.", "a now 2/3." and "Left a at 2."
+
+#### Scenario: The SDK's words by default
+
+- **WHEN** `UI.Sortable(…)` is given no words, under the `pt-BR` culture
+- **THEN** its `Announcements` are the SDK's `pt-BR` texts, and the instructions read
+  "Pressione Espaço para pegá-lo, as setas para movê-lo e Espaço de novo para soltá-lo."
+
+### Requirement: An item may carry the name the keyboard's steps say
+
+A `SortableItem` with a `Name` SHALL be named by it in every step the keyboard's sort says, on the web and on Photon,
+before what its subtree says; an item with an empty `Name` SHALL be named by what its subtree says, as before. The web
+lowering SHALL write the name on the item's element (`data-eq-sort-name`) when it has one.
+
+#### Scenario: A heading named by its column, not its press
+
+- **WHEN** a sortable item holds a press labelled "Sort by Amount", its `Name` is "Amount", and the keyboard picks it
+  up at the last of 5 places in a list labelled "Columns"
+- **THEN** a reader hears "Picked up Amount, position 5 of 5 in Columns."
+
+### Requirement: The look of a carried item is the theme's and the list's
+
+The look of an item carried from a `Sortable` SHALL be the theme's `SortableTheme` with the list's own `Style` laid
+over it, member by member, and the defaults of `SortPlacement` where neither sets a member: the item in its place
+SHALL be drawn at `LiftedOpacity` (0.4), the copy that follows a pointer at `CopyOpacity` (0.92) under the theme's
+shadow for elevation level `CopyElevation` (4), and the copy SHALL lean with the pointer's speed no further than
+`MaxLean` degrees (12) either way, staying upright at 0. The look SHALL be the one of the list the item was picked up
+from, on the web and on Photon.
+
+#### Scenario: A theme's look on the web
+
+- **WHEN** the theme's `SortableTheme` sets `LiftedOpacity` to 0.25 and `CopyElevation` to 5, and a mouse carries card
+  `a` of a list with no style of its own
+- **THEN** card `a` is drawn at opacity 0.25, and the copy carries the theme's level 5 shadow at opacity 0.92
+
+#### Scenario: A list's own look over the theme's
+
+- **WHEN** the theme sets `MaxLean` to 6 and the list's `Style` sets `MaxLean` to 0, and a mouse carries a card fast
+  across
+- **THEN** the copy stays upright
+
+#### Scenario: The defaults
+
+- **WHEN** neither the theme nor the list sets a `SortableTheme`
+- **THEN** the carried item is drawn at 0.4, and the copy at 0.92 under the theme's level 4 shadow, leaning up to 12°
+
+#### Scenario: The same look on Photon
+
+- **WHEN** the same theme and list are drawn on Photon and a mouse carries card `a`
+- **THEN** the host draws card `a` at the theme's `LiftedOpacity` and the copy at the list's `CopyOpacity`, under the
+  theme's shadow for `CopyElevation`, leaning no further than `MaxLean`
+
+### Requirement: A list's items may have depths, and a place says the depth a carried item takes
+
+A `Sortable` whose `Indent` is above 0 SHALL be a list whose items have depths: each `SortableItem.Depth` (0 at the top)
+and `Indent` the distance across the axis between two depths. In such a list the items right after a carried item that
+are deeper than it SHALL be carried with it: they SHALL NOT be places of their own. A place between two items (not
+inside one) SHALL be reported with `SortDrop.Depth`, the depth the carried item takes, which SHALL be at least the depth
+of the item after the place and at most one deeper than the item before it (`SortPlacement.Depths`). A pointer SHALL ask
+for the carried item's own depth plus one per `Indent` it travelled across the axis since it picked the item up, rounded
+to the nearest (`SortPlacement.Wanted`); the depth asked for, kept in the place's range, SHALL be offered to the list's
+`Accepts` first, then each shallower one, then each deeper one, and the first accepted SHALL be the place. A place inside
+an item, and every place of a list whose `Indent` is 0, SHALL report no depth. The web and Photon SHALL run the same
+arithmetic.
+
+#### Scenario: A pointer that travels across takes the item deeper
+
+- **WHEN** a list with depths and an `Indent` of 16 holds `src` (0), `App.cs` (1) and `docs` (0), and a mouse carries
+  `docs` from depth 0 to between `App.cs` and the end, travelling 16 px toward the end of the cross axis
+- **THEN** the place reported has `Index` 2 and `Depth` 1
+
+#### Scenario: A pointer that does not travel across keeps the item's own depth
+
+- **WHEN** the same mouse carries `docs` to the same place without travelling across
+- **THEN** the place reported has `Depth` 0
+
+#### Scenario: A refused depth gives way to a shallower one
+
+- **WHEN** a list with depths holds `a` (0) and `b` (0), its `Accepts` refuses every place whose `Depth` is 1, and a mouse
+  carries `b` above itself to after `a`, travelling one `Indent` across
+- **THEN** the place reported has `Depth` 0
+
+#### Scenario: The carried item's subtree is no place of its own
+
+- **WHEN** a list with depths holds `src` (0), `App.cs` (1), `Program.cs` (1) and `docs` (0), and a mouse carries `src`
+  over `Program.cs`
+- **THEN** no place among `App.cs` and `Program.cs` is reported, and the place reported is `src`'s own, `Index` 0
+
+#### Scenario: The same depth on Photon
+
+- **WHEN** the first scenario's list is carried the same way on Photon
+- **THEN** the host reports the same `Index` and `Depth`
+
+### Requirement: In a list with depths the keyboard reaches each depth and a reader hears the level
+
+In a list with depths, at a place between two items, the arrow across the axis toward its end (ArrowRight in a
+vertical list, ArrowDown in a horizontal one) SHALL ask one depth deeper and the other one shallower, passing over the
+depths the list refuses as the arrows along the axis pass over refused places; once the place offers no depth that way,
+the arrow SHALL move the item to the neighbouring list of its group, as in a list without depths. The depth the keyboard
+last chose SHALL be kept, within each place's range, as the item moves along. Each step's words SHALL keep their holes,
+filled from the depths: `{1}` the item's position among the items at its depth under the same holder, `{2}` their
+count, the carried item included, and `{3}` the holder's name, the holder being the nearest earlier item one depth
+shallower, or the list's name at depth 0 (`SortPlacement.Siblings`). A list without depths SHALL say what it said.
+
+#### Scenario: ArrowRight makes the item the last child of the folder above
+
+- **WHEN** a nesting list with depths holds `src` (0), `App.cs` (1), `docs` (0) and `README.md` (0), and the person picks
+  `README.md` up with Space, presses ArrowUp until it stands before `docs`, then ArrowRight and Space
+- **THEN** the drop reports `Index` 2 and `Depth` 1, and the live region said that `README.md` is at position 2 of 2 in
+  `src` and that it was dropped at position 2 of 2 in `src`
+
+#### Scenario: The same steps on Photon
+
+- **WHEN** the same list on Photon is sorted by the same keys
+- **THEN** the host reports the same drop and says the same words
+
+#### Scenario: No deeper depth moves to the next list
+
+- **WHEN** a list with depths of a group holds `a` (0) and `b` (0), the group's next list holds `c`, and the person picks
+  `a` up with Space, where no deeper depth is offered, and presses ArrowRight
+- **THEN** `a` is at a place of the next list

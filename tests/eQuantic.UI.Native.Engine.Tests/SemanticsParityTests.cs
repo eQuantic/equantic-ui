@@ -138,6 +138,23 @@ public class SemanticsParityTests(ITestOutputHelper output)
         yield return new("case progress", () => new ProgressBar(0.42f));
         yield return new("case slider", () => new Slider(0.5f, _ => { }));
         yield return new("case text-input", () => new TextInput("ana@example.com", _ => { }, label: "Email"));
+        yield return new("case editable combobox", () => EditableComboBox(open: true));
+        yield return new("case editable combobox closed", () => EditableComboBox(open: false));
+        yield return new("case editable combobox beside a word", () =>
+        {
+            var anchor = new Row(gap: 8);
+            anchor.Add(new Text("Find", TypeRole.BodyM));
+            anchor.Add(new TextEntry("al", _ => { }) { Label = "Place" });
+            anchor.Add(new TextEntry("", _ => { }) { Label = "Note" });
+            return new Anchored(anchor, new Pressable(new Text("Alpha", TypeRole.BodyM), () => { }) { Role = PressableRole.Option })
+            {
+                Open = true,
+                PanelRole = AnchorPanelRole.Listbox,
+                ActiveIndex = 0,
+            };
+        });
+        yield return new("case merge a label and an editable combobox",
+            () => new MergeSemantics(Line(new Text("Destination", TypeRole.BodyM), EditableComboBox(open: false))));
         yield return new("case image", () => new Image("https://example.com/a.png", 120, 80, ImageFit.Cover, "A harbour at dawn"));
         yield return new("case heading", () => new Text("Cards", TypeRole.Title, headingLevel: 2));
         yield return new("case list", () => new eQuantic.UI.Components.List(
@@ -146,6 +163,38 @@ public class SemanticsParityTests(ITestOutputHelper output)
         foreach (var role in Enum.GetValues<TableRole>())
             yield return new($"case table-view {role}", () => Table(role));
         yield return new("case table-viewport composed column by column", Viewport);
+
+        // A subtree heard as one stop, or passed over (#1567): the stop a merge becomes and what it is named,
+        // and what an exclusion leaves out, read alike on both targets.
+        yield return new("case merge a switch and its label",
+            () => new MergeSemantics(Line(new Text("Wi-Fi", TypeRole.BodyM), new Switch(true))));
+        yield return new("case merge a checkbox and its description", () => new MergeSemantics(Line(
+            new Checkbox(true, label: "Agree"), new Text("to the terms", TypeRole.BodyM))));
+        yield return new("case merge read content", () => new MergeSemantics(Line(
+            new Icon(Icons.Check, IconSize.Sm, label: "Paid"), new Text("Total", TypeRole.BodyM),
+            new Text("42 EUR", TypeRole.BodyM))));
+        yield return new("case merge two controls", () => new MergeSemantics(Line(
+            new Text("Volume", TypeRole.BodyM), new Slider(0.5f, _ => { }), new Button("Mute"))));
+        yield return new("case merge around an exclusion", () => new MergeSemantics(Line(
+            new ExcludeSemantics(new Text("JD", TypeRole.BodyM)), new Text("Jane Doe", TypeRole.BodyM))));
+        yield return new("case merge inside a merge", () => new MergeSemantics(Line(
+            new MergeSemantics(Line(new Text("Wi-Fi", TypeRole.BodyM), new Text("On", TypeRole.BodyM))),
+            new Text("Home", TypeRole.BodyM))));
+        yield return new("case merge around a merged control", () => new MergeSemantics(Line(
+            new Text("Home", TypeRole.BodyM),
+            new MergeSemantics(Line(new Text("Wi-Fi", TypeRole.BodyM), new Switch(true))))));
+        yield return new("case exclude", () => Line(
+            new ExcludeSemantics(new Text("Decoration", TypeRole.BodyM)), new Text("Shown", TypeRole.BodyM)));
+        yield return new("case exclude, not excluding",
+            () => new ExcludeSemantics(new Text("Read", TypeRole.BodyM)) { Excluding = false });
+    }
+
+    /// <summary>A row of what a case reads, in order.</summary>
+    private static Row Line(params VisualNode[] children)
+    {
+        var row = new Row(gap: 8);
+        foreach (var child in children) row.Add(child);
+        return row;
     }
 
     private static VisualNode Table(TableRole role) =>
@@ -162,6 +211,27 @@ public class SemanticsParityTests(ITestOutputHelper output)
             Selected = (row, column) => column == 2 && row >= 2 && row <= 3,
             Current = new TableRange(3, 2),
         };
+
+    /// <summary>A text field a listbox hangs from, the code editor's go-to in small (#1088): an editable
+    /// combobox, the keyboard on its second option.</summary>
+    private static VisualNode EditableComboBox(bool open)
+    {
+        var list = new Column(gap: 0);
+        foreach (var (place, i) in new[] { ("Alpha", 0), ("Beta", 1) })
+        {
+            list.Add(new Pressable(new Text(place, TypeRole.BodyM), () => { })
+            {
+                Role = PressableRole.Option,
+                Selected = i == 1,
+            });
+        }
+        return new Anchored(new TextEntry("al", _ => { }) { Label = "Go to" }, list)
+        {
+            Open = open,
+            PanelRole = AnchorPanelRole.Listbox,
+            ActiveIndex = 1,
+        };
+    }
 
     /// <summary>A viewport whose cells are added down the columns: both targets read the rows, each row's
     /// cells by column, whatever order they were added in.</summary>

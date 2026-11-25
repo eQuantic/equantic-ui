@@ -1,4 +1,4 @@
-import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
+import { $CodeTokenKindValue, $eq, CodeDocument, CodeLanguageRules, CodeToken } from "../runtime-exports";
 
 export class PythonLanguage {
     static $interfaces = ['eQuantic.UI.Code.ICodeLanguage'];
@@ -35,7 +35,7 @@ export class PythonLanguage {
                 $slots.reserved = $eq.collections.hashSetOf(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
                 $slots.builtins = $eq.collections.hashSetOf(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
                 $slots.constants = $eq.collections.hashSetOf(['True', 'False', 'None', 'self', 'cls']);
-                $slots.words = [...[...$eq.linq.seq(PythonLanguage.reserved, 'first'), ...$eq.linq.seq(PythonLanguage.builtins, 'second')], ...$eq.linq.seq(PythonLanguage.constants, 'second')].slice();
+                $slots.words = $eq.linq.toArray($eq.query.concat($eq.query.concat(PythonLanguage.reserved, PythonLanguage.builtins), PythonLanguage.constants));
             } catch ($error) {
                 PythonLanguage.$slots = null;
                 throw PythonLanguage.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.PythonLanguage', $error);
@@ -85,95 +85,95 @@ export class PythonLanguage {
                 PythonLanguage.add(into, 0, line.length, 'string');
                 return state;
             }
-            PythonLanguage.add(into, 0, close + 3, 'string');
-            i = close + 3;
+            PythonLanguage.add(into, 0, close + 3 | 0, 'string');
+            i = close + 3 | 0;
         }
         while (i < line.length) {
             let c = line[i];
             if ($eq.text.isWhiteSpace(c)) {
-                i++;
+                i = i + 1 | 0;
                 continue;
             }
             if (c === '#') {
-                PythonLanguage.add(into, i, line.length - i, 'comment');
+                PythonLanguage.add(into, i, line.length - i | 0, 'comment');
                 return PythonLanguage.normal;
             }
             if (PythonLanguage.tripleAt(line, i, '"') || PythonLanguage.tripleAt(line, i, '\'')) {
                 let quote = line[i];
                 let marker = quote === '"' ? '"""' : '\'\'\'';
-                let close = $eq.text.indexOf(line, marker, i + 3, 'ordinal');
+                let close = $eq.text.indexOf(line, marker, i + 3 | 0, 'ordinal');
                 if (close < 0) {
-                    PythonLanguage.add(into, i, line.length - i, 'string');
+                    PythonLanguage.add(into, i, line.length - i | 0, 'string');
                     return quote === '"' ? PythonLanguage.tripleDouble : PythonLanguage.tripleSingle;
                 }
-                PythonLanguage.add(into, i, close + 3 - i, 'string');
-                i = close + 3;
+                PythonLanguage.add(into, i, (close + 3 | 0) - i | 0, 'string');
+                i = close + 3 | 0;
                 continue;
             }
             if (c === '"' || c === '\'') {
                 let start = i;
-                if (i > 0 && 'fFrRbBuU'.indexOf(line[i - 1]) >= 0) start = i - 1;
-                if (start < i && into.length > 0 && into[into.length - 1].end === i) $eq.collections.listRemoveAt(into, into.length - 1);
-                let end = PythonLanguage.scanQuoted(line, i + 1, c);
-                PythonLanguage.add(into, start, (end < 0 ? line.length : end) - start, 'string');
+                if (i > 0 && 'fFrRbBuU'.indexOf(line[i - 1 | 0]) >= 0) start = i - 1 | 0;
+                if (start < i && into.length > 0 && into[into.length - 1].end === i) $eq.collections.listRemoveAt(into, into.length - 1 | 0);
+                let end = PythonLanguage.scanQuoted(line, i + 1 | 0, c);
+                PythonLanguage.add(into, start, (end < 0 ? line.length : end) - start | 0, 'string');
                 i = end < 0 ? line.length : end;
                 continue;
             }
             if ((/^\p{Nd}$/u.test(c))) {
                 let end = i;
-                while (end < line.length && ((/^[\p{L}\p{Nd}]$/u.test(line[end])) || line[end] === '.' || line[end] === '_')) end++;
-                PythonLanguage.add(into, i, end - i, 'number');
+                while (end < line.length && ((/^[\p{L}\p{Nd}]$/u.test(line[end])) || line[end] === '.' || line[end] === '_')) end = end + 1 | 0;
+                PythonLanguage.add(into, i, end - i | 0, 'number');
                 i = end;
                 continue;
             }
             if (c === '@') {
-                let end = i + 1;
-                while (end < line.length && (CodeDocument.isWordChar(line[end]) || line[end] === '.')) end++;
-                PythonLanguage.add(into, i, end - i, 'attribute');
+                let end = i + 1 | 0;
+                while (end < line.length && (CodeDocument.isWordChar(line[end]) || line[end] === '.')) end = end + 1 | 0;
+                PythonLanguage.add(into, i, end - i | 0, 'attribute');
                 i = end;
                 continue;
             }
             if ((/^\p{L}$/u.test(c)) || c === '_') {
                 let start = i;
-                while (i < line.length && CodeDocument.isWordChar(line[i])) i++;
+                while (i < line.length && CodeDocument.isWordChar(line[i])) i = i + 1 | 0;
                 let word = line.slice(start, i);
-                let kind: CodeTokenKindValue = PythonLanguage.reserved.has(word) ? 'keyword' : PythonLanguage.constants.has(word) ? 'constant' : PythonLanguage.builtins.has(word) ? 'type' : PythonLanguage.nextNonSpace(line, i) === '(' ? 'function' : (/^\p{Lu}$/u.test(word[0])) ? 'type' : 'plain';
-                PythonLanguage.add(into, start, i - start, kind);
+                let kind: $CodeTokenKindValue = PythonLanguage.reserved.has(word) ? 'keyword' : PythonLanguage.constants.has(word) ? 'constant' : PythonLanguage.builtins.has(word) ? 'type' : PythonLanguage.nextNonSpace(line, i) === '(' ? 'function' : (/^\p{Lu}$/u.test(word[0])) ? 'type' : 'plain';
+                PythonLanguage.add(into, start, i - start | 0, kind);
                 continue;
             }
             PythonLanguage.add(into, i, 1, '()[]{},:.'.indexOf(c) >= 0 ? 'punctuation' : 'operator');
-            i++;
+            i = i + 1 | 0;
         }
         return PythonLanguage.normal;
     }
 
     static tripleAt(line: string, i: number, quote: string) {
-        return i + 2 < line.length && line[i] === quote && line[i + 1] === quote && line[i + 2] === quote;
+        return (i + 2 | 0) < line.length && line[i] === quote && line[i + 1 | 0] === quote && line[i + 2 | 0] === quote;
     }
 
     static scanQuoted(line: string, from: number, quote: string) {
-        for (let i = from; i < line.length; i++) {
+        for (let i = from; i < line.length; i = i + 1 | 0) {
             if (line[i] === '\\') {
-                i++;
+                i = i + 1 | 0;
                 continue;
             }
-            if (line[i] === quote) return i + 1;
+            if (line[i] === quote) return i + 1 | 0;
         }
         return -1;
     }
 
     static nextNonSpace(line: string, from: number) {
-        for (let i = from; i < line.length; i++) if (!$eq.text.isWhiteSpace(line[i])) return line[i];
+        for (let i = from; i < line.length; i = i + 1 | 0) if (!$eq.text.isWhiteSpace(line[i])) return line[i];
         return '\u0000';
     }
 
-    static add(into: CodeToken[], start: number, length: number, kind: CodeTokenKindValue) {
+    static add(into: CodeToken[], start: number, length: number, kind: $CodeTokenKindValue) {
         if (length <= 0) return;
         if (into.length > 0 && into[into.length - 1].kind === kind && into[into.length - 1].end === start) {
-            (into[into.length - 1] = $eq.withPatch(into[into.length - 1], { length: into[into.length - 1].length + length }));
+            $eq.collections.listSet(into, into.length - 1, $eq.withPatch(into[into.length - 1], { length: into[into.length - 1].length + length | 0 }));
             return;
         }
-        into.push(new CodeToken(start, length, kind));
+        $eq.collections.listAdd(into, new CodeToken(start, length, kind));
     }
 
     toString(): string {

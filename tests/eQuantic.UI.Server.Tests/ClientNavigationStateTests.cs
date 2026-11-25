@@ -127,6 +127,23 @@ public class ClientNavigationStateTests
             .Should().Be("from the server");
     }
 
+    /// <summary>
+    /// It names the page the server resolved for the URL, by the module the document names (#1778): the
+    /// browser's router chose its own, and says so in development when the two differ, as a server that
+    /// rewrote the path draws another page than the route declares.
+    /// </summary>
+    [Fact]
+    public async Task ANavigation_NamesThePageTheServerResolved()
+    {
+        var (app, client) = await StartAsync();
+        await using var _ = app;
+
+        var payload = await NavigateAsync(client, "/probe");
+
+        payload.GetProperty("page").GetString().Should().Be(TwinName.OfType(typeof(ProbePage)))
+            .And.Be("ClientNavigationStateTests$ProbePage");
+    }
+
     [Fact]
     public async Task ANavigation_CarriesTheMetadataToo()
     {

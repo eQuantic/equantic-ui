@@ -74,18 +74,21 @@ public class ComplexScenarioTests
         // 3. Dictionary ContainsKey, a name only a dictionary answers
         Assert.Contains("if (config.has('timeout'))", js);
 
-        // 4. Math.Clamp -> Math.min(Math.max(val, min), max). The entry read inside it is a
-        // dictionary's only where a model can say so, which this harness has none of.
-        Assert.Contains("let safeTimeout = Math.min(Math.max(", js);
-        Assert.Contains(", 100), 5000);", js);
+        // 4. Math.Clamp -> the runtime's clamp, which refuses a minimum above the maximum as .NET does
+        // (#1824). The entry read inside it is a dictionary's only where a model can say so, which this
+        // harness has none of.
+        Assert.Contains("let safeTimeout = $eq.num.clamp(", js);
+        Assert.Contains(", 100, 5000, '", js);
 
         // 5. Pattern Matching: the bound variable is assigned inside the condition (guarded by &&).
         Assert.Contains("(typeof input === 'string' && (s = input, true))", js);
 
         // 6. Lambdas & List
         Assert.Contains("let values = [1, 2, 3];", js);
-        // Select -> map, ToList -> removed/passthrough
-        Assert.Contains("let doubled = values.map((x) => x * 2);", js);
+        // Select is a lazy query (#685), and ToList reads it into the array `doubled.Count` reads the length of,
+        // even with no model to say so: it handed the query back, whose length was undefined.
+        Assert.Contains("let doubled = $eq.linq.toArray($eq.query.select(values, (x) => x * 2));", js);
+        Assert.Contains("let count = doubled.length;", js);
 
         // 7. Await
         // Task.Delay might not be fully transpiled if no specific strategy, but 'await' keyword must exist

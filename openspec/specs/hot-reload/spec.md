@@ -261,9 +261,10 @@ fail when the median is over the budget, naming the part and the value.
 
 The time from a save to the frame that draws it, measured on the dashboard sample under `dotnet
 watch`, SHALL be held to a ceiling on its warm median, set from the first CI run that measured it with
-room for the runner's spread. The measurement SHALL fail over the ceiling, and SHALL say when the
-median falls under half of a ceiling that is above the bar, so the change that made it faster lowers
-it in the same pull request.
+room for the runner's spread. The measurement SHALL fail over the ceiling. While the ceiling is more
+than one and a half bars, it SHALL say when the median falls under half of it, so the change that made
+it faster lowers it in the same pull request. Within one and a half bars, where the ceiling holds the
+runner's spread and nothing more, it SHALL say whether the median met the bar.
 
 #### Scenario: Over the ceiling
 
@@ -273,8 +274,13 @@ it in the same pull request.
 
 #### Scenario: Far under the ceiling
 
-- **WHEN** the warm median is under half of a ceiling above the bar of a second
+- **WHEN** the warm median is under half of a ceiling more than one and a half bars of a second
 - **THEN** the run passes and says the ceiling can be lowered
+
+#### Scenario: Within the runner's spread of the bar
+
+- **WHEN** the ceiling is 1.5s and the warm median is 722ms
+- **THEN** the run passes and says the median is under the bar of a second, inside its ceiling
 
 ### Requirement: An app that publishes trimmed reloads an edit in place
 
@@ -384,6 +390,13 @@ its limit SHALL kill it, and the next save SHALL start it again, never waiting o
 
 - **WHEN** the running eqc exits, and its exit is raised as the next save finds it gone
 - **THEN** the save starts eqc again and compiles, where the save and the exit each waited for the other and the hot reload hung for good
+
+#### Scenario: A save is the first to see eqc dead
+
+- **WHEN** the running eqc exits, nothing has seen its exit yet, and the next save asks whether it is
+  still running as the process's exit event is raised
+- **THEN** the save starts eqc again and compiles, where it asked the process under the compiler's gate
+  and each waited for the other
 
 #### Scenario: A compile past its limit, or a stop
 
@@ -566,3 +579,26 @@ writes after the same edit.
 
 - **WHEN** a file that reads a resource string is not compiled again
 - **THEN** the culture catalogs the build writes still hold that string
+
+### Requirement: A host that is not an eQuantic.UI app says once that hot reload is off
+
+A server whose project is not built with eQuantic.UI.Sdk, as a host serving the pages of a library it references
+is, SHALL say once, in its own words, that hot reload is off for it, with no MSBuild error. It SHALL ask MSBuild no
+more, rebuild nothing on a save and send the page nothing. Whether the project is built with the SDK SHALL be asked
+only when MSBuild refuses the SDK's target, so an app pays nothing for the question.
+
+#### Scenario: A host serving a library's pages
+
+- **WHEN** an ordinary ASP.NET Core project serving eQuantic.UI pages from a library it references starts in
+  Development
+- **THEN** its log says once that hot reload is off for this host, and holds no `MSB4057` and no "Build failed"
+
+#### Scenario: A save in such a host
+
+- **WHEN** a C# file of that host is saved
+- **THEN** nothing is rebuilt, nothing is written to the log and the page receives nothing
+
+#### Scenario: An eQuantic.UI app
+
+- **WHEN** an app built with eQuantic.UI.Sdk starts in Development
+- **THEN** MSBuild is asked once, as before, and the app's eqc starts

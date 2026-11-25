@@ -594,7 +594,8 @@ the parity rows it closes flip.
    in build order while the server counted as its lowering met a component, and the two orders part at
    an adaptive node's arms and at a deferred layer. So every arm of an adaptive node is a position on
    the web, which draws them all behind its gates (`BuildOwner(…, holdsEveryArm)`, and no window size
-   class or width decides an arm there), and a composed component's data is keyed by where it stands,
+   class or width decides an arm there; since #1783 the browser holds every arm only until the page has
+   hydrated, then the one its window resolves, at the same slot), and a composed component's data is keyed by where it stands,
    `r{tree}/{type}@{slots}`, read off the element on both sides (`Element.Slot`, `SlotsBelow`,
    `BuildOwner.Building`); 3.8 says why. eqc met one more emission defect on the way (#1483, a `for`
    head's declared type), fixed by the bug sweep. E3b-2 (#1454) moves the path attributes and the
@@ -736,7 +737,9 @@ E1 to E4 change no public signature an app calls; E5 and E6 add to it.
 
 ## 6. Not in this plan
 
-- `GlobalKey`, the element that moves between parents. Nothing needs it yet.
+- ~~`GlobalKey`, the element that moves between parents.~~ Landed outside the plan (#797), when an
+  adaptive node's two arms needed one screen: a keyed position that leaves is parked for the build, and
+  one that still stands elsewhere is taken from its parent, as Flutter's `_retakeInactiveElement` does.
 - `InheritedModel`'s aspects, a dependency on part of a value. The first inherited components are
   small enough that rebuilding all their dependents costs nothing worth the API.
 - `FocusManager` and the rest of `PhotonHost`'s split (the audit's step 11): the element tree makes

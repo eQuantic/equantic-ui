@@ -11,14 +11,14 @@ export class SparseTableSpans extends TableSpans {
         this.count = Math.max(0, count);
         this.extent = Math.max(0, extent);
         let kept: number[] = [];
-        for (const index of extents.keys()) if (index >= 0 && index < this.count) kept.push(index);
+        for (const index of $eq.collections.sequenceWalk(extents.keys())) if (index >= 0 && index < this.count) $eq.collections.listAdd(kept, index);
         $eq.collections.listSort(kept, $eq.collections.order('value', 'comparable'));
         this._indices = kept.slice();
         this._extents = new Array(this._indices.length).fill(0);
-        this._added = new Array(this._indices.length + 1).fill(0);
-        for (let k = 0; k < this._indices.length; k++) {
+        this._added = new Array(this._indices.length + 1 | 0).fill(0);
+        for (let k = 0; k < this._indices.length; k = k + 1 | 0) {
             this._extents[k] = Math.max(0, $eq.mapGet(extents, this._indices[k]));
-            this._added[k + 1] = this._added[k] + (this._extents[k] - this.extent);
+            this._added[k + 1 | 0] = this._added[k] + (this._extents[k] - this.extent);
         }
     }
 
@@ -46,17 +46,17 @@ export class SparseTableSpans extends TableSpans {
     }
 
     offsetOf(index: number) {
-        let clamped = Math.min(Math.max(index, 0), this.count);
+        let clamped = $eq.num.clamp(index, 0, this.count, 'int32');
         return clamped * this.extent + this._added[this.before(clamped)];
     }
 
     indexAt(offset: number) {
         if (this.count === 0) return 0;
         let low = 0;
-        let high = this.count - 1;
+        let high = this.count - 1 | 0;
         while (low < high) {
-            let middle = low + Math.trunc((high - low + 1) / 2);
-            if (this.offsetOf(middle) <= offset) low = middle; else high = middle - 1;
+            let middle = low + Math.trunc(((high - low | 0) + 1 | 0) / 2) | 0;
+            if (this.offsetOf(middle) <= offset) low = middle; else high = middle - 1 | 0;
         }
         return low;
     }
@@ -65,8 +65,8 @@ export class SparseTableSpans extends TableSpans {
         let low = 0;
         let high = this._indices.length;
         while (low < high) {
-            let middle = Math.trunc((low + high) / 2);
-            if (this._indices[middle] < index) low = middle + 1; else high = middle;
+            let middle = Math.trunc((low + high | 0) / 2);
+            if (this._indices[middle] < index) low = middle + 1 | 0; else high = middle;
         }
         return low;
     }
