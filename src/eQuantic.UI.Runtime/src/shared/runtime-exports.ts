@@ -160,7 +160,7 @@ export {
 } from './value-types';
 // A page placing a WebFrame names this to say WHICH form its content is; same implicit promise.
 export { WebContent } from './value-types';
-export { GlobalKey, GridPattern, InFlow, InheritedComponent, InView, RadialGradient, Simulated, Theme } from './vocabulary';
+export { Directionality, GlobalKey, GridPattern, InFlow, InheritedComponent, InView, RadialGradient, Simulated, Theme } from './vocabulary';
 export { VisualNodeExtensions } from './visual-node-extensions';
 // The Primitives VALUE types a page can name — same implicit promise, see primitive-values.ts.
 export {
@@ -219,6 +219,7 @@ export {
 // The builder, built through `$eq.text.stringBuilder` and NAMED by a field or a parameter that holds one.
 export { StringBuilder } from '../utils/string-builder';
 export { CalendarNames } from './calendar-names';
+export { CultureCalendar } from './culture-calendar';
 // The vocabulary's interface defaults (#414): a twin that relies on one delegates to it by the
 // interface's name, and an embedded twin imports from this barrel, not from index (found in review,
 // #418). export-parity.spec.ts holds every one of them here.

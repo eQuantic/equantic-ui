@@ -57,6 +57,12 @@ public class MathStrategy : IExpressionIrStrategy
                 irArgs);
         }
 
+        // A decimal overload the table has no row for is refused, never sent to JavaScript's Math,
+        // which reads the runtime's Decimal as NaN (#1767). Round is the one settled below.
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Name: not "Round" } overload
+            && overload.Parameters.Any(parameter => parameter.Type.SpecialType == SpecialType.System_Decimal))
+            return JsExpr.Opaque(context.Unhandled(node, "Math"));
+
         var argsList = arguments
             .Select(a => context.Converter.ConvertExpression(a.Expression))
             .ToList();

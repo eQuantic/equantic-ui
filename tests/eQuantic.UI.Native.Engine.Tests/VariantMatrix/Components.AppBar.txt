@@ -3,7 +3,7 @@
 <div class="eq-17gcljg eq-1eb13m5 eq-1fdhaeb eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-168ghzj eq-5ew4ww">
-<div class="eq-1eb13m5 eq-1lav9l3 eq-g7fowl">
+<div class="eq-1eb13m5 eq-1mkosml eq-1p0bb5o eq-g7fowl">
 <h1 class="eq-type-title eq-114sn1y eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-mxq5ld eq-pbx3g3 eq-y9mhin">x</h1>
 </div>
 </div>
@@ -19,7 +19,8 @@
 .eq-1fdhaeb{height:56px}
 .eq-1gudvpj{min-height:0}
 .eq-1jjc6f6{height:100%}
-.eq-1lav9l3{padding:0 8px 0 12px}
+.eq-1mkosml{padding-inline:12px 8px}
+.eq-1p0bb5o{padding-block:0}
 .eq-1uhnwvg{flex-direction:row}
 .eq-5ew4ww{min-width:0}
 .eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}
@@ -50,7 +51,7 @@ AppBar 0 0 480x56
 <div class="eq-17gcljg eq-1eb13m5 eq-1fdhaeb eq-5ew4ww eq-akjizx eq-bo3n4y eq-g7fowl">
 <div class="eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-168ghzj eq-5ew4ww">
-<div class="eq-1eb13m5 eq-1lav9l3 eq-g7fowl">
+<div class="eq-1eb13m5 eq-1mkosml eq-1p0bb5o eq-g7fowl">
 <h1 class="eq-type-title eq-114sn1y eq-1566de eq-16x7aca eq-7gvrt4 eq-epaxs4 eq-mbtjfn eq-mxq5ld eq-pbx3g3 eq-y9mhin">x</h1>
 </div>
 </div>
@@ -66,7 +67,8 @@ AppBar 0 0 480x56
 .eq-1fdhaeb{height:56px}
 .eq-1gudvpj{min-height:0}
 .eq-1jjc6f6{height:100%}
-.eq-1lav9l3{padding:0 8px 0 12px}
+.eq-1mkosml{padding-inline:12px 8px}
+.eq-1p0bb5o{padding-block:0}
 .eq-1uhnwvg{flex-direction:row}
 .eq-5ew4ww{min-width:0}
 .eq-7gvrt4{color:var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))}

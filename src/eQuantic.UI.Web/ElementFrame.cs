@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Web;
@@ -23,8 +25,24 @@ namespace eQuantic.UI.Web;
 internal sealed class ElementFrame
 {
     private readonly Dictionary<VisualNode, Element> _positions = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>
+    /// Every component's position, by the instance it holds AND the component position whose build it
+    /// stands in (null at the tree's root), because an instance can hold more than one position, nested:
+    /// a component whose <c>Build</c> answers itself, or a box around itself, stands at every position of
+    /// the chain the engine built until its boundary contained it. Found by the instance alone, each
+    /// lookup answered the outermost one again, whose build is that instance again, and the lowering
+    /// walked back into it until the stack died, taking the server's process with it (#1544).
+    /// </summary>
+    private readonly Dictionary<(VisualNode Node, ComponentElement? Within), ComponentElement> _components =
+        new(PlacementComparer.Instance);
+
     private readonly int _tree;
     private readonly int _keyDepth;
+
+    /// <summary>The component position whose build is being lowered: where <see cref="At"/> looks for a
+    /// component first (<see cref="Enter"/>).</summary>
+    private ComponentElement? _lowering;
 
     /// <param name="root">The tree's root position.</param>
     /// <param name="tree">Which tree of the render this is, in the order the render draws them: what a
@@ -35,7 +53,7 @@ internal sealed class ElementFrame
     {
         _tree = tree;
         _keyDepth = keyDepth;
-        Index(root);
+        Index(root, within: null);
     }
 
     /// <summary>
@@ -60,16 +78,59 @@ internal sealed class ElementFrame
     /// the one a parent's latest build holds, and what that instance built, null when it built
     /// nothing. The kept one is also the one a discovery round must ask for its data, so a prefetch
     /// lands on the instance the next frame draws.
+    /// <para>
+    /// Looked for first inside the component position whose build is being lowered
+    /// (<see cref="Enter"/>), so a lowering descends the positions the engine built, as Photon's layout
+    /// walks them, rather than finding an instance's outermost position again. A lowering that has not
+    /// entered the position it stands in (a tree built beside this one) finds the instance's first
+    /// position, which is the only one when no instance repeats.
+    /// </para>
     /// </summary>
     /// <exception cref="InvalidOperationException">The frame has no position for the component: the
     /// engine went wrong, and lowering a fresh instance instead would draw its defaults in silence
     /// (Photon refuses a layer without a position for the same reason).</exception>
     internal (UiComponent Kept, VisualNode? Built, ComponentElement Position) At(UiComponent component) =>
-        _positions.TryGetValue(component, out var element) && element is ComponentElement position
+        (_components.TryGetValue((component, _lowering), out var within)
+            ? within
+            : _positions.GetValueOrDefault(component) as ComponentElement) is { } position
             ? (position.Component, position.ChildAt(0)?.Configuration, position)
             : throw new InvalidOperationException(
                 $"A {component.GetType().Name} was lowered that this frame did not build: the element "
                 + "tree and the tree being lowered disagree.");
+
+    /// <summary>
+    /// Enters <paramref name="position"/> for the lowering of what it built: until the scope is
+    /// disposed, <see cref="At"/> finds a component among the positions that build stands in. Null
+    /// enters nothing, and the scope then restores what it found.
+    /// </summary>
+    internal Entered Enter(ComponentElement? position)
+    {
+        var entered = new Entered(this, _lowering);
+        if (position is not null) _lowering = position;
+        return entered;
+    }
+
+    /// <summary>
+    /// The scope <see cref="Enter"/> opens, which puts back the position it found rather than the
+    /// one before it, so a copy disposed twice restores the same one, and a <c>default</c> one restores
+    /// nothing.
+    /// </summary>
+    internal readonly struct Entered : IDisposable
+    {
+        private readonly ElementFrame? _frame;
+        private readonly ComponentElement? _restore;
+
+        internal Entered(ElementFrame frame, ComponentElement? restore)
+        {
+            _frame = frame;
+            _restore = restore;
+        }
+
+        public void Dispose()
+        {
+            if (_frame is not null) _frame._lowering = _restore;
+        }
+    }
 
     /// <summary>
     /// Shows <paramref name="layer"/> in the deferred slot of <paramref name="holder"/>'s position
@@ -84,23 +145,55 @@ internal sealed class ElementFrame
             throw new InvalidOperationException(
                 $"A {holder.GetType().Name}'s layer was lowered that this frame has no position for.");
 
-        Index(position.ShowDeferred(layer));
+        Index(position.ShowDeferred(layer), ComponentAbove(position));
         return layer;
     }
 
-    /// <summary>
-    /// Every position under <paramref name="root"/>, by the node it holds. A node placed at two
-    /// positions keeps the first: a stateful instance placed twice builds the same tree at both.
-    /// </summary>
-    private void Index(Element root)
+    /// <summary>The nearest component position above <paramref name="element"/>, or null at the root:
+    /// the one whose build a layer shown in it stands in.</summary>
+    private static ComponentElement? ComponentAbove(Element element)
     {
-        var pending = new Stack<Element>();
-        pending.Push(root);
+        for (var at = element.Parent; at is not null; at = at.Parent)
+            if (at is ComponentElement component) return component;
+        return null;
+    }
+
+    /// <summary>
+    /// Every position under <paramref name="root"/>, by the node it holds, and every component's also by
+    /// the component position whose build it stands in, <paramref name="within"/> for the root. A node
+    /// placed at two positions keeps the first: a stateful instance placed twice builds the same tree at
+    /// both.
+    /// </summary>
+    private void Index(Element root, ComponentElement? within)
+    {
+        var pending = new Stack<(Element Element, ComponentElement? Within)>();
+        pending.Push((root, within));
         while (pending.Count > 0)
         {
-            var element = pending.Pop();
+            var (element, around) = pending.Pop();
             _positions.TryAdd(element.Configuration, element);
-            element.VisitChildren(pending.Push);
+            var below = around;
+            if (element is ComponentElement component)
+            {
+                _components.TryAdd((component.Configuration, around), component);
+                below = component;
+            }
+
+            element.VisitChildren(child => pending.Push((child, below)));
         }
+    }
+
+    /// <summary>A placement compared by reference on both halves, as <see cref="_positions"/> compares
+    /// its nodes: a node may define an equality of its own, and two equal nodes are two positions.</summary>
+    private sealed class PlacementComparer : IEqualityComparer<(VisualNode Node, ComponentElement? Within)>
+    {
+        internal static readonly PlacementComparer Instance = new();
+
+        public bool Equals((VisualNode Node, ComponentElement? Within) x, (VisualNode Node, ComponentElement? Within) y) =>
+            ReferenceEquals(x.Node, y.Node) && ReferenceEquals(x.Within, y.Within);
+
+        public int GetHashCode((VisualNode Node, ComponentElement? Within) placement) =>
+            HashCode.Combine(RuntimeHelpers.GetHashCode(placement.Node),
+                placement.Within is null ? 0 : RuntimeHelpers.GetHashCode(placement.Within));
     }
 }

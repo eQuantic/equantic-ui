@@ -11,12 +11,13 @@ import { RouteValues } from './route-values';
 import { getCurrentRoute } from '../router/current-route';
 import { cssFontWeight, isWellFormedFace, type AppTheme } from './value-types';
 import type { TypeStyleValue } from './nodes';
-import type { DensityValue } from './enums.generated';
+import type { DensityValue, TextDirectionValue } from './enums.generated';
 import { photonTheme } from './design-system.generated';
 import { DENSITY_COOKIE } from './markers';
 import { passInvalidator } from './pass-invalidator';
 import { declareFamily, dependOnFamily } from './face-declarations';
 import { textElementStarts } from '../utils/text-elements';
+import { activeTextDirection } from '../utils/culture';
 
 /**
  * What a context made for a component's position reads of it: the element engine's
@@ -41,6 +42,28 @@ let themeNode: (abstract new (...args: never[]) => object) | null = null;
 
 export function registerThemeNode(type: abstract new (...args: never[]) => object): void {
   themeNode = type;
+}
+
+/** What the vocabulary's `Directionality` holds, as the context and the lowering read it. */
+interface DirectionalityValue {
+  readonly direction: TextDirectionValue;
+}
+
+/** The vocabulary's `Directionality` node, handed in by the vocabulary, which imports this module. */
+let directionalityNode: (abstract new (...args: never[]) => DirectionalityValue) | null = null;
+
+export function registerDirectionalityNode(type: abstract new (...args: never[]) => DirectionalityValue): void {
+  directionalityNode = type;
+}
+
+/**
+ * The direction `node` sets for its subtree when it is a `Directionality`, or null for any other node:
+ * how the lowering, which cannot import the vocabulary that imports it, tells one from another
+ * inherited component.
+ */
+export function directionSetBy(node: object): TextDirectionValue | null {
+  const type = directionalityNode;
+  return type && node instanceof type ? node.direction : null;
 }
 
 /** Whether the constructor was handed a position rather than a theme: only an element visits children. */
@@ -109,6 +132,20 @@ export class ComponentContext {
     const node = themeNode;
     const above = node ? (position.dependOn((value) => value instanceof node) as { value: AppTheme } | null) : null;
     return above?.value ?? this.readFrame(position).theme;
+  }
+
+  /**
+   * Which way this component's text runs (the C# `ComponentContext.TextDirection`): the nearest
+   * `Directionality` above its position, and reading it makes the component a dependent of that node,
+   * as reading the theme does; with none above it, the UI culture's, which the server said (.NET's
+   * `TextInfo.IsRightToLeft`). A frame's context answers its culture's.
+   */
+  get textDirection(): TextDirectionValue {
+    const node = directionalityNode;
+    const above = node && this._position
+      ? (this._position.dependOn((value) => value instanceof node) as DirectionalityValue | null)
+      : null;
+    return above?.direction ?? activeTextDirection();
   }
 
   get typeScale(): number {

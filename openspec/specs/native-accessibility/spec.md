@@ -90,16 +90,19 @@ reader activates it. A slider SHALL stay one stop that carries its value.
 ### Requirement: A combobox's field and a dialog are announced as what they are
 
 The pressable a listbox panel hangs from SHALL reach the native tree as a `ComboBox`, with `Expanded`
-saying whether its list is open, the rule the web applies to the anchor's root. A menu's trigger SHALL
+saying whether its list is open, the rule the web applies to the anchor's root. It SHALL be named by its
+author's label, and by nothing without one, and what its field shows SHALL be its value, as the web reads a
+select-only combobox, which is never named from its content. A menu's trigger SHALL
 stay a button. An open modal layer SHALL reach the tree as a `Dialog` named by its label, or as an
-`AlertDialog` when it interrupts, as the web's `role="dialog"` and `role="alertdialog"` do. The layer
-Photon opens for an anchored panel SHALL be a dialog only when its panel is one, and no stop at all for
-a menu, a listbox or a tooltip.
+`AlertDialog` when it interrupts, as the web's `role="dialog"` and `role="alertdialog"` do. An anchored
+panel SHALL be a dialog only when it is one, and its stop SHALL be the panel itself, after the scrim's
+dismiss button, as the web's `role="dialog"` is the panel and its scrim stands outside it. A menu's, a
+listbox's or a tooltip's panel SHALL be no stop at all.
 
 #### Scenario: A select, closed and then open
 
 - **WHEN** a `Select` showing "Lisbon" is laid out, and its field is then activated
-- **THEN** the field is a `ComboBox` named "Lisbon" whose `Expanded` is false, and after the press it
+- **THEN** the field is a `ComboBox` with no name whose value is "Lisbon" and whose `Expanded` is false, and after the press it
   is true and is followed by the dismissing scrim and the `Option`s, with no dialog or group between
   them
 
@@ -111,18 +114,25 @@ a menu, a listbox or a tooltip.
 #### Scenario: A date picker's calendar
 
 - **WHEN** a `DatePicker`'s calendar is opened
-- **THEN** the tree holds one `Dialog`, followed by the calendar's days, and the opener stays a button
+- **THEN** the opener stays a button, followed by the scrim's dismiss button, one `Dialog`, and the calendar's
+  days
+
+#### Scenario: A labelled combobox
+
+- **WHEN** an anchored listbox hangs from a pressable labelled "Country" whose field shows "Brazil"
+- **THEN** the field is a `ComboBox` named "Country" whose value is "Brazil", on Photon as on the web
 
 ### Requirement: Each platform hears the containers and the combobox in its own words
 
 The bridges SHALL announce a tab bar as `AXTabGroup` and `android.widget.TabWidget`, a radio group as
 `AXRadioGroup` and `android.widget.RadioGroup`, a dialog as `AXGroup` with the `AXApplicationDialog`
 subrole and `android.app.Dialog`, and an alert dialog as `AXGroup` with the `AXApplicationAlertDialog`
-subrole and `android.app.AlertDialog`, the W3C Core-AAM's words for the same ARIA roles. A combobox,
-which is select-only in this library, SHALL be `AXPopUpButton` and `android.widget.Spinner`, each
-platform's select-only drop-down. On UIKit the containers SHALL carry no trait and the combobox the
-button trait. The containers SHALL be neither activatable nor adjustable on any platform, and the
-combobox SHALL be activatable.
+subrole and `android.app.AlertDialog`, the W3C Core-AAM's words for the same ARIA roles. A select-only
+combobox SHALL be `AXPopUpButton` and `android.widget.Spinner`, each platform's select-only drop-down, and
+an editable combobox SHALL be `AXComboBox` and `android.widget.EditText`, Core-AAM's pair for a text field
+with a list under it. On UIKit the containers and the editable combobox SHALL carry no trait and the
+select-only combobox the button trait. The containers SHALL be neither activatable nor adjustable on any
+platform, and both comboboxes SHALL be activatable.
 
 #### Scenario: The macOS bridge reads back real components
 
@@ -140,6 +150,13 @@ combobox SHALL be activatable.
 - **THEN** the tablist, tab, radiogroup, radio, combobox, option, menuitem, dialog and alertdialog
   elements of the DOM and the matching stops of the tree are the same list of roles, names and states
   in the same order
+
+#### Scenario: The macOS bridge reads back an editable combobox
+
+- **WHEN** the macOS bridge builds the accessibility elements for a `TextEntry` holding "al", labelled "Go to",
+  that an open listbox hangs from, outside a running app
+- **THEN** AppKit reports an `AXComboBox` named "Go to", described as "combo box", whose value is "al" and which
+  is expanded
 
 ### Requirement: Tables, grids, cells and headers in each platform's words
 
@@ -220,3 +237,138 @@ Android added in API 30, and with the `Obtain` factories only below API 30.
 
 - **WHEN** TalkBack's next-item key walks a screen from its first node on the Android 16 emulator
 - **THEN** it reads every node in tree order with the same words as before this change
+
+### Requirement: A text field a listbox hangs from is an editable combobox
+
+The first `TextEntry` in tree order of an `Anchored` node's anchor, wherever it sits in the anchor, when the
+panel is a `Listbox`, SHALL reach the native tree as an `EditableComboBox`, named by its label or by its placeholder without
+one, whose value is the text it holds and whose `Expanded` says whether its list is open, as the web's text control
+under that anchor carries `role="combobox"`. A field under a menu, or with no anchored panel, SHALL stay a
+`TextField`. The field SHALL be one of the controls a merge's stop becomes, as a text field is. The option the
+keyboard is on, the item row `Anchored.ActiveIndex` counts to in tree order, SHALL be
+announced politely from the field each time it changes, the option marked selected having no part in it. A list
+that is closed or has no active row SHALL say nothing, so the option it shows is announced again when it opens or
+the keyboard comes back to it. On the host's first frame nothing SHALL be announced.
+
+#### Scenario: The go-to field, open and closed
+
+- **WHEN** a `TextEntry` holding "al", labelled "Go to", anchors an open listbox of three options
+- **THEN** it is an `EditableComboBox` named "Go to" whose value is "al" and whose `Expanded` is true, followed by
+  the three `Option`s, and with the list closed its `Expanded` is false
+
+#### Scenario: A field beside a word, and a second field
+
+- **WHEN** an open listbox hangs from a row holding a text "Find", a field labelled "Place" and a field labelled
+  "Note"
+- **THEN** "Place" is the `EditableComboBox`, the option the keyboard is on is announced from it, and "Note" is a
+  `TextField`, on the web and on Photon
+
+#### Scenario: A field under a menu, and a field alone
+
+- **WHEN** the same field anchors a menu, or anchors nothing
+- **THEN** it is a `TextField`
+
+#### Scenario: A label merged with the field
+
+- **WHEN** a `MergeSemantics` holds a text "Destination" and the field, its list closed
+- **THEN** one `EditableComboBox` named "Destination Go to" is announced, on the web and on Photon
+
+#### Scenario: The keyboard walks the list
+
+- **WHEN** the active row of the field's open list moves from "Alpha" to "Beta", and later to "Gamma"
+- **THEN** the host announces "Beta" and then "Gamma", politely, each from the field's node, and announced nothing
+  on its first frame
+
+#### Scenario: The list opens again
+
+- **WHEN** the list closes and opens again with the keyboard on "Alpha", or its active row goes to none and comes
+  back to "Alpha"
+- **THEN** nothing is announced while it is closed or has no active row, and "Alpha" is announced when it comes back
+
+#### Scenario: The picked option is not the active one
+
+- **WHEN** "Alpha" is the option marked selected and the active row moves to "Gamma"
+- **THEN** the host announces "Gamma"
+
+#### Scenario: The web and Photon agree
+
+- **WHEN** the field with its list open, and with it closed, is lowered to the DOM and laid out on Photon
+- **THEN** the DOM's combobox input and options and the tree's stops are the same list of roles, names, values and
+  states in the same order
+
+### Requirement: VoiceOver walks into a Photon window on the Mac and hears where the keyboard is
+
+The macOS bridge SHALL keep one accessibility element per semantics node for as long as the node lives, found
+by the id of the node's position at every read and told what the node says now, taking away a value, a pick
+or an open list the node no longer has. It SHALL release an element only when its node leaves the tree, and
+SHALL give a position that holds another kind of node a new element. The content view SHALL be an `AXGroup`
+element that the window lists and that its elements name as their parent. Its focused element SHALL be the
+element of the node that holds the keyboard, or the view itself when none does, and the bridge SHALL post
+`NSAccessibilityFocusedUIElementChangedNotification` on it when the keyboard moves, once an assistive app has
+read the tree.
+
+#### Scenario: An element an assistive app holds
+
+- **WHEN** an assistive app reads the window's group, holds one of its elements, and reads the group again
+- **THEN** the element it holds still answers, and is the element the second read lists
+
+#### Scenario: A node that changes, leaves, or becomes another kind
+
+- **WHEN** a field's text changes, a button leaves the tree, and a button's position comes to hold a checkbox
+- **THEN** the field keeps its element, which holds the new text, the button's element is gone, and the
+  checkbox has an element of its own
+
+#### Scenario: What a node stops saying
+
+- **WHEN** a tab that was picked, open and valued is read again with none of the three
+- **THEN** its element has no value, is not selected and is not expanded
+
+#### Scenario: The window's tree and its focus
+
+- **WHEN** an assistive app reads the PhotonDesktop window, and a press moves the keyboard to a field
+- **THEN** the window lists the content's group beside its title bar's buttons, each element names the group
+  as its parent, the application's focused element was the group and is now the field's element, and an
+  observer of the focused element hears the change
+
+### Requirement: A navigable grid is read as a grid whose header row heads its columns
+
+Photon SHALL announce a `Navigable` as a `Tree` when its role is a tree and as a `Grid` otherwise, named by its
+label, as the web writes `role="tree"` or `role="grid"`, and a reader SHALL walk into it. When the grid says its
+first row heads the columns, each direct child of that row SHALL be a `ColumnHeader` named by the words it holds,
+and the grid's other rows SHALL be read as they are.
+
+#### Scenario: A calendar's month
+
+- **WHEN** a `Calendar` showing July 2026 is laid out on Photon
+- **THEN** it is a `Grid` named "July 2026", followed by seven `ColumnHeader`s in the culture's day names, and then
+  the month's days as `GridCell`s, with no day name read as plain text
+
+#### Scenario: The web and Photon agree
+
+- **WHEN** a `Calendar`, and a `DatePicker` with its calendar open, are lowered to the DOM and laid out on Photon
+- **THEN** the grid, its column headers and its cells are the same roles and names on both targets
+
+### Requirement: An anchored panel is read right after its anchor
+
+On Photon, the stops of an open anchored panel (a menu, a select's list, an editable combobox's list, a date
+picker's calendar) SHALL follow its anchor's stops, before whatever follows the anchored node on the page, as the
+web lowers the panel inside the anchor's markup and as Flutter attaches an `OverlayPortal`'s child to the portal's
+semantics. An anchored node the walk does not reach SHALL have its panel read after the page, as before.
+
+#### Scenario: An open menu in the middle of a page
+
+- **WHEN** a text "Before", a menu triggered by "More" holding "Rename" and "Delete" and open, and a text "After"
+  are laid out on Photon
+- **THEN** the reader hears "Before", the "More" button, the "Rename" and "Delete" menu items, then "After"
+
+#### Scenario: A dialog panel
+
+- **WHEN** a dismissible anchored dialog panel holding "July 2026" hangs from a "Pick" button between "Before" and
+  "After", open
+- **THEN** the reader hears "Before", "Pick", the "Dismiss" button, a `Dialog`, "July 2026", then "After"
+
+#### Scenario: The web and Photon agree on an open date picker
+
+- **WHEN** a `DatePicker` with its calendar open is lowered to the DOM and laid out on Photon
+- **THEN** both read the field, the opener, the dismiss button, the dialog, the calendar and then the field's
+  message line, in that order

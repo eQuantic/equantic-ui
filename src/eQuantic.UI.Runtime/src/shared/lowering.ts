@@ -38,7 +38,7 @@ import {
   setFailureRenderer,
 } from './component-boundary';
 import { getActivePass, setRootLowering, setRootRelowering, type Relowered, type SubtreePatch } from './element-roots';
-import { ElementFrame } from './element-frame';
+import { ElementFrame, type ComponentPosition } from './element-frame';
 // The engine's types through the barrel its own modules import from, for the reason
 // `element-frame.ts` gives; its classes through the seam the barrel registers them in.
 import type { BuildOwner, Element as Position } from './runtime-exports';
@@ -47,6 +47,7 @@ import { adaptiveWindowWidth, documentHoldsEveryArm, noteThreshold } from './ada
 import type { VisualNode } from './vocabulary';
 import {
   ambientLoweringContext,
+  directionSetBy,
   getPhotonTheme,
   photonComponentContext,
 } from './photon-context';
@@ -430,11 +431,15 @@ function relowerRecord(record: LoweredRecord, frame: ElementFrame): HtmlNode | n
   setWalkAmbients(inputs.ambients);
   try {
     const context: LoweringContext = { ...inputs.context, frame };
-    const fresh = lowerRecorded(
-      record.position,
-      inputs,
-      () => decorate(node, lowerNodeKind(node, context, inputs.horizontalAxis, inputs.path)),
-      record.parent,
+    // From the component position above the record's, where a lowering from the root stands when it
+    // reaches it, so the record's own position is the one found (#1544).
+    const fresh = frame.withinParentOf(record.position, () =>
+      lowerRecorded(
+        record.position,
+        inputs,
+        () => decorate(node, lowerNodeKind(node, context, inputs.horizontalAxis, inputs.path)),
+        record.parent,
+      ),
     );
     return replay(drawn, fresh);
   } finally {
@@ -465,11 +470,40 @@ function partialBorder(style: { borderWidth?: number; borderSides?: number }): b
   return (style.borderWidth ?? 0) > 0 && sides !== BORDER_ALL && sides !== 0;
 }
 
-/** `border-width` in CSS's own order — top, right, bottom, left — from the logical sides. */
+/**
+ * Whether a box draws its start or its end and not both (C# `DrawsOneInlineSide`): then its widths are
+ * `border-block-width` and `border-inline-width`, which mirror under `rtl`, and otherwise the physical
+ * `border-width`, which reads the same either way (#1568). End is bit 2 and Start bit 8.
+ */
+function drawsOneInlineSide(sides: number): boolean {
+  return ((sides & 8) !== 0) !== ((sides & 2) !== 0);
+}
+
+/** One side's width: the box's, or 0 where it draws none. */
+function sideWidth(width: number, sides: number, bit: number): string {
+  return (sides & bit) !== 0 ? px(width) : '0';
+}
+
+/** `border-width` in CSS's own order — top, right, bottom, left — from the logical sides, for a box
+ * whose start and end draw alike. */
 function sideWidths(width: number, sides: number): string {
-  const w = px(width);
-  const edge = (bit: number) => ((sides & bit) !== 0 ? w : '0');
-  return `${edge(1)} ${edge(2)} ${edge(4)} ${edge(8)}`;
+  return `${sideWidth(width, sides, 1)} ${sideWidth(width, sides, 2)} ${sideWidth(width, sides, 4)} ${sideWidth(width, sides, 8)}`;
+}
+
+/** The two sides of one axis as a logical shorthand writes them (C# `TokenCss.Pair`): one length when equal. */
+function pair(first: string, second: string): string {
+  return first === second ? first : `${first} ${second}`;
+}
+
+/** A partial border's widths in the shape that mirrors (C# twin: the base's three width members and
+ * `DiffDeclarations`): the physical shorthand, or the block and inline pairs when one inline side draws alone. */
+function borderWidthEntries(width: number, sides: number): Record<string, string> {
+  return drawsOneInlineSide(sides)
+    ? {
+        'border-block-width': pair(sideWidth(width, sides, 1), sideWidth(width, sides, 4)),
+        'border-inline-width': pair(sideWidth(width, sides, 8), sideWidth(width, sides, 2)),
+      }
+    : { 'border-width': sideWidths(width, sides) };
 }
 
 export function px(dp: number): string {
@@ -511,8 +545,21 @@ function radiusValue(radii: CornerRadiiValue): string {
     : `${px(topLeft)} ${px(topRight)} ${px(bottomRight)} ${px(bottomLeft)}`;
 }
 
-function paddingValue(insets: EdgeInsetsValue): string {
-  return `${px(insets.top)} ${px(insets.end)} ${px(insets.bottom)} ${px(insets.start)}`;
+/**
+ * A padding's declarations (C# `TokenCss.Padding`, `PaddingBlock`, `PaddingInline`): the physical
+ * shorthand when its start and end are equal, so it reads the same in both directions and the classes of
+ * a symmetric padding never move; `padding-block` and `padding-inline` when they differ, so it mirrors
+ * under `rtl` (#1568); nothing for none.
+ */
+function paddingEntries(insets: EdgeInsetsValue | null | undefined): Record<string, string | undefined> {
+  if (!insets || isZeroInsets(insets)) return {};
+  if (insets.start === insets.end) {
+    return { padding: `${px(insets.top)} ${px(insets.end)} ${px(insets.bottom)} ${px(insets.start)}` };
+  }
+  return {
+    'padding-block': pair(px(insets.top), px(insets.bottom)),
+    'padding-inline': pair(px(insets.start), px(insets.end)),
+  };
 }
 
 /**
@@ -838,7 +885,7 @@ function lowerNodeKind(
     // draws its child as if it were not there (the C# `WebLoweringVisitor`). Who depends on its value
     // is the element engine's to track, which drives the browser from E3b.
     case 'inherited':
-      return lowerNode((node as unknown as InheritedNode).child, context, horizontalAxis, path + '/0');
+      return lowerInherited(node as unknown as InheritedNode, context, horizontalAxis, path);
     case 'inView':
       return lowerInView(node as unknown as InViewNode, context, horizontalAxis, path);
     case 'positioned':
@@ -849,8 +896,14 @@ function lowerNodeKind(
       // data in front of it, with the instance its position keeps (C# `Visit(UiComponent)` with a
       // frame). What it built is lowered as it stands, one step down (path/~), a step the scope of a
       // grid's ids reads past (pathScope).
-      const { built } = frameOf(context).at(node);
-      return built ? lowerNode(built as unknown as VisualNodeValue, context, horizontalAxis, path + '/~') : null;
+      // Inside its position, so a component found there is the one the engine placed below this
+      // one, even when it is this same instance again (C# twin, #1544).
+      const frame = frameOf(context);
+      const { built, position } = frame.at(node);
+      if (!built) return null;
+      return frame.within(position, () =>
+        lowerNode(built as unknown as VisualNodeValue, context, horizontalAxis, path + '/~'),
+      );
     }
     // THE DOOR CLOSED. `nodeKind` is the generated NodeKind union, so this arm is unreachable for
     // every kind the vocabulary declares — and the day it declares one more, this line stops
@@ -958,6 +1011,8 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     [],
   );
   prependClass(surface, 'eq-code-surface');
+  // Code reads left to right in every language, and its carets and its door stand at physical x (C# twin, #1568).
+  surface.attributes['dir'] = 'ltr';
   // The surface's identity across rebuilds: its position's id, which it keeps while it lives and no
   // other node is ever given. Anything that has to find it AFTER the render (see revealCaret)
   // resolves by this, never by a reference.
@@ -2090,9 +2145,12 @@ function edge(point: number | null | undefined, fraction: number | null | undefi
   return `calc(${pct(fraction)} ${point < 0 ? '-' : '+'} ${px(Math.abs(point))})`;
 }
 
-/** A shift by fractions of the box's own size, or none (C# TokenCss.Shift twin). */
+/** A shift by fractions of the box's own size, or none (C# TokenCss.Shift twin): across, toward the END,
+ * through the `--eq-inline` the token sheet sets to 1 under `ltr` and -1 under `rtl` (#1568). */
 function shift(x: number, y: number): string | undefined {
-  return x === 0 && y === 0 ? undefined : `translate(${x === 0 ? '0' : pct(x)}, ${y === 0 ? '0' : pct(y)})`;
+  return x === 0 && y === 0
+    ? undefined
+    : `translate(${x === 0 ? '0' : `calc(var(--eq-inline, 1) * ${pct(x)})`}, ${y === 0 ? '0' : pct(y)})`;
 }
 
 /** Spec §06 mirror: the generated eq-slide-x keyframes animate the wrapper; endpoints ride custom
@@ -2154,6 +2212,8 @@ function lowerSheetSurface(
     child ? [child] : [],
   );
   prependClass(view, 'eq-sheet-surface');
+  // The door and the carets stand at the model's physical x: left to right in every language (C# twin, #1568).
+  view.attributes['dir'] = 'ltr';
   // No role of its own (#1081): the table it holds is the grid a reader walks, and the door is the field
   // that takes the sheet's keys, named as the sheet is.
   // The surface's identity across rebuilds, which a focus request finds it by after the render: its
@@ -2442,6 +2502,9 @@ function lowerTableViewport(node: TableViewportNode, context: LoweringContext, p
     children,
   );
   view.attributes['role'] = role;
+  // Its cells and bands stand at physical x and it scrolls by scrollLeft, whose origin moves under rtl:
+  // it lays out left to right in every language until a table mirrors (C# twin, #1568).
+  view.attributes['dir'] = 'ltr';
   if (semantics.rows) {
     // The whole grid's count, not the cells built: a reader is told where it is in a million rows.
     view.attributes['aria-rowcount'] = String(node.rows.count);
@@ -3479,8 +3542,24 @@ function lowerLayer(
   // Through the COMPONENT to what it builds, exactly as the C# realizer does — `Positioned` is a
   // contract with the parent, and one returned by a component was not recognised. Read from the
   // frame, so what lowers here is what the instance its position keeps built.
-  const child = resolveStackChild(raw, context);
-  if (!child) return null;
+  const resolved = resolveStackChild(raw, context);
+  if (!resolved) return null;
+  // What the component built is lowered inside its position, as its own lowering lowers it.
+  return frameOf(context).within(resolved.position, () =>
+    lowerResolvedLayer(raw, resolved.node, depth, context, path, cellJustify, cellAlign),
+  );
+}
+
+/** A stack layer once its component, if it is one, is read through to what its position built. */
+function lowerResolvedLayer(
+  raw: VisualNodeValue,
+  child: VisualNodeValue,
+  depth: number,
+  context: LoweringContext,
+  path: string,
+  cellJustify: string,
+  cellAlign: string,
+): HtmlNode | null {
   // A component the stack expanded is decorated as the funnel decorates one, on the element of what
   // it built, after that node's own (C# twin, #940).
   const asComponent = (lowered: HtmlNode | null): HtmlNode | null =>
@@ -3521,9 +3600,10 @@ function lowerLayer(
         'z-index': `${(positioned.layer ?? 0) !== 0 ? positioned.layer : depth}`,
         // A point, a fraction of the stack, or both (C# TokenCss.Edge twin).
         top: edge(positioned.top, positioned.topFraction) ?? (spanY ? '0' : undefined),
-        right: edge(positioned.end, positioned.endFraction) ?? (spanX ? '0' : undefined),
+        // The start and the end from the side the text starts and ends on, so they mirror (C# twin, #1568).
+        'inset-inline-end': edge(positioned.end, positioned.endFraction) ?? (spanX ? '0' : undefined),
         bottom: edge(positioned.bottom, positioned.bottomFraction) ?? (spanY ? '0' : undefined),
-        left: edge(positioned.start, positioned.startFraction) ?? (spanX ? '0' : undefined),
+        'inset-inline-start': edge(positioned.start, positioned.startFraction) ?? (spanX ? '0' : undefined),
         transform: stretched ? undefined : shifted,
       },
       [
@@ -3726,8 +3806,7 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     // number: a hydration payload written before the cap became a SizeValue still says `620`.
     'max-width': sizeValue(asSize(style.maxWidth)),
     'max-height': sizeValue(asSize(style.maxHeight), true),
-    padding:
-      style.padding && !isZeroInsets(style.padding) ? paddingValue(style.padding) : undefined,
+    ...paddingEntries(style.padding),
     'background-color': style.background ? tokenValue(style.background) : undefined,
     // The foreground the text and icons inside inherit (C# twin, #614).
     color: style.foreground ? tokenValue(style.foreground) : undefined,
@@ -3751,10 +3830,10 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     // KEBAB, quoted, like every other multi-word property in this object: the key IS the CSS
     // property name. camelCase here made the browser drop the rule AND made the class hash differ
     // from the C# one, so a hydrated box got a different class than the server had given it.
-    'border-width':
-      style.borderWidth && style.borderWidth > 0 && !sidesAreAll(style)
-        ? sideWidths(style.borderWidth, style.borderSides ?? BORDER_ALL)
-        : undefined,
+    // Physical when the start and the end draw alike, logical when one of them draws alone (C# twin, #1568).
+    ...(style.borderWidth && style.borderWidth > 0 && !sidesAreAll(style)
+      ? borderWidthEntries(style.borderWidth, style.borderSides ?? BORDER_ALL)
+      : {}),
     'border-style': partialBorder(style) ? 'solid' : undefined,
     'border-color':
       partialBorder(style) && style.borderColor ? tokenValue(style.borderColor) : undefined,
@@ -3968,7 +4047,7 @@ function diffEntries(diff: StyleDiffValue, style: BoxStyleValue): Record<string,
     if (sidesAreAll(style)) {
       entries['border'] = `${px(diff.borderWidth)} solid ${value}`;
     } else {
-      entries['border-width'] = sideWidths(diff.borderWidth, style.borderSides ?? BORDER_ALL);
+      Object.assign(entries, borderWidthEntries(diff.borderWidth, style.borderSides ?? BORDER_ALL));
       entries['border-style'] = 'solid';
       entries['border-color'] = value;
     }
@@ -4012,7 +4091,7 @@ function lowerFlex(flex: FlexNodeValue, context: LoweringContext, path: string):
     // OVERRIDES width, so long content grew a Fill row past its parent (C# twin).
     'min-width': flex.width?.kind === 'fill' ? '0' : undefined,
     'min-height': flex.height?.kind === 'fill' ? '0' : undefined,
-    padding: flex.padding && !isZeroInsets(flex.padding) ? paddingValue(flex.padding) : undefined,
+    ...paddingEntries(flex.padding),
     'background-color': flex.background ? tokenValue(flex.background) : undefined,
     // A layout node that PAINTS NOTHING is not a hit target — the C# twin, and the framework's
     // inspiration deciding it: Flutter's RenderBox.hitTestSelf answers false, so a Row is
@@ -5532,14 +5611,45 @@ function buildsItsOwnNode(node: unknown): boolean {
  * every component already, through the owner's boundary and its bound, so the walk ends wherever
  * the chain of components does.
  */
-function resolveStackChild(child: VisualNodeValue, context: LoweringContext): VisualNodeValue | null {
+function resolveStackChild(
+  child: VisualNodeValue,
+  context: LoweringContext,
+): { node: VisualNodeValue; position: Position | null } | null {
+  // Each step of a chain of components is read inside the position the step before it found, as a
+  // component's own lowering reads it, so the chain descends to where its engine stopped it, and what
+  // the last one built is lowered inside that last position (C# twin, #1544).
+  const frame = frameOf(context);
   let node = child;
+  let position: Position | null = null;
   while (buildsItsOwnNode(node)) {
-    const { built } = frameOf(context).at(node);
-    if (!built) return null;
-    node = built as unknown as VisualNodeValue;
+    const at: VisualNodeValue = node;
+    const step: ComponentPosition = frame.within(position, () => frame.at(at));
+    if (!step.built) return null;
+    node = step.built as unknown as VisualNodeValue;
+    position = step.position;
   }
-  return node;
+  return { node, position };
+}
+
+/**
+ * A value for a subtree, lowered as its child one step down (C# `Visit(InheritedComponent)`). A
+ * `Directionality` is the one the page itself hears (#1568): it writes `dir` on its child's own element,
+ * so every start and end the subtree writes as logical CSS mirrors under it, and a direction that changes
+ * rewrites one attribute. It adds no element, which would take what a parent writes on its child; an
+ * element that already says its direction keeps it, so the nearest `Directionality` wins.
+ */
+function lowerInherited(
+  node: InheritedNode,
+  context: LoweringContext,
+  horizontalAxis: boolean | null,
+  path: string,
+): HtmlNode | null {
+  const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
+  const direction = directionSetBy(node);
+  if (direction !== null && child && child.tag !== '#text' && child.attributes['dir'] === undefined) {
+    child.attributes['dir'] = direction === 'rightToLeft' ? 'rtl' : 'ltr';
+  }
+  return child;
 }
 
 /**
@@ -5899,7 +6009,7 @@ function lowerGrid(grid: GridNode, context: LoweringContext, path: string): Html
     width: sizeValue(grid.width),
     height: sizeValue(grid.height, true),
     'flex-shrink': rigid(grid.width, grid.height),
-    padding: grid.padding && !isZeroInsets(grid.padding) ? paddingValue(grid.padding) : undefined,
+    ...paddingEntries(grid.padding),
   });
   const item = (child: VisualNodeValue, childPath: string) =>
     lowerGridItem(child, context, childPath);

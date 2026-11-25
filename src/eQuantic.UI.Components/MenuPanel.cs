@@ -58,6 +58,11 @@ internal static class MenuPanel
             {
                 Disabled = item.Disabled,
                 Role = PressableRole.MenuItem,
+                // The keyboard stays on the trigger while the menu shows (the arrows walk the items as
+                // its aria-activedescendant), and a press on an item leaves it there too. An item that
+                // took the focus left with its menu in the pass its press ran, so a dialog the item
+                // opened recorded nothing to give the focus back to (#1812).
+                CanRequestFocus = false,
             });
         }
 

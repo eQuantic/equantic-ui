@@ -16,8 +16,29 @@ internal sealed partial class SemanticsVisitor
     /// <inheritdoc cref="PureLayout"/>
     public bool Visit(AdaptiveNode node, LayoutNode laidOut) => PureLayout;
 
-    /// <inheritdoc cref="PureLayout"/>
-    public bool Visit(Anchored node, LayoutNode laidOut) => PureLayout;
+    /// <summary>
+    /// An anchored node is pure layout, and its PANEL is read IN PLACE, right after the anchor, when its
+    /// layer is shown (#1868). The web lowers the panel inside the anchor's markup, and Flutter attaches an
+    /// <c>OverlayPortal</c>'s child to the portal's semantics rather than to the overlay's; Photon lays the
+    /// panel out in a layer of its own, which this walk read after the page, so whatever followed the anchor
+    /// on the page was read before the panel. The layer holds the scrim's dismiss button first, then the
+    /// panel, and a DIALOG panel's stop is the panel, after that button, as the web's <c>role="dialog"</c>
+    /// is the panel and its scrim stands outside it: it was the whole layer, so the button was read inside
+    /// the dialog.
+    /// </summary>
+    public bool Visit(Anchored node, LayoutNode laidOut)
+    {
+        if (laidOut.Element is not { } at || !_panels.TryGetValue(at, out var layer)) return PureLayout;
+        foreach (var anchor in laidOut) SemanticsTree.Walk(anchor, this);
+        _readInPlace.Add(layer);
+        foreach (var part in layer)
+        {
+            if (node.PanelRole == AnchorPanelRole.Dialog && part.Source is Positioned)
+                AnnounceGroup(new(SemanticRole.Dialog, IdOf(part), part.Bounds, "", null, false));
+            SemanticsTree.Walk(part, this);
+        }
+        return Consumed;
+    }
 
     /// <inheritdoc cref="PureLayout"/>
     public bool Visit(Box node, LayoutNode laidOut) => PureLayout;

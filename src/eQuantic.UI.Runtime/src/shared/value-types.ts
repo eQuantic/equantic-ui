@@ -991,7 +991,14 @@ export class SortDrop {
   /** The depth the carried item takes, in a list whose items have depths (C# `SortDrop.Depth`, #1594). */
   readonly depth: number | null = null;
 
-  constructor(item = '', from = '', to = '', index = 0, config?: { into?: string | null; depth?: number | null }) {
+  constructor(
+    item = '',
+    from = '',
+    to = '',
+    index = 0,
+    // The positional four too: an initializer that sets one reaches the config (#1823).
+    config?: { item?: string; from?: string; to?: string; index?: number; into?: string | null; depth?: number | null },
+  ) {
     this.item = item;
     this.from = from;
     this.to = to;
@@ -1055,7 +1062,7 @@ export class TableScrollRequest {
   readonly offset: TableOffset | null = null;
   readonly reveal: TableRange | null = null;
 
-  constructor(version = 0, config?: { offset?: TableOffset | null; reveal?: TableRange | null }) {
+  constructor(version = 0, config?: { version?: number; offset?: TableOffset | null; reveal?: TableRange | null }) {
     this.version = version;
     if (config) Object.assign(this, config);
   }
@@ -1081,7 +1088,7 @@ export class ScrollRequest {
   readonly version: number;
   readonly offset: number = 0;
 
-  constructor(version = 0, config?: { offset?: number }) {
+  constructor(version = 0, config?: { version?: number; offset?: number }) {
     this.version = version;
     if (config) Object.assign(this, config);
   }

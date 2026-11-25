@@ -11,6 +11,7 @@ export type { ICanvasPainter } from './shared/nodes';
 // name must resolve here exactly as it does in shared/runtime-exports.
 export type { RenderContext as BuildContext } from './core/types';
 export { CalendarNames } from './shared/calendar-names';
+export { CultureCalendar } from './shared/culture-calendar';
 
 export { StatelessComponent, StatefulComponent } from './core/component';
 // The C# `eQuantic.UI.Primitives.UiComponent` base surfaces in transpiled signatures (e.g. the
@@ -88,6 +89,7 @@ export { $eq } from './eq';
 export {
   installCulture,
   activeCulture,
+  activeTextDirection,
   setCulture,
   setCultureInvalidator,
   setCultureCatalogLoader,
@@ -185,6 +187,7 @@ export {
   InFlow,
   InheritedComponent,
   Theme,
+  Directionality,
   InView,
   Simulated,
   TextEntry,

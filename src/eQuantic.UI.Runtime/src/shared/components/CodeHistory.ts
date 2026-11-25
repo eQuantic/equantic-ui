@@ -90,7 +90,7 @@ export class CodeHistory {
                 let edit = $eq.collections.item(step.edits, i);
                 let replaced = new CodeRange(next.clamp(edit.insertedRange.start), next.clamp(edit.insertedRange.end));
                 let removed = next.textIn(replaced);
-                let end: any; 
+                let end!: CodePosition; 
                 next = ($o => (end = $o.caret, $o.$))(next.replace(replaced, edit.removedText));
                 $eq.collections.listAdd(undone, new CodeEdit(replaced, removed, next.textIn(new CodeRange(replaced.start, end)), edit.selectionAfter, edit.selectionBefore, false));
             }
@@ -116,7 +116,7 @@ export class CodeHistory {
             for (const edit of $eq.collections.sequenceWalk(step.edits)) {
                 let replaced = new CodeRange(next.clamp(edit.range.start), next.clamp(edit.range.end));
                 let removed = next.textIn(replaced);
-                let end: any; 
+                let end!: CodePosition; 
                 next = ($o => (end = $o.caret, $o.$))(next.replace(replaced, edit.insertedText));
                 $eq.collections.listAdd(redone, new CodeEdit(replaced, removed, next.textIn(new CodeRange(replaced.start, end)), edit.selectionBefore, edit.selectionAfter, false));
             }

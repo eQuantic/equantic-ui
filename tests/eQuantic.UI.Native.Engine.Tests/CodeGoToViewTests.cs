@@ -51,6 +51,7 @@ public class CodeGoToViewTests : IDisposable
         Anchored anchored => [anchored.Anchor, anchored.Panel],
         CodeSurface surface => [surface.Child],
         SingleChildNode single => [single.Child],
+        InheritedComponent inherited => [inherited.Child],
         _ => [],
     };
 
@@ -168,6 +169,42 @@ public class CodeGoToViewTests : IDisposable
         scrolled.Should().BeGreaterThan(0, "line 121 is centred in a view over the top of the document");
         host.TextInput("x").Should().BeTrue("the code has the keyboard back");
         editor.Editor.Document.Line(120).Should().Be("xline 121");
+    }
+
+    /// <summary>What a screen reader hears from the go-to field on Photon (#1088), driven by the keys a person
+    /// presses: ⇧⌘O opens it as an editable combobox named "Go to", holding "@", its list open, and the row the
+    /// keyboard is on is announced from it as it opens and as the arrows move, as the web's reader follows the
+    /// field's aria-activedescendant.</summary>
+    [Fact]
+    public void OnPhoton_TheGoToField_IsHeardAsAComboBox_AndTheRowTheArrowsReachIsAnnounced()
+    {
+        var editor = new CodeEditor(Text, "csharp")
+        {
+            Height = SizeValue.Fill,
+            Autofocus = true,
+            SymbolProviders = [Symbols],
+        };
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 640, 300) { SmoothScroll = false };
+        host.RenderFrame(new DisplayListBuilder(), 0);
+        host.RenderFrame(new DisplayListBuilder(), 100);
+        host.TakeAnnouncements();
+
+        host.KeyDown("o", KeyModifiers.Shift | KeyModifiers.Command).Should().BeTrue();
+        host.RenderFrame(new DisplayListBuilder(), 2000);
+
+        var field = host.Semantics().Single(node => node.Role == SemanticRole.EditableComboBox);
+        (field.Label, field.Value, field.Expanded).Should().Be((SdkStrings.GoTo, "@", (bool?)true));
+        host.TakeAnnouncements().Should().ContainSingle().Which.Should().BeEquivalentTo(
+            new LiveAnnouncement(field.Id, "", "Ledger", LiveRegionUrgency.Polite),
+            "the list that opens is news, and its first row is the one the keyboard is on");
+
+        host.KeyDown("ArrowDown").Should().BeTrue();
+        host.RenderFrame(new DisplayListBuilder(), 4000);
+        host.TakeAnnouncements().Select(said => (said.Id, said.Text)).Should().Equal([(field.Id, "AddEntry, Ledger")]);
+
+        host.KeyDown("ArrowDown").Should().BeTrue();
+        host.RenderFrame(new DisplayListBuilder(), 6000);
+        host.TakeAnnouncements().Select(said => said.Text).Should().Equal(["Balance, Ledger"]);
     }
 
     [Fact]

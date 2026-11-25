@@ -624,6 +624,7 @@ public class CodeSnippetsTests : IDisposable
         ScrollView scroll => [scroll.Child],
         Shortcut shortcut => [shortcut.Child],
         CodeSurface surface => [surface.Child],
+        InheritedComponent inherited => [inherited.Child],
         _ => [],
     };
 }

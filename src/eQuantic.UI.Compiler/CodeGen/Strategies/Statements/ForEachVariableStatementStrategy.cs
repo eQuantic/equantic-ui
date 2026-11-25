@@ -29,7 +29,7 @@ public class ForEachVariableStatementStrategy : IStatementStrategy
             context.SemanticHelper.GetDeconstructionInfo(foreachStmt),
             context.SemanticHelper.ForEachInfo(foreachStmt)?.ElementType, context);
         var pattern = deconstruction?.Pattern ?? ConvertDesignation(foreachStmt.Variable);
-        var declared = ExpressionVariableScanner.Declarations(foreachStmt.Expression, context.TypeAnnotations);
+        var declared = ExpressionVariableScanner.Declarations(foreachStmt.Expression, context);
         // A class's public GetEnumerator() beside the interface's is called as the loop binds it
         // (IterableTwin.ForEachSource).
         var source = context.Converter.ConvertIr(foreachStmt.Expression);

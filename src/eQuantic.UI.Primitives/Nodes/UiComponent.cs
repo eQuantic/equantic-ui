@@ -70,6 +70,19 @@ public sealed class ComponentContext
         ? (at.DependOn(static inherited => inherited is Primitives.Theme) as Primitives.Theme)?.Value ?? ReadFrame(at).Theme
         : _theme;
 
+    /// <summary>
+    /// Which way this component's text runs, and so which side its start and its end are on: the nearest
+    /// <see cref="Directionality"/> above its position, and reading it makes the component a dependent of
+    /// that node, as reading <see cref="Theme"/> does; with none above it, its UI culture's
+    /// (<see cref="System.Globalization.CultureInfo.CurrentUICulture"/>), which is .NET's answer and the one
+    /// the browser is handed. A frame's context answers its culture's.
+    /// </summary>
+    public TextDirection TextDirection =>
+        (_position?.DependOn(static inherited => inherited is Directionality) as Directionality)?.Direction
+        ?? (System.Globalization.CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft
+            ? TextDirection.RightToLeft
+            : TextDirection.LeftToRight);
+
     public float TypeScale => _position is { } at ? ReadFrame(at).TypeScale : _typeScale;
 
     /// <summary>

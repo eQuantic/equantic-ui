@@ -140,7 +140,7 @@ export class CodeGoTo {
 
     select(index: number) {
         if (!this._open || this._entries.length === 0) return false;
-        let next = Math.min(Math.max(index, 0), this._entries.length - 1 | 0);
+        let next = $eq.num.clamp(index, 0, this._entries.length - 1 | 0, 'int32');
         if (next === this._selected) return false;
         this._selected = next;
         this.previewed();

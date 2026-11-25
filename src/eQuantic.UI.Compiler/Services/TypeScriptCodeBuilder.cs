@@ -66,7 +66,9 @@ public class TypeScriptCodeBuilder
     public void Write(JsClass jsClass)
     {
         if (jsClass.Origin?.Member is { } classNode) RecordMapping(classNode);
-        var generics = jsClass.TypeParameters.Count > 0 ? $"<{string.Join(", ", jsClass.TypeParameters)}>" : "";
+        // TypeScript syntax, like `abstract` below: plain JavaScript has no type parameters, and `class Box<T> {` is a
+        // parse error that costs the whole module.
+        var generics = jsClass.TypeParameters.Count > 0 && TypeAnnotations ? $"<{string.Join(", ", jsClass.TypeParameters)}>" : "";
         var extendsClause = string.IsNullOrEmpty(jsClass.Base) ? "" : $" extends {jsClass.Base}";
         // `abstract` is emitted, not erased: a base that declares a member for its subclasses to
         // supply has to say so, or TypeScript reads the declaration as a real property and refuses

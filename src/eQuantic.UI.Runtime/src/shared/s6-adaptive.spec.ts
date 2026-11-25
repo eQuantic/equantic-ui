@@ -210,7 +210,7 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
     expect(effectiveStyle(layer)).toBe('display: contents');
     expect(effectiveStyle(layer.children[0].children[0])).toContain('grid-area: 1 / 1');
     expect(effectiveStyle(layer.children[1].children[0])).toBe(
-      'position: absolute; right: 0; top: 0; z-index: 2',
+      'inset-inline-end: 0; position: absolute; top: 0; z-index: 2',
     );
   });
 

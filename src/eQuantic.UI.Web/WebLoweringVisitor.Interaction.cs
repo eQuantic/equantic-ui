@@ -473,6 +473,8 @@ internal sealed partial class WebLoweringVisitor
         Simulated simulated => CapsAt(simulated.Child),
         InFlow inFlow => CapsAt(inFlow.Child),
         InView inView => CapsAt(inView.Child),
+        // A value for a subtree draws nothing of its own, as the TypeScript `capsAt` walks it.
+        InheritedComponent inherited => CapsAt(inherited.Child),
         _ => SizeValue.Hug,
     };
     /// <summary>
