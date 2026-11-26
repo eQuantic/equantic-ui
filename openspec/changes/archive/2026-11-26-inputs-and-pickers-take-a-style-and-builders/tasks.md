@@ -17,4 +17,4 @@
 ## 4. Docs and archive
 
 - [x] 4.1 The wiki's Components page in every language it is written in; a ledger entry citing #1608
-- [ ] 4.2 `./scripts/check-openspec.sh` passes, then `openspec archive inputs-and-pickers-take-a-style-and-builders --yes`
+- [x] 4.2 `./scripts/check-openspec.sh` passes, then `openspec archive inputs-and-pickers-take-a-style-and-builders --yes`
