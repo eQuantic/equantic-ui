@@ -1,9 +1,10 @@
-import { $eq, $IconsValue, $SizeVariantValue, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, IconGlyph, Pressable, Row, SizeValue, StatelessComponent, Text } from "../runtime-exports";
+import { $eq, $IconsValue, $SizeVariantValue, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, Icon, IconGlyph, Pressable, Row, SegmentedTheme, SizeValue, StatelessComponent, Text } from "../runtime-exports";
 
 export class Stepper extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Stepper';
     declare value: number;
     declare onChanged: ((int: number) => void) | null;
+    declare style: any;
     declare min: number;
     declare max: number;
     declare step: number;
@@ -12,10 +13,11 @@ export class Stepper extends StatelessComponent {
     declare suffix: string;
     declare label: string;
 
-    constructor(value?: any, onChanged: any = null, props?: any) {
+    constructor(value?: any, onChanged: any = null, style: any = null, props?: any) {
         super();
         if (value !== undefined) this.value = value;
         if (onChanged !== undefined) this.onChanged = onChanged;
+        if (style !== undefined) this.style = style;
         if (this.value === undefined) this.value = 0;
         if (this.min === undefined) this.min = -2147483648;
         if (this.max === undefined) this.max = 2147483647;
@@ -26,12 +28,13 @@ export class Stepper extends StatelessComponent {
         if (this.label === undefined) this.label = '';
         this.value = value;
         this.onChanged = onChanged;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let slot = theme.segmented;
+        let slot = SegmentedTheme.merge(theme.segmented, this.style);
         let ladder = (slot?.controls ?? null);
         let height = ControlMetrics.height(context, this.size, ladder);
         let iconSize = slot?.iconSize ?? 20;
@@ -40,7 +43,7 @@ export class Stepper extends StatelessComponent {
         let row = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
         row.add(Stepper.arm(theme, 'minus', height, iconSize, canDecrement, () => this.onChanged?.(this.value - this.step | 0), this.action('Decrease')));
         let reading = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, main: 'center', cross: 'center' });
-        reading.add(new Text(`${$eq.text.format(this.value, null, undefined, undefined, 'int32')}${this.suffix}`, 'label', this.disabled ? theme.textMuted : theme.textPrimary, 1, 'start', false, false, null, 0, { align: 'center', tabular: true, styleOverride: theme.type('label').withSize(ControlMetrics.labelSize(context, this.size, ladder)) }));
+        reading.add(new Text(`${$eq.text.format(this.value, null, undefined, undefined, 'int32')}${this.suffix}`, 'label', this.disabled ? theme.textMuted : theme.textPrimary, 1, null, false, false, null, 0, { align: 'center', tabular: true, styleOverride: theme.type('label').withSize(ControlMetrics.labelSize(context, this.size, ladder)) }));
         row.add(new Box(new BoxStyle({ minWidth: height, height: SizeValue.fill }), reading));
         row.add(Stepper.arm(theme, 'plus', height, iconSize, canIncrement, () => this.onChanged?.(this.value + this.step | 0), this.action('Increase')));
         return new Box(new BoxStyle({ width: SizeValue.hug, height: height, background: this.disabled ? theme.surfaceSubtle : theme.surface, cornerRadius: new CornerRadii(ControlMetrics.radius(context, this.size, ladder)), borderWidth: slot?.borderWidth ?? 1, borderColor: slot?.borderColor ?? theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : 1 }), row);

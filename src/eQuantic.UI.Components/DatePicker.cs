@@ -31,13 +31,16 @@ public sealed class DatePicker : StatefulComponent
     private DateOnly? _reported;
 
     public DatePicker(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
-        DateOnly? min = null, DateOnly? max = null, string label = "")
+        DateOnly? min = null, DateOnly? max = null, string label = "",
+        InputTheme? style = null, CalendarTheme? calendarStyle = null)
     {
         Selected = selected;
         OnChanged = onChanged;
         Min = min;
         Max = max;
         Label = label;
+        Style = style;
+        CalendarStyle = calendarStyle;
     }
 
     public DateOnly? Selected { get; private set; }
@@ -45,6 +48,14 @@ public sealed class DatePicker : StatefulComponent
     public DateOnly? Min { get; private set; }
     public DateOnly? Max { get; private set; }
     public string Label { get; private set; }
+
+    /// <summary>The field's own look, handed to the <see cref="TextInput"/> it draws.</summary>
+    public InputTheme? Style { get; private set; }
+
+    /// <summary>The look of the panel it opens and of the calendar in it, laid over the theme's
+    /// <see cref="IAppTheme.Calendar"/> slot with <see cref="CalendarTheme.Merge"/>.</summary>
+    public CalendarTheme? CalendarStyle { get; private set; }
+
     /// <summary>Backed by a field, so <see cref="AdoptConfig"/> can carry it: this instance is kept
     /// across the parent's rebuilds, and an <c>init</c> accessor cannot be written from there.</summary>
     public bool Disabled { get => _disabled; init => _disabled = value; }
@@ -91,6 +102,8 @@ public sealed class DatePicker : StatefulComponent
         Min = fresh.Min;
         Max = fresh.Max;
         Label = fresh.Label;
+        Style = fresh.Style;
+        CalendarStyle = fresh.CalendarStyle;
         _disabled = fresh.Disabled;
         _labelHidden = fresh.LabelHidden;
         _composed = fresh.Composed;
@@ -105,9 +118,9 @@ public sealed class DatePicker : StatefulComponent
         // whole reason the typed row can be trusted as the primary path rather than an escape.
         var invalid = _typing is { Length: > 0 } typed && Parse(typed) is null;
 
-        // The theme's Calendar slot, then the component's own (§3.10). The calendar in the panel reads it
-        // too.
-        var slot = theme.Calendar;
+        // The instance's calendar style over the theme's Calendar slot, then the component's own (§3.10). The
+        // calendar in the panel is handed the style and merges it over the theme's the same way.
+        var slot = CalendarTheme.Merge(theme.Calendar, CalendarStyle);
         var panel = new Box(new BoxStyle
         {
             Background = slot?.PanelFill ?? theme.Surface,
@@ -116,7 +129,7 @@ public sealed class DatePicker : StatefulComponent
             BorderColor = slot?.PanelBorderColor ?? theme.Border,
             Elevation = slot?.PanelElevation ?? 2,
             Padding = EdgeInsets.All(slot?.PanelPadding ?? Space.S3),
-        }, new Calendar(Selected, Pick, Min, Max));
+        }, new Calendar(Selected, Pick, Min, Max, CalendarStyle));
 
         // The opener is the ICON, and the field around it stays a field. Pressing the whole row
         // would be friendlier to a mouse, but on the web it makes a <button> that contains the
@@ -150,7 +163,7 @@ public sealed class DatePicker : StatefulComponent
         return new TextInput(shown, Type, Label,
             placeholder: SdkStrings.DateFormatHint,
             error: invalid ? SdkStrings.DateFormatHint : null,
-            trailing: Disabled ? null : opener)
+            trailing: Disabled ? null : opener, style: Style)
         {
             Disabled = Disabled,
             LabelHidden = LabelHidden,

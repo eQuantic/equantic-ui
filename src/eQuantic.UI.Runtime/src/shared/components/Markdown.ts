@@ -31,7 +31,7 @@ export class Markdown extends StatelessComponent {
                 {
                     let role: $TypeRoleValue = style.heading4 ?? 'label';
                     if (block.level === 1) role = style.heading1 ?? 'heading'; else if (block.level === 2) role = style.heading2 ?? 'title'; else if (block.level === 3) role = style.heading3 ?? 'titleSmall';
-                    return new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(0, block.level <= 2 ? style.headingSpace ?? 10 : style.subheadingSpace ?? 6, 0, 0) }), new Text(block.text, role, style.headingColor ?? theme.textPrimary, 0, 'start', false, false, null, block.level, { key: block.id }));
+                    return new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(0, block.level <= 2 ? style.headingSpace ?? 10 : style.subheadingSpace ?? 6, 0, 0) }), new Text(block.text, role, style.headingColor ?? theme.textPrimary, 0, null, false, false, null, block.level, { key: block.id }));
                 }
             case 'list':
                 return Markdown.listView(block, theme, style);
@@ -59,7 +59,7 @@ export class Markdown extends StatelessComponent {
         for (const run of $eq.collections.listWalk(runs)) {
             $eq.collections.listAdd(spans, new TextRun(run.text, null, false, { mono: run.code, styleOverride: run.code ? code : null, color: run.code ? style.inlineCodeColor ?? theme.textPrimary : null, weight: run.bold ? 'bold' : null, italic: run.italic, destination: run.isLink ? run.href : null }));
         }
-        return new Text('', body, style.bodyColor ?? theme.textSecondary, 0, 'start', false, false, null, 0, { spans: spans });
+        return new Text('', body, style.bodyColor ?? theme.textSecondary, 0, null, false, false, null, 0, { spans: spans });
     }
 
     static listView(block: MarkdownBlock, theme: any, style: MarkdownTheme) {

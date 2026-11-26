@@ -28,7 +28,7 @@ export class PageIndicator extends StatelessComponent {
         let label = `Page ${$eq.text.format(this.currentIndex + 1 | 0, null, undefined, undefined, 'int32')} of ${$eq.text.format(this.count, null, undefined, undefined, 'int32')}`;
         let slot = theme.navigation;
         if (this.count > PageIndicator.maxDots) {
-            return new Text(label, 'caption', slot?.pageColor ?? theme.textSecondary, 1, 'start', false, false, null, 0, { tabular: true });
+            return new Text(label, 'caption', slot?.pageColor ?? theme.textSecondary, 1, null, false, false, null, 0, { tabular: true });
         }
         let dotSize = slot?.dotSize ?? 6;
         let row = new Row(slot?.dotGap ?? 4, 'start', 'center', false, null, null, { cross: 'center' });

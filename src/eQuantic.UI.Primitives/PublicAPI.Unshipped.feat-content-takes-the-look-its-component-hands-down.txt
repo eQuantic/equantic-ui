@@ -1,0 +1,58 @@
+#nullable enable
+*REMOVED*eQuantic.UI.Primitives.Icon.Icon(eQuantic.UI.Primitives.IconGlyph glyph, float size = 24, eQuantic.UI.Primitives.ColorToken? color = null, string? label = null) -> void
+*REMOVED*eQuantic.UI.Primitives.Icon.Size.get -> float
+*REMOVED*eQuantic.UI.Primitives.Text.Align.get -> eQuantic.UI.Primitives.TextAlignment
+*REMOVED*eQuantic.UI.Primitives.Text.MaxLines.get -> int
+*REMOVED*eQuantic.UI.Primitives.Text.Role.get -> eQuantic.UI.Primitives.TypeRole
+*REMOVED*eQuantic.UI.Primitives.Text.Text(string! content, eQuantic.UI.Primitives.TypeRole role = eQuantic.UI.Primitives.TypeRole.BodyL, eQuantic.UI.Primitives.ColorToken? color = null, int maxLines = 0, eQuantic.UI.Primitives.TextAlignment align = eQuantic.UI.Primitives.TextAlignment.Start, bool mono = false, bool tabular = false, eQuantic.UI.Primitives.TypeStyle? styleOverride = null, int headingLevel = 0) -> void
+*REMOVED*static eQuantic.UI.Primitives.EffectiveTypeStyle.Resolve(this eQuantic.UI.Primitives.Text! text, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.TypeStyle
+eQuantic.UI.Primitives.BoxStyle.Content.get -> eQuantic.UI.Primitives.ContentStyle?
+eQuantic.UI.Primitives.BoxStyle.Content.init -> void
+eQuantic.UI.Primitives.ContentStyle
+eQuantic.UI.Primitives.ContentStyle.<Clone>$() -> eQuantic.UI.Primitives.ContentStyle!
+eQuantic.UI.Primitives.ContentStyle.Align.get -> eQuantic.UI.Primitives.TextAlignment?
+eQuantic.UI.Primitives.ContentStyle.Align.init -> void
+eQuantic.UI.Primitives.ContentStyle.ContentStyle() -> void
+eQuantic.UI.Primitives.ContentStyle.Equals(eQuantic.UI.Primitives.ContentStyle? other) -> bool
+eQuantic.UI.Primitives.ContentStyle.IconSize.get -> float?
+eQuantic.UI.Primitives.ContentStyle.IconSize.init -> void
+eQuantic.UI.Primitives.ContentStyle.MaxLines.get -> int?
+eQuantic.UI.Primitives.ContentStyle.MaxLines.init -> void
+eQuantic.UI.Primitives.ContentStyle.Role.get -> eQuantic.UI.Primitives.TypeRole?
+eQuantic.UI.Primitives.ContentStyle.Role.init -> void
+eQuantic.UI.Primitives.ContentStyle.Type.get -> eQuantic.UI.Primitives.TypeStyle?
+eQuantic.UI.Primitives.ContentStyle.Type.init -> void
+eQuantic.UI.Primitives.Icon.Icon(eQuantic.UI.Primitives.IconGlyph glyph, float? size = null, eQuantic.UI.Primitives.ColorToken? color = null, string? label = null) -> void
+eQuantic.UI.Primitives.Icon.Size.get -> float?
+eQuantic.UI.Primitives.Icon.SizeUnder(eQuantic.UI.Primitives.ContentStyle? around) -> float
+eQuantic.UI.Primitives.Text.Align.get -> eQuantic.UI.Primitives.TextAlignment?
+eQuantic.UI.Primitives.Text.MaxLines.get -> int?
+eQuantic.UI.Primitives.Text.Role.get -> eQuantic.UI.Primitives.TypeRole?
+eQuantic.UI.Primitives.Text.Text(string! content, eQuantic.UI.Primitives.TypeRole? role = null, eQuantic.UI.Primitives.ColorToken? color = null, int? maxLines = null, eQuantic.UI.Primitives.TextAlignment? align = null, bool mono = false, bool tabular = false, eQuantic.UI.Primitives.TypeStyle? styleOverride = null, int headingLevel = 0) -> void
+eQuantic.UI.Primitives.Text.Under(eQuantic.UI.Primitives.ContentStyle? around) -> eQuantic.UI.Primitives.TextLook
+eQuantic.UI.Primitives.TextLook
+eQuantic.UI.Primitives.TextLook.Align.get -> eQuantic.UI.Primitives.TextAlignment
+eQuantic.UI.Primitives.TextLook.Align.init -> void
+eQuantic.UI.Primitives.TextLook.Deconstruct(out eQuantic.UI.Primitives.TypeRole Role, out eQuantic.UI.Primitives.TypeStyle? StyleOverride, out int MaxLines, out eQuantic.UI.Primitives.TextAlignment Align) -> void
+eQuantic.UI.Primitives.TextLook.Equals(eQuantic.UI.Primitives.TextLook other) -> bool
+eQuantic.UI.Primitives.TextLook.MaxLines.get -> int
+eQuantic.UI.Primitives.TextLook.MaxLines.init -> void
+eQuantic.UI.Primitives.TextLook.Role.get -> eQuantic.UI.Primitives.TypeRole
+eQuantic.UI.Primitives.TextLook.Role.init -> void
+eQuantic.UI.Primitives.TextLook.StyleOverride.get -> eQuantic.UI.Primitives.TypeStyle?
+eQuantic.UI.Primitives.TextLook.StyleOverride.init -> void
+eQuantic.UI.Primitives.TextLook.TextLook() -> void
+eQuantic.UI.Primitives.TextLook.TextLook(eQuantic.UI.Primitives.TypeRole Role, eQuantic.UI.Primitives.TypeStyle? StyleOverride, int MaxLines, eQuantic.UI.Primitives.TextAlignment Align) -> void
+override eQuantic.UI.Primitives.ContentStyle.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.ContentStyle.GetHashCode() -> int
+override eQuantic.UI.Primitives.ContentStyle.ToString() -> string!
+override eQuantic.UI.Primitives.TextLook.GetHashCode() -> int
+static eQuantic.UI.Primitives.ContentStyle.Merge(eQuantic.UI.Primitives.ContentStyle? under, eQuantic.UI.Primitives.ContentStyle? over) -> eQuantic.UI.Primitives.ContentStyle?
+static eQuantic.UI.Primitives.ContentStyle.operator !=(eQuantic.UI.Primitives.ContentStyle? left, eQuantic.UI.Primitives.ContentStyle? right) -> bool
+static eQuantic.UI.Primitives.ContentStyle.operator ==(eQuantic.UI.Primitives.ContentStyle? left, eQuantic.UI.Primitives.ContentStyle? right) -> bool
+static eQuantic.UI.Primitives.EffectiveTypeStyle.Resolve(this eQuantic.UI.Primitives.Text! text, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ContentStyle? around) -> eQuantic.UI.Primitives.TypeStyle
+static eQuantic.UI.Primitives.TextLook.operator !=(eQuantic.UI.Primitives.TextLook left, eQuantic.UI.Primitives.TextLook right) -> bool
+static eQuantic.UI.Primitives.TextLook.operator ==(eQuantic.UI.Primitives.TextLook left, eQuantic.UI.Primitives.TextLook right) -> bool
+~override eQuantic.UI.Primitives.TextLook.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.TextLook.ToString() -> string
+static eQuantic.UI.Primitives.VisualNode.implicit operator eQuantic.UI.Primitives.VisualNode?(string? text) -> eQuantic.UI.Primitives.VisualNode?

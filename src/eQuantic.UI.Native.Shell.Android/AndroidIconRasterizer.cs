@@ -65,6 +65,8 @@ public sealed class AndroidIconRasterizer : IIconRasterizer
         else
         {
             paint.SetStyle(Paint.Style.Fill);
+            // The glyph's own fill rule, as SVG's fill-rule (#1210).
+            path.SetFillType(glyph.EvenOdd ? Path.FillType.EvenOdd! : Path.FillType.Winding!);
         }
 
         using var bitmap = Bitmap.CreateBitmap(pxW, pxH, Bitmap.Config.Argb8888!)!;
