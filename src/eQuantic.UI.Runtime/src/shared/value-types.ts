@@ -7,6 +7,8 @@
  */
 
 import { round as dotnetRound } from '../utils/dotnet-math';
+import { exception } from '../utils/exceptions';
+import { single as singleText } from '../utils/real-text';
 import type { ColorValue, SizeKindValue, TypeStyleValue } from './nodes';
 import type { DataPalette } from './data-palette';
 import type { SheetTheme } from './sheet-theme';
@@ -387,6 +389,130 @@ export class Rect {
       f(this.height + f(by * 2)),
     );
   }
+}
+
+/**
+ * Mirror of the C# `BoxConstraints`: the room a box may take, a minimum and a maximum on each axis, an
+ * unbounded maximum being `Infinity`. What a `LayoutBuilder`'s builder is handed in the browser, and what
+ * the transpiled `ConstrainedBox` applies. Single precision throughout, as every number of its subject is
+ * a C# `float`; its answers are cross-pinned with .NET's by the primitive values fixture.
+ */
+export class BoxConstraints {
+  /** No limit on either axis. */
+  static readonly unbounded = new BoxConstraints();
+
+  readonly minWidth: number;
+  readonly maxWidth: number;
+  readonly minHeight: number;
+  readonly maxHeight: number;
+
+  constructor(minWidth = 0, maxWidth = Infinity, minHeight = 0, maxHeight = Infinity) {
+    const [minW, maxW, minH, maxH] = [f(minWidth), f(maxWidth), f(minHeight), f(maxHeight)];
+    refuseBounds(minW, maxW, 'minWidth', 'maxWidth');
+    refuseBounds(minH, maxH, 'minHeight', 'maxHeight');
+    this.minWidth = minW;
+    this.maxWidth = maxW;
+    this.minHeight = minH;
+    this.maxHeight = maxH;
+  }
+
+  static tight(size: Size): BoxConstraints {
+    return new BoxConstraints(size.width, size.width, size.height, size.height);
+  }
+
+  static loose(size: Size): BoxConstraints {
+    return new BoxConstraints(0, size.width, 0, size.height);
+  }
+
+  get isTight(): boolean {
+    return this.minWidth >= this.maxWidth && this.minHeight >= this.maxHeight;
+  }
+
+  get hasBoundedWidth(): boolean {
+    return this.maxWidth < Infinity;
+  }
+
+  get hasBoundedHeight(): boolean {
+    return this.maxHeight < Infinity;
+  }
+
+  get biggest(): Size {
+    return new Size(this.maxWidth, this.maxHeight);
+  }
+
+  get smallest(): Size {
+    return new Size(this.minWidth, this.minHeight);
+  }
+
+  constrain(size: Size): Size {
+    return new Size(
+      clampBound(size.width, this.minWidth, this.maxWidth),
+      clampBound(size.height, this.minHeight, this.maxHeight),
+    );
+  }
+
+  enforce(parent: BoxConstraints): BoxConstraints {
+    // As the C# method refuses it, before it reads a bound.
+    if (parent == null)
+      throw exception(
+        'System.ArgumentNullException',
+        "Value cannot be null. (Parameter 'parent')",
+      );
+    return new BoxConstraints(
+      clampBound(this.minWidth, parent.minWidth, parent.maxWidth),
+      clampBound(this.maxWidth, parent.minWidth, parent.maxWidth),
+      clampBound(this.minHeight, parent.minHeight, parent.maxHeight),
+      clampBound(this.maxHeight, parent.minHeight, parent.maxHeight),
+    );
+  }
+
+  loosen(): BoxConstraints {
+    return new BoxConstraints(0, this.maxWidth, 0, this.maxHeight);
+  }
+
+  deflate(insets: EdgeInsets): BoxConstraints {
+    // The C# reads `insets.Horizontal`, a float add, so the sum is rounded before it is taken away.
+    const horizontal = f(f(insets.start) + f(insets.end));
+    const vertical = f(f(insets.top) + f(insets.bottom));
+    const minWidth = Math.max(0, f(this.minWidth - horizontal));
+    const minHeight = Math.max(0, f(this.minHeight - vertical));
+    return new BoxConstraints(
+      minWidth,
+      Math.max(minWidth, f(this.maxWidth - horizontal)),
+      minHeight,
+      Math.max(minHeight, f(this.maxHeight - vertical)),
+    );
+  }
+
+  /** The C# record's value equality, which `==` on two of them reads. */
+  equals(other: BoxConstraints | null | undefined): boolean {
+    return (
+      other != null &&
+      other.minWidth === this.minWidth &&
+      other.maxWidth === this.maxWidth &&
+      other.minHeight === this.minHeight &&
+      other.maxHeight === this.maxHeight
+    );
+  }
+}
+
+/** Flutter's `num.clamp`, as the C# writes it: never throws, the ranges being valid by construction. */
+function clampBound(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+/** As the C# constructor refuses a bound, in its order and with its message. */
+function refuseBounds(min: number, max: number, minName: string, maxName: string): void {
+  if (Number.isNaN(min) || !Number.isFinite(min) || min < 0)
+    throw exception(
+      'System.ArgumentOutOfRangeException',
+      `A minimum is a finite number of points, zero or more. (Parameter '${minName}')\nActual value was ${singleText(min)}.`,
+    );
+  if (Number.isNaN(max) || max < min)
+    throw exception(
+      'System.ArgumentOutOfRangeException',
+      `A maximum is a number of points no smaller than its minimum. (Parameter '${maxName}')\nActual value was ${singleText(max)}.`,
+    );
 }
 
 /** Mirror of the C# `Transform2D` — components applied translate → rotate → scale, center-anchored.
@@ -998,6 +1124,7 @@ hashesByValue(
   Point,
   Size,
   Rect,
+  BoxConstraints,
   Transform2D,
   CornerRadii,
   TypeStyle,

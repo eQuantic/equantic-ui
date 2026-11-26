@@ -64,6 +64,9 @@ internal static class ChildSlots
         // A value for a subtree holds its one child through an element of its own; that never asks this.
         "inherited" => NodeSlots.None,
         "inView" => NodeSlots.One(((InView)node).Child),
+        // The child is what the builder answers for the room the node has, which only the realizer knows,
+        // in its layout pass or right after it: the slot is built when the realizer shows it.
+        "layoutBuilder" => NodeSlots.WithDeferred(NodeSlots.One(null), 0),
         "link" => NodeSlots.One(((Link)node).Child),
         "loopMotion" => NodeSlots.One(((LoopMotion)node).Child),
         "navigable" => NodeSlots.Listed(((Navigable)node).Rows),

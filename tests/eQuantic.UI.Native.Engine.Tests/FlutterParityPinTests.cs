@@ -264,14 +264,22 @@ public class FlutterParityPinTests
 
         // 2 — layout
         ["Constraints go down,"] = () => Has("LayoutContext"),
-        ["BoxConstraints"] = () => Nothing("BoxConstraints", "Constraints"),
+        // The author's value, Flutter's shape, in the vocabulary's own assembly where a realizer that has
+        // never heard of Photon can hand one over; the engine's record stays the engine's.
+        ["BoxConstraints"] = () => typeof(BoxConstraints).Assembly == typeof(VisualNode).Assembly
+            && HasMember("BoxConstraints", "Enforce") && HasMember("BoxConstraints", "Loosen")
+            && HasMember("BoxConstraints", "Deflate") && HasMember("BoxConstraints", "IsTight"),
         // Geometry is the vocabulary's own, which is the whole claim: the three types ship in the
         // SAME assembly as VisualNode, so a realizer that has never heard of Photon can spell a box.
         // Asserted by ASSEMBLY rather than by name — `Has` would pass on a second copy declared
         // anywhere in the surface, and a second copy is the defect this row exists to have ended.
         ["Rect"] = () => new[] { typeof(Rect), typeof(Point), typeof(Size) }
             .All(t => t.Assembly == typeof(VisualNode).Assembly),
-        ["LayoutBuilder"] = () => Nothing("LayoutBuilder", "SizeBuilder") && Has("AdaptiveNode"),
+        // A node of the vocabulary whose child is what its builder answers for the author's value, and the
+        // box that applies a value an author holds.
+        ["LayoutBuilder"] = () => typeof(LayoutBuilder).Assembly == typeof(VisualNode).Assembly
+            && typeof(LayoutBuilder).GetProperty("Builder")?.PropertyType == typeof(Func<BoxConstraints, VisualNode>)
+            && Has("ConstrainedBox"),
         ["CustomMultiChildLayout"] = () => Nothing("MultiChildLayoutDelegate", "LayoutDelegate"),
         ["CustomSingleChildLayout"] = () => Nothing("SingleChildLayoutDelegate"),
         ["RenderBox"] = () => Nothing("RenderBox"),

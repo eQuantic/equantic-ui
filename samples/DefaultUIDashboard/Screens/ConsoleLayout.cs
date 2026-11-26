@@ -69,6 +69,8 @@ public sealed class ConsoleLayout(VisualNode body) : StatefulComponent
         new(Icons.Menu, "Files", "/files"),
         // Cards a pointer moves inside a column and across columns.
         new(Icons.Table, "Board", "/board"),
+        // Cards whose content is built for the room each one's box has.
+        new(Icons.Table, "Layout", "/layout"),
         // Cards a hold lifts and a drag carries, a gesture of the dashboard's own beside the list's scroll.
         new(Icons.Heart, "Gestures", "/gestures"),
     ];

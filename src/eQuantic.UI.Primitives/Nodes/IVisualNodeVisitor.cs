@@ -106,6 +106,10 @@ public interface IVisualNodeVisitor<in TState, out TResult>
 
     TResult Visit(InView node, TState state);
 
+    /// <summary>A child built for the room the node has: the realizer runs the builder, in its layout
+    /// pass or right after it, and shows what it answers in the node's one slot.</summary>
+    TResult Visit(LayoutBuilder node, TState state);
+
     TResult Visit(Link node, TState state);
 
     TResult Visit(LoopMotion node, TState state);

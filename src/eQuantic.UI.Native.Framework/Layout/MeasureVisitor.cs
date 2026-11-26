@@ -83,7 +83,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
 
     // Only the nodes that can HAVE an auto size worth stretching take the flags; for the rest
     // (text, images, fixed primitives) the parent's decision changes nothing.
-    public LayoutNode Visit(Box node, MeasureState s) => MeasureBox(node, s.Constraints, _ctx, s.At);
+    public LayoutNode Visit(Box node, MeasureState s) => MeasureBox(node, node.Style, node.Child, s.Constraints, _ctx, s.At);
 
     // Row and Column are ONE algorithm and two doors, the way S4 gave them two lowerings over one
     // LowerFlex: the switch bound them together as `FlexNode flex`, and a reader looking for where a

@@ -4,8 +4,8 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Native.Components;
 
 /// <summary>
-/// Containers and layout — fourteen words the engine has already resolved into geometry by the time
-/// a screen reader asks. All fourteen descend here, and that is no longer a gap: a modal
+/// Containers and layout — fifteen words the engine has already resolved into geometry by the time
+/// a screen reader asks. All fifteen descend here, and that is no longer a gap: a modal
 /// <see cref="Overlay"/> DOES announce itself now (#187), as a dialog since #501, at its overlay
 /// ROOT rather than at the placeholder this file sees — <see cref="SemanticsVisitor.AnnounceOverlay"/>,
 /// called by <c>SemanticsTree.Collect</c>. The arm below carries the reason, because "it descends"
@@ -48,6 +48,9 @@ internal sealed partial class SemanticsVisitor
 
     /// <inheritdoc cref="PureLayout"/>
     public bool Visit(Flexible node, LayoutNode laidOut) => PureLayout;
+
+    /// <inheritdoc cref="PureLayout"/>
+    public bool Visit(LayoutBuilder node, LayoutNode laidOut) => PureLayout;
 
     /// <inheritdoc cref="PureLayout"/>
     public bool Visit(Grid node, LayoutNode laidOut) => PureLayout;
