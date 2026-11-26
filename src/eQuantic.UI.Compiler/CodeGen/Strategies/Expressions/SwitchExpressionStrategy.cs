@@ -79,7 +79,8 @@ public class SwitchExpressionStrategy : IConversionStrategy
             .SelectMany(arm => ExpressionVariableScanner.Names(arm.Expression)
                 .Concat(ExpressionVariableScanner.Names(arm.WhenClause?.Condition)))
             .Concat(held),
-            context.TypeAnnotations));
+            switchExpr.Arms.SelectMany(arm => new[] { arm.Expression, arm.WhenClause?.Condition }),
+            context));
         sb.Append($" const {Subject} = {governingExpr};");
         sb.Append(arms);
 

@@ -192,6 +192,40 @@ describe('the gesture arena, in the browser', () => {
     expect(clicks).toEqual([]);
   });
 
+  // #1889: the guard on the click of a press that lost is the arena's, and goes with that click or with the arena's
+  // reset. Its 50 ms timer started at the arena's end, after the arena had left the map a reset walks, so it fired
+  // after a spec's page was torn down.
+  it('swallows the click of a press that lost, and its guard goes with that click', () => {
+    vi.useFakeTimers();
+    const { press } = draggableUnderADetector({ acceptOnMove: true });
+    pointer(press, 'pointerdown', 60, 110);
+    pointer(document, 'pointermove', 64, 110);
+    pointer(document, 'pointermove', 100, 110);
+    pointer(document, 'pointerup', 100, 110);
+    const armed = vi.getTimerCount();
+
+    click(press);
+
+    expect(clicks, 'the press lost, so its click presses nothing').toEqual([]);
+    expect(vi.getTimerCount(), 'the guard’s timer went with its click').toBe(armed - 1);
+  });
+
+  it("lets go of a lost press's click guard when the arena is reset after the press ended, and leaves no timer of it", () => {
+    vi.useFakeTimers();
+    const { press } = draggableUnderADetector({ acceptOnMove: true });
+    pointer(press, 'pointerdown', 60, 110);
+    pointer(document, 'pointermove', 64, 110);
+    pointer(document, 'pointermove', 100, 110);
+    pointer(document, 'pointerup', 100, 110);
+    const armed = vi.getTimerCount();
+
+    resetGestureArena();
+
+    expect(vi.getTimerCount(), 'the guard’s timer went with the reset').toBe(armed - 1);
+    click(press);
+    expect(clicks, 'a click afterwards is the press’s').toHaveLength(1);
+  });
+
   it('gives the pointer to a draggable that arms first, and the recognizer never hears its deadline', () => {
     vi.useFakeTimers();
     const { press, surface, released } = draggableUnderADetector({ deadlineMs: 500 });

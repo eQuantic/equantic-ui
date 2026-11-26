@@ -128,8 +128,8 @@ public readonly record struct BoxStyle
 
     /// <summary>
     /// The 1px INNER TOP highlight (the design's glossy <c>inset 0 1px 0 white/25</c> on primary
-    /// buttons). Web = an inset box-shadow entry; Photon = a hairline fill clipped to the rrect's
-    /// top edge. <c>null</c> = none.
+    /// buttons). Web = an inset box-shadow entry; Photon = a hairline fill clipped to the top edge
+    /// of the inner rrect, the padding box the inset shadow paints in. <c>null</c> = none.
     /// </summary>
     public ColorToken? InsetHighlight { get; init; }
 

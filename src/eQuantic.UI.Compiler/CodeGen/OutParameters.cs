@@ -44,6 +44,15 @@ internal static class OutParameters
     /// read before it is written, so it stays.</summary>
     public static bool IsOut(ParameterSyntax parameter) => parameter.Modifiers.Any(SyntaxKind.OutKeyword);
 
+    /// <summary>An <c>out</c> parameter as the body's <c>let</c> declares it: by its type in TypeScript, where it has one
+    /// to say (<see cref="CSharpToJsConverter.OutParameterType"/>), and <c>any</c> otherwise.</summary>
+    private static string Declared(ParameterSyntax parameter, CSharpToJsConverter converter)
+    {
+        var name = parameter.Identifier.ValueText.ToJsIdentifier();
+        if (!converter.TypeAnnotations) return name;
+        return converter.OutParameterType(parameter) is { } type ? $"{name}!: {type}" : $"{name}: any";
+    }
+
     /// <summary>
     /// The body of a method, a lambda or a local function that has them: its outs declared, the body
     /// run in an arrow so that each of its returns still means what it meant, and one object carrying
@@ -70,7 +79,7 @@ internal static class OutParameters
         IReadOnlyList<ParameterSyntax> byReference, CSharpToJsConverter converter)
     {
         var owner = byReference[0].Parent?.Parent ?? byReference[0];
-        var declared = byReference.Where(IsOut).Select(p => p.Identifier.ValueText.ToJsIdentifier()).ToArray();
+        var declared = byReference.Where(IsOut).Select(p => Declared(p, converter)).ToArray();
         var carried = byReference.Select(p => p.Identifier.ValueText.ToJsIdentifier());
 
         // The wrapper's statements stand one level into the body, the arrow's head among them, and
@@ -84,12 +93,13 @@ internal static class OutParameters
                 : JsStatement.Block([]));
         var run = JsExpr.Call(JsExpr.ArrowBlock("", body with { Origin = owner }, converter.Layout, depth));
 
-        // The outs are assigned inside the arrow, which TypeScript cannot follow, so in TypeScript they are
-        // declared any, as every variable an arrow binds is (ExpressionVariableScanner): untyped, an out
-        // assigned an empty list read as an implicit any[] and failed the type check (TS7005, #1034).
+        // The outs are assigned inside the arrow, which TypeScript cannot follow, so in TypeScript each is declared by
+        // its type, definitely assigned, as an out var is, or any where its type has nothing to say: untyped, an out
+        // assigned an empty list read as an implicit any[] and failed the type check (TS7005, #1034), and declared any,
+        // a list walked through it inferred unknown elements (TS18046, #1865).
         return JsStatement.Block([
             .. declared.Length > 0
-                ? [JsStatement.Raw($"let {ExpressionVariableScanner.List(declared, converter.TypeAnnotations)};")]
+                ? [JsStatement.Raw($"let {string.Join(", ", declared)};")]
                 : Array.Empty<JsStatement>(),
             JsStatement.Const("$r", run),
             JsStatement.Return(JsExpr.Opaque($"{{ $: $r, {string.Join(", ", carried)} }}")),
