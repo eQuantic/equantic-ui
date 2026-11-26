@@ -196,7 +196,8 @@ ios_screen() {
 ios_photograph() {
     local shot temporary="${TMPDIR:-/tmp}"
     shot="$(mktemp -d "${temporary%/}/eq-readme-shot.XXXXXX")"
-    if ! xcrun simctl io "$1" screenshot --type=png "$shot/screen.png" > "$shot/simctl.log" 2>&1; then
+    if ! xcrun simctl io "$1" screenshot --type=png "$shot/screen.png" > "$shot/simctl.log" 2>&1 \
+        || [ ! -s "$shot/screen.png" ]; then
         local said; said="$(cat "$shot/simctl.log")"
         rm -rf "$shot"
         fail "the simulator took no screenshot: ${said:-it said nothing}"
