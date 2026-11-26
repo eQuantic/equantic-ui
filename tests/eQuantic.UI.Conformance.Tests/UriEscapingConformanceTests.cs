@@ -13,6 +13,29 @@ namespace eQuantic.UI.Conformance.Tests;
 /// </summary>
 public class UriEscapingConformanceTests
 {
+    /// <summary>A static class whose one runtime call is an escape, as a site's route helper is (#1882).</summary>
+    private const string Routes = """
+        using System;
+
+        public static class OrderRoutes
+        {
+            private const string Checkout = "/checkout";
+            public static string Pay(string order) => $"{Checkout}?order={Uri.EscapeDataString(order)}";
+        }
+        """;
+
+    /// <summary>
+    /// A static class whose only use of the runtime is <c>Uri.EscapeDataString</c> is built as an app builds it, one
+    /// module per type, and its method runs: the module wrote <c>$eq.uri.escapeData</c> without importing
+    /// <c>$eq</c>, loaded, and threw "$eq is not defined" the first time the method ran, so a real site's order pages
+    /// went dead once they hydrated (#1882).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AStaticClassWhoseOnlyRuntimeCallIsAnEscape_ImportsWhatItWrites(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Routes, typeAnnotations, ("pay", "return OrderRoutes.Pay(\"A&B (1)\");"));
+
     /// <summary>The UTF-16 code units of a text, which compares a character past the BMP on both sides alike.</summary>
     private static string Units(string expression) =>
         "var t = " + expression + "; var u = \"\"; foreach (var c in t) u += ((int)c).ToString(\"X4\") + \" \"; return u;";

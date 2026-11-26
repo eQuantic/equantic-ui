@@ -427,6 +427,12 @@ public class SharedComponentTranspilationTests
             private EmittedPointer? _last;
             public bool Remember(int pointer) => _arenas.TryGetValue(pointer, out _last);
         }
+
+        public static class EmittedRoutes
+        {
+            private const string Checkout = "/checkout";
+            public static string Pay(string order) => $"{Checkout}?order={Uri.EscapeDataString(order)}";
+        }
         """;
 
     private const string BoundReceiversSource = """
@@ -615,7 +621,7 @@ public class SharedComponentTranspilationTests
     [
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
-        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedShapeBase", "EmittedMeasured", "EmittedTagged", "EmittedHandler", "EmittedMaybe", "EmittedOwner", "EmittedOwner$Held", "EmittedPointer", "EmittedArena",
+        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedShapeBase", "EmittedMeasured", "EmittedTagged", "EmittedHandler", "EmittedMaybe", "EmittedOwner", "EmittedOwner$Held", "EmittedPointer", "EmittedArena", "EmittedRoutes",
         "ArenaProbe", "ArenaMember", "HoldThenDrag", "FactoryTypeChange",
     ];
 
