@@ -56,7 +56,7 @@
 - [x] 7.6 Scroll spec under `dir="rtl"`: a horizontal `ScrollView` scrolled to the end reports a positive offset, and an `Offset` of 100 sets `scrollLeft` to -100
 - [x] 7.7 The variant matrix gains one `RightToLeft` cell per control (default variant and size, Comfortable): its web pin is written, and its Photon reading is asserted equal to the matching left-to-right cell's, not pinned twice
 - [x] 7.8 Check against the real thing: the dashboard sample served in `ar` in a real browser (`tests/e2e/tests/direction.spec.ts`, over a "Direction" section of the `/i18n` screen): a calendar's previous-month chevron points right, a `Switch` dragged leftwards turns on, a `SwipeableRow` swiped rightwards opens, ArrowLeft moves to the next tab, a horizontal `ScrollView`'s reported offset grows toward the end, and a code block's fold chevron is unturned
-- [ ] 7.9 Check: the conformance suite (`tests/eQuantic.UI.Conformance.Tests`) green on both sides, and the full Web, Native.Engine and Compiler suites green before the pull request
+- [x] 7.9 Check: the conformance suite (`tests/eQuantic.UI.Conformance.Tests`) green on both sides, and the full Web, Native.Engine and Compiler suites green before the pull request
 
 ## 8. Documentation
 
@@ -65,4 +65,4 @@
 - [x] 8.3 The wiki's Localization page in its five languages: "draw the glyph and it turns" replaces choosing `ChevronRight` from `context.TextDirection`; `WikiClaimsCompile.BackLink` follows the page; the Upgrading page in every language it is written in carries the three breaks and their migration lines
 - [x] 8.4 One ledger file under `docs/ledger/` citing #1569
 - [x] 8.5 Follow-up issue (under #197) for marking the icon packs' directional glyphs, linked from the design (#1875)
-- [ ] 8.6 Check: `WikiClaimsCompile`, `LedgerTests`, `FlutterParityPinTests` and the docs guards green against the wiki branch (`EQ_WIKI_DIR` pointed at it); `./scripts/check-openspec.sh` green; archive the change before the merge
+- [x] 8.6 Check: `WikiClaimsCompile`, `LedgerTests`, `FlutterParityPinTests` and the docs guards green against the wiki branch (`EQ_WIKI_DIR` pointed at it); `./scripts/check-openspec.sh` green; archive the change before the merge
