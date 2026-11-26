@@ -152,6 +152,8 @@ export class Upload {
   private readonly second: number;
   /** The turn it waits for, while it waits. */
   private turn: UploadTurn | null = null;
+  /** Ends a wait for the server's Retry-After early, on a pause or a cancel. */
+  private wake: (() => void) | null = null;
   /** The seconds the server asked it to wait since its creation was last refused, in all. */
   private waited = 0;
   /** The upload's address on the server, once it was created or found again. */
@@ -235,9 +237,10 @@ export class Upload {
 
   private interrupt(): void {
     this.generation++;
-    // A turn not yet granted is left, so the next upload in line takes it.
+    // A turn not yet granted is left, so the next upload in line takes it, and a wait for the server ends.
     this.turn?.withdraw();
     this.turn = null;
+    this.wake?.();
     const request = this.inFlight;
     this.inFlight = null;
     request?.abort();
@@ -262,6 +265,20 @@ export class Upload {
     } finally {
       this.slots.give();
     }
+  }
+
+  /** Waits `milliseconds`, or until a pause or a cancel ends the wait. */
+  private wait(milliseconds: number): Promise<void> {
+    return new Promise((resolve) => {
+      const timer = setTimeout(done, milliseconds);
+      const self = this;
+      function done(): void {
+        clearTimeout(timer);
+        if (self.wake === done) self.wake = null;
+        resolve();
+      }
+      this.wake = done;
+    });
   }
 
   /** The parts, from wherever the upload stands to its end, while its generation holds. */
@@ -311,8 +328,10 @@ export class Upload {
             this.fail(error.reason);
             return;
           }
+          // The server knows this browser (a new visitor has nothing unfinished), so the page's turns open.
+          this.slots.open();
           if (this._state !== 'waiting') this.change('waiting');
-          await delay(error.seconds * this.second);
+          await this.wait(error.seconds * this.second);
           continue;
         }
         if (error instanceof Refused) {

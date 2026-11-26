@@ -99,9 +99,14 @@ internal sealed class FolderUploadStorage : IUploadStorage
     public async ValueTask DeleteAsync(string id, CancellationToken cancellationToken = default)
     {
         await _loaded.Value;
-        _records.TryRemove(id, out _);
+        // The files first, the record's last, and the index only once they are gone: a delete that fails
+        // leaves the upload as it was, counted, and removed by a later sweep. The side files an earlier
+        // version's engine kept beside the bytes (<id>.uploadlength, .metadata…) go with them.
         File.Delete(BytesPath(id));
+        foreach (var side in Directory.EnumerateFiles(Folder, id + ".*"))
+            if (!side.EndsWith(RecordSuffix, StringComparison.Ordinal)) File.Delete(side);
         File.Delete(RecordPath(id));
+        _records.TryRemove(id, out _);
     }
 
     public async IAsyncEnumerable<StoredUpload> ListAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)

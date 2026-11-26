@@ -367,6 +367,32 @@ describe('Upload', () => {
     expect(server.received.filter((request) => request.method === 'POST')).toHaveLength(2);
   });
 
+  it('opens the turns when the first creation waits for the server', async () => {
+    const reason = 'At most 3 uploads may be unfinished at a time.';
+    server.planned.push({ method: 'POST', status: 429, body: reason, headers: { 'Retry-After': '5' } });
+    const uploads = [0, 1, 2].map((i) => new Upload(file(`part-${i}.stl`, 20, i + 1), models, quick).begin());
+    await Promise.all(uploads.map((upload) => settled(upload, 'completed', 'failed')));
+
+    expect(uploads.every((upload) => upload.state === 'completed')).toBe(true);
+    // The others were created while the first waited out the server's five seconds.
+    const creations = server.received.filter((request) => request.method === 'POST').map((request) => request.headers['Upload-Metadata']);
+    expect(creations.map((metadata) => metadata.includes(btoa('part-0.stl'))).lastIndexOf(true)).toBe(3);
+  });
+
+  it('gives its turn back at once when it is paused while it waits for the server', async () => {
+    const slots = new UploadSlots(1);
+    server.planned.push({ method: 'POST', status: 429, body: 'At most 3 uploads may be unfinished at a time.', headers: { 'Retry-After': '600' } });
+    const waiting = new Upload(file('slow.stl', 20, 1), models, { ...quick, slots, second: 1000 }).begin();
+    const next = new Upload(file('next.stl', 20, 2), models, { ...quick, slots }).begin();
+    await settled(waiting, 'waiting');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    waiting.pause();
+    await settled(next, 'completed', 'failed');
+
+    expect(next.state).toBe('completed');
+  });
+
   it('sends three files at a time, and the others wait their turn in the order they were started', async () => {
     const files = [0, 1, 2, 3, 4].map((i) => file(`part-${i}.stl`, 20, i + 1));
 

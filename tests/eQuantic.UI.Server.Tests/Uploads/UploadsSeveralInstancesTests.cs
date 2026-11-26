@@ -147,6 +147,39 @@ public sealed class UploadsSeveralInstancesTests : IDisposable
         copy.ToArray().Should().Equal(Content(10));
     }
 
+    [Fact]
+    public async Task AnAppWithItsOwnStorage_DoesNotReadTheFolder_EvenUnderTheWebRoot()
+    {
+        var webRoot = Directory.CreateTempSubdirectory("eq-uploads-web-").FullName;
+        try
+        {
+            await using var app = await UploadsApp.StartAsync(Path.Combine(webRoot, "uploads"), webRoot: webRoot, shared: new SharedUploads());
+            using var created = await app.Browser(user: "ana").CreateAsync(10, "models", "a.stl");
+            created.StatusCode.Should().Be(HttpStatusCode.Created);
+            Directory.Exists(Path.Combine(webRoot, "uploads")).Should().BeFalse();
+        }
+        finally
+        {
+            Directory.Delete(webRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task TheDefaultStorage_RemovesTheSideFilesAnEarlierEngineKept()
+    {
+        await using var app = await UploadsApp.StartAsync(_firstFolder);
+        var storage = app.Services.GetRequiredService<IUploadStorage>();
+        var id = Guid.NewGuid().ToString("N");
+        var now = DateTimeOffset.UtcNow;
+        await storage.CreateAsync(new StoredUpload(id, "user:ana", "models", "a.stl", "model/stl", 10, now, now.AddDays(1)));
+        foreach (var side in new[] { ".uploadlength", ".metadata", ".expiration", ".chunkstart", ".chunkcomplete" })
+            await File.WriteAllTextAsync(Path.Combine(_firstFolder, id + side), "1");
+
+        await storage.DeleteAsync(id);
+
+        Directory.EnumerateFiles(_firstFolder).Should().BeEmpty();
+    }
+
     private static async Task Until(Func<bool> condition)
     {
         for (var tries = 0; tries < 200 && !condition(); tries++) await Task.Delay(25);

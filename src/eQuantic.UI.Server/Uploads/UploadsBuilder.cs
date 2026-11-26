@@ -74,9 +74,13 @@ public sealed class UploadsBuilder
         services.TryAddSingleton(_ => new UploadPolicies(_policies.Values));
         if (_storage is null) services.TryAddSingleton<IUploadStorage, FolderUploadStorage>();
         else services.Replace(ServiceDescriptor.Singleton(typeof(IUploadStorage), _storage));
+        services.Replace(ServiceDescriptor.Singleton(new UploadsStorageChoice(_storage is not null)));
         services.TryAddSingleton<UploadStore>();
         services.TryAddSingleton<TusStorageAdapter>();
         services.TryAddSingleton<UploadProtocol>();
         services.AddHostedService<ExpiredUploadsCleaner>();
     }
 }
+
+/// <summary>Whether the app keeps its uploads in a storage of its own, so the folder's settings are not read.</summary>
+internal sealed record UploadsStorageChoice(bool OwnStorage);
