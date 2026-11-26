@@ -37,14 +37,14 @@ internal static class InterfaceTwin
     /// that <see cref="CanBeWritten(InterfaceDeclarationSyntax)"/>.</summary>
     public static bool CanBeWritten(INamedTypeSymbol symbol) =>
         symbol.TypeKind == TypeKind.Interface
-        && symbol.DeclaringSyntaxReferences is [var only]
+        && symbol.ReadDeclarations() is [var only]
         && only.GetSyntax() is InterfaceDeclarationSyntax declaration
         && CanBeWritten(declaration);
 
     /// <summary>The name a reference writes for <paramref name="symbol"/>'s twin, its owners' and its own (#584), or null
     /// when it has none. A type annotation writes an interface as <c>any</c>, so a constraint names its twin by this.</summary>
     public static string? NameOf(INamedTypeSymbol symbol) =>
-        CanBeWritten(symbol) && symbol.DeclaringSyntaxReferences[0].GetSyntax() is InterfaceDeclarationSyntax declaration
+        CanBeWritten(symbol) && symbol.ReadDeclarations()[0].GetSyntax() is InterfaceDeclarationSyntax declaration
             ? declaration.TwinTypeName()
             : null;
 
