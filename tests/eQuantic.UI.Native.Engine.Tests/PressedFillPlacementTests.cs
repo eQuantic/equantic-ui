@@ -83,9 +83,14 @@ public class PressedFillPlacementTests
         return found;
     }
 
+    /// <summary>
+    /// The same rect, edge by edge, within half a pixel: a fill's edges land on whole device pixels, as a browser
+    /// rounds a box's background (#1344), so each edge of a control at a fractional position moves up to half a pixel
+    /// and its width up to a whole one. Comparing the width alone failed a tab whose two edges rounded apart.
+    /// </summary>
     private static bool Same(Rect a, Rect b) =>
-        MathF.Abs(a.X - b.X) < 0.5f && MathF.Abs(a.Y - b.Y) < 0.5f
-        && MathF.Abs(a.Width - b.Width) < 0.5f && MathF.Abs(a.Height - b.Height) < 0.5f;
+        MathF.Abs(a.Left - b.Left) <= 0.51f && MathF.Abs(a.Top - b.Top) <= 0.51f
+        && MathF.Abs(a.Right - b.Right) <= 0.51f && MathF.Abs(a.Bottom - b.Bottom) <= 0.51f;
 
     [Theory]
     [MemberData(nameof(Cases))]
