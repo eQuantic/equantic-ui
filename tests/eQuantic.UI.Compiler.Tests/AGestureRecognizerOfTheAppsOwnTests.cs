@@ -59,15 +59,14 @@ public class AGestureRecognizerOfTheAppsOwnTests
     }
 
     /// <summary>
-    /// TODAY'S ANSWER, pinned on purpose (#1863). An app reads the framework from metadata, and eqc marks a generic
-    /// construction with its type arguments only for a type the source declares, so the factory crosses unmarked: in
-    /// the browser <c>GestureRecognizerFactoryWithHandlers&lt;A&gt;</c> and <c>&lt;B&gt;</c> are one runtime type, and a
-    /// detector whose factory changes type at the same place keeps its old recognizer there. Photon makes a new one,
-    /// and so does the twin once the construction is marked (<c>gesture-arena.spec.ts</c>). When #1863 marks it, this
-    /// fails: flip it, and mark that case of the <c>RawGestureDetector</c> row in <c>docs/FLUTTER-PARITY.md</c> SAME.
+    /// An app's construction of the framework's factory carries its type argument to the browser (#1863). The app
+    /// reads the framework from metadata, and eqc marks a generic the runtime library twins as it marks one the source
+    /// declares, so in the browser <c>GestureRecognizerFactoryWithHandlers&lt;A&gt;</c> and <c>&lt;B&gt;</c> are two
+    /// runtime types, and a detector whose factory changes type at the same place makes a new recognizer, as Photon
+    /// does (<c>FactoryTypeChange</c>, in <c>GestureArenaFixtureTests</c> and <c>gesture-arena.spec.ts</c>).
     /// </summary>
     [Fact]
-    public void AnAppsConstructionOfTheFrameworksFactory_CarriesNoTypeArgumentYet()
+    public void AnAppsConstructionOfTheFrameworksFactory_CarriesItsTypeArgument()
     {
         using var solution = new Solution()
             .App("Console", globalUsings: SharedLibrary.Factories,
@@ -75,7 +74,8 @@ public class AGestureRecognizerOfTheAppsOwnTests
 
         var cards = solution.Build().Module("Cards");
 
-        cards.Should().Contain("[new GestureRecognizerFactoryWithHandlers(", "the construction is not wrapped in its type's mark")
-            .And.NotContain("closing(", "no type argument reaches the browser for a framework generic yet");
+        cards.Should().MatchRegex(
+                @"\$eq\.closing\(new GestureRecognizerFactoryWithHandlers\(.*, 'global::eQuantic\.Console\.HoldThenDrag'\)",
+                "the factory crosses marked with the app's recognizer, so the router tells it from a factory of another type");
     }
 }

@@ -7,9 +7,9 @@ namespace eQuantic.UI.Web.Tests.Fixtures;
 /// A detector whose factory changes type at the same place (#1563): the first build hands it a factory of
 /// <see cref="ArenaProbe"/>, the next one a factory of the dashboard's <see cref="HoldThenDrag"/>. Flutter's
 /// <c>canUpdate</c> makes a new recognizer then, and so does the router, which compares the factories' types.
-/// Run in C# by <c>GestureArenaFixtureTests</c> and transpiled for <c>gesture-arena.spec.ts</c>. That suite compiles the
-/// framework from source, so eqc marks each construction with its type argument and the browser answers as C# does;
-/// an app's construction of the framework's factory goes unmarked until #1863 (<c>AGestureRecognizerOfTheAppsOwnTests</c>).
+/// Run in C# by <c>GestureArenaFixtureTests</c> and transpiled for <c>gesture-arena.spec.ts</c>, where eqc marks each
+/// construction with its type argument and the browser answers as C# does. An app's construction of the framework's
+/// factory is marked too (<c>AGestureRecognizerOfTheAppsOwnTests</c>).
 /// </summary>
 public static class FactoryTypeChange
 {

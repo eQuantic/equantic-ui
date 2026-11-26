@@ -147,12 +147,11 @@ new one), which is Flutter's `canUpdate`, asked of the factory as the element en
 
 Measured by task 1.5: the first shape, `recognizer is T` inside the factory, transpiled to `recognizer != null`,
 true for every recognizer, and nothing said so (filed as #1846). The runtime-type comparison is a construct eqc
-translates and its Conformance suite runs. One gap is left, on the web only. A generic class declared outside
-the app is not marked with its type arguments when the app constructs it (`ObjectCreationStrategy.ClosureOf`
-marks only a type the source declares). So until eqc marks it, `GestureRecognizerFactoryWithHandlers<A>` and
-`<B>` compare as one type in the browser, and a place handed a factory of another recognizer type keeps the one
-it has there. Photon answers it as .NET does. The gap is eqc's, on #1863, and the change's spec scenario for it
-is proved on Photon and waits on the web.
+translates and its Conformance suite runs. The same measurement found that a generic class declared outside
+the app was not marked with its type arguments when the app constructed it (`ObjectCreationStrategy.ClosureOf`
+marked only a type the source declares), so `GestureRecognizerFactoryWithHandlers<A>` and `<B>` compared as one
+type in an app's browser. The gap was eqc's (#1863), and #1890 closed it before this change merged: a generic
+the runtime library twins is marked as one the source declares, and the spec's scenario holds on both targets.
 
 ### 3. One arena and one router, written once in C# and transpiled
 

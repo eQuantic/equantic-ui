@@ -188,9 +188,8 @@ describe('the gesture arena, run by its transpiled twin', () => {
 describe('a place whose factory changes type', () => {
   // Flutter's canUpdate, as the C# router answers it (GestureArenaFixtureTests.APlaceWhoseFactoryChangesType_GetsANewRecognizer).
   // The twin compares the factories' runtime types, which in the browser are the type arguments the construction
-  // was marked with: this suite compiles the framework from source, so eqc marks GestureRecognizerFactoryWithHandlers
-  // <ArenaProbe> and <HoldThenDrag>. An app reads the framework from metadata, and its construction goes unmarked
-  // until #1863: AGestureRecognizerOfTheAppsOwnTests pins that, and docs/FLUTTER-PARITY.md names the difference.
+  // was marked with: eqc marks GestureRecognizerFactoryWithHandlers<ArenaProbe> and <HoldThenDrag>, here and in an
+  // app, which reads the framework from metadata (AGestureRecognizerOfTheAppsOwnTests).
   it('makes a new recognizer, and never hands the old one to the new initialize', () => {
     expect(FactoryTypeChange.run()).toEqual(['probe.create', 'probe.initialize', 'drag.create', 'drag.initialize its own', 'made new']);
   });
