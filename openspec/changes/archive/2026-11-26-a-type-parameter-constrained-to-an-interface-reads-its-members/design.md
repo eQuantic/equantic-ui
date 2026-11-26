@@ -15,6 +15,11 @@ the app that constrains a class to its interface, so its build cannot see that c
 import a twin nobody wrote. An unused twin costs an app nothing, since only the modules a written module imports are
 bundled.
 
+The library's barrel re-exports each of its twins with `export type`, which `CompilationResult.IsInterfaceTwin` tells it
+to. A plain re-export kept the twin's value reachable from the runtime's entry, and the served runtime carried seven
+`var X=void 0` and their names. Re-exported as a type, no value of a twin is reachable and the bundler drops its module:
+measured, the served runtime is byte for byte main's.
+
 It can be written when the interface declares no type parameter and stands in no generic type, each member is an
 instance property or method with no body, no member is static, an event or an indexer, it extends no
 interface, and it is neither marked `[ServerOnly]` nor inside a type that is. An interface that extends another is fenced

@@ -27,7 +27,8 @@ TypeScript has no generic `any`: since TS 3.9, `T extends any` no longer lets a 
 - A value typed as an interface stays `any`: only constraints name the twin, so no other module's types move.
 
 Nothing an app writes moves. The runtime library gains the twins of seven of its own interfaces, the code editor's six
-providers and the gesture arena's member, empty in JavaScript and exported from its barrel. No developer surface moves;
+providers and the gesture arena's member, which its barrel re-exports as types, so the served runtime carries none of
+them. No developer surface moves;
 the compiler's new members are declared in the branch's own `PublicAPI.Unshipped` file.
 
 The rules followed: the structural fix over the patch (a twin the constraint can name, not a looser constraint), one
@@ -38,7 +39,8 @@ target's language (the twin carries the members' twin names, as every class twin
 
 - `src/eQuantic.UI.Compiler`: the parser takes an interface whose twin can be written as a definition; the class
   module's writer writes its twin; the dependency resolver counts it as a module; the constraint namer names it
-- The runtime library: a twin module for each eligible interface of `eQuantic.UI.Code`, exported from the barrel
+- The runtime library: a twin module for each eligible interface of `eQuantic.UI.Code`, re-exported from the barrel
+  with `export type`
 - The emission shapes the runtime's `tsc` reads, and the compiler's tests of each fence
 - `openspec/specs/transpiler-classes`: the requirement that a class's TypeScript twin passes the runtime's type check
 - An entry under `docs/ledger/`

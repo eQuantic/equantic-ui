@@ -5,6 +5,7 @@
   `export interface` with each member's twin name and type beside a value of its name, and a constraint to it is written
   `T extends` it, imported. A generic interface, one with a static, default, event or indexer member, one extending
   another and one the server keeps get none and leave the constraint unconstrained. A value typed as an interface stays
-  `any`, and the runtime library gains the twins of seven of its own interfaces
+  `any`, and the runtime library gains the twins of seven of its own interfaces, which its barrel re-exports as types,
+  so the served runtime carries none of them
   ([#1878](https://github.com/eQuantic/equantic-ui/issues/1878)). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-classes`).
