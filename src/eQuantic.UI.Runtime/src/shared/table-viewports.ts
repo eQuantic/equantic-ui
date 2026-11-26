@@ -17,6 +17,7 @@
  */
 
 import { joinGestureArena, type ArenaMembership } from '../dom/arena-membership';
+import { clickGuards, type ClickGuards } from '../dom/click-guard';
 import { logger } from '../utils/logger';
 import { modifiersOf } from './css-values';
 import type { TableScrollModelLike, TableViewCellNode, TableViewportNode } from './nodes';
@@ -85,8 +86,8 @@ interface TableElement extends HTMLElement {
   __eqTablePointerAt?: number;
   /** Set while the Tab order leaves past the last cell: that focus is a step out, not one to reveal. */
   __eqTableLeaving?: boolean;
-  /** Lets go of the click guard a pan armed, at once: the table's own, so it leaves with the table (#1876). */
-  __eqTableClickGuard?: () => void;
+  /** The click guard a pan armed: the table's own, so it leaves with the table (#1876, #1889). */
+  __eqTableClickGuards?: ClickGuards;
 }
 
 /**
@@ -104,7 +105,7 @@ export function declareTableViewport(position: Position, declaration: TableViewp
 const watched = new Set<TableElement>();
 
 function stopWatching(view: TableElement): void {
-  view.__eqTableClickGuard?.();
+  view.__eqTableClickGuards?.release();
   view.__eqTableObserver?.disconnect();
   view.__eqTableObserver = undefined;
   if (view.__eqTableFrame !== undefined) cancelAnimationFrame(view.__eqTableFrame);
@@ -845,29 +846,16 @@ const PRESS_SLOP = 12;
 /**
  * The click a browser sends where a pan ended was no click: it is stopped once, before anything under the
  * finger hears it, and the guard goes with it. A pan whose lift sends no click must not eat the next real
- * one, so the guard goes after 400 ms otherwise. It is the TABLE's (#1876): kept on its element and let go
- * at once when the table stops being watched (`stopWatching`, which an unmount and a disposed position both
- * reach), so its timer never runs after the table left. It ran on a bare timer, which fired after a spec's
- * teardown against a page that was gone and failed the runtime suite now and then, and kept the guard
- * alive in an app for its 400 ms.
+ * one, so the guard goes after 400 ms otherwise. It is the TABLE's (#1876): the table owns it, and lets go
+ * of it at once when the table stops being watched (`stopWatching`, which an unmount and a disposed position
+ * both reach), so its timer never runs after the table left. The guard itself is the one a drag's, a hold's
+ * and an arena's release arm (`dom/click-guard.ts`, #1889).
  */
 function swallowNextClick(view: TableElement): void {
-  view.__eqTableClickGuard?.();
-  // The click it stops is the one it waited for: it goes then, with its timer.
-  const stop = (event: Event) => {
-    event.stopPropagation();
-    event.preventDefault();
-    release();
-  };
+  const guards = (view.__eqTableClickGuards ??= clickGuards());
+  // A second pan's guard replaces the first's: a pan whose lift sent no click must not leave one behind.
+  guards.release();
   // Held before the timer: by the time it fires the page may be gone (deferred-cleanup.spec.ts).
-  const target = window;
-  target.addEventListener('click', stop, { capture: true, once: true });
-  const timer = setTimeout(release, 400);
-  function release(): void {
-    clearTimeout(timer);
-    target.removeEventListener('click', stop, { capture: true });
-    if (view.__eqTableClickGuard === release) view.__eqTableClickGuard = undefined;
-  }
-  view.__eqTableClickGuard = release;
+  guards.arm(window, 400);
 }
 

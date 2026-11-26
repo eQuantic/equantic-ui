@@ -6,6 +6,7 @@
  */
 
 import { afterEach, describe, expect, it } from 'vitest';
+import { clickGuards } from './click-guard';
 import { followPointer, type PointerGesture } from './pointer-gesture';
 
 function pointer(target: EventTarget, type: string, x: number, y: number): PointerEvent {
@@ -42,7 +43,10 @@ const travelling = (): PointerGesture => ({
 const selected = (): string => document.getSelection()!.toString();
 
 describe('a pointer gesture and the text selection', () => {
+  // The owner of the click guards these gestures arm, as a controller's delegate is.
+  const guards = clickGuards();
   afterEach(() => {
+    guards.release();
     document.getSelection()!.removeAllRanges();
     document.documentElement.style.userSelect = '';
     document.body.innerHTML = '';
@@ -50,7 +54,7 @@ describe('a pointer gesture and the text selection', () => {
 
   it('clears the selection the press started once the gesture arms, and lets none start until it ends', () => {
     const { text, down } = pressOnText();
-    followPointer(down, travelling());
+    followPointer(down, travelling(), guards);
     expect(selected()).toBe('DATE');
 
     pointer(document, 'pointermove', 40, 10);
@@ -69,7 +73,7 @@ describe('a pointer gesture and the text selection', () => {
 
   it('leaves the selection to a press that never becomes a gesture', () => {
     const { down } = pressOnText();
-    followPointer(down, travelling());
+    followPointer(down, travelling(), guards);
 
     pointer(document, 'pointermove', 15, 10);
     pointer(document, 'pointerup', 15, 10);
@@ -80,8 +84,8 @@ describe('a pointer gesture and the text selection', () => {
   it('holds the selection while any of two gestures is armed, and gives the page its own back after the last', () => {
     document.documentElement.style.userSelect = 'text';
     const { text, down } = pressOnText();
-    const first = followPointer(down, travelling());
-    const second = followPointer(down, travelling());
+    const first = followPointer(down, travelling(), guards);
+    const second = followPointer(down, travelling(), guards);
     pointer(document, 'pointermove', 40, 10);
 
     first.cancel();
@@ -97,7 +101,7 @@ describe('a pointer gesture and the text selection', () => {
   it('gives the page back its own user-select when the gesture is cancelled', () => {
     document.documentElement.style.userSelect = 'text';
     const { down } = pressOnText();
-    const followed = followPointer(down, travelling());
+    const followed = followPointer(down, travelling(), guards);
 
     pointer(document, 'pointermove', 40, 10);
     expect(document.documentElement.style.userSelect).toBe('none');

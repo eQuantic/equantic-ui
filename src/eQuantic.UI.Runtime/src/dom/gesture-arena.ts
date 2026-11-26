@@ -29,6 +29,7 @@ import { modifiersOf } from '../shared/css-values';
 import type { GestureDispositionValue, PointerKindValue, PointerPhaseValue } from '../shared/enums.generated';
 import { Point, PointerEvent as HeardPointer } from '../shared/value-types';
 import { setArenaJoiner, type ArenaMembership } from './arena-membership';
+import { clickGuards, type ClickGuard } from './click-guard';
 import { holdSelection, releaseSelection } from './pointer-gesture';
 import { heardAt } from './pointer-listener';
 
@@ -129,13 +130,15 @@ interface Arena {
   recognizers: GestureRecognizer[];
   /** The document whose selection it holds, which it gives back once at its end, or null. */
   heldOn: Document | null;
-  /** Stops swallowing the click of the press that lost, or null. */
-  unswallow: (() => void) | null;
+  /** The guard on the click of the press that lost, or null: the arena controller's (#1889). */
+  unswallow: ClickGuard | null;
 }
 
 let installed = false;
 let router: GestureRouter | null = null;
 const arenas = new Map<number, Arena>();
+/** The guards on the clicks of presses that lost: the controller's, so its reset lets go of them (#1889). */
+const guards = clickGuards();
 /** The detectors the router keeps recognizers for, so one that left the document is forgotten. */
 const known = new Set<Element>();
 let deadline: { timer: ReturnType<typeof setTimeout>; due: number } | null = null;
@@ -159,11 +162,11 @@ export function resetGestureArena(): void {
   if (typeof document === 'undefined') return;
   installed = false;
   for (const arena of [...arenas.values()]) {
-    // No click listener outlives a reset: what the arena swallows stops now, not after the timer of its up.
-    arena.unswallow?.();
-    arena.unswallow = null;
     end(arena);
   }
+  // No click guard outlives a reset, an ended arena's included: what the arena swallows stops now, not after the
+  // timer of its up, which used to run after a spec's page was torn down (#1889).
+  guards.release();
   arenas.clear();
   known.clear();
   router = null;
@@ -415,9 +418,8 @@ function end(arena: Arena): void {
   const heldOn = arena.heldOn;
   arena.heldOn = null;
   if (heldOn) releaseSelection(heldOn);
-  const unswallow = arena.unswallow;
+  arena.unswallow?.expireAfter(CLICK_AFTER_UP_MS);
   arena.unswallow = null;
-  if (unswallow) setTimeout(unswallow, CLICK_AFTER_UP_MS);
   if (touchHost && ![...arenas.values()].some((other) => other.kind !== 'mouse')) {
     touchHost.removeEventListener('touchmove', holdTouch);
     touchHost = null;
@@ -429,14 +431,8 @@ function swallowClick(arena: Arena): void {
   const press = arena.press;
   const host = press?.ownerDocument;
   if (!press || !host || arena.unswallow) return;
-  const swallow = (event: Event): void => {
-    if (!(event.target instanceof Node) || !press.contains(event.target)) return;
-    event.stopPropagation();
-    event.preventDefault();
-    host.removeEventListener('click', swallow, true);
-  };
-  host.addEventListener('click', swallow, true);
-  arena.unswallow = () => host.removeEventListener('click', swallow, true);
+  // The guard's time starts at the arena's end (`end`): the press can lose before its up.
+  arena.unswallow = guards.arm(host, undefined, (event) => event.target instanceof Node && press.contains(event.target));
   // Lost after the pointer ended is not possible: the arena is decided at the latest at the up.
 }
 
