@@ -30,4 +30,4 @@
 
 ## 6. Archive
 
-- [ ] 6.1 `./scripts/check-openspec.sh` passes, then `openspec archive a-component-builds-its-child-against-its-box --yes`
+- [x] 6.1 `./scripts/check-openspec.sh` passes, then `openspec archive a-component-builds-its-child-against-its-box --yes`

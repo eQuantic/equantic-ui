@@ -1,4 +1,4 @@
-- **2026-11-25 · A component builds its child against the box its parent gives it**: the vocabulary
+- **2026-11-26 · A component builds its child against the box its parent gives it**: the vocabulary
   gains `BoxConstraints`, the room a box may take (Flutter's value by name and shape), and
   `LayoutBuilder`, a node whose child is what its builder answers for the constraints its own box has;
   `eQuantic.UI.Components` gains `ConstrainedBox`, which applies constraints an author holds. Until now
