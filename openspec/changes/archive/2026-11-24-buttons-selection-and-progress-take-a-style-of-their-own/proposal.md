@@ -47,7 +47,7 @@ developer surface (csproj, appsettings, templates) does not move.
 
 **Breaks, preview.** Each widened constructor and factory replaces the old signature (`*REMOVED*` lines in the
 change's PublicAPI file). A call that named its arguments, or passed only the leading ones, compiles unchanged.
-Three factories take `style` ahead of their initializer tail, so a call that passed that tail by position
+Four factories take `style` ahead of their initializer tail, so a call that passed that tail by position
 moves: `Switch(on, onChanged, "Dark mode")` becomes `Switch(on, onChanged, label: "Dark mode")`, and the same
 for `Slider`'s `min` and `ProgressBar`'s `label`, and `Checkbox`'s `disabled`.
 
