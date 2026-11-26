@@ -18,7 +18,7 @@ export class EmittedConfigs {
     }
 
     static titled() {
-        return new Text('Totals', 'bodyL', null, 0, 'start', false, false, null, 0, { role: 'title', maxLines: 2 });
+        return new Text('Totals', null, null, null, null, false, false, null, 0, { role: 'title', maxLines: 2 });
     }
 
     static reparented(first: VisualNode, second: VisualNode) {
