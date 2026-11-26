@@ -51,7 +51,7 @@ internal sealed class UploadsApp : IAsyncDisposable
 
     public static async Task<UploadsApp> StartAsync(string folder, FakeTimeProvider? time = null,
         IReadOnlyDictionary<string, string?>? configuration = null, string? webRoot = null, string? contentRoot = null,
-        string environment = "Production")
+        string environment = "Production", SharedUploads? shared = null)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
         {
@@ -71,9 +71,15 @@ internal sealed class UploadsApp : IAsyncDisposable
         builder.Services.AddSingleton<ReceivedLog>();
         builder.Services.AddAuthentication(HeaderUser.Name)
             .AddScheme<AuthenticationSchemeOptions, HeaderUser>(HeaderUser.Name, null);
+        // The storage several instances share, when the test gives one: each instance's own folder is then unused.
+        if (shared is not null) builder.Services.AddSingleton(shared);
         builder.Services.AddUI(options => options
             .ScanAssembly(typeof(UploadsApp).Assembly)
-            .UseUploads(uploads => uploads.Accept(Models).Accept(Small).Accept(Members)));
+            .UseUploads(uploads =>
+            {
+                uploads.Accept(Models).Accept(Small).Accept(Members);
+                if (shared is not null) uploads.UseStorage<SharedUploadStorage>();
+            }));
         var app = builder.Build();
         app.UseServerActions();
         app.MapUI();
