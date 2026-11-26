@@ -38,14 +38,19 @@ internal static class ChangeGrowth
         var work = Directory.CreateTempSubdirectory("eq-runtime-base-").FullName;
         try
         {
+            // The commit's own bun too, so a change that moves the bun is measured by what the new one writes: with this
+            // checkout's bun on both sides, an upgrade's bytes passed unrecorded (found by the review).
+            var zip = EmbeddedBun.Archive(root);
+            zip.Should().NotBeNull("the SDK ships a bun for this machine, which bundles the base as it bundles the runtime");
             var archive = Path.Combine(work, "sources.zip");
             var (archived, _, archiveError) = ChildProcess.Run("git",
-                ["-C", root, "archive", "--format=zip", "-o", archive, commit, Runtime, Resources, Server], TimeSpan.FromMinutes(2));
-            archived.Should().Be(0, $"git archives {commit}'s runtime: {archiveError}");
+                ["-C", root, "archive", "--format=zip", "-o", archive, commit, Runtime, Resources, Server,
+                    Path.GetRelativePath(root, zip!).Replace('\\', '/')], TimeSpan.FromMinutes(2));
+            archived.Should().Be(0, $"git archives {commit}'s runtime and its bun: {archiveError}");
             ZipFile.ExtractToDirectory(archive, work);
 
-            var bun = EmbeddedBun.Program(root);
-            bun.Should().NotBeNull("the source tree carries this machine's bun, which bundles the base as it bundles the runtime");
+            var bun = EmbeddedBun.Program(work);
+            bun.Should().NotBeNull($"{commit} carries this machine's bun");
             var server = Path.Combine(work, Path.GetDirectoryName(Server)!);
             var (code, output, error) = ChildProcess.Run(bun!, BundleArguments(Path.Combine(work, Server)),
                 TimeSpan.FromMinutes(5), workingDirectory: server);
