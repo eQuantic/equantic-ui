@@ -1,5 +1,6 @@
 using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Testing;
 using eQuantic.UI.Web;
 using FluentAssertions;
 
@@ -95,15 +96,20 @@ public class InputsTakeTheirOwnStyleRealizerTests
                 yield return descendant;
     }
 
-    /// <summary>The page a component lowers to, opened first when asked: a stateful instance keeps its
-    /// state for the next lowering, so the first one finds the trigger and the second draws the panel.</summary>
+    /// <summary>The page a component lowers to, opened first when asked. An opened one is drawn by a
+    /// tester, which keeps the element tree between the press and the frame that draws the panel: a
+    /// picker a component builds inside itself (the DateTimePicker's date field) is a new, closed
+    /// instance in a second lowering of its own.</summary>
     private static string Lowered(VisualNode node, IAppTheme theme, bool open)
     {
         if (open)
         {
-            var closed = WebRealizer.Lower(node, theme, 1f, new StyleSink()).Render();
-            var trigger = Walk(closed).First(n => n.Attributes.ContainsKey("aria-expanded") && n.Events.ContainsKey("click"));
+            using var tester = new ComponentTester(theme);
+            tester.Pump(node);
+            var trigger = Walk(tester.Root).First(n => n.Attributes.ContainsKey("aria-expanded") && n.Events.ContainsKey("click"));
             ((Action)trigger.Events["click"])();
+            tester.Pump();
+            return tester.Html + tester.Css;
         }
 
         var sink = new StyleSink();

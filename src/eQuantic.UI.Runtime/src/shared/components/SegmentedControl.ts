@@ -1,19 +1,23 @@
-import { $eq, $SizeVariantValue, Adjustable, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Motion, Pressable, Row, SizeValue, StatelessComponent, Text, TransitionSpec } from "../runtime-exports";
+import { $eq, $SizeVariantValue, Adjustable, Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Motion, Pressable, Row, SegmentedTheme, SizeValue, StatelessComponent, Text, TransitionSpec, VisualNode } from "../runtime-exports";
 
 export class SegmentedControl extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.SegmentedControl';
     declare segments: string[];
     declare selectedIndex: number;
     declare onChanged: ((int: number) => void) | null;
+    declare style: any;
+    declare segmentBuilder: ((value: number) => VisualNode) | null;
     declare size: $SizeVariantValue;
     declare disabled: boolean;
     declare stretch: boolean;
 
-    constructor(segments?: any, selectedIndex?: any, onChanged: any = null, props?: any) {
+    constructor(segments?: any, selectedIndex?: any, onChanged: any = null, style: any = null, segmentBuilder: any = null, props?: any) {
         super();
         if (segments !== undefined) this.segments = segments;
         if (selectedIndex !== undefined) this.selectedIndex = selectedIndex;
         if (onChanged !== undefined) this.onChanged = onChanged;
+        if (style !== undefined) this.style = style;
+        if (segmentBuilder !== undefined) this.segmentBuilder = segmentBuilder;
         if (this.selectedIndex === undefined) this.selectedIndex = 0;
         if (this.size === undefined) this.size = 'medium';
         if (this.disabled === undefined) this.disabled = false;
@@ -21,12 +25,14 @@ export class SegmentedControl extends StatelessComponent {
         this.segments = segments;
         this.selectedIndex = selectedIndex;
         this.onChanged = onChanged;
+        this.style = style;
+        this.segmentBuilder = segmentBuilder;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let slot = theme.segmented;
+        let slot = SegmentedTheme.merge(theme.segmented, this.style);
         let ladder = (slot?.controls ?? null);
         let height = ControlMetrics.height(context, this.size, ladder);
         let inset = slot?.inset ?? 3;
@@ -36,7 +42,8 @@ export class SegmentedControl extends StatelessComponent {
             let index = i;
             let selected = index === this.selectedIndex;
             let label = new Row(0, 'start', 'center', false, null, null, { width: this.stretch ? SizeValue.fill : SizeValue.hug, height: SizeValue.fill, main: 'center', cross: 'center' });
-            label.add(new Text($eq.collections.item(this.segments, index), 'label', selected ? theme.textPrimary : theme.textSecondary, 1, 'start', false, false, null, 0, { styleOverride: theme.type('label').withSize(ControlMetrics.labelSize(context, this.size, ladder)), transition: TransitionSpec.of(1, Motion.press) }));
+            let builder: any; 
+            if ((builder = this.segmentBuilder) != null) label.add(builder(index)); else label.add(new Text($eq.collections.item(this.segments, index), 'label', selected ? theme.textPrimary : theme.textSecondary, 1, 'start', false, false, null, 0, { styleOverride: theme.type('label').withSize(ControlMetrics.labelSize(context, this.size, ladder)), transition: TransitionSpec.of(1, Motion.press) }));
             let segment = new Box(new BoxStyle({ width: this.stretch ? SizeValue.fill : SizeValue.hug, height: SizeValue.fill, padding: this.stretch ? new EdgeInsets() : EdgeInsets.symmetric(ControlMetrics.paddingX(context, this.size, ladder), 0), background: selected ? slot?.thumbFill ?? theme.surface : null, cornerRadius: new CornerRadii(Math.fround(trackRadius - inset)), elevation: selected ? slot?.thumbElevation ?? 1 : 0, transition: TransitionSpec.of(1 | 8, Motion.press) }), label);
             let press = new Pressable(segment, this.disabled || selected ? null : () => this.onChanged?.(index), { disabled: this.disabled, label: $eq.collections.item(this.segments, index), role: 'radio', selected: selected });
             row.add(this.stretch ? new Flexible(press, 1) : press);

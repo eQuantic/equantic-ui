@@ -55,7 +55,7 @@ export class NumberInput extends StatefulComponent {
         let shown = this._typing ?? ((value = this.value) != null ? NumberInput.write(value) : '');
         let typed: any; 
         let error = this.error ?? ((typed = this._typing) != null ? this.complaint(typed) : null);
-        return new TextInput(shown, this.onChanged == null ? null : $eq.delegates.bound(this, this.type), this.label, this.placeholder, this.helper, error, null, this.size, null, 'number', null, this.unit.length > 0 ? this.unit : null, { disabled: this.disabled, onFocusChanged: $eq.delegates.bound(this, this.focus).bind(this) });
+        return new TextInput(shown, this.onChanged == null ? null : $eq.delegates.bound(this, this.type), this.label, this.placeholder, this.helper, error, null, this.size, null, 'number', null, this.unit.length > 0 ? this.unit : null, null, { disabled: this.disabled, onFocusChanged: $eq.delegates.bound(this, this.focus).bind(this) });
     }
 
     adoptConfig(next: UiComponent) {
