@@ -78,17 +78,19 @@ internal static class ChangeGrowth
     }
 
     /// <summary>
-    /// What is wrong with a change that grew the runtime by <paramref name="grown"/> and records
-    /// <paramref name="recorded"/> for itself, or null: growth, however small, records a delta of its own, and
-    /// the one it records stays within <paramref name="noise"/> of what it grew, the 1% the budget keeps for
-    /// measurement noise, as a change measured on an older <c>main</c> meets the newer one's neighbours.
+    /// What is wrong with a change that moved the runtime by <paramref name="grown"/> and records
+    /// <paramref name="recorded"/> for itself, or null: growth, however small, records a delta of its own, and so
+    /// does a shrink, whose bytes the budget would otherwise keep as headroom until a later shrink met its floor
+    /// with a record that cannot reach it; and the one it records stays within <paramref name="noise"/> of what it
+    /// moved, the 1% the budget keeps for measurement noise, as a change measured on an older <c>main</c> meets the
+    /// newer one's neighbours.
     /// </summary>
     public static string? Owed(long grown, long recorded, long noise)
     {
-        if (grown > 0 && recorded <= 0)
-            return $"this change grows the served runtime by {RuntimeBudget.Text(grown)} bytes gzipped and records no delta "
-                + "of its own: record it with EQ_UPDATE_RUNTIME_BUDGET=1 and EQ_RUNTIME_BOUGHT saying what the bytes bought, "
-                + "however small (#1922)";
+        if (grown != 0 && recorded == 0)
+            return $"this change {(grown > 0 ? "grows" : "shrinks")} the served runtime by {RuntimeBudget.Text(Math.Abs(grown))} "
+                + "bytes gzipped and records no delta of its own: record it with EQ_UPDATE_RUNTIME_BUDGET=1 and "
+                + "EQ_RUNTIME_BOUGHT saying what the bytes bought or saved, however small (#1922)";
         if (recorded != 0 && Math.Abs(recorded - grown) > noise)
             return $"this change records {RuntimeBudget.Text(recorded)} bytes for itself and grows the served runtime by "
                 + $"{RuntimeBudget.Text(grown)}, more than the {RuntimeBudget.Text(noise)} the budget keeps for noise apart: "

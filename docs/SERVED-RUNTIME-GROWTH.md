@@ -74,8 +74,8 @@ budget is what makes each such cost a decision. Since #1489 a change records a d
 `Budgets/served-runtime/<branch>.json` with `deltaBytes` and `bought`, beside the base the last release
 folded, and the test holds the runtime to the base and every delta: two changes that each crossed the
 ceiling used to rewrite the one number and conflict on it, as the sections below show. Since #1922 every
-change that grows the runtime records one, however small, and what it records is the bytes it grew it by
-against the commit it is measured from, built there as BundleRuntime builds it: growth under the 1% margin
+change that grows the runtime records one, however small, and so does one that shrinks it, and what it records
+is the bytes it moved it by against the commit it is measured from, built there as BundleRuntime builds it: growth under the 1% margin
 passed unrecorded, and the first change past it was handed everyone's bytes, as the section since #1852
 shows. The 1% stays as the margin for measurement noise. A release folds the deltas into the base
 (`./scripts/fold-runtime-budget.sh`) and writes each as a row of this page, under its version, with the pull

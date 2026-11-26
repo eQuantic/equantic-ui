@@ -24,8 +24,10 @@ Nothing an app writes or serves changes. A pull request that grows the runtime r
   That commit's runtime is built as the Server's `BundleRuntime` builds its own: its sources from `git archive`, the
   embedded bun, and the arguments read from its own Server project.
 - **Growth owes a delta of its own** (`AChangeThatGrowsTheRuntime_RecordsItsOwnDelta`). A change that grows the runtime
-  by any byte and records none fails, naming the bytes and the variables that record them. A delta it records must be
-  what it grew, within the noise margin. A change that grows nothing owes nothing, whatever `main` grew around it.
+  by any byte and records none fails, naming the bytes and the variables that record them. So does a shrink: recorded
+  as its own bytes, the shrinks left unrecorded would pile up as headroom until a later shrink met the 5% floor with a
+  record that could not reach it (found by the review). A delta it records must be what it moved, within the noise
+  margin. A change that moves nothing owes nothing, whatever `main` did around it.
 - **The record is the change's own growth.** `EQ_UPDATE_RUNTIME_BUDGET=1` writes the bytes the change grew the runtime
   by against that commit, not what its measurement added to the base and the other deltas.
 - **The 1% stays as the margin for noise.** The runtime past 1% over the base and every delta still fails. Deltas each

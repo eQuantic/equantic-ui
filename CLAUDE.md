@@ -344,8 +344,8 @@ GitHub performs reads no `.gitattributes` that could resolve it (#892). A releas
 into the chronology (`./scripts/fold-ledger.sh`), and `LedgerTests` fails on a file that is not one
 dated entry and on a chronology no fold wrote. Two more files had that shape and take that cure
 (#1489): a change declares its public API in `PublicAPI.Unshipped.<branch>.txt` beside each project,
-the file `./scripts/public-api.sh update` writes, and a change that grows the served runtime, however
-little, writes its own delta under `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime/` (#1922), and
+the file `./scripts/public-api.sh update` writes, and a change that grows or shrinks the served runtime,
+however little, writes its own delta under `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime/` (#1922), and
 a release folds both. A third rewrote itself whenever a cited line moved: a citation in the audits
 names the file and the code, never the line, and `DocsIndexTests` finds the code.
 
@@ -987,8 +987,8 @@ file and records the chronology in `docs/ledger/folded.json`. It writes nothing 
 not an entry. The line that says the release happened is an event like another: a file, written
 after the tag, that the next release folds.
 
-**And the served runtime's budget.** A change that grows the served runtime, however little, writes a
-delta of its own under `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime/`, the bytes it grew it by
+**And the served runtime's budget.** A change that grows or shrinks the served runtime, however little,
+writes a delta of its own under `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime/`, the bytes it moved it by
 against the commit it is measured from and what they bought (#1489, #1922), and the release folds them into
 the base in the same commit, writing each as a row of `docs/SERVED-RUNTIME-GROWTH.md`:
 

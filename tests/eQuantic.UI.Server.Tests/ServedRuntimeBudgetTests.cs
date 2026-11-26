@@ -85,8 +85,9 @@ public class ServedRuntimeBudgetTests
         ChangeGrowth.Owed(grown, recorded, Noise(budget)).Should().BeNull();
     }
 
-    /// <summary>The rule the guard applies, apart from a build: growth owes a delta, however small, and a delta is
-    /// what its change grew, within the noise the budget keeps; a change that grows nothing owes nothing.</summary>
+    /// <summary>The rule the guard applies, apart from a build: growth owes a delta, however small, and so does a
+    /// shrink; a delta is what its change moved, within the noise the budget keeps; a change that moves nothing owes
+    /// nothing.</summary>
     [Theory]
     [InlineData(3, 0, "grows the served runtime by 3 bytes gzipped and records no delta")]
     [InlineData(1_000, 0, "grows the served runtime by 1,000 bytes gzipped and records no delta")]
@@ -95,7 +96,7 @@ public class ServedRuntimeBudgetTests
     [InlineData(3, 3, null)]
     [InlineData(106, 128, null)]
     [InlineData(0, 0, null)]
-    [InlineData(-200, 0, null)]
+    [InlineData(-200, 0, "shrinks the served runtime by 200 bytes gzipped and records no delta")]
     [InlineData(-200, -200, null)]
     public void GrowthOwesADeltaOfItsOwn_HoweverSmall(long grown, long recorded, string? owed)
     {

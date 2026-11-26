@@ -6,8 +6,8 @@ The served runtime's budget SHALL be the base the last release folded, in `Budge
 per change in `Budgets/served-runtime/<branch>.json`, each holding `deltaBytes` and what they `bought`. A change SHALL
 be measured against the commit it is measured from: `EQ_RUNTIME_BASE`, its fork from `origin/main` on a named branch,
 or the checkout's first parent, whose runtime SHALL be built as the Server's `BundleRuntime` builds its own. A change
-that grows the runtime by any byte SHALL record a delta of its own, and SHALL fail without one, and the delta it
-records SHALL be what it grew, within 1% of the budget. Growth past 1% of the base and every delta and a shrink past
+that grows or shrinks the runtime by any byte SHALL record a delta of its own, and SHALL fail without one, and the
+delta it records SHALL be what it moved, within 1% of the budget. Growth past 1% of the base and every delta and a shrink past
 5% of it SHALL fail, the 1% being the margin for measurement noise. `EQ_UPDATE_RUNTIME_BUDGET=1` SHALL write the bytes
 the change grew the runtime by against the commit it is measured from, and SHALL refuse without `EQ_RUNTIME_BOUGHT`. A
 delta that says nothing it bought, or records no bytes, SHALL fail. `scripts/fold-runtime-budget.sh` SHALL fold every
@@ -23,6 +23,11 @@ request whose commit added it, and remove the deltas, and SHALL write nothing wh
 
 - **WHEN** a change grows the runtime by 63 bytes, under 1% of the budget, and records no delta
 - **THEN** the budget test fails, naming the 63 bytes, and passes once the change records its 63 bytes
+
+#### Scenario: A change shrinks the runtime
+
+- **WHEN** a change takes 200 bytes off the runtime and records no delta
+- **THEN** the budget test fails until the change records its -200 bytes
 
 #### Scenario: A change grows nothing while main did
 
