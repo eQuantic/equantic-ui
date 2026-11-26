@@ -25,7 +25,9 @@ import { Directionality } from './vocabulary';
 setPhotonTheme(photonTheme);
 
 const nextFrame = () =>
-  new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
 
 /** One control under a `Directionality`, which writes `dir` on the element the control lowers to. */
 class Under extends StatefulComponent {
@@ -87,7 +89,10 @@ function steps(role: string, make: (seen: number[]) => unknown, initial: number)
 
   it('steps as in English under ltr, and inside a dir="ltr" surface of an rtl page', () => {
     const english: number[] = [];
-    press(mount(reading.ltr, () => make(english)), 'ArrowRight');
+    press(
+      mount(reading.ltr, () => make(english)),
+      'ArrowRight',
+    );
     expect(english).toEqual([initial + 1]);
 
     document.body.innerHTML = '';
@@ -103,7 +108,10 @@ function steps(role: string, make: (seen: number[]) => unknown, initial: number)
     const seen: number[] = [];
     const container = mount(reading.ltr, () => make(seen));
     // A Directionality that changed under a kept position rewrote one attribute and nothing else.
-    (container.querySelector(`[role="${role}"]`)!.closest('[dir]') as HTMLElement).setAttribute('dir', 'rtl');
+    (container.querySelector(`[role="${role}"]`)!.closest('[dir]') as HTMLElement).setAttribute(
+      'dir',
+      'rtl',
+    );
 
     press(container, 'ArrowLeft');
 
@@ -112,11 +120,13 @@ function steps(role: string, make: (seen: number[]) => unknown, initial: number)
 }
 
 describe('Tabs (#1569)', () => {
-  const tabs = (seen: number[]) => new Tabs(['One', 'Two', 'Three'], 1, (index: number) => seen.push(index));
+  const tabs = (seen: number[]) =>
+    new Tabs(['One', 'Two', 'Three'], 1, (index: number) => seen.push(index));
 
   // Selected is the middle tab, so the next is the third and the previous the first.
   describe('by the arrows along the strip', () => {
-    const press = (container: HTMLElement, name: string) => key(container.querySelector('[role="tablist"]')!, name);
+    const press = (container: HTMLElement, name: string) =>
+      key(container.querySelector('[role="tablist"]')!, name);
 
     it('selects the next tab on ArrowLeft under rtl, and the previous on ArrowRight', () => {
       const seen: number[] = [];
@@ -130,7 +140,10 @@ describe('Tabs (#1569)', () => {
 
     it('selects the next tab on ArrowRight under ltr, and inside a dir="ltr" surface of an rtl page', () => {
       const english: number[] = [];
-      press(mount(reading.ltr, () => tabs(english)), 'ArrowRight');
+      press(
+        mount(reading.ltr, () => tabs(english)),
+        'ArrowRight',
+      );
       expect(english).toEqual([2]);
 
       document.body.innerHTML = '';
@@ -156,20 +169,32 @@ describe('Tabs (#1569)', () => {
 });
 
 describe('RadioGroup (#1569)', () => {
-  steps('radiogroup', (seen) => new RadioGroup(['a', 'b', 'c'], 1, (index: number) => seen.push(index)), 1);
+  steps(
+    'radiogroup',
+    (seen) => new RadioGroup(['a', 'b', 'c'], 1, (index: number) => seen.push(index)),
+    1,
+  );
 });
 
 describe('SegmentedControl (#1569)', () => {
-  steps('radiogroup', (seen) => new SegmentedControl(['a', 'b', 'c'], 1, (index: number) => seen.push(index)), 1);
+  steps(
+    'radiogroup',
+    (seen) => new SegmentedControl(['a', 'b', 'c'], 1, (index: number) => seen.push(index)),
+    1,
+  );
 });
 
 describe('Slider (#1569)', () => {
   // A value of 0.5 over 0..1 steps by a tenth: a step toward the end is 0.6.
-  const press = (container: HTMLElement, name: string) => key(container.querySelector('[role="slider"]')!, name);
+  const press = (container: HTMLElement, name: string) =>
+    key(container.querySelector('[role="slider"]')!, name);
 
   it('rises on ArrowLeft and falls on ArrowRight under rtl', () => {
     const seen: number[] = [];
-    const container = mount(reading.rtl, () => new Slider(0.5, (value: number) => seen.push(value)));
+    const container = mount(
+      reading.rtl,
+      () => new Slider(0.5, (value: number) => seen.push(value)),
+    );
 
     press(container, 'ArrowLeft');
     press(container, 'ArrowRight');
@@ -180,7 +205,10 @@ describe('Slider (#1569)', () => {
   it('rises on ArrowRight under ltr, and inside a dir="ltr" surface of an rtl page', () => {
     document.documentElement.setAttribute('dir', 'rtl');
     const seen: number[] = [];
-    const container = mount(reading.ltr, () => new Slider(0.5, (value: number) => seen.push(value)));
+    const container = mount(
+      reading.ltr,
+      () => new Slider(0.5, (value: number) => seen.push(value)),
+    );
 
     press(container, 'ArrowRight');
     press(container, 'ArrowLeft');
@@ -192,10 +220,16 @@ describe('Slider (#1569)', () => {
     for (const direction of [reading.rtl, reading.ltr]) {
       document.body.innerHTML = '';
       const seen: number[] = [];
-      const container = mount(direction, () => new Slider(0.5, (value: number) => seen.push(value)));
+      const container = mount(
+        direction,
+        () => new Slider(0.5, (value: number) => seen.push(value)),
+      );
       press(container, 'ArrowUp');
       press(container, 'ArrowDown');
-      expect(seen.map((value) => Math.round(value * 100)), direction).toEqual([60, 40]);
+      expect(
+        seen.map((value) => Math.round(value * 100)),
+        direction,
+      ).toEqual([60, 40]);
     }
   });
 });
@@ -205,7 +239,9 @@ describe('Calendar (#1569)', () => {
   const grid = (container: HTMLElement) => container.querySelector('[role="grid"]') as HTMLElement;
   /** The day the grid's active cell names. */
   const day = (container: HTMLElement): number => {
-    const cell = container.querySelector(`#${grid(container).getAttribute('aria-activedescendant')}`);
+    const cell = container.querySelector(
+      `#${grid(container).getAttribute('aria-activedescendant')}`,
+    );
     return Number(/(\d+) July/.exec(cell?.getAttribute('aria-label') ?? '')?.[1]);
   };
 
@@ -253,14 +289,18 @@ describe('TreeView (#1569)', () => {
   const leaf = (name: string) => Object.assign(new TreeNode(name, name), { isLeaf: true });
   const files = () =>
     new TreeView(
-      [Object.assign(new TreeNode('src', 'src'), { children: [leaf('App.cs')] }), leaf('README.md')],
+      [
+        Object.assign(new TreeNode('src', 'src'), { children: [leaf('App.cs')] }),
+        leaf('README.md'),
+      ],
       null,
       () => {},
       null,
       { label: 'Files' },
     );
   const tree = (container: HTMLElement) => container.querySelector('[role="tree"]') as HTMLElement;
-  const src = (container: HTMLElement) => container.querySelector('[aria-label="src"]') as HTMLElement;
+  const src = (container: HTMLElement) =>
+    container.querySelector('[aria-label="src"]') as HTMLElement;
 
   /** The tree with its first node the active one, closed. */
   async function atSrc(direction: TextDirectionValue): Promise<HTMLElement> {
@@ -302,7 +342,9 @@ describe('TreeView (#1569)', () => {
       const container = await atSrc(direction);
       key(tree(container), 'ArrowDown');
       await nextFrame();
-      const active = container.querySelector(`#${tree(container).getAttribute('aria-activedescendant')}`);
+      const active = container.querySelector(
+        `#${tree(container).getAttribute('aria-activedescendant')}`,
+      );
       expect(active?.getAttribute('aria-label'), direction).toBe('README.md');
     }
   });

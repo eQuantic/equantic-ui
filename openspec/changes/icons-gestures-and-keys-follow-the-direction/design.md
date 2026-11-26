@@ -43,7 +43,7 @@ with no drag to close: neither has anything to mirror.
 - Mirroring Photon (layout, shaping, input). Outside 1.0.
 - Marking the icon packs' directional glyphs (Lucide `arrow-left`, Heroicons `chevron-right`, …): Iconify carries no
   right-to-left metadata, and a rule by name is a guess (`arrow-up-right` is a direction in some sets and a
-  "go out" link in others). A follow-up issue under #197; an app marks a pack glyph itself with
+  "go out" link in others). The follow-up is #1875, under #197; an app marks a pack glyph itself with
   `glyph with { MatchTextDirection = true }`.
 - Mirroring a `Canvas`, a `Listener`'s positions or a `Drawing`: a picture has physical coordinates, as Flutter's
   `CustomPaint` and `Listener.localPosition` do.
@@ -264,7 +264,7 @@ wiki's Localization page (five languages) and Upgrading page (English and Portug
 
 - A horizontal `ScrollView`'s offset changes meaning under `rtl` for an app that compensated for `scrollLeft`
   itself. Listed as a break.
-- An app that drew a pack glyph as directional gets no mirror until it sets `MatchTextDirection` (follow-up issue).
+- An app that drew a pack glyph as directional gets no mirror until it sets `MatchTextDirection` (#1875).
 - The server's declared handlers carry a direction resolved at lowering; if a C# host ever dispatched keys after a
   client-side direction change, it would hold the old one. No such host exists.
 - One extra variant-matrix cell per control adds pins (one file section each).

@@ -24,14 +24,14 @@
 
 ## 4. The web runtime (TypeScript)
 
-- [ ] 4.1 `src/dom/reading-direction.ts`: `readsRightToLeft(element)` answers whether the nearest `[dir]` ancestor-or-self says `rtl` (the `<html>` included); the one place the runtime reads a direction
-- [ ] 4.2 `lowerGlyph` writes the same `scale` as 3.2 (byte twin)
-- [ ] 4.3 `lowerDraggable` writes a horizontal rest offset as 3.3 does (byte twin)
-- [ ] 4.4 `dom/draggable.ts`: at pointerdown a horizontal surface that reads right to left negates its travel and its painted `translate`; arming, clamping and the reported offset are in the logical space
-- [ ] 4.5 `lowerAdjustable` and the Navigable keydown read `readsRightToLeft(event.currentTarget)` at the key and swap ArrowLeft/ArrowRight; `navigableMove(event, direction)` mirrors `NavigableKeys.Move`
-- [ ] 4.6 `dom/sortable.ts`: read at pickup; a horizontal list under `rtl` hands `SortPlacement.place` starts and the pointer measured from the reading start (`-box.right`, `-x`); a vertical list's depth travel is negated under `rtl`; the keyboard carry's ArrowLeft/ArrowRight swap (along a horizontal list, across a vertical one)
-- [ ] 4.7 A horizontal `ScrollView` under `rtl` reports `-scrollLeft` (`lowering.ts` scroll handler) and sets `scrollLeft = -offset` (`scroll-viewports.ts` `scrollTo`, initial offset and request alike)
-- [ ] 4.8 Check: `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime` green with the specs of group 7, and `component-parity.spec.ts` green against the regenerated fixture
+- [x] 4.1 `src/dom/reading-direction.ts`: `readsRightToLeft(element)` answers whether the nearest `[dir]` ancestor-or-self says `rtl` (the `<html>` included); the one place the runtime reads a direction
+- [x] 4.2 `lowerGlyph` writes the same `scale` as 3.2 (byte twin)
+- [x] 4.3 `lowerDraggable` writes a horizontal rest offset as 3.3 does (byte twin)
+- [x] 4.4 `dom/draggable.ts`: at pointerdown a horizontal surface that reads right to left negates its travel and its painted `translate`; arming, clamping and the reported offset are in the logical space
+- [x] 4.5 `lowerAdjustable` and the Navigable keydown read `readsRightToLeft(event.currentTarget)` at the key and swap ArrowLeft/ArrowRight; `navigableMove(event, direction)` mirrors `NavigableKeys.Move`
+- [x] 4.6 `dom/sortable.ts`: read at pickup; a horizontal list under `rtl` hands `SortPlacement.place` starts and the pointer measured from the reading start (`-box.right`, `-x`); a vertical list's depth travel is negated under `rtl`; the keyboard carry's ArrowLeft/ArrowRight swap (along a horizontal list, across a vertical one)
+- [x] 4.7 A horizontal `ScrollView` under `rtl` reports `-scrollLeft` (`lowering.ts` scroll handler) and sets `scrollLeft = -offset` (`scroll-viewports.ts` `scrollTo`, initial offset and request alike)
+- [x] 4.8 Check: `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime` green with the specs of group 7, and `component-parity.spec.ts` green against the regenerated fixture
 
 ## 5. The catalog
 
@@ -50,19 +50,19 @@
 
 - [x] 7.1 `NavigableKeyTableTests` enumerates every key at both directions and cross-pins `NavigableKeys.Move` against `navigableMove`
 - [x] 7.2 `ComponentParityFixtureTests` cases (regenerated with its variable, diff read): an `Icon(Icons.ChevronLeft)` and a pack-style glyph without the flag, a horizontal `Draggable` at a px rest and at a normalized rest, a vertical one, each under `Directionality(RightToLeft)`
-- [ ] 7.3 `draggable.spec.ts` under `dir="rtl"`: a `Switch` off dragged toward its end flips it on and stays in its track; a `SwipeableRow` swiped toward its start opens; a `Slider` dragged toward its end rises; the same drags under `dir="ltr"` inside an `rtl` page behave as in English; each fails with the travel left physical and with only the travel negated (paint still physical)
-- [ ] 7.4 Keyboard specs under `dir="rtl"`: ArrowLeft selects the next tab (`Tabs`), the next option (`RadioGroup`, `SegmentedControl`), raises a `Slider`, walks a `Calendar` to the next day, and expands a closed `TreeView` node (ArrowRight collapses it); ArrowUp/ArrowDown unchanged; inside a `dir="ltr"` surface the English mapping holds
-- [ ] 7.5 `sortable.spec.ts` under `dir="rtl"`: a horizontal list places a carried item by reading order, a vertical tree's carry toward the end (leftwards) asks for a deeper depth, and the keyboard carry's horizontal arrows move next/deeper by the direction
-- [ ] 7.6 Scroll spec under `dir="rtl"`: a horizontal `ScrollView` scrolled to the end reports a positive offset, and an `Offset` of 100 sets `scrollLeft` to -100
+- [x] 7.3 `draggable.spec.ts` under `dir="rtl"`: a `Switch` off dragged toward its end flips it on and stays in its track; a `SwipeableRow` swiped toward its start opens; a `Slider` dragged toward its end rises; the same drags under `dir="ltr"` inside an `rtl` page behave as in English; each fails with the travel left physical and with only the travel negated (paint still physical)
+- [x] 7.4 Keyboard specs under `dir="rtl"`: ArrowLeft selects the next tab (`Tabs`), the next option (`RadioGroup`, `SegmentedControl`), raises a `Slider`, walks a `Calendar` to the next day, and expands a closed `TreeView` node (ArrowRight collapses it); ArrowUp/ArrowDown unchanged; inside a `dir="ltr"` surface the English mapping holds
+- [x] 7.5 `sortable.spec.ts` under `dir="rtl"`: a horizontal list places a carried item by reading order, a vertical tree's carry toward the end (leftwards) asks for a deeper depth, and the keyboard carry's horizontal arrows move next/deeper by the direction
+- [x] 7.6 Scroll spec under `dir="rtl"`: a horizontal `ScrollView` scrolled to the end reports a positive offset, and an `Offset` of 100 sets `scrollLeft` to -100
 - [x] 7.7 The variant matrix gains one `RightToLeft` cell per control (default variant and size, Comfortable): its web pin is written, and its Photon reading is asserted equal to the matching left-to-right cell's, not pinned twice
 - [ ] 7.8 Check against the real thing: the dashboard sample served in `ar` in a real browser (`tests/e2e`, a new spec): a calendar's previous-month chevron points right, a `Switch` dragged leftwards turns on, a `SwipeableRow` swiped rightwards opens, ArrowLeft moves to the next tab, a horizontal `ScrollView`'s reported offset grows toward the end, and a code block's fold chevron is unturned
 - [ ] 7.9 Check: the conformance suite (`tests/eQuantic.UI.Conformance.Tests`) green on both sides, and the full Web, Native.Engine and Compiler suites green before the pull request
 
 ## 8. Documentation
 
-- [ ] 8.1 `docs/FLUTTER-PARITY.md`: a row for `IconData.matchTextDirection` → `IconGlyph.MatchTextDirection` (SAME for the web); the `TextDirection` row says icons, drags, sortable lists, keys and horizontal scroll follow it on the web; `FlutterParityPinTests` probe for the new row
-- [ ] 8.2 `docs/I18N-PLAN.md` D9: a dated line saying the glyphs, gestures and keys landed in #1569, and Photon's mirroring stays outside 1.0
-- [ ] 8.3 The wiki's Localization page in its five languages: "draw the glyph and it turns" replaces choosing `ChevronRight` from `context.TextDirection`; `WikiClaimsCompile.BackLink` follows the page; the Upgrading page in every language it is written in carries the three breaks and their migration lines
-- [ ] 8.4 One ledger file under `docs/ledger/` citing #1569
-- [ ] 8.5 Follow-up issue (under #197) for marking the icon packs' directional glyphs, linked from the design
+- [x] 8.1 `docs/FLUTTER-PARITY.md`: a row for `IconData.matchTextDirection` → `IconGlyph.MatchTextDirection` (SAME for the web); the `TextDirection` row says icons, drags, sortable lists, keys and horizontal scroll follow it on the web; `FlutterParityPinTests` probe for the new row
+- [x] 8.2 `docs/I18N-PLAN.md` D9: a dated line saying the glyphs, gestures and keys landed in #1569, and Photon's mirroring stays outside 1.0
+- [x] 8.3 The wiki's Localization page in its five languages: "draw the glyph and it turns" replaces choosing `ChevronRight` from `context.TextDirection`; `WikiClaimsCompile.BackLink` follows the page; the Upgrading page in every language it is written in carries the three breaks and their migration lines
+- [x] 8.4 One ledger file under `docs/ledger/` citing #1569
+- [x] 8.5 Follow-up issue (under #197) for marking the icon packs' directional glyphs, linked from the design (#1875)
 - [ ] 8.6 Check: `WikiClaimsCompile`, `LedgerTests`, `FlutterParityPinTests` and the docs guards green against the wiki branch (`EQ_WIKI_DIR` pointed at it); `./scripts/check-openspec.sh` green; archive the change before the merge

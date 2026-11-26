@@ -43,11 +43,14 @@ function mount(direction: TextDirectionValue, make: () => unknown): HTMLElement 
   return container;
 }
 
-const surfaceOf = (container: HTMLElement): HTMLElement => container.querySelector('[data-eq-drag]') as HTMLElement;
+const surfaceOf = (container: HTMLElement): HTMLElement =>
+  container.querySelector('[data-eq-drag]') as HTMLElement;
 const translateOf = (surface: HTMLElement): string => surface.style.getPropertyValue('translate');
 
 const at = (target: EventTarget, type: string, x: number): void => {
-  target.dispatchEvent(new PointerEvent(type, { clientX: x, clientY: 100, bubbles: true, cancelable: true }));
+  target.dispatchEvent(
+    new PointerEvent(type, { clientX: x, clientY: 100, bubbles: true, cancelable: true }),
+  );
 };
 /** A finger that goes down at `from` and moves through `path`, leaving the surface where the last move put it. */
 function hold(surface: HTMLElement, from: number, ...path: number[]): void {
@@ -138,9 +141,13 @@ describe('a horizontal drag is measured toward the end (#1569)', () => {
   describe('a SwipeableRow', () => {
     // The action stands at the END and the surface slides toward the START, by up to the action's 96px, to uncover it.
     const row = (direction: TextDirectionValue, opened: boolean[]): HTMLElement =>
-      mount(direction, () => new SwipeableRow(new Text('row') as never, 'Delete', 'search', null, {
-        onOpenChanged: (open: boolean) => opened.push(open),
-      }));
+      mount(
+        direction,
+        () =>
+          new SwipeableRow(new Text('row') as never, 'Delete', 'search', null, {
+            onOpenChanged: (open: boolean) => opened.push(open),
+          }),
+      );
 
     it('opens by a swipe toward its start under rtl, which is rightwards', () => {
       const opened: boolean[] = [];
@@ -196,7 +203,10 @@ describe('a horizontal drag is measured toward the end (#1569)', () => {
   describe('a Slider', () => {
     // A normalized drag: a fraction of the surface's own extent, which only the browser can measure.
     const slider = (direction: TextDirectionValue, values: number[]): HTMLElement => {
-      const container = mount(direction, () => new Slider(0.5, (value: number) => values.push(value)));
+      const container = mount(
+        direction,
+        () => new Slider(0.5, (value: number) => values.push(value)),
+      );
       Object.defineProperty(surfaceOf(container), 'offsetWidth', { value: 200 });
       return surfaceOf(container);
     };
@@ -207,7 +217,7 @@ describe('a horizontal drag is measured toward the end (#1569)', () => {
 
       hold(surface, 100, 50);
 
-      expect(values.at(-1)).toBe(0.75);
+      expect(values[values.length - 1]).toBe(0.75);
     });
 
     it('falls when dragged toward its start under rtl', () => {
@@ -216,19 +226,19 @@ describe('a horizontal drag is measured toward the end (#1569)', () => {
 
       hold(surface, 100, 150);
 
-      expect(values.at(-1)).toBe(0.25);
+      expect(values[values.length - 1]).toBe(0.25);
     });
 
     it('rises when dragged rightwards under ltr, and inside a dir="ltr" surface of an rtl page', () => {
       const english: number[] = [];
       hold(slider('leftToRight', english), 100, 150);
-      expect(english.at(-1)).toBe(0.75);
+      expect(english[english.length - 1]).toBe(0.75);
 
       document.body.innerHTML = '';
       document.documentElement.setAttribute('dir', 'rtl');
       const fenced: number[] = [];
       hold(slider('leftToRight', fenced), 100, 150);
-      expect(fenced.at(-1)).toBe(0.75);
+      expect(fenced[fenced.length - 1]).toBe(0.75);
     });
   });
 });

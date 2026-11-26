@@ -9,7 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StatefulComponent } from '../core/component';
 import { photonTheme } from '../shared/design-system.generated';
 import { setPhotonTheme } from '../shared/photon-context';
-import { Column, Row, Sortable, SortableItem, Text } from '../shared/vocabulary';
+import { Column, Directionality, Row, Sortable, SortableItem, Text } from '../shared/vocabulary';
+import type { TextDirectionValue } from '../shared/enums.generated';
 import { SortAnnouncements, type SortDrop } from '../shared/value-types';
 import { SdkStrings } from '../shared/components/SdkStrings';
 import { SortPlacement } from '../shared/components/SortPlacement';
@@ -726,3 +727,249 @@ describe('a list whose items have depths (#1594)', () => {
     });
   });
 });
+
+/**
+ * What is horizontal reads in the READING order, where each list sits (#1569), driven as a mouse and a keyboard drive it
+ * through real `Sortable` and `SortableItem` nodes under a `Directionality`. The direction is the nearest `[dir]` of the
+ * list when the pointer or the key arrives (`reading-direction.ts`). jsdom lays nothing out, so each item is given the box
+ * a row of chips would draw, from the reading start: the right edge under rtl.
+ */
+class Reading extends StatefulComponent {
+  constructor(
+    private readonly direction: TextDirectionValue,
+    private readonly inner: { build(): unknown },
+  ) {
+    super();
+  }
+
+  build(): never {
+    return new Directionality(this.direction, this.inner.build() as never) as never;
+  }
+}
+
+/** Three chips, a, b and c, in one horizontal list. */
+class Chips extends StatefulComponent {
+  build(): Sortable {
+    const row = new Row(0);
+    for (const chip of ['a', 'b', 'c']) row.add(new SortableItem(new Text(chip) as never, chip) as never);
+    return new Sortable(row as never, 'chips', (drop: SortDrop) => dropped.push(drop), SdkStrings.sorting, null, {
+      axis: 'horizontal',
+      label: 'Chips',
+      onHovered: (drop: SortDrop | null) => hovered.push(drop),
+    });
+  }
+}
+
+describe('a sortable list reads in the reading order (#1569)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('requestAnimationFrame', () => 0);
+    vi.stubGlobal('cancelAnimationFrame', () => undefined);
+  });
+
+  afterEach(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    resetSortableController();
+    vi.unstubAllGlobals();
+    document.documentElement.removeAttribute('dir');
+    document.body.innerHTML = '';
+    boxes.clear();
+    dropped.length = 0;
+    hovered.length = 0;
+  });
+
+  /** Gives the elements of a mounted tree the boxes `place` names, and answers `elementsFromPoint` from them. */
+  function lay(container: HTMLElement, place: (element: Element) => Box | undefined): void {
+    for (const element of Array.from(container.querySelectorAll('[data-eq-sort], [data-eq-sort-item]'))) {
+      const box = place(element);
+      if (box) give(element, box);
+    }
+    (document as unknown as { elementsFromPoint: (x: number, y: number) => Element[] }).elementsFromPoint = (x, y) =>
+      Array.from(boxes.entries())
+        .filter(([, b]) => x >= b.left && x < b.left + b.width && y >= b.top && y < b.top + b.height)
+        .map(([element]) => element)
+        .sort((p, q) => (p.contains(q) ? 1 : q.contains(p) ? -1 : 0));
+  }
+
+  const hundred = (at: number): Box => ({ left: at, top: 0, width: 100, height: 40 });
+
+  /** The chips a, b, c standing from the reading start, which is the right edge under rtl: 300 wide, 100 each. */
+  function chips(direction: TextDirectionValue, standing: 'rtl' | 'ltr'): HTMLElement {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    new Reading(direction, new Chips()).mount(container);
+    lay(container, (element) => {
+      const id = element.getAttribute('data-eq-sort-item');
+      if (id === null) return { left: 0, top: 0, width: 300, height: 40 };
+      const index = ['a', 'b', 'c'].indexOf(id);
+      return hundred(standing === 'rtl' ? 200 - index * 100 : index * 100);
+    });
+    return container;
+  }
+
+  /** Carries c from its own middle through `xs`, and answers the index each place offered. */
+  function carried(container: HTMLElement, from: number, xs: number[]): (number | undefined)[] {
+    pointer(item(container, 'c'), 'pointerdown', from, 20);
+    const offered: (number | undefined)[] = [];
+    for (const x of xs) {
+      pointer(document, 'pointermove', x, 20);
+      offered.push(last(hovered)?.index);
+    }
+    return offered;
+  }
+
+  describe('by the pointer', () => {
+    // a stands at the reading start: [200, 300) under rtl, whose middle is 250, and b at [100, 200), whose middle is 150.
+    it('places a carried chip by the order from the right edge under rtl', () => {
+      const container = chips('rightToLeft', 'rtl');
+
+      // Just right of a's middle is before a; just left of it, after a; and past b's middle toward the end, after b.
+      expect(carried(container, 50, [260, 240, 160, 140])).toEqual([0, 1, 1, 2]);
+    });
+
+    it('places it by the order from the left edge under ltr, as in English', () => {
+      const container = chips('leftToRight', 'ltr');
+
+      // a is [0, 100) with its middle at 50, b [100, 200) with its middle at 150, and c is carried from [200, 300).
+      expect(carried(container, 250, [40, 60, 140, 160])).toEqual([0, 1, 1, 2]);
+    });
+
+    it('places it by the English order inside a dir="ltr" surface of an rtl page', () => {
+      document.documentElement.setAttribute('dir', 'rtl');
+      const container = chips('leftToRight', 'ltr');
+
+      expect(carried(container, 250, [40, 60, 140, 160])).toEqual([0, 1, 1, 2]);
+    });
+
+    it('asks a tree for a depth one deeper by a carry toward the end, which is leftwards under rtl', () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      new Reading('rightToLeft', new Outline()).mount(container);
+      lay(container, (element) => {
+        const id = element.getAttribute('data-eq-sort-item');
+        if (id === null) return element.getAttribute('data-eq-sort-id') === 'files' ? { left: 0, top: 0, width: 200, height: 400 } : undefined;
+        return { left: 0, top: ['src', 'App.cs', 'Program.cs', 'docs', 'README.md'].indexOf(id) * 40, width: 200, height: 40 };
+      });
+      const place = (drop: SortDrop | undefined) => [drop?.index, drop?.into, drop?.depth];
+
+      // README.md (160..200) pressed at x 100, to docs' top quarter: after Program.cs (1), before docs (0).
+      pointer(item(container, 'README.md'), 'pointerdown', 100, 170);
+      pointer(document, 'pointermove', 100, 125);
+      expect(place(last(hovered)!)).toEqual([3, null, 0]);
+      // One indent LEFT of where it went down is one deeper, and two is two.
+      pointer(document, 'pointermove', 84, 125);
+      expect(place(last(hovered)!)).toEqual([3, null, 1]);
+      pointer(document, 'pointermove', 68, 125);
+      expect(place(last(hovered)!)).toEqual([3, null, 2]);
+      // And an indent RIGHT of it is toward the start: shallower, which is no shallower than the top.
+      pointer(document, 'pointermove', 116, 125);
+      expect(place(last(hovered)!)).toEqual([3, null, 0]);
+    });
+
+    it('asks for the English depth inside a dir="ltr" surface of an rtl page', () => {
+      document.documentElement.setAttribute('dir', 'rtl');
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      new Reading('leftToRight', new Outline()).mount(container);
+      lay(container, (element) => {
+        const id = element.getAttribute('data-eq-sort-item');
+        if (id === null) return element.getAttribute('data-eq-sort-id') === 'files' ? { left: 0, top: 0, width: 200, height: 400 } : undefined;
+        return { left: 0, top: ['src', 'App.cs', 'Program.cs', 'docs', 'README.md'].indexOf(id) * 40, width: 200, height: 40 };
+      });
+
+      pointer(item(container, 'README.md'), 'pointerdown', 100, 170);
+      pointer(document, 'pointermove', 100, 125);
+      pointer(document, 'pointermove', 116, 125);
+      expect(last(hovered)?.depth).toBe(1);
+      pointer(document, 'pointermove', 84, 125);
+      expect(last(hovered)?.depth).toBe(0);
+    });
+  });
+
+  describe('by the keyboard', () => {
+    const press = (key: string): void => {
+      (document.activeElement ?? document.body).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    };
+
+    it('moves a chip to the next place on ArrowLeft and to the previous on ArrowRight under rtl', () => {
+      const container = chips('rightToLeft', 'rtl');
+      item(container, 'a').focus();
+      press(' ');
+
+      press('ArrowLeft');
+      expect(last(hovered)?.index).toBe(1);
+      press('ArrowLeft');
+      expect(last(hovered)?.index).toBe(2);
+      press('ArrowRight');
+      expect(last(hovered)?.index).toBe(1);
+      press('Enter');
+      expect([dropped[0].item, dropped[0].index]).toEqual(['a', 1]);
+    });
+
+    it('moves a chip to the next place on ArrowRight under ltr, and inside a dir="ltr" surface of an rtl page', () => {
+      document.documentElement.setAttribute('dir', 'rtl');
+      const container = chips('leftToRight', 'ltr');
+      item(container, 'a').focus();
+      press(' ');
+
+      press('ArrowRight');
+      press('ArrowRight');
+      expect(last(hovered)?.index).toBe(2);
+      press('ArrowLeft');
+      expect(last(hovered)?.index).toBe(1);
+    });
+
+    /** A tree with README.md picked up and moved to before docs, where the place offers depths 0 to 2. */
+    function carriedInTree(direction: TextDirectionValue): HTMLElement {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      new Reading(direction, new Outline()).mount(container);
+      lay(container, () => undefined);
+      item(container, 'README.md').focus();
+      press(' ');
+      press('ArrowUp');
+      press('ArrowUp');
+      return container;
+    }
+    const place = (drop: SortDrop | undefined) => [drop?.index, drop?.into, drop?.depth];
+
+    it('steps a tree item deeper on ArrowLeft and shallower on ArrowRight under rtl', () => {
+      carriedInTree('rightToLeft');
+
+      press('ArrowLeft');
+      expect(place(last(hovered)!)).toEqual([3, null, 1]);
+      press('ArrowLeft');
+      expect(place(last(hovered)!)).toEqual([3, null, 2]);
+      press('ArrowRight');
+      press('Enter');
+      expect(place(dropped[0])).toEqual([3, null, 1]);
+    });
+
+    it('steps a tree item deeper on ArrowRight under ltr, and inside a dir="ltr" surface of an rtl page', () => {
+      document.documentElement.setAttribute('dir', 'rtl');
+      carriedInTree('leftToRight');
+
+      press('ArrowRight');
+      expect(place(last(hovered)!)).toEqual([3, null, 1]);
+      press('ArrowRight');
+      expect(place(last(hovered)!)).toEqual([3, null, 2]);
+      press('ArrowLeft');
+      press('Enter');
+      expect(place(dropped[0])).toEqual([3, null, 1]);
+    });
+
+    it('carries an item across to the neighbouring list on the arrow toward the end', () => {
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      new Reading('rightToLeft', new Outline()).mount(container);
+      lay(container, () => undefined);
+      item(container, 'src').focus();
+      press(' ');
+      // src is at the top and has no shallower place, and the other list is the next one: toward the end.
+      press('ArrowRight');
+      expect(last(hovered)?.to).toBe('files');
+      press('ArrowLeft');
+      expect(last(hovered)?.to).toBe('next');
+    });
+  });
+});
+
