@@ -26,7 +26,7 @@ public class UsingStatementStrategy : IStatementStrategy
         // statement's own — Roslyn scopes it there — and the block this lowering opens is exactly
         // that scope.
         var declared = ExpressionVariableScanner.Declarations(
-            usingStmt.Declaration?.Variables.First().Initializer?.Value ?? usingStmt.Expression, context.TypeAnnotations);
+            usingStmt.Declaration?.Variables.First().Initializer?.Value ?? usingStmt.Expression, context);
         var isAsync = usingStmt.AwaitKeyword.Value != null;
         if (usingStmt.Declaration != null)
         {

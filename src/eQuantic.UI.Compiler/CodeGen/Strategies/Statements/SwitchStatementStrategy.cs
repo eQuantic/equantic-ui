@@ -61,10 +61,21 @@ public class SwitchStatementStrategy : IStatementStrategy
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
+    /// <summary>The expressions the sections' names come from, and the guards' conditions: what an <c>out var</c> among
+    /// the switch's declarations is typed from (#1865).</summary>
+    private static IEnumerable<ExpressionSyntax?> Declaring(SwitchStatementSyntax switchStmt) =>
+        switchStmt.Sections
+            .SelectMany(section => section.Statements)
+            .SelectMany(ExpressionVariableScanner.BlockExpressions)
+            .Concat(switchStmt.Sections
+                .SelectMany(section => section.Labels)
+                .OfType<CasePatternSwitchLabelSyntax>()
+                .Select(label => label.WhenClause?.Condition));
+
     private static JsStatement ConvertAsNativeSwitch(SwitchStatementSyntax switchStmt, ConversionContext context, JsExpr expr)
     {
         // The switch block's own declarations, in a block that is the switch's scope and no wider.
-        var declared = ExpressionVariableScanner.Declarations(SectionNames(switchStmt), context.TypeAnnotations);
+        var declared = ExpressionVariableScanner.Declarations(SectionNames(switchStmt), Declaring(switchStmt), context);
         // A section's statements sit two levels in, one more inside that block: converted there, so
         // what they lay out (a lambda's block) indents as they do (found in review, #384).
         var cases = Deeper(context, declared.Length == 0 ? 2 : 3, () => switchStmt.Sections.Select(section => new JsCase(
@@ -168,7 +179,7 @@ public class SwitchStatementStrategy : IStatementStrategy
         var statements = new List<JsStatement>();
         // Annotated in TypeScript, as every declaration the scanner writes is: a section's `out var`
         // may be assigned inside an arrow (a dictionary's TryGetValue), which TypeScript cannot follow.
-        if (hoist.Count > 0) statements.Add(JsStatement.Raw($"let {ExpressionVariableScanner.List(hoist, context.TypeAnnotations)};"));
+        if (hoist.Count > 0) statements.Add(JsStatement.Raw($"let {ExpressionVariableScanner.List(hoist, Declaring(switchStmt), context)};"));
         statements.Add(JsStatement.Const(Subject, expr));
         if (chain is not null) statements.Add(chain);
         return JsStatement.Block(statements);

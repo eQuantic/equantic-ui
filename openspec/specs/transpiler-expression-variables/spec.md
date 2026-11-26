@@ -19,7 +19,11 @@ one name. A variable a lambda, an anonymous method, a local function or a query 
 SHALL be declared inside it, once for every call.
 In TypeScript an `out var` of a named type SHALL be declared by that type, definitely assigned, and a miss
 that leaves null there SHALL write it as one TypeScript takes, so a value read through it stays typed. It SHALL
-admit a null when its parameter is declared nullable or when its declaration writes a nullable type.
+admit a null when its parameter is declared nullable or when its declaration writes a nullable type. It SHALL be
+so in every scope that declares one: a statement's block, a `while`'s, a `do`'s and a `for`'s head, where a
+definite assignment is no part of the grammar and the variable starts as `undefined!`, a `using`'s resource, a
+`catch` filter, a switch's sections and guards, a switch expression's arms, an initializer and a constructor's base
+call. A method's own `out` parameter SHALL be declared by its type, the same way, in the body that assigns it.
 
 #### Scenario: The guard idiom reads it after the if
 
@@ -63,6 +67,15 @@ admit a null when its parameter is declared nullable or when its declaration wri
 - **WHEN** a method reads `TryGetValue(pointer, out Pointer? seen)` on a `Dictionary<int, Pointer>` and later writes
   `seen = null`
 - **THEN** the module declares `let seen!: Pointer | null;`, and the runtime's `tsc` takes the write
+
+#### Scenario: An out var in every scope
+
+- **WHEN** a class reads `Pointers.TryGetValue(id, out var next)` on a `Dictionary<int, Pointer>` in a `while`'s, a
+  `do`'s and a `for`'s condition, in a `using`'s resource, a `catch` filter, a switch's section and its guard, a
+  switch expression's arm, a field's initializer and a constructor's base call, and walks `next.Members` where the
+  scope allows it, and a method assigns its own `out Pointer held` and walks `held.Members`
+- **THEN** each is declared `Pointer` (a loop's head `next: Pointer = undefined!`), and the runtime's `tsc` takes
+  every walk; declared `any`, it refused them with TS18046
 
 ### Requirement: A loop's condition has a fresh variable every time round
 

@@ -33,8 +33,10 @@ namespace eQuantic.UI.Compiler.CodeGen;
 public static class ExpressionVariableScanner
 {
     /// <summary>
-    /// <c>let a: any; let b: any; </c> for every variable <paramref name="expression"/> declares, or
-    /// an empty string when there is none.
+    /// <c>let a: any; let b: any; </c> for every one of <paramref name="names"/>, or an empty string when there is
+    /// none: what a writer declares for names no <c>out var</c> types, a pattern's held parts or a lowering's
+    /// temporaries. The variables of an expression go through
+    /// <see cref="Declarations(ExpressionSyntax?, ConversionContext)"/>, which types each <c>out var</c> (#1865).
     /// <para>
     /// <paramref name="typeAnnotations"/> has no default on purpose. The same converter also emits
     /// plain <c>.js</c> — for the conformance harness, the playground and the design host — and
@@ -45,11 +47,6 @@ public static class ExpressionVariableScanner
     /// some locations", which is an error, where an explicit one is a decision.
     /// </para>
     /// </summary>
-    public static string Declarations(ExpressionSyntax? expression, bool typeAnnotations) =>
-        Declarations(Names(expression), typeAnnotations);
-
-    /// <summary>As <see cref="Declarations(ExpressionSyntax?, bool)"/>, for names gathered from more
-    /// than one expression into one scope — a switch expression's arms, a loop's head.</summary>
     public static string Declarations(IEnumerable<string> names, bool typeAnnotations)
     {
         var slot = typeAnnotations ? ": any" : "";
@@ -72,18 +69,14 @@ public static class ExpressionVariableScanner
     /// <see cref="BlockNames"/>). Nothing when the statement stands directly in a switch section: C#
     /// scopes those to the whole switch block, which a later section can assign, so the switch
     /// declares them once for all of its sections. A <c>let</c> in the section it was written in
-    /// was in its temporal dead zone for every other one.
+    /// was in its temporal dead zone for every other one. Each <c>out var</c> is declared by the type the bound tree
+    /// gives it (<see cref="Declarations(ExpressionSyntax?, ConversionContext)"/>).
     /// </summary>
-    public static string InFrontOf(StatementSyntax statement, ExpressionSyntax? expression, bool typeAnnotations) =>
-        statement.Parent is SwitchSectionSyntax ? "" : Declarations(expression, typeAnnotations);
-
-    /// <summary>As <see cref="InFrontOf(StatementSyntax, ExpressionSyntax?, bool)"/>, with each <c>out var</c>
-    /// declared by the type the bound tree gives it (<see cref="Declarations(ExpressionSyntax?, ConversionContext)"/>).</summary>
     internal static string InFrontOf(StatementSyntax statement, ExpressionSyntax? expression, ConversionContext context) =>
         statement.Parent is SwitchSectionSyntax ? "" : Declarations(expression, context);
 
     /// <summary>
-    /// As <see cref="Declarations(ExpressionSyntax?, bool)"/>, where a converter can ask the bound tree: in TypeScript
+    /// The declarations of what <paramref name="expression"/> declares, asking the bound tree: in TypeScript
     /// an <c>out var</c> of a named type is declared by that type, <c>let arena!: GestureArenaPointer;</c>, every other
     /// variable as <c>any</c>. An <c>out var</c> declared <c>any</c> made what it reached untyped, and a walk of a list
     /// read from it, <c>listWalk(arena.members)</c>, inferred <c>unknown</c> elements, which the runtime's tsc refuses at
@@ -91,14 +84,55 @@ public static class ExpressionVariableScanner
     /// arrow TypeScript does not follow, and a miss writes the null .NET leaves as <c>null!</c>
     /// (<see cref="Strategies.OutArgument.Missed"/>).
     /// </summary>
-    internal static string Declarations(ExpressionSyntax? expression, ConversionContext context)
+    internal static string Declarations(ExpressionSyntax? expression, ConversionContext context) =>
+        Declarations(Names(expression), [expression], context, context.TypeAnnotations);
+
+    /// <summary>
+    /// As <see cref="Declarations(ExpressionSyntax?, ConversionContext)"/>, for names gathered into one scope from more
+    /// than one expression, each <c>out var</c> among them typed from the expression that declares it (#1865): a
+    /// switch's sections, a switch expression's arms, a <c>catch</c>'s filters. A name no <c>out var</c> of
+    /// <paramref name="from"/> declares (a pattern's binding, a deconstruction's element) is <c>any</c>.
+    /// </summary>
+    internal static string Declarations(IEnumerable<string> names, IEnumerable<ExpressionSyntax?> from, ConversionContext context) =>
+        Declarations(names, from, context, context.TypeAnnotations);
+
+    /// <summary>As <see cref="Declarations(IEnumerable{string}, IEnumerable{ExpressionSyntax?}, ConversionContext)"/>, written
+    /// with or without types as <paramref name="typeAnnotations"/> says, for a writer whose annotations are its own
+    /// rather than its context's (an initializer, a constructor's base call).</summary>
+    internal static string Declarations(IEnumerable<string> names, IEnumerable<ExpressionSyntax?> from, ConversionContext context,
+        bool typeAnnotations)
     {
-        var names = Names(expression);
-        if (!context.TypeAnnotations) return Declarations(names, typeAnnotations: false);
-        var typed = OutVariableTypes(expression, context);
+        if (!typeAnnotations) return Declarations(names, typeAnnotations: false);
+        var typed = OutVariableTypes(from, context);
         var declared = names.Distinct(StringComparer.Ordinal)
             .Select(name => typed.TryGetValue(name, out var type) ? $"let {name}!: {type};" : $"let {name}: any;").ToList();
         return declared.Count == 0 ? "" : string.Join(" ", declared) + " ";
+    }
+
+    /// <summary>
+    /// The names as a declaration LIST for a head that has its own <c>let</c> (a loop's, a switch chain's), each
+    /// <c>out var</c> typed from the expression of <paramref name="from"/> that declares it (#1865). A definite
+    /// assignment is no part of a <c>for</c> head's grammar (<c>for (let n!: T; …)</c> is a syntax error), so a typed
+    /// name starts as <c>undefined!</c>, which the stripped JavaScript writes <c>let n = undefined</c>, as an
+    /// uninitialized <c>let</c> starts. Every other name is <c>any</c>.
+    /// </summary>
+    internal static string List(IEnumerable<string> names, IEnumerable<ExpressionSyntax?> from, ConversionContext context)
+    {
+        if (!context.TypeAnnotations) return List(names, typeAnnotations: false);
+        var typed = OutVariableTypes(from, context);
+        return string.Join(", ", names.Distinct(StringComparer.Ordinal)
+            .Select(name => typed.TryGetValue(name, out var type) ? $"{name}: {type} = undefined!" : $"{name}: any"));
+    }
+
+    /// <summary>The <c>out var</c> types of several expressions, the first one written for a name winning, as the first
+    /// declaration of a name in a scope does.</summary>
+    private static Dictionary<string, string> OutVariableTypes(IEnumerable<ExpressionSyntax?> expressions, ConversionContext context)
+    {
+        var typed = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var expression in expressions)
+            foreach (var (name, type) in OutVariableTypes(expression, context))
+                typed.TryAdd(name, type);
+        return typed;
     }
 
     /// <summary>The TypeScript type of each <c>out var</c> <paramref name="expression"/> declares outside a lambda, by
@@ -143,9 +177,13 @@ public static class ExpressionVariableScanner
     /// <c>switch</c>'s governing expression's. A loop's and a <c>using</c>'s stay inside the
     /// statement, so they are none of the block's.
     /// </summary>
-    public static IReadOnlyList<string> BlockNames(StatementSyntax statement)
-    {
-        IEnumerable<ExpressionSyntax?> expressions = statement switch
+    public static IReadOnlyList<string> BlockNames(StatementSyntax statement) =>
+        BlockExpressions(statement).SelectMany(Names).Distinct(StringComparer.Ordinal).ToList();
+
+    /// <summary>The expressions whose variables <paramref name="statement"/> declares into the block it stands in, as
+    /// <see cref="BlockNames"/> reads them.</summary>
+    internal static IEnumerable<ExpressionSyntax?> BlockExpressions(StatementSyntax statement) =>
+        statement switch
         {
             ExpressionStatementSyntax expressionStatement => [expressionStatement.Expression],
             IfStatementSyntax ifStatement => [ifStatement.Condition],
@@ -158,8 +196,6 @@ public static class ExpressionVariableScanner
             SwitchStatementSyntax switchStatement => [switchStatement.Expression],
             _ => [],
         };
-        return expressions.SelectMany(Names).Distinct(StringComparer.Ordinal).ToList();
-    }
 
     /// <summary>The JavaScript names of the variables <paramref name="expression"/> declares, in the
     /// order they are written, each once. A name goes through

@@ -381,6 +381,113 @@ public class SharedComponentTranspilationTests
             private EmittedPointer? _last;
             public bool Remember(int pointer) => _arenas.TryGetValue(pointer, out _last);
         }
+
+        public sealed class EmittedLease : IDisposable
+        {
+            public void Dispose() { }
+        }
+
+        public abstract class EmittedScopedBase
+        {
+            protected EmittedScopedBase(int count) { Count = count; }
+            public int Count { get; }
+        }
+
+        public sealed class EmittedScopes : EmittedScopedBase
+        {
+            private static readonly Dictionary<int, EmittedPointer> Pointers = new();
+            private readonly int _first = Find(0, out var first) ? first.Members.Count : 0;
+
+            public EmittedScopes() : base(Find(1, out var held) ? held.Members.Count : 0) { }
+
+            private static bool Find(int id, out EmittedPointer found)
+            {
+                found = Pointers.TryGetValue(id, out var pointer) ? pointer : new EmittedPointer();
+                return Pointers.ContainsKey(id);
+            }
+
+            private static EmittedLease Lease(int id, out EmittedPointer held)
+            {
+                Find(id, out held);
+                var total = 0;
+                foreach (var member in held.Members) total += member.Length;
+                return total > 0 ? new EmittedLease() : new EmittedLease();
+            }
+
+            public int While()
+            {
+                var total = 0;
+                var id = 0;
+                while (Pointers.TryGetValue(id++, out var next))
+                    foreach (var member in next.Members) total += member.Length;
+                return total;
+            }
+
+            public int Do()
+            {
+                var id = 0;
+                do { id++; } while (Pointers.TryGetValue(id, out var next) && next.Members.Count > 0);
+                return id;
+            }
+
+            public int For()
+            {
+                var total = 0;
+                for (var id = 0; Pointers.TryGetValue(id, out var next); id++)
+                    foreach (var member in next.Members) total += member.Length;
+                return total;
+            }
+
+            public int Using(int id)
+            {
+                var total = 0;
+                using (Lease(id, out var held))
+                    foreach (var member in held.Members) total += member.Length;
+                return total;
+            }
+
+            public int Filter(Exception thrown)
+            {
+                var total = 0;
+                try { throw thrown; }
+                catch (Exception e) when (Pointers.TryGetValue(e.Message.Length, out var held))
+                {
+                    foreach (var member in held.Members) total += member.Length;
+                }
+                return total;
+            }
+
+            public int Section(int kind)
+            {
+                var total = 0;
+                switch (kind)
+                {
+                    case 1:
+                        Pointers.TryGetValue(kind, out var held);
+                        foreach (var member in held!.Members) total += member.Length;
+                        break;
+                }
+                return total;
+            }
+
+            public int Guarded(int kind)
+            {
+                var total = 0;
+                switch (kind)
+                {
+                    case > 1 when Pointers.TryGetValue(kind, out var held):
+                        foreach (var member in held.Members) total += member.Length;
+                        break;
+                }
+                return total;
+            }
+
+            public int Arm(int kind) => kind switch
+            {
+                > 0 when Pointers.TryGetValue(kind, out var held) => held.Members.Count + _first,
+                _ => 0,
+            };
+        }
         """;
 
     private const string BoundReceiversSource = """
@@ -562,7 +669,7 @@ public class SharedComponentTranspilationTests
     [
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
-        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedPointer", "EmittedArena",
+        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedPointer", "EmittedArena", "EmittedLease", "EmittedScopedBase", "EmittedScopes",
     ];
 
     /// <summary>The source this asks about, kept HERE rather than pointed at a production class.
