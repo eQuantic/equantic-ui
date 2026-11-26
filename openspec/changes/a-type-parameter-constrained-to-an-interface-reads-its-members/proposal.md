@@ -26,8 +26,9 @@ TypeScript has no generic `any`: since TS 3.9, `T extends any` no longer lets a 
   with no twin (a BCL one), and one the build keeps on the server.
 - A value typed as an interface stays `any`: only constraints name the twin, so no other module's types move.
 
-Nothing an app writes moves. The runtime library gains the twins of its own eligible interfaces (the code editor's
-providers), empty in JavaScript. No public surface moves.
+Nothing an app writes moves. The runtime library gains the twins of seven of its own interfaces, the code editor's six
+providers and the gesture arena's member, empty in JavaScript and exported from its barrel. No developer surface moves;
+the compiler's new members are declared in the branch's own `PublicAPI.Unshipped` file.
 
 The rules followed: the structural fix over the patch (a twin the constraint can name, not a looser constraint), one
 writer per level (the twin goes through the class module's writer and its imports), and the vocabulary speaks no
