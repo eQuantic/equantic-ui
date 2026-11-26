@@ -37,18 +37,30 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
-    /// THE ONE HOST of the six wrappers that put an element between a parent and its child to carry
+    /// A PART THAT NAMES OR DESCRIBES ITS NEAREST NAMEABLE (TS twin: lowerPart, #1916): a host with no role, and the child
+    /// lowered inside it. Which nameable it reaches, and the id it then takes, the funnel settles as the walk unwinds
+    /// (<see cref="NamingParts"/>).
+    /// </summary>
+    private HtmlElement LowerPart(SingleChildNode part)
+    {
+        var host = SemanticsHost(part.Child, new Dictionary<string, string>(), null, takesPointer: false);
+        if (Lower(part.Child, null, LoweringPath.Child) is { } child) host.Children.Add(child);
+        return host;
+    }
+
+    /// <summary>
+    /// THE ONE HOST of the eight wrappers that put an element between a parent and its child to carry
     /// semantics (TS twin: semanticsHost): <c>Progress</c>, <c>Adjustable</c>, <c>LiveRegion</c>,
-    /// <c>Group</c>, <c>MergeSemantics</c> and <c>ExcludeSemantics</c>. It is the web's stand-in for
+    /// <c>Group</c>, <c>MergeSemantics</c>, <c>ExcludeSemantics</c>, <c>LabelPart</c> and <c>DescriptionPart</c>. It is the web's stand-in for
     /// Flutter's <c>Semantics</c> proxy box, which takes exactly its child's size, and it writes the
     /// rule once: the box a reader outlines is the box it names, so the host takes the child's width
     /// contract (<c>fit-content</c>, or <c>100%</c> when the child fills), the child's cap as
     /// <c>max-width</c>, and <c>100%</c> height when the child fills down. A wrapper that took the
     /// width and dropped the rest is the half-contract that made the Link diverge, and that
-    /// <c>RoleBearingHostBoundsTests</c> keeps from coming back (#239, #241); a seventh wrapper comes
+    /// <c>RoleBearingHostBoundsTests</c> keeps from coming back (#239, #241); a ninth wrapper comes
     /// through here rather than writing the lines by hand.
     /// <para>
-    /// What differs is the role's <paramref name="attributes"/> (none for the two that bear no role),
+    /// What differs is the role's <paramref name="attributes"/> (none for the four that bear no role),
     /// the accessible <paramref name="label"/>, written right after them when it is not empty, and
     /// whether the host <paramref name="takesPointer"/> (<c>pointer-events: auto</c>), which the one wrapper
     /// that is a tab stop and operated says. The helper takes the caller's map OVER: it stores it as the

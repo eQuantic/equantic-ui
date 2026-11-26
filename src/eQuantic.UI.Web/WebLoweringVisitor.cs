@@ -67,6 +67,10 @@ internal sealed partial class WebLoweringVisitor(
     /// are not inherited properties, and two mechanisms answering one question is how targets drift.</summary>
     private ContentStyle? _content;
 
+    /// <summary>Which nameable each <see cref="LabelPart"/> and <see cref="DescriptionPart"/> reaches, settled as this
+    /// walk unwinds (#1916): every node takes a mark before its subtree and settles after it, in <see cref="Lower(VisualNode, bool?)"/>.</summary>
+    private readonly NamingParts _naming = new();
+
     /// <summary>This node's place in the tree, as the browser's lowering spells it (<see cref="LoweringPath"/>): a
     /// table scopes its cells' ids by it (#1115). Each container steps down by the browser's segment for the same
     /// child, through <see cref="Lower(VisualNode, bool?, string)"/> or <see cref="At{T}"/>.</summary>
@@ -113,7 +117,47 @@ internal sealed partial class WebLoweringVisitor(
             }
             if (node is not UiComponent) _placing = null;
         }
-        return Decorate(node, node.Accept(this, horizontalAxis));
+        var mark = _naming.Begin();
+        var lowered = Decorate(node, node.Accept(this, horizontalAxis));
+        if (lowered is not null) Settle(node, lowered, mark);
+        return lowered;
+    }
+
+    /// <summary>
+    /// What <paramref name="node"/> is to the parts lowered under it (#1916, TS twin: <c>settleParts</c>): a part waits for
+    /// the nameable it reaches; a container that names itself, or a nameable control, takes the parts inside it; a layer
+    /// that is no dialog drops them; anything else hands them the one candidate control it holds, or leaves them to the
+    /// node above. An anchored panel is settled where it is built (<see cref="BuildAnchorPanel"/>), since it is no node.
+    /// </summary>
+    private void Settle(VisualNode node, HtmlElement lowered, NamingParts.Mark mark)
+    {
+        switch (node)
+        {
+            case LabelPart:
+                _naming.Part(mark, describes: false, lowered, $"eq-label-{LoweringPath.Scope(_path)}");
+                break;
+            case DescriptionPart:
+                _naming.Part(mark, describes: true, lowered, $"eq-desc-{LoweringPath.Scope(_path)}");
+                break;
+            case Group or LiveRegion:
+                _naming.Container(mark, lowered);
+                break;
+            case Overlay { Modal: true, Open: true }:
+                _naming.Container(mark, lowered);
+                break;
+            case Overlay:
+                _naming.Boundary(mark);
+                break;
+            case TextEntry:
+                _naming.Control(mark, TextControlIn(lowered) ?? lowered);
+                break;
+            case Pressable { Role: PressableRole.Checkbox or PressableRole.Radio or PressableRole.Switch }:
+                _naming.Control(mark, lowered);
+                break;
+            default:
+                _naming.Other(mark, node.NodeKind);
+                break;
+        }
     }
 
     /// <summary>
@@ -273,6 +317,10 @@ internal sealed partial class WebLoweringVisitor(
     public HtmlElement? Visit(MergeSemantics merge, bool? horizontalAxis) => LowerMergeSemantics(merge);
 
     public HtmlElement? Visit(ExcludeSemantics exclude, bool? horizontalAxis) => LowerExcludeSemantics(exclude);
+
+    public HtmlElement? Visit(LabelPart part, bool? horizontalAxis) => LowerPart(part);
+
+    public HtmlElement? Visit(DescriptionPart part, bool? horizontalAxis) => LowerPart(part);
 
     public HtmlElement? Visit(Navigable navigable, bool? horizontalAxis) => LowerNavigable(navigable);
 

@@ -294,12 +294,15 @@ internal sealed class AnnouncedTree
         // A label an element names by id is read even when it is hidden: the accessible-name rule
         // reads what a reference points at, which is how a page names a dialog by a title it does not
         // show, and a merged row names its control by the parts it hides. An element naming ITSELF
-        // among them is named as it would be with no reference at all (accname's step 2B, once).
-        if (!byReference && Attribute(node, "aria-labelledby") is { } ids)
-            return Collapse(string.Join(" ", ids.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        // among them is named as it would be with no reference at all (accname's step 2B, once). The text the
+        // references gather is the name only when it is not empty; otherwise the rule goes on to aria-label, which is
+        // how a dialog whose title part says nothing keeps its label (#1916).
+        if (!byReference && Attribute(node, "aria-labelledby") is { } ids
+            && Collapse(string.Join(" ", ids.Split(' ', StringSplitOptions.RemoveEmptyEntries)
                 .Select(id => !_byId.TryGetValue(id, out var label) ? ""
                     : ReferenceEquals(label, node) ? NameOf(node, role, byReference: true)
-                    : AlternativeOf(label))));
+                    : AlternativeOf(label)))) is { Length: > 0 } referenced)
+            return referenced;
         if (Attribute(node, "aria-label") is { } label && Collapse(label) is { Length: > 0 } named) return named;
         if (node.Tag == "img" && Attribute(node, "alt") is { } alt) return Collapse(alt);
         if (NamedFromContent(role) && Collapse(TextOf(node)) is { Length: > 0 } content) return content;

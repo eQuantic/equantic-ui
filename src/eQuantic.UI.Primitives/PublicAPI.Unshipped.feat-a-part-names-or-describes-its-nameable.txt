@@ -1,0 +1,11 @@
+#nullable enable
+eQuantic.UI.Primitives.DescriptionPart
+eQuantic.UI.Primitives.DescriptionPart.DescriptionPart(eQuantic.UI.Primitives.VisualNode! child) -> void
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.DescriptionPart! node, TState state) -> TResult
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.LabelPart! node, TState state) -> TResult
+eQuantic.UI.Primitives.LabelPart
+eQuantic.UI.Primitives.LabelPart.LabelPart(eQuantic.UI.Primitives.VisualNode! child) -> void
+override eQuantic.UI.Primitives.DescriptionPart.NodeKind.get -> string!
+override eQuantic.UI.Primitives.LabelPart.NodeKind.get -> string!
+override sealed eQuantic.UI.Primitives.DescriptionPart.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+override sealed eQuantic.UI.Primitives.LabelPart.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult

@@ -345,6 +345,9 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     // semantics walk says, and a control inside keeps its press and its Tab stop.
     public Nothing Visit(MergeSemantics node, EmitState s) { Descend(s); return Nothing.Value; }
     public Nothing Visit(ExcludeSemantics node, EmitState s) { Descend(s); return Nothing.Value; }
+    // The parts that name and describe a nameable paint nothing and take no focus: the semantics walk reads them.
+    public Nothing Visit(LabelPart node, EmitState s) { Descend(s); return Nothing.Value; }
+    public Nothing Visit(DescriptionPart node, EmitState s) { Descend(s); return Nothing.Value; }
     public Nothing Visit(ScrollView node, EmitState s) { EmitScrollView(node, s); return Nothing.Value; }
     public Nothing Visit(SheetSurface node, EmitState s) { EmitSheet(node, s); return Nothing.Value; }
     public Nothing Visit(Overlay node, EmitState s) { EmitOverlay(node, s); return Nothing.Value; }

@@ -187,6 +187,26 @@ public class SemanticsParityTests(ITestOutputHelper output)
             new ExcludeSemantics(new Text("Decoration", TypeRole.BodyM)), new Text("Shown", TypeRole.BodyM)));
         yield return new("case exclude, not excluding",
             () => new ExcludeSemantics(new Text("Read", TypeRole.BodyM)) { Excluding = false });
+
+        // A dialog named by the part that titles it (#1916): a part that is a composite, a part beside a label and
+        // one that says nothing beside it, two parts, a part inside a layer that is no dialog, and a dialog panel.
+        yield return new("case layer titled by a composite part", () => ComponentCatalog.Page(Layer(null, Lines(
+            new TitlePart(Line(new Text("Rename", TypeRole.Title), new Text("file", TypeRole.Title))),
+            new Text("The name is shared.", TypeRole.BodyM)))));
+        yield return new("case layer titled beside a label", () => ComponentCatalog.Page(Layer("Settings",
+            new TitlePart(new Text("Rename file", TypeRole.Title)))));
+        yield return new("case layer titled by a part that says nothing", () => ComponentCatalog.Page(Layer("Settings",
+            new TitlePart(new Text("Rename file", TypeRole.Title) { ExcludeFromSemantics = true }))));
+        yield return new("case layer titled by two parts", () => ComponentCatalog.Page(Layer(null, Lines(
+            new TitlePart(new Text("Step 2", TypeRole.Label)), new TitlePart(new Text("Payment", TypeRole.Title))))));
+        yield return new("case part inside a layer that is no dialog", () => ComponentCatalog.Page(Layer("Editor",
+            new Overlay(new TitlePart(new Text("Saved", TypeRole.BodyM))) { Modal = false })));
+        yield return new("case dialog panel titled by its part", () => new Anchored(new Button("Pick"),
+            Lines(new TitlePart(new Text("Pick a day", TypeRole.Title)), new Text("July", TypeRole.BodyM)))
+        {
+            Open = true,
+            PanelRole = AnchorPanelRole.Dialog,
+        });
     }
 
     /// <summary>A row of what a case reads, in order.</summary>
@@ -196,6 +216,17 @@ public class SemanticsParityTests(ITestOutputHelper output)
         foreach (var child in children) row.Add(child);
         return row;
     }
+
+    /// <summary>A column of what a case reads, in order.</summary>
+    private static Column Lines(params VisualNode[] children)
+    {
+        var column = new Column(gap: 8);
+        foreach (var child in children) column.Add(child);
+        return column;
+    }
+
+    /// <summary>A modal layer holding <paramref name="content"/>, labelled <paramref name="label"/> when it is given.</summary>
+    private static Overlay Layer(string? label, VisualNode content) => new(content) { Label = label };
 
     private static VisualNode Table(TableRole role) =>
         new TableView(new UniformTableSpans(6, 28), new UniformTableSpans(4, 96),

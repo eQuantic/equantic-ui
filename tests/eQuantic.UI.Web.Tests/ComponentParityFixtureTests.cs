@@ -302,6 +302,13 @@ public class ComponentParityFixtureTests
             new Text("Shown", TypeRole.BodyM, Theme.TextPrimary)), NoPresses),
         ("exclude-not-excluding",
             new ExcludeSemantics(new Text("Read", TypeRole.BodyM, Theme.TextPrimary)) { Excluding = false }, NoPresses),
+        // A dialog named by the part that titles it (#1916): the part's host, its id scoped by its path, and the
+        // layer's aria-labelledby beside its label, written alike by both producers. A part outside every layer
+        // takes no id.
+        ("layer-titled-by-its-part", new Overlay(Stack(8,
+            new TitlePart(new Text("Rename file", TypeRole.Title, Theme.TextPrimary)),
+            new Text("The name is shared.", TypeRole.BodyM, Theme.TextPrimary))) { Label = "Settings" }, NoPresses),
+        ("part-outside-every-layer", new TitlePart(new Text("Orders", TypeRole.BodyM, Theme.TextPrimary)), NoPresses),
         // A LIST A POINTER SORTS (#1535): no element of its own, its column marked, and the reports the
         // browser's controller dispatches declared by the server. Its words (#1564) are attributes both sides
         // write, escaped alike.

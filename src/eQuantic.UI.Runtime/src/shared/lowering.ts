@@ -54,6 +54,15 @@ import {
   photonComponentContext,
 } from './photon-context';
 import { declareInView } from './in-view';
+import {
+  beginParts,
+  boundaryLowered,
+  containerLowered,
+  controlLowered,
+  otherLowered,
+  partLowered,
+  type PartsMark,
+} from './naming-parts';
 import { artworkAspect, cssFontWeight, isWellFormedFace } from './value-types';
 import {
   adaptiveGateOpen,
@@ -98,6 +107,8 @@ import type {
   GroupNode,
   MergeSemanticsNode,
   ExcludeSemanticsNode,
+  LabelPartNode,
+  DescriptionPartNode,
   NavigableNode,
   NavigableMoveValue,
   CameraPreviewNode,
@@ -641,10 +652,52 @@ function lowerNode(
   // A component's position keeps what it lowered to, and with what (lowered-records.ts), so a render
   // its owner asks for can lower it alone (#1455).
   const position = node.nodeKind === 'component' ? context.frame?.elementAt(node) : null;
-  if (!position) return decorate(node, lowerNodeKind(node, context, horizontalAxis, path));
-  return lowerRecorded(position, inputsOf(context, horizontalAxis, path), () =>
-    decorate(node, lowerNodeKind(node, context, horizontalAxis, path)),
-  );
+  const mark = beginParts();
+  const lowered = !position
+    ? decorate(node, lowerNodeKind(node, context, horizontalAxis, path))
+    : lowerRecorded(position, inputsOf(context, horizontalAxis, path), () =>
+        decorate(node, lowerNodeKind(node, context, horizontalAxis, path)),
+      );
+  if (lowered) settleParts(node, lowered, mark, path);
+  return lowered;
+}
+
+/**
+ * What `node` is to the parts lowered under it (#1916, C# twin: `Settle`): a part waits for the nameable it reaches; a
+ * container that names itself, or a nameable control, takes the parts inside it; a layer that is no dialog drops them;
+ * anything else hands them the one candidate control it holds, or leaves them to the node above. An anchored panel is
+ * settled where it is built (`buildAnchorPanel`), since it is no node.
+ */
+function settleParts(node: VisualNodeValue, lowered: HtmlNode, mark: PartsMark, path: string): void {
+  switch (node.nodeKind) {
+    case 'labelPart':
+      partLowered(mark, false, lowered, `eq-label-${pathScope(path)}`);
+      return;
+    case 'descriptionPart':
+      partLowered(mark, true, lowered, `eq-desc-${pathScope(path)}`);
+      return;
+    case 'group':
+    case 'liveRegion':
+      containerLowered(mark, lowered);
+      return;
+    case 'overlay': {
+      const overlay = node as unknown as OverlayNode;
+      if (overlay.modal !== false && overlay.open !== false) containerLowered(mark, lowered);
+      else boundaryLowered(mark);
+      return;
+    }
+    case 'textEntry':
+      controlLowered(mark, textControlOf(lowered) ?? lowered);
+      return;
+    case 'pressable': {
+      const role = (node as PressableNode).role;
+      if (role === 'checkbox' || role === 'radio' || role === 'switch') controlLowered(mark, lowered);
+      else otherLowered(mark, node.nodeKind);
+      return;
+    }
+    default:
+      otherLowered(mark, node.nodeKind);
+  }
 }
 
 /**
@@ -875,6 +928,10 @@ function lowerNodeKind(
       return lowerMergeSemantics(node as unknown as MergeSemanticsNode, context, path);
     case 'excludeSemantics':
       return lowerExcludeSemantics(node as unknown as ExcludeSemanticsNode, context, path);
+    case 'labelPart':
+      return lowerPart(node as unknown as LabelPartNode, context, path);
+    case 'descriptionPart':
+      return lowerPart(node as unknown as DescriptionPartNode, context, path);
     case 'navigable':
       return lowerNavigable(node as unknown as NavigableNode, context, path);
     case 'hoverable':
@@ -4476,6 +4533,8 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'group':
     case 'mergeSemantics':
     case 'excludeSemantics':
+    case 'labelPart':
+    case 'descriptionPart':
     case 'flexible':
     case 'loopMotion':
     case 'link':
@@ -4539,6 +4598,9 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as unknown as MergeSemanticsNode).child as VisualNodeValue);
     case 'excludeSemantics':
       return fills((node as unknown as ExcludeSemanticsNode).child as VisualNodeValue);
+    case 'labelPart':
+    case 'descriptionPart':
+      return fills((node as unknown as LabelPartNode).child as VisualNodeValue);
     case 'navigable':
       // A grid host has ROWS, not one child: nothing to inherit a fill from.
       return { width: false, height: false };
@@ -4857,6 +4919,9 @@ function visualTextOf(node: VisualNodeValue): string {
       return visualTextOf((node as unknown as MergeSemanticsNode).child as VisualNodeValue);
     case 'excludeSemantics':
       return visualTextOf((node as unknown as ExcludeSemanticsNode).child as VisualNodeValue);
+    case 'labelPart':
+    case 'descriptionPart':
+      return visualTextOf((node as unknown as LabelPartNode).child as VisualNodeValue);
     default:
       return '';
   }
@@ -5171,15 +5236,28 @@ function lowerExcludeSemantics(node: ExcludeSemanticsNode, context: LoweringCont
 }
 
 /**
- * THE ONE HOST of the six wrappers that put an element between a parent and its child to carry semantics
- * (C# twin: SemanticsHost): progress, adjustable, liveRegion, group, mergeSemantics, excludeSemantics. It
+ * A PART THAT NAMES OR DESCRIBES ITS NEAREST NAMEABLE (C# twin: LowerPart, #1916): a host with no role, and the child
+ * lowered inside it. Which nameable it reaches, and the id it then takes, the funnel settles as the walk unwinds
+ * (naming-parts.ts).
+ */
+function lowerPart(node: LabelPartNode | DescriptionPartNode, context: LoweringContext, path: string): HtmlNode {
+  const host = semanticsHost(node.child, {}, undefined, false);
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
+/**
+ * THE ONE HOST of the seven wrappers that put an element between a parent and its child to carry semantics
+ * (C# twin: SemanticsHost): progress, adjustable, liveRegion, group, mergeSemantics, excludeSemantics and
+ * titlePart. It
  * is the web's stand-in for Flutter's `Semantics` proxy box, which takes exactly its child's size, and it
  * writes the rule once: the box a reader outlines is the box it names, so the host takes the child's width
  * contract (`fit-content`, or `100%` when the child fills), the child's cap as `max-width` and `100%` height
  * when the child fills down. A wrapper that took the width and dropped the rest is the half-contract that
  * made the Link diverge (#239, #241, held by role-host-bounds.spec.ts).
  *
- * What differs is the role's `attributes` (none for the two that bear no role), the accessible `label`,
+ * What differs is the role's `attributes` (none for the three that bear no role), the accessible `label`,
  * written right after them when it is not empty, and whether the host `takesPointer` (`pointer-events:
  * auto`, the adjustable's). The child is not lowered here. The style's keys are written in the
  * order the adjustable's host always had (width, max-width, pointer-events, height), so the order
@@ -5796,9 +5874,14 @@ function buildAnchorPanel(node: AnchoredNode, context: LoweringContext, path: st
   if (node.matchAnchorWidth === true) prependClass(panel, 'eq-anchor-match');
   if (!at) prependClass(panel, anchorPlacementClass(node.placement));
   prependClass(panel, 'eq-anchor-panel');
-  // Shown before it lowers, as an overlay's child is (C# twin).
+  // Shown before it lowers, as an overlay's child is (C# twin). A panel is a layer of its own on Photon, so it is a
+  // scope here too: a dialog panel takes the parts inside it, as a modal layer does, and any other panel drops them
+  // (#1916, C# twin).
+  const mark = beginParts();
   const content = lowerNode(showLayer(node, node.panel, context), context, null, path + '/1');
   if (content) panel.children.push(content);
+  if (node.panelRole === 'dialog') containerLowered(mark, panel);
+  else boundaryLowered(mark);
   return panel;
 }
 

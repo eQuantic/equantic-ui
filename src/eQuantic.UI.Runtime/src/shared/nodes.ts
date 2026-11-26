@@ -1003,6 +1003,12 @@ export interface ExcludeSemanticsNode extends VisualNodeValue {
   excluding?: boolean;
 }
 
+/** The part that names the dialog around it (C# twin: TitlePart, #1916). */
+export interface TitlePartNode extends VisualNodeValue {
+  nodeKind: 'titlePart';
+  child: VisualNodeValue;
+}
+
 /**
  * Wire shape of the C# `RangeValue`: the trio ARIA calls now/min/max. One object rather than three
  * fields because `role="slider"` REQUIRES a now, and a now without its bounds is read against ARIA's

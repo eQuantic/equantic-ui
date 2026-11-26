@@ -57,6 +57,8 @@ internal static class ChildSlots
         "group" => NodeSlots.One(((Group)node).Child),
         "mergeSemantics" => NodeSlots.One(((MergeSemantics)node).Child),
         "excludeSemantics" => NodeSlots.One(((ExcludeSemantics)node).Child),
+        "labelPart" => NodeSlots.One(((LabelPart)node).Child),
+        "descriptionPart" => NodeSlots.One(((DescriptionPart)node).Child),
         "hoverable" => NodeSlots.One(((Hoverable)node).Child),
         "icon" => NodeSlots.None,
         "image" => NodeSlots.None,

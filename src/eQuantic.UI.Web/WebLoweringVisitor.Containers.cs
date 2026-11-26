@@ -489,8 +489,13 @@ internal sealed partial class WebLoweringVisitor
         // A layer of a live tree is SHOWN before it lowers, so its components build in the slot
         // that keeps them; a frame that lowers no panel leaves the slot to be taken out at its end.
         var layer = _frame?.Show(anchored, anchored.Panel) ?? anchored.Panel;
+        // A panel is a layer of its own on Photon, so it is a scope here too: a dialog panel takes the parts inside it, as
+        // a modal layer does, and any other panel drops them (#1916, TS twin).
+        var mark = _naming.Begin();
         if (Lower(layer, horizontalAxis: null, LoweringPath.Second) is { } content)
             panel.Children.Add(content);
+        if (anchored.PanelRole == AnchorPanelRole.Dialog) _naming.Container(mark, panel);
+        else _naming.Boundary(mark);
         return panel;
     }
 

@@ -152,6 +152,7 @@ export {
   Group,
   MergeSemantics,
   ExcludeSemantics,
+  TitlePart,
   RangeValue,
   Navigable,
   CameraPreview,

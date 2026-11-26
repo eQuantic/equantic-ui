@@ -14,6 +14,15 @@ internal sealed partial class SemanticsVisitor
     public bool Visit(ExcludeSemantics node, LayoutNode laidOut) => node.Excluding ? Consumed : Wraps;
 
     /// <summary>
+    /// A part that names a nameable is no stop of its own: what it holds is read where it stands, as the web's host with
+    /// no role is. The nameable it reaches reads its words from <see cref="NamedByParts"/>.
+    /// </summary>
+    public bool Visit(LabelPart node, LayoutNode laidOut) => Wraps;
+
+    /// <inheritdoc cref="Visit(LabelPart, LayoutNode)"/>
+    public bool Visit(DescriptionPart node, LayoutNode laidOut) => Wraps;
+
+    /// <summary>
     /// ONE STOP for the subtree: its stops are collected as they would be heard, and joined. When a control
     /// is among them the stop is the FIRST control, with its role, value, states and identity, so the
     /// bridge's activate presses it, named by every stop's name in reading order, its own in its place. A

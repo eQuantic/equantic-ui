@@ -47,6 +47,8 @@ import {
   Link,
   MergeSemantics,
   ExcludeSemantics,
+  Overlay,
+  TitlePart,
   Pinned,
   Positioned,
   Pressable,
@@ -614,6 +616,17 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'exclude-not-excluding': still(
       new ExcludeSemantics(new Text('Read', 'bodyM', photonTheme.textPrimary), { excluding: false }),
     ),
+    'layer-titled-by-its-part': still(
+      new Overlay(
+        column(
+          8,
+          new TitlePart(new Text('Rename file', 'title', photonTheme.textPrimary)),
+          new Text('The name is shared.', 'bodyM', photonTheme.textPrimary),
+        ),
+        { label: 'Settings' },
+      ),
+    ),
+    'part-outside-every-layer': still(new TitlePart(new Text('Orders', 'bodyM', photonTheme.textPrimary))),
     'sortable-column': still(
       new Sortable(
         column(

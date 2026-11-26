@@ -1893,6 +1893,21 @@ export class ExcludeSemantics extends VisualNode {
   }
 }
 
+/**
+ * Mirror of the C# `TitlePart` node (#1916): the part that names the dialog around it. It draws nothing and adds no
+ * geometry.
+ */
+export class TitlePart extends VisualNode {
+  readonly nodeKind = 'titlePart';
+  child: VisualNode;
+
+  constructor(child: VisualNode, config?: EqConfig) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `Adjustable` node: the child answers to the arrow keys as ONE Tab stop. */
 export class Adjustable extends VisualNode {
   readonly nodeKind = 'adjustable';

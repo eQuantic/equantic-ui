@@ -128,6 +128,10 @@ public interface IVisualNodeVisitor<in TState, out TResult>
 
     TResult Visit(ExcludeSemantics node, TState state);
 
+    TResult Visit(LabelPart node, TState state);
+
+    TResult Visit(DescriptionPart node, TState state);
+
     TResult Visit(Positioned node, TState state);
 
     TResult Visit(Presence node, TState state);

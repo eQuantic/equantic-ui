@@ -400,6 +400,13 @@ public static class UI
         new ExcludeSemantics(child) { Excluding = excluding };
 
     /// <summary>
+    /// The part that names the dialog around it, on every target: what <paramref name="child"/> says is the name a
+    /// reader hears on arriving at the nearest dialog, over its label. Wrap a dialog's title in it, whatever the title
+    /// draws. It is no stop of its own, draws nothing and adds no geometry.
+    /// </summary>
+    public static TitlePart TitlePart(VisualNode child) => new TitlePart(child);
+
+    /// <summary>
     /// Arrow-key adjustment semantics: one Tab stop, arrows call back with ±1.
     /// <para>
     /// <paramref name="value"/> is what the control HOLDS, and a slider needs it —

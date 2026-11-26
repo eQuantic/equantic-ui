@@ -173,11 +173,38 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes,
     /// its PANEL is one (<c>EmitAnchored</c> says which): the web has no layer there at all, and a
     /// menu's, a listbox's and a tooltip's are no dialog to anyone.
     /// </para>
+    /// <para>
+    /// Its NAME is what the layer's <see cref="TitlePart"/>s say, joined in reading order, over its
+    /// <see cref="Overlay.Label"/>, and the label when the parts say nothing: the web names the same layer by the parts'
+    /// ids in <c>aria-labelledby</c>, which the browser takes over <c>aria-label</c> only when it gathers some text.
+    /// </para>
     /// </summary>
     internal void AnnounceOverlay(Overlay overlay, LayoutNode root)
     {
         if (overlay is not { Modal: true, Open: true }) return;
+        var titled = TitleOf(root);
         AnnounceGroup(new(overlay.Alert ? SemanticRole.AlertDialog : SemanticRole.Dialog,
-            IdOf(root), root.Bounds, overlay.Label ?? "", null, false));
+            IdOf(root), root.Bounds, titled.Length > 0 ? titled : overlay.Label ?? "", null, false));
+    }
+
+    /// <summary>
+    /// What the <see cref="TitlePart"/>s under a layer's root say, joined in tree order. A layer opened inside this one is
+    /// laid out apart, under a root of its own, so its parts are never found here.
+    /// </summary>
+    private static string TitleOf(LayoutNode root)
+    {
+        var parts = new List<string>();
+        Find(root, parts);
+        return string.Join(" ", parts);
+
+        static void Find(LayoutNode node, List<string> parts)
+        {
+            if (node.Source is TitlePart)
+            {
+                if (TextWithin(node) is { Length: > 0 } words) parts.Add(words);
+                return;
+            }
+            foreach (var child in node) Find(child, parts);
+        }
     }
 }

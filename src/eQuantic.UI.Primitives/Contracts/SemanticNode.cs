@@ -310,6 +310,12 @@ public enum SemanticCheck : byte
 /// their count, all from one, as <see cref="Pressable.TreePlace"/> declares them. Null for everything
 /// else. AppKit takes the level as an outline row's disclosure level, from zero (#1529).
 /// </param>
+/// <param name="Description">
+/// What a reader hears after the stop's name and state: the words of the <see cref="DescriptionPart"/>s that reach it,
+/// joined in reading order, or a <see cref="TextEntry"/>'s own <see cref="TextEntry.Description"/> beside them. Null when
+/// nothing describes it. The web says the same with <c>aria-describedby</c> (#1916); AppKit reads it as the element's
+/// help, UIKit as its hint and Android as its node's hint text (#1920). Appended, as every parameter before it.
+/// </param>
 [ServerOnly]
 public readonly record struct SemanticNode(
     SemanticRole Role,
@@ -327,4 +333,5 @@ public readonly record struct SemanticNode(
     RangeValue? Range = null,
     TableRange? Place = null,
     TableRange? Extent = null,
-    TreePlace? TreePlace = null);
+    TreePlace? TreePlace = null,
+    string? Description = null);

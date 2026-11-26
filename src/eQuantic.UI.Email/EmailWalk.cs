@@ -69,6 +69,13 @@ internal abstract partial class EmailWalk : IVisualNodeVisitor<Nothing, Nothing>
     /// <inheritdoc cref="Visit(MergeSemantics, Nothing)"/>
     public Nothing Visit(ExcludeSemantics node, Nothing state) => node.Child.Accept(this, state);
 
+    /// <summary>The part that names a nameable reaches a message as the child it holds: what a reader makes of a message
+    /// is its mail client's, and the words are the same without the part (#1916).</summary>
+    public Nothing Visit(LabelPart node, Nothing state) => node.Child.Accept(this, state);
+
+    /// <inheritdoc cref="Visit(LabelPart, Nothing)"/>
+    public Nothing Visit(DescriptionPart node, Nothing state) => node.Child.Accept(this, state);
+
     /// <summary>What a person asks the menu of reaches a message as the child it holds: a message has no menu
     /// to ask for, and the content is the same without one (#1531).</summary>
     public Nothing Visit(ContextTarget node, Nothing state) => node.Child.Accept(this, state);
