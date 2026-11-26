@@ -3045,6 +3045,12 @@ public class TypeScriptEmitter
         // A compat value type is not in an eQuantic namespace, so the scanner above never buckets
         // it — but a factory's `DateOnly? selected` annotates with the name all the same.
         foreach (var compat in RuntimeValueTypes) runtimeProvided.Add(compat);
+        // `$eq` is a candidate of every class module, as it is of a record's and a component's, and stays where the
+        // emitted text names it: the import follows from what the module writes, whoever wrote it. It came only from
+        // the strategies that registered it, and `Uri.EscapeDataString` wrote `$eq.uri.escapeData(…)` without doing
+        // so, which a static class whose one runtime call it was shipped with no import: the page threw
+        // "$eq is not defined" the first time the method ran, after hydration (#1882).
+        runtimeProvided.Add(Eq.Import);
         runtimeProvided.RemoveWhere(referenced => !NamedIn(emitted, referenced));
         core.UnionWith(runtimeProvided);
         if (core.Count > 0) imports.Add(new JsImport(core.ToList(), "@equantic/runtime"));
