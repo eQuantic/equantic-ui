@@ -42,17 +42,20 @@ public class IdentifierStrategy : IExpressionIrStrategy
         if (symbol is INamedTypeSymbol nested && nested.RenamedTwin() is not null)
             return JsExpr.Identifier(nested.IntroduceTwin(context));
 
+        // An alias of a static generic class's closed type (`using IntCache = Cache<int>;`, or one named `Cache`, which
+        // the generic class's own name leaves free) reaches that closed type's statics, as its own spelling does
+        // (#1855). A bare name binds a generic class through an alias alone.
+        if (symbol is INamedTypeSymbol aliasedClosed
+            && identifier.Parent is MemberAccessExpressionSyntax aliasAccess && aliasAccess.Expression == identifier
+            && ClosedStatics.Home(aliasedClosed, identifier, context) is { } aliasStatics)
+            return aliasStatics;
+
         // A type named through a using alias is written by its own name and imported by it, as through its
         // namespace (#625): `using F = Falei.Web.Portal.Fold;` then `F.Text(1)` wrote `F.text(1)`, a name
         // nothing defines. A name that differs from the type's own is only ever an alias.
         if (symbol is INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct } aliased && aliased.Name != name
             && !aliased.IsHostOnly() && aliased.HasTwin())
         {
-            // An alias of a static generic class's closed type (`using IntCache = Cache<int>;`) reaches that closed
-            // type's statics, as its own spelling does (#1855).
-            if (identifier.Parent is MemberAccessExpressionSyntax aliasAccess && aliasAccess.Expression == identifier
-                && ClosedStatics.Home(aliased, identifier, context) is { } aliasStatics)
-                return aliasStatics;
             aliased.RegisterIntroduced(context);
             return JsExpr.Identifier(aliased.TwinReference());
         }

@@ -114,11 +114,13 @@ public class StaticGenericClassTests
         user.TypeScript.Should().Contain("$eq.statics(Cache, 'int').keep(1);").And.Contain("$eq.statics(Cache, 'string').last");
     }
 
-    [Fact]
-    public void AnAliasOfAClosedType_IsItsOwn()
+    [Theory]
+    [InlineData("IntCache")]
+    [InlineData("Cache")]  // the generic class's own name, which leaves an alias of no type parameters free
+    public void AnAliasOfAClosedType_IsItsOwn(string alias)
     {
-        var user = Compile(Cache.Replace("namespace NS;", "namespace NS;\nusing IntCache = NS.Cache<int>;") + """
-            public sealed class User { public int Use() { IntCache.Keep(1); return IntCache.Last; } }
+        var user = Compile(Cache.Replace("namespace NS;", $"namespace NS;\nusing {alias} = NS.Cache<int>;") + $$"""
+            public sealed class User { public int Use() { {{alias}}.Keep(1); return {{alias}}.Last; } }
             """).Single(result => result.ComponentName == "User");
 
         user.Errors.Should().BeEmpty();
