@@ -3421,7 +3421,7 @@ public class TypeScriptEmitter
         // A dictionary is the runtime's dictionary class, which no `Record` describes, so every
         // name for one degrades to `any` alike: the interfaces and the sorted ones reached
         // TypeScript verbatim, naming types that exist nowhere there.
-        else if (IsDictionaryName(tsType))
+        else if (IsDictionaryName(tsType) || IsRuntimeCollectionName(tsType))
         {
             tsType = "any";
         }
@@ -3459,6 +3459,17 @@ public class TypeScriptEmitter
 
     /// <summary>The set family — a JS Set.</summary>
     private static string? SetOf(string tsType) => Unwrap(tsType, ["HashSet<", "ISet<", "IReadOnlySet<"]);
+
+    /// <summary>
+    /// A collection the runtime holds as a class of its own that no module imports by its C# name: a queue,
+    /// a stack, a linked list and its node, a sorted set and a priority queue. A field of one is declared
+    /// <c>any</c>, as a dictionary's is: its C# name reached TypeScript verbatim, `_waiting!: Queue&lt;Shape&gt;`,
+    /// a name the module never imported (#1866), and the runtime's collection stack is exported under
+    /// another name, since the vocabulary's <c>Stack</c> owns it. A local of one keeps its element type
+    /// through its factory's type argument (<see cref="TsNamedType.TypeArguments"/>).
+    /// </summary>
+    internal static bool IsRuntimeCollectionName(string tsType) =>
+        Unwrap(tsType, ["Queue<", "Stack<", "LinkedList<", "LinkedListNode<", "SortedSet<", "PriorityQueue<"]) is not null;
 
     /// <summary>Every C# name for a dictionary: each is a runtime dictionary class on this side.</summary>
     internal static bool IsDictionaryName(string tsType) =>

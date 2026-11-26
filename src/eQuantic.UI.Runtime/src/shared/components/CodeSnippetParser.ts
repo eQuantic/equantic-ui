@@ -4,9 +4,9 @@ export class CodeSnippetParser {
     constructor(source: string) {
         this._source = null!;
         this._at = 0;
-        this._read = $eq.collections.dictionary();
-        this._readTo = $eq.collections.dictionary();
-        this._failed = $eq.collections.hashSet();
+        this._read = $eq.collections.dictionary<number, CodeSnippetPart>();
+        this._readTo = $eq.collections.dictionary<number, number>();
+        this._failed = $eq.collections.hashSet<number>();
         this._source = source;
     }
 

@@ -444,7 +444,7 @@ export class CodeEditor extends StatefulComponent {
     gutter(editor: CodeEditorController, first: number, last: number) {
         let problems = editor.diagnostics.items;
         if ($eq.collections.count(problems) === 0) return this.gutterMarkers;
-        let worst: any = $eq.collections.dictionary();
+        let worst: any = $eq.collections.dictionary<number, number>();
         for (const problem of $eq.collections.sequenceWalk(problems)) {
             let severity = (($0) => (({ 'hint': 0, 'information': 1, 'warning': 2, 'error': 3 })[$0] ?? $0))(problem.severity);
             if (severity < 2) continue;

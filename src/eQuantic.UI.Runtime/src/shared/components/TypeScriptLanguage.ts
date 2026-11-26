@@ -6,9 +6,9 @@ export class TypeScriptLanguage extends CurlyBraceLanguage {
 
     constructor() {
         const $$$rules: CodeLanguageRules = (() => { let $n0: CodeLanguageRules; return ($n0 = new CodeLanguageRules(), $n0.lineComment = '//', $n0.blockComment = ['/*', '*/'], $n0.indentWidth = 2, $n0); })();
-        const $$$reservedWords: Set<string> = $eq.collections.hashSetOf(['abstract', 'any', 'as', 'async', 'await', 'break', 'case', 'catch', 'class', 'const', 'constructor', 'continue', 'debugger', 'declare', 'default', 'delete', 'do', 'else', 'enum', 'export', 'extends', 'finally', 'for', 'from', 'function', 'get', 'if', 'implements', 'import', 'in', 'infer', 'instanceof', 'interface', 'is', 'keyof', 'let', 'namespace', 'new', 'of', 'private', 'protected', 'public', 'readonly', 'return', 'satisfies', 'set', 'static', 'super', 'switch', 'this', 'throw', 'try', 'type', 'typeof', 'var', 'while', 'yield']);
-        const $$$typeWords: Set<string> = $eq.collections.hashSetOf(['bigint', 'boolean', 'never', 'number', 'object', 'string', 'symbol', 'unknown', 'void']);
-        const $$$constantWords: Set<string> = $eq.collections.hashSetOf(['true', 'false', 'null', 'undefined', 'NaN', 'Infinity']);
+        const $$$reservedWords: Set<string> = $eq.collections.hashSetOf<string>(['abstract', 'any', 'as', 'async', 'await', 'break', 'case', 'catch', 'class', 'const', 'constructor', 'continue', 'debugger', 'declare', 'default', 'delete', 'do', 'else', 'enum', 'export', 'extends', 'finally', 'for', 'from', 'function', 'get', 'if', 'implements', 'import', 'in', 'infer', 'instanceof', 'interface', 'is', 'keyof', 'let', 'namespace', 'new', 'of', 'private', 'protected', 'public', 'readonly', 'return', 'satisfies', 'set', 'static', 'super', 'switch', 'this', 'throw', 'try', 'type', 'typeof', 'var', 'while', 'yield']);
+        const $$$typeWords: Set<string> = $eq.collections.hashSetOf<string>(['bigint', 'boolean', 'never', 'number', 'object', 'string', 'symbol', 'unknown', 'void']);
+        const $$$constantWords: Set<string> = $eq.collections.hashSetOf<string>(['true', 'false', 'null', 'undefined', 'NaN', 'Infinity']);
         super();
         this.$rules = $$$rules;
         this.$reservedWords = $$$reservedWords;
