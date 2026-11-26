@@ -96,7 +96,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     {
         context.UsedHelpers.Add(Eq.Import);
         var factory = type.DictionaryFactory()!;
-        return Factory(factory, type, factory == Eq.Dictionary ? capacity : null);
+        return Factory(factory, type, factory == Eq.Dictionary ? capacity : null, context);
     }
 
     /// <summary>
@@ -222,7 +222,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
 
         if (factory == Eq.Dictionary && type is INamedTypeSymbol { TypeArguments: [var found, _] })
             ElementEquality.Refuses(found, true, creation, context);
-        return Initialized(Factory(factory, type, source, ordering, copied), creation.Initializer, context);
+        return Initialized(Factory(factory, type, source, context, ordering, copied), creation.Initializer, context);
     }
 
     /// <summary><c>factory(seed)</c>, and <c>factory(seed, equality)</c> when the keys are not found by
@@ -231,8 +231,8 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     /// or the order its comparer asked for (<paramref name="asked"/>). A seed the construction copies
     /// is followed by the name of the parameter it binds to (<paramref name="copied"/>), by which the
     /// factory refuses a null one, as .NET does (#726).</summary>
-    private static JsExpr Factory(string factory, ITypeSymbol? type, JsExpr? seed, string? asked = null,
-        string? copied = null)
+    private static JsExpr Factory(string factory, ITypeSymbol? type, JsExpr? seed, ConversionContext context,
+        string? asked = null, string? copied = null)
     {
         var arguments = new List<JsExpr>();
         var key = type is INamedTypeSymbol { TypeArguments: [var keyType, _] } ? keyType : null;
@@ -245,7 +245,8 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         if (second is not null) arguments.Add(JsExpr.Literal(second));
         else if (named) arguments.Add(JsExpr.Literal("undefined"));
         if (named) arguments.Add(JsExpr.Literal($"'{copied}'"));
-        return JsExpr.Call(JsExpr.Identifier(factory), arguments);
+        // Its key's and value's types, so a read from a local dictionary lands in a typed variable (#1866).
+        return JsExpr.Call(JsExpr.Identifier(factory + TsNamedType.TypeArguments(type, context)), arguments);
     }
 
     /// <summary>The call a dictionary answers, or null when this invocation is not one.</summary>

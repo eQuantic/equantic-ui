@@ -1980,7 +1980,8 @@ public class TypeScriptEmitter
             if (ordered)
             {
                 _converter.UsedHelpers.Add(Eq.Import);
-                foreach (var member in TypeInitializer.Members(cls, name, initialized, _converter, Lowering, TypeAnnotations, _converter.Layout))
+                // A static generic class keeps its slots on the closed type its members were reached through (#1855).
+                foreach (var member in TypeInitializer.Members(cls, StaticsHome(cls, name), initialized, _converter, Lowering, TypeAnnotations, _converter.Layout))
                     c.Member(member, member.Origin?.Member);
             }
             foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
@@ -2059,7 +2060,30 @@ public class TypeScriptEmitter
             // A static constructor runs before the first instance and the first use of any static
             // member, a method included, and not only before the first read of a static.
             if (ordered && TypeInitializer.HasStaticConstructor(cls))
-                c.Rewrite(member => TypeInitializer.StartedIn(member, name, slots));
+                c.Rewrite(member => TypeInitializer.StartedIn(member, StaticsHome(cls, name), slots));
+    }
+
+    /// <summary>What a class's static members reach its statics through: the class, or <c>this</c> for a static
+    /// generic class, whose statics are the closed type's they were reached through (<see cref="ClosedStatics"/>).</summary>
+    private static string StaticsHome(ClassDeclarationSyntax cls, string name) =>
+        ClosedStatics.KeepsPerClosure(cls) ? ClosedStatics.Own : name;
+
+    /// <summary>
+    /// The type parameters of a static generic class, which its members name, each an alias of <c>any</c> after the
+    /// class (#1855): the class declares none, since TypeScript refuses a static member that reads them (TS2302),
+    /// and every member of a static class is static. One class serves every closed type, so no one type argument is
+    /// the right one. An alias only for a parameter the module names, as one it never reads is refused (TS6133); and
+    /// after the class, so the lines the class's source map records stay where they are.
+    /// </summary>
+    private string ErasedTypeParameters(ClassDeclarationSyntax cls, string emitted)
+    {
+        if (!TypeAnnotations || !ClosedStatics.KeepsPerClosure(cls)) return "";
+        var aliases = cls.TypeParameterList!.Parameters
+            .Select(parameter => parameter.Identifier.ValueText.ToJsIdentifier())
+            .Where(name => NamedIn(emitted, name))
+            .Select(name => $"type {name} = any;")
+            .ToList();
+        return aliases.Count == 0 ? "" : string.Join("\n", aliases) + "\n";
     }
 
     /// <summary>A static's initializer: its VALUE where C# folds it to a constant
@@ -2971,7 +2995,9 @@ public class TypeScriptEmitter
                     c.Member(JsClassMember.Method("", "toString", "", "", TypeAnnotations ? ": string" : "",
                         JsStatement.Block([JsStatement.Return(JsExpr.Literal(JsStringLiteral.Quote(fullName)))])), cls);
             },
-            typeParameters: cls.TwinTypeParameters(ConstraintType),
+            // A static class has no instance, and TypeScript refuses a static member that reads its class's type
+            // parameters (TS2302), so a static generic class declares none (#1855): ErasedTypeParameters below.
+            typeParameters: ClosedStatics.KeepsPerClosure(cls) ? [] : cls.TwinTypeParameters(ConstraintType),
             isAbstract: cls.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword));
         var emitted = builder.ToString();
         // This module used a LOCAL builder, so the mappings it recorded never reached
@@ -3045,6 +3071,12 @@ public class TypeScriptEmitter
         // A compat value type is not in an eQuantic namespace, so the scanner above never buckets
         // it — but a factory's `DateOnly? selected` annotates with the name all the same.
         foreach (var compat in RuntimeValueTypes) runtimeProvided.Add(compat);
+        // `$eq` is a candidate of every class module, as it is of a record's and a component's, and stays where the
+        // emitted text names it: the import follows from what the module writes, whoever wrote it. It came only from
+        // the strategies that registered it, and `Uri.EscapeDataString` wrote `$eq.uri.escapeData(…)` without doing
+        // so, which a static class whose one runtime call it was shipped with no import: the page threw
+        // "$eq is not defined" the first time the method ran, after hydration (#1882).
+        runtimeProvided.Add(Eq.Import);
         runtimeProvided.RemoveWhere(referenced => !NamedIn(emitted, referenced));
         core.UnionWith(runtimeProvided);
         if (core.Count > 0) imports.Add(new JsImport(core.ToList(), "@equantic/runtime"));
@@ -3075,7 +3107,8 @@ public class TypeScriptEmitter
                 imports.Add(new JsImport([ct], $"./{ct}"));
             else if (!Referenced.IsModule(ct)) ReportIfKeptOut(ct, cls);
         }
-        var module = new JsModule(imports, builder.ToString());
+        var erased = ErasedTypeParameters(cls, emitted);
+        var module = new JsModule(imports, erased.Length == 0 ? builder.ToString() : builder.ToString().TrimEnd('\n') + "\n\n" + erased);
         // The class's mappings were recorded against its own text; the imports stand above it.
         builder.ShiftMappings(JsModuleWriter.BodyLine(module));
         return JsModuleWriter.Write(module);
@@ -3415,7 +3448,7 @@ public class TypeScriptEmitter
         // A dictionary is the runtime's dictionary class, which no `Record` describes, so every
         // name for one degrades to `any` alike: the interfaces and the sorted ones reached
         // TypeScript verbatim, naming types that exist nowhere there.
-        else if (IsDictionaryName(tsType))
+        else if (IsDictionaryName(tsType) || IsRuntimeCollectionName(tsType))
         {
             tsType = "any";
         }
@@ -3453,6 +3486,17 @@ public class TypeScriptEmitter
 
     /// <summary>The set family — a JS Set.</summary>
     private static string? SetOf(string tsType) => Unwrap(tsType, ["HashSet<", "ISet<", "IReadOnlySet<"]);
+
+    /// <summary>
+    /// A collection the runtime holds as a class of its own that no module imports by its C# name: a queue,
+    /// a stack, a linked list and its node, a sorted set and a priority queue. A field of one is declared
+    /// <c>any</c>, as a dictionary's is: its C# name reached TypeScript verbatim, `_waiting!: Queue&lt;Shape&gt;`,
+    /// a name the module never imported (#1866), and the runtime's collection stack is exported under
+    /// another name, since the vocabulary's <c>Stack</c> owns it. A local of one keeps its element type
+    /// through its factory's type argument (<see cref="TsNamedType.TypeArguments"/>).
+    /// </summary>
+    internal static bool IsRuntimeCollectionName(string tsType) =>
+        Unwrap(tsType, ["Queue<", "Stack<", "LinkedList<", "LinkedListNode<", "SortedSet<", "PriorityQueue<"]) is not null;
 
     /// <summary>Every C# name for a dictionary: each is a runtime dictionary class on this side.</summary>
     internal static bool IsDictionaryName(string tsType) =>

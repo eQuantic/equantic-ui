@@ -107,12 +107,12 @@ public class CollectionConstructionTests
     [Fact]
     public void AnEmptyCollectionExpression_BuildsTheRuntimesClass()
     {
-        Convert("Dictionary<string, int> ids = [];").Should().Contain("let ids: any = $eq.collections.dictionary();");
-        Convert("SortedDictionary<int, int> sorted = [];").Should().Contain("let sorted: any = $eq.collections.sortedDictionary(");
-        Convert("Queue<int> pending = [];").Should().Contain("let pending = $eq.collections.queue();");
-        Convert("Stack<int> undo = [];").Should().Contain("let undo = $eq.collections.stack();");
-        Convert("LinkedList<int> chain = [];").Should().Contain("let chain = $eq.collections.linkedList();");
-        Convert("var ids = new Dictionary<string, int>();").Should().Contain("let ids: any = $eq.collections.dictionary();",
+        Convert("Dictionary<string, int> ids = [];").Should().Contain("let ids: any = $eq.collections.dictionary<string, number>();");
+        Convert("SortedDictionary<int, int> sorted = [];").Should().Contain("let sorted: any = $eq.collections.sortedDictionary<number, number>(");
+        Convert("Queue<int> pending = [];").Should().Contain("let pending = $eq.collections.queue<number>();");
+        Convert("Stack<int> undo = [];").Should().Contain("let undo = $eq.collections.stack<number>();");
+        Convert("LinkedList<int> chain = [];").Should().Contain("let chain = $eq.collections.linkedList<number>();");
+        Convert("var ids = new Dictionary<string, int>();").Should().Contain("let ids: any = $eq.collections.dictionary<string, number>();",
             "the construction it is the newer spelling of");
     }
 
@@ -136,8 +136,8 @@ public class CollectionConstructionTests
             }
             """, "Sized");
 
-        ts.Should().Contain("$eq.collections.dictionary(10)").And.Contain("$eq.collections.dictionary(3)")
-            .And.Contain("$eq.collections.queue(4)");
+        ts.Should().Contain("$eq.collections.dictionary<string, number>(10)").And.Contain("$eq.collections.dictionary<string, number>(3)")
+            .And.Contain("$eq.collections.queue<number>(4)");
     }
 
     /// <summary>
@@ -159,7 +159,7 @@ public class CollectionConstructionTests
             """, "Interner");
 
         ts.Should().NotContain("= [];").And.NotContain("count([])");
-        ts.Should().Contain("$eq.collections.dictionary()").And.Contain("$eq.collections.queue()");
+        ts.Should().Contain("$eq.collections.dictionary<string, number>()").And.Contain("$eq.collections.queue<string>()");
     }
 
     /// <summary>

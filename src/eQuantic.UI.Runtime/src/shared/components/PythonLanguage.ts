@@ -32,9 +32,9 @@ export class PythonLanguage {
                 $slots.builtins = null;
                 $slots.constants = null;
                 $slots.words = null;
-                $slots.reserved = $eq.collections.hashSetOf(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
-                $slots.builtins = $eq.collections.hashSetOf(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
-                $slots.constants = $eq.collections.hashSetOf(['True', 'False', 'None', 'self', 'cls']);
+                $slots.reserved = $eq.collections.hashSetOf<string>(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
+                $slots.builtins = $eq.collections.hashSetOf<string>(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
+                $slots.constants = $eq.collections.hashSetOf<string>(['True', 'False', 'None', 'self', 'cls']);
                 $slots.words = $eq.linq.toArray($eq.query.concat($eq.query.concat(PythonLanguage.reserved, PythonLanguage.builtins), PythonLanguage.constants));
             } catch ($error) {
                 PythonLanguage.$slots = null;
