@@ -52,9 +52,9 @@ public sealed class Pagination : StatelessComponent
         }
 
         var row = new Row(gap: slot?.PaginationGap ?? Space.S2) { Cross = CrossAlign.Center };
-        row.Add(Step("Previous", current > 1, () => OnChanged?.Invoke(current - 1)));
+        row.Add(Step(SdkStrings.PreviousPage, current > 1, () => OnChanged?.Invoke(current - 1)));
         row.Add(numbers);
-        row.Add(Step("Next", current < PageCount, () => OnChanged?.Invoke(current + 1)));
+        row.Add(Step(SdkStrings.NextPage, current < PageCount, () => OnChanged?.Invoke(current + 1)));
         return row;
     }
 
@@ -113,7 +113,7 @@ public sealed class Pagination : StatelessComponent
 
         return new Pressable(box, current ? null : () => OnChanged?.Invoke(page))
         {
-            Label = $"Page {page}",
+            Label = SdkStrings.PageNumbered(page),
             Selected = current,
         };
     }

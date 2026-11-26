@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Progress, RangeValue, Row, SizeValue, Spacer, StatefulComponent, UiComponent, VariantValue } from "../runtime-exports";
+import { $eq, $VariantValue, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Progress, RangeValue, Row, SizeValue, Spacer, StatefulComponent, UiComponent } from "../runtime-exports";
 
 export class ProgressBar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.ProgressBar';
@@ -10,7 +10,7 @@ export class ProgressBar extends StatefulComponent {
     _label: string = '';
     _valueText: any = null;
     declare value: any;
-    declare variant: VariantValue;
+    declare variant: $VariantValue;
 
     get prominent() {
         return this._prominent;
@@ -56,14 +56,14 @@ export class ProgressBar extends StatefulComponent {
         if ((value = this.value) != null) {
             let animate = !this._snapNext;
             this._snapNext = false;
-            let clamped = Math.min(Math.max(value, 0), 1);
+            let clamped = $eq.num.clamp(value, 0, 1, 'single');
             let filledWeight = $eq.num.saturate($eq.math.roundSingle(Math.fround(clamped * 1000)));
             let track = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: height, background: trackColor, cornerRadius: ends });
             if (filledWeight > 0) {
                 track.add(new Flexible(new Box(new BoxStyle({ height: height, background: theme.colors(this.variant).base, cornerRadius: ends })), filledWeight, 0, 1, { animateChanges: animate }));
             }
             if (filledWeight < 1000) {
-                track.add(new Spacer(1000 - filledWeight, { animateChanges: animate }));
+                track.add(new Spacer(1000 - filledWeight | 0, { animateChanges: animate }));
             }
             return new Progress(track, { label: this.label, value: new RangeValue(Math.fround(Math.fround(filledWeight) / 1000), 0, 1), valueText: this.valueText });
         }

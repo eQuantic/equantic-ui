@@ -3,6 +3,7 @@ import { lowerVisualNode } from './lowering';
 import type { LoweringContext } from './lowering';
 import { photonTheme } from './design-system.generated';
 import type { AdjustableNode } from './nodes';
+import keyTable from './adjustable-keys.fixture.json';
 
 const ctx: LoweringContext = { textPrimary: photonTheme.textPrimary };
 
@@ -132,5 +133,28 @@ describe('adjustable lowering (C# cross-pin)', () => {
     expect(html.attributes['tabindex']).toBe('0');
     expect(html.attributes['aria-label']).toBe('Budget');
     expect(html.attributes['aria-valuenow']).toBeUndefined();
+  });
+
+  it('steps each arrow as the C# table does, role by role (AdjustableKeys, #1873)', () => {
+    for (const [role, steps] of Object.entries(keyTable as Record<string, Record<string, number | null>>)) {
+      // A slider and a separator carry a value, as the components send them; a tab list and a radio group do not.
+      const valued = role === 'slider' || role === 'separator';
+      for (const [key, expected] of Object.entries(steps)) {
+        const seen: number[] = [];
+        const html = lower(
+          (d) => seen.push(d),
+          role as AdjustableNode['role'],
+          valued ? { now: 0.5, min: 0, max: 1 } : undefined,
+        );
+        const keydown = html.events['keydown'] as unknown as (e: KeyboardEvent) => void;
+        let prevented = false;
+        keydown({ key, preventDefault: () => (prevented = true) } as unknown as KeyboardEvent);
+        expect(seen, `${key} on a ${role} must step the same on both halves`).toEqual(
+          expected === null ? [] : [expected],
+        );
+        // An arrow that steps is kept from scrolling the page, and a key that does not reaches the page whole.
+        expect(prevented, `${key} on a ${role}: the default is taken only when the key steps`).toBe(expected !== null);
+      }
+    }
   });
 });

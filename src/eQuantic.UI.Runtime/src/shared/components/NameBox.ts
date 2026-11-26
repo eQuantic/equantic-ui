@@ -1,9 +1,9 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeGrid, CodeSurface, EdgeInsets, EntryLines, Point, ScrollView, SdkStrings, SheetController, SheetPalette, Size, SizeValue, StatefulComponent, Text, TypeRoleValue, UiComponent } from "../runtime-exports";
+import { $eq, $TypeRoleValue, Box, BoxStyle, BuildContext, CodeGrid, CodeSurface, EdgeInsets, EntryLines, Point, ScrollView, SdkStrings, SheetController, SheetPalette, Size, SizeValue, StatefulComponent, Text, UiComponent } from "../runtime-exports";
 
 export class NameBox extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Spreadsheets.NameBox';
     static defaultWidth: number = 96;
-    static boxType: TypeRoleValue = 'bodyM';
+    static boxType: $TypeRoleValue = 'bodyM';
     _config: NameBox;
     _counted: any = null;
     _rebuild: () => void;

@@ -177,7 +177,12 @@ public class SharedComponentTranspilationTests
     /// (#1303 to #1307): a downcast reaching a member of the derived type, abstract members of every
     /// accessibility called through the base, a constructor chained to one with an argument the first
     /// supplies, a lambda stored in a static field, and a field's collection initializer beside a base
-    /// constructor call. Written to <c>__fixtures__</c>, where the runtime's <c>tsc</c> reads every line.
+    /// constructor call. And initializers of hand-written vocabulary twins setting a member their config
+    /// lacked (#1823): a box style's foreground, a node's bookmark, cross alignment and grid span on a config
+    /// written in place, a spacer's fixed length, and members the constructor takes as parameters too (an image's
+    /// label, a text's role, a group's child, a safe area's edges, a gradient's direction). Written to
+    /// <c>__fixtures__</c>, where the runtime's <c>tsc</c> reads every line. And a plain generic class, a generic
+    /// record and a generic struct, whose class declared no type parameters while its members named them (#1845).
     /// </summary>
     private const string EmissionShapesSource = """
         using System;
@@ -290,6 +295,135 @@ public class SharedComponentTranspilationTests
             private List<string?> _items = new();
             public EmittedBag(string name) : base(name) { }
             public int Count => _items.Count;
+        }
+
+        public static class EmittedConfigs
+        {
+            public static BoxStyle Inked() => new BoxStyle { Foreground = new ColorToken(Color.Black) };
+
+            public static VisualNode Grouped(VisualNode child) =>
+                new Group(child) { Label = "Totals", Bookmark = "totals", AlignSelf = CrossAlign.Center, GridSpan = 2 };
+
+            public static Spacer Rigid() => new Spacer { FixedLength = 8 };
+
+            // Members the constructor takes as parameters too, which an initializer sets through the config.
+            public static Image Labelled() => new Image("a.png", 1, 2) { Label = "Chart" };
+
+            public static Text Titled() => new Text("Totals") { Role = TypeRole.Title, MaxLines = 2 };
+
+            public static Group Reparented(VisualNode first, VisualNode second) => new Group(first) { Child = second };
+
+            public static SafeArea Inset(VisualNode child) => new SafeArea(child) { Edges = 3 };
+
+            public static LinearGradient Downward() =>
+                new LinearGradient(new ColorToken(Color.Black), new ColorToken(Color.White)) { Direction = GradientDirection.ToBottom };
+        }
+
+        public sealed class EmittedFactory<T>
+        {
+            private readonly Func<T> _create;
+            private readonly Action<T> _initialize;
+            public EmittedFactory(Func<T> create, Action<T> initialize) { _create = create; _initialize = initialize; }
+            public T Build() { var made = _create(); _initialize(made); return made; }
+        }
+
+        public sealed record EmittedPair<TKey>(TKey Key, int Rank);
+
+        public struct EmittedSlot<TValue>
+        {
+            public TValue Value;
+            public EmittedSlot(TValue value) { Value = value; }
+        }
+
+        public abstract class EmittedShapeBase { public abstract int Area { get; } }
+
+        public sealed class EmittedMeasured<T> where T : EmittedShapeBase
+        {
+            private readonly T _shape;
+            public EmittedMeasured(T shape) { _shape = shape; }
+            public int Area() => _shape.Area;
+        }
+
+        public sealed record EmittedTagged<T>(T Shape, string Tag) where T : EmittedShapeBase
+        {
+            public int Area => Shape.Area;
+        }
+
+        public sealed class EmittedHandler<T> where T : EmittedShapeBase
+        {
+            private readonly Action<T> _use;
+            public EmittedHandler(Action<T> use) { _use = use; }
+            public void Give(EmittedShapeBase shape) => _use((T)shape);
+            public static EmittedShapeBase Unbox(object value) => (T)value;
+            public EmittedShapeBase Same(object value)
+            {
+                static TOut Cast<TOut>(object held) => (TOut)held;
+                return Cast<EmittedShapeBase>(value);
+            }
+        }
+
+        public sealed class EmittedMaybe<T> where T : EmittedShapeBase?
+        {
+            private readonly T _shape;
+            public EmittedMaybe(T shape) { _shape = shape; }
+            public int Area() => _shape?.Area ?? 0;
+        }
+
+        public sealed class EmittedOwner<T> where T : EmittedShapeBase
+        {
+            public EmittedShapeBase Keep(object value) => (T)value;
+
+            public sealed class Held
+            {
+                public EmittedShapeBase Unwrap(object value) => (T)value;
+            }
+        }
+
+        public sealed class EmittedPointer
+        {
+            public List<string> Members { get; } = new();
+        }
+
+        public sealed class EmittedArena
+        {
+            private readonly Dictionary<int, EmittedPointer> _arenas = new();
+            public int Count(int pointer)
+            {
+                if (!_arenas.TryGetValue(pointer, out var arena)) return 0;
+                var total = 0;
+                foreach (var member in arena.Members) total += member.Length;
+                return total;
+            }
+
+            public bool Find(int pointer, out EmittedPointer? found)
+            {
+                found = _arenas.TryGetValue(pointer, out var arena) ? arena : null;
+                return found != null;
+            }
+
+            public int Forget(int pointer)
+            {
+                if (Find(pointer, out var found)) found = null;
+                return found == null ? 0 : 1;
+            }
+
+            private readonly Dictionary<int, List<EmittedPointer>> _routes = new();
+            public int Routed(int pointer)
+            {
+                var total = 0;
+                if (_routes.TryGetValue(pointer, out var routed))
+                    foreach (var route in routed) total += route.Members.Count;
+                return total;
+            }
+
+            public int Drop(int pointer)
+            {
+                if (_arenas.TryGetValue(pointer, out EmittedPointer? seen)) seen = null;
+                return seen == null ? 0 : 1;
+            }
+
+            private EmittedPointer? _last;
+            public bool Remember(int pointer) => _arenas.TryGetValue(pointer, out _last);
         }
         """;
 
@@ -472,7 +606,7 @@ public class SharedComponentTranspilationTests
     [
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
-        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain",
+        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedShapeBase", "EmittedMeasured", "EmittedTagged", "EmittedHandler", "EmittedMaybe", "EmittedOwner", "EmittedOwner$Held", "EmittedPointer", "EmittedArena",
     ];
 
     /// <summary>The source this asks about, kept HERE rather than pointed at a production class.
@@ -966,7 +1100,7 @@ public class SharedComponentTranspilationTests
 
         // The NAMED argument lands at the constructor's real position, with the skipped parameters
         // filled from their C# defaults — JS has no named arguments.
-        counter.Should().Contain("new Button('Increment', 'primary', 'medium', () => this.setState(() => this._count++))");
+        counter.Should().Contain("new Button('Increment', 'primary', 'medium', () => this.setState(() => this._count = this._count + 1 | 0))");
 
         // async void — the modifier drives the emission, not the return type (the site's
         // hover-intent grace timer found this: awaits inside a non-async function don't parse).

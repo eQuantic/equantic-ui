@@ -10,10 +10,11 @@
 
 import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { NodeKind } from './node-kinds.generated';
-import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue } from './enums.generated';
+import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue, TextDirectionValue, TextEntryKindValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
 import type { AppTheme, ContextRequest, PointerEvent } from './value-types';
 import { iconPaths } from './icons.generated';
+import { exception } from '../utils/exceptions';
 import type {
   BoxStyleValue,
   ColorTokenValue,
@@ -31,7 +32,7 @@ import type { PickedFile } from './picked-file';
 export { CanvasPointer };
 import { floatText } from './css-values';
 import { lowerVisualNode } from './lowering';
-import { ambientLoweringContext, registerThemeNode } from './photon-context';
+import { ambientLoweringContext, registerDirectionalityNode, registerThemeNode } from './photon-context';
 import {
   artworkAspect,
   CornerRadii,
@@ -50,6 +51,7 @@ import {
 import { Curve, Motion } from './design-system.generated';
 import type { MotionSpec } from './primitive-values';
 import { hashesByValue } from '../utils/hash';
+import type { SortableTheme } from './theme-slots';
 
 export { StyleChannels } from './value-types';
 
@@ -62,9 +64,30 @@ export { StyleChannels } from './value-types';
  */
 export type EqConfig = Record<string, unknown>;
 
+/**
+ * Mirror of the C# `GlobalKey` (#797): an identity a node keeps wherever it is placed. A node that carries
+ * one, moved under another parent in one build, takes its position along, and the stateful components below
+ * it keep their instances. The identity is the instance: an app makes one and keeps it in a field of the
+ * component that builds the tree. The label is for a reader, never compared.
+ */
+export class GlobalKey {
+  readonly label: string | null;
+
+  constructor(label: string | null = null, config?: EqConfig) {
+    this.label = label;
+    if (config) Object.assign(this, config);
+  }
+
+  toString(): string {
+    return this.label ? `GlobalKey(${this.label})` : 'GlobalKey';
+  }
+}
+
 export abstract class VisualNode {
   abstract readonly nodeKind: NodeKind;
   key?: string | null;
+  /** The identity this node keeps wherever it is placed (the C# `VisualNode.GlobalKey`, #797). */
+  globalKey?: GlobalKey | null;
   /**
    * A named place a link can reach (the C# `VisualNode.Bookmark`), which becomes this element's
    * `id`. Distinct from `key`: a key is reconciler identity and need only be unique among siblings,
@@ -169,6 +192,29 @@ export class ShadowSpec {
   }
 }
 
+/**
+ * What an object initializer may set on every node: the C# `VisualNode` members a transpiled initializer reaches, which
+ * each node's config extends, or intersects when the constructor writes it in place. Each config repeated a few of them
+ * by hand and lacked the rest, so `new Grid(…) { Key = k }` would have failed the runtime's tsc the first time a
+ * component wrote it (#1823). `Origin` and `OriginLabel` are left out on purpose: only a design-mode compilation sets
+ * them, on the C# tree the design host reads.
+ */
+interface VisualNodeConfig {
+  key?: string | null;
+  globalKey?: GlobalKey | null;
+  bookmark?: string | null;
+  alignSelf?: CrossAlignValue | null;
+  gridSpan?: number;
+}
+
+/**
+ * What an object initializer may set on every node with one child: the C# `SingleChildNode.Child`, besides what every
+ * node takes. The child is a constructor parameter too, and an initializer that sets it reaches the config (#1823).
+ */
+interface SingleChildNodeConfig extends VisualNodeConfig {
+  child?: VisualChild;
+}
+
 interface BoxStyleConfig {
   width?: SizeValue | number;
   height?: SizeValue | number;
@@ -180,6 +226,8 @@ interface BoxStyleConfig {
   maxHeight?: SizeValue | number;
   padding?: EdgeInsetsValue;
   background?: ColorTokenValue | null;
+  /** The content color the box hands its descendants (C# `BoxStyle.Foreground`, #614). */
+  foreground?: ColorTokenValue | null;
   cornerRadius?: CornerRadii;
   borderWidth?: number;
   borderColor?: ColorTokenValue;
@@ -202,6 +250,8 @@ interface BoxStyleConfig {
   hover?: StyleDiff | null;
   focus?: StyleDiff | null;
   pressed?: StyleDiff | null;
+  /** While the nearest pinned header around the box is scrolled (C# `BoxStyle.Scrolled`, #1769). */
+  scrolled?: StyleDiff | null;
   /** CSS cursor mirror — the C# PointerCursor member name in camelCase ('crosshair', 'colResize'). */
   cursor?: string;
 }
@@ -252,6 +302,8 @@ export class BoxStyle {
   hover?: StyleDiff | null;
   focus?: StyleDiff | null;
   pressed?: StyleDiff | null;
+  /** The nearest pinned header's scroll (C# `BoxStyle.Scrolled`, #1769). */
+  scrolled?: StyleDiff | null;
   cursor?: string;
 
   constructor(config?: BoxStyleConfig) {
@@ -280,8 +332,9 @@ export class Box extends VisualNode {
   }
 }
 
-interface FlexConfig {
-  key?: string | null;
+interface FlexConfig extends VisualNodeConfig {
+  /** Also a constructor parameter: an initializer that sets it reaches the config (#1823). */
+  gap?: number;
   main?: MainAlignValue;
   cross?: CrossAlignValue;
   wrap?: boolean;
@@ -360,7 +413,10 @@ export class Anchored extends VisualNode {
   constructor(
     anchor: VisualChild,
     panel: VisualChild,
-    config?: {
+    config?: VisualNodeConfig & {
+      // Also constructor parameters: an initializer that sets one reaches the config (#1823).
+      anchor?: VisualChild;
+      panel?: VisualChild;
       placement?: AnchorPlacementValue | string;
       at?: Point | null;
       gap?: number;
@@ -373,7 +429,6 @@ export class Anchored extends VisualNode {
       activeIndex?: number;
       scrimStyle?: BoxStyleValue | null;
       motion?: TransitionSpec | null;
-      key?: string | null;
     },
   ) {
     super();
@@ -401,7 +456,7 @@ export class Draggable extends VisualNode {
   constructor(
     readonly child: VisualChild,
     onReleased: ((offset: number) => void) | null = null,
-    config?: {
+    config?: SingleChildNodeConfig & {
       axis?: string;
       min?: number;
       max?: number;
@@ -412,7 +467,6 @@ export class Draggable extends VisualNode {
       // Also a constructor parameter — C# lets an initializer set it instead, and the transpiled
       // call then carries it in the config object.
       onReleased?: ((offset: number) => void) | null;
-      key?: string | null;
     },
   ) {
     super();
@@ -429,7 +483,7 @@ export class SafeArea extends VisualNode {
   constructor(
     readonly child: VisualChild,
     readonly edges = 15,
-    config?: { extra?: EdgeInsets | null; key?: string | null },
+    config?: SingleChildNodeConfig & { edges?: number; extra?: EdgeInsets | null },
   ) {
     super();
     if (config) Object.assign(this, config);
@@ -451,11 +505,12 @@ export class Pinned extends VisualNode {
   constructor(
     readonly child: VisualChild,
     readonly offset = 0,
-    config?: {
+    config?: SingleChildNodeConfig & {
+      // Also constructor parameters: an initializer that sets one reaches the config (#1823).
+      offset?: number;
       float?: boolean;
       scrolledStyle?: StyleDiff | null;
       transition?: TransitionSpec | null;
-      key?: string | null;
     },
   ) {
     super();
@@ -463,11 +518,10 @@ export class Pinned extends VisualNode {
   }
 }
 
-interface AdaptiveConfig {
+interface AdaptiveConfig extends VisualNodeConfig {
   /** Custom thresholds in dp (default 600/840 — the spec size classes). */
   mediumFrom?: number;
   expandedFrom?: number;
-  key?: string | null;
 }
 
 /** Mirror of the C# `AdaptiveNode` (spec S6): up to three variants, switched at the node's own thresholds. */
@@ -489,9 +543,16 @@ export class AdaptiveNode extends VisualNode {
   /** The variant for a window `widthDp` wide, at this node's thresholds: the one every target holds and
    * draws, the gates showing it at the same widths (C# twin: `ResolveWidth`, #1465). */
   resolveWidth(widthDp: number): VisualNode {
-    if (this.expanded && widthDp >= this.expandedFrom) return this.expanded;
-    if (this.medium && widthDp >= this.mediumFrom) return this.medium;
-    return this.compact;
+    const index = this.resolveIndex(widthDp);
+    return index === 2 ? this.expanded! : index === 1 ? this.medium! : this.compact;
+  }
+
+  /** Which arm a window `widthDp` wide shows, as its slot: 0 compact, 1 medium, 2 expanded. The arm stands
+   * at that slot on every target, held alone or beside the others (C# twin: `ResolveIndex`, #1783). */
+  resolveIndex(widthDp: number): number {
+    if (this.expanded && widthDp >= this.expandedFrom) return 2;
+    if (this.medium && widthDp >= this.mediumFrom) return 1;
+    return 0;
   }
 }
 
@@ -531,7 +592,9 @@ export class GridTrack {
   }
 }
 
-interface GridConfig {
+interface GridConfig extends VisualNodeConfig {
+  /** Also a constructor parameter: an initializer that sets it reaches the config (#1823). */
+  gap?: number;
   rowGap?: number | null;
   padding?: EdgeInsetsValue;
   width?: SizeValue | number;
@@ -655,7 +718,12 @@ function level(value: number): number {
   return value;
 }
 
-interface TextConfig {
+interface TextConfig extends VisualNodeConfig {
+  /** Also constructor parameters: an initializer that sets one reaches the config (#1823). */
+  content?: string;
+  role?: string;
+  color?: ColorTokenValue | null;
+  maxLines?: number;
   styleOverride?: TypeStyleValue | null;
   /** 1..6, or 0 for text that is not part of the outline. */
   headingLevel?: number;
@@ -673,7 +741,6 @@ interface TextConfig {
   align?: string;
   /** Spec S6: animates color changes (the design's transition-colors). */
   transition?: TransitionSpec | null;
-  key?: string | null;
 }
 
 export class Text extends VisualNode {
@@ -737,10 +804,11 @@ export class Text extends VisualNode {
   }
 }
 
-interface PressableConfig {
+interface PressableConfig extends SingleChildNodeConfig {
+  /** Also a constructor parameter: an initializer that sets it reaches the config (#1823). */
+  onPressed?: (() => void) | null;
   disabled?: boolean;
   label?: string | null;
-  key?: string | null;
   /** Selection for a toggling/picking button — lowers to aria-pressed. */
   selected?: boolean | null;
   /** Partly selected — checkbox role only; wins over selected. */
@@ -988,6 +1056,27 @@ export class Theme extends InheritedComponent {
 // The context finds it by its class, which it cannot import: this module imports the context.
 registerThemeNode(Theme);
 
+/**
+ * The direction a subtree reads in (the C# `Directionality`, after Flutter's `Directionality`): a
+ * component below it reads `context.textDirection` as this node's `direction`, and builds again when a
+ * new one replaces it; one with none above it reads its UI culture's. The lowering writes it as `dir`
+ * on its child's own element, so a start and an end mirror under it.
+ */
+export class Directionality extends InheritedComponent {
+  readonly direction: TextDirectionValue;
+
+  constructor(direction: TextDirectionValue, child: VisualChild, config?: EqConfig) {
+    super(child, config);
+    this.direction = direction;
+  }
+
+  updateShouldNotify(old: InheritedComponent): boolean {
+    return (old as Directionality).direction !== this.direction;
+  }
+}
+// The context and the lowering find it by its class, which neither can import: this module imports both.
+registerDirectionalityNode(Directionality);
+
 export class InFlow extends VisualNode {
   readonly nodeKind = 'inFlow';
   child: VisualChild;
@@ -1096,9 +1185,13 @@ export class Sortable extends VisualNode {
   id: string;
   onDropped: (drop: SortDrop) => void;
   announcements: SortAnnouncementsValue | null;
+  /** The look of an item carried from this list, over the theme's (C# `Sortable.Style`, #1602). */
+  style: SortableTheme | null;
   group = '';
   axis = 'vertical';
   nests = false;
+  /** How far across the axis one depth of the items is indented; above 0 the items have depths (C# `Sortable.Indent`, #1594). */
+  indent = 0;
   label = '';
   onHovered: ((drop: SortDrop | null) => void) | null = null;
   accepts: ((drop: SortDrop) => boolean) | null = null;
@@ -1109,6 +1202,7 @@ export class Sortable extends VisualNode {
     id: string,
     onDropped: (drop: SortDrop) => void,
     announcements: SortAnnouncementsValue | null = null,
+    style: SortableTheme | null = null,
     config?: EqConfig,
   ) {
     super();
@@ -1116,6 +1210,7 @@ export class Sortable extends VisualNode {
     this.id = id;
     this.onDropped = onDropped;
     this.announcements = announcements;
+    this.style = style;
     if (config) Object.assign(this, config);
   }
 }
@@ -1128,6 +1223,8 @@ export class SortableItem extends VisualNode {
   enabled = true;
   /** The name the keyboard's steps say. C# twin: `SortableItem.Name`. */
   name = '';
+  /** The item's depth in a list whose items have depths. C# twin: `SortableItem.Depth` (#1594). */
+  depth = 0;
 
   constructor(child: VisualChild, id: string, config?: EqConfig) {
     super();
@@ -1154,13 +1251,12 @@ export class Overlay extends VisualNode {
 
   constructor(
     child: VisualChild,
-    config?: {
+    config?: SingleChildNodeConfig & {
       modal?: boolean;
       label?: string | null;
       alert?: boolean;
       open?: boolean;
       motion?: TransitionSpec | null;
-      key?: string | null;
     },
   ) {
     super();
@@ -1194,11 +1290,13 @@ export class Link extends VisualNode {
   keepsPosition = false;
   /** This link points at the page the reader is ON — aria-current="page" (C# twin). */
   current = false;
+  /** Opens the destination beside the page, in a new tab (C# twin, #941). */
+  opensBeside = false;
 
   constructor(
     destination: string,
     child: VisualChild,
-    config?: { label?: string | null; keepsPosition?: boolean; current?: boolean },
+    config?: SingleChildNodeConfig & { destination?: string; label?: string | null; keepsPosition?: boolean; current?: boolean; opensBeside?: boolean },
   ) {
     super();
     this.destination = destination;
@@ -1223,7 +1321,10 @@ export class DragDismiss extends VisualNode {
   }
 }
 
-interface TextEntryConfig {
+interface TextEntryConfig extends VisualNodeConfig {
+  /** Also constructor parameters: an initializer that sets one reaches the config (#1823). */
+  value?: string;
+  onChanged?: ((value: string) => void) | null;
   placeholder?: string | null;
   /** The accessible name (aria-label) — the C# initializer `{ Label = … }` lands here. */
   label?: string | null;
@@ -1235,6 +1336,8 @@ interface TextEntryConfig {
   onFocusChanged?: ((focused: boolean) => void) | null;
   disabled?: boolean;
   obscure?: boolean;
+  /** What the field takes (C# `Kind`). */
+  kind?: TextEntryKindValue;
   role?: string;
   /** Takes focus on mount (the command-palette contract). */
   autofocus?: boolean;
@@ -1260,6 +1363,8 @@ export class TextEntry extends VisualNode {
   onFocusChanged: ((focused: boolean) => void) | null = null;
   disabled = false;
   obscure = false;
+  /** What the field takes: its keyboard, its autofill, and that a value is no prose. */
+  kind: TextEntryKindValue = 'text';
   role = 'bodyL';
   autofocus = false;
   selectOnFocus = false;
@@ -1278,6 +1383,10 @@ export class TextEntry extends VisualNode {
 }
 
 interface LinearGradientConfig {
+  /** Also constructor parameters: an initializer that sets one reaches the config (#1823). */
+  from?: ColorTokenValue;
+  to?: ColorTokenValue;
+  direction?: string;
   via?: ColorTokenValue | null;
   viaPosition?: number;
 }
@@ -1373,6 +1482,10 @@ export class LinearGradient {
 }
 
 interface TransitionSpecConfig {
+  /** Also constructor parameters: an initializer that sets one reaches the config (#1823). */
+  channels?: number;
+  durationMs?: number;
+  delayMs?: number;
   easing?: CurveValue;
 }
 
@@ -1451,7 +1564,12 @@ export class GridPattern {
   }
 }
 
-interface LoopMotionConfig {
+interface LoopMotionConfig extends SingleChildNodeConfig {
+  /** Also constructor parameters: an initializer that sets one reaches the config (#1823). */
+  effect?: string;
+  fromX?: number;
+  toX?: number;
+  durationMs?: number;
   hideAtRest?: boolean;
 }
 
@@ -1502,7 +1620,9 @@ export class ScrollView extends VisualNode {
   constructor(
     child: VisualChild,
     axis = 'vertical',
-    config?: {
+    config?: SingleChildNodeConfig & {
+      // Also constructor parameters: an initializer that sets one reaches the config (#1823).
+      axis?: string;
       width?: SizeValue | number;
       height?: SizeValue | number;
       offset?: number;
@@ -1530,6 +1650,11 @@ export class Image extends VisualNode {
   fit: string;
   label: string;
   cornerRadius?: CornerRadii;
+  darkSource?: string | null;
+  /** C# `Image.FocalPoint` (#1785): fractions of the picture, 0..1 on each axis; the centre by default. */
+  focalPoint: { x: number; y: number } = { x: 0.5, y: 0.5 };
+  /** C# `Image.Zoom` (#1785): 1, the fit, or closer. */
+  zoom = 1;
 
   constructor(
     source: string,
@@ -1537,7 +1662,15 @@ export class Image extends VisualNode {
     height: number,
     fit = 'cover',
     label = '',
-    config?: { cornerRadius?: CornerRadii },
+    config?: VisualNodeConfig & {
+      // Also constructor parameters: an initializer that sets one reaches the config (#1823).
+      fit?: string;
+      label?: string;
+      cornerRadius?: CornerRadii;
+      darkSource?: string | null;
+      focalPoint?: { x: number; y: number };
+      zoom?: number;
+    },
   ) {
     super();
     this.source = source;
@@ -1546,6 +1679,14 @@ export class Image extends VisualNode {
     this.fit = fit;
     this.label = label;
     if (config) Object.assign(this, config);
+    // The C# init accessors' rules, so a page refuses in the browser what it refuses on the server.
+    const { x, y } = this.focalPoint;
+    if (!(x >= 0 && x <= 1) || !(y >= 0 && y <= 1)) {
+      throw exception('System.ArgumentOutOfRangeException', 'A focal point is a fraction of the picture on each axis, from 0 to 1. (Parameter \'FocalPoint\')');
+    }
+    if (!(this.zoom >= 1) || !Number.isFinite(this.zoom)) {
+      throw exception('System.ArgumentOutOfRangeException', 'A zoom draws the picture at its fit (1) or closer, never farther. (Parameter \'Zoom\')');
+    }
   }
 }
 
@@ -1623,7 +1764,7 @@ export class Progress extends VisualNode {
 
   constructor(
     child: VisualNode,
-    config?: { label?: string; value?: RangeValue | null; valueText?: string | null },
+    config?: SingleChildNodeConfig & { label?: string; value?: RangeValue | null; valueText?: string | null },
   ) {
     super();
     this.child = child;
@@ -1644,7 +1785,7 @@ export class LiveRegion extends VisualNode {
   urgency: LiveRegionUrgencyValue = 'polite';
   label = '';
 
-  constructor(child: VisualNode, config?: { urgency?: LiveRegionUrgencyValue; label?: string }) {
+  constructor(child: VisualNode, config?: SingleChildNodeConfig & { urgency?: LiveRegionUrgencyValue; label?: string }) {
     super();
     this.child = child;
     if (config) Object.assign(this, config);
@@ -1660,7 +1801,38 @@ export class Group extends VisualNode {
   child: VisualNode;
   label = '';
 
-  constructor(child: VisualNode, config?: { label?: string }) {
+  constructor(child: VisualNode, config?: SingleChildNodeConfig & { label?: string }) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `MergeSemantics` node: a subtree a reader hears as one stop. It draws nothing and adds
+ * no geometry.
+ */
+export class MergeSemantics extends VisualNode {
+  readonly nodeKind = 'mergeSemantics';
+  child: VisualNode;
+
+  constructor(child: VisualNode, config?: EqConfig) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `ExcludeSemantics` node: a subtree a reader passes over while it excludes. It draws
+ * nothing and adds no geometry.
+ */
+export class ExcludeSemantics extends VisualNode {
+  readonly nodeKind = 'excludeSemantics';
+  child: VisualNode;
+  excluding = true;
+
+  constructor(child: VisualNode, config?: SingleChildNodeConfig & { excluding?: boolean }) {
     super();
     this.child = child;
     if (config) Object.assign(this, config);
@@ -1692,7 +1864,9 @@ export class Adjustable extends VisualNode {
   constructor(
     child: VisualNode,
     onAdjust: (direction: number) => void,
-    config?: {
+    config?: SingleChildNodeConfig & {
+      // Also constructor parameters: an initializer that sets one reaches the config (#1823).
+      onAdjust?: (direction: number) => void;
       label?: string;
       role?: 'slider' | 'tablist' | 'radiogroup' | 'separator';
       axis?: 'vertical' | 'horizontal';
@@ -1732,7 +1906,10 @@ export class Navigable extends VisualNode {
   constructor(
     onMove: (move: NavigableMoveValue) => void,
     rows: VisualNode[],
-    config?: {
+    config?: VisualNodeConfig & {
+      // Also constructor parameters: an initializer that sets one reaches the config (#1823).
+      rows?: VisualNode[];
+      onMove?: (move: NavigableMoveValue) => void;
       onTextSearch?: ((text: string) => void) | null;
       label?: string;
       role?: 'grid' | 'tree';
@@ -1764,7 +1941,7 @@ export class CameraPreview extends VisualNode {
     session: { id: string } | null,
     width: number,
     height: number,
-    config?: { cornerRadius?: CornerRadii; label?: string },
+    config?: VisualNodeConfig & { cornerRadius?: CornerRadii; label?: string },
   ) {
     super();
     this.session = session;
@@ -1793,7 +1970,7 @@ export class WebFrame extends VisualNode {
   constructor(
     content: WebContent,
     title: string,
-    config?: {
+    config?: VisualNodeConfig & {
       sandbox?: number;
       width?: SizeValue | number;
       height?: SizeValue | number;
@@ -2188,7 +2365,7 @@ export class Stack extends VisualNode {
 
   constructor(
     align = 'topStart',
-    config?: { width?: SizeValue | number; height?: SizeValue | number; key?: string | null },
+    config?: VisualNodeConfig & { align?: string; width?: SizeValue | number; height?: SizeValue | number },
   ) {
     super();
     this.align = align;
@@ -2233,7 +2410,7 @@ export class Positioned extends VisualNode {
     end: number | null = null,
     bottom: number | null = null,
     start: number | null = null,
-    config?: {
+    config?: SingleChildNodeConfig & {
       top?: number | null;
       end?: number | null;
       bottom?: number | null;
@@ -2245,7 +2422,6 @@ export class Positioned extends VisualNode {
       shiftX?: number;
       shiftY?: number;
       layer?: number;
-      key?: string | null;
     },
   ) {
     super();
@@ -2258,7 +2434,7 @@ export class Positioned extends VisualNode {
   }
 }
 
-interface FlexibleConfig {
+interface FlexibleConfig extends SingleChildNodeConfig {
   /** C#'s object initializer can set the three numbers too (they are `init` there). */
   flex?: number;
   basis?: number;
@@ -2332,7 +2508,7 @@ export class Spacer extends VisualNode {
 
   constructor(
     flex = 1,
-    config?: { flex?: number; animateChanges?: boolean; key?: string | null },
+    config?: VisualNodeConfig & { flex?: number; fixedLength?: number; animateChanges?: boolean },
   ) {
     super();
     this.flex = flex;

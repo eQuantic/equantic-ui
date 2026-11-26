@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Button, Column, CornerRadii, DropTarget, EdgeInsets, Flexible, LiveRegion, PickedFile, ProgressBar, Row, SdkStrings, SizeValue, StatefulComponent, Text, UiComponent, Upload, UploadedFile, UploadPolicy, UploadStateValue } from "../runtime-exports";
+import { $eq, $UploadStateValue, Box, BoxStyle, BuildContext, Button, Column, CornerRadii, DropTarget, EdgeInsets, Flexible, LiveRegion, PickedFile, ProgressBar, Row, SdkStrings, SizeValue, StatefulComponent, Text, UiComponent, Upload, UploadedFile, UploadPolicy } from "../runtime-exports";
 
 export class FileUpload extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.FileUpload';
@@ -66,7 +66,7 @@ export class FileUpload extends StatefulComponent {
     }
 
     rowOf(upload: Upload, theme: any) {
-        let state: UploadStateValue = upload.state;
+        let state: $UploadStateValue = upload.state;
         let failed = state === 'failed';
         let heading = new Row(8, 'start', 'center', false, null, null, { width: SizeValue.fill });
         heading.add(new Flexible(new Text(upload.file.name, 'label', theme.textPrimary, 1)));
@@ -100,7 +100,7 @@ export class FileUpload extends StatefulComponent {
         let config = this._config;
         let count = config.multiple ? $eq.collections.count(files) : 1;
         this.setState(() => {
-            for (let i = 0; i < count; i++) {
+            for (let i = 0; i < count; i = i + 1 | 0) {
                 let upload = uploads.start($eq.collections.item(files, i), config.policy);
                 $eq.collections.listAdd(this._uploads, upload);
                 $eq.collections.listAdd(this._subscriptions, upload.subscribe($eq.delegates.bound(this, this.changed)));

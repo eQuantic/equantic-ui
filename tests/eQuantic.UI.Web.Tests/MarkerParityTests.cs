@@ -70,6 +70,24 @@ public class MarkerParityTests
             "the realizer's scrolled rules select on what scrolled-pinned.ts sets");
     }
 
+    /// <summary>A box's scrolled rule reads BOTH markers (#1769): the attribute the runtime sets, and
+    /// the one every header carries, where the rule stops at a nested header that is not scrolled.</summary>
+    [Fact]
+    public void ABoxsScrolledRule_ReadsTheMarkersTheRuntimeWrites()
+    {
+        var sink = new StyleSink();
+        WebRealizer.Lower(new Pinned(new Box(new BoxStyle
+        {
+            Scrolled = new StyleDiff { Opacity = 0.5f },
+        })), PhotonTheme.Instance, styles: sink);
+
+        var scrolled = MarkerFromTypeScript("SCROLLED_MARKER");
+        sink.Css.Should().Contain($"html :where([{scrolled}]) .",
+            "the box's rule selects on what scrolled-pinned.ts sets on its header");
+        sink.Css.Should().Contain($"[{MarkerFromTypeScript("PINNED_MARKER")}]:not([{scrolled}])",
+            "and stops at a header the realizer marks and the runtime has not set");
+    }
+
     private static string Marker(VisualNode node)
     {
         var lowered = WebRealizer.Lower(node, PhotonTheme.Instance);

@@ -584,7 +584,16 @@ accessibility. A downcast to a class with a twin SHALL keep its target's type fo
 without checking the value. A class's module SHALL import every app type its text names, whether or not its compile
 was handed a scan of the app. A parameter an alternate constructor may leave missing, a lambda stored in a static, a
 value a derived type evaluates before its base's constructor, and a primary constructor's parameter that defaults to
-null SHALL each hold the type C# declares for it.
+null SHALL each hold the type C# declares for it. A generic class, a plain one, a record, a struct or a
+component, SHALL declare its type parameters in TypeScript and none in plain JavaScript, and a record's members
+SHALL name its own type by its closure. A type parameter constrained to a class that is not generic and has a twin
+SHALL be declared `T extends` that class, the class imported, a nullable one (`ShapeBase?`) by its class, in TypeScript
+only; any other constraint, an interface's included, since
+an interface has no twin, SHALL leave it unconstrained. A cast
+to a type parameter SHALL assert it in TypeScript, `(value as T)`, checking nothing, as a downcast checks nothing,
+where TypeScript has the parameter in scope: a method's own, and a class's in an instance member of that class. A
+local function's own, a class's in a static member, which TypeScript forbids to read it, and a class's in a type nested
+in it, which is a module of its own, SHALL write the value alone, as before.
 
 #### Scenario: A base calls its abstract members
 
@@ -616,6 +625,49 @@ null SHALL each hold the type C# declares for it.
 
 - **WHEN** a class declares `class Base(string name)`
 - **THEN** its twin's constructor is `constructor(name: string = null!)`, and `tsc` takes it
+
+#### Scenario: A plain generic class, a record and a struct declare their type parameters
+
+- **WHEN** an app or the library declares `class Factory<T>` storing a `Func<T>`, `record Pair<TKey>(TKey Key, int Rank)`
+  and `struct Slot<TValue>` with a `TValue` field
+- **THEN** their modules declare `class Factory<T>`, `class Pair<TKey>` and `class Slot<TValue>`; `Pair`'s `with` answers
+  `Pair<TKey>`, `Slot`'s `with` and `$clone` answer `Slot<TValue>` and its static `$zero` answers `Slot<any>`; and `tsc`
+  takes them
+
+#### Scenario: Plain JavaScript declares no type parameters
+
+- **WHEN** the same classes and a generic component are compiled with type annotations off
+- **THEN** no class header carries a type parameter list, and the modules parse
+
+#### Scenario: A type parameter constrained to a class
+
+- **WHEN** `class Measured<T> where T : ShapeBase` reads `_shape.Area` on a `T`, and `record Tagged<T>(T Shape, string Tag)
+  where T : ShapeBase` reads `Shape.Area`
+- **THEN** their modules declare `class Measured<T extends ShapeBase>` and `class Tagged<T extends ShapeBase>`, import
+  `ShapeBase`, and `tsc` takes the reads; it refused them with TS2339
+
+#### Scenario: A cast to a type parameter
+
+- **WHEN** `class Handler<T> where T : ShapeBase` holds an `Action<T>` and calls it with `(T)shape` for a `ShapeBase`
+- **THEN** the twin writes `(shape as T)`, and `tsc` takes the call; it refused it with TS2345
+
+#### Scenario: A cast to a type parameter TypeScript cannot see
+
+- **WHEN** the same class's static member returns `(T)value`, and an instance member's local function
+  `static TOut Cast<TOut>(object held) => (TOut)held` casts to its own parameter
+- **THEN** both write the value alone, and `tsc` takes them; asserted, it refused them with TS2302 and TS2304
+
+#### Scenario: A nullable class constraint and a type nested in a generic one
+
+- **WHEN** `class Maybe<T> where T : ShapeBase?` reads `_shape?.Area`, and `class Owner<T>` declares a nested `class Held`
+  whose instance member returns `(T)value`
+- **THEN** `Maybe`'s header is `Maybe<T extends ShapeBase>` and imports `ShapeBase`, `Held` writes the value alone, plain
+  JavaScript imports no class only a constraint names, and `tsc` takes them
+
+#### Scenario: A constraint with no twin
+
+- **WHEN** a type parameter is constrained to an interface, to `struct`, `class`, `new()` or `notnull`
+- **THEN** its class header declares it unconstrained, as before
 
 ### Requirement: A component's store a property guards with field starts as C# starts it
 
@@ -730,13 +782,13 @@ a local or a property of one, SHALL compose its invocation list as on an event.
 ### Requirement: An array of an enum is typed as the enum crosses
 
 A field, a static's accessors or a local typed as an array of an enum, at any depth, SHALL be annotated with
-what the enum crosses as in the browser: a vocabulary enum's `<Enum>Value` union, imported from the runtime,
+what the enum crosses as in the browser: a vocabulary enum's `$<Enum>Value` union, imported from the runtime,
 and an app's own enum's member string, so the runtime's strict `tsc` takes the twin.
 
 #### Scenario: A static array of a vocabulary enum
 
 - **WHEN** a class declares `private static readonly TypeRole[] Roles = [TypeRole.BodyM];`
-- **THEN** its twin's accessors are typed `TypeRoleValue[]`, and its module imports `TypeRoleValue` from the runtime
+- **THEN** its twin's accessors are typed `$TypeRoleValue[]`, and its module imports `$TypeRoleValue` from the runtime
 
 #### Scenario: An array of an app's enum
 
@@ -766,3 +818,146 @@ A type test against an interface (`is`, `as`, a type pattern, a switch arm) SHAL
 
 - **WHEN** a program tests `o is IComparable`, `o is IEnumerable`, `o is IEnumerable<int>` or `o is IBox<int>`
 - **THEN** the build refuses it with EQ2015
+
+### Requirement: A type named like an enum's union is its own
+
+A vocabulary enum's union SHALL be named, in every module eqc writes, with a character C# cannot spell
+(`$DensityValue` for `Density`), so a type of any name an app or the vocabulary declares beside the enum
+SHALL be that type, imported from its own module, and never taken for the union. Every top-level non-flags enum
+of the vocabulary's assemblies SHALL have its union, an internal one included, since a twin imports the union of
+whatever enum its C# names. A `file` enum, whose metadata name no code can say, SHALL have none.
+
+#### Scenario: An app's record named like the union
+
+- **WHEN** an app declares `record DensityValue(int Rows)` and a component whose constructor takes a
+  `Density` and a `DensityValue`
+- **THEN** the component's module imports `DensityValue` from the app's module and `$DensityValue` from
+  the runtime, and it builds and runs as .NET runs it, with type annotations on and off
+
+#### Scenario: An internal enum has its union
+
+- **WHEN** an assembly holds an internal top-level enum, a `file` enum and a public class with a nested enum
+- **THEN** the generator's list of unions holds the internal enum, and neither the `file` one nor the nested one
+
+### Requirement: A named argument and an initializer both reach the twin
+
+A construction that hands its object initializer to the twin as the constructor's trailing config SHALL
+place each argument in the parameter the bound tree binds it to, fill the parameters no argument reached
+with their defaults counted from the arguments emitted, and pass the initializer in the config slot, so a
+named argument beside an initializer keeps both.
+
+#### Scenario: A vocabulary record with a named argument and an initializer
+
+- **WHEN** a component builds `new TextRun(code, Mono: true) { StyleOverride = new TypeStyle(13, …) }`
+- **THEN** the twin receives the content, no color and `mono` in its positional parameters and the
+  initializer in its config, and the run's `Mono` and its `StyleOverride` are what .NET reads
+
+#### Scenario: Every argument named, out of order
+
+- **WHEN** `new TextRun(Mono: true, Content: "x") { Italic = true }` is built
+- **THEN** the twin's content is `"x"`, its `mono` is true and its `italic` is true, as in .NET
+
+### Requirement: A hand-written twin's config takes every member its C# class lets an initializer set
+
+An object initializer on a vocabulary type whose twin the runtime writes by hand SHALL pass the runtime's strict
+`tsc` for every member the C# class lets it set, and the twin SHALL hold each value it sets. The config each such
+twin's constructor takes, a named interface or a literal written in place, SHALL hold the C# class's public
+settable members, those its constructor also takes as parameters included, and nothing C# does not have, but for
+the members `vocabulary-config.baseline.txt` names with a reason, a list that may only shrink. A config typed as a
+record of anything (`EqConfig`) takes every member.
+
+#### Scenario: A box style's foreground
+
+- **WHEN** a module eqc writes builds `new BoxStyle { Foreground = new ColorToken(Color.Black) }`
+- **THEN** the runtime's `tsc` takes it, and the twin's `foreground` holds that token
+
+#### Scenario: A node's config written in place
+
+- **WHEN** a module eqc writes builds `new Group(child) { Label = "Totals", Bookmark = "totals", AlignSelf = CrossAlign.Center, GridSpan = 2 }`
+- **THEN** the runtime's `tsc` takes it, and the twin holds `bookmark` `totals`, `alignSelf` `center` and
+  `gridSpan` `2`
+
+#### Scenario: A spacer's fixed length
+
+- **WHEN** a module eqc writes builds `new Spacer { FixedLength = 8 }`
+- **THEN** the runtime's `tsc` takes it, and the twin's `fixedLength` is `8`
+
+#### Scenario: A member the constructor also takes
+
+- **WHEN** a module eqc writes builds `new Image("a.png", 1, 2) { Label = "Chart" }` and
+  `new Group(first) { Child = second }`
+- **THEN** the runtime's `tsc` takes both, the image's `label` is `Chart` and the group's `child` is `second`, as
+  in .NET, where the initializer runs after the constructor
+
+#### Scenario: Every config of the mirror
+
+- **WHEN** the suite reads every config a class of the hand-written mirror takes, and the C# type of that class
+- **THEN** no member differs either way but those the baseline names, and an entry of the baseline that no longer
+  differs fails the suite
+
+### Requirement: An HtmlElement subclass runs its constructor as C# does
+
+A class deriving from `HtmlElement` SHALL run its constructor's body in the browser, a block's or an arrow's. Its
+parameters SHALL keep their C# defaults, a primary constructor's parameters SHALL be held on each instance, and an
+initializer beside the arguments SHALL be applied after the constructor, so every member it reads is what .NET reads.
+
+#### Scenario: An explicit constructor and its default
+
+- **WHEN** `Chip(string label, int size = 2) { _label = label; _size = size; }` is built as `new Chip("a", 5)` and
+  `new Chip("b")`, and `Says()` returns `_label + "|" + _size`
+- **THEN** they read `a|5` and `b|2`, as in .NET
+
+#### Scenario: A primary constructor
+
+- **WHEN** `class Tag(string label, int size = 2) : HtmlElement` is built as `new Tag("e", 9)`, and `Says()` returns
+  `label + "|" + size`
+- **THEN** it reads `e|9`, as in .NET
+
+#### Scenario: An arrow constructor feeds what Render builds
+
+- **WHEN** `Blocky(string text) => _text = text;` is built as `new Blocky("g")`, and `Render()` returns
+  `new HtmlNode { Tag = "p", TextContent = _text }`
+- **THEN** the node's tag is `p` and its text is `g`, as in .NET
+
+### Requirement: A component's dependency leaves no slot before its initializer
+
+A construction of a component whose constructor takes a dependency, built with an object initializer, SHALL pass
+its other arguments in the parameters the twin's constructor keeps, fill the kept parameters no argument reached
+with their own defaults, and pass the initializer in the config slot after them, so the component holds what .NET
+builds whichever way its arguments are written.
+
+#### Scenario: A named argument after the dependency
+
+- **WHEN** a component is built with `new Quark(null, mood: "x") { Size = 3 }`, for
+  `Quark(IClock? clock, string mood = "calm")` with `int Size { get; init; }`
+- **THEN** it reads `Mood` `x` and `Size` `3`, as in .NET
+
+#### Scenario: No argument after the dependency
+
+- **WHEN** it is built with `new Quark(null) { Size = 5 }`
+- **THEN** it reads `Mood` `calm` and `Size` `5`, as in .NET
+
+#### Scenario: The dependency in the middle
+
+- **WHEN** a component is built with `new Middle("a", null) { Tone = "warm" }`, for
+  `Middle(string before, IClock? clock, int after = 3)`
+- **THEN** it reads `Before` `a`, `After` `3` and `Tone` `warm`, as in .NET
+
+### Requirement: A runtime library's generic, built by an app, keeps its type arguments
+
+A closed construction of a generic class, record or struct the runtime library twins SHALL be marked with its
+type arguments wherever an app writes it, as one the app's source declares is, though the app reads that
+generic from metadata. A generic the runtime maps to JavaScript's own types, and a construction whose type
+arguments are known only at run time, SHALL stay unmarked.
+
+#### Scenario: A factory of the framework's over an app's type
+
+- **WHEN** an app builds `new GestureRecognizerFactoryWithHandlers<HoldThenDrag>(…)`, the factory read from
+  the framework's assembly
+- **THEN** the value is marked with `HoldThenDrag`, so its runtime type is not that of a factory over another
+  type, as in .NET
+
+#### Scenario: A collection of the BCL's
+
+- **WHEN** an app builds `new List<int>()`
+- **THEN** it crosses as before, a JavaScript array with no mark

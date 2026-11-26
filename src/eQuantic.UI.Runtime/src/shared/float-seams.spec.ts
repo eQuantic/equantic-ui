@@ -17,6 +17,7 @@ import { commitScrollViewports } from './scroll-viewports';
 import { photonTheme } from './design-system.generated';
 import { CanvasPointer } from './canvas-pointer';
 import { Point } from './value-types';
+import { SortableTheme } from './theme-slots';
 
 /** A double that is not a single, so a seam that passes it through is visible. */
 const RAW = 0.1;
@@ -107,6 +108,19 @@ describe('the runtime hands C# a single wherever C# says float', () => {
     expect(point.x).toBe(Math.fround(10 + RAW));
     expect(point.y).toBe(Math.fround(6 + RAW));
     expect(point.x).not.toBe(10 + RAW);
+  });
+
+  // A list's own look of a carried item (#1602): the controller builds it from the numbers the list's element says,
+  // and the twin holds each float member as the C# record does.
+  it('SortableTheme', () => {
+    const look = new SortableTheme({ liftedOpacity: RAW, copyOpacity: 0.5 + RAW, maxLean: 6 + RAW, copyElevation: 5 });
+
+    expect(look.liftedOpacity).toBe(SINGLE);
+    expect(look.copyOpacity).toBe(Math.fround(0.5 + RAW));
+    expect(look.maxLean).toBe(Math.fround(6 + RAW));
+    expect(look.liftedOpacity).not.toBe(RAW);
+    expect(look.copyElevation).toBe(5);
+    expect(new SortableTheme().liftedOpacity).toBeNull();
   });
 
   // The pointer twin is written by hand, so its members answer what the C# record's do, measured

@@ -129,6 +129,15 @@
   <data name="NextMonth" xml:space="preserve">
     <value>Next month</value>
   </data>
+  <data name="PreviousPage" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="PageNumbered" xml:space="preserve">
+    <value>Page {0}</value>
+  </data>
   <data name="Today" xml:space="preserve">
     <value>Today</value>
   </data>
@@ -345,5 +354,26 @@
   </data>
   <data name="TableColumns" xml:space="preserve">
     <value>Columns</value>
+  </data>
+  <data name="AmountExpected" xml:space="preserve">
+    <value>Enter an amount, such as {0}</value>
+  </data>
+  <data name="WholeNumberExpected" xml:space="preserve">
+    <value>Enter a whole number, such as {0}</value>
+  </data>
+  <data name="ValueBetween" xml:space="preserve">
+    <value>Enter a value from {0} to {1}</value>
+  </data>
+  <data name="ValueAtLeast" xml:space="preserve">
+    <value>Enter at least {0}</value>
+  </data>
+  <data name="ValueAtMost" xml:space="preserve">
+    <value>Enter at most {0}</value>
+  </data>
+  <data name="NamedWithAffixes" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+  <data name="ValueWithUnit" xml:space="preserve">
+    <value>{0} {1}</value>
   </data>
 </root>

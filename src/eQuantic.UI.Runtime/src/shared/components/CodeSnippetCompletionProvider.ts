@@ -16,8 +16,8 @@ export class CodeSnippetCompletionProvider {
     async completeAsync(document: CodeDocument, position: CodePosition, _context: CodeCompletionContext, _cancellation: CancellationToken) {
         let line = document.line(position.line);
         let start = position.column;
-        while (start > 0 && CodeDocument.isWordChar(line[start - 1])) start--;
-        if (start > 0 && line[start - 1] === '.') return Promise.resolve(CodeCompletionList.empty);
+        while (start > 0 && CodeDocument.isWordChar(line[start - 1 | 0])) start = start - 1 | 0;
+        if (start > 0 && line[start - 1 | 0] === '.') return Promise.resolve(CodeCompletionList.empty);
         return Promise.resolve(new CodeCompletionList(this._items));
     }
 

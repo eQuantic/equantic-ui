@@ -74,6 +74,14 @@ internal static class ChildProcess
     /// process it left behind still holds its output is left to it. Either way the run fails as a
     /// <see cref="TimeoutException"/> naming the command.
     /// <para>
+    /// With <paramref name="work"/>, the program is held to its own processor time as well, and killed
+    /// once it has used that much: a deadline on the WORK it does, which a loop that never ends exhausts
+    /// whatever the machine's load, and which a run waiting for a processor does not spend (#1850). The
+    /// clock deadline then only catches a program that waits without working. A conformance case on a
+    /// machine at a load of 160 over 14 cores gets about a ninth of a core, so a walk of three seconds
+    /// alone took longer than the twenty a clock deadline gave it and failed with nothing wrong with it.
+    /// </para>
+    /// <para>
     /// The conformance suite runs a program through here thousands of times, so the run costs what
     /// starting a process costs and the deadline nothing more: blocking waits on one clock read as a
     /// timestamp, and the command written out only for the failure that names it.
@@ -85,18 +93,19 @@ internal static class ChildProcess
         TimeSpan deadline,
         string? workingDirectory = null,
         IEnumerable<KeyValuePair<string, string?>>? environment = null,
-        Encoding? encoding = null)
+        Encoding? encoding = null,
+        TimeSpan? work = null)
     {
         var started = Stopwatch.GetTimestamp();
         using var process = Started(program, arguments, workingDirectory, environment, encoding);
         var output = process.StandardOutput.ReadToEndAsync();
         var error = process.StandardError.ReadToEndAsync();
 
-        if (!process.WaitForExit(deadline))
+        if (WaitForExit(process, started, deadline, work) is { } late)
         {
             try { process.Kill(entireProcessTree: true); }
             catch (InvalidOperationException) { /* it exited between the deadline and the kill */ }
-            throw new TimeoutException($"{Command(process.StartInfo)} did not finish within {deadline}, and was killed with every process it started.");
+            throw new TimeoutException($"{Command(process.StartInfo)} did not finish within {late}, and was killed with every process it started.");
         }
         if (!output.Wait(Left()) || !error.Wait(Left()))
             throw new TimeoutException(
@@ -105,6 +114,58 @@ internal static class ChildProcess
         return (process.ExitCode, output.Result, error.Result);
 
         TimeSpan Left() => deadline - Stopwatch.GetElapsedTime(started) is var left && left > TimeSpan.Zero ? left : TimeSpan.Zero;
+    }
+
+    /// <summary>
+    /// Waits for <paramref name="process"/> to exit, and answers null when it did, or what it ran out of:
+    /// <paramref name="deadline"/> on the clock, or <paramref name="work"/> of its own processor time. The
+    /// wait for the work is taken on the clock in slices of the work still left, and the time is read only
+    /// when a slice ends: a process of one busy thread spends at most the slice, and one of several may
+    /// spend a multiple of it before it is read, which a deadline allows. A slice is a whole millisecond
+    /// at least, as the wait counts in milliseconds and would not wait at all for less.
+    /// </summary>
+    /// <para>
+    /// <paramref name="read"/> reads the time, the process's own <see cref="Process.TotalProcessorTime"/>
+    /// unless a test hands another, to fail as a platform's read fails.
+    /// </para>
+    internal static string? WaitForExit(Process process, long started, TimeSpan deadline, TimeSpan? work,
+        Func<Process, TimeSpan>? read = null)
+    {
+        if (work is not { } budget) return process.WaitForExit(deadline) ? null : $"{deadline}";
+        while (true)
+        {
+            var clockLeft = deadline - Stopwatch.GetElapsedTime(started);
+            if (clockLeft <= TimeSpan.Zero) return process.WaitForExit(0) ? null : $"{deadline}";
+            var used = ProcessorTime(process, read ?? (running => running.TotalProcessorTime));
+            if (used is null) return process.WaitForExit(clockLeft) ? null : $"{deadline}";
+            var workLeft = budget - used.Value;
+            if (workLeft <= TimeSpan.Zero) return process.WaitForExit(0) ? null : $"{budget} of its own processor time";
+            var slice = workLeft < clockLeft ? workLeft : clockLeft;
+            if (process.WaitForExit(TimeSpan.FromMilliseconds(Math.Ceiling(slice.TotalMilliseconds)))) return null;
+        }
+    }
+
+    /// <summary>
+    /// The processor time a running process has used, every thread of it, or null where there is none to
+    /// read: it has exited, or it cannot be read, and the wait is then left to the clock, which answers at
+    /// once for a process that has exited. A read never fails the run. A process may exit between the check
+    /// for its exit and the read, and the read then fails in the platform's words: .NET answers an
+    /// <see cref="InvalidOperationException"/> where it saw the exit, and on Linux a
+    /// <see cref="Win32Exception"/> ("Unable to retrieve the specified information about the process or
+    /// thread") once the process's <c>/proc</c> entry went with its reaping, which a conformance case on
+    /// CI met as its answer (#1850).
+    /// </summary>
+    private static TimeSpan? ProcessorTime(Process process, Func<Process, TimeSpan> read)
+    {
+        try
+        {
+            process.Refresh();
+            return process.HasExited ? null : read(process);
+        }
+        catch (Exception unread) when (unread is InvalidOperationException or Win32Exception or NotSupportedException)
+        {
+            return null;
+        }
     }
 
     /// <summary>

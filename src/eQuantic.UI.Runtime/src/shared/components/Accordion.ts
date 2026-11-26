@@ -28,7 +28,7 @@ export class Accordion extends StatefulComponent {
         let slot = theme.list;
         let paddingX = slot?.sectionPaddingX ?? 12;
         let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        for (let i = 0; i < $eq.collections.count(this.items); i++) {
+        for (let i = 0; i < $eq.collections.count(this.items); i = i + 1 | 0) {
             let item = $eq.collections.item(this.items, i);
             let index = i;
             let open = this.isOpen(i);
@@ -41,7 +41,7 @@ export class Accordion extends StatefulComponent {
             if (open && (content = item.content) != null) {
                 column.add(new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(paddingX, 0, paddingX, slot?.sectionPaddingBottom ?? 12) }), content));
             }
-            if (i < $eq.collections.count(this.items) - 1) column.add(new Divider());
+            if (i < ($eq.collections.count(this.items) - 1 | 0)) column.add(new Divider());
         }
         return column;
     }

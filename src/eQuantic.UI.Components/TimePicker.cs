@@ -45,9 +45,23 @@ public sealed class TimePicker : StatefulComponent
     public bool Disabled { get => _disabled; init => _disabled = value; }
     private bool _disabled;
 
+    /// <summary>The time this picker last reported, until its parent draws it again (#1780).</summary>
+    private TimeOnly? _reported;
+
+    /// <summary>A half of a picker that says the notice for the whole (<see cref="DateTimePicker"/>), so
+    /// this one says none: the halves only follow the whole, and the page made one mistake (#1780).</summary>
+    internal bool Composed { get => _composed; init => _composed = value; }
+    private bool _composed;
+
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not TimePicker fresh) return;
+        // Drawn again with no time after it reported one, it shows none while the page keeps the time
+        // (DatePicker says why this is said).
+        if (_reported is { } said && fresh.Selected is null && !Composed)
+            DevelopmentNotices.Say($"A TimePicker reported {said:t} through onChanged and was drawn again with no time, "
+                + "so its field emptied: a picker shows the time it is handed. Hand it back the time onChanged reports.");
+        _reported = null;
         Selected = fresh.Selected;
         OnChanged = fresh.OnChanged;
         StepMinutes = Step(fresh.StepMinutes);
@@ -56,6 +70,7 @@ public sealed class TimePicker : StatefulComponent
         Label = fresh.Label;
         Style = fresh.Style;
         _disabled = fresh.Disabled;
+        _composed = fresh.Composed;
     }
 
     /// <summary>The step both doors agree on — the constructor's and the adopt's. A step under a
@@ -202,6 +217,7 @@ public sealed class TimePicker : StatefulComponent
 
     private void Pick(TimeOnly time)
     {
+        if (OnChanged is not null) _reported = time;
         OnChanged?.Invoke(time);
         SetState(() => _open = false);
     }

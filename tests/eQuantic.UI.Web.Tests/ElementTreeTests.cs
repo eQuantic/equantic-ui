@@ -406,6 +406,129 @@ public class ElementTreeTests
         holder.ChildAt(0).Should().BeNull();
     }
 
+    /// <summary>A component that holds an overlay over <paramref name="layer"/>.</summary>
+    private sealed class Opener(VisualNode layer) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new Overlay(layer);
+    }
+
+    /// <summary>
+    /// A frame whose realizer drew only parts of the tree, the web's patch render, keeps a layer it did
+    /// not draw, which the page still shows, and a frame that drew nothing keeps every layer. Only a frame
+    /// that drew the whole tree, saying nothing, takes out a layer it did not show (#1575).
+    /// </summary>
+    [Fact]
+    public void ADeferredSlotOutsideWhatAFrameDrew_KeepsItsLayer()
+    {
+        var log = new List<string>();
+        var owner = new ComponentBoundary().Owner();
+        var counter = new Counter("a");
+        var overlay = new Overlay(new Tracked(log));
+        var column = new Column();
+        column.Add(counter);
+        column.Add(overlay);
+
+        var root = owner.Build(column, Context, 400f, rebuildAll: true);
+        var holder = (NodeElement)root.ChildAt(1)!;
+        holder.ShowDeferred(overlay.Child);
+        owner.EndFrame();
+        log.Should().Equal("mounted");
+
+        counter.Press();
+        owner.Build(column, Context, 400f, rebuildAll: false);
+        owner.DrewOnly([root.ChildAt(0)!]);
+        owner.EndFrame();
+        log.Should().Equal(["mounted"], "the counter's part was drawn again, the overlay's was not");
+
+        owner.Build(column, Context, 400f, rebuildAll: false);
+        owner.DrewOnly([]);
+        owner.EndFrame();
+        log.Should().Equal(["mounted"], "a frame that drew nothing judged no layer");
+        holder.ChildAt(0).Should().NotBeNull();
+
+        owner.Build(column, Context, 400f, rebuildAll: false);
+        owner.EndFrame();
+        log.Should().Equal(["mounted", "unmounted"], "a frame that drew the whole tree did not show it");
+    }
+
+    /// <summary>What a realizer drew is said of one frame: a frame that never reached its end hands
+    /// nothing to the next, which drew the whole tree and takes out the layer it did not show.</summary>
+    [Fact]
+    public void WhatAFrameDrew_IsForgottenWhenTheNextFrameBegins()
+    {
+        var log = new List<string>();
+        var owner = new ComponentBoundary().Owner();
+        var counter = new Counter("a");
+        var overlay = new Overlay(new Tracked(log));
+        var column = new Column();
+        column.Add(counter);
+        column.Add(overlay);
+
+        var root = owner.Build(column, Context, 400f, rebuildAll: true);
+        ((NodeElement)root.ChildAt(1)!).ShowDeferred(overlay.Child);
+        owner.EndFrame();
+
+        owner.Build(column, Context, 400f, rebuildAll: false);
+        owner.DrewOnly([root.ChildAt(0)!]);
+
+        owner.Build(column, Context, 400f, rebuildAll: false);
+        owner.EndFrame();
+
+        log.Should().Equal("mounted", "unmounted");
+    }
+
+    /// <summary>A layer inside what a frame drew is judged as a whole frame judges it: one the frame did
+    /// not show has closed, and leaves (#1575).</summary>
+    [Fact]
+    public void ADeferredSlotInsideWhatAFrameDrew_LeavesWhenItIsNotShown()
+    {
+        var log = new List<string>();
+        var owner = new ComponentBoundary().Owner();
+        var layer = new Tracked(log);
+        var column = new Column();
+        column.Add(new Opener(layer));
+
+        var root = owner.Build(column, Context, 400f, rebuildAll: true);
+        var opener = root.ChildAt(0)!;
+        var holder = (NodeElement)opener.ChildAt(0)!;
+        holder.ShowDeferred(layer);
+        owner.EndFrame();
+        log.Should().Equal("mounted");
+
+        owner.Build(column, Context, 400f, rebuildAll: false);
+        owner.DrewOnly([opener]);
+        owner.EndFrame();
+
+        log.Should().Equal("mounted", "unmounted");
+    }
+
+    /// <summary>A position marked inside a layer waits for the layer to be shown, and the owner says so,
+    /// for a realizer that draws only parts of the tree and would never show it (#1575).</summary>
+    [Fact]
+    public void APositionMarkedInsideALayer_WaitsForIt_UntilTheLayerIsShown()
+    {
+        var owner = new ComponentBoundary().Owner();
+        var inner = new Counter("inner");
+        var overlay = new Overlay(inner);
+        var column = new Column();
+        column.Add(overlay);
+
+        var root = owner.Build(column, Context, 400f, rebuildAll: true);
+        var holder = (NodeElement)root.ChildAt(0)!;
+        holder.ShowDeferred(overlay.Child);
+        owner.EndFrame();
+        owner.WaitsForALayer.Should().BeFalse();
+
+        inner.Press();
+        owner.Build(column, Context, 400f, rebuildAll: false);
+        owner.WaitsForALayer.Should().BeTrue("the press is inside a layer the build phase does not reach");
+
+        holder.ShowDeferred(overlay.Child);
+        owner.WaitsForALayer.Should().BeFalse("showing the layer built it");
+        inner.Count.Should().Be(1);
+        owner.EndFrame();
+    }
+
     private sealed class Logged(string label, List<string> log) : StatefulComponent
     {
         public string Label { get; } = label;

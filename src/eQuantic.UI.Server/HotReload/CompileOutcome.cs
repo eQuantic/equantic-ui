@@ -11,4 +11,11 @@ internal sealed record CompileOutcome(bool Compiled, IReadOnlyList<string> Error
 
     /// <summary>A compile that did not run to its end, for the reason given.</summary>
     public static CompileOutcome NotRun(string why) => new(false, [why]);
+
+    /// <summary>No compile can run for this host: its project is not built with eQuantic.UI.Sdk, so there is no
+    /// eqc to start, which the server has said once already (#1757). A save has nothing to tell the page.</summary>
+    public static CompileOutcome Off { get; } = new(false, []) { Unavailable = true };
+
+    /// <summary>Whether no compile can run for this host at all, rather than this one having failed.</summary>
+    public bool Unavailable { get; init; }
 }

@@ -1,4 +1,4 @@
-import { $eq, Box, BuildContext, Size, SizeValue, StatefulComponent, TableOffset, TableRoleValue, TableScroll, TableSpans, TableViewCell, TableViewport, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, $TableRoleValue, Box, BuildContext, Size, SizeValue, StatefulComponent, TableOffset, TableScroll, TableSpans, TableViewCell, TableViewport, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TableView extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TableView';
@@ -24,7 +24,7 @@ export class TableView extends StatefulComponent {
     declare label: any;
     declare scroll: any;
     declare canRequestFocus: boolean;
-    declare role: TableRoleValue;
+    declare role: $TableRoleValue;
     declare cellRole: any;
     declare selected: ((arg1: number, arg2: number) => boolean) | null;
     declare current: any;
@@ -75,21 +75,21 @@ export class TableView extends StatefulComponent {
         let config = this._config;
         let rows = config.rows;
         let columns = config.columns;
-        let pinnedRows = Math.min(Math.max(config.pinnedRows, 0), rows.count);
-        let pinnedColumns = Math.min(Math.max(config.pinnedColumns, 0), columns.count);
+        let pinnedRows = $eq.num.clamp(config.pinnedRows, 0, rows.count, 'int32');
+        let pinnedColumns = $eq.num.clamp(config.pinnedColumns, 0, columns.count, 'int32');
         let scroll = config.scroll ?? this._ownScroll;
         if (!this.covers(scroll.offset) || this._lastRow >= rows.count || this._lastColumn >= columns.count) this.window(scroll.offset);
         let viewport = new TableViewport(rows, columns, scroll, { pinnedRows: pinnedRows, pinnedColumns: pinnedColumns, width: config.width, height: config.height, request: config.request, onScrolled: $eq.delegates.bound(this, this.scrolled).bind(this), onViewportChanged: $eq.delegates.bound(this, this.viewportChanged).bind(this), label: config.label, canRequestFocus: config.canRequestFocus, role: config.role });
-        for (let row = 0; row < pinnedRows; row++) {
-            for (let column = 0; column < pinnedColumns; column++) this.place(viewport, row, column);
-            for (let column = this._firstColumn; column <= this._lastColumn; column++) this.place(viewport, row, column);
+        for (let row = 0; row < pinnedRows; row = row + 1 | 0) {
+            for (let column = 0; column < pinnedColumns; column = column + 1 | 0) this.place(viewport, row, column);
+            for (let column = this._firstColumn; column <= this._lastColumn; column = column + 1 | 0) this.place(viewport, row, column);
         }
-        for (let row = this._firstRow; row <= this._lastRow; row++) {
-            for (let column = 0; column < pinnedColumns; column++) this.place(viewport, row, column);
-            for (let column = this._firstColumn; column <= this._lastColumn; column++) this.place(viewport, row, column);
+        for (let row = this._firstRow; row <= this._lastRow; row = row + 1 | 0) {
+            for (let column = 0; column < pinnedColumns; column = column + 1 | 0) this.place(viewport, row, column);
+            for (let column = this._firstColumn; column <= this._lastColumn; column = column + 1 | 0) this.place(viewport, row, column);
         }
         let marks: any; 
-        if ((marks = config.marks) != null) for (let index = 0; index < $eq.collections.count(marks); index++) TableView.addMark(viewport, $eq.collections.item(marks, index), index, pinnedRows, pinnedColumns);
+        if ((marks = config.marks) != null) for (let index = 0; index < $eq.collections.count(marks); index = index + 1 | 0) TableView.addMark(viewport, $eq.collections.item(marks, index), index, pinnedRows, pinnedColumns);
         return viewport;
     }
 
@@ -112,14 +112,14 @@ export class TableView extends StatefulComponent {
     }
 
     static addMark(viewport: TableViewport, mark: TableViewCell, index: number, pinnedRows: number, pinnedColumns: number) {
-        let lastRow = mark.row + Math.max(1, mark.rows);
-        let lastColumn = mark.column + Math.max(1, mark.columns);
+        let lastRow = mark.row + Math.max(1, mark.rows) | 0;
+        let lastColumn = mark.column + Math.max(1, mark.columns) | 0;
         let piece = 0;
         for (const [rowFrom, rowTo] of $eq.collections.listWalk(TableView.cut(mark.row, lastRow, pinnedRows))) {
             for (const [columnFrom, columnTo] of $eq.collections.listWalk(TableView.cut(mark.column, lastColumn, pinnedColumns))) {
                 let key: any; 
-                viewport.add(new TableViewCell(rowFrom, columnFrom, mark.child, true, { rows: rowTo - rowFrom, columns: columnTo - columnFrom, key: (key = mark.key) != null ? key + '/' + (rowFrom < pinnedRows ? 'p' : 'b') + (columnFrom < pinnedColumns ? 'p' : 'b') : 'mark:' + $eq.text.format(index, null, undefined, undefined, 'int32') + '/' + $eq.text.format(piece, null, undefined, undefined, 'int32'), glide: mark.glide }));
-                piece++;
+                viewport.add(new TableViewCell(rowFrom, columnFrom, mark.child, true, { rows: rowTo - rowFrom | 0, columns: columnTo - columnFrom | 0, key: (key = mark.key) != null ? key + '/' + (rowFrom < pinnedRows ? 'p' : 'b') + (columnFrom < pinnedColumns ? 'p' : 'b') : 'mark:' + $eq.text.format(index, null, undefined, undefined, 'int32') + '/' + $eq.text.format(piece, null, undefined, undefined, 'int32'), glide: mark.glide }));
+                piece = piece + 1 | 0;
             }
         }
     }
@@ -140,19 +140,19 @@ export class TableView extends StatefulComponent {
     window(offset: TableOffset) {
         let [firstRow, lastRow, firstColumn, lastColumn] = this.visible(offset);
         let overscan = Math.max(0, this._config.overscan);
-        let pinnedRows = Math.min(Math.max(this._config.pinnedRows, 0), this._config.rows.count);
-        let pinnedColumns = Math.min(Math.max(this._config.pinnedColumns, 0), this._config.columns.count);
-        this._firstRow = Math.max(pinnedRows, firstRow - overscan);
-        this._lastRow = Math.min(this._config.rows.count - 1, lastRow + overscan);
-        this._firstColumn = Math.max(pinnedColumns, firstColumn - overscan);
-        this._lastColumn = Math.min(this._config.columns.count - 1, lastColumn + overscan);
+        let pinnedRows = $eq.num.clamp(this._config.pinnedRows, 0, this._config.rows.count, 'int32');
+        let pinnedColumns = $eq.num.clamp(this._config.pinnedColumns, 0, this._config.columns.count, 'int32');
+        this._firstRow = Math.max(pinnedRows, firstRow - overscan | 0);
+        this._lastRow = Math.min(this._config.rows.count - 1 | 0, lastRow + overscan | 0);
+        this._firstColumn = Math.max(pinnedColumns, firstColumn - overscan | 0);
+        this._lastColumn = Math.min(this._config.columns.count - 1 | 0, lastColumn + overscan | 0);
     }
 
     visible(offset: TableOffset): [number, number, number, number] {
         let config = this._config;
         let size = this._viewport.width > 0 && this._viewport.height > 0 ? this._viewport : TableView.firstGuess;
-        let pinnedRows = Math.min(Math.max(config.pinnedRows, 0), config.rows.count);
-        let pinnedColumns = Math.min(Math.max(config.pinnedColumns, 0), config.columns.count);
+        let pinnedRows = $eq.num.clamp(config.pinnedRows, 0, config.rows.count, 'int32');
+        let pinnedColumns = $eq.num.clamp(config.pinnedColumns, 0, config.columns.count, 'int32');
         let pinnedDown = config.rows.offsetOf(pinnedRows);
         let pinnedAcross = config.columns.offsetOf(pinnedColumns);
         let firstRow = Math.max(pinnedRows, config.rows.indexAt(offset.down + pinnedDown));

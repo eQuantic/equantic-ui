@@ -58,7 +58,7 @@ internal readonly struct LaidOutChildren
             if (node is AdaptiveNode adaptive)
             {
                 node = _ctx.ArmOf(adaptive);
-                at = at?.ChildAt(0);
+                at = at?.ChildAt(_ctx.ArmSlotOf(adaptive));
             }
             else if (node is UiComponent && at?.ChildAt(0) is { } built && BuildsAPlaceInItsParent(built))
             {

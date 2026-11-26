@@ -6,12 +6,15 @@ import { Component, HtmlNode, RenderContext } from './types';
 import type { VisualNodeValue } from '../shared/nodes';
 import type { CrossAlignValue } from '../shared/enums.generated';
 import type { ComponentElement } from '../shared/components/ComponentElement';
+import type { GlobalKey } from '../shared/vocabulary';
 import { RenderManager } from '../dom/renderer';
+import type { HydrationResult } from '../dom/reconciler';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
 import { hydrate, type HydrationSpec } from '../utils/hydrate';
 import { adoptMember } from '../utils/adopt-member';
 import { getCurrentRoute } from '../router/current-route';
+import { activeTextDirection } from '../utils/culture';
 import { ElementRoots, enterPass, exitPass, lowerRoot, relowerRoot, type Relowered } from '../shared/element-roots';
 import { partialCommitIsExact } from '../dom/shortcuts';
 import {
@@ -258,6 +261,10 @@ export abstract class UiComponent extends Component {
   /** The C# `VisualNode.Key` mirror: part of the reconciler identity (path + type + key). */
   key: string | null = null;
 
+  /** The C# `VisualNode.GlobalKey` mirror (#797): the identity the component's position keeps wherever
+   * the tree places it. A field, as `key` is, so eqc's list of runtime members sees it. */
+  globalKey: GlobalKey | null = null;
+
   /**
    * The C# `VisualNode.Bookmark`, `AlignSelf` and `GridSpan`, which a component carries as any node
    * does. Fields rather than `declare`d types: the lowering reads them off the component, and a field
@@ -295,6 +302,8 @@ function pageContext(serviceProvider: ServiceProvider): RenderContext {
     route: getCurrentRoute(),
     theme: getPhotonTheme(),
     density: getPhotonDensity(),
+    // A page builds with no position, so it reads its culture's direction, as the C# frame does.
+    textDirection: activeTextDirection(),
     typeScale: getPhotonTypeScale(),
     measureText: measurePhotonText,
     monoAdvance: photonMonoAdvance,
@@ -452,10 +461,11 @@ export abstract class StatelessComponent extends UiComponent {
    * shared shell. The caller has already determined SSR content is present, so this bypasses the
    * `data-ssr` gate that {@link mount} uses.
    */
-  hydrate(container: HTMLElement): void {
+  hydrate(container: HTMLElement): HydrationResult {
     const node = this.render();
-    this._renderManager.hydrate(node, container);
+    const result = this._renderManager.hydrate(node, container);
     this._mounted = true;
+    return result;
   }
 
   /**
@@ -677,11 +687,12 @@ export abstract class StatefulComponent extends UiComponent {
     this.notifyMounted();
   }
 
-  hydrate(container: HTMLElement): void {
-    this._renderManager.hydrate(this.render(), container);
+  hydrate(container: HTMLElement): HydrationResult {
+    const result = this._renderManager.hydrate(this.render(), container);
     this._mounted = true;
     // The root has no parent to mount it — see notifyMounted.
     this.notifyMounted();
+    return result;
   }
 
   mountReconcile(container: HTMLElement, previousNode: HtmlNode | null): HtmlNode {

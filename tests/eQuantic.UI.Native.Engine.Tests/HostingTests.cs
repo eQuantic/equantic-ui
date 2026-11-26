@@ -5,6 +5,7 @@ using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace eQuantic.UI.Native.Engine.Tests;
 
@@ -156,5 +157,46 @@ public class HostingTests
 
         chosen.Report.Should().BeSameAs(mine);
         logged.Report.Should().NotBeNull("with no report chosen, a window reports to the app's logger");
+    }
+
+    private sealed class Heard(List<string> lines) : ILoggerProvider, ILogger
+    {
+        public ILogger CreateLogger(string categoryName) => this;
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) => lines.Add($"{logLevel}: {formatter(state, exception)}");
+        public void Dispose() { }
+    }
+
+    /// <summary>
+    /// What a component tells the developer (#1780) reaches a Photon app's logger as a warning while it
+    /// runs in Development, as the browser's development runtime writes it to the console, and nowhere
+    /// in any other environment.
+    /// </summary>
+    [Theory]
+    [InlineData("Development", true)]
+    [InlineData("Production", false)]
+    public void ADevelopmentNotice_ReachesTheAppsLogger_InDevelopmentOnly(string environment, bool heard)
+    {
+        var lines = new List<string>();
+        var builder = PhotonApplication.CreateBuilder(["--environment", environment]);
+        builder.Logging.ClearProviders();
+        builder.Logging.AddProvider(new Heard(lines));
+        var app = builder.Build();
+        DevelopmentNotices.Sink = null;
+        try
+        {
+            app.ArmDevelopmentNotices();
+            DevelopmentNotices.Say("A DatePicker reported 7/17/2026 through onChanged and was drawn again with no date");
+        }
+        finally
+        {
+            DevelopmentNotices.Sink = null;
+        }
+
+        lines.Should().Equal(heard
+            ? ["Warning: A DatePicker reported 7/17/2026 through onChanged and was drawn again with no date"]
+            : []);
     }
 }

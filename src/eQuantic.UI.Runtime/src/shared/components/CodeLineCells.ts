@@ -9,15 +9,15 @@ export class CodeLineCells {
         this.text = text;
         this.tabSize = Math.max(1, tabSize);
         let starts = $eq.text.textElementStarts(text);
-        this._columns = new Array(starts.length + 1).fill(0);
-        this._cells = new Array(starts.length + 1).fill(0);
+        this._columns = new Array(starts.length + 1 | 0).fill(0);
+        this._cells = new Array(starts.length + 1 | 0).fill(0);
         let cell = 0;
-        for (let i = 0; i < starts.length; i++) {
+        for (let i = 0; i < starts.length; i = i + 1 | 0) {
             let start = starts[i];
-            let end = i + 1 < starts.length ? starts[i + 1] : text.length;
+            let end = (i + 1 | 0) < starts.length ? starts[i + 1 | 0] : text.length;
             this._columns[i] = start;
             this._cells[i] = cell;
-            cell += this.elementWidth(text, start, end, cell);
+            cell = cell + this.elementWidth(text, start, end, cell) | 0;
         }
         this._columns[starts.length] = text.length;
         this._cells[starts.length] = cell;
@@ -29,15 +29,15 @@ export class CodeLineCells {
     tabSize!: number;
 
     get width(): number {
-        return this._cells[this._cells.length - 1];
+        return this._cells[this._cells.length - 1 | 0];
     }
 
     get count(): number {
-        return this._columns.length - 1;
+        return this._columns.length - 1 | 0;
     }
 
     elementAt(index: number) {
-        return new CodeCell(this._columns[index], this._columns[index + 1], this._cells[index], this._cells[index + 1] - this._cells[index]);
+        return new CodeCell(this._columns[index], this._columns[index + 1 | 0], this._cells[index], this._cells[index + 1 | 0] - this._cells[index] | 0);
     }
 
     cellOf(column: number) {
@@ -48,38 +48,38 @@ export class CodeLineCells {
 
     columnAt(cell: number) {
         if (cell <= 0) return 0;
-        for (let i = 0; i < this.count; i++) {
+        for (let i = 0; i < this.count; i = i + 1 | 0) {
             let from = this._cells[i];
-            let to = this._cells[i + 1];
-            if (cell < Math.fround(to)) return Math.fround(cell - Math.fround(from)) <= Math.fround(Math.fround(to - from) / 2) ? this._columns[i] : this._columns[i + 1];
+            let to = this._cells[i + 1 | 0];
+            if (cell < Math.fround(to)) return Math.fround(cell - Math.fround(from)) <= Math.fround(Math.fround(to - from | 0) / 2) ? this._columns[i] : this._columns[i + 1 | 0];
         }
         return this.text.length;
     }
 
     columnUnder(cell: number) {
         if (cell < 0) return -1;
-        for (let i = 0; i < this.count; i++) if (cell < Math.fround(this._cells[i + 1])) return this._columns[i];
+        for (let i = 0; i < this.count; i = i + 1 | 0) if (cell < Math.fround(this._cells[i + 1 | 0])) return this._columns[i];
         return -1;
     }
 
     next(column: number) {
         if (column >= this.text.length) return this.text.length;
         if (column < 0) return 0;
-        return this._columns[this.indexOf(column) + 1];
+        return this._columns[this.indexOf(column) + 1 | 0];
     }
 
     previous(column: number) {
         if (column <= 0) return 0;
         if (column > this.text.length) return this.text.length;
         let index = this.indexOf(column);
-        return this._columns[index] === column ? this._columns[Math.max(0, index - 1)] : this._columns[index];
+        return this._columns[index] === column ? this._columns[Math.max(0, index - 1 | 0)] : this._columns[index];
     }
 
     static widthOf(text: string, tabSize: number) {
         let stop = Math.max(1, tabSize);
         let cell = 0;
         for (const c of text.split('')) {
-            if (c === '\t') cell += stop - $eq.num.intRem(cell, stop); else if (c < String.fromCharCode(0x80)) cell++; else return new CodeLineCells(text, tabSize).width;
+            if (c === '\t') cell = cell + (stop - $eq.num.intRem(cell, stop) | 0) | 0; else if (c < String.fromCharCode(0x80)) cell = cell + 1 | 0; else return new CodeLineCells(text, tabSize).width;
         }
         return cell;
     }
@@ -88,27 +88,27 @@ export class CodeLineCells {
         let low = 0;
         let high = this.count;
         while (low < high) {
-            let middle = Math.trunc((low + high + 1) / 2);
-            if (this._columns[middle] <= column) low = middle; else high = middle - 1;
+            let middle = Math.trunc(((low + high | 0) + 1 | 0) / 2);
+            if (this._columns[middle] <= column) low = middle; else high = middle - 1 | 0;
         }
-        return Math.min(low, this.count - 1);
+        return Math.min(low, this.count - 1 | 0);
     }
 
     elementWidth(text: string, start: number, end: number, cell: number) {
         let first = text[start];
-        if (first === '\t') return this.tabSize - $eq.num.intRem(cell, this.tabSize);
-        let codePoint = start + 1 < end && (/^[\uD800-\uDBFF]$/.test(first) && /^[\uDC00-\uDFFF]$/.test(text[start + 1])) ? Number((first + text[start + 1]).codePointAt(0)) : first.charCodeAt(0);
+        if (first === '\t') return this.tabSize - $eq.num.intRem(cell, this.tabSize) | 0;
+        let codePoint = (start + 1 | 0) < end && (/^[\uD800-\uDBFF]$/.test(first) && /^[\uDC00-\uDFFF]$/.test(text[start + 1 | 0])) ? Number((first + text[start + 1 | 0]).codePointAt(0)) : first.charCodeAt(0);
         if (codePoint >= 0x0300) {
             let category = $eq.text.unicodeCategory(codePoint);
             if ((category === 'nonSpacingMark' || category === 'enclosingMark')) return 0;
         }
         if (CodeLineCells.isWide(codePoint)) return 2;
-        for (let i = start + 1; i < end; i++) {
+        for (let i = start + 1 | 0; i < end; i = i + 1 | 0) {
             let c = text[i];
             if (c === '\uFE0F') return 2;
-            if (c === '\uD83C' && i + 1 < end && text[i + 1] >= '\uDFFB' && text[i + 1] <= '\uDFFF') return 2;
+            if (c === '\uD83C' && (i + 1 | 0) < end && text[i + 1 | 0] >= '\uDFFB' && text[i + 1 | 0] <= '\uDFFF') return 2;
         }
-        if (codePoint >= 0x1F1E6 && codePoint <= 0x1F1FF && end - start >= 4) return 2;
+        if (codePoint >= 0x1F1E6 && codePoint <= 0x1F1FF && (end - start | 0) >= 4) return 2;
         return CodeLineCells.isZeroWidth(codePoint) ? 0 : 1;
     }
 

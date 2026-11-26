@@ -262,6 +262,21 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("NextMonth", Culture)!; }
         }
 
+        internal static string PreviousPage
+        {
+            get { return ResourceManager.GetString("PreviousPage", Culture)!; }
+        }
+
+        internal static string NextPage
+        {
+            get { return ResourceManager.GetString("NextPage", Culture)!; }
+        }
+
+        internal static string PageNumbered
+        {
+            get { return ResourceManager.GetString("PageNumbered", Culture)!; }
+        }
+
         internal static string Today
         {
             get { return ResourceManager.GetString("Today", Culture)!; }
@@ -586,5 +601,40 @@ namespace eQuantic.UI.Components
         {
             get { return ResourceManager.GetString("TableColumns", Culture)!; }
         }
-}
+
+        internal static string AmountExpected
+        {
+            get { return ResourceManager.GetString("AmountExpected", Culture)!; }
+        }
+
+        internal static string WholeNumberExpected
+        {
+            get { return ResourceManager.GetString("WholeNumberExpected", Culture)!; }
+        }
+
+        internal static string ValueBetween
+        {
+            get { return ResourceManager.GetString("ValueBetween", Culture)!; }
+        }
+
+        internal static string ValueAtLeast
+        {
+            get { return ResourceManager.GetString("ValueAtLeast", Culture)!; }
+        }
+
+        internal static string ValueAtMost
+        {
+            get { return ResourceManager.GetString("ValueAtMost", Culture)!; }
+        }
+
+        internal static string NamedWithAffixes
+        {
+            get { return ResourceManager.GetString("NamedWithAffixes", Culture)!; }
+        }
+
+        internal static string ValueWithUnit
+        {
+            get { return ResourceManager.GetString("ValueWithUnit", Culture)!; }
+        }
+    }
 }

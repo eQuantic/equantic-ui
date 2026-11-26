@@ -35,8 +35,10 @@ public class FormatSubsetTests
     /// then one whose data leaves a four-digit number ungrouped where .NET groups it (es-ES writes
     /// 1.234, #445), one whose minus sign is not a hyphen (sv-SE writes U+2212), one whose group
     /// separator is a narrow no-break space (fr-FR), and one whose own digits are not ASCII, which
-    /// .NET never writes (ar-EG, #634).</summary>
-    private static readonly string[] Cultures = ["en-US", "pt-BR", "de-DE", "es-ES", "sv-SE", "fr-FR", "ar-EG"];
+    /// .NET never writes (ar-EG, #634), then the three calendars a culture counts its dates in that are
+    /// not the Gregorian one: th-TH's Thai Buddhist years, fa-IR's Persian calendar and ar-SA's Um Al Qura
+    /// one, whose dates the browser wrote in the Gregorian numbers (#1191).</summary>
+    private static readonly string[] Cultures = ["en-US", "pt-BR", "de-DE", "es-ES", "sv-SE", "fr-FR", "ar-EG", "th-TH", "fa-IR", "ar-SA"];
 
     /// <summary>The values, the infinities and NaN among them: the culture's symbols, whatever the
     /// specifier.</summary>

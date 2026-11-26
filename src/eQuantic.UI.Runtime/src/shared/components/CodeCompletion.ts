@@ -1,4 +1,4 @@
-import { $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeChoiceProvider, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionRequest, CodeCompletionTriggerValue, CodeDocument, CodeEdit, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, ProviderRequest, UiThread } from "../runtime-exports";
+import { $CodeCompletionTriggerValue, $eq, CancellationToken, CancellationTokenSource, CodeChange, CodeChoiceProvider, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionRequest, CodeDocument, CodeEdit, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, ProviderRequest, UiThread } from "../runtime-exports";
 
 export class CodeCompletion {
     constructor(editor: CodeEditorController) {
@@ -35,7 +35,7 @@ export class CodeCompletion {
     _shown!: CodeCompletionOffer[];
     _selected!: number;
     _active!: boolean;
-    _openedBy!: CodeCompletionTriggerValue;
+    _openedBy!: $CodeCompletionTriggerValue;
     _start!: CodePosition;
     _openedEmpty!: boolean;
     _choosing!: boolean;
@@ -100,7 +100,7 @@ export class CodeCompletion {
         this.open(start, 'typing', typed, this.providers.slice());
     }
 
-    open(start: CodePosition, trigger: CodeCompletionTriggerValue, character: string | null, providers: any[], choosing: boolean = false) {
+    open(start: CodePosition, trigger: $CodeCompletionTriggerValue, character: string | null, providers: any[], choosing: boolean = false) {
         this.close(false);
         this._active = true;
         this._choosing = choosing;
@@ -121,7 +121,7 @@ export class CodeCompletion {
         if (this._choosing) this.close(true);
     }
 
-    ask(trigger: CodeCompletionTriggerValue, character: string | null, providers: any[], announce: boolean) {
+    ask(trigger: $CodeCompletionTriggerValue, character: string | null, providers: any[], announce: boolean) {
         let document = this._editor.document;
         let position = this._editor.caret;
         let $n0: CodeCompletionContext; 
@@ -130,7 +130,7 @@ export class CodeCompletion {
         let word = this.word();
         let requests: CodeCompletionRequest[] = [];
         for (const provider of $eq.collections.listWalk(providers)) {
-            for (let i = this._requests.length - 1; i >= 0; i--) {
+            for (let i = this._requests.length - 1 | 0; i >= 0; i = i - 1 | 0) {
                 if (!(this._requests[i].provider === provider)) continue;
                 let stale = this._requests[i];
                 $eq.collections.listRemoveAt(this._requests, i);
@@ -168,7 +168,7 @@ export class CodeCompletion {
         if (known >= 0) $eq.collections.listRemoveAt(this._answers, known);
         let rank = this.rankOf(answer.provider);
         let at = 0;
-        while (at < this._answers.length && this.rankOf(this._answers[at].provider) <= rank) at++;
+        while (at < this._answers.length && this.rankOf(this._answers[at].provider) <= rank) at = at + 1 | 0;
         $eq.collections.listInsert(this._answers, at, answer);
         if ($eq.query.all(this._answers, (held) => held.offers.length === 0 && !held.isIncomplete) && !this.isLoading) {
             this.close(true);
@@ -178,7 +178,7 @@ export class CodeCompletion {
         this.gather();
         this.filter();
         if (!(selected == null)) {
-            for (let i = 0; i < this._shown.length; i++) {
+            for (let i = 0; i < this._shown.length; i = i + 1 | 0) {
                 if (CodeCompletion.entryOf(this._shown[i].item) !== selected) continue;
                 this._selected = i;
                 break;
@@ -190,7 +190,7 @@ export class CodeCompletion {
     }
 
     rankOf(provider: any) {
-        for (let i = 0; i < $eq.collections.count(this.providers); i++) if (($eq.collections.item(this.providers, i) === provider)) return i;
+        for (let i = 0; i < $eq.collections.count(this.providers); i = i + 1 | 0) if (($eq.collections.item(this.providers, i) === provider)) return i;
         return $eq.collections.count(this.providers);
     }
 
@@ -267,7 +267,7 @@ export class CodeCompletion {
             let asked: any; 
             if ((asked = item.replacing) != null) {
                 let replacing = offer.answer.carried(asked, this._edits);
-                if (replacing.start.line === caret.line && replacing.start.column !== this._start.column && replacing.start.column <= caret.column) typed = $eq.text.substring(line, replacing.start.column, caret.column - replacing.start.column);
+                if (replacing.start.line === caret.line && replacing.start.column !== this._start.column && replacing.start.column <= caret.column) typed = $eq.text.substring(line, replacing.start.column, caret.column - replacing.start.column | 0);
             }
             let filter = item.filterText ?? item.label;
             let match: any; 
@@ -278,13 +278,13 @@ export class CodeCompletion {
             $eq.collections.listAdd(offers, offer);
         }
         let order: number[] = [];
-        for (let i = 0; i < matches.length; i++) $eq.collections.listAdd(order, i);
+        for (let i = 0; i < matches.length; i = i + 1 | 0) $eq.collections.listAdd(order, i);
         $eq.collections.listSortBy(order, (a: number, b: number) => {
-            if (matches[a].score !== matches[b].score) return matches[b].score - matches[a].score;
+            if (matches[a].score !== matches[b].score) return matches[b].score - matches[a].score | 0;
             let byKey = $eq.text.compare(offers[a].sortKey, offers[b].sortKey, 'ordinal');
             if (byKey !== 0) return byKey;
             let byLabel = $eq.text.compare(matches[a].item.label, matches[b].item.label, 'ordinal');
-            return byLabel !== 0 ? byLabel : a - b;
+            return byLabel !== 0 ? byLabel : a - b | 0;
         }, 'System.Comparison`1[System.Int32]');
         this._items = [];
         this._shown = [];
@@ -293,7 +293,7 @@ export class CodeCompletion {
             $eq.collections.listAdd(this._shown, offers[i]);
         }
         this._selected = this._items.length > 0 ? 0 : -1;
-        for (let i = 0; i < this._items.length && this._items[i].score === this._items[0].score; i++) {
+        for (let i = 0; i < this._items.length && this._items[i].score === this._items[0].score; i = i + 1 | 0) {
             if (!this._items[i].item.preselect) continue;
             this._selected = i;
             break;
@@ -308,7 +308,7 @@ export class CodeCompletion {
     move(delta: number) {
         if (!this.isOpen || this._items.length < 2) return false;
         let count = this._items.length;
-        this._selected = $eq.num.intRem($eq.num.intRem(this._selected + delta, count) + count, count);
+        this._selected = $eq.num.intRem($eq.num.intRem(this._selected + delta | 0, count) + count | 0, count);
         this.resolveSelected();
         this.changed?.();
         return true;
@@ -316,7 +316,7 @@ export class CodeCompletion {
 
     movePage(pages: number) {
         if (!this.isOpen || this._items.length < 2) return false;
-        this._selected = Math.max(0, Math.min(this._items.length - 1, this._selected + pages * this.pageSize));
+        this._selected = Math.max(0, Math.min(this._items.length - 1 | 0, this._selected + Math.imul(pages, this.pageSize) | 0));
         this.resolveSelected();
         this.changed?.();
         return true;
@@ -343,8 +343,8 @@ export class CodeCompletion {
         this.close(true);
         let caret = this._editor.caret;
         let snippet: any; 
-        if ((snippet = offer.item.snippet) != null && range.start.line === caret.line && range.end.line === caret.line) return this._editor.insertSnippetAround(snippet, caret.column - range.start.column, range.end.column - caret.column);
-        if (this._editor.hasOtherCarets && range.start.line === caret.line && range.end.line === caret.line) return this._editor.replaceAroundEveryCaret(caret.column - range.start.column, range.end.column - caret.column, text);
+        if ((snippet = offer.item.snippet) != null && range.start.line === caret.line && range.end.line === caret.line) return this._editor.insertSnippetAround(snippet, caret.column - range.start.column | 0, range.end.column - caret.column | 0);
+        if (this._editor.hasOtherCarets && range.start.line === caret.line && range.end.line === caret.line) return this._editor.replaceAroundEveryCaret(caret.column - range.start.column | 0, range.end.column - caret.column | 0, text);
         if (this._editor.document.textIn(range) === text) {
             this._editor.selection = new CodeRange(range.end);
             return true;
@@ -423,13 +423,13 @@ export class CodeCompletion {
         if (this._choosing && !this._editor.selection.isEmpty) return '';
         let caret = this._editor.caret;
         if (caret.line !== this._start.line || caret.column < this._start.column) return '';
-        return $eq.text.substring(this._editor.document.line(caret.line), this._start.column, caret.column - this._start.column);
+        return $eq.text.substring(this._editor.document.line(caret.line), this._start.column, caret.column - this._start.column | 0);
     }
 
     wordStart(caret: CodePosition) {
         let line = this._editor.document.line(caret.line);
         let column = caret.column;
-        while (column > 0 && CodeDocument.isWordChar(line[column - 1])) column--;
+        while (column > 0 && CodeDocument.isWordChar(line[column - 1 | 0])) column = column - 1 | 0;
         return new CodePosition(caret.line, column);
     }
 
@@ -454,7 +454,7 @@ export class CodeCompletion {
     inCommentOrString(caret: CodePosition) {
         if (caret.column === 0) return false;
         for (const token of $eq.collections.sequenceWalk(this._editor.highlighter.tokensFor(this._editor.document, caret.line))) {
-            if (token.start <= caret.column - 1 && caret.column - 1 < token.end) return (($0) => ($0 === 'comment' || $0 === 'string'))(token.kind);
+            if (token.start <= (caret.column - 1 | 0) && (caret.column - 1 | 0) < token.end) return (($0) => ($0 === 'comment' || $0 === 'string'))(token.kind);
         }
         return false;
     }

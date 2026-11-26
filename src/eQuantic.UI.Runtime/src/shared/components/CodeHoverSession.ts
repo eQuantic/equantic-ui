@@ -98,7 +98,7 @@ export class CodeHoverSession {
     }
 
     dismiss() {
-        this._generation++;
+        this._generation = this._generation + 1 | 0;
         ProviderRequest.cancel(this._request, this.failed);
         this._request = null;
         this._pending = null;
@@ -137,7 +137,7 @@ export class CodeHoverSession {
     pointerLeft() {
         if (this._requestByKeyboard) return;
         if (this._open && this._byKeyboard) {
-            this._generation++;
+            this._generation = this._generation + 1 | 0;
             ProviderRequest.cancel(this._request, this.failed);
             this._request = null;
             this._pending = null;
@@ -153,7 +153,7 @@ export class CodeHoverSession {
 
     async rest(explained: CodeRange, position: CodePosition, wait: boolean, keyboard: boolean, ask: boolean) {
         if (this._editor.completion.isOpen) return;
-        let generation = ++this._generation;
+        let generation = this._generation = this._generation + 1 | 0;
         ProviderRequest.cancel(this._request, this.failed);
         let request = $eq.cancellation.source();
         this._request = request;
@@ -191,7 +191,7 @@ export class CodeHoverSession {
         let showed = this._open;
         this._open = this._problems.length > 0;
         if (this._open || showed) this.changed?.();
-        for (let slot = 0; slot < providers.length; slot++) this.askOne(slot, providers[slot], document, position, generation, cancellation);
+        for (let slot = 0; slot < providers.length; slot = slot + 1 | 0) this.askOne(slot, providers[slot], document, position, generation, cancellation);
     }
 
     async askOne(slot: number, provider: any, document: CodeDocument, position: CodePosition, generation: number, cancellation: CancellationToken) {

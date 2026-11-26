@@ -7,8 +7,8 @@ export class CodeLineAdvances {
         this._advances = null!;
         this._cells = cells;
         this._measure = measure;
-        this._advances = new Array(cells.count + 1).fill(0);
-        for (let i = 1; i < this._advances.length; i++) this._advances[i] = NaN;
+        this._advances = new Array(cells.count + 1 | 0).fill(0);
+        for (let i = 1; i < this._advances.length; i = i + 1 | 0) this._advances[i] = NaN;
     }
 
     _cells!: CodeLineCells;
@@ -44,7 +44,7 @@ export class CodeLineAdvances {
         if (after < 0) return this._cells.text.length;
         let element = this._cells.elementAt(after);
         let from = this.at(after);
-        let to = this.at(after + 1);
+        let to = this.at(after + 1 | 0);
         return Math.fround(advance - from) <= Math.fround(Math.fround(to - from) / 2) ? element.start : element.end;
     }
 
@@ -56,14 +56,14 @@ export class CodeLineAdvances {
 
     firstEndingPast(advance: number) {
         let low = 0;
-        let high = this._cells.count - 1;
+        let high = this._cells.count - 1 | 0;
         let found = -1;
         while (low <= high) {
-            let middle = Math.trunc((low + high) / 2);
-            if (this.at(middle + 1) > advance) {
+            let middle = Math.trunc((low + high | 0) / 2);
+            if (this.at(middle + 1 | 0) > advance) {
                 found = middle;
-                high = middle - 1;
-            } else low = middle + 1;
+                high = middle - 1 | 0;
+            } else low = middle + 1 | 0;
         }
         return found;
     }

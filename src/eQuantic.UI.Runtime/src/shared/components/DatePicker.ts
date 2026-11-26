@@ -1,10 +1,13 @@
-import { $eq, Anchored, Box, BoxStyle, BuildContext, Calendar, CornerRadii, DateOnly, EdgeInsets, Icon, IconGlyph, KeyChord, Pressable, SdkStrings, Shortcut, StatefulComponent, TextInput, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Anchored, Box, BoxStyle, BuildContext, Calendar, CornerRadii, DateOnly, DevelopmentNotices, EdgeInsets, Icon, IconGlyph, KeyChord, Pressable, SdkStrings, Shortcut, StatefulComponent, TextInput, UiComponent, VisualNode } from "../runtime-exports";
 
 export class DatePicker extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.DatePicker';
     _open: boolean = false;
     _typing: any = null;
+    _reported: any = null;
     _disabled: boolean = false;
+    _labelHidden: boolean = false;
+    _composed: boolean = false;
     declare selected: any;
     declare onChanged: ((dateOnly: DateOnly) => void) | null;
     declare min: any;
@@ -17,6 +20,22 @@ export class DatePicker extends StatefulComponent {
 
     set disabled(value) {
         this._disabled = value;
+    }
+
+    get labelHidden() {
+        return this._labelHidden;
+    }
+
+    set labelHidden(value) {
+        this._labelHidden = value;
+    }
+
+    get composed() {
+        return this._composed;
+    }
+
+    set composed(value) {
+        this._composed = value;
     }
 
     constructor(selected: any = null, onChanged: any = null, min: any = null, max: any = null, label: any = '', props?: any) {
@@ -44,12 +63,15 @@ export class DatePicker extends StatefulComponent {
         let panel = new Box(new BoxStyle({ background: slot?.panelFill ?? theme.surface, cornerRadius: new CornerRadii(slot?.panelRadius ?? theme.shape('medium')), borderWidth: slot?.panelBorderWidth ?? 1, borderColor: slot?.panelBorderColor ?? theme.border, elevation: slot?.panelElevation ?? 2, padding: EdgeInsets.all(slot?.panelPadding ?? 12) }), new Calendar(this.selected, $eq.delegates.bound(this, this.pick), this.min, this.max));
         let opener: VisualNode = new Anchored(new Pressable(new Icon(IconGlyph.fromIcons('calendar'), slot?.openerIconSize ?? 20, slot?.openerColor ?? theme.textSecondary), $eq.delegates.bound(this, this.toggle), { label: SdkStrings.chooseDate, expanded: this._open }), panel, { open: this._open && !this.disabled, onDismiss: $eq.delegates.bound(this, this.close).bind(this), panelRole: 'dialog' });
         opener = new Shortcut(opener, KeyChord.escape, $eq.delegates.bound(this, this.close), { enabled: this._open && !this.disabled });
-        return new TextInput(shown, $eq.delegates.bound(this, this.type), this.label, SdkStrings.dateFormatHint, null, invalid ? SdkStrings.dateFormatHint : null, null, 'large', this.disabled ? null : opener, { disabled: this.disabled });
+        return new TextInput(shown, $eq.delegates.bound(this, this.type), this.label, SdkStrings.dateFormatHint, null, invalid ? SdkStrings.dateFormatHint : null, null, 'large', this.disabled ? null : opener, 'text', null, null, { disabled: this.disabled, labelHidden: this.labelHidden });
     }
 
     adoptConfig(next: UiComponent) {
         let fresh: any; 
         if (!((next instanceof DatePicker && (fresh = next, true)))) return;
+        let said: any; 
+        if ((said = this._reported) != null && fresh.selected == null && !this.composed) DevelopmentNotices.say(`A DatePicker reported ${$eq.text.format(said, 'd')} through onChanged and was drawn again with no date, ` + 'so its field emptied: a picker shows the date it is handed. Hand it back the day onChanged reports.');
+        this._reported = null;
         let buffer: any; 
         if ((buffer = this._typing) != null && !$eq.equals(DatePicker.parse(buffer), fresh.selected)) this._typing = null;
         this.selected = fresh.selected;
@@ -58,9 +80,12 @@ export class DatePicker extends StatefulComponent {
         this.max = fresh.max;
         this.label = fresh.label;
         this._disabled = fresh.disabled;
+        this._labelHidden = fresh.labelHidden;
+        this._composed = fresh.composed;
     }
 
     pick(day: DateOnly) {
+        if (!(this.onChanged == null)) this._reported = day;
         this.onChanged?.(day);
         this.setState(() => {
             this._open = false;
@@ -71,7 +96,10 @@ export class DatePicker extends StatefulComponent {
     type(text: string) {
         let parsed = DatePicker.parse(text);
         let day: any; 
-        if ((day = parsed) != null && this.inRange(day)) this.onChanged?.(day);
+        if ((day = parsed) != null && this.inRange(day)) {
+            if (!(this.onChanged == null)) this._reported = day;
+            this.onChanged?.(day);
+        }
         this.setState(() => this._typing = text);
     }
 
@@ -93,8 +121,8 @@ export class DatePicker extends StatefulComponent {
     }
 
     static parse(text: string) {
-        let day: any; 
-        return ((day = $eq.time.dateOnly.tryParse(text)) !== undefined || ((day = $eq.time.dateOnly.minValue()), false)) ? day : null;
+        let day!: DateOnly; 
+        return ((day = ($eq.time.dateOnly.tryParse(text))!) !== undefined || ((day = $eq.time.dateOnly.minValue()), false)) ? day : null;
     }
 }
 

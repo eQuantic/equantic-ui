@@ -38,6 +38,7 @@ public class CodeEditorGridTests
         Shortcut shortcut => [shortcut.Child],
         CodeSurface surface => [surface.Child],
         UiComponent component => [],
+        InheritedComponent inherited => [inherited.Child],
         _ => [],
     };
 

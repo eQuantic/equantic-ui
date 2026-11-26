@@ -71,7 +71,9 @@ internal sealed class EntryLines : StatelessComponent
             if (from.Y == to.Y && to.X > from.X)
                 layers.Add(Rectangle(new Rect(from.X, from.Bottom - 1.5f, to.X - from.X, 1.5f), _palette.CellText));
         }
-        return layers;
+        // The engine placed the lines from the left of its grid: they read left to right in every
+        // language, as the sheet's own surface does (#1568).
+        return new Directionality(TextDirection.LeftToRight, layers);
     }
 
     private Positioned Rectangle(Rect rect, ColorToken colour) =>

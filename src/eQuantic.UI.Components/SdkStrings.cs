@@ -159,6 +159,15 @@ public static class SdkStrings
     /// <summary>The calendar's step-forward affordance.</summary>
     public static string NextMonth => SdkResources.NextMonth;
 
+    // Pagination: the steps either side of the page list, and how a page announces itself (#1874).
+    public static string PreviousPage => SdkResources.PreviousPage;
+    public static string NextPage => SdkResources.NextPage;
+
+    /// <summary>A page's accessible name: "Page 3". The culture is named, as <see cref="LineNumbered"/>
+    /// says why.</summary>
+    public static string PageNumbered(int page) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.PageNumbered, page);
+
     /// <summary>What today's cell is called beyond its date — the ring is paint, this is the word.</summary>
     public static string Today => SdkResources.Today;
 
@@ -167,6 +176,36 @@ public static class SdkStrings
 
     /// <summary>A time picker's accessible name when the app supplies none.</summary>
     public static string ChooseTime => SdkResources.ChooseTime;
+
+    // MoneyInput and NumberInput: what the field wants, when what was typed is not it.
+
+    /// <summary>What a money field says of text that is no amount, with one written as the field writes it.</summary>
+    public static string AmountExpected(string example) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.AmountExpected, example);
+
+    /// <summary>What a number field says of text that is no whole number, with one as the field writes it.</summary>
+    public static string WholeNumberExpected(string example) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.WholeNumberExpected, example);
+
+    /// <summary>What a field says of a value outside its range, its bounds written as the field writes them.</summary>
+    public static string ValueBetween(string least, string most) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ValueBetween, least, most);
+
+    /// <summary>What a field with only a least value says of one under it.</summary>
+    public static string ValueAtLeast(string least) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ValueAtLeast, least);
+
+    /// <summary>What a field with only a greatest value says of one over it.</summary>
+    public static string ValueAtMost(string most) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ValueAtMost, most);
+
+    /// <summary>A field's accessible name with what is drawn beside its text: <c>Price (€)</c>.</summary>
+    public static string NamedWithAffixes(string label, string affixes) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.NamedWithAffixes, label, affixes);
+
+    /// <summary>A number with its unit, in the language's order: <c>30 days</c>.</summary>
+    public static string ValueWithUnit(string number, string unit) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.ValueWithUnit, number, unit);
 
     /// <summary>
     /// What shape the typed row expects: <c>MM/DD/YYYY</c> in the United States,

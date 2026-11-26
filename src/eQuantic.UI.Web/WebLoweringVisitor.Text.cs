@@ -45,11 +45,12 @@ internal sealed partial class WebLoweringVisitor
                 ? new Dictionary<string, string> { ["rows"] = entry.Lines.ToString(System.Globalization.CultureInfo.InvariantCulture) }
                 : new Dictionary<string, string>
                 {
-                    ["type"] = entry.Obscure ? "password" : "text",
+                    ["type"] = entry.Obscure ? "password" : entry.Kind == TextEntryKind.Phone ? "tel" : "text",
                     ["value"] = entry.Value,
                 },
         };
         if (multiline) element.InnerHtml = entry.Value;
+        else WriteKind(element.RawAttributes, entry);
         if (entry.Placeholder is { } placeholder) element.RawAttributes["placeholder"] = placeholder;
         // The accessible NAME — a placeholder vanishes under text, so it never substitutes for one.
         if (entry.Label is { Length: > 0 } accessibleName) element.RawAttributes["aria-label"] = accessibleName;
@@ -91,6 +92,32 @@ internal sealed partial class WebLoweringVisitor
         host.Children.Add(description);
         return host;
     }
+
+    /// <summary>
+    /// What a single-line entry's <see cref="TextEntry.Kind"/> says to the browser: the keyboard a phone
+    /// opens (<c>inputmode</c>), the autofill offered (<c>autocomplete</c>) and that a value is not prose.
+    /// <c>inputmode</c> and not <c>type</c>, but for the telephone: <c>type="email"</c> and
+    /// <c>type="number"</c> refuse the selection API the client calls to place an autofocused entry's caret,
+    /// and a number input writes only the invariant decimal point. An obscured entry keeps its keyboard and
+    /// offers no autofill of the kind. Written in the order the client twin writes it (lowering.ts).
+    /// </summary>
+    private static void WriteKind(Dictionary<string, string> attributes, TextEntry entry)
+    {
+        (string? mode, string? autofill) = entry.Kind switch
+        {
+            TextEntryKind.Email => ("email", "email"),
+            TextEntryKind.Phone => ("tel", "tel"),
+            TextEntryKind.Url => ("url", "url"),
+            TextEntryKind.Number => ("numeric", null),
+            TextEntryKind.Decimal => ("decimal", null),
+            _ => (null, null),
+        };
+        if (mode is null) return;
+        attributes["inputmode"] = mode;
+        if (autofill is not null && !entry.Obscure) attributes["autocomplete"] = autofill;
+        attributes["spellcheck"] = "false";
+        attributes["autocapitalize"] = "none";
+    }
     /// <summary>
     /// The sheet's SKELETON, server-side. It rendered as an empty span to anything that does not run
     /// scripts — no arm here, so `_ => null` caught it, from the day it shipped (d8be2bd6).
@@ -131,6 +158,8 @@ internal sealed partial class WebLoweringVisitor
                 Outline = "none",
                 UserSelect = "none",
             },
+            // The door and the carets stand at the model's physical x: left to right in every language (#1568).
+            Dir = "ltr",
         };
         // The pointer, DECLARED here as well as installed by the client twin, as the Navigable's
         // keyboard is. The server dispatches none of them, so these delegates never run, but the lowered
@@ -245,6 +274,8 @@ internal sealed partial class WebLoweringVisitor
                 UserSelect = "none",
                 Cursor = "text",
             },
+            // Code reads left to right in every language, and its carets and its door stand at physical x (#1568).
+            Dir = "ltr",
         };
 
         element.OnMouseDown = static _ => { };

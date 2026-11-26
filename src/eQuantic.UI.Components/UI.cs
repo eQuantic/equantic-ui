@@ -52,6 +52,11 @@ public static class UI
     /// the portal that normally carry it. Five components rendered blank on a page without it.</summary>
     public static InFlow InFlow(VisualNode child) => new InFlow(child);
 
+    /// <summary>The direction a subtree reads in — <c>Directionality(TextDirection.LeftToRight, code)</c>
+    /// keeps a code view left to right in an Arabic page.</summary>
+    public static Directionality Directionality(TextDirection direction, VisualNode child) =>
+        new Directionality(direction, child);
+
     /// <summary>Draws its subtree AS IF it were hovered, pressed or focused — a gallery, a design
     /// review and a visual-regression suite could otherwise only ever show the rest state.</summary>
     public static Simulated Simulated(SimulatedState state, VisualNode child) =>
@@ -165,13 +170,15 @@ public static class UI
     /// <summary>Navigation semantics: the child becomes a link to <paramref name="destination"/>.
     /// <paramref name="label"/> names an icon-only link; <paramref name="current"/> marks the link
     /// that points at the page the reader is ON (<c>aria-current="page"</c> — a sidebar's active
-    /// row stated to assistive tech, not just painted).</summary>
+    /// row stated to assistive tech, not just painted); <paramref name="opensBeside"/> opens the
+    /// destination beside the page, keeping the reader where they are (#941).</summary>
     public static Link Link(string destination, VisualNode child, string? label = null,
-        bool current = false) =>
+        bool current = false, bool opensBeside = false) =>
         new Link(destination, child)
         {
             Label = label,
             Current = current,
+            OpensBeside = opensBeside,
         };
 
     /// <summary>
@@ -185,7 +192,11 @@ public static class UI
     /// factory named after the type, which is the rule the extra name was working around.
     /// </para>
     /// </summary>
-    public static Icon Icon(IconGlyph glyph, float size = 24, ColorToken? color = null, string? label = null) =>
+    public static Icon Icon(IconGlyph glyph,
+        [System.ComponentModel.DataAnnotations.AllowedValues(IconSize.Sm, IconSize.Dense, IconSize.Md, IconSize.Lg,
+            ErrorMessage = "An icon of any other size throws when it is built, on the server and in the browser alike: the "
+                + "scale is for content, and a glyph in a box of another size is a Vector.")] float size = IconSize.Md,
+        ColorToken? color = null, string? label = null) =>
         new Icon(glyph, size, color, label);
 
     /// <summary>A vector shape at any size — an icon freed of the size whitelist, and of the
@@ -365,6 +376,23 @@ public static class UI
     /// </summary>
     public static Group Group(VisualNode child, string label = "") =>
         new Group(child) { Label = label };
+
+    /// <summary>
+    /// A subtree a reader hears as ONE stop, what its stops say joined in reading order. When a control is
+    /// among them the stop is that control, named by the whole of <paramref name="child"/>: a row that draws
+    /// a switch beside its label is heard as the switch. With none, it is a group named by what it says.
+    /// It draws nothing and adds no geometry.
+    /// </summary>
+    public static MergeSemantics MergeSemantics(VisualNode child) => new MergeSemantics(child);
+
+    /// <summary>
+    /// A subtree a reader passes over, on every target: drawn for the eye and heard by no one, for what
+    /// another stop already says. Wrap no control in it. <paramref name="excluding"/> false keeps the node and
+    /// reads what it holds, so a subtree heard in one state and not in another keeps its shape. It draws
+    /// nothing and adds no geometry.
+    /// </summary>
+    public static ExcludeSemantics ExcludeSemantics(VisualNode child, bool excluding = true) =>
+        new ExcludeSemantics(child) { Excluding = excluding };
 
     /// <summary>
     /// Arrow-key adjustment semantics: one Tab stop, arrows call back with ±1.
@@ -572,11 +600,24 @@ public static class UI
     public static Stepper Stepper(int value, Action<int>? onChanged = null, SegmentedTheme? style = null) =>
         new Stepper(value, onChanged, style);
 
-    /// <summary>A date, typed or picked from a calendar.</summary>
+    /// <summary>An amount of money in a currency's minor units, typed in the culture's way.</summary>
+    public static MoneyInput MoneyInput(long? amount, Action<long?>? onChanged, string label, Currency currency,
+        long? min = null, long? max = null, string? placeholder = null, string? helper = null,
+        string? error = null, SizeVariant size = SizeVariant.Large) =>
+        new MoneyInput(amount, onChanged, label, currency, min, max, placeholder, helper, error, size);
+
+    /// <summary>A whole number with its unit beside it, typed in the culture's way.</summary>
+    public static NumberInput NumberInput(int? value, Action<int?>? onChanged, string label, string unit = "",
+        int? min = null, int? max = null, string? placeholder = null, string? helper = null,
+        string? error = null, SizeVariant size = SizeVariant.Large) =>
+        new NumberInput(value, onChanged, label, unit, min, max, placeholder, helper, error, size);
+
+    /// <summary>A date, typed or picked from a calendar. <paramref name="labelHidden"/> draws no label, for a
+    /// form that lays its own, and the label still names the field (#1780).</summary>
     public static DatePicker DatePicker(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
         DateOnly? min = null, DateOnly? max = null, string label = "",
-        InputTheme? style = null, CalendarTheme? calendarStyle = null) =>
-        new DatePicker(selected, onChanged, min, max, label, style, calendarStyle);
+        InputTheme? style = null, CalendarTheme? calendarStyle = null, bool labelHidden = false) =>
+        new DatePicker(selected, onChanged, min, max, label, style, calendarStyle) { LabelHidden = labelHidden };
 
     /// <summary>A time of day, picked from a list of slots.</summary>
     public static TimePicker TimePicker(TimeOnly? selected = null, Action<TimeOnly>? onChanged = null,
@@ -584,12 +625,16 @@ public static class UI
         InputTheme? style = null) =>
         new TimePicker(selected, onChanged, stepMinutes, min, max, label, style);
 
-    /// <summary>A moment — the date and the time, as one value.</summary>
+    /// <summary>A moment — the date and the time, as one value. <paramref name="labelHidden"/> draws no label
+    /// above the date, for a form that lays its own (#1780).</summary>
     public static DateTimePicker DateTimePicker(DateTime? selected = null, Action<DateTime>? onChanged = null,
         DateTime? min = null, DateTime? max = null, int stepMinutes = 30,
         string dateLabel = "", string timeLabel = "", InputTheme? style = null,
-        CalendarTheme? calendarStyle = null) =>
-        new DateTimePicker(selected, onChanged, min, max, stepMinutes, dateLabel, timeLabel, style, calendarStyle);
+        CalendarTheme? calendarStyle = null, bool labelHidden = false) =>
+        new DateTimePicker(selected, onChanged, min, max, stepMinutes, dateLabel, timeLabel, style, calendarStyle)
+        {
+            LabelHidden = labelHidden,
+        };
 
     /// <summary>A month at a time — the grid a date is picked from.</summary>
     public static Calendar Calendar(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
@@ -604,12 +649,19 @@ public static class UI
         new Select(options, selectedIndex, onChanged, placeholder, groups, style, optionBuilder);
 
     /// <summary>The full text field: label, helper, error, leading icon, and a trailing SLOT
-    /// for whatever belongs at the end of the row — a picker's opener, a clear affordance.</summary>
+    /// for whatever belongs at the end of the row — a picker's opener, a clear affordance.
+    /// <paramref name="labelHidden"/> draws no label, for a form that lays its own, and the label still
+    /// names the field (#1780).</summary>
     public static TextInput TextInput(string value, Action<string>? onChanged = null, string label = "",
         string? placeholder = null, string? helper = null, string? error = null,
         Icons? leading = null, SizeVariant size = SizeVariant.Large, VisualNode? trailing = null,
-        InputTheme? style = null) =>
-        new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing, style);
+        TextEntryKind kind = TextEntryKind.Text, string? prefix = null, string? suffix = null,
+        InputTheme? style = null, bool labelHidden = false) =>
+        new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing, kind, prefix, suffix,
+            style)
+        {
+            LabelHidden = labelHidden,
+        };
 
     /// <summary>The search entry. Null placeholder = the SDK's localized default.</summary>
     public static SearchField SearchField(string query, Action<string>? onChanged = null,
@@ -799,14 +851,17 @@ public static class UI
 
     /// <summary>A list whose items a pointer and the keyboard put in order, and which takes the items of the lists
     /// of its group; the drop is the app's to apply (#1535). Each step of the keyboard's is said in
-    /// <paramref name="announcements"/>, the SDK's words in the reader's culture when the app gives none (#1564).</summary>
+    /// <paramref name="announcements"/>, the SDK's words in the reader's culture when the app gives none (#1564), and a
+    /// carried item looks as <paramref name="style"/> says over the theme's look (#1602). Above 0,
+    /// <paramref name="indent"/> gives the items depths, one per its distance across the axis (#1594).</summary>
     public static Sortable Sortable(VisualNode child, string id, Action<SortDrop> onDropped,
-        SortAnnouncements? announcements = null, string group = "", DragAxis axis = DragAxis.Vertical,
-        bool nests = false, Action<SortDrop?>? onHovered = null, Func<SortDrop, bool>? accepts = null,
-        bool enabled = true, string label = "") =>
-        new Sortable(child, id, onDropped, announcements ?? SdkStrings.Sorting)
+        SortAnnouncements? announcements = null, SortableTheme? style = null, string group = "",
+        DragAxis axis = DragAxis.Vertical, bool nests = false, Action<SortDrop?>? onHovered = null,
+        Func<SortDrop, bool>? accepts = null, bool enabled = true, string label = "", float indent = 0) =>
+        new Sortable(child, id, onDropped, announcements ?? SdkStrings.Sorting, style)
         {
             Label = label,
+            Indent = indent,
             Group = group,
             Axis = axis,
             Nests = nests,
@@ -816,9 +871,10 @@ public static class UI
         };
 
     /// <summary>One item of a <see cref="Primitives.Sortable"/>, named by its id in what the list reports, and by
-    /// <paramref name="name"/>, when given, in what the keyboard's steps say.</summary>
-    public static SortableItem SortableItem(VisualNode child, string id, bool enabled = true, string name = "") =>
-        new SortableItem(child, id) { Enabled = enabled, Name = name };
+    /// <paramref name="name"/>, when given, in what the keyboard's steps say; at <paramref name="depth"/> in a list
+    /// whose items have depths (#1594).</summary>
+    public static SortableItem SortableItem(VisualNode child, string id, bool enabled = true, string name = "", int depth = 0) =>
+        new SortableItem(child, id) { Enabled = enabled, Name = name, Depth = depth };
 
     /// <summary>
     /// An area a person drops files onto: <paramref name="onDropped"/> hands over what landed, and

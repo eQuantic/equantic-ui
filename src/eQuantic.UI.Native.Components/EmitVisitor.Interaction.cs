@@ -147,7 +147,7 @@ internal sealed partial class EmitVisitor
         // Navigation surface: pure semantics — the child paints; a tap that no pressable claims
         // resolves to this region through the host's navigation seam.
         var at = PositionOf(s.Node);
-        s.Input.Add(new LinkRegion(s.Node.Bounds, link.Destination, at.Id));
+        s.Input.Add(new LinkRegion(s.Node.Bounds, link.Destination, at.Id, link.OpensBeside));
 
         // "Tab reaches every interactive control" (handoff, Foundations · Keyboard conventions), and
         // a link is one — the web gets the stop and the activate from <a href> for nothing, and

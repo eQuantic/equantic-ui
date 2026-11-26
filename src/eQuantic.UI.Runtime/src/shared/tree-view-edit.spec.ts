@@ -286,6 +286,10 @@ describe('a TreeView edited in place, in the browser', () => {
     const container = mount();
     tree(container).focus();
     host.change(() => (host.edit = Object.assign(new TreeEditRequest(1, 'docs'), { creates: true })));
+    // Each waited for as itself: the field is drawn in the build that opened the node, and the load starts
+    // after the scheduler's next turn, so on a loaded machine the field shows a frame before the load is
+    // asked for, and a case that read the load as soon as it saw the field failed then (#1600).
+    await until(() => loads === 1);
     await until(() => field(container) !== null);
     expect(loads).toBe(1);
     const docs = container.querySelector('[aria-label="docs"]') as HTMLElement;

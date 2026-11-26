@@ -21,7 +21,8 @@ public sealed class FormInput : StatelessComponent
 {
     public FormInput(FormController form, string name, string label = "",
         string? placeholder = null, string? helper = null, Icons? leading = null,
-        SizeVariant size = SizeVariant.Large, InputTheme? style = null)
+        SizeVariant size = SizeVariant.Large, TextEntryKind kind = TextEntryKind.Text,
+        string? prefix = null, string? suffix = null, InputTheme? style = null)
     {
         Form = form;
         Name = name;
@@ -30,6 +31,9 @@ public sealed class FormInput : StatelessComponent
         Helper = helper;
         Leading = leading;
         Size = size;
+        Kind = kind;
+        Prefix = prefix;
+        Suffix = suffix;
         Style = style;
     }
 
@@ -49,6 +53,16 @@ public sealed class FormInput : StatelessComponent
     public Icons? Leading { get; init; }
     public SizeVariant Size { get; init; }
 
+    /// <summary>What the field takes, as <see cref="TextInput.Kind"/>: a form's e-mail or phone field
+    /// opens that keyboard.</summary>
+    public TextEntryKind Kind { get; init; }
+
+    /// <summary>Drawn before the field's text and announced with its name, as <see cref="TextInput.Prefix"/>.</summary>
+    public string? Prefix { get; init; }
+
+    /// <summary>Drawn after the field's text and announced with its name, as <see cref="TextInput.Suffix"/>.</summary>
+    public string? Suffix { get; init; }
+
     /// <summary>The field's own look, handed to the <see cref="TextInput"/> it draws.</summary>
     public InputTheme? Style { get; init; }
 
@@ -65,7 +79,8 @@ public sealed class FormInput : StatelessComponent
         if (field is null) return new Box();
 
         return new TextInput(field.Value, value => Form.Set(Name, value), Label,
-            Placeholder, Helper, field.VisibleError, Leading, Size, style: Style)
+            Placeholder, Helper, field.VisibleError, Leading, Size, kind: Kind, prefix: Prefix, suffix: Suffix,
+            style: Style)
         {
             Obscure = Obscure,
             Autofocus = Autofocus,

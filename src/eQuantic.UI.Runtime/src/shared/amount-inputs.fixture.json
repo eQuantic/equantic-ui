@@ -1,0 +1,7167 @@
+{
+  "": {
+    "numberFormat": {
+      "numberDecimalSeparator": ".",
+      "numberGroupSeparator": ",",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 2,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "¤",
+      "currencyDecimalSeparator": ".",
+      "currencyGroupSeparator": ",",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 0,
+      "currencyNegativePattern": 0,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ".",
+      "percentGroupSeparator": ",",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 2,
+      "percentPositivePattern": 0,
+      "percentNegativePattern": 0,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "Infinity",
+      "negativeInfinitySymbol": "-Infinity"
+    },
+    "formats": [
+      {
+        "currency": "EUR",
+        "amount": "0",
+        "text": "€0.00"
+      },
+      {
+        "currency": "EUR",
+        "amount": "5",
+        "text": "€0.05"
+      },
+      {
+        "currency": "EUR",
+        "amount": "1250",
+        "text": "€12.50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123450",
+        "text": "€1,234.50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "-123450",
+        "text": "(€1,234.50)"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123456789012",
+        "text": "€1,234,567,890.12"
+      },
+      {
+        "currency": "JPY",
+        "amount": "0",
+        "text": "¥0"
+      },
+      {
+        "currency": "JPY",
+        "amount": "5",
+        "text": "¥5"
+      },
+      {
+        "currency": "JPY",
+        "amount": "1250",
+        "text": "¥1,250"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123450",
+        "text": "¥123,450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "-123450",
+        "text": "(¥123,450)"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123456789012",
+        "text": "¥123,456,789,012"
+      },
+      {
+        "currency": "CHF",
+        "amount": "0",
+        "text": "CHF0.00"
+      },
+      {
+        "currency": "CHF",
+        "amount": "5",
+        "text": "CHF0.05"
+      },
+      {
+        "currency": "CHF",
+        "amount": "1250",
+        "text": "CHF12.50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123450",
+        "text": "CHF1,234.50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "-123450",
+        "text": "(CHF1,234.50)"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123456789012",
+        "text": "CHF1,234,567,890.12"
+      }
+    ],
+    "scripts": [
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look",
+          "focus",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "JPY",
+        "value": "1235",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "1,235",
+            "name": "Price (¥)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "¥",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "-123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "-1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "12.5",
+          "12,5",
+          "1,234",
+          "1.234",
+          "1 234,50",
+          "1.234,50",
+          "12,505",
+          "abc",
+          "-3,5",
+          "",
+          "7",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12.5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250"
+            ]
+          },
+          {
+            "value": "12,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1,234",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1.234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1 234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "12,505",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500"
+            ]
+          },
+          {
+            "value": "abc",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500"
+            ]
+          },
+          {
+            "value": "-3,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350",
+              null
+            ]
+          },
+          {
+            "value": "7",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350",
+              null,
+              "700"
+            ]
+          },
+          {
+            "value": "7.00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350",
+              null,
+              "700"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": "1000",
+        "max": null,
+        "unit": "",
+        "steps": [
+          "5",
+          "10",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "5",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter at least €10.00",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "10",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          },
+          {
+            "value": "10.00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "CHF",
+        "value": null,
+        "min": "0",
+        "max": "10000",
+        "unit": "",
+        "steps": [
+          "200",
+          "99.95",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "200",
+            "name": "Price (CHF)",
+            "invalid": true,
+            "caption": "Enter a value from CHF0.00 to CHF100.00",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "3",
+        "min": "1",
+        "max": "30",
+        "unit": "dias",
+        "steps": [
+          "look",
+          "45",
+          "12",
+          "2,5",
+          "1.000",
+          "",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "3",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "45",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a value from 1 dias to 30 dias",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "12",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "2,5",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "1.000",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "12500",
+        "min": null,
+        "max": null,
+        "unit": "g",
+        "steps": [
+          "look",
+          "focus",
+          "1,500",
+          "1 500",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12,500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "12,500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1,500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          }
+        ]
+      }
+    ]
+  },
+  "en": {
+    "numberFormat": {
+      "numberDecimalSeparator": ".",
+      "numberGroupSeparator": ",",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "¤",
+      "currencyDecimalSeparator": ".",
+      "currencyGroupSeparator": ",",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 0,
+      "currencyNegativePattern": 1,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ".",
+      "percentGroupSeparator": ",",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 1,
+      "percentNegativePattern": 1,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
+    },
+    "formats": [
+      {
+        "currency": "EUR",
+        "amount": "0",
+        "text": "€0.00"
+      },
+      {
+        "currency": "EUR",
+        "amount": "5",
+        "text": "€0.05"
+      },
+      {
+        "currency": "EUR",
+        "amount": "1250",
+        "text": "€12.50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123450",
+        "text": "€1,234.50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "-123450",
+        "text": "-€1,234.50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123456789012",
+        "text": "€1,234,567,890.12"
+      },
+      {
+        "currency": "JPY",
+        "amount": "0",
+        "text": "¥0"
+      },
+      {
+        "currency": "JPY",
+        "amount": "5",
+        "text": "¥5"
+      },
+      {
+        "currency": "JPY",
+        "amount": "1250",
+        "text": "¥1,250"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123450",
+        "text": "¥123,450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "-123450",
+        "text": "-¥123,450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123456789012",
+        "text": "¥123,456,789,012"
+      },
+      {
+        "currency": "CHF",
+        "amount": "0",
+        "text": "CHF0.00"
+      },
+      {
+        "currency": "CHF",
+        "amount": "5",
+        "text": "CHF0.05"
+      },
+      {
+        "currency": "CHF",
+        "amount": "1250",
+        "text": "CHF12.50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123450",
+        "text": "CHF1,234.50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "-123450",
+        "text": "-CHF1,234.50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123456789012",
+        "text": "CHF1,234,567,890.12"
+      }
+    ],
+    "scripts": [
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look",
+          "focus",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "JPY",
+        "value": "1235",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "1,235",
+            "name": "Price (¥)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "¥",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "-123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "-1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "12.5",
+          "12,5",
+          "1,234",
+          "1.234",
+          "1 234,50",
+          "1.234,50",
+          "12,505",
+          "abc",
+          "-3,5",
+          "",
+          "7",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12.5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250"
+            ]
+          },
+          {
+            "value": "12,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1,234",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1.234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1 234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "12,505",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500"
+            ]
+          },
+          {
+            "value": "abc",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500"
+            ]
+          },
+          {
+            "value": "-3,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350",
+              null
+            ]
+          },
+          {
+            "value": "7",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350",
+              null,
+              "700"
+            ]
+          },
+          {
+            "value": "7.00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350",
+              null,
+              "700"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": "1000",
+        "max": null,
+        "unit": "",
+        "steps": [
+          "5",
+          "10",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "5",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter at least €10.00",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "10",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          },
+          {
+            "value": "10.00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "CHF",
+        "value": null,
+        "min": "0",
+        "max": "10000",
+        "unit": "",
+        "steps": [
+          "200",
+          "99.95",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "200",
+            "name": "Price (CHF)",
+            "invalid": true,
+            "caption": "Enter a value from CHF0.00 to CHF100.00",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "3",
+        "min": "1",
+        "max": "30",
+        "unit": "dias",
+        "steps": [
+          "look",
+          "45",
+          "12",
+          "2,5",
+          "1.000",
+          "",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "3",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "45",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a value from 1 dias to 30 dias",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "12",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "2,5",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "1.000",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "12500",
+        "min": null,
+        "max": null,
+        "unit": "g",
+        "steps": [
+          "look",
+          "focus",
+          "1,500",
+          "1 500",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12,500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "12,500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1,500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          }
+        ]
+      }
+    ]
+  },
+  "en-US": {
+    "numberFormat": {
+      "numberDecimalSeparator": ".",
+      "numberGroupSeparator": ",",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "$",
+      "currencyDecimalSeparator": ".",
+      "currencyGroupSeparator": ",",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 0,
+      "currencyNegativePattern": 1,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ".",
+      "percentGroupSeparator": ",",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 1,
+      "percentNegativePattern": 1,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
+    },
+    "formats": [
+      {
+        "currency": "EUR",
+        "amount": "0",
+        "text": "€0.00"
+      },
+      {
+        "currency": "EUR",
+        "amount": "5",
+        "text": "€0.05"
+      },
+      {
+        "currency": "EUR",
+        "amount": "1250",
+        "text": "€12.50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123450",
+        "text": "€1,234.50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "-123450",
+        "text": "-€1,234.50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123456789012",
+        "text": "€1,234,567,890.12"
+      },
+      {
+        "currency": "JPY",
+        "amount": "0",
+        "text": "¥0"
+      },
+      {
+        "currency": "JPY",
+        "amount": "5",
+        "text": "¥5"
+      },
+      {
+        "currency": "JPY",
+        "amount": "1250",
+        "text": "¥1,250"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123450",
+        "text": "¥123,450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "-123450",
+        "text": "-¥123,450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123456789012",
+        "text": "¥123,456,789,012"
+      },
+      {
+        "currency": "CHF",
+        "amount": "0",
+        "text": "CHF0.00"
+      },
+      {
+        "currency": "CHF",
+        "amount": "5",
+        "text": "CHF0.05"
+      },
+      {
+        "currency": "CHF",
+        "amount": "1250",
+        "text": "CHF12.50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123450",
+        "text": "CHF1,234.50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "-123450",
+        "text": "-CHF1,234.50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123456789012",
+        "text": "CHF1,234,567,890.12"
+      }
+    ],
+    "scripts": [
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look",
+          "focus",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "JPY",
+        "value": "1235",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "1,235",
+            "name": "Price (¥)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "¥",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "-123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "-1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "12.5",
+          "12,5",
+          "1,234",
+          "1.234",
+          "1 234,50",
+          "1.234,50",
+          "12,505",
+          "abc",
+          "-3,5",
+          "",
+          "7",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12.5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250"
+            ]
+          },
+          {
+            "value": "12,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1,234",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1.234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1 234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "12,505",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500"
+            ]
+          },
+          {
+            "value": "abc",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500"
+            ]
+          },
+          {
+            "value": "-3,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350",
+              null
+            ]
+          },
+          {
+            "value": "7",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350",
+              null,
+              "700"
+            ]
+          },
+          {
+            "value": "7.00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350",
+              null,
+              "700"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": "1000",
+        "max": null,
+        "unit": "",
+        "steps": [
+          "5",
+          "10",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "5",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter at least €10.00",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "10",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          },
+          {
+            "value": "10.00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "CHF",
+        "value": null,
+        "min": "0",
+        "max": "10000",
+        "unit": "",
+        "steps": [
+          "200",
+          "99.95",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "200",
+            "name": "Price (CHF)",
+            "invalid": true,
+            "caption": "Enter a value from CHF0.00 to CHF100.00",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "3",
+        "min": "1",
+        "max": "30",
+        "unit": "dias",
+        "steps": [
+          "look",
+          "45",
+          "12",
+          "2,5",
+          "1.000",
+          "",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "3",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "45",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a value from 1 dias to 30 dias",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "12",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "2,5",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "1.000",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "12500",
+        "min": null,
+        "max": null,
+        "unit": "g",
+        "steps": [
+          "look",
+          "focus",
+          "1,500",
+          "1 500",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12,500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "12,500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1,500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          }
+        ]
+      }
+    ]
+  },
+  "pt-PT": {
+    "numberFormat": {
+      "numberDecimalSeparator": ",",
+      "numberGroupSeparator": "\u00A0",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "€",
+      "currencyDecimalSeparator": ",",
+      "currencyGroupSeparator": "\u00A0",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 3,
+      "currencyNegativePattern": 8,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ",",
+      "percentGroupSeparator": "\u00A0",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 1,
+      "percentNegativePattern": 1,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
+    },
+    "formats": [
+      {
+        "currency": "EUR",
+        "amount": "0",
+        "text": "0,00 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "5",
+        "text": "0,05 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "1250",
+        "text": "12,50 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123450",
+        "text": "1\u00A0234,50 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "-123450",
+        "text": "-1\u00A0234,50 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123456789012",
+        "text": "1\u00A0234\u00A0567\u00A0890,12 €"
+      },
+      {
+        "currency": "JPY",
+        "amount": "0",
+        "text": "0 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "5",
+        "text": "5 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "1250",
+        "text": "1\u00A0250 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123450",
+        "text": "123\u00A0450 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "-123450",
+        "text": "-123\u00A0450 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123456789012",
+        "text": "123\u00A0456\u00A0789\u00A0012 ¥"
+      },
+      {
+        "currency": "CHF",
+        "amount": "0",
+        "text": "0,00 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "5",
+        "text": "0,05 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "1250",
+        "text": "12,50 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123450",
+        "text": "1\u00A0234,50 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "-123450",
+        "text": "-1\u00A0234,50 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123456789012",
+        "text": "1\u00A0234\u00A0567\u00A0890,12 CHF"
+      }
+    ],
+    "scripts": [
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look",
+          "focus",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "1\u00A0234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          },
+          {
+            "value": "1\u00A0234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          },
+          {
+            "value": "1\u00A0234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "JPY",
+        "value": "1235",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "1\u00A0235",
+            "name": "Price (¥)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "¥",
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "-123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "-1\u00A0234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "12.5",
+          "12,5",
+          "1,234",
+          "1.234",
+          "1 234,50",
+          "1.234,50",
+          "12,505",
+          "abc",
+          "-3,5",
+          "",
+          "7",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12.5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250"
+            ]
+          },
+          {
+            "value": "12,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1,234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1.234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1 234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450"
+            ]
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450"
+            ]
+          },
+          {
+            "value": "12,505",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450"
+            ]
+          },
+          {
+            "value": "abc",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450"
+            ]
+          },
+          {
+            "value": "-3,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450",
+              "-350"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450",
+              "-350",
+              null
+            ]
+          },
+          {
+            "value": "7",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450",
+              "-350",
+              null,
+              "700"
+            ]
+          },
+          {
+            "value": "7,00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450",
+              "-350",
+              null,
+              "700"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": "1000",
+        "max": null,
+        "unit": "",
+        "steps": [
+          "5",
+          "10",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "5",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter at least 10,00 €",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          },
+          {
+            "value": "10",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1000"
+            ]
+          },
+          {
+            "value": "10,00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1000"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "CHF",
+        "value": null,
+        "min": "0",
+        "max": "10000",
+        "unit": "",
+        "steps": [
+          "200",
+          "99.95",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "200",
+            "name": "Price (CHF)",
+            "invalid": true,
+            "caption": "Enter a value from 0,00 CHF to 100,00 CHF",
+            "prefix": null,
+            "suffix": "CHF",
+            "handed": []
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "CHF",
+            "handed": [
+              "9995"
+            ]
+          },
+          {
+            "value": "99,95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "CHF",
+            "handed": [
+              "9995"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "3",
+        "min": "1",
+        "max": "30",
+        "unit": "dias",
+        "steps": [
+          "look",
+          "45",
+          "12",
+          "2,5",
+          "1.000",
+          "",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "3",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "45",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a value from 1 dias to 30 dias",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "12",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "2,5",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "1.000",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "12500",
+        "min": null,
+        "max": null,
+        "unit": "g",
+        "steps": [
+          "look",
+          "focus",
+          "1,500",
+          "1 500",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12\u00A0500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "12\u00A0500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1,500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          }
+        ]
+      }
+    ]
+  },
+  "pt-BR": {
+    "numberFormat": {
+      "numberDecimalSeparator": ",",
+      "numberGroupSeparator": ".",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "R$",
+      "currencyDecimalSeparator": ",",
+      "currencyGroupSeparator": ".",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 2,
+      "currencyNegativePattern": 9,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ",",
+      "percentGroupSeparator": ".",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 1,
+      "percentNegativePattern": 1,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
+    },
+    "formats": [
+      {
+        "currency": "EUR",
+        "amount": "0",
+        "text": "€ 0,00"
+      },
+      {
+        "currency": "EUR",
+        "amount": "5",
+        "text": "€ 0,05"
+      },
+      {
+        "currency": "EUR",
+        "amount": "1250",
+        "text": "€ 12,50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123450",
+        "text": "€ 1.234,50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "-123450",
+        "text": "-€ 1.234,50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123456789012",
+        "text": "€ 1.234.567.890,12"
+      },
+      {
+        "currency": "JPY",
+        "amount": "0",
+        "text": "¥ 0"
+      },
+      {
+        "currency": "JPY",
+        "amount": "5",
+        "text": "¥ 5"
+      },
+      {
+        "currency": "JPY",
+        "amount": "1250",
+        "text": "¥ 1.250"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123450",
+        "text": "¥ 123.450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "-123450",
+        "text": "-¥ 123.450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123456789012",
+        "text": "¥ 123.456.789.012"
+      },
+      {
+        "currency": "CHF",
+        "amount": "0",
+        "text": "CHF 0,00"
+      },
+      {
+        "currency": "CHF",
+        "amount": "5",
+        "text": "CHF 0,05"
+      },
+      {
+        "currency": "CHF",
+        "amount": "1250",
+        "text": "CHF 12,50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123450",
+        "text": "CHF 1.234,50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "-123450",
+        "text": "-CHF 1.234,50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123456789012",
+        "text": "CHF 1.234.567.890,12"
+      }
+    ],
+    "scripts": [
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look",
+          "focus",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "JPY",
+        "value": "1235",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "1.235",
+            "name": "Price (¥)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "¥",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "-123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "-1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "12.5",
+          "12,5",
+          "1,234",
+          "1.234",
+          "1 234,50",
+          "1.234,50",
+          "12,505",
+          "abc",
+          "-3,5",
+          "",
+          "7",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12.5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250"
+            ]
+          },
+          {
+            "value": "12,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1,234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1.234",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1 234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450"
+            ]
+          },
+          {
+            "value": "12,505",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450"
+            ]
+          },
+          {
+            "value": "abc",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450"
+            ]
+          },
+          {
+            "value": "-3,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450",
+              "-350"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450",
+              "-350",
+              null
+            ]
+          },
+          {
+            "value": "7",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450",
+              "-350",
+              null,
+              "700"
+            ]
+          },
+          {
+            "value": "7,00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450",
+              "-350",
+              null,
+              "700"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": "1000",
+        "max": null,
+        "unit": "",
+        "steps": [
+          "5",
+          "10",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "5",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter at least € 10,00",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "10",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          },
+          {
+            "value": "10,00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "CHF",
+        "value": null,
+        "min": "0",
+        "max": "10000",
+        "unit": "",
+        "steps": [
+          "200",
+          "99.95",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "200",
+            "name": "Price (CHF)",
+            "invalid": true,
+            "caption": "Enter a value from CHF 0,00 to CHF 100,00",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          },
+          {
+            "value": "99,95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "3",
+        "min": "1",
+        "max": "30",
+        "unit": "dias",
+        "steps": [
+          "look",
+          "45",
+          "12",
+          "2,5",
+          "1.000",
+          "",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "3",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "45",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a value from 1 dias to 30 dias",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "12",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "2,5",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "1.000",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "12500",
+        "min": null,
+        "max": null,
+        "unit": "g",
+        "steps": [
+          "look",
+          "focus",
+          "1,500",
+          "1 500",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12.500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "12.500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1,500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          }
+        ]
+      }
+    ]
+  },
+  "de-DE": {
+    "numberFormat": {
+      "numberDecimalSeparator": ",",
+      "numberGroupSeparator": ".",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "€",
+      "currencyDecimalSeparator": ",",
+      "currencyGroupSeparator": ".",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 3,
+      "currencyNegativePattern": 8,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ",",
+      "percentGroupSeparator": ".",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 0,
+      "percentNegativePattern": 0,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
+    },
+    "formats": [
+      {
+        "currency": "EUR",
+        "amount": "0",
+        "text": "0,00 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "5",
+        "text": "0,05 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "1250",
+        "text": "12,50 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123450",
+        "text": "1.234,50 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "-123450",
+        "text": "-1.234,50 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123456789012",
+        "text": "1.234.567.890,12 €"
+      },
+      {
+        "currency": "JPY",
+        "amount": "0",
+        "text": "0 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "5",
+        "text": "5 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "1250",
+        "text": "1.250 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123450",
+        "text": "123.450 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "-123450",
+        "text": "-123.450 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123456789012",
+        "text": "123.456.789.012 ¥"
+      },
+      {
+        "currency": "CHF",
+        "amount": "0",
+        "text": "0,00 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "5",
+        "text": "0,05 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "1250",
+        "text": "12,50 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123450",
+        "text": "1.234,50 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "-123450",
+        "text": "-1.234,50 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123456789012",
+        "text": "1.234.567.890,12 CHF"
+      }
+    ],
+    "scripts": [
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look",
+          "focus",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "JPY",
+        "value": "1235",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "1.235",
+            "name": "Price (¥)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "¥",
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "-123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "-1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "12.5",
+          "12,5",
+          "1,234",
+          "1.234",
+          "1 234,50",
+          "1.234,50",
+          "12,505",
+          "abc",
+          "-3,5",
+          "",
+          "7",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12.5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250"
+            ]
+          },
+          {
+            "value": "12,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1,234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1.234",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1 234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450"
+            ]
+          },
+          {
+            "value": "12,505",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450"
+            ]
+          },
+          {
+            "value": "abc",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450"
+            ]
+          },
+          {
+            "value": "-3,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450",
+              "-350"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450",
+              "-350",
+              null
+            ]
+          },
+          {
+            "value": "7",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450",
+              "-350",
+              null,
+              "700"
+            ]
+          },
+          {
+            "value": "7,00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450",
+              "-350",
+              null,
+              "700"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": "1000",
+        "max": null,
+        "unit": "",
+        "steps": [
+          "5",
+          "10",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "5",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter at least 10,00 €",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          },
+          {
+            "value": "10",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1000"
+            ]
+          },
+          {
+            "value": "10,00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1000"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "CHF",
+        "value": null,
+        "min": "0",
+        "max": "10000",
+        "unit": "",
+        "steps": [
+          "200",
+          "99.95",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "200",
+            "name": "Price (CHF)",
+            "invalid": true,
+            "caption": "Enter a value from 0,00 CHF to 100,00 CHF",
+            "prefix": null,
+            "suffix": "CHF",
+            "handed": []
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "CHF",
+            "handed": [
+              "9995"
+            ]
+          },
+          {
+            "value": "99,95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "CHF",
+            "handed": [
+              "9995"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "3",
+        "min": "1",
+        "max": "30",
+        "unit": "dias",
+        "steps": [
+          "look",
+          "45",
+          "12",
+          "2,5",
+          "1.000",
+          "",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "3",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "45",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a value from 1 dias to 30 dias",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "12",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "2,5",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "1.000",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "12500",
+        "min": null,
+        "max": null,
+        "unit": "g",
+        "steps": [
+          "look",
+          "focus",
+          "1,500",
+          "1 500",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12.500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "12.500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1,500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          }
+        ]
+      }
+    ]
+  },
+  "de-AT": {
+    "numberFormat": {
+      "numberDecimalSeparator": ",",
+      "numberGroupSeparator": "\u00A0",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "€",
+      "currencyDecimalSeparator": ",",
+      "currencyGroupSeparator": ".",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 2,
+      "currencyNegativePattern": 9,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ",",
+      "percentGroupSeparator": "\u00A0",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 0,
+      "percentNegativePattern": 0,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
+    },
+    "formats": [
+      {
+        "currency": "EUR",
+        "amount": "0",
+        "text": "€ 0,00"
+      },
+      {
+        "currency": "EUR",
+        "amount": "5",
+        "text": "€ 0,05"
+      },
+      {
+        "currency": "EUR",
+        "amount": "1250",
+        "text": "€ 12,50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123450",
+        "text": "€ 1.234,50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "-123450",
+        "text": "-€ 1.234,50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123456789012",
+        "text": "€ 1.234.567.890,12"
+      },
+      {
+        "currency": "JPY",
+        "amount": "0",
+        "text": "¥ 0"
+      },
+      {
+        "currency": "JPY",
+        "amount": "5",
+        "text": "¥ 5"
+      },
+      {
+        "currency": "JPY",
+        "amount": "1250",
+        "text": "¥ 1.250"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123450",
+        "text": "¥ 123.450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "-123450",
+        "text": "-¥ 123.450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123456789012",
+        "text": "¥ 123.456.789.012"
+      },
+      {
+        "currency": "CHF",
+        "amount": "0",
+        "text": "CHF 0,00"
+      },
+      {
+        "currency": "CHF",
+        "amount": "5",
+        "text": "CHF 0,05"
+      },
+      {
+        "currency": "CHF",
+        "amount": "1250",
+        "text": "CHF 12,50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123450",
+        "text": "CHF 1.234,50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "-123450",
+        "text": "-CHF 1.234,50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123456789012",
+        "text": "CHF 1.234.567.890,12"
+      }
+    ],
+    "scripts": [
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look",
+          "focus",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "1\u00A0234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1\u00A0234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1\u00A0234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "JPY",
+        "value": "1235",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "1\u00A0235",
+            "name": "Price (¥)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "¥",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "-123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "-1\u00A0234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "12.5",
+          "12,5",
+          "1,234",
+          "1.234",
+          "1 234,50",
+          "1.234,50",
+          "12,505",
+          "abc",
+          "-3,5",
+          "",
+          "7",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12.5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250"
+            ]
+          },
+          {
+            "value": "12,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1,234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1.234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1 234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123450"
+            ]
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123450"
+            ]
+          },
+          {
+            "value": "12,505",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123450"
+            ]
+          },
+          {
+            "value": "abc",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123450"
+            ]
+          },
+          {
+            "value": "-3,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123450",
+              "-350"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123450",
+              "-350",
+              null
+            ]
+          },
+          {
+            "value": "7",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123450",
+              "-350",
+              null,
+              "700"
+            ]
+          },
+          {
+            "value": "7,00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123450",
+              "-350",
+              null,
+              "700"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": "1000",
+        "max": null,
+        "unit": "",
+        "steps": [
+          "5",
+          "10",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "5",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter at least € 10,00",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "10",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          },
+          {
+            "value": "10,00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "CHF",
+        "value": null,
+        "min": "0",
+        "max": "10000",
+        "unit": "",
+        "steps": [
+          "200",
+          "99.95",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "200",
+            "name": "Price (CHF)",
+            "invalid": true,
+            "caption": "Enter a value from CHF 0,00 to CHF 100,00",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          },
+          {
+            "value": "99,95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "3",
+        "min": "1",
+        "max": "30",
+        "unit": "dias",
+        "steps": [
+          "look",
+          "45",
+          "12",
+          "2,5",
+          "1.000",
+          "",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "3",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "45",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a value from 1 dias to 30 dias",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "12",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "2,5",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "1.000",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "12500",
+        "min": null,
+        "max": null,
+        "unit": "g",
+        "steps": [
+          "look",
+          "focus",
+          "1,500",
+          "1 500",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12\u00A0500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "12\u00A0500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1,500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          }
+        ]
+      }
+    ]
+  },
+  "de-CH": {
+    "numberFormat": {
+      "numberDecimalSeparator": ".",
+      "numberGroupSeparator": "'",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "CHF",
+      "currencyDecimalSeparator": ".",
+      "currencyGroupSeparator": "'",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 2,
+      "currencyNegativePattern": 2,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ".",
+      "percentGroupSeparator": "'",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 1,
+      "percentNegativePattern": 1,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
+    },
+    "formats": [
+      {
+        "currency": "EUR",
+        "amount": "0",
+        "text": "€ 0.00"
+      },
+      {
+        "currency": "EUR",
+        "amount": "5",
+        "text": "€ 0.05"
+      },
+      {
+        "currency": "EUR",
+        "amount": "1250",
+        "text": "€ 12.50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123450",
+        "text": "€ 1'234.50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "-123450",
+        "text": "€-1'234.50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123456789012",
+        "text": "€ 1'234'567'890.12"
+      },
+      {
+        "currency": "JPY",
+        "amount": "0",
+        "text": "¥ 0"
+      },
+      {
+        "currency": "JPY",
+        "amount": "5",
+        "text": "¥ 5"
+      },
+      {
+        "currency": "JPY",
+        "amount": "1250",
+        "text": "¥ 1'250"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123450",
+        "text": "¥ 123'450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "-123450",
+        "text": "¥-123'450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123456789012",
+        "text": "¥ 123'456'789'012"
+      },
+      {
+        "currency": "CHF",
+        "amount": "0",
+        "text": "CHF 0.00"
+      },
+      {
+        "currency": "CHF",
+        "amount": "5",
+        "text": "CHF 0.05"
+      },
+      {
+        "currency": "CHF",
+        "amount": "1250",
+        "text": "CHF 12.50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123450",
+        "text": "CHF 1'234.50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "-123450",
+        "text": "CHF-1'234.50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123456789012",
+        "text": "CHF 1'234'567'890.12"
+      }
+    ],
+    "scripts": [
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look",
+          "focus",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "1'234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1'234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1'234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "JPY",
+        "value": "1235",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "1'235",
+            "name": "Price (¥)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "¥",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "-123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "-1'234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "12.5",
+          "12,5",
+          "1,234",
+          "1.234",
+          "1 234,50",
+          "1.234,50",
+          "12,505",
+          "abc",
+          "-3,5",
+          "",
+          "7",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12.5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250"
+            ]
+          },
+          {
+            "value": "12,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1,234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1.234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1 234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "12,505",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "abc",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "-3,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "-350"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "-350",
+              null
+            ]
+          },
+          {
+            "value": "7",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "-350",
+              null,
+              "700"
+            ]
+          },
+          {
+            "value": "7.00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "-350",
+              null,
+              "700"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": "1000",
+        "max": null,
+        "unit": "",
+        "steps": [
+          "5",
+          "10",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "5",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter at least € 10.00",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "10",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          },
+          {
+            "value": "10.00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "CHF",
+        "value": null,
+        "min": "0",
+        "max": "10000",
+        "unit": "",
+        "steps": [
+          "200",
+          "99.95",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "200",
+            "name": "Price (CHF)",
+            "invalid": true,
+            "caption": "Enter a value from CHF 0.00 to CHF 100.00",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "3",
+        "min": "1",
+        "max": "30",
+        "unit": "dias",
+        "steps": [
+          "look",
+          "45",
+          "12",
+          "2,5",
+          "1.000",
+          "",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "3",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "45",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a value from 1 dias to 30 dias",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "12",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "2,5",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "1.000",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "12500",
+        "min": null,
+        "max": null,
+        "unit": "g",
+        "steps": [
+          "look",
+          "focus",
+          "1,500",
+          "1 500",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12'500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "12'500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1,500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          }
+        ]
+      }
+    ]
+  },
+  "nl-NL": {
+    "numberFormat": {
+      "numberDecimalSeparator": ",",
+      "numberGroupSeparator": ".",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "€",
+      "currencyDecimalSeparator": ",",
+      "currencyGroupSeparator": ".",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 2,
+      "currencyNegativePattern": 12,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ",",
+      "percentGroupSeparator": ".",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 1,
+      "percentNegativePattern": 1,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
+    },
+    "formats": [
+      {
+        "currency": "EUR",
+        "amount": "0",
+        "text": "€ 0,00"
+      },
+      {
+        "currency": "EUR",
+        "amount": "5",
+        "text": "€ 0,05"
+      },
+      {
+        "currency": "EUR",
+        "amount": "1250",
+        "text": "€ 12,50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123450",
+        "text": "€ 1.234,50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "-123450",
+        "text": "€ -1.234,50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123456789012",
+        "text": "€ 1.234.567.890,12"
+      },
+      {
+        "currency": "JPY",
+        "amount": "0",
+        "text": "¥ 0"
+      },
+      {
+        "currency": "JPY",
+        "amount": "5",
+        "text": "¥ 5"
+      },
+      {
+        "currency": "JPY",
+        "amount": "1250",
+        "text": "¥ 1.250"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123450",
+        "text": "¥ 123.450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "-123450",
+        "text": "¥ -123.450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123456789012",
+        "text": "¥ 123.456.789.012"
+      },
+      {
+        "currency": "CHF",
+        "amount": "0",
+        "text": "CHF 0,00"
+      },
+      {
+        "currency": "CHF",
+        "amount": "5",
+        "text": "CHF 0,05"
+      },
+      {
+        "currency": "CHF",
+        "amount": "1250",
+        "text": "CHF 12,50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123450",
+        "text": "CHF 1.234,50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "-123450",
+        "text": "CHF -1.234,50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123456789012",
+        "text": "CHF 1.234.567.890,12"
+      }
+    ],
+    "scripts": [
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look",
+          "focus",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "JPY",
+        "value": "1235",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "1.235",
+            "name": "Price (¥)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "¥",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "-123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "-1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "12.5",
+          "12,5",
+          "1,234",
+          "1.234",
+          "1 234,50",
+          "1.234,50",
+          "12,505",
+          "abc",
+          "-3,5",
+          "",
+          "7",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12.5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250"
+            ]
+          },
+          {
+            "value": "12,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1,234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1.234",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1 234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450"
+            ]
+          },
+          {
+            "value": "12,505",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450"
+            ]
+          },
+          {
+            "value": "abc",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450"
+            ]
+          },
+          {
+            "value": "-3,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450",
+              "-350"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450",
+              "-350",
+              null
+            ]
+          },
+          {
+            "value": "7",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450",
+              "-350",
+              null,
+              "700"
+            ]
+          },
+          {
+            "value": "7,00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "123450",
+              "-350",
+              null,
+              "700"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": "1000",
+        "max": null,
+        "unit": "",
+        "steps": [
+          "5",
+          "10",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "5",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter at least € 10,00",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "10",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          },
+          {
+            "value": "10,00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "CHF",
+        "value": null,
+        "min": "0",
+        "max": "10000",
+        "unit": "",
+        "steps": [
+          "200",
+          "99.95",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "200",
+            "name": "Price (CHF)",
+            "invalid": true,
+            "caption": "Enter a value from CHF 0,00 to CHF 100,00",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          },
+          {
+            "value": "99,95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "3",
+        "min": "1",
+        "max": "30",
+        "unit": "dias",
+        "steps": [
+          "look",
+          "45",
+          "12",
+          "2,5",
+          "1.000",
+          "",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "3",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "45",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a value from 1 dias to 30 dias",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "12",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "2,5",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "1.000",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "12500",
+        "min": null,
+        "max": null,
+        "unit": "g",
+        "steps": [
+          "look",
+          "focus",
+          "1,500",
+          "1 500",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12.500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "12.500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1,500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          }
+        ]
+      }
+    ]
+  },
+  "fr-FR": {
+    "numberFormat": {
+      "numberDecimalSeparator": ",",
+      "numberGroupSeparator": "\u202F",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "€",
+      "currencyDecimalSeparator": ",",
+      "currencyGroupSeparator": "\u202F",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 2,
+      "currencyPositivePattern": 3,
+      "currencyNegativePattern": 8,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ",",
+      "percentGroupSeparator": "\u202F",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 0,
+      "percentNegativePattern": 0,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
+    },
+    "formats": [
+      {
+        "currency": "EUR",
+        "amount": "0",
+        "text": "0,00 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "5",
+        "text": "0,05 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "1250",
+        "text": "12,50 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123450",
+        "text": "1\u202F234,50 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "-123450",
+        "text": "-1\u202F234,50 €"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123456789012",
+        "text": "1\u202F234\u202F567\u202F890,12 €"
+      },
+      {
+        "currency": "JPY",
+        "amount": "0",
+        "text": "0 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "5",
+        "text": "5 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "1250",
+        "text": "1\u202F250 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123450",
+        "text": "123\u202F450 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "-123450",
+        "text": "-123\u202F450 ¥"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123456789012",
+        "text": "123\u202F456\u202F789\u202F012 ¥"
+      },
+      {
+        "currency": "CHF",
+        "amount": "0",
+        "text": "0,00 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "5",
+        "text": "0,05 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "1250",
+        "text": "12,50 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123450",
+        "text": "1\u202F234,50 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "-123450",
+        "text": "-1\u202F234,50 CHF"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123456789012",
+        "text": "1\u202F234\u202F567\u202F890,12 CHF"
+      }
+    ],
+    "scripts": [
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look",
+          "focus",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "1\u202F234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          },
+          {
+            "value": "1\u202F234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          },
+          {
+            "value": "1\u202F234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "JPY",
+        "value": "1235",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "1\u202F235",
+            "name": "Price (¥)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "¥",
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "-123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "-1\u202F234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "12.5",
+          "12,5",
+          "1,234",
+          "1.234",
+          "1 234,50",
+          "1.234,50",
+          "12,505",
+          "abc",
+          "-3,5",
+          "",
+          "7",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12.5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250"
+            ]
+          },
+          {
+            "value": "12,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1,234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1.234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1 234,50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450"
+            ]
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450"
+            ]
+          },
+          {
+            "value": "12,505",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450"
+            ]
+          },
+          {
+            "value": "abc",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12,50",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450"
+            ]
+          },
+          {
+            "value": "-3,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450",
+              "-350"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450",
+              "-350",
+              null
+            ]
+          },
+          {
+            "value": "7",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450",
+              "-350",
+              null,
+              "700"
+            ]
+          },
+          {
+            "value": "7,00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1250",
+              "1250",
+              "123450",
+              "-350",
+              null,
+              "700"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": "1000",
+        "max": null,
+        "unit": "",
+        "steps": [
+          "5",
+          "10",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "5",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter at least 10,00 €",
+            "prefix": null,
+            "suffix": "€",
+            "handed": []
+          },
+          {
+            "value": "10",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1000"
+            ]
+          },
+          {
+            "value": "10,00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "€",
+            "handed": [
+              "1000"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "CHF",
+        "value": null,
+        "min": "0",
+        "max": "10000",
+        "unit": "",
+        "steps": [
+          "200",
+          "99.95",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "200",
+            "name": "Price (CHF)",
+            "invalid": true,
+            "caption": "Enter a value from 0,00 CHF to 100,00 CHF",
+            "prefix": null,
+            "suffix": "CHF",
+            "handed": []
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "CHF",
+            "handed": [
+              "9995"
+            ]
+          },
+          {
+            "value": "99,95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "CHF",
+            "handed": [
+              "9995"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "3",
+        "min": "1",
+        "max": "30",
+        "unit": "dias",
+        "steps": [
+          "look",
+          "45",
+          "12",
+          "2,5",
+          "1.000",
+          "",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "3",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "45",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a value from 1 dias to 30 dias",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "12",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "2,5",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "1.000",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "12500",
+        "min": null,
+        "max": null,
+        "unit": "g",
+        "steps": [
+          "look",
+          "focus",
+          "1,500",
+          "1 500",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12\u202F500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "12\u202F500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1,500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          }
+        ]
+      }
+    ]
+  },
+  "ja-JP": {
+    "numberFormat": {
+      "numberDecimalSeparator": ".",
+      "numberGroupSeparator": ",",
+      "numberGroupSizes": [
+        3
+      ],
+      "numberDecimalDigits": 3,
+      "numberNegativePattern": 1,
+      "negativeSign": "-",
+      "positiveSign": "+",
+      "currencySymbol": "¥",
+      "currencyDecimalSeparator": ".",
+      "currencyGroupSeparator": ",",
+      "currencyGroupSizes": [
+        3
+      ],
+      "currencyDecimalDigits": 0,
+      "currencyPositivePattern": 0,
+      "currencyNegativePattern": 1,
+      "percentSymbol": "%",
+      "percentDecimalSeparator": ".",
+      "percentGroupSeparator": ",",
+      "percentGroupSizes": [
+        3
+      ],
+      "percentDecimalDigits": 3,
+      "percentPositivePattern": 1,
+      "percentNegativePattern": 1,
+      "perMilleSymbol": "‰",
+      "nanSymbol": "NaN",
+      "positiveInfinitySymbol": "∞",
+      "negativeInfinitySymbol": "-∞"
+    },
+    "formats": [
+      {
+        "currency": "EUR",
+        "amount": "0",
+        "text": "€0.00"
+      },
+      {
+        "currency": "EUR",
+        "amount": "5",
+        "text": "€0.05"
+      },
+      {
+        "currency": "EUR",
+        "amount": "1250",
+        "text": "€12.50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123450",
+        "text": "€1,234.50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "-123450",
+        "text": "-€1,234.50"
+      },
+      {
+        "currency": "EUR",
+        "amount": "123456789012",
+        "text": "€1,234,567,890.12"
+      },
+      {
+        "currency": "JPY",
+        "amount": "0",
+        "text": "¥0"
+      },
+      {
+        "currency": "JPY",
+        "amount": "5",
+        "text": "¥5"
+      },
+      {
+        "currency": "JPY",
+        "amount": "1250",
+        "text": "¥1,250"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123450",
+        "text": "¥123,450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "-123450",
+        "text": "-¥123,450"
+      },
+      {
+        "currency": "JPY",
+        "amount": "123456789012",
+        "text": "¥123,456,789,012"
+      },
+      {
+        "currency": "CHF",
+        "amount": "0",
+        "text": "CHF0.00"
+      },
+      {
+        "currency": "CHF",
+        "amount": "5",
+        "text": "CHF0.05"
+      },
+      {
+        "currency": "CHF",
+        "amount": "1250",
+        "text": "CHF12.50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123450",
+        "text": "CHF1,234.50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "-123450",
+        "text": "-CHF1,234.50"
+      },
+      {
+        "currency": "CHF",
+        "amount": "123456789012",
+        "text": "CHF1,234,567,890.12"
+      }
+    ],
+    "scripts": [
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look",
+          "focus",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "JPY",
+        "value": "1235",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "1,235",
+            "name": "Price (¥)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "¥",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": "-123450",
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "look"
+        ],
+        "seen": [
+          {
+            "value": "-1,234.50",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": null,
+        "max": null,
+        "unit": "",
+        "steps": [
+          "12.5",
+          "12,5",
+          "1,234",
+          "1.234",
+          "1 234,50",
+          "1.234,50",
+          "12,505",
+          "abc",
+          "-3,5",
+          "",
+          "7",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12.5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250"
+            ]
+          },
+          {
+            "value": "12,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250"
+            ]
+          },
+          {
+            "value": "1,234",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1.234",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1 234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "1.234,50",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400"
+            ]
+          },
+          {
+            "value": "12,505",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500"
+            ]
+          },
+          {
+            "value": "abc",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter an amount, such as 12.50",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500"
+            ]
+          },
+          {
+            "value": "-3,5",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350",
+              null
+            ]
+          },
+          {
+            "value": "7",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350",
+              null,
+              "700"
+            ]
+          },
+          {
+            "value": "7.00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1250",
+              "1250",
+              "123400",
+              "1250500",
+              "-350",
+              null,
+              "700"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "EUR",
+        "value": null,
+        "min": "1000",
+        "max": null,
+        "unit": "",
+        "steps": [
+          "5",
+          "10",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "5",
+            "name": "Price (€)",
+            "invalid": true,
+            "caption": "Enter at least €10.00",
+            "prefix": "€",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "10",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          },
+          {
+            "value": "10.00",
+            "name": "Price (€)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "€",
+            "suffix": null,
+            "handed": [
+              "1000"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "money",
+        "currency": "CHF",
+        "value": null,
+        "min": "0",
+        "max": "10000",
+        "unit": "",
+        "steps": [
+          "200",
+          "99.95",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "200",
+            "name": "Price (CHF)",
+            "invalid": true,
+            "caption": "Enter a value from CHF0.00 to CHF100.00",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": []
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          },
+          {
+            "value": "99.95",
+            "name": "Price (CHF)",
+            "invalid": false,
+            "caption": "",
+            "prefix": "CHF",
+            "suffix": null,
+            "handed": [
+              "9995"
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "3",
+        "min": "1",
+        "max": "30",
+        "unit": "dias",
+        "steps": [
+          "look",
+          "45",
+          "12",
+          "2,5",
+          "1.000",
+          "",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "3",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "45",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a value from 1 dias to 30 dias",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": []
+          },
+          {
+            "value": "12",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "2,5",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "1.000",
+            "name": "Price (dias)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12"
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          },
+          {
+            "value": "",
+            "name": "Price (dias)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "dias",
+            "handed": [
+              "12",
+              null
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "number",
+        "currency": "",
+        "value": "12500",
+        "min": null,
+        "max": null,
+        "unit": "g",
+        "steps": [
+          "look",
+          "focus",
+          "1,500",
+          "1 500",
+          "blur"
+        ],
+        "seen": [
+          {
+            "value": "12,500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "12,500",
+            "name": "Price (g)",
+            "invalid": false,
+            "caption": "",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1,500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          },
+          {
+            "value": "1 500",
+            "name": "Price (g)",
+            "invalid": true,
+            "caption": "Enter a whole number, such as 12",
+            "prefix": null,
+            "suffix": "g",
+            "handed": []
+          }
+        ]
+      }
+    ]
+  }
+}

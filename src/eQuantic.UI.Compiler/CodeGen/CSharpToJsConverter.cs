@@ -352,6 +352,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<TextElementStrategy>();     // StringInfo: grapheme clusters, from the platform
         _strategyRegistry.Register<UnicodeCategoryStrategy>(); // a character's general category, from the platform
         _strategyRegistry.Register<CollectionIsReadOnlyStrategy>(); // ICollection<T>.IsReadOnly, of what it holds
+        _strategyRegistry.Register<NumberFormatInfoStrategy>(); // a culture's NumberFormatInfo, the object it travels as
         _strategyRegistry.Register<PrimitiveEqualsStrategy>(); // a primitive's Equals, by the other value's type
         _strategyRegistry.Register<BclSurfaceTailStrategy>();  // instance tail: Equals/String/Dictionary/List QoL
         _strategyRegistry.Register<ReverseStrategy>();
@@ -785,7 +786,7 @@ public class CSharpToJsConverter
         IReadOnlyList<string> temporaries, bool returns) =>
         new([
             JsStatement.Hoisted(
-                ExpressionVariableScanner.Declarations(expression, _context.TypeAnnotations)
+                ExpressionVariableScanner.Declarations(expression, _context)
                     + _context.Temporaries.Declarations(temporaries, _context.TypeAnnotations),
                 returns ? JsStatement.Return(converted) : JsStatement.Expression(converted)) with { Origin = expression },
         ]);

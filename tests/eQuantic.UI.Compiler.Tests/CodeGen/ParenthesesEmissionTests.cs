@@ -15,8 +15,8 @@ public class ParenthesesEmissionTests
     // says so — under nullable-enabled code a `string` is left bare.
     [InlineData("var r = ((name)) + \"x\";", "let r = (this.name ?? '') + 'x';")]
     [InlineData("var r = (list1).Count;", "let r = this.list1.length;")]
-    [InlineData("var r = (list1.Count) + 1;", "let r = this.list1.length + 1;")]
-    [InlineData("var r = (list1.Count + 1) * 2;", "let r = (this.list1.length + 1) * 2;")]
+    [InlineData("var r = (list1.Count) + 1;", "let r = this.list1.length + 1 | 0;")]
+    [InlineData("var r = (list1.Count + 1.5) * 2;", "let r = (this.list1.length + 1.5) * 2;")]
     [InlineData("var r = FetchValue((name + \"x\"));", "let r = this.fetchValue((this.name ?? '') + 'x');")]
     [InlineData("var r = (status == Status.Active ? list1 : list2).Count;",
                 "let r = (this.status === 'active' ? this.list1 : this.list2).length;")]

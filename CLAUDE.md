@@ -289,7 +289,11 @@ is not the owner's.
    ("Auto merge is not allowed for this repository"). The queue runs CI on it together with every
    pull request ahead of it, merges it
    with a squash when that run is green, and nobody merges `main` into a pull request only to bring
-   it up to date. A pull request's own run skips the four macOS jobs, which hold the scarcest
+   it up to date. The ruleset also requires one approving review, so that a contributor's pull
+   request waits for the owner's: the owner's own pull requests, every session's included, are
+   approved by `.github/workflows/approve-owner-pull-requests.yml` (#1847), which runs on
+   `pull_request_target` as `main` holds it and approves only when the author, the actor of the event and
+   every commit are the owner's account. A pull request's own run skips the four macOS jobs, which hold the scarcest
    runners and report as skipped, satisfying their checks: the queue's run is the one that runs them
    (#1385), and a pull request that changes the Apple track asks for them on its branch first with
    `gh workflow run ci.yml --ref <branch>`. Until the queue is on, when `main` moved after the CI ran, merge `main` into the
@@ -648,9 +652,10 @@ translation change must execute identically on both sides.
 
 **Supported C# Features:**
 - Expressions: Arithmetic, Logical, Ternary, Null-coalescing (`??`)
-- Fixed-width integers settle by RESULT type (`IntegerWidth`): byte/sbyte/short/ushort/uint always
-  wrap, int/long wrap only under explicit `unchecked`, a `checked` context throws (read from the
-  bound tree's `IsChecked` — the first IOperation use). A `float` is a single wherever it is
+- Fixed-width integers settle by RESULT type (`IntegerWidth`): every width wraps where C# wraps,
+  int and long in the default context included (#1807), a `checked` context throws (read from the
+  bound tree's `IsChecked` — the first IOperation use), and a constant C#'s compiler folded is left
+  as written (`ArithmeticContext.ProvedInRange`). A `float` is a single wherever it is
   PRODUCED (`SinglePrecision`) — every `+ - * /`, increment and compound, an int past 2^24 on its
   way in, every float answer of the numeric table, a float constant, a hydrated value — because
   RyuJIT rounds each operation; it prints via `$eq.num.single`. What the BROWSER produces enters
@@ -778,7 +783,9 @@ screen composes both identically.
   (two components share a name).
 - A factory SHADOWS its type for types reached by `using` (the framework's, not the app's own):
   `Spacer.Fixed(34)` → use `Gap(34)`, `Badge.AsDot(v)` → `DotBadge(v)`. A conformance test fails
-  naming any new one.
+  naming any new one. An app's component that declares a static member gets a `global using` alias
+  from the generator, so `ProductEditor.Toggled(…)` reads from any namespace (#1781), except where a
+  file imports another type of its name, which the alias would capture.
 - eqc reads FILES, so generated sources must be on disk (`EmitCompilerGeneratedFiles`) and scoped
   to the configuration being built (`--generated`), or types arrive twice and resolve to neither.
   eqc takes that list from `ProjectCompilationHelper.GetCompilationUnits` and walks for nothing
@@ -813,6 +820,16 @@ public class TodoList : StatefulComponent
 async loadTodos() {
     return await this._serverActions.invoke("MyApp.Pages.TodoList/LoadTodos", []);
 }
+```
+
+**How long the browser waits:** 30 seconds, then the call is abandoned and the page's `await` throws.
+A slow but bounded action states its own, read at build time as a constant and handed to the stub
+(#1881); 0 or none keeps the 30, and a value below 0 or above 600 is EQ2017:
+
+```csharp
+[ServerAction(TimeoutSeconds = 120)]
+public async Task<Report> BuildReport(int year) { ... }
+// → invoke("MyApp.Pages.Reports/BuildReport", [year], { timeoutMs: 120000 })
 ```
 
 **Security:**

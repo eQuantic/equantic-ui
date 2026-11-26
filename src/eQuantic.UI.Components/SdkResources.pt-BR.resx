@@ -122,6 +122,15 @@
   <data name="NextMonth" xml:space="preserve">
     <value>Próximo mês</value>
   </data>
+  <data name="PreviousPage" xml:space="preserve">
+    <value>Anterior</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>Próxima</value>
+  </data>
+  <data name="PageNumbered" xml:space="preserve">
+    <value>Página {0}</value>
+  </data>
   <data name="Today" xml:space="preserve">
     <value>Hoje</value>
   </data>
@@ -337,5 +346,26 @@
   </data>
   <data name="TableColumns" xml:space="preserve">
     <value>Colunas</value>
+  </data>
+  <data name="AmountExpected" xml:space="preserve">
+    <value>Digite um valor, como {0}</value>
+  </data>
+  <data name="WholeNumberExpected" xml:space="preserve">
+    <value>Digite um número inteiro, como {0}</value>
+  </data>
+  <data name="ValueBetween" xml:space="preserve">
+    <value>Digite um valor entre {0} e {1}</value>
+  </data>
+  <data name="ValueAtLeast" xml:space="preserve">
+    <value>Digite pelo menos {0}</value>
+  </data>
+  <data name="ValueAtMost" xml:space="preserve">
+    <value>Digite no máximo {0}</value>
+  </data>
+  <data name="NamedWithAffixes" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+  <data name="ValueWithUnit" xml:space="preserve">
+    <value>{0} {1}</value>
   </data>
 </root>

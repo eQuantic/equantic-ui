@@ -38,7 +38,7 @@ internal sealed partial class EmitVisitor
             return;
         }
         if (lift is { Follows: true, Copy: null }) RecordCopy(lift, s);
-        s.Builder.PushLayer((float)SortPlacement.LiftedOpacity);
+        s.Builder.PushLayer(lift.LiftedOpacity);
         Descend(s);
         s.Builder.PopLayer();
     }
@@ -60,8 +60,10 @@ internal sealed partial class EmitVisitor
         var bounds = s.Node.Bounds;
         var copy = new DisplayListBuilder();
         copy.PushTransform(transform);
-        copy.ShadowRRect(new RRect(bounds, CornerOf(s.Node)), SortPlacement.CopyShadowOffsetY,
-            SortPlacement.CopyShadowBlur, 0, new Color(0, 0, 0, (byte)Math.Round(SortPlacement.CopyShadowAlpha * 255)));
+        // The shadow of the source list's look (#1602): the theme's for its elevation level, in this frame's mode.
+        if (lift.CopyShadow is { IsNone: false } shadow)
+            copy.ShadowRRect(new RRect(bounds, CornerOf(s.Node)), shadow.OffsetY, shadow.Blur, shadow.Spread,
+                shadow.Color.Resolve(s.Mode, s.Contrast));
         var still = s with
         {
             Input = new InputSink(new FrameRegions()),

@@ -320,7 +320,7 @@ public class ComponentParser
                 SyntaxTree = tree,
                 ClassSyntax = classDecl,
                 Namespace = ns ?? "",
-                TypeParameters = classDecl.TypeParameterList?.Parameters.Select(p => p.Identifier.ValueText.ToJsIdentifier()).ToList() ?? new List<string>(),
+                TypeParameters = classDecl.TwinTypeParameters().ToList(),
                 IsAbstract = classDecl.Modifiers.Any(SyntaxKind.AbstractKeyword),
                 BaseClassName = baseType,
             };
@@ -426,16 +426,21 @@ public class ComponentParser
             if (serverActionAttr != null)
             {
                 string actionName = method.Identifier.ValueText;
-                
-                // Check for Name parameter
+                AttributeArgumentSyntax? timeout = null;
+
+                // Its Name, and how long the browser waits for it (TimeoutSeconds).
                 if (serverActionAttr.ArgumentList != null)
                 {
                     foreach (var arg in serverActionAttr.ArgumentList.Arguments)
                     {
-                        if (arg.NameEquals?.Name.ValueText() == "Name")
+                        switch (arg.NameEquals?.Name.ValueText())
                         {
-                            actionName = arg.Expression.ToString().Trim('"');
-                            break;
+                            case "Name":
+                                actionName = arg.Expression.ToString().Trim('"');
+                                break;
+                            case "TimeoutSeconds":
+                                timeout = arg;
+                                break;
                         }
                     }
                 }
@@ -449,7 +454,9 @@ public class ComponentParser
                     ReturnType = method.ReturnType.ValueText(),
                     TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.ValueText.ToJsIdentifier()).ToList() ?? new List<string>(),
                     IsAsync = method.Modifiers.Any(m => m.ValueText == "async"),
-                    SyntaxNode = method
+                    SyntaxNode = method,
+                    TimeoutArgument = timeout,
+                    TimeoutSeconds = timeout is null ? null : SecondsOf(timeout.Expression, model),
                 };
                 
                 foreach (var param in method.ParameterList.Parameters)
@@ -466,6 +473,24 @@ public class ComponentParser
         }
     }
     
+    /// <summary>
+    /// The seconds <c>TimeoutSeconds = …</c> states, read as C# reads an attribute's argument: a constant,
+    /// so <c>2 * 60</c> or a <c>const</c> is read as its value where a model answers, and a literal is read
+    /// where none does. Null where neither can say, which the compiler refuses (EQ2017) rather than guess.
+    /// </summary>
+    private static int? SecondsOf(ExpressionSyntax expression, SemanticModel? model)
+    {
+        var own = model is null ? null
+            : ReferenceEquals(model.SyntaxTree, expression.SyntaxTree) ? model
+            : model.Compilation.ModelOf(expression.SyntaxTree);
+        if (own?.GetConstantValue(expression) is { HasValue: true, Value: int value }) return value;
+
+        (ExpressionSyntax Number, int Sign) written = expression is PrefixUnaryExpressionSyntax { RawKind: (int)SyntaxKind.UnaryMinusExpression } negative
+            ? (negative.Operand, -1)
+            : (expression, 1);
+        return written.Number is LiteralExpressionSyntax { Token.Value: int literal } ? literal * written.Sign : null;
+    }
+
     /// <summary>
     /// SERVER-ONLY (<c>[ServerOnly]</c>): the method never crosses to the client, so it is not
     /// parsed, not transpiled and not validated against the client boundary — it may use the whole
@@ -741,34 +766,17 @@ public class ComponentParser
         }
     }
 
+    /// <summary>
+    /// An <c>HtmlElement</c> subclass's members. Its constructors are read by <see cref="ParseConstructors"/>, the
+    /// component path's: the primitive path kept a reader of its own that stored no constructor's syntax, so no
+    /// body ran, no parameter kept its default and a primary constructor was not read at all (#1837). The rest of
+    /// its members still take the primitive path's own way (#1540, #1541), and the direction that closes them is
+    /// every member parser of the component path.
+    /// </summary>
     private void ParsePrimitiveClass(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
         ParseMethods(classDecl, definition);
-
-        // Extract constructors, a static one excepted: it is the type initializer's.
-        var constructors = InstanceConstructors(classDecl);
-
-        foreach (var ctor in constructors)
-        {
-            var ctorDef = new MethodDefinition
-            {
-                Name = ctor.Identifier.ValueText,
-                ReturnType = "void",
-                Body = ctor.Body?.ToString() ?? ctor.ExpressionBody?.Expression.ToString() ?? "",
-                SyntaxNode = null // Marker for constructor helper
-            };
-
-            foreach (var param in ctor.ParameterList.Parameters)
-            {
-                ctorDef.Parameters.Add(new ParameterDefinition
-                {
-                    Name = param.Identifier.ValueText,
-                    Type = param.Type?.ValueText() ?? "object"
-                });
-            }
-
-            definition.Constructors.Add(ctorDef);
-        }
+        ParseConstructors(classDecl, definition);
     }
 
     /// <summary>The constructors that build an instance: every one the class declares but a static

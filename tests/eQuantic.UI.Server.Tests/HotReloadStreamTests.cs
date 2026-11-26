@@ -188,6 +188,8 @@ public class HotReloadStreamTests
         service.SourceChanged(saved);
         if (!goneFirst) service.SourceChanged(gone);
         service.Rebuild();
+        // Waited for, as the stream's loop writes it after Rebuild returns (#1818).
+        await UntilAsync(page, "event: rebuilt");
         leave.Cancel();
         await listening;
 
@@ -293,6 +295,9 @@ public class HotReloadStreamTests
         var before = page.Heard;
         edits.Take();
         await rebuild.WaitAsync(TimeSpan.FromSeconds(20));
+        // The frame is written by the stream's own loop, after Rebuild returns: waited for, never
+        // assumed written. A cancel right after Rebuild outran it on a slow runner.
+        await UntilAsync(page, "event: rebuilt");
         leave.Cancel();
         await listening;
 

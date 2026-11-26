@@ -24,8 +24,9 @@ public class JsClassLayoutTests
     {
         var jsClass = new JsClass("Page", "StatelessComponent", ["T"], Export: true, Abstract: true, Members: []);
         Write(jsClass).Should().Be("export abstract class Page<T> extends StatelessComponent {\n}\n\n");
-        // Plain JavaScript has no `abstract`; the keyword is dropped, nothing else moves.
-        Write(jsClass, typeAnnotations: false).Should().Be("export class Page<T> extends StatelessComponent {\n}\n\n");
+        // Plain JavaScript has no `abstract` and no type parameters: both are dropped, nothing else moves. This pinned
+        // `class Page<T>` once, a parse error that cost a generic component's plain module (#1845).
+        Write(jsClass, typeAnnotations: false).Should().Be("export class Page extends StatelessComponent {\n}\n\n");
         Write(new JsClass("Helper", null, [], Export: false, Abstract: false, Members: []))
             .Should().Be("class Helper {\n}\n\n");
     }

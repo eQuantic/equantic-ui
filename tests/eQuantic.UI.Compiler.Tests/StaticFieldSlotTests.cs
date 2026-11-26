@@ -23,11 +23,11 @@ public class StaticFieldSlotTests
     {
         {
             "Counter", "public static class Counter { private static int count; public static int Count { get => count; set => count = value * 2; } }",
-            ["static count$: number = 0", "return Counter.count$", "Counter.count$ = value * 2", "static get count()"]
+            ["static count$: number = 0", "return Counter.count$", "Counter.count$ = Math.imul(value, 2)", "static get count()"]
         },
         {
             "Seq", "public sealed class Seq { private static int next; public static int Next() => ++next; public static int Peek => next; }",
-            ["static next$: number = 0", "++Seq.next$", "static next()"]
+            ["static next$: number = 0", "Seq.next$ = Seq.next$ + 1 | 0", "static next()"]
         },
         {
             "Ordered", "public sealed class Ordered { private static int count = Seed(); private static int Seed() => 5; public static int Count => count; }",
@@ -35,7 +35,7 @@ public class StaticFieldSlotTests
         },
         {
             "Stamp", "public sealed record Stamp(int V) { private static int made; public static int Made => made; public static Stamp Make(int v) { made++; return new(v); } }",
-            ["static made$ = 0", "Stamp.made$++", "return Stamp.made$"]
+            ["static made$ = 0", "Stamp.made$ = Stamp.made$ + 1 | 0", "return Stamp.made$"]
         },
         {
             "Spot", "public struct Spot { private static int made; public static int Made => made; }",
@@ -51,7 +51,7 @@ public class StaticFieldSlotTests
         },
         {
             "Ledger", "public class Tally { protected static int total; } public sealed class Ledger : Tally { public static int Total() => ++total; }",
-            ["++Tally.total$", "static total()"]
+            ["Tally.total$ = Tally.total$ + 1 | 0", "static total()"]
         },
         {
             "Page", """

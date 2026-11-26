@@ -233,10 +233,37 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
     /// <summary>Emission template ({0}, {1}, … are the converted arguments), or null = fenced.</summary>
     private static string? MethodTable(SpecialType home, string name, int argCount, bool indexed)
     {
+        // A decimal is the runtime's Decimal, which answers every member Math has for a decimal itself,
+        // the scale .NET keeps included: it rounds to whole units in any of .NET's directions (#1765,
+        // where a money field asks whether an amount has more digits than its currency), and its
+        // magnitude, sign, larger, smaller and clamp are its own (#1767), where JavaScript's Math read
+        // the object as NaN. decimal's own statics of the same names reach this row, and so do its
+        // conversions to an integer, toward zero from its digits as a cast converts it (#1766).
+        if (home == SpecialType.System_Decimal)
+            return (name, argCount) switch
+            {
+                ("Truncate", 1) => "{0}.round(0, 'toZero')",
+                ("Floor", 1) => "{0}.round(0, 'toNegativeInfinity')",
+                ("Ceiling", 1) => "{0}.round(0, 'toPositiveInfinity')",
+                ("Abs", 1) => "{0}.abs()",
+                ("Sign", 1) => "{0}.sign()",
+                ("Max", 2) => "{0}.max({1})",
+                ("Min", 2) => "{0}.min({1})",
+                ("Clamp", 3) => $"{Eq.DecClamp}({{0}}, {{1}}, {{2}})",
+                ("ToSByte", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'sbyte')",
+                ("ToByte", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'byte')",
+                ("ToInt16", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'short')",
+                ("ToUInt16", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'ushort')",
+                ("ToInt32", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'int')",
+                ("ToUInt32", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'uint')",
+                ("ToInt64", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'long')",
+                ("ToUInt64", 1) => $"{Eq.TruncatedFromDecimal}({{0}}, 'ulong')",
+                _ => null,
+            };
         if (home == SpecialType.System_Single && SingleTable(name, argCount) is { } single) return single;
         if (IsFloating(home))
         {
-            var shared = SharedNumeric(name, argCount);
+            var shared = SharedNumeric(home, name, argCount);
             if (shared is not null) return shared;
             return name switch
             {
@@ -334,7 +361,8 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 // Native = the platform's plain comparison; no NaN promises to keep.
                 "MaxNative" => "Math.max({0}, {1})",
                 "MinNative" => "Math.min({0}, {1})",
-                "ClampNative" => "Math.min(Math.max({0}, {1}), {2})",
+                // Refused as Clamp refuses a minimum above the maximum, measured on .NET 10 (#1824).
+                "ClampNative" when argCount == 3 => Clamp(home),
                 // The tie-and-NaN rule set lives once, in the runtime.
                 "MaxMagnitude" => "$eq.math.maxMagnitude({0}, {1})",
                 "MinMagnitude" => "$eq.math.minMagnitude({0}, {1})",
@@ -355,7 +383,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
             {
                 "Max" when argCount == 2 => "Math.max({0}, {1})",
                 "Min" when argCount == 2 => "Math.min({0}, {1})",
-                "Clamp" when argCount == 3 => "Math.min(Math.max({0}, {1}), {2})",
+                "Clamp" when argCount == 3 => Clamp(home),
                 "BigMul" when argCount == 2 => $"({Eq.Long}({{0}}) * {Eq.Long}({{1}}))",
                 "DivRem" when argCount == 2 => DivRem(home),
                 _ => null,
@@ -364,7 +392,20 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
 
         if (IsSmallInteger(home))
         {
-            var shared = SharedNumeric(name, argCount);
+            // A signed width's MinValue has no magnitude in its type, so Abs and CopySign throw for it,
+            // in an unchecked context too, where Math.abs answered 2147483648 for an int (#1808).
+            if (SignedBits(home) is { } bits)
+            {
+                var signed = name switch
+                {
+                    "Abs" => $"$eq.num.abs({{0}}, {bits})",
+                    "CopySign" when argCount == 2 => $"$eq.num.copySign({{0}}, {{1}}, {bits})",
+                    _ => null,
+                };
+                if (signed is not null) return signed;
+            }
+
+            var shared = SharedNumeric(home, name, argCount);
             if (shared is not null) return shared;
 
             // The BIT surface is width-specific — a short rotates 16 bits, not 32 — so only
@@ -397,7 +438,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 "IsNegative" => "({0} < 0)",
                 "IsEvenInteger" => "({0} % 2 === 0)",
                 "IsOddInteger" => "(Math.abs({0} % 2) === 1)",
-                // Width-agnostic: the magnitude fits every small width without wrapping.
+                // An unsigned width's magnitude is itself (the signed widths are settled above).
                 "CopySign" when argCount == 2 => "({1} < 0 ? -Math.abs({0}) : Math.abs({0}))",
                 // A tuple crosses as an array, and the division throws where .NET's does (DivRem).
                 "DivRem" when argCount == 2 => DivRem(home),
@@ -421,12 +462,17 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
             // answers it as it answers a long but the rotations, which hand back a signed long.
             if (home is SpecialType.System_UInt64 or SpecialType.System_UIntPtr && name is "RotateLeft" or "RotateRight")
                 return null;
+            // A long's and an nint's MinValue has no magnitude in its type, so Abs and CopySign throw for it,
+            // where the BigInt answered 2^63 (#1808).
+            var unsigned64 = home is SpecialType.System_UInt64 or SpecialType.System_UIntPtr;
             return name switch
             {
+                "Abs" when !unsigned64 => "$eq.num.absLong({0})",
+                "CopySign" when argCount == 2 && !unsigned64 => "$eq.num.copySignLong({0}, {1})",
                 "Abs" => "({0} < 0n ? -{0} : {0})",
                 "Max" when argCount == 2 => "({0} > {1} ? {0} : {1})",
                 "Min" when argCount == 2 => "({0} < {1} ? {0} : {1})",
-                "Clamp" when argCount == 3 => "({0} < {1} ? {1} : {0} > {2} ? {2} : {0})",
+                "Clamp" when argCount == 3 => "$eq.num.clampLong({0}, {1}, {2})",
                 "Sign" => "({0} < 0n ? -1 : {0} > 0n ? 1 : 0)",
                 "IsPositive" => "({0} >= 0n)",
                 "IsNegative" => "({0} < 0n)",
@@ -504,16 +550,36 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
         return null;
     }
 
-    /// <summary>Numeric members whose emission is identical for floats and small ints.</summary>
-    private static string? SharedNumeric(string name, int argCount) => name switch
+    /// <summary>The width of a signed integer a plain number carries, or null for any other type.</summary>
+    private static int? SignedBits(SpecialType home) => home switch
+    {
+        SpecialType.System_SByte => 8,
+        SpecialType.System_Int16 => 16,
+        SpecialType.System_Int32 => 32,
+        _ => null,
+    };
+
+    /// <summary>Numeric members whose emission is the same for floats and small ints but for the kind
+    /// of number a refusal writes.</summary>
+    private static string? SharedNumeric(SpecialType home, string name, int argCount) => name switch
     {
         "Abs" => "Math.abs({0})",
         "Max" when argCount == 2 => "Math.max({0}, {1})",
         "Min" when argCount == 2 => "Math.min({0}, {1})",
         "Sign" => "Math.sign({0})",
-        "Clamp" when argCount == 3 => "Math.min(Math.max({0}, {1}), {2})",
+        "Clamp" when argCount == 3 => Clamp(home),
         _ => null,
     };
+
+    /// <summary>
+    /// <c>Clamp</c> over a number the runtime holds as a JavaScript number, as .NET clamps it (#1824): a
+    /// minimum above the maximum is refused with .NET's <c>ArgumentException</c>, its values written in
+    /// the current culture as their type writes them (a float's <c>0.1</c>, not its double's digits);
+    /// then the minimum where the value is below it, the maximum where it is above, and the value
+    /// otherwise, which keeps a NaN bound from turning the answer into NaN and a negative zero its sign,
+    /// where <c>Math.min(Math.max(…))</c> did both.
+    /// </summary>
+    private static string Clamp(SpecialType home) => $"$eq.num.clamp({{0}}, {{1}}, {{2}}, '{FormatKind.Of(home)}')";
 
     /// <summary>
     /// The static values of a primitive that are not constants: null = fenced. Every CONSTANT

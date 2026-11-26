@@ -41,7 +41,8 @@ public static class EnumUnionsTsGenerator
         ts.AppendLine(" * One table follows the unions: each FontWeight's number, which the runtime asks for by name.");
         ts.AppendLine(" */");
 
-        foreach (var type in Unions())
+        var unions = Unions().ToList();
+        foreach (var type in unions)
         {
             // Distinct: an alias (two names, one value) is one member of the union, named twice.
             var members = Enum.GetNames(type)
@@ -51,6 +52,15 @@ public static class EnumUnionsTsGenerator
             ts.AppendLine();
             TsUnion.Write(ts, $"{type.Name}Value", members);
         }
+
+        // The runtime's own code names a union plainly. A module eqc writes names it with a `$`, a
+        // character C# cannot spell, so a type an app or the vocabulary declares never meets it: named
+        // `DensityValue`, an app's `record DensityValue` was taken for the union (#1427).
+        ts.AppendLine();
+        ts.AppendLine("/** Each union under the name a module eqc writes imports it by: a `$` no C# type can carry. */");
+        using (ts.BeginBlock("export type {", "};"))
+            foreach (var type in unions)
+                ts.AppendLine($"{type.Name}Value as ${type.Name}Value,");
 
         // A weight is the one vocabulary enum whose VALUE is its meaning, the weight class CSS, CoreText,
         // DirectWrite and Android are all asked for, while the transpiler emits a member as its name. So
@@ -69,15 +79,27 @@ public static class EnumUnionsTsGenerator
     private static string Emitted(string name) => char.ToLowerInvariant(name[0]) + name[1..];
 
     /// <summary>
-    /// Every public non-flags enum of the vocabulary assemblies, in name order so the file is stable
-    /// whatever order reflection hands them back. The same three the compiler routes as vocabulary
-    /// (<c>RuntimeProvidedTypeScanner.VocabularyNamespaces</c>): an enum it annotates with a union
-    /// this file does not declare is a transpiled twin that does not compile.
+    /// Every non-flags enum of the vocabulary assemblies a twin can name (<see cref="UnionsIn"/>), in name order so the
+    /// file is stable whatever order reflection hands them back. The same three the compiler routes as vocabulary
+    /// (<c>RuntimeProvidedTypeScanner.VocabularyNamespaces</c>): an enum it annotates with a union this file does not
+    /// declare is a transpiled twin that does not compile.
     /// </summary>
     public static IEnumerable<Type> Unions() =>
-        new[] { typeof(VisualNode).Assembly, typeof(CodeEditorController).Assembly, typeof(SheetController).Assembly }
+        UnionsIn([typeof(VisualNode).Assembly, typeof(CodeEditorController).Assembly, typeof(SheetController).Assembly]);
+
+    /// <summary>
+    /// The enums of <paramref name="assemblies"/> a twin can name, so each needs its union: every top-level non-flags
+    /// enum, internal ones included. A twin of the library imports the union of whatever enum its C# names, whatever
+    /// that enum's accessibility, and only public ones were written: <c>GestureArenaPhase</c>, an internal detail of
+    /// the gesture arena, was imported as a <c>$GestureArenaPhaseValue</c> nothing declared, which the runtime's tsc
+    /// refuses (#1859). A nested enum is its owner's, and has no union of its own here. Nor has a <c>file</c> enum,
+    /// whose metadata name is one no code can say (<c>&lt;Arena&gt;F…__Phase</c>): a union named after it would not
+    /// be a TypeScript name, and would break every module that reads the unions.
+    /// </summary>
+    public static IEnumerable<Type> UnionsIn(IEnumerable<System.Reflection.Assembly> assemblies) =>
+        assemblies
             .SelectMany(assembly => assembly.GetTypes())
-            .Where(type => type.IsEnum && type.IsPublic
+            .Where(type => type.IsEnum && !type.IsNested && !type.Name.Contains('<')
                 && type.GetCustomAttribute<FlagsAttribute>() is null)
             .OrderBy(type => type.Name, StringComparer.Ordinal);
 }

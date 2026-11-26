@@ -43,4 +43,20 @@ describe('a navigation destination says where you are', () => {
     // A navigation is a list of links, not a composite with one entry point — it keeps its Tab stop.
     expect(current['tabindex']).not.toBe('-1');
   });
+  it('a link that opens beside the page is a new tab cut from it, as the server writes it (#941)', () => {
+    const link = (opensBeside: boolean): VisualNodeValue =>
+      ({
+        nodeKind: 'link',
+        destination: '/terms',
+        opensBeside,
+        child: { nodeKind: 'text', content: 'Terms of use', role: 'label' },
+      }) as unknown as VisualNodeValue;
+
+    const beside = lowerVisualNode(link(true), ctx).attributes;
+    expect(beside['target']).toBe('_blank');
+    expect(beside['rel']).toBe('noopener noreferrer');
+    const inPlace = lowerVisualNode(link(false), ctx).attributes;
+    expect(inPlace['target']).toBeUndefined();
+    expect(inPlace['rel']).toBeUndefined();
+  });
 });

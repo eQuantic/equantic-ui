@@ -111,8 +111,12 @@ the wiki's default branch otherwise. In a merge queue's run, CI SHALL read the w
 with the wiki branch of every pull request already merged whose branch still waits and whose name no
 open pull request uses, and then of every pull request the group puts on main, merged onto it in that
 order, leaving out a pull request from a fork. The branch name SHALL be read as data and never
-interpolated into a command. When the wiki's branches cannot be listed, when a group's commits do
-not end with the pull request its ref names, or when two of its wiki branches conflict, the checkout
+interpolated into a command. A waiting branch the default branch already holds SHALL merge as nothing. A
+waiting branch that leaves the wiki between the listing of its branches and its fetch, as the step
+after a pull request lands merges it into the default branch and deletes it, SHALL be read from the
+default branch fetched again, which holds its pages, and the checkout SHALL go on. When the wiki's
+branches cannot be listed, when a group's commits do not end with the pull request its ref names, when
+a branch the wiki still has cannot be fetched, or when two of its wiki branches conflict, the checkout
 SHALL fail and leave nothing behind, rather than read the default branch.
 
 #### Scenario: A pull request that carries its wiki pages
@@ -169,6 +173,23 @@ SHALL fail and leave nothing behind, rather than read the default branch.
 #### Scenario: Two wiki branches that conflict
 
 - **WHEN** two pull requests in the group change the same lines of a page
+- **THEN** the checkout fails and leaves no directory behind
+
+#### Scenario: A waiting branch master already holds
+
+- **WHEN** a merged pull request's wiki branch has been merged into master and kept
+- **THEN** its merge brings nothing, and the guards read master with the group's pages
+
+#### Scenario: A waiting branch merged and deleted while the run checks the wiki out
+
+- **WHEN** a merged pull request's wiki branch is listed, then merged into master and deleted before
+  the run fetches it
+- **THEN** the run fetches master again, the guards read that branch's pages from it, and the
+  checkout goes on
+
+#### Scenario: A branch the wiki still has that cannot be fetched
+
+- **WHEN** the fetch of a wiki branch fails while the wiki still lists it
 - **THEN** the checkout fails and leaves no directory behind
 
 ### Requirement: Every docs guard reads one wiki, which a local run can name
@@ -860,7 +881,8 @@ Priority and nothing above it. Every other issue needs an open parent under an e
 of 1, 2, 3, 5, 8 or 13, except a feature or a story created to be split, which carries none of its own. `scripts/new-issue.py` SHALL refuse, before any request, an issue that lacks
 one of them, naming what it lacks. It SHALL create the issue with its type, parent, milestone,
 assignee and priority, put it on the board with its points and status, read it back, and fail naming
-whatever did not land. A session's `PreToolUse` hook SHALL refuse the other ways a session creates an
+whatever did not land. An issue the board's own workflow adds at the same moment SHALL still get its
+points and status. A session's `PreToolUse` hook SHALL refuse the other ways a session creates an
 issue (`gh issue create`, the GraphQL `createIssue`, a REST `POST` to `/issues` and an MCP tool that
 creates one), naming the script, and SHALL let a read, a comment, an edit and a phrase quoted in an
 argument pass. It SHALL read the file of a script the command runs, and the scripts that file runs one
@@ -877,6 +899,18 @@ pass.
 
 - **WHEN** an epic is to be created without `--priority`
 - **THEN** the script exits 2 naming the priority
+
+#### Scenario: The board adds the issue at the same moment
+
+- **WHEN** the board's own workflow adds the new issue as the script does, and GitHub refuses the
+  script's add with `Content already exists in this project`
+- **THEN** the script makes the add again, sets the status and the points on the item it answers, and
+  the issue is read back whole
+
+#### Scenario: The add is refused for another reason
+
+- **WHEN** GitHub refuses the script's add with anything else, or with the same refusal on every try
+- **THEN** the script exits 1 saying the issue was created but not whole, naming the refusal
 
 #### Scenario: A session runs gh issue create
 
@@ -1094,3 +1128,26 @@ the base and remove the deltas, and SHALL write nothing when one file is not a d
 
 - **WHEN** the fold runs over a base of 1,000 bytes and deltas of +30 and -10
 - **THEN** the base is 1,020 and the deltas are gone
+
+### Requirement: A contributor's pull request waits for the owner's approval, and the owner's is approved by a workflow
+
+The `main` ruleset SHALL require one approving review. A workflow on `pull_request_target`, running as `main` holds it
+and running no code of the pull request, SHALL approve a pull request whose author, event actor and every commit are the
+owner's account and whose head is a branch of this repository; it SHALL NOT approve any other pull request, nor a push another
+account makes to the owner's branch.
+
+#### Scenario: The owner opens a pull request
+
+- **WHEN** the owner's account, or a session working as it, opens a pull request from a branch of this repository, or
+  pushes to one, or moves one out of draft
+- **THEN** the workflow approves it, and the merge queue accepts it once its checks are green
+
+#### Scenario: A contributor opens a pull request
+
+- **WHEN** another account opens a pull request
+- **THEN** the workflow does not approve it, and it waits for the owner's review before it can enter the queue
+
+#### Scenario: A contributor pushes to the owner's branch
+
+- **WHEN** another account pushes a commit to a branch of an open pull request the owner wrote
+- **THEN** the workflow does not approve that push, and the ruleset dismisses the earlier approval

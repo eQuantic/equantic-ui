@@ -45,6 +45,10 @@ public abstract class VisualNode
     /// <summary>Reconciler identity across rebuilds (keyed diffing) — same contract as the web SDK.</summary>
     public string? Key { get; init; }
 
+    /// <summary>The identity this node keeps wherever it is placed (#797): moved under another parent in
+    /// one build, its position goes with it, and what it holds (<see cref="Primitives.GlobalKey"/>).</summary>
+    public GlobalKey? GlobalKey { get; init; }
+
     /// <summary>
     /// A named place in the screen that a link can reach — <c>Link("#features", …)</c> arrives at
     /// the node that says <c>Bookmark = "features"</c>.
