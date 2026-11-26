@@ -111,8 +111,9 @@ internal sealed partial class EmitVisitor
 
         void EmitShape(VectorShape shape, IconGlyphStyle style, VectorPaint paint)
         {
+            // The shape's own fill rule travels with its path, as the web's fill-rule does (#1210).
             var glyph = new IconGlyph("", shape.Path, style, drawing.Artwork.ViewBox,
-                shape.StrokeWidth);
+                shape.StrokeWidth, shape.EvenOdd);
             // The laid-out box, not the node's own numbers: a filling drawing learns its size there.
             if (cache.Get(drawingIcons, glyph, s.Node.Bounds.Width, s.Node.Bounds.Height,
                     s.Motion.RenderScale) is not { } raster) return;

@@ -11,7 +11,7 @@ namespace eQuantic.UI.Native.Framework;
 /// releases.
 /// <para>
 /// It answers as the platform ones do (<c>CoreGraphicsIconRasterizer</c> is the reference): the path
-/// lowered by <see cref="VectorPath"/> to moves, lines and cubics, filled by the nonzero rule, or
+/// lowered by <see cref="VectorPath"/> to moves, lines and cubics, filled by the glyph's rule, or
 /// stroked with round caps and joins, the icon-pack convention, into A8 coverage at device scale, each
 /// axis scaled on its own so a stroke follows the box as the platform's transform makes it.
 /// </para>
@@ -53,7 +53,8 @@ public sealed class PortableIconRasterizer : IIconRasterizer
                 canvas.AddPolygon(path.Points.Select(ToPixels).ToList());
         }
 
-        return new TextRaster(width, height, canvas.ToAlpha());
+        // A stroke is a union, which only the nonzero rule gives; a fill takes the glyph's own rule (#1210).
+        return new TextRaster(width, height, canvas.ToAlpha(glyph.Style == IconGlyphStyle.Fill && glyph.EvenOdd));
     }
 
     /// <summary>The viewBox as numbers, "minX minY width height", invariant: a comma is SVG's separator.</summary>
@@ -269,8 +270,12 @@ public sealed class PortableIconRasterizer : IIconRasterizer
             _cells[line + rightCell] += d * lastArea;
         }
 
-        /// <summary>The running sum of each row, clamped to full coverage, as A8.</summary>
-        public byte[] ToAlpha()
+        /// <summary>
+        /// The running sum of each row as A8. Nonzero clamps it to full coverage. Even-odd folds it: the sum is the
+        /// winding at that pixel, so an even count paints nothing and an odd one paints, and between the two the
+        /// edge's fraction is read as it falls, the fold the accumulation rasterizers of fonts use (#1210).
+        /// </summary>
+        public byte[] ToAlpha(bool evenOdd)
         {
             var alpha = new byte[width * height];
             for (var row = 0; row < height; row++)
@@ -279,10 +284,18 @@ public sealed class PortableIconRasterizer : IIconRasterizer
                 for (var column = 0; column < width; column++)
                 {
                     sum += _cells[row * _stride + column];
-                    alpha[row * width + column] = (byte)MathF.Round(MathF.Min(1, MathF.Abs(sum)) * 255);
+                    alpha[row * width + column] = (byte)MathF.Round(Cover(sum, evenOdd) * 255);
                 }
             }
             return alpha;
+        }
+
+        private static float Cover(float sum, bool evenOdd)
+        {
+            var winding = MathF.Abs(sum);
+            if (!evenOdd) return MathF.Min(1, winding);
+            var folded = winding % 2;
+            return folded > 1 ? 2 - folded : folded;
         }
     }
 }
