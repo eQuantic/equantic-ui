@@ -22,8 +22,8 @@ TypeScript has no generic `any`: since TS 3.9, `T extends any` no longer lets a 
 - A type parameter constrained to such an interface is declared `T extends IShaped`, the interface imported, in
   TypeScript only.
 - Named fences, where an interface gets no twin and its constraint stays unconstrained: a generic interface or one in a
-  generic type, an interface with a static member, a default member, an event or an indexer, one extending an interface
-  with no twin (a BCL one), and one the build keeps on the server.
+  generic type, an interface with a static member, a default member, an event or an indexer, one extending another interface, and one the build keeps on the
+  server.
 - A value typed as an interface stays `any`: only constraints name the twin, so no other module's types move.
 
 Nothing an app writes moves. The runtime library gains the twins of seven of its own interfaces, the code editor's six

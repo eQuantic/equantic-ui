@@ -15,8 +15,8 @@ SHALL be declared `T extends` that class, the class imported, a nullable one (`S
 only. A type parameter constrained to an interface that has a twin SHALL be declared `T extends` that interface, the
 interface imported, in TypeScript only. Every in-source interface SHALL have a twin when its twin can be written: it
 declares no type parameter and stands in no generic type, each member is an
-instance property or method with no body, no member is static, an event or an indexer, every interface it extends has
-a twin, and the build keeps it off no server. Its twin SHALL be a module holding `export interface` with each member
+instance property or method with no body, no member is static, an event or an indexer, it extends no
+interface, and the build does not keep it on the server. Its twin SHALL be a module holding `export interface` with each member
 under its twin's name and type, read-only where the property has no setter, and a value of the same name so a plain
 import resolves, as a union's alias module holds; plain JavaScript SHALL write the value alone. A value typed as the
 interface SHALL stay `any`. Any other constraint SHALL leave the parameter unconstrained. A cast
@@ -100,12 +100,12 @@ in it, which is a module of its own, SHALL write the value alone, as before.
   `class Measured<T> where T : IShaped` reads `_shape.Area` and calls `_shape.Describe("cm")` on a `T`
 - **THEN** the build writes a module `IShaped` holding `export interface IShaped { readonly area: number;
   describe(unit: string): string; }`, `Measured`'s header is `Measured<T extends IShaped>` with
-  `import type { IShaped }`, and the runtime's `tsc` takes the reads; it refused them with TS2339
+  `import { IShaped }`, and the runtime's `tsc` takes the reads; it refused them with TS2339
 
 #### Scenario: An interface whose twin cannot be written
 
 - **WHEN** a type parameter is constrained to a generic interface, to one with a static member, a default member, an
-  event or an indexer, or to one that extends an interface of the BCL
+  event or an indexer, or to one that extends another interface, an in-source one or the BCL's
 - **THEN** no module is written for it and the class header declares the parameter unconstrained, as before
 
 #### Scenario: A constraint with no twin

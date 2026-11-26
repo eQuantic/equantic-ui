@@ -16,8 +16,10 @@ import a twin nobody wrote. An unused twin costs an app nothing, since only the 
 bundled.
 
 It can be written when the interface declares no type parameter and stands in no generic type, each member is an
-instance property or method with no body, no member is static, an event or an indexer, each interface it extends has a
-twin, and it is neither marked `[ServerOnly]` nor inside a type that is. Each fence leaves the constraint unconstrained,
+instance property or method with no body, no member is static, an event or an indexer, it extends no
+interface, and it is neither marked `[ServerOnly]` nor inside a type that is. An interface that extends another is fenced
+rather than written with an `extends`: its base's twin would have to be found in another file, which the syntax-only
+resolver cannot do, and the parser and the resolver must agree. Each fence leaves the constraint unconstrained,
 as every constraint was before #1854.
 
 ## The module
@@ -25,7 +27,7 @@ as every constraint was before #1854.
 The twin is written by the class module's writer, so its imports come from the same rule every class module's do: what
 the emitted text names. It holds `export interface` with each member under its twin's name (`Area` is `area`, as the
 class twin that implements it names it, and a method through `TwinMethodName`), its type as an annotation writes it, and
-`readonly` where the property has no setter; an `extends` of each base twin. Beside it, `export const IShaped = undefined;`,
+`readonly` where the property has no setter. Beside it, `export const IShaped = undefined;`,
 the device a union's alias module uses: a module importing the name with a plain `import` finds a value whether or not
 the bundler elides a type-only import, with `isolatedModules` on. Plain JavaScript writes the value alone.
 
