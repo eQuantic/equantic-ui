@@ -56,7 +56,7 @@ export class Button extends StatelessComponent {
             textColor = textColor.withOpacity(opacity);
             borderColor = borderColor.withOpacity(opacity);
         }
-        let label = new Text(this.label, 'label', textColor, 1, 'start', false, false, null, 0, { styleOverride: TypeStyle.ofSize(labelSize, slot?.labelWeight ?? 'semiBold', slot?.labelTracking ?? Math.fround(0.1)) });
+        let label = new Text(this.label, 'label', textColor, 1, null, false, false, null, 0, { styleOverride: TypeStyle.ofSize(labelSize, slot?.labelWeight ?? 'semiBold', slot?.labelTracking ?? Math.fround(0.1)) });
         let content = new Row(gap, 'start', 'center', false, null, null, { height: SizeValue.fill, main: 'center', cross: 'center' });
         if (this.loading) content.add(new Spinner(iconSize, textColor)); else { let leading: any; if ((leading = this.leading) != null) content.add(new Icon(leading, iconSize, textColor)); }
         content.add(label);

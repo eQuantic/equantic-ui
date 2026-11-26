@@ -178,8 +178,7 @@ public class PhoneKeyboardTests
         var (host, bounds, _) = OpenMeasured("say ");
         host.UpdateEditingValue(new TextEditingValue("say hel", 7, 7, 4, 7));
 
-        var underline = Drawn(host, 32).Single(command =>
-            command.Kind == DrawCommandKind.FillRRect && MathF.Abs(command.Shape.Rect.Height - 1.5f) < 0.01f);
+        var underline = Drawn(host, 32).Single(IsCompositionUnderline);
 
         underline.Shape.Rect.X.Should().Be(bounds.X + 4 * 8);
         underline.Shape.Rect.Width.Should().Be(3 * 8);
@@ -199,8 +198,7 @@ public class PhoneKeyboardTests
 
         var drawn = Drawn(host, 32);
 
-        drawn.Should().NotContain(command => command.Kind == DrawCommandKind.FillRRect
-            && MathF.Abs(command.Shape.Rect.Height - 1.5f) < 0.01f, "the field shows HEL, which nobody composed");
+        drawn.Should().NotContain(command => IsCompositionUnderline(command), "the field shows HEL, which nobody composed");
         host.EditingValue.Should().Be(TextEditingValue.Collapsed("HEL", 3));
     }
 
@@ -223,6 +221,17 @@ public class PhoneKeyboardTests
         host.RenderFrame(builder, timeMs);
         return builder.Build().Commands.ToArray();
     }
+
+    /// <summary>
+    /// The composition's underline: a rule 1.5 units tall, in the text's colour, which lands on one or two whole device
+    /// pixels, as a browser rounds a box's edges (#1344). It used to be found by its height of exactly 1.5, which no
+    /// snapped fill keeps, and a search that finds nothing would let "no underline" pass whatever was drawn.
+    /// </summary>
+    private static bool IsCompositionUnderline(DrawCommand command) =>
+        command.Kind == DrawCommandKind.FillRRect
+        && command.Shape.Rect.Height is >= 1f and <= 2f
+        && command.Shape.Rect.Width > command.Shape.Rect.Height * 2
+        && command.Paint.Color == PhotonTheme.Instance.TextPrimary.Resolve(ThemeMode.Light, ContrastLevel.Standard);
 
     private static float? CaretX(IReadOnlyList<DrawCommand> commands) => commands
         .Where(command => command.Kind == DrawCommandKind.FillRRect

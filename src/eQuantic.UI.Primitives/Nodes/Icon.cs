@@ -134,16 +134,17 @@ public sealed class Icon : VisualNode
     /// the no-overloads rule removes, and the TypeScript twin already had one.
     /// </summary>
     /// <param name="glyph">The glyph to draw.</param>
-    /// <param name="size">One of the §07 steps (<see cref="IconSize"/>). A constant outside them is a build
+    /// <param name="size">One of the §07 steps (<see cref="IconSize"/>), or null for the size the box around it
+    /// states (<see cref="ContentStyle.IconSize"/>, #1577), and <see cref="IconSize.Md"/> where none does. A constant outside them is a build
     /// error (EQ3106), read from the <c>[AllowedValues]</c> below; a size known only when the code runs is
     /// refused here.</param>
     /// <param name="color">The tint, or null for the inherited ink.</param>
     /// <param name="label">What assistive technology announces, or null for a decorative glyph.</param>
     public Icon(IconGlyph glyph,
-        [AllowedValues(IconSize.Sm, IconSize.Dense, IconSize.Md, IconSize.Lg, ErrorMessage = AllowedSizes)] float size = IconSize.Md,
+        [AllowedValues(null, IconSize.Sm, IconSize.Dense, IconSize.Md, IconSize.Lg, ErrorMessage = AllowedSizes)] float? size = null,
         ColorToken? color = null, string? label = null)
     {
-        if (size is not (IconSize.Sm or IconSize.Dense or IconSize.Md or IconSize.Lg))
+        if (size is not (null or IconSize.Sm or IconSize.Dense or IconSize.Md or IconSize.Lg))
             throw new ArgumentOutOfRangeException(nameof(size),
                 $"Icon size {size} is not on the §07 whitelist (16/20/24/32 — IconSize.Sm/Dense/Md/Lg). "
                 + "The scale is for CONTENT. Window chrome is sized by the platform, not by it — a title "
@@ -164,7 +165,14 @@ public sealed class Icon : VisualNode
     /// <summary>The RESOLVED target-neutral glyph data (curated or from any pack).</summary>
     public IconGlyph Glyph { get; }
 
-    public float Size { get; }
+    /// <summary>The icon's size in dp; <c>null</c> takes the box's around it (<see cref="ContentStyle.IconSize"/>),
+    /// and 24 where none states one. A realizer reads the resolved one through <see cref="SizeUnder"/>.</summary>
+    public float? Size { get; }
+
+    /// <summary>The size this icon is drawn at under <paramref name="around"/>, the look the boxes above it
+    /// state (#1577): its own, else the box's, else 24, as Flutter's <c>Icon</c> takes its <c>IconTheme</c>'s.</summary>
+    [ServerOnly]
+    public float SizeUnder(ContentStyle? around) => Size ?? around?.IconSize ?? 24;
 
     /// <summary>Tint token; null inherits the context text color (like Text).</summary>
     public ColorToken? Color { get; init; }

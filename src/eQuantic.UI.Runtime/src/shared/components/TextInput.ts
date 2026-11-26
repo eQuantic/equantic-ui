@@ -1,4 +1,4 @@
-import { $eq, $SizeVariantValue, $TextEntryKindValue, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, LiveRegion, Row, SdkStrings, SizeValue, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
+import { $eq, $SizeVariantValue, $TextEntryKindValue, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, InputTheme, LiveRegion, Row, SdkStrings, SizeValue, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
 
 export class TextInput extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TextInput';
@@ -29,6 +29,7 @@ export class TextInput extends StatefulComponent {
     declare kind: $TextEntryKindValue;
     declare prefix: any;
     declare suffix: any;
+    declare style: any;
 
     get disabled() {
         return this._disabled;
@@ -62,7 +63,7 @@ export class TextInput extends StatefulComponent {
         this._onFocusChanged = value;
     }
 
-    constructor(value?: any, onChanged: any = null, label: any = '', placeholder: any = null, helper: any = null, error: any = null, leading: any = null, size: any = 'large', trailing: any = null, kind: any = 'text', prefix: any = null, suffix: any = null, props?: any) {
+    constructor(value?: any, onChanged: any = null, label: any = '', placeholder: any = null, helper: any = null, error: any = null, leading: any = null, size: any = 'large', trailing: any = null, kind: any = 'text', prefix: any = null, suffix: any = null, style: any = null, props?: any) {
         super();
         if (value !== undefined) this.value = value;
         if (onChanged !== undefined) this.onChanged = onChanged;
@@ -76,6 +77,7 @@ export class TextInput extends StatefulComponent {
         if (kind !== undefined) this.kind = kind;
         if (prefix !== undefined) this.prefix = prefix;
         if (suffix !== undefined) this.suffix = suffix;
+        if (style !== undefined) this.style = style;
         if (this.size === undefined) this.size = 'small';
         if (this.kind === undefined) this.kind = 'text';
         if (size === 'small') throw $eq.exceptions.create(['System.ArgumentOutOfRangeException', 'System.ArgumentException', 'System.SystemException', 'System.Exception'], 'TextInput has no Small size — text + padding can\'t fit 32dp (spec B9).', { paramName: 'size' });
@@ -91,12 +93,13 @@ export class TextInput extends StatefulComponent {
         this.kind = kind;
         this.prefix = prefix;
         this.suffix = suffix;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let slot = theme.input;
+        let slot = InputTheme.merge(theme.input, this.style);
         let height = ControlMetrics.height(context, this.size, (slot?.controls ?? null));
         let hasError = !!this.error;
         let borderColor = hasError ? theme.colors('destructive').base : this._focused ? theme.colors('primary').base : slot?.borderColor ?? theme.borderStrong;
@@ -153,6 +156,7 @@ export class TextInput extends StatefulComponent {
         this.kind = fresh.kind;
         this.prefix = fresh.prefix;
         this.suffix = fresh.suffix;
+        this.style = fresh.style;
         this._disabled = fresh.disabled;
         this._autofocus = fresh.autofocus;
         this._obscure = fresh.obscure;

@@ -32,7 +32,7 @@ export class ListItem extends StatelessComponent {
         let slot = theme.list;
         let quietFill = slot?.quietFill ?? theme.surfaceSubtle;
         let content = new Column(slot?.textGap ?? 2);
-        content.add(new Text(this.title, 'bodyM', slot?.titleColor ?? theme.textPrimary, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(slot?.titleSize ?? 15, slot?.titleLineHeight ?? 20, slot?.titleWeight ?? 'medium', 0, Math.fround(1.3)) }));
+        content.add(new Text(this.title, 'bodyM', slot?.titleColor ?? theme.textPrimary, 1, null, false, false, null, 0, { styleOverride: new TypeStyle(slot?.titleSize ?? 15, slot?.titleLineHeight ?? 20, slot?.titleWeight ?? 'medium', 0, Math.fround(1.3)) }));
         let subtitle: any; 
         if ((subtitle = this.subtitle) != null) content.add(new Text(subtitle, 'caption', slot?.subtitleColor ?? theme.textSecondary, this.subtitleLines >= 2 ? 2 : 1));
         let row = new Row(slot?.itemGap ?? 12, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center', padding: EdgeInsets.symmetric(slot?.itemPaddingX ?? 16, slot?.itemPaddingY ?? 8) });
@@ -56,7 +56,7 @@ export class ListItem extends StatelessComponent {
     }
 
     static slotWidth(leading: VisualNode, declared: number, theme: any) {
-        return (() => { const $s = leading; if ($s instanceof Icon) { const icon = $s; return icon.size; } if ($s instanceof Avatar) { const avatar = $s; return Avatar.sideOf(theme, avatar.size); } return declared; })();
+        return (() => { const $s = leading; if ($s instanceof Icon) { const icon = $s; return icon.size ?? 24; } if ($s instanceof Avatar) { const avatar = $s; return Avatar.sideOf(theme, avatar.size); } return declared; })();
     }
 }
 
