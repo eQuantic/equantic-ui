@@ -344,6 +344,10 @@ public sealed partial class PhotonHost
             _textCache.Clear();
             _iconCache.Clear();
             _imageCache.Clear();
+            // Every raster this frame draws is new, and none an earlier frame uploaded is drawn again: the renderer
+            // gives those back now, where an app still between edits never drew enough frames for them to age out
+            // (#1490).
+            builder.ReplacesRasters = true;
             // A patched Build has to run to be seen, in every component that has one.
             Volatile.Write(ref _rebuildAll, 1);
         }

@@ -294,7 +294,7 @@ public sealed class RhiRenderer : IDisposable
     /// <summary>Offscreen path: begin, encode, submit-and-wait (the caller reads pixels right after).</summary>
     public void Render(DisplayList displayList, IRhiRenderTarget target)
     {
-        BeginFrame();
+        BeginFrame(displayList);
         var layers = RenderLayers(displayList, target.Width, target.Height);
         var splits = FindTopLevelBackdrops(displayList.Commands);
         if (splits is null)
@@ -489,7 +489,7 @@ public sealed class RhiRenderer : IDisposable
     {
         // A caller's own pass is one frame. Render begins its frame itself and encodes through
         // EncodeRange, so every way into the encoder passes BeginFrame exactly once.
-        BeginFrame();
+        BeginFrame(displayList);
         var layers = layersHandle as LayerTargets;
         EncodeRange(displayList, commands, layers, 0, displayList.Commands.Length);
     }
@@ -726,9 +726,10 @@ public sealed class RhiRenderer : IDisposable
     /// one of them. A raster drawn again later is uploaded again, from the bytes its owner still
     /// holds.
     /// </summary>
-    private void BeginFrame()
+    private void BeginFrame(DisplayList displayList)
     {
         _frame++;
+        if (displayList.ReplacesRasters) ReleaseWhatThisFrameDoesNotDraw(displayList);
         // As many as the last frame uploaded, and never fewer than the share: see ReleasesPerFrame.
         var releases = Math.Max(ReleasesPerFrame, _uploads);
         _uploads = 0;
@@ -746,6 +747,29 @@ public sealed class RhiRenderer : IDisposable
         {
             // Out of the map first: a release that throws must not leave an entry whose texture
             // is gone, nor a list of keys the next frame would trip over.
+            foreach (var data in _retired)
+                if (_textures.Remove(data, out var uploaded)) uploaded.Texture.Dispose();
+        }
+        finally
+        {
+            _retired.Clear();
+        }
+    }
+
+    /// <summary>
+    /// The frame replaces every raster earlier frames drew (a hot-reload edit dropped the host's caches, #1490): each
+    /// texture it does not draw is given back now, before anything is encoded. Its texture table is everything it
+    /// draws, so nothing it binds is one of them. Ageing alone left them: an app still between edits draws a frame or
+    /// two for each, never <see cref="RetainFrames"/>, and every edit kept a whole screen of textures on the GPU.
+    /// </summary>
+    private void ReleaseWhatThisFrameDoesNotDraw(DisplayList displayList)
+    {
+        var drawn = new HashSet<TextureData>(displayList.Textures, ReferenceEqualityComparer.Instance);
+        foreach (var entry in _textures)
+            if (!drawn.Contains(entry.Key)) _retired.Add(entry.Key);
+        if (_retired.Count == 0) return;
+        try
+        {
             foreach (var data in _retired)
                 if (_textures.Remove(data, out var uploaded)) uploaded.Texture.Dispose();
         }

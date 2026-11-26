@@ -1,0 +1,4 @@
+#nullable enable
+[EQX0001]eQuantic.UI.Native.Engine.DisplayList.ReplacesRasters.get -> bool
+[EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.ReplacesRasters.get -> bool
+[EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.ReplacesRasters.set -> void

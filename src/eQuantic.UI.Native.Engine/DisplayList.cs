@@ -137,11 +137,20 @@ public sealed class DisplayList
     private readonly DrawCommand[] _commands;
     private readonly TextureData[] _textures;
 
-    internal DisplayList(DrawCommand[] commands, TextureData[]? textures = null)
+    internal DisplayList(DrawCommand[] commands, TextureData[]? textures = null, bool replacesRasters = false)
     {
         _commands = commands;
         _textures = textures ?? NoTextures;
+        ReplacesRasters = replacesRasters;
     }
+
+    /// <summary>
+    /// Whether this frame's rasters REPLACE every raster earlier frames drew (#1490): the host dropped its content
+    /// caches for a hot-reload edit, so nothing an earlier frame uploaded will be drawn again. A renderer gives back,
+    /// at once, every texture this frame does not draw, where it would otherwise wait for them to go undrawn for a
+    /// number of frames an app that is still between edits never draws.
+    /// </summary>
+    public bool ReplacesRasters { get; }
 
     public ReadOnlySpan<DrawCommand> Commands => _commands;
     public int Count => _commands.Length;
@@ -156,6 +165,11 @@ public sealed class DisplayList
 /// </summary>
 public sealed class DisplayListBuilder
 {
+    /// <summary>Says the frame being recorded replaces every raster earlier frames drew: see
+    /// <see cref="DisplayList.ReplacesRasters"/>. The host sets it on the frame that drops its content caches, and
+    /// <see cref="Reset"/> clears it.</summary>
+    public bool ReplacesRasters { get; set; }
+
     private readonly List<DrawCommand> _commands = new();
     private readonly Stack<Matrix2D> _stack = new();
     private readonly Stack<RRect?> _clipStack = new();
@@ -462,6 +476,7 @@ public sealed class DisplayListBuilder
         _current = Matrix2D.Identity;
         _clip = null;
         _openLayers = 0;
+        ReplacesRasters = false;
     }
 
     public DisplayList Build()
@@ -472,6 +487,6 @@ public sealed class DisplayListBuilder
             throw new InvalidOperationException($"Unbalanced clip stack: {_clipStack.Count} unpopped PushClip call(s).");
         if (_openLayers != 0)
             throw new InvalidOperationException($"Unbalanced layer stack: {_openLayers} unpopped PushLayer call(s).");
-        return new DisplayList(_commands.ToArray(), _textures.Count > 0 ? _textures.ToArray() : null);
+        return new DisplayList(_commands.ToArray(), _textures.Count > 0 ? _textures.ToArray() : null, ReplacesRasters);
     }
 }

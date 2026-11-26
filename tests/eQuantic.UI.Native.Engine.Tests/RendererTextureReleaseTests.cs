@@ -1,3 +1,5 @@
+using eQuantic.UI.Components;
+using eQuantic.UI.Native.Components;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Xunit;
@@ -215,5 +217,85 @@ public class RendererTextureReleaseTests
         renderer.Dispose();
 
         device.Live.Should().Be(0);
+    }
+
+    /// <summary>
+    /// A frame that says it replaces its rasters gives back, at once, every texture it does not draw, and keeps the
+    /// ones it draws without uploading them again (#1490).
+    /// </summary>
+    [Fact]
+    public void AFrameThatReplacesItsRasters_GivesBackWhatItDoesNotDraw_AndKeepsWhatItDraws()
+    {
+        var device = new CountingDevice();
+        using var renderer = new RhiRenderer(device);
+        var (gone, kept, fresh) = (Raster(), Raster(), Raster());
+
+        renderer.Encode(Frame(gone, kept), new Pass());
+        // The renderer's own 1×1 placeholder is among the live textures; what moves is the frame's rasters.
+        var two = device.Live;
+
+        var builder = new DisplayListBuilder { ReplacesRasters = true };
+        builder.Texture(new Rect(0, 0, 2, 2), Color.White, kept);
+        builder.Texture(new Rect(0, 0, 2, 2), Color.White, fresh);
+        renderer.Encode(builder.Build(), new Pass());
+
+        device.Live.Should().Be(two, "the raster the frame no longer draws went back at once, one frame after it was drawn");
+        device.Uploads[kept].Should().Be(1, "the raster it draws again stayed on the GPU");
+        device.Uploads[fresh].Should().Be(1);
+    }
+
+    /// <summary>A screen of a few lines of text, each its own raster.</summary>
+    private sealed class Lines : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2);
+            for (var line = 0; line < 8; line++) column.Add(new Text($"line {line}", TypeRole.BodyM));
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// A hot-reload edit drops the host's content caches, so the frames that draw the edit upload every raster again
+    /// (#1490). An app is still between edits and draws one or two frames for each, so the rasters the edit replaced
+    /// never went undrawn for <see cref="RhiRenderer.RetainFrames"/> frames and were never given back: each edit left a
+    /// whole screen of textures on the GPU, which the runner measured as about 3 MB of graphics memory an edit.
+    /// </summary>
+    [Fact]
+    public void HotReloadEdits_LeaveNoScreenOfTexturesBehind()
+    {
+        var device = new CountingDevice();
+        using var renderer = new RhiRenderer(device);
+        var host = new PhotonHost(new Lines(), PhotonTheme.Instance, ThemeMode.Light, 400, 400)
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+        };
+        void Draw(float timeMs)
+        {
+            var builder = new DisplayListBuilder();
+            host.RenderFrame(builder, timeMs);
+            renderer.Encode(builder.Build(), new Pass());
+        }
+
+        var time = 0f;
+        Draw(time += 16);
+        Draw(time += 16);
+        var screen = device.Live;
+        screen.Should().BeGreaterThan(4, "the screen's lines are rasters on the GPU");
+
+        var live = new List<int>();
+        for (var edit = 0; edit < 6; edit++)
+        {
+            // The runtime's own sequence, then the frames an edit draws before the app is still again.
+            PhotonHotReload.ClearCache(null);
+            PhotonHotReload.UpdateApplication(null);
+            Draw(time += 16);
+            Draw(time += 16);
+            live.Add(device.Live);
+        }
+
+        live.Should().OnlyContain(count => count <= screen + 1,
+            $"an edit replaces the screen's rasters and gives the ones it replaced back: one screen is {screen} textures, "
+            + $"and after each edit the GPU held {string.Join(", ", live)}");
     }
 }
