@@ -1,1 +1,2 @@
 #nullable enable
+const eQuantic.UI.Compiler.CodeGen.Eq.Statics = "$eq.statics" -> string!

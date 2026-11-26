@@ -1,3 +1,4 @@
+using eQuantic.UI.Compiler.CodeGen.Ir;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -31,6 +32,10 @@ public class GenericNameStrategy : IConversionStrategy
         var isReceiver = name.Parent is MemberAccessExpressionSyntax access && access.Expression == name;
         if (symbol is null && !isReceiver && LocalFunctionName.InScope(name, name.Identifier.ValueText) is { } local)
             return LocalFunctionName.Of(local, context);
+        // A static generic class's member is its closed type's (#1855): `Cache<int>.Keep(1)` is
+        // `$eq.statics(Cache, 'int').keep(1)`.
+        if (isReceiver && symbol is INamedTypeSymbol type && ClosedStatics.Home(type, name, context) is { } closed)
+            return JsExprWriter.Write(closed);
         return name.Identifier.ValueText;
     }
 

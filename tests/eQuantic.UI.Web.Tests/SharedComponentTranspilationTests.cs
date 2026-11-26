@@ -386,6 +386,26 @@ public class SharedComponentTranspilationTests
             public List<string> Members { get; } = new();
         }
 
+        // A static generic class, whose statics are each closed type's (#1855): every member is static, and a
+        // static member that names its class's type parameter was refused (TS2302), so the twin declares none.
+        public static class EmittedCache<T>
+        {
+            public const int Size = 4;
+            public static T? Last;
+            public static int Hits { get; private set; }
+            private static readonly List<T> _all = new();
+            static EmittedCache() { Hits = 0; }
+            public static int Count => _all.Count;
+            public static T Keep(T value) { Last = value; _all.Add(value); Hits++; Func<T, T> echo = Echo; return echo(value); }
+            private static T Echo(T value) { T Local(T v) => v; return Local(value); }
+        }
+
+        // The statics of two closed types, reached from another class.
+        public sealed class EmittedCacheUser
+        {
+            public int Use() { EmittedCache<int>.Keep(3); EmittedCache<string>.Keep("a"); Func<int, int> keep = EmittedCache<int>.Keep; return keep(EmittedCache<int>.Hits) + EmittedCache<string>.Count + EmittedCache<int>.Size; }
+        }
+
         public sealed class EmittedArena
         {
             private readonly Dictionary<int, EmittedPointer> _arenas = new();
@@ -615,7 +635,7 @@ public class SharedComponentTranspilationTests
     [
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
-        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedShapeBase", "EmittedMeasured", "EmittedTagged", "EmittedHandler", "EmittedMaybe", "EmittedOwner", "EmittedOwner$Held", "EmittedPointer", "EmittedArena",
+        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedShapeBase", "EmittedMeasured", "EmittedTagged", "EmittedHandler", "EmittedMaybe", "EmittedOwner", "EmittedOwner$Held", "EmittedPointer", "EmittedArena", "EmittedCache", "EmittedCacheUser",
         "ArenaProbe", "ArenaMember", "HoldThenDrag", "FactoryTypeChange",
     ];
 

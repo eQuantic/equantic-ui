@@ -113,9 +113,14 @@ public class IdentifierStrategy : IExpressionIrStrategy
                     if (!isMemberName && symbol.ReportIfPlatformReachedBare(identifier, context))
                         return JsExpr.Literal("undefined");
                     var staticName = Named(symbol, name);
-                    return isMemberName
-                        ? JsExpr.Identifier(staticName)
-                        : JsExpr.Member(JsExpr.Identifier(StaticHome(symbol.ContainingType, context)), staticName);
+                    if (isMemberName) return JsExpr.Identifier(staticName);
+                    // A static generic class's statics are its closed type's (#1855): `this` in its own code, a
+                    // method group bound to it, since its body reads `this` too.
+                    if (ClosedStatics.Home(symbol.ContainingType, identifier, context) is { } closed)
+                        return symbol is IMethodSymbol
+                            ? JsExpr.Template($"{Eq.DelegateBound}({{0}}, {{0}}.{staticName})", closed)
+                            : JsExpr.Member(closed, staticName);
+                    return JsExpr.Member(JsExpr.Identifier(StaticHome(symbol.ContainingType, context)), staticName);
                 }
 
                 // If it's a member of the current class and not static, add 'this.'. A field is read in
