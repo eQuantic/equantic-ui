@@ -76,7 +76,8 @@ public class HotReloadTests
         two.RenderFrame(new DisplayListBuilder());
 
         // As an earlier test's async work finishing late, on a thread of its own.
-        var late = new Thread(() => PhotonDispatcher.Shared.Post(() => { }));
+        var ran = false;
+        var late = new Thread(() => PhotonDispatcher.Shared.Post(() => ran = true));
         late.Start();
         late.Join();
 
@@ -85,7 +86,9 @@ public class HotReloadTests
         one.WantsFrame(16).Should().BeTrue("the posted work still gets the frame it runs in");
 
         one.RenderFrame(new DisplayListBuilder(), 16);
-        one.WantsFrame(32).Should().BeFalse("the frame ran it, and nothing is waiting any more");
+        // Whether the queue is empty after the frame is the process's to say, and late work of another test could
+        // fill it again: the case reads its own work instead.
+        ran.Should().BeTrue("the frame ran the posted work at its top");
         two.NeedsRender.Should().BeFalse("and the other window's tree never changed");
     }
 
