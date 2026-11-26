@@ -201,6 +201,6 @@ page would pay for it.
 deltas, floor(395,786 × 1.01) = 399,743. Its 106 bytes are `statics` in `utils/closures.ts`, the object it makes
 once per closed type of a static generic class, which keeps that type's statics and its type initializer apart
 from every other closed type's, as .NET does (#1855). They are the helper's least shape: a mark of the closed type
-on that object, which nothing reads, was dropped to reach them. It records a delta of 4,013 bytes, measured against
-the base and its deltas rather than against `main`, which had grown 3,907 bytes past them without crossing the
-ceiling.
+on that object, which nothing reads, was dropped to reach them. It records its own 106 bytes as its delta. The 3,907
+bytes `main` had grown past the base and its deltas without crossing the ceiling are other pull requests' growth,
+which this one does not record.
