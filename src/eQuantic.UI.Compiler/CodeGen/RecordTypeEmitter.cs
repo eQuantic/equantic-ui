@@ -101,12 +101,22 @@ public class RecordTypeEmitter
             reference.GetSyntax() is TypeDeclarationSyntax declaration && CanEmit(declaration, type));
 
     /// <summary>A type parameter's constraint as the header writes it (#1854): a class that is not generic and has a twin,
-    /// as a downcast asks it, and null for any other one, a class the server keeps included.</summary>
-    private string? ConstraintType(TypeSyntax type) =>
-        ModelFor(type)?.GetTypeInfo(type).Type is INamedTypeSymbol { TypeKind: TypeKind.Class, IsGenericType: false } bound
-        && Strategies.Expressions.CastExpressionStrategy.NamesATwin(bound)
+    /// as a downcast asks it, or an interface with a twin (#1878), and null for any other one, a class the server keeps
+    /// included.</summary>
+    private string? ConstraintType(TypeSyntax type)
+    {
+        if (ModelFor(type)?.GetTypeInfo(type).Type is not INamedTypeSymbol bound) return null;
+        // An interface's twin is named by its own name, which no annotation writes (it writes an interface as any), and
+        // imported as a name the conversion introduced (#1878).
+        if (InterfaceTwin.NameOf(bound) is { } face)
+        {
+            (bound.IsRuntimeProvided() ? _converter.UsedRuntimeTypes : _converter.UsedAppTypes).Add(face);
+            return face;
+        }
+        return bound is { TypeKind: TypeKind.Class, IsGenericType: false } && Strategies.Expressions.CastExpressionStrategy.NamesATwin(bound)
             ? TsTypeOf(type)
             : null;
+    }
 
     /// <summary>A model that can answer about THIS declaration. Roslyn throws for a node from
     /// another tree, so the COMPILATION is asked for that tree's own model; when even it does not
