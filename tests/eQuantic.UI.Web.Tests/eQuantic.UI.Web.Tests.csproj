@@ -60,6 +60,10 @@
     <Compile Include="..\Shared\TestReferences.cs" Link="Shared\TestReferences.cs" />
     <!-- The dashboard's own recognizer (#1563), run by the arena fixture on both sides. -->
     <Compile Include="..\..\samples\DefaultUIDashboard\Gestures\HoldThenDrag.cs" Link="Fixtures\HoldThenDrag.cs" />
+    <!-- The emission shapes are sources the transpilation test reads from disk, one file each, and never this suite's
+         code: its own assembly is a reference of that compilation, and a shape compiled into both binds twice (#1906). -->
+    <Compile Remove="Fixtures\Shapes\**" />
+    <None Include="Fixtures\Shapes\**" />
     <!-- How a test starts a program: one deadline over the exit and both streams, and for dotnet a
          build that leaves nothing holding its output (#971). -->
     <Compile Include="..\Shared\ChildProcess.cs" Link="Shared\ChildProcess.cs" />
