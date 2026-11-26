@@ -32,7 +32,8 @@ public class StaticGenericClassConformanceTests
         public static class Plain<T>
         {
             public static int N;
-            public static int Bump() => ++N;
+            public static int Count { get; private set; }
+            public static int Bump() { Count += 2; return ++N; }
         }
         """;
 
@@ -50,6 +51,8 @@ public class StaticGenericClassConformanceTests
             "Cache<string>.Twice(\"x\"); return Cache<string>.Hits + \"|\" + Cache<int>.Hits;"), // "2|0"
         ("a static with no initializer is per closed type too",
             "Plain<int>.Bump(); Plain<int>.Bump(); Plain<string>.Bump(); return Plain<int>.N + \"|\" + Plain<string>.N + \"|\" + Plain<bool>.N;"), // "2|1|0"
+        ("an auto-property with no initializer is per closed type too",
+            "Plain<int>.Bump(); Plain<string>.Bump(); Plain<string>.Bump(); return Plain<int>.Count + \"|\" + Plain<string>.Count + \"|\" + Plain<bool>.Count;"), // "2|4|0"
         ("a closed type over a closed generic is its own",
             "Cache<List<int>>.Keep(new List<int> { 1 }); return Cache<List<int>>.Count + \"|\" + Cache<List<long>>.Count;"), // "1|0"
     ];

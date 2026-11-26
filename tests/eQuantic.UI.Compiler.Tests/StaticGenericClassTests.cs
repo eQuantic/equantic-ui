@@ -70,6 +70,23 @@ public class StaticGenericClassTests
     }
 
     [Fact]
+    public void ATypeDeclaredInsideIt_IsReachedAsATypeFromOutside()
+    {
+        var results = Compile("""
+            namespace NS;
+            public static class Cache<T>
+            {
+                public sealed class Inner { public static int Size => 3; }
+            }
+            public sealed class User { public int Use() => Cache<int>.Inner.Size; }
+            """);
+
+        var user = results.Single(result => result.ComponentName == "User");
+        user.Errors.Should().BeEmpty();
+        user.TypeScript.Should().Contain("Cache$Inner.size").And.NotContain("$eq.statics", "a type declared inside it is its own module, not one of its statics");
+    }
+
+    [Fact]
     public void ATypeDeclaredInsideIt_HasNoClosedTypeOfIt()
     {
         var results = Compile("""

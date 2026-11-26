@@ -34,10 +34,7 @@ public class GenericNameStrategy : IConversionStrategy
             return LocalFunctionName.Of(local, context);
         // A static generic class's member is its closed type's (#1855): `Cache<int>.Keep(1)` is
         // `$eq.statics(Cache, 'int').keep(1)`.
-        // A type declared inside it (`Cache<int>.Inner`) is not one of its statics.
-        if (isReceiver && symbol is INamedTypeSymbol type
-            && context.SemanticHelper.GetSymbol(name.Parent!) is not ITypeSymbol
-            && ClosedStatics.Home(type, name, context) is { } closed)
+        if (isReceiver && symbol is INamedTypeSymbol type && ClosedStatics.Home(type, name, context) is { } closed)
             return JsExprWriter.Write(closed);
         return name.Identifier.ValueText;
     }
