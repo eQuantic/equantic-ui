@@ -6,11 +6,11 @@ namespace eQuantic.UI.Native.Shell.Apple;
 
 /// <summary>
 /// The W4 icon rasterizer on macOS — CoreGraphics only (the zero third-party rule): the shared
-/// <see cref="VectorPath"/> parser lowers the glyph's path data to moves/lines/cubics, CG fills
-/// (nonzero) or strokes (round caps/joins, the icon-pack convention) into an A8 coverage bitmap at
-/// device scale, a fill by the glyph's own rule (even-odd or nonzero, #1210). The CTM flips CG's
-/// bottom-up frame and scales viewBox units → pixels, so stroke widths stay in glyph units. v1
-/// fence: per-glyph raster (no atlas packing yet).
+/// <see cref="VectorPath"/> parser lowers the glyph's path data to moves/lines/cubics, CG fills by
+/// the glyph's own rule (even-odd or nonzero, #1210) or strokes (round caps/joins, the icon-pack
+/// convention) into an A8 coverage bitmap at device scale. The CTM flips CG's bottom-up frame and
+/// scales viewBox units → pixels, so stroke widths stay in glyph units. v1 fence: per-glyph raster
+/// (no atlas packing yet).
 /// </summary>
 public sealed partial class CoreGraphicsIconRasterizer : IIconRasterizer
 {
