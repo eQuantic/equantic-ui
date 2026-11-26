@@ -3,8 +3,8 @@ import { EmittedPointer } from "./EmittedPointer";
 
 export class EmittedArena {
     constructor() {
-        this._arenas = $eq.collections.dictionary();
-        this._routes = $eq.collections.dictionary();
+        this._arenas = $eq.collections.dictionary<number, EmittedPointer>();
+        this._routes = $eq.collections.dictionary<number, any>();
         this._last = null;
     }
 

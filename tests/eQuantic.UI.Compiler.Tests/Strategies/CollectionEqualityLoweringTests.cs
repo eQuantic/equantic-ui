@@ -18,11 +18,11 @@ public class CollectionEqualityLoweringTests
     {
         // By identity (nothing passed), by value, and by what an element of a type that does not
         // decide turns out to be.
-        TestHelper.ConvertExpression("new HashSet<int>()").Should().Be("$eq.collections.hashSet()");
-        TestHelper.ConvertExpression("new HashSet<(int, string)>()").Should().Be("$eq.collections.hashSet(true)");
-        TestHelper.ConvertExpression("new HashSet<object>()").Should().Be("$eq.collections.hashSet('own')");
-        TestHelper.ConvertExpression("new HashSet<DistinctPoint>(10)").Should().Be("$eq.collections.hashSet(true, 10)");
-        TestHelper.ConvertExpression("new HashSet<TestClass>(list)").Should().Be("$eq.collections.hashSet('item', this.list)");
+        TestHelper.ConvertExpression("new HashSet<int>()").Should().Be("$eq.collections.hashSet<number>()");
+        TestHelper.ConvertExpression("new HashSet<(int, string)>()").Should().Be("$eq.collections.hashSet<any>(true)");
+        TestHelper.ConvertExpression("new HashSet<object>()").Should().Be("$eq.collections.hashSet<any>('own')");
+        TestHelper.ConvertExpression("new HashSet<DistinctPoint>(10)").Should().Be("$eq.collections.hashSet<DistinctPoint>(true, 10)");
+        TestHelper.ConvertExpression("new HashSet<TestClass>(list)").Should().Be("$eq.collections.hashSet<TestClass>('item', this.list)");
     }
 
     [Fact]
@@ -32,9 +32,9 @@ public class CollectionEqualityLoweringTests
         // comparison is generated from the element types, for a set's elements and a dictionary's
         // keys alike.
         TestHelper.ConvertExpression("new HashSet<(int[], int)>()")
-            .Should().Be("$eq.collections.hashSet($eq.collections.tupleEquality(false, false))");
+            .Should().Be("$eq.collections.hashSet<any>($eq.collections.tupleEquality(false, false))");
         TestHelper.ConvertExpression("new Dictionary<(int[], int), int>()")
-            .Should().Be("$eq.collections.dictionary(null, $eq.collections.tupleEquality(false, false))");
+            .Should().Be("$eq.collections.dictionary<any, number>(null, $eq.collections.tupleEquality(false, false))");
     }
 
     [Fact]

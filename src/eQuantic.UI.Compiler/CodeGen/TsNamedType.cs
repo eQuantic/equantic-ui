@@ -21,6 +21,37 @@ internal static class TsNamedType
             : null;
 
     /// <summary>
+    /// The TypeScript type arguments of a runtime collection's factory for the closed type
+    /// <paramref name="constructed"/>, <c>&lt;Shape&gt;</c> or <c>&lt;string, Shape&gt;</c>, or nothing for a type
+    /// that is not generic. A queue built with <c>new</c> went out as <c>$eq.collections.queue()</c>, a
+    /// <c>Queue&lt;unknown&gt;</c> to TypeScript, so a take from it was refused into a typed variable (#1866).
+    /// Each argument is named as a local's type is, its primitive spelled as the mapper spells it, and
+    /// <c>any</c> where no module could name it; a nullable reference is <c>T | null</c>, as the C# collection
+    /// takes a null then.
+    /// </summary>
+    internal static string TypeArguments(ITypeSymbol? constructed, ConversionContext context) =>
+        constructed is INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: > 0 } named
+            ? $"<{string.Join(", ", named.TypeArguments.Select(argument => Argument(argument, context)))}>"
+            : "";
+
+    private static string Argument(ITypeSymbol argument, ConversionContext context)
+    {
+        if (argument is ITypeParameterSymbol) return "any";
+        var ts = For(argument, context) ?? Mapped(argument) ?? "any";
+        return ts != "any" && argument is { IsReferenceType: true, NullableAnnotation: NullableAnnotation.Annotated }
+            ? TypeScriptEmitter.OrNull(ts)
+            : ts;
+    }
+
+    /// <summary>A type the mapper spells with no module behind the name (a number, a string, a nullable
+    /// value), or null.</summary>
+    private static string? Mapped(ITypeSymbol argument)
+    {
+        var ts = TypeScriptEmitter.CSharpTypeToTypeScript(argument.ToDisplayString());
+        return TypeScriptEmitter.NamesWithoutAModule(ts) ? ts : null;
+    }
+
+    /// <summary>
     /// The TS spelling of a named type that is neither a primitive nor generic. A type with a twin, the
     /// app's own or one the runtime provides, is named by its twin and imported as any reference to it is:
     /// an app class only a tuple's slot named was named and never imported. A task held as a value is a

@@ -235,7 +235,7 @@ export class CodeCompletion {
 
     gather() {
         this._candidates = [];
-        let groups: any = $eq.collections.dictionary();
+        let groups: any = $eq.collections.dictionary<string, number>();
         for (const answer of $eq.collections.listWalk(this._answers)) {
             for (const offer of $eq.collections.listWalk(answer.offers)) {
                 let item = offer.item;

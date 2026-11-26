@@ -9,7 +9,7 @@ export class CodeDiffer {
     }
 
     static compareLines(original: string[], modified: string[]) {
-        let ids: any = $eq.collections.dictionary();
+        let ids: any = $eq.collections.dictionary<string, number>();
         let a = CodeDiffer.idsOf(original, ids);
         let b = CodeDiffer.idsOf(modified, ids);
         let removed = new Array(a.length).fill(false);
@@ -152,7 +152,7 @@ export class CodeDiffer {
         let bLines: number[] = [];
         let bColumns: number[] = [];
         if (!CodeDiffer.tokenize(original, originalStart, originalCount, aTexts, aLines, aColumns) || !CodeDiffer.tokenize(modified, modifiedStart, modifiedCount, bTexts, bLines, bColumns)) return [];
-        let ids: any = $eq.collections.dictionary();
+        let ids: any = $eq.collections.dictionary<string, number>();
         let a = CodeDiffer.idsOf(aTexts, ids);
         let b = CodeDiffer.idsOf(bTexts, ids);
         let removed = new Array(a.length).fill(false);

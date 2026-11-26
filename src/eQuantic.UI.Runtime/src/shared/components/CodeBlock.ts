@@ -6,8 +6,8 @@ export class CodeBlock extends StatelessComponent {
     _foldsByHeader: any = null;
     _foldedHeaders: any = null;
     static markerRoom: number = 12;
-    _cells: any = $eq.collections.dictionary();
-    _fillerCells: any = $eq.collections.dictionary();
+    _cells: any = $eq.collections.dictionary<number, CodeLineCells>();
+    _fillerCells: any = $eq.collections.dictionary<number, CodeLineCells>();
     static linePass: number = 0;
     static highlightPass: number = 1;
     static outlinePass: number = 2;
@@ -297,7 +297,7 @@ export class CodeBlock extends StatelessComponent {
 
     foldAt(line: number) {
         if (this._foldsByHeader == null) {
-            this._foldsByHeader = $eq.collections.dictionary();
+            this._foldsByHeader = $eq.collections.dictionary<number, CodeFold>();
             for (const fold of $eq.collections.sequenceWalk(this.folds)) $eq.mapSet(this._foldsByHeader, fold.startLine, fold);
         }
         let found!: CodeFold; 
@@ -305,7 +305,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     isFolded(line: number) {
-        this._foldedHeaders ?? (this._foldedHeaders = $eq.collections.hashSetOf([...this.foldedLines]));
+        this._foldedHeaders ?? (this._foldedHeaders = $eq.collections.hashSetOf<number>([...this.foldedLines]));
         return this._foldedHeaders.has(line);
     }
 
