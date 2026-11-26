@@ -597,6 +597,10 @@ public sealed class AppBuild
     public bool CompileAndBundle()
     {
         BundleElapsed = TimeSpan.Zero;
+        // Counted afresh for every compile, so a second compile of the same build says its own work.
+        ModulesWritten = 0;
+        BundleWritten = 0;
+        BundleWrittenBytes = 0;
         var sourceDirs = _options.SourceDirectories;
         var outputDir = _options.OutputDirectory;
         var bunPath = _options.BunPath;

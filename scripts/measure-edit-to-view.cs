@@ -474,6 +474,7 @@ async Task WaitForAnswer(string url, TimeSpan limit)
             if (restarted) throw new InvalidOperationException($"dotnet watch exited twice before the app answered. {why}");
             Console.WriteLine($"::warning::dotnet watch exited before the app answered, so it is started once more. {why}");
             restarted = true;
+            watch.Dispose();
             watch = StartWatch();
             return false;
         }

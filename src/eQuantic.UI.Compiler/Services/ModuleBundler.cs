@@ -79,6 +79,9 @@ public sealed class ModuleBundler : IDisposable
             },
         };
 
+        // Counted afresh for every bundle, a failed one included, so a save never reports the one before it.
+        Written = 0;
+        WrittenBytes = 0;
         JsonObject answer;
         try
         {
@@ -92,8 +95,6 @@ public sealed class ModuleBundler : IDisposable
             return $"bun's bundle worker stopped: {ex.Message}";
         }
 
-        Written = 0;
-        WrittenBytes = 0;
         if (answer["ok"]?.GetValue<bool>() != true) return answer["error"]?.GetValue<string>() ?? "bun failed";
 
         // A module, a chunk or a map is this bundle's when bun produced it, written or left as it was.

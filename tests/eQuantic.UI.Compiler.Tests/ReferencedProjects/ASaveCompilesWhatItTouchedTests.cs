@@ -107,6 +107,9 @@ public class ASaveCompilesWhatItTouchedTests
         warm.AppBuild.FilesWalked.Should().Be(3, "the save walked every file, and compiled one of them");
         warm.AppBuild.CompiledFiles.Should().ContainSingle();
         warm.AppBuild.ModulesWritten.Should().Be(1, "the one module whose text the save changed");
+
+        warm.AppBuild.CompileAndBundle().Should().BeFalse();
+        warm.AppBuild.ModulesWritten.Should().Be(0, "a second compile with nothing changed writes nothing, and says its own work");
     }
 
     [Fact]
