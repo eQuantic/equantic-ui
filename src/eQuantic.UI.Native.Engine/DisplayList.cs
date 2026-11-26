@@ -231,6 +231,22 @@ public sealed class DisplayListBuilder
             (right - transform.M31) / transform.M11, (bottom - transform.M32) / transform.M22);
     }
 
+    /// <summary>
+    /// <paramref name="rect"/> in DEVICE space under the current transform, its edges on whole device pixels where the
+    /// transform keeps it axis-aligned: a clip's and a frosted region's, so each lands where the fill it bounds does
+    /// (#1344). A clip that ended on a fractional pixel took the same fraction off every layer under it, the one in
+    /// front and the one behind alike, so a swipeable row's red action still showed through its closed surface after
+    /// the fills were snapped, as a browser snaps an overflow clip too.
+    /// </summary>
+    private Rect DeviceRect(Rect rect)
+    {
+        var device = _current.TransformBounds(rect);
+        if (!AxisAligned(_current)) return device;
+        var (left, right) = Snap(device.Left, device.Right);
+        var (top, bottom) = Snap(device.Top, device.Bottom);
+        return Rect.FromLTRB(left, top, right, bottom);
+    }
+
     /// <summary>Whether <paramref name="transform"/> keeps a rect's edges on the device's axes: no turn, no skew,
     /// no mirror. Only then does a whole device pixel mean anything for them.</summary>
     private static bool AxisAligned(in Matrix2D transform) =>
@@ -333,7 +349,7 @@ public sealed class DisplayListBuilder
         var scale = _current.AverageScale();
         if (radius * scale <= 0) return;
         var normalized = shape.Normalized();
-        var deviceRect = _current.TransformBounds(normalized.Rect);
+        var deviceRect = DeviceRect(normalized.Rect);
         var radii = new CornerRadii(
             normalized.Radii.TopLeft * scale, normalized.Radii.TopRight * scale,
             normalized.Radii.BottomRight * scale, normalized.Radii.BottomLeft * scale);
@@ -474,16 +490,7 @@ public sealed class DisplayListBuilder
     {
         _clipStack.Push(_clip);
         var normalized = shape.Normalized();
-        var deviceRect = _current.TransformBounds(normalized.Rect);
-        // A clip's edges land on whole device pixels as a fill's do, as a browser snaps an overflow clip (#1344): a
-        // clip that ended on a fractional pixel took the same fraction off every layer under it, the one in front and
-        // the one behind alike, so a swipeable row's red action still showed through its closed surface.
-        if (AxisAligned(_current))
-        {
-            var (left, right) = Snap(deviceRect.Left, deviceRect.Right);
-            var (top, bottom) = Snap(deviceRect.Top, deviceRect.Bottom);
-            deviceRect = Rect.FromLTRB(left, top, right, bottom);
-        }
+        var deviceRect = DeviceRect(normalized.Rect);
         var scale = _current.AverageScale();
         var radii = new CornerRadii(
             normalized.Radii.TopLeft * scale, normalized.Radii.TopRight * scale,
