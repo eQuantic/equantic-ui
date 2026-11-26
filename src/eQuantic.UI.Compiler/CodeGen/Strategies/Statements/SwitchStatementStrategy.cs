@@ -108,6 +108,7 @@ public class SwitchStatementStrategy : IStatementStrategy
         var arms = new List<(string Condition, JsStatement Body, SwitchSectionSyntax Section)>();
         var hoist = new List<string>();   // distinct bound names, hoisted once for the whole chain
         var seen = new HashSet<string>();
+        var bound = new HashSet<string>(StringComparer.Ordinal);   // what a pattern binds, which no out var types
         // What the sections' statements declare belongs to the switch block too (see SectionNames).
         foreach (var name in SectionNames(switchStmt))
             if (seen.Add(name)) hoist.Add(name);
@@ -139,7 +140,11 @@ public class SwitchStatementStrategy : IStatementStrategy
                             var cond = PatternConverter.BuildCondition(pat.Pattern, Subject, context);
                             var bindings = new List<(string Name, string Access)>();
                             PatternConverter.CollectBindings(pat.Pattern, Subject, context, bindings);
-                            foreach (var b in bindings) if (seen.Add(b.Name)) hoist.Add(b.Name);
+                            foreach (var b in bindings)
+                            {
+                                bound.Add(b.Name);
+                                if (seen.Add(b.Name)) hoist.Add(b.Name);
+                            }
 
                             // Assign the pattern's bindings AND evaluate the when-clause inside the condition (a
                             // comma sequence, guarded by `&&` so it only runs when the pattern matched): this
@@ -179,7 +184,7 @@ public class SwitchStatementStrategy : IStatementStrategy
         var statements = new List<JsStatement>();
         // Annotated in TypeScript, as every declaration the scanner writes is: a section's `out var`
         // may be assigned inside an arrow (a dictionary's TryGetValue), which TypeScript cannot follow.
-        if (hoist.Count > 0) statements.Add(JsStatement.Raw($"let {ExpressionVariableScanner.List(hoist, Declaring(switchStmt), context)};"));
+        if (hoist.Count > 0) statements.Add(JsStatement.Raw($"let {ExpressionVariableScanner.List(hoist, Declaring(switchStmt), context, bound.Concat(held))};"));
         statements.Add(JsStatement.Const(Subject, expr));
         if (chain is not null) statements.Add(chain);
         return JsStatement.Block(statements);

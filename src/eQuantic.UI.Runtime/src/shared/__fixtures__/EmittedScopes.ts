@@ -21,7 +21,9 @@ export class EmittedScopes extends EmittedScopedBase {
             let $slots: any = EmittedScopes.$slots = {};
             try {
                 $slots.pointers = null;
+                $slots.lists = null;
                 $slots.pointers = $eq.collections.dictionary();
+                $slots.lists = $eq.collections.dictionary();
             } catch ($error) {
                 EmittedScopes.$slots = null;
                 throw EmittedScopes.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Web.Tests.Fixtures.EmittedScopes', $error);
@@ -36,6 +38,14 @@ export class EmittedScopes extends EmittedScopedBase {
 
     static set pointers(value: any) {
         EmittedScopes.$init().pointers = value;
+    }
+
+    static get lists(): any {
+        return EmittedScopes.$init().lists;
+    }
+
+    static set lists(value: any) {
+        EmittedScopes.$init().lists = value;
     }
 
     static find(id: number) {
@@ -84,12 +94,12 @@ export class EmittedScopes extends EmittedScopedBase {
         let total = 0;
         {
             let held!: EmittedPointer;
-            const _disposable_36ede7 = ($o => (held = $o.held, $o.$))(EmittedScopes.lease(id));
+            const _disposable_8bb542 = ($o => (held = $o.held, $o.$))(EmittedScopes.lease(id));
             try {
                 for (const member of $eq.collections.listWalk(held.members)) total = total + member.length | 0;
             } finally {
-                if (_disposable_36ede7 && typeof _disposable_36ede7.dispose === 'function') {
-                    _disposable_36ede7.dispose();
+                if (_disposable_8bb542 && typeof _disposable_8bb542.dispose === 'function') {
+                    _disposable_8bb542.dispose();
                 }
             }
         }
@@ -140,6 +150,39 @@ export class EmittedScopes extends EmittedScopedBase {
 
     arm(kind: number) {
         return (() => {let held!: EmittedPointer;  const $s = kind; if (($s > 0) && ((($0) => ($0.has(kind) ? ((held = $0.get(kind)), true) : ((held = null!), false)))(EmittedScopes.pointers))) return held.members.length + this._first | 0; return 0; })();
+    }
+
+    arms(kind: number) {
+        return (() => {let found: any;  const $s = kind; if (($s > 5) && ((($0) => ($0.has(kind) ? ((found = $0.get(kind)), true) : ((found = null!), false)))(EmittedScopes.pointers))) return found.members.length; if (($s > 0) && ((($0) => ($0.has(kind) ? ((found = $0.get(kind)), true) : ((found = null!), false)))(EmittedScopes.lists))) return found.length; return 0; })();
+    }
+
+    filters(thrown: Error) {
+        try {
+            throw thrown;
+        } catch ($e: any) {
+            let e = $e;
+            let found: any;
+            if ($eq.exceptions.is($e, 'System.ArgumentException') && $eq.exceptions.filter(() => (($0, $1) => ($0.has($1) ? ((found = $0.get($1)), true) : ((found = null!), false)))(EmittedScopes.pointers, e.message.length))) {
+                return found.members.length;
+            } else if ($eq.exceptions.filter(() => (($0, $1) => ($0.has($1) ? ((found = $0.get($1)), true) : ((found = null!), false)))(EmittedScopes.lists, e.message.length))) {
+                return found.length;
+            } else {
+                throw $e;
+            }
+        }
+    }
+
+    guards(value: any) {
+        {
+            let id: any, found: any;
+            const $s = value;
+            if ((Number.isInteger($s) && (id = $s, (($0) => ($0.has(id) ? ((found = $0.get(id)), true) : ((found = null!), false)))(EmittedScopes.pointers)))) {
+                return found.members.length;
+            } else if ((typeof $s === 'string' && (found = $s, true))) {
+                return found.length;
+            }
+        }
+        return 0;
     }
 
     toJSON() {

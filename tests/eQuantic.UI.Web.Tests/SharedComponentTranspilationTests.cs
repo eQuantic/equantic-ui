@@ -487,6 +487,34 @@ public class SharedComponentTranspilationTests
                 > 0 when Pointers.TryGetValue(kind, out var held) => held.Members.Count + _first,
                 _ => 0,
             };
+
+            private static readonly Dictionary<int, List<string>> Lists = new();
+
+            public int Arms(int kind) => kind switch
+            {
+                > 5 when Pointers.TryGetValue(kind, out var found) => found.Members.Count,
+                > 0 when Lists.TryGetValue(kind, out var found) => found.Count,
+                _ => 0,
+            };
+
+            public int Filters(Exception thrown)
+            {
+                try { throw thrown; }
+                catch (ArgumentException e) when (Pointers.TryGetValue(e.Message.Length, out var found)) { return found.Members.Count; }
+                catch (Exception e) when (Lists.TryGetValue(e.Message.Length, out var found)) { return found.Count; }
+            }
+
+            public int Guards(object value)
+            {
+                switch (value)
+                {
+                    case int id when Pointers.TryGetValue(id, out var found):
+                        return found.Members.Count;
+                    case string found:
+                        return found.Length;
+                }
+                return 0;
+            }
         }
         """;
 

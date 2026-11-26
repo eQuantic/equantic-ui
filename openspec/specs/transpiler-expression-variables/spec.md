@@ -24,6 +24,8 @@ so in every scope that declares one: a statement's block, a `while`'s, a `do`'s 
 definite assignment is no part of the grammar and the variable starts as `undefined!`, a `using`'s resource, a
 `catch` filter, a switch's sections and guards, a switch expression's arms, an initializer and a constructor's base
 call. A method's own `out` parameter SHALL be declared by its type, the same way, in the body that assigns it.
+Where one declaration holds a name that separate C# scopes declare (two arms, two filters, two guards), the name SHALL
+be typed only when every declaration of it there is an `out var` of that one type, and SHALL stay `any` otherwise.
 
 #### Scenario: The guard idiom reads it after the if
 
@@ -76,6 +78,13 @@ call. A method's own `out` parameter SHALL be declared by its type, the same way
   scope allows it, and a method assigns its own `out Pointer held` and walks `held.Members`
 - **THEN** each is declared `Pointer` (a loop's head `next: Pointer = undefined!`), and the runtime's `tsc` takes
   every walk; declared `any`, it refused them with TS18046
+
+#### Scenario: One name declared with two types
+
+- **WHEN** two arms of a switch expression, two `catch` filters, or a guard and another section's pattern each
+  declare `found`, one as a `Pointer` and the other as a `List<string>` or a `string`
+- **THEN** the declaration they share is `found: any`, and the runtime's `tsc` takes both assignments; typed by the
+  first, it refused the second with TS2322
 
 ### Requirement: A loop's condition has a fresh variable every time round
 

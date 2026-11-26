@@ -116,23 +116,38 @@ public static class ExpressionVariableScanner
     /// name starts as <c>undefined!</c>, which the stripped JavaScript writes <c>let n = undefined</c>, as an
     /// uninitialized <c>let</c> starts. Every other name is <c>any</c>.
     /// </summary>
-    internal static string List(IEnumerable<string> names, IEnumerable<ExpressionSyntax?> from, ConversionContext context)
+    internal static string List(IEnumerable<string> names, IEnumerable<ExpressionSyntax?> from, ConversionContext context,
+        IEnumerable<string>? untyped = null)
     {
         if (!context.TypeAnnotations) return List(names, typeAnnotations: false);
-        var typed = OutVariableTypes(from, context);
+        var typed = OutVariableTypes(from, context, untyped);
         return string.Join(", ", names.Distinct(StringComparer.Ordinal)
             .Select(name => typed.TryGetValue(name, out var type) ? $"{name}: {type} = undefined!" : $"{name}: any"));
     }
 
-    /// <summary>The <c>out var</c> types of several expressions, the first one written for a name winning, as the first
-    /// declaration of a name in a scope does.</summary>
-    private static Dictionary<string, string> OutVariableTypes(IEnumerable<ExpressionSyntax?> expressions, ConversionContext context)
+    /// <summary>
+    /// The <c>out var</c> types of several expressions whose names one declaration holds. They may be separate C# scopes
+    /// (a switch expression's arms, a <c>catch</c>'s filters, a switch's guards), each free to declare the same name, so
+    /// a name is typed only when every declaration of it among them is an <c>out var</c> of that one type: declared with
+    /// another type, untyped, as a pattern's binding, or named in <paramref name="untyped"/>, it stays <c>any</c>, which
+    /// every one of them may assign (found by the review of #1865).
+    /// </summary>
+    private static Dictionary<string, string> OutVariableTypes(IEnumerable<ExpressionSyntax?> expressions, ConversionContext context,
+        IEnumerable<string>? untyped = null)
     {
-        var typed = new Dictionary<string, string>(StringComparer.Ordinal);
+        var agreed = new Dictionary<string, string?>(StringComparer.Ordinal);
         foreach (var expression in expressions)
-            foreach (var (name, type) in OutVariableTypes(expression, context))
-                typed.TryAdd(name, type);
-        return typed;
+        {
+            var typed = OutVariableTypes(expression, context);
+            foreach (var name in Names(expression))
+            {
+                var type = typed.GetValueOrDefault(name);
+                if (!agreed.TryAdd(name, type) && agreed[name] != type) agreed[name] = null;
+            }
+        }
+        foreach (var name in untyped ?? []) agreed[name] = null;
+        return agreed.Where(entry => entry.Value is not null)
+            .ToDictionary(entry => entry.Key, entry => entry.Value!, StringComparer.Ordinal);
     }
 
     /// <summary>The TypeScript type of each <c>out var</c> <paramref name="expression"/> declares outside a lambda, by
