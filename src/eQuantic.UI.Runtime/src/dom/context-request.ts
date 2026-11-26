@@ -12,10 +12,13 @@
  *   keyboard is with `aria-activedescendant`, and the target around THAT item answers (#1532).
  * - A finger held still for `HOLD_MS`: counted here, since iOS Safari fires no `contextmenu` for a long press
  *   and Android Chrome does, so a touch's `contextmenu` over a target is held off and both phones ask once. A
- *   hold that lifted a sortable item is the lift's, and asks for nothing.
+ *   hold that lifted a sortable item is the lift's, and asks for nothing. Under a `RawGestureDetector` the hold is a
+ *   member of the finger's gesture arena (#1563): it asks for the pointer when its menu is asked, leaves when the
+ *   finger travels first, and stops counting when an app's recognizer wins the finger before it.
  */
 import { ContextRequest, Point } from '../shared/value-types';
 import { activeItemOf } from './active-item';
+import { joinGestureArena } from './arena-membership';
 
 /** `ContextTarget.HoldMs`: how long a finger holds a target still to ask for its menu (cross-pinned with C#). */
 export const HOLD_MS = 500;
@@ -107,6 +110,8 @@ function onPointerDown(down: PointerEvent): void {
     stop();
     // A hold that lifted a sortable item is the lift's (`dom/sortable.ts`, 250 ms).
     if (pressed.closest?.('[data-eq-sort-lifted]')) return;
+    // Asked for, the menu takes the finger from every other member of its arena.
+    membership?.accept();
     ask(target, pointIn(target, startX, startY));
     // The press the hold began is not a tap: the click its release ends in is the menu's.
     host.addEventListener('click', swallow, { capture: true, once: true });
@@ -115,7 +120,10 @@ function onPointerDown(down: PointerEvent): void {
   const move = (ev: Event): void => {
     const pointer = ev as PointerEvent;
     if (pointer.pointerId !== down.pointerId) return;
-    if (Math.hypot(pointer.clientX - startX, pointer.clientY - startY) > SLOP) stop();
+    if (Math.hypot(pointer.clientX - startX, pointer.clientY - startY) > SLOP) {
+      stop();
+      membership?.reject();
+    }
   };
   const end = (ev: Event): void => {
     if ((ev as PointerEvent).pointerId === down.pointerId) stop();
@@ -129,6 +137,8 @@ function onPointerDown(down: PointerEvent): void {
   };
   const watch = { stop };
   watching = watch;
+  // A member that wins the finger first (an app's recognizer, a drag) ends the watch: no menu is asked.
+  const membership = joinGestureArena(down, target, stop);
   host.addEventListener('pointermove', move);
   host.addEventListener('pointerup', end);
   host.addEventListener('pointercancel', end);

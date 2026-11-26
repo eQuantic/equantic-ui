@@ -505,6 +505,14 @@ export interface ListenerNode extends VisualNodeValue {
   behavior?: HitTestBehaviorValue;
 }
 
+/** Wire shape of the C# `RawGestureDetector` (#1563): gestures of the app's own over its child. */
+export interface RawGestureDetectorNode extends VisualNodeValue {
+  nodeKind: 'rawGestureDetector';
+  child: VisualNodeValue;
+  gestures?: readonly unknown[];
+  behavior?: HitTestBehaviorValue;
+}
+
 /** The value a C# `SortDrop` crosses as (value-types.ts `SortDrop`). */
 export interface SortDropValue {
   readonly item: string;

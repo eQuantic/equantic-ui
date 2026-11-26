@@ -1,0 +1,2 @@
+#nullable enable
+static eQuantic.UI.Components.UI.RawGestureDetector(eQuantic.UI.Primitives.VisualNode! child, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.GestureRecognizerFactory!>! gestures, eQuantic.UI.Primitives.HitTestBehavior behavior = eQuantic.UI.Primitives.HitTestBehavior.DeferToChild) -> eQuantic.UI.Primitives.RawGestureDetector!

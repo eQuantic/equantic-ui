@@ -160,6 +160,7 @@ export {
   DropTarget,
   ContextTarget,
   Listener,
+  RawGestureDetector,
   Sortable,
   SortableItem,
   Flexible,

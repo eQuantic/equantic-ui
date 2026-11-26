@@ -248,6 +248,8 @@ internal sealed partial class WebLoweringVisitor(
 
     public HtmlElement? Visit(Listener listener, bool? horizontalAxis) => LowerListener(listener);
 
+    public HtmlElement? Visit(RawGestureDetector detector, bool? horizontalAxis) => LowerRawGestureDetector(detector);
+
     public HtmlElement? Visit(Sortable sortable, bool? horizontalAxis) => LowerSortable(sortable, horizontalAxis);
 
     public HtmlElement? Visit(SortableItem item, bool? horizontalAxis) => LowerSortableItem(item, horizontalAxis);

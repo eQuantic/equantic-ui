@@ -156,6 +156,8 @@ public sealed partial class PhotonHost
         // A finger's hold that lifted the item asks for no menu (#1531).
         _contextHold = null;
         NeedsRender = true;
+        // The item lifted: the sort takes the pointer, from a recognizer waiting under it too (#1563).
+        if (!sort.ByKeyboard) AskFor(BuiltInGestureKind.Sort);
         return true;
     }
 

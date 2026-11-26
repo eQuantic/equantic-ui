@@ -259,7 +259,7 @@ public class FlutterParityPinTests
         // Box's is optional). WrapperNode and ProxyNode stay in the negative set they were in while this row
         // was a GAP — a SECOND wrapper base would change the shape surface just as much as a first.
         ["SingleChildRenderObjectWidget"] = () => EveryOneChildNodeIsA("SingleChildNode")
-            && Descendants("SingleChildNode") == 31 && Has("FlexNode")
+            && Descendants("SingleChildNode") == 32 && Has("FlexNode")
             && Nothing("MultiChildNode", "LeafNode", "WrapperNode", "ProxyNode"),
 
         // 2 — layout
@@ -324,10 +324,12 @@ public class FlutterParityPinTests
         ["Listener"] = () => HasMember("Listener", "OnPointerDown") && HasMember("Listener", "OnPointerScroll")
             && Has("PointerEvent"),
         ["HitTestBehavior"] = () => Has("HitTestBehavior") && HasMember("Listener", "Behavior"),
-        ["GestureArena"] = () => Nothing("GestureArena", "GestureRecognizer"),
+        // One arena, written once and transpiled, and the recognizer an app subclasses (#1563).
+        ["GestureArena"] = () => Has("GestureArena") && Has("GestureRouter") && Has("IGestureArenaMember"),
         ["GestureDetector"] = () => Has("Pressable") && Has("Draggable") && Has("Hoverable")
             && Has("Adjustable") && Has("Navigable"),
-        ["RawGestureDetector"] = () => Nothing("RawGestureDetector"),
+        ["RawGestureDetector"] = () => Has("RawGestureDetector") && Has("GestureRecognizer") && Has("GestureArena")
+            && HasMember("RawGestureDetector", "Gestures"),
         ["MenuAnchor"] = () => HasMember("ContextTarget", "OnRequested") && HasMember("ContextRequest", "At")
             && HasMember("Anchored", "At") && Has("ContextMenu"),
         ["FocusNode"] = () => HasMember("Pressable", "InitialFocus") && Nothing("FocusNode", "FocusScope"),

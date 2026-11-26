@@ -71,6 +71,8 @@ public sealed class ConsoleLayout(VisualNode body) : StatefulComponent
         new(Icons.Table, "Board", "/board"),
         // Cards whose content is built for the room each one's box has.
         new(Icons.Table, "Layout", "/layout"),
+        // Cards a hold lifts and a drag carries, a gesture of the dashboard's own beside the list's scroll.
+        new(Icons.Heart, "Gestures", "/gestures"),
     ];
 
     /// <summary>Whether the compact drawer is up. The layout's, so a navigation keeps it.</summary>

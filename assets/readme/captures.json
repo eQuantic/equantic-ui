@@ -17,7 +17,7 @@
       "target": "web",
       "sources": {
         "samples/DefaultUIDashboard/Program.cs": "4ef2e83b6e34bfc2847e1e71abb0703e4e1e40b8a7890753e690c0f9857bd0b0",
-        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "db6f181bd6d667a5de8d151594753c1f26baf618e7e0fb3235c448443f02d7d7",
+        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "49d04db467afe23c1e3179c08ab24dac1748363ea71c97351b455122fb437b71",
         "samples/DefaultUIDashboard/Screens/ConsoleData.cs": "abcb0a957c3823167118ea3f6ea2f100dc9e0aab969910388f3e3d4c4c91403e",
         "samples/DefaultUIDashboard/Screens/PaymentsPage.cs": "212049d3c5d2179818a879addd880a35b5aaaf230d7a804189c0d704186a270a"
       }
@@ -26,7 +26,7 @@
       "target": "web",
       "sources": {
         "samples/DefaultUIDashboard/Program.cs": "4ef2e83b6e34bfc2847e1e71abb0703e4e1e40b8a7890753e690c0f9857bd0b0",
-        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "db6f181bd6d667a5de8d151594753c1f26baf618e7e0fb3235c448443f02d7d7",
+        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "49d04db467afe23c1e3179c08ab24dac1748363ea71c97351b455122fb437b71",
         "samples/DefaultUIDashboard/Screens/ChartsScreen.cs": "991dc99192c2e18b181424fbe3e260262387b8e02ed84d50cb120aeef8ad01c3"
       }
     },
@@ -34,7 +34,7 @@
       "target": "web",
       "sources": {
         "samples/DefaultUIDashboard/Program.cs": "4ef2e83b6e34bfc2847e1e71abb0703e4e1e40b8a7890753e690c0f9857bd0b0",
-        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "db6f181bd6d667a5de8d151594753c1f26baf618e7e0fb3235c448443f02d7d7",
+        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "49d04db467afe23c1e3179c08ab24dac1748363ea71c97351b455122fb437b71",
         "samples/DefaultUIDashboard/Screens/DiffScreen.cs": "8ee387b084e99ddb898598abc65794f79642dcf15b5cc255e3bdc162a4805afe"
       }
     },
@@ -42,7 +42,7 @@
       "target": "web",
       "sources": {
         "samples/DefaultUIDashboard/Program.cs": "4ef2e83b6e34bfc2847e1e71abb0703e4e1e40b8a7890753e690c0f9857bd0b0",
-        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "db6f181bd6d667a5de8d151594753c1f26baf618e7e0fb3235c448443f02d7d7",
+        "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "49d04db467afe23c1e3179c08ab24dac1748363ea71c97351b455122fb437b71",
         "samples/DefaultUIDashboard/Screens/FormScreen.cs": "d8cf114470cec1a12818c58cc0a66efe65675d1697274222263d2b5ecc3e6f04"
       }
     },
