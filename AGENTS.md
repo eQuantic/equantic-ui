@@ -195,8 +195,8 @@ GitHub performs reads no `.gitattributes` that could resolve it (#892). A releas
 into the chronology (`./scripts/fold-ledger.sh`), and `LedgerTests` fails on a file that is not one
 dated entry and on a chronology no fold wrote. Two more files had that shape and take that cure
 (#1489): a change declares its public API in `PublicAPI.Unshipped.<branch>.txt` beside each project,
-the file `./scripts/public-api.sh update` writes, and a change that moves the served runtime past
-its budget writes its own delta under `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime/`, and
+the file `./scripts/public-api.sh update` writes, and a change that grows the served runtime, however
+little, writes its own delta under `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime/` (#1922), and
 a release folds both. A third rewrote itself whenever a cited line moved: a citation in the audits
 names the file and the code, never the line, and `DocsIndexTests` finds the code.
 

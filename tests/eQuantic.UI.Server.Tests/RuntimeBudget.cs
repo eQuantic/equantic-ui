@@ -6,8 +6,8 @@ namespace eQuantic.UI.Server.Tests;
 
 /// <summary>
 /// The served runtime's budget as it is recorded (#1489): a BASE the last release folded, in
-/// <c>Budgets/served-runtime.json</c>, and a DELTA per change that moved the runtime past what the
-/// test allows, in <c>Budgets/served-runtime/&lt;change&gt;.json</c>, each saying what its bytes bought.
+/// <c>Budgets/served-runtime.json</c>, and a DELTA per change that grew the runtime, however little (#1922),
+/// in <c>Budgets/served-runtime/&lt;change&gt;.json</c>, each saying what its bytes bought.
 /// The budget a build is held to is the base plus every delta.
 /// <para>
 /// One number every change re-recorded made any two such pull requests conflict on its one line, and
@@ -71,17 +71,17 @@ internal sealed partial class RuntimeBudget
     }
 
     /// <summary>
-    /// Writes the delta of <paramref name="change"/> under <paramref name="root"/>: what
-    /// <paramref name="measured"/> adds to the base and every OTHER change's delta, so a change measured
-    /// again replaces its own file rather than adding to it.
+    /// Writes the delta of <paramref name="change"/> under <paramref name="root"/>: the bytes the change itself
+    /// <paramref name="grew"/> the runtime by, measured against the commit it is measured from
+    /// (<see cref="ChangeGrowth"/>), so a change measured again replaces its own file rather than adding to it.
+    /// It recorded what its measurement added to the base and every other delta, which took in every byte
+    /// <c>main</c> had grown under the margin, and #1913's 106 bytes came out as 4,013 (#1922).
     /// </summary>
-    public static void Record(string root, string change, long measured, string bought)
+    public static void Record(string root, string change, long grew, string bought)
     {
-        var recorded = Load(root);
-        var budget = recorded.BaseBytes + recorded.Deltas.Where(delta => delta.Change != change).Sum(delta => delta.Bytes);
         var folder = Path.Combine(root, DeltaFolder);
         Directory.CreateDirectory(folder);
-        var json = JsonSerializer.Serialize(new { deltaBytes = measured - budget, bought },
+        var json = JsonSerializer.Serialize(new { deltaBytes = grew, bought },
             new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(Path.Combine(folder, change + ".json"), json + "\n");
     }
