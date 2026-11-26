@@ -111,7 +111,7 @@ export class Select extends StatefulComponent {
             row.add(new Icon(IconGlyph.fromIcons('check'), 16, theme.colors('primary').onSubtle));
         }
         let highlighted = this._open && index === this._highlight;
-        return new Pressable(new Box(new BoxStyle({ height: rowHeight, padding: EdgeInsets.symmetric(paddingX, 0), width: SizeValue.fill, background: selected ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.choose(index), { role: 'option', selected: selected, label: this.optionBuilder == null ? null : option });
+        return new Pressable(new Box(new BoxStyle({ height: rowHeight, padding: EdgeInsets.symmetric(paddingX, 0), width: SizeValue.fill, background: selected ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, foreground: selected ? theme.colors('primary').onSubtle : theme.textPrimary, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.choose(index), { role: 'option', selected: selected, label: this.optionBuilder == null ? null : option });
     }
 
     toggle() {

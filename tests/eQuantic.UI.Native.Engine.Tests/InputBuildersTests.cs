@@ -128,8 +128,30 @@ public class InputBuildersTests
     [Fact]
     public void WithNoBuilder_ASegmentedControlDrawsNoContentOfTheDevelopers()
     {
-        var (_, frame) = Render(new SegmentedControl(["Day", "Week"], 0, _ => { }));
+        var (host, frame) = Render(new SegmentedControl(["Day", "Week"], 0, _ => { }));
 
         Paints(frame, 0).Should().BeFalse();
+        host.Semantics().Where(node => node.Role == SemanticRole.Radio).Select(node => node.Label)
+            .Should().Equal(["Day", "Week"], "the segments are drawn, as their text");
+    }
+
+    /// <summary>With no platform text service a text draws as bars in its ink at 30%: the colour is what
+    /// this reads (AForegroundDescendsTests).</summary>
+    private static bool Inks(DisplayList list, ColorToken token)
+    {
+        var color = token.Resolve(ThemeMode.Light, ContrastLevel.Standard).WithOpacity(0.30f);
+        return list.Commands.ToArray().Any(c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == color);
+    }
+
+    /// <summary>A builder's content that names no colour is drawn in the segment's: the chosen one's text
+    /// colour and the others', as the segment's own text is.</summary>
+    [Fact]
+    public void ABuildersTextWithNoColour_TakesTheSegmentsColour()
+    {
+        var (_, frame) = Render(new SegmentedControl(["Day", "Week"], 0, _ => { },
+            segmentBuilder: index => new Text(index == 0 ? "D" : "W", TypeRole.Label)));
+
+        Inks(frame, Theme.TextPrimary).Should().BeTrue("the chosen segment's content");
+        Inks(frame, Theme.TextSecondary).Should().BeTrue("and the other's, in the quieter colour");
     }
 }

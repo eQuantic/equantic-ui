@@ -219,6 +219,8 @@ public sealed class Select : StatefulComponent
             // whichever hand is steering.
             Background = selected ? theme.Colors(Variant.Primary).Subtle
                 : highlighted ? theme.SurfaceSubtle : null,
+            // The colour the option's text takes, handed to a builder's content that names none.
+            Foreground = selected ? theme.Colors(Variant.Primary).OnSubtle : theme.TextPrimary,
             Hover = selected ? null : new StyleDiff { Background = theme.SurfaceSubtle },
         }, row), () => Choose(index))
         {

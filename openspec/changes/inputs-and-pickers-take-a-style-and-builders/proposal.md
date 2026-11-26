@@ -59,9 +59,9 @@ None.
 
 ## Impact
 
-- **Components** (`eQuantic.UI.Components`): the twelve components and their factories in `UI.cs`. Additions
-  only to the public surface (`PublicAPI.Unshipped.<branch>.txt`): a constructor that widens loses its old
-  signature, as a preview allows, and the factories mirror it.
+- **Components** (`eQuantic.UI.Components`): the twelve components and their factories in `UI.cs`. Each
+  widened constructor and the factory that mirrors it declare their new signature and retire their old one
+  in `PublicAPI.Unshipped.<branch>.txt`, as a preview allows.
 - **Runtime**: the components' transpiled twins, regenerated. No runtime code is written by hand.
 - **Web realizer, Photon, eqc, the SDKs**: untouched; the components are written once.
 - **The guard**: the family's `style` entries leave `inputs-and-pickers.baseline.txt`; its `text` entries

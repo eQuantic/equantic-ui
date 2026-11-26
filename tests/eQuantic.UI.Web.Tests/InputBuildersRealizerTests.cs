@@ -93,6 +93,67 @@ public class InputBuildersRealizerTests
         chosen.Should().Equal(2);
     }
 
+    /// <summary>The colour rule nearest above the element that writes <paramref name="text"/>, itself
+    /// included: what a text that names no colour is drawn in.</summary>
+    private static string? ColourOf(ComponentTester tester, string text)
+    {
+        var rules = System.Text.RegularExpressions.Regex.Matches(tester.Css, @"\.(eq-[a-z0-9]+)\{color:([^}]*)\}")
+            .GroupBy(m => m.Groups[1].Value).ToDictionary(g => g.Key, g => g.First().Groups[2].Value);
+        var path = new List<HtmlNode>();
+        // An open list's options, ahead of the field that also writes the chosen one's text.
+        var root = Listbox(tester.Root) ?? tester.Root;
+        if (!Find(root, text, path)) throw new InvalidOperationException($"Nothing writes '{text}'.");
+        for (var at = path.Count - 1; at >= 0; at--)
+            foreach (var name in (path[at].Attributes.GetValueOrDefault("class") ?? "").Split(' '))
+                if (rules.TryGetValue(name, out var colour)) return colour;
+        return null;
+
+        static HtmlNode? Listbox(HtmlNode node) =>
+            node.Attributes.GetValueOrDefault("role") == "listbox"
+                ? node
+                : node.Children.Select(Listbox).FirstOrDefault(found => found is not null);
+
+        static bool Find(HtmlNode node, string text, List<HtmlNode> path)
+        {
+            path.Add(node);
+            if (node.TextContent == text || node.Children.Any(child => child.Tag == "#text" && child.TextContent == text))
+                return true;
+            foreach (var child in node.Children)
+                if (Find(child, text, path)) return true;
+            path.RemoveAt(path.Count - 1);
+            return false;
+        }
+    }
+
+    /// <summary>A builder's content that names no colour is drawn in the colour the part's own text is.</summary>
+    [Fact]
+    public void ABuildersContentWithNoColour_TakesThePartsColour()
+    {
+        using var plain = new ComponentTester(Theme);
+        plain.Pump(new SegmentedControl(["Day", "Week"], 0, _ => { }));
+        using var built = new ComponentTester(Theme);
+        built.Pump(new SegmentedControl(["Day", "Week"], 0, _ => { }, segmentBuilder: Drawn));
+
+        ColourOf(built, "drawn-0").Should().NotBeNull().And.Be(ColourOf(plain, "Day"));
+        ColourOf(built, "drawn-1").Should().NotBeNull().And.Be(ColourOf(plain, "Week"));
+    }
+
+    [Fact]
+    public void ASelectsBuiltOptions_TakeTheOptionsColour()
+    {
+        using var plain = new ComponentTester(Theme);
+        plain.Pump(Grouped([], build: false));
+        plain.Tap(SemanticRole.ComboBox, plain.Semantics.Single(stop => stop.Role == SemanticRole.ComboBox).Name);
+        plain.Pump();
+        using var built = new ComponentTester(Theme);
+        built.Pump(Grouped([]));
+        built.Tap(SemanticRole.ComboBox, built.Semantics.Single(stop => stop.Role == SemanticRole.ComboBox).Name);
+        built.Pump();
+
+        ColourOf(built, "drawn-0").Should().NotBeNull().And.Be(ColourOf(plain, "Lisboa"), "the chosen option's");
+        ColourOf(built, "drawn-1").Should().NotBeNull().And.Be(ColourOf(plain, "Braga"), "and another's");
+    }
+
     [Fact]
     public void WithNoBuilder_ASegmentedControlDrawsItsSegmentsAsText()
     {

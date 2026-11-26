@@ -94,6 +94,8 @@ public sealed class SegmentedControl : StatelessComponent
                 Height = SizeValue.Fill,
                 Padding = Stretch ? default : EdgeInsets.Symmetric(ControlMetrics.PaddingX(context, Size, ladder), 0),
                 Background = selected ? slot?.ThumbFill ?? theme.Surface : null,
+                // The colour the segment's text takes, handed to a builder's content that names none.
+                Foreground = selected ? theme.TextPrimary : theme.TextSecondary,
                 CornerRadius = new CornerRadii(trackRadius - inset),
                 Elevation = selected ? slot?.ThumbElevation ?? 1 : 0,
                 Transition = TransitionSpec.Of(StyleChannels.Colors | StyleChannels.Shadow, Motion.Press),
