@@ -59,6 +59,44 @@ describe('draggable controller', () => {
     expect(released).toEqual([-20]);
   });
 
+  // #1889: the guard on the click a drag's release ends in is the controller's, and goes with that click or
+  // with the controller. Its 50 ms timer was a bare one, which could fire after a spec's page was torn down.
+  it("swallows the click a drag's release ends in, and its guard goes with that click", () => {
+    vi.useFakeTimers();
+    try {
+      down(100, 100);
+      move(80, 100);
+      up(80, 100);
+      const armed = vi.getTimerCount();
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+      surface.dispatchEvent(click);
+
+      expect(click.defaultPrevented, 'a tap that was really a drag presses nothing').toBe(true);
+      expect(vi.getTimerCount(), 'the guard’s timer went with its click').toBe(armed - 1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("lets go of a drag's click guard when the controller goes, and leaves no timer of it", () => {
+    vi.useFakeTimers();
+    try {
+      down(100, 100);
+      move(80, 100);
+      up(80, 100);
+      const armed = vi.getTimerCount();
+
+      resetDraggableController();
+
+      expect(vi.getTimerCount(), 'the guard’s timer went with the controller').toBe(armed - 1);
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+      surface.dispatchEvent(click);
+      expect(click.defaultPrevented, 'a click afterwards is the page’s').toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('moves by translate, so the box keeps its own transform for the whole gesture (#511)', () => {
     // The lowering writes the rest offset to `translate` and the box's own transform (a resting
     // scale, a hover's lift) to `transform`: CSS applies the two together. Written into the

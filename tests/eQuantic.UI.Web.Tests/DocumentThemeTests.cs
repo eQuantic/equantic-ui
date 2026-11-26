@@ -67,7 +67,7 @@ public class DocumentThemeTests
             .Should().Be(new FontFamily("JetBrains Mono"), "monospaced text takes the code face, never the text face");
         (Photon.Type(TypeRole.Heading) with { Family = new("Newsreader") }).WithThemeFace(theme).Family
             .Should().Be(new FontFamily("Newsreader"), "a role's own face stays");
-        new Text("Cura", TypeRole.BodyL).Resolve(theme).Family.Should().Be(new FontFamily("Atkinson Hyperlegible Next"));
+        new Text("Cura", TypeRole.BodyL).Resolve(theme, around: null).Family.Should().Be(new FontFamily("Atkinson Hyperlegible Next"));
     }
 
     /// <summary>
@@ -78,7 +78,7 @@ public class DocumentThemeTests
     public void ARunOfCode_InsideAParagraphInTheTextFace_TakesTheCodeFace()
     {
         var theme = new DocumentTheme(Photon) { Text = new("Atkinson Hyperlegible Next"), Code = new("JetBrains Mono") };
-        var paragraph = new Text("run it", TypeRole.BodyM).Resolve(theme);
+        var paragraph = new Text("run it", TypeRole.BodyM).Resolve(theme, around: null);
 
         new TextRun("dotnet build") { Mono = true }.Resolve(paragraph, theme).Family.Should().Be(new FontFamily("JetBrains Mono"));
         new TextRun("then").Resolve(paragraph, theme).Family.Should().Be(new FontFamily("Atkinson Hyperlegible Next"));

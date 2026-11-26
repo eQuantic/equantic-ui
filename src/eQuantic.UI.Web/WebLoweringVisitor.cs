@@ -91,6 +91,14 @@ internal sealed partial class WebLoweringVisitor(
     /// then the control's (#614). A disabled control's boxes keep their own, as before.</summary>
     private bool _inEnabledControl;
 
+    /// <summary>The look the boxes above the node being lowered state, each laid over the one around it
+    /// (<see cref="BoxStyle.Content"/>, <see cref="ContentStyle.Merge"/>, #1577): what a <see cref="Text"/>
+    /// or an <see cref="Icon"/> that names none of its own is lowered in. Set around a box's child
+    /// (<see cref="LowerBox"/>) and restored after it. A text is lowered with the role it resolved, as if
+    /// it had named it, rather than leaving the type to CSS inheritance: a line limit and an icon's size
+    /// are not inherited properties, and two mechanisms answering one question is how targets drift.</summary>
+    private ContentStyle? _content;
+
     /// <summary>This node's place in the tree, as the browser's lowering spells it (<see cref="LoweringPath"/>): a
     /// table scopes its cells' ids by it (#1115). Each container steps down by the browser's segment for the same
     /// child, through <see cref="Lower(VisualNode, bool?, string)"/> or <see cref="At{T}"/>.</summary>

@@ -404,7 +404,7 @@ public class LayoutTransparencyTests
         kept.Length.Should().BeLessThan("alphabet".Length, "and a real one at this width");
 
         float Measure(string t) => Ctx.Measurer
-            .Measure(t, new Text(t, TypeRole.BodyL).Resolve(Ctx.Theme), Ctx.TypeScale,
+            .Measure(t, new Text(t, TypeRole.BodyL).Resolve(Ctx.Theme, around: null), Ctx.TypeScale,
                 float.PositiveInfinity, 1).Width;
 
         (Measure("alphabet"[..(kept.Length + 1)]) + mark.Width).Should().BeGreaterThan(room + 0.01f,

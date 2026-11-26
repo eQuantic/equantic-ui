@@ -41,12 +41,6 @@ public sealed partial class PhotonHost
         // added a handler each time).
         _owner.BuildRequested += RequestFrame;
 
-        // Work posted from a worker thread has to WAKE an idle window, or it runs whenever something
-        // else next needs a frame — a scanner's results appearing on the next mouse move.
-        // WEAKLY, like PhotonHotReload.Register below and for the same reason: the dispatcher is a
-        // process static, and a host is not kept alive by having subscribed to one.
-        PhotonDispatcher.Shared.WakeOnPost(this);
-
         // Hot reload reaches a running app through a static seam — every live host signs up, so an
         // applied edit wakes this one too. Weakly: a host is not kept alive by having existed.
         PhotonHotReload.Register(this);
@@ -88,12 +82,12 @@ public sealed partial class PhotonHost
     /// <summary>True when state changed since the last <see cref="RenderFrame"/> (starts true), or
     /// when the last frame carried running loop motion — animated frames keep the loop hot.</summary>
     /// <remarks>
-    /// VOLATILE, because <see cref="Invalidate"/> is now called from any thread — the dispatcher
-    /// wakes an idle window when work is posted from a worker. A plain bool write is atomic but
+    /// VOLATILE, because <see cref="Invalidate"/> is called from any thread: hot reload applies an
+    /// edit on the runtime's thread and wakes every live host. A plain bool write is atomic but
     /// carries no barrier, so the render loop could keep reading a cached false and the frame the
-    /// posted work is waiting for would arrive whenever something else happened to need one. That
-    /// is not a crash; it is a scanner's results appearing on the next mouse move, which is the
-    /// symptom this whole path exists to remove.
+    /// edit is waiting for would arrive whenever something else happened to need one. Work posted
+    /// to the thread that draws is not this flag's: it is the process's, and the shells ask for it
+    /// beside this through <see cref="WantsFrame"/> (#1239).
     /// </remarks>
     public bool NeedsRender
     {
@@ -176,10 +170,13 @@ public sealed partial class PhotonHost
     /// only it (the frame's owner knows which).</summary>
     private void RequestFrame() => NeedsRender = true;
 
-    /// <summary>Work was posted for the thread that draws (<see cref="PhotonDispatcher"/>): it runs
-    /// at the top of the next frame, which builds what the work marks and nothing of its own. Safe
-    /// from any thread, like <see cref="Invalidate"/>.</summary>
-    internal void Wake() => NeedsRender = true;
+    /// <summary>
+    /// Whether a shell should draw a frame now: this host's tree changed (<see cref="NeedsRender"/>), a frame
+    /// it scheduled came due (<see cref="IsFrameDue"/>), or work posted to the thread that draws is waiting
+    /// for a frame to run at the top of (<see cref="PhotonDispatcher.HasWork"/>). The last is the process's,
+    /// and changes neither of the first two (#1239): what it marks asks for its own frame.
+    /// </summary>
+    public bool WantsFrame(float nowMs) => NeedsRender || IsFrameDue(nowMs) || PhotonDispatcher.Shared.HasWork;
 
     /// <summary>The OS "Reduce Motion" accessibility setting (spec §06): loop movement renders at
     /// rest and stops requesting frames. Platform shells (W5) feed the real setting.</summary>

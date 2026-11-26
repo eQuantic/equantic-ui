@@ -389,23 +389,26 @@ internal sealed partial class WebLoweringVisitor
 
     private HtmlElement LowerText(Text text)
     {
+        // What it names, else what the boxes above it state (#1577): it is lowered with the role, the
+        // style, the line limit and the alignment it resolved, as if it had named them.
+        var look = text.Under(_content);
         // The face can come from the NODE (this text is code) or from the STYLE (this ROLE is
         // code) — the native side merges the two into the style, and so does this.
         // Only what the NODE said, like the face beside it: a mono ROLE rides its `.eq-type-*`
         // class (TokenCss), because the client's lowering cannot read the theme's type scale and
         // anything SSR emits inline from it is dropped on the first client re-render.
-        var mono = text.Mono || text.StyleOverride?.Mono == true;
+        var mono = text.Mono || look.StyleOverride?.Mono == true;
         // The slant reads the same two places for the same reason: a role may BE italic (a
         // theme's caption), and a node may slant a paragraph of an upright role.
-        var italic = text.Italic || text.StyleOverride?.Italic == true;
+        var italic = text.Italic || look.StyleOverride?.Italic == true;
         // Only what the NODE named. A ROLE's face rides its `.eq-type-*` class instead (TokenCss),
         // because the client's lowering cannot read the theme's type scale and an inline role face
         // would be dropped on the first client re-render — SSR showing the brand and hydration
         // showing the system font is the hydration mismatch, not a cosmetic difference.
-        var face = FaceName.Usable(text.StyleOverride?.Family?.Name);
+        var face = FaceName.Usable(look.StyleOverride?.Family?.Name);
         // A family that ships files is declared in the head of the page the server renders (#1056), as
         // Photon registers it the first time text asks: the server leaves out what the theme declares.
-        if (face is not null && text.StyleOverride?.Family is { Files.Count: > 0 } shipped) _channels?.Faces.Add(shipped);
+        if (face is not null && look.StyleOverride?.Family is { Files.Count: > 0 } shipped) _channels?.Faces.Add(shipped);
         // The OUTLINE, not the type scale: `h1`–`h6` when the author placed this text in the
         // document's structure, and a span when they did not. The heading's own UA margin and
         // size are cancelled in the token sheet (`.eq-type-*` owns the size), so choosing a level
@@ -413,7 +416,7 @@ internal sealed partial class WebLoweringVisitor
         // a designer must not have to pay for it in layout.
         var element = new RealizedElement(text.HeadingLevel > 0 ? $"h{text.HeadingLevel}" : "span")
         {
-            ClassName = $"eq-type-{text.Role.ToString().ToLowerInvariant()}",
+            ClassName = $"eq-type-{look.Role.ToString().ToLowerInvariant()}",
             InnerHtml = text.Spans is null ? text.Content : null,
             Style = new HtmlStyle
             {
@@ -431,7 +434,7 @@ internal sealed partial class WebLoweringVisitor
                 Color = text.Color is { } own ? TokenCss.Value(own) : null,
                 // Line alignment inside the paragraph: wrapped lines of a centered headline must
                 // center too — container alignment only places the block.
-                TextAlign = text.Align switch
+                TextAlign = look.Align switch
                 {
                     TextAlignment.Center => TextAlign.Center,
                     TextAlignment.End => TextAlign.End,
@@ -506,7 +509,7 @@ internal sealed partial class WebLoweringVisitor
         }
 
         // Single line → shaping-style ellipsis (spec A8).
-        if (text.MaxLines == 1)
+        if (look.MaxLines == 1)
         {
             // A line keeps its spaces, as Photon (which draws literal glyph runs) and Flutter's Text
             // keep them: nowrap COLLAPSES runs of spaces, and every indented line of the playground's
@@ -526,16 +529,16 @@ internal sealed partial class WebLoweringVisitor
         // keeps a grid of cards on one baseline when the copy is not the site's to control (a
         // registry description, a user's bio). CSS line-clamp; Photon fence: the shaper truncates
         // at the line the box allows.
-        else if (text.MaxLines > 1)
+        else if (look.MaxLines > 1)
         {
             element.Style!.Display = Display.WebkitBox;
             element.Style.WebkitBoxOrient = "vertical";
-            element.Style.WebkitLineClamp = text.MaxLines.ToString();
+            element.Style.WebkitLineClamp = look.MaxLines.ToString();
             element.Style.Overflow = "hidden";
         }
 
         // System table override (e.g. Button labels) — inline styles beat the role class.
-        if (text.StyleOverride is { } style)
+        if (look.StyleOverride is { } style)
         {
             // A size that follows the window is a `clamp()` and its line box a ratio (#652).
             element.Style!.FontSize = TokenCss.FontSize(style);

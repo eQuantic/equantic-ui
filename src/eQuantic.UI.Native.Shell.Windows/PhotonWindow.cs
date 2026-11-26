@@ -270,7 +270,7 @@ public sealed unsafe class PhotonWindow
             // instead of spinning; while animating, pace to roughly a display refresh so a fast
             // software frame does not burn a core drawing the same tween twice.
             var now = Now();
-            var idle = !(_host!.NeedsRender || _paintRequested || forced || _host.IsFrameDue(now));
+            var idle = !(_host!.WantsFrame(now) || _paintRequested || forced);
             var since = (long)now - _lastPresentMs;
             var timeout = idle ? 50u : (uint)Math.Clamp(16 - since, 0, 16);
             MsgWaitForMultipleObjectsEx(0, null, timeout, QS_ALLINPUT, MWMO_INPUTAVAILABLE);
@@ -284,7 +284,7 @@ public sealed unsafe class PhotonWindow
             if (_closed || _fault is not null) break;
 
             now = Now();
-            if (_host.NeedsRender || _paintRequested || forced || _host.IsFrameDue(now)) Present(IntPtr.Zero);
+            if (_host.WantsFrame(now) || _paintRequested || forced) Present(IntPtr.Zero);
 
             if (forced && FramesPresented >= maxFrames)
             {
@@ -937,7 +937,7 @@ public sealed unsafe class PhotonWindow
                 break;
 
             case WM_TIMER when wParam == LiveResizeTimer && _host is not null:
-                if (_host.NeedsRender || _host.IsFrameDue(Now())) Present(IntPtr.Zero);
+                if (_host.WantsFrame(Now())) Present(IntPtr.Zero);
                 return 0;
 
             case WM_COPYDATA:

@@ -321,7 +321,7 @@ public sealed class PhotonWindow
                 host.Resize(_currentWidth, _currentHeight);
             }
             // A due frame is the caret's next blink transition — two a second, not every vsync.
-            if (host.NeedsRender || host.IsFrameDue((float)clock.Elapsed.TotalMilliseconds)) Present();
+            if (host.WantsFrame((float)clock.Elapsed.TotalMilliseconds)) Present();
         }
 
         // A TIMER in the common modes, because that is what still fires while AppKit is tracking a
@@ -362,7 +362,7 @@ public sealed class PhotonWindow
             // Self-test presents EVERY cycle (a static tree renders on demand only and would
             // otherwise idle forever short of maxFrames).
             var forced = maxFrames > 0;
-            var idle = !host.NeedsRender && !forced;
+            var idle = !host.WantsFrame((float)clock.Elapsed.TotalMilliseconds) && !forced;
             var until = idle ? Send(nsDate, Sel("dateWithTimeIntervalSinceNow:"), 0.05) : distantPast;
             while (true)
             {
@@ -389,8 +389,7 @@ public sealed class PhotonWindow
                 host.Resize(newW, newH);
             }
 
-            if (host.NeedsRender || forced
-                || host.IsFrameDue((float)clock.Elapsed.TotalMilliseconds)) Present();
+            if (forced || host.WantsFrame((float)clock.Elapsed.TotalMilliseconds)) Present();
 
             if (maxFrames > 0 && FramesPresented >= maxFrames)
             {

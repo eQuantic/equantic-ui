@@ -273,7 +273,7 @@ function onPointerDown(down: PointerEvent): void {
       end();
       landing = null;
     },
-  });
+  }, delegate.guards);
 }
 
 /** The list's own look of a carried item (#1602), each member its lowering wrote; null for a list with none. */

@@ -54,7 +54,7 @@ public class ForStatementStrategy : IStatementStrategy
             var variables = declaration.Variables.Select(v => Declarator(declaration, v, context));
             var hoisted = once.Count == 0
                 ? variables
-                : variables.Prepend(ExpressionVariableScanner.List(once, context.TypeAnnotations));
+                : variables.Prepend(ExpressionVariableScanner.List(once, Head(forStmt), context));
             statements.Add(JsStatement.Raw($"let {string.Join(", ", hoisted)};"));
         }
         else
@@ -64,12 +64,12 @@ public class ForStatementStrategy : IStatementStrategy
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
             if (once.Count > 0)
-                statements.Add(JsStatement.Raw($"let {ExpressionVariableScanner.List(once, context.TypeAnnotations)};"));
+                statements.Add(JsStatement.Raw($"let {ExpressionVariableScanner.List(once, Head(forStmt), context)};"));
             statements.AddRange(forStmt.Initializers.Select(initializer =>
                 JsStatement.Raw($"{context.Converter.ConvertExpression(initializer)};")));
         }
         var eachTime = Declared(forStmt).Except(once, StringComparer.Ordinal).ToList();
-        var head = eachTime.Count == 0 ? "" : $"let {ExpressionVariableScanner.List(eachTime, context.TypeAnnotations)}";
+        var head = eachTime.Count == 0 ? "" : $"let {ExpressionVariableScanner.List(eachTime, Head(forStmt), context)}";
         var condition = forStmt.Condition != null ? context.Converter.ConvertExpression(forStmt.Condition) : "";
         var incrementors = string.Join(", ", forStmt.Incrementors.Select(i => context.Converter.ConvertExpression(i)));
         var body = context.Converter.ConvertStatementIr(forStmt.Statement);
@@ -116,13 +116,17 @@ public class ForStatementStrategy : IStatementStrategy
     /// its own iteration's value (.NET 12; one slot in front of the loop answered 22).
     /// </summary>
     private static IReadOnlyList<string> Declared(ForStatementSyntax forStmt) =>
-        (forStmt.Declaration?.Variables.Select(v => v.Initializer?.Value) ?? [])
-            .Concat(forStmt.Initializers)
-            .Append(forStmt.Condition)
-            .Concat(forStmt.Incrementors)
+        Head(forStmt)
             .SelectMany(ExpressionVariableScanner.Names)
             .Distinct(StringComparer.Ordinal)
             .ToList();
+
+    /// <summary>Every expression of the head, whose <c>out var</c>s the head's declarations are typed from (#1865).</summary>
+    private static IEnumerable<ExpressionSyntax?> Head(ForStatementSyntax forStmt) =>
+        (forStmt.Declaration?.Variables.Select(v => v.Initializer?.Value) ?? [])
+            .Concat(forStmt.Initializers)
+            .Append(forStmt.Condition)
+            .Concat(forStmt.Incrementors);
 
     /// <summary>
     /// A declarator of the head as a local declaration writes one: the name every reference reads
@@ -144,7 +148,7 @@ public class ForStatementStrategy : IStatementStrategy
     {
         // Declared FIRST, so a declarator or an initializer that assigns one of them finds it bound
         // rather than in its temporal dead zone.
-        var names = declared.Count == 0 ? "" : ExpressionVariableScanner.List(declared, context.TypeAnnotations);
+        var names = declared.Count == 0 ? "" : ExpressionVariableScanner.List(declared, Head(forStmt), context);
 
         // for (int i = 0; ...)
         if (forStmt.Declaration != null)
@@ -178,7 +182,7 @@ public class ForStatementStrategy : IStatementStrategy
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
             var expressions = converted.Select((text, i) => deconstructions[i] is null ? text : $"({text[LetPrefix.Length..]})");
-            return $"let {ExpressionVariableScanner.List(assigned, context.TypeAnnotations)}, $init = void ({string.Join(", ", expressions)})";
+            return $"let {ExpressionVariableScanner.List(assigned, Head(forStmt), context)}, $init = void ({string.Join(", ", expressions)})";
         }
 
         return declared.Count == 0 ? "" : $"let {names}";

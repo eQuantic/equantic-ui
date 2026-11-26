@@ -32,10 +32,15 @@ public static class EffectiveTypeStyle
 {
     /// <summary>
     /// The role's style with the node's overrides applied. <paramref name="theme"/> supplies both
-    /// the role and the code face.
+    /// the role and the code face; <paramref name="around"/> is the look the boxes above the text
+    /// state (<see cref="BoxStyle.Content"/>, #1577), which supplies the role and the type style the
+    /// text names none of (<see cref="Text.Under"/>). It is required on purpose: a producer that
+    /// walks a tree has a look in effect, <c>null</c> where no box states one, and a default here is
+    /// how a producer would forget to carry it.
     /// </summary>
-    public static TypeStyle Resolve(this Text text, IAppTheme theme)
+    public static TypeStyle Resolve(this Text text, IAppTheme theme, ContentStyle? around)
     {
+        var look = text.Under(around);
         // WHERE the style came from, kept before it is flattened. `WithThemeFace` steps aside for a
         // style that NAMES a family, on the rule that the call site was specific — and after this
         // line nothing can tell a family the CALL SITE chose from one the ROLE supplied as a
@@ -43,8 +48,8 @@ public static class EffectiveTypeStyle
         // `Base.Type(role) with { Family = brandSans }`: every role named a face, so `MonoFamily`
         // was inert for exactly the themes that brand their type, which is backwards. Naming a face
         // per role is the normal way to use `Type`.
-        var chosen = text.StyleOverride is not null;
-        var style = text.StyleOverride ?? theme.Type(text.Role);
+        var chosen = look.StyleOverride is not null;
+        var style = look.StyleOverride ?? theme.Type(look.Role);
         // Whether the role itself is CODE. A theme that sets `Mono` and a `Family` on the same role
         // chose that pairing deliberately and is more specific than the theme-wide code face, so it
         // is left alone — this is not "mono means drop the family".
@@ -65,7 +70,7 @@ public static class EffectiveTypeStyle
 
     /// <summary>
     /// The style a <see cref="TextEntry"/> is set in: its role, and the theme's face when the role
-    /// named none. The field's twin of <see cref="Resolve(Text, IAppTheme)"/>: four places measured,
+    /// named none. The field's twin of <see cref="Resolve(Text, IAppTheme, ContentStyle)"/>: four places measured,
     /// drew and hit-tested a field's text from the role alone, so a theme's text face would have
     /// reached every label and missed the field a person types into.
     /// </summary>
@@ -74,7 +79,7 @@ public static class EffectiveTypeStyle
 
     /// <summary>
     /// The style a RUN inside a paragraph is set in: the paragraph's, plus what the run said, plus
-    /// the theme's faces. The run-level twin of <see cref="Resolve(Text, IAppTheme)"/>, and here
+    /// the theme's faces. The run-level twin of <see cref="Resolve(Text, IAppTheme, ContentStyle)"/>, and here
     /// for the reason that function exists at all — this merge was written out by hand in the layout
     /// engine and got the family wrong, which is what a second voice does.
     ///

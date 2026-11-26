@@ -165,10 +165,14 @@ internal sealed partial class WebLoweringVisitor
     /// <summary>
     /// Spec A10 lowering: inline 24×24-viewBox SVG with the registry's single alpha-mask path and
     /// <c>fill="currentColor"</c> — the tint rides the CSS <c>color</c> property exactly like text
-    /// (token → light-dark()). Null color inherits; null label = decorative (aria-hidden).
+    /// (token → light-dark()). Null color inherits; null label = decorative (aria-hidden). An icon
+    /// that names no size takes the one the boxes above it state (#1577).
     /// </summary>
     private HtmlElement LowerIcon(Icon icon)
-        => LowerGlyph(icon.Glyph, icon.Size, icon.Size, icon.Color, icon.Label);
+    {
+        var side = icon.SizeUnder(_content);
+        return LowerGlyph(icon.Glyph, side, side, icon.Color, icon.Label);
+    }
 
     /// <summary>
     /// Artwork stays VECTOR in the DOM: one inline <c>&lt;svg&gt;</c> carrying the drawing's own
