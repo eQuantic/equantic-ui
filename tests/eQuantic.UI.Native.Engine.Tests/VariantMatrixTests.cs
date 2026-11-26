@@ -155,9 +155,16 @@ public class VariantMatrixTests(ITestOutputHelper output)
             }
             compared++;
 
-            // Without the one attribute the wrapper writes, and without the scope a grid's cell ids are hashed
-            // from: it is the grid's place in the tree, and the wrapper is one step down it.
-            var webWithoutDir = CellScope.Replace(webTurned!.Replace(" dir=\"rtl\"", "", StringComparison.Ordinal), "$1#-");
+            // Without the one attribute the wrapper writes, on the control's root and nowhere else, and without the
+            // scope a grid's cell ids are hashed from: it is the grid's place in the tree, and the wrapper is one
+            // step down it. A dir="rtl" anywhere below the root is the control's own and stays, so a control that
+            // writes one only under right to left differs here.
+            if (WithoutTheWrappersDir(webTurned!) is not { } unwrapped)
+            {
+                different.Add($"{control.Name}: the web root says no direction under right to left");
+                continue;
+            }
+            var webWithoutDir = CellScope.Replace(unwrapped, "$1#-");
             web = CellScope.Replace(web!, "$1#-");
             if (webWithoutDir != web) different.Add($"{control.Name}: the web lowers differently under right to left ({FirstDifference(web!, webWithoutDir)})");
             if (photonTurned != photon) different.Add($"{control.Name}: Photon measures differently under right to left ({FirstDifference(photon!, photonTurned!)})");
@@ -171,6 +178,29 @@ public class VariantMatrixTests(ITestOutputHelper output)
     }
 
     private static readonly System.Text.RegularExpressions.Regex CellScope = new(@"(eq-t?cell-)[a-z0-9]+-");
+
+    /// <summary>
+    /// The web reading under right to left with the <c>dir="rtl"</c> the <see cref="Directionality"/> wrote taken
+    /// off the control's root element, the first line of the reading, and only there. A root that says its own
+    /// direction (the <c>dir="ltr"</c> of a code, table or sheet host) gets none from the wrapper and is read as it
+    /// is, and so is the bare <c>&lt;span&gt;</c> the host stands in with when the control lowered nothing, which
+    /// leaves the wrapper no element to write on. Null when any other root says no direction: the wrapper wrote
+    /// nothing where it must.
+    /// </summary>
+    private static string? WithoutTheWrappersDir(string turned)
+    {
+        const string header = "### web\n";
+        const string attribute = " dir=\"rtl\"";
+        var at = turned.IndexOf(header, StringComparison.Ordinal);
+        if (at < 0) return null;
+        var start = at + header.Length;
+        var end = turned.IndexOf('\n', start);
+        if (end < 0) end = turned.Length;
+        var root = turned[start..end];
+        var written = root.IndexOf(attribute, StringComparison.Ordinal);
+        if (written >= 0) return turned[..start] + root.Remove(written, attribute.Length) + turned[end..];
+        return root == "<span>" || root.Contains(" dir=\"", StringComparison.Ordinal) ? turned : null;
+    }
 
     /// <summary>The first line the two readings disagree on, each side quoted.</summary>
     private static string FirstDifference(string expected, string actual)

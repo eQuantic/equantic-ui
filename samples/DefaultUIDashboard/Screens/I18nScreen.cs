@@ -22,9 +22,9 @@ namespace DefaultUIDashboard.Screens;
 /// </para>
 /// <para>
 /// The section at the end is what follows the direction under Arabic (#1569), written once and with no test of the
-/// direction anywhere in this file: the calendar's chevrons turn, the switch and the row are dragged toward the end,
-/// the arrows step the tabs in reading order, the strip scrolls from its start, and the code keeps reading left to
-/// right. <c>tests/e2e/tests/direction.spec.ts</c> drives each one in a real browser.
+/// direction anywhere in this file: the calendar's chevrons turn, the switch is dragged toward the end and the row
+/// swiped toward the start, the arrows step the tabs in reading order, the strip scrolls from its start, and the code
+/// keeps reading left to right. <c>tests/e2e/tests/direction.spec.ts</c> drives each one in a real browser.
 /// </para>
 /// </summary>
 [Page("/i18n", Title = "Localization — eQuantic Console")]

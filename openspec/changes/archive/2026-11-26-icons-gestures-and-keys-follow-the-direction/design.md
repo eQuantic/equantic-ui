@@ -71,7 +71,7 @@ its three trees:
 - **Scrolling.** A horizontal `Scrollable`'s `AxisDirection` comes from `textDirectionToAxisDirection`, so
   `ScrollPosition.pixels` is 0 at the reading start in both directions. That is D6.
 
-So the design keeps Flutter's names and Flutter's meaning, and binds at the render level because our widget level is
+So the design keeps Flutter's names and Flutter's meaning, and binds at the render level because our component level is
 written once for two targets of which one does not mirror. `MatchTextDirection` passes "would this word exist if the
 web did not?": it is Flutter's.
 

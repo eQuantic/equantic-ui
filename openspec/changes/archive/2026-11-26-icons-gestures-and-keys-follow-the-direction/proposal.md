@@ -64,6 +64,8 @@ None.
 - `text-direction`: a glyph that matches the direction, a horizontal drag, a horizontal sortable list, the
   horizontal arrows and a horizontal scroll offset follow the direction where they sit; `CodeDiff` joins the code
   views that read left to right.
+- `adjustable-keyboard`: an `Adjustable`'s horizontal arrows swap where it reads right to left on the web, from the
+  table both targets read (`AdjustableKeys`), while Photon keeps left to right.
 
 ## Impact
 
