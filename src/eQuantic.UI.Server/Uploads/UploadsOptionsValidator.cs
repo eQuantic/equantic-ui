@@ -43,7 +43,9 @@ internal sealed class UploadsOptionsValidator(IHostEnvironment environment, ISer
                              $"{UploadsOptions.SectionName}:{(options.MaxBytesPerOwner <= options.MaxTotalBytes ? nameof(UploadsOptions.MaxBytesPerOwner) : nameof(UploadsOptions.MaxTotalBytes))} " +
                              $"allows ({Math.Min(options.MaxBytesPerOwner, options.MaxTotalBytes)}): raise it, or lower the policy's size.");
         }
-        if (UnderTheWebRoot(UploadStore.FolderOf(options, environment)) is { } root)
+        // The folder is the default storage's: an app that keeps its uploads in its own never writes it.
+        if (services.GetService<UploadsStorageChoice>() is not { OwnStorage: true }
+            && UnderTheWebRoot(FolderUploadStorage.FolderOf(options, environment)) is { } root)
             failures.Add($"{UploadsOptions.SectionName}:{nameof(UploadsOptions.Folder)} is under the web root {root}, " +
                          "where the static files would serve every upload and the cookie of the person who sent it: choose a folder outside it.");
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);

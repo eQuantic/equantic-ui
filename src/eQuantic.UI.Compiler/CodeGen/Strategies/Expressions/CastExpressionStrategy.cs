@@ -141,18 +141,52 @@ public class CastExpressionStrategy : IExpressionIrStrategy
     {
         if (!context.TypeAnnotations) return value;
         var conversion = operation.GetConversion();
+        // A cast to a TYPE PARAMETER, `(T)recognizer`, is asserted to it: written as the value alone, the call it feeds
+        // read the operand's own type where it takes a T, which tsc refused (#1860). Nothing is checked, as a downcast
+        // checks nothing.
+        if (operation.Type is ITypeParameterSymbol parameter && !conversion.IsImplicit)
+            return InScope(parameter, operation)
+                ? JsExpr.Template("({0} as " + parameter.Name.ToJsIdentifier() + ")", value)
+                : value;
         if (!conversion.IsReference || conversion.IsImplicit) return value;
-        if (operation.Type is not INamedTypeSymbol { TypeKind: TypeKind.Class, IsGenericType: false } target) return value;
-        if (!target.Locations.Any(location => location.IsInSource) && !target.IsRuntimeProvided()) return value;
-        // A type with no twin to name writes the value alone, as it did, and the fence stays where the code
-        // reads it. Which type has none is asked of its kind: an app's type the build writes no module for,
-        // its base kept on the server included (IsKeptOut), and a type of the runtime that is itself the
-        // server's. A runtime type over a base the server keeps (`Pressable : SingleChildNode`, `Row :
-        // FlexNode`) has a twin of its own, and read as kept out, its cast was dropped, so a member it
-        // inherits was read off the static type, which tsc refused (#1396).
-        if (target.IsRuntimeProvided() ? StaysOnTheServer(target) : target.IsKeptOut()) return value;
+        if (operation.Type is not INamedTypeSymbol { TypeKind: TypeKind.Class, IsGenericType: false } target
+            || !NamesATwin(target))
+            return value;
         return JsExpr.Template("({0} as " + target.IntroduceTwin(context) + ")", value);
     }
+
+    /// <summary>
+    /// Whether TypeScript has <paramref name="parameter"/> in scope where <paramref name="operation"/> stands, so an
+    /// assertion may name it: a method's own, which its signature declares (<c>also&lt;T&gt;(node: T)</c>), and a class's,
+    /// in an instance member of that class. A local function is an arrow that declares none, TypeScript forbids a static
+    /// member to read a class's type parameters (TS2302), and a type nested in a generic one is a module of its own that
+    /// declares none of its owner's: there a cast writes the value alone, as it did, rather than name a parameter tsc
+    /// cannot find.
+    /// </summary>
+    private static bool InScope(ITypeParameterSymbol parameter, IOperation operation)
+    {
+        if (parameter.TypeParameterKind == TypeParameterKind.Method)
+            return parameter.DeclaringMethod is not { MethodKind: MethodKind.LocalFunction };
+        if (parameter.TypeParameterKind != TypeParameterKind.Type) return false;
+        var member = operation.SemanticModel?.GetEnclosingSymbol(operation.Syntax.SpanStart);
+        while (member is IMethodSymbol { MethodKind: MethodKind.AnonymousFunction or MethodKind.LocalFunction })
+            member = member.ContainingSymbol;
+        return member is { IsStatic: false, ContainingType: { } owner }
+            && SymbolEqualityComparer.Default.Equals(parameter.ContainingSymbol, owner.OriginalDefinition);
+    }
+
+    /// <summary>
+    /// Whether a TypeScript annotation can name <paramref name="target"/>, a class that is not generic: it is the app's
+    /// or the runtime's, and has a twin. A type with no twin to name writes the value alone, as it did, and the fence
+    /// stays where the code reads it. Which type has none is asked of its kind: an app's type the build writes no module
+    /// for, its base kept on the server included (IsKeptOut), and a type of the runtime that is itself the server's. A
+    /// runtime type over a base the server keeps (<c>Pressable : SingleChildNode</c>, <c>Row : FlexNode</c>) has a twin
+    /// of its own, and read as kept out, its cast was dropped, so a member it inherits was read off the static type,
+    /// which tsc refused (#1396). A type parameter's constraint asks the same question (#1854).
+    /// </summary>
+    internal static bool NamesATwin(INamedTypeSymbol target) =>
+        (target.Locations.Any(location => location.IsInSource) || target.IsRuntimeProvided())
+        && !(target.IsRuntimeProvided() ? StaysOnTheServer(target) : target.IsKeptOut());
 
     /// <summary>Whether a type of the runtime is the server's own: marked <c>[ServerOnly]</c> itself, or
     /// declared inside a type that is, which the runtime carries no twin of either, by the attribute or by its
