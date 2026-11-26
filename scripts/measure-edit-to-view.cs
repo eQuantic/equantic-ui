@@ -17,11 +17,20 @@
 //   desktop  delta   the save to the runtime applying the edit (dotnet watch compiles and applies it)
 //            frame   the edit applied, to the frame that draws it (Photon says so on its console)
 //
-// A budget file, when given, holds the warm median of the parts it names, in milliseconds, and the
-// run fails over any of them. A target that meets the bar is held to the bar. One that does not is
-// held to a CEILING, the number it measures on CI with that runner's spread, which only ever comes
-// down: the run says when a median falls under half its ceiling, and the work that made it faster
-// lowers it, until it is the bar. The bar itself is reported on every run.
+// A budget file, when given, holds each target two ways, and the run fails over either (#1909):
+//
+//   work  the most any warm save did of what it names: on the web, the files eqc compiled, the
+//         TypeScript modules it wrote, and the files and kilobytes bun wrote. eqc counts them
+//         (EQC_TIMINGS), so a loaded machine cannot move them, and a save that compiles, writes or
+//         bundles more than one screen's worth is a regression whatever the clock says.
+//   time  the FASTEST warm save of the parts it names, in milliseconds: a loaded runner slows some
+//         saves and never makes one faster, so the fastest is what a save costs when nothing else
+//         runs. A target that meets the bar is held to the bar; one that does not is held to a
+//         CEILING, which only ever comes down, until it is the bar.
+//
+// The medians are reported beside them on every run, and so is the bar. A warm save that loaded the
+// project cold, instead of keeping the compilation the save before it loaded, fails whatever its
+// numbers: that is the regression a save that recompiles everything is.
 //
 // usage: dotnet run scripts/measure-edit-to-view.cs -- web|desktop [--runs <n>] [--report <file>] [--budget <file>]
 //   web needs Google Chrome (EQ_CHROME names another one), desktop a session that can open a window.
@@ -155,7 +164,7 @@ finally
 // The report: the cold run apart, the warm ones as a distribution.
 var warm = measured.Where(r => r["cold"] == 0).ToList();
 var partNames = target == "web"
-    ? new[] { "total", "wait", "msbuild", "eqc", "bun", "replay", "early", "flips", "documents", "load" }
+    ? new[] { "total", "wait", "msbuild", "eqc", "bun", "replay", "early", "flips", "documents", "compiled", "walked", "modules", "bundled", "bundledKb", "load" }
     : new[] { "total", "delta", "frame", "load" };
 var summary = new JsonObject();
 foreach (var name in partNames)
@@ -187,23 +196,45 @@ if (reportPath is not null)
 WriteSummary();
 
 if (measured.Count < runs) failures.Add($"{measured.Count} of {runs} edits were measured");
+// A warm save keeps the compilation the save before it loaded. One that loaded the project cold did the
+// whole app's work, and fails whatever its numbers (#1909).
+foreach (var index in warm.Select((r, i) => (r, i)).Where(p => p.r.TryGetValue("kept", out var kept) && kept == 0).Select(p => p.i))
+    failures.Add($"{target} warm save {index + 2}: eqc loaded the project cold, where a save keeps the compilation the save before it loaded");
 if (budgetPath is not null && JsonNode.Parse(File.ReadAllText(budgetPath))?[target] is JsonObject budget)
 {
-    foreach (var (name, limit) in budget)
+    // The work, the most any warm save did: counted by eqc, so no runner's load moves it.
+    if (budget["work"] is JsonObject work)
     {
-        if (summary[name]?["median"] is not JsonValue median) failures.Add($"the budget names {name}, which was not measured");
-        else if (median.GetValue<double>() > limit!.GetValue<double>())
-            failures.Add($"{target} {name}: the warm median is {median.GetValue<double>():F0}ms, over the budget of {limit.GetValue<double>():F0}ms");
-        // A ceiling above the bar only ever comes down: a change that made this part faster says by how
-        // much, so the number it earned is written into the budget in the same pull request. Once the
-        // ceiling is within the runner's spread of the bar, it holds that spread and nothing more, so the
-        // run says whether the median met the bar instead (#900).
-        else if (limit.GetValue<double>() > BarMs * Spread && median.GetValue<double>() < limit.GetValue<double>() / 2)
-            Console.WriteLine($"::notice::{target} {name}: the warm median is {median.GetValue<double>():F0}ms, under half its ceiling of {limit.GetValue<double>():F0}ms: lower the ceiling in the budget");
-        else if (limit.GetValue<double>() > BarMs && limit.GetValue<double>() <= BarMs * Spread)
-            Console.WriteLine($"::notice::{target} {name}: the warm median is {median.GetValue<double>():F0}ms, "
-                + (median.GetValue<double>() <= BarMs ? "under" : "over")
-                + $" the bar of {BarMs:F0}ms, inside its ceiling of {limit.GetValue<double>():F0}ms, which holds the runner's spread");
+        foreach (var (name, limit) in work)
+        {
+            if (summary[name]?["max"] is not JsonValue most) failures.Add($"the budget names {name}, which was not counted");
+            else if (most.GetValue<double>() > limit!.GetValue<double>())
+                failures.Add($"{target} {name}: a warm save did {most.GetValue<double>():0.#}, over the budget of {limit.GetValue<double>():0.#}: "
+                    + "a save of one screen does that screen's work and no more");
+        }
+    }
+    // The time, the fastest warm save: a loaded runner slows some saves and never makes one faster.
+    if (budget["time"] is JsonObject time)
+    {
+        foreach (var (name, limit) in time)
+        {
+            if (summary[name]?["min"] is not JsonValue fastest) { failures.Add($"the budget names {name}, which was not measured"); continue; }
+            var ms = fastest.GetValue<double>();
+            var ceiling = limit!.GetValue<double>();
+            var median = summary[name]!["median"]!.GetValue<double>();
+            if (ms > ceiling)
+                failures.Add($"{target} {name}: the fastest warm save took {ms:F0}ms, over the budget of {ceiling:F0}ms (the median {median:F0}ms)");
+            // A ceiling above the bar only ever comes down: a change that made this part faster says by how
+            // much, so the number it earned is written into the budget in the same pull request. Once the
+            // ceiling is within the runner's spread of the bar, it holds that spread and nothing more, so the
+            // run says whether the fastest save met the bar instead (#900).
+            else if (ceiling > BarMs * Spread && ms < ceiling / 2)
+                Console.WriteLine($"::notice::{target} {name}: the fastest warm save took {ms:F0}ms, under half its ceiling of {ceiling:F0}ms: lower the ceiling in the budget");
+            else if (ceiling > BarMs && ceiling <= BarMs * Spread)
+                Console.WriteLine($"::notice::{target} {name}: the fastest warm save took {ms:F0}ms, "
+                    + (ms <= BarMs ? "under" : "over")
+                    + $" the bar of {BarMs:F0}ms, inside its ceiling of {ceiling:F0}ms, which holds the runner's spread (the median {median:F0}ms)");
+        }
     }
 }
 foreach (var failure in failures) Console.WriteLine($"::error::{failure}");
@@ -308,6 +339,12 @@ async Task<Dictionary<string, double>> MeasureWeb(string marker, double saved)
         parts["msbuild"] = (eqcStarted - from) + (document - eqcEnded);
         parts["eqc"] = eqcEnded - eqcStarted - bunMs;
         parts["bun"] = bunMs;
+        // The work the save did, as eqc counted it (#1909). An eqc that counts nothing (an older one) says
+        // nothing here, and a budget that names a count fails as unmeasured.
+        if (eqc["kept"] is JsonValue kept) parts["kept"] = kept.GetValue<bool>() ? 1 : 0;
+        foreach (var (count, name) in new[] { ("compiled", "compiled"), ("modules", "modules"), ("bundled", "bundled"), ("walked", "walked") })
+            if (eqc[count] is JsonValue value) parts[name] = value.GetValue<double>();
+        if (eqc["bundledBytes"] is JsonValue bytes) parts["bundledKb"] = Math.Round(bytes.GetValue<double>() / 1024, 1);
     }
     parts["replay"] = drawnAt - document;
     return parts;
@@ -420,12 +457,33 @@ double? LineAfter(double after, string text) =>
 async Task WaitForAnswer(string url, TimeSpan limit)
 {
     using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+    // A dotnet watch that exits before the app answers is started once more: on a runner at a load of 200
+    // its first start has ended before the app answered with nothing in the tree to blame (#1909). The
+    // first exit is said, with what dotnet watch said last, its exit code and the load, and a second one
+    // fails the run with the same, so a start that cannot succeed is never taken for a slow edit.
+    var restarted = false;
     await Until(async () =>
     {
-        if (watch!.HasExited) throw new InvalidOperationException("dotnet watch exited before the app answered");
+        if (watch!.HasExited)
+        {
+            var why = WhyWatchExited();
+            if (restarted) throw new InvalidOperationException($"dotnet watch exited twice before the app answered. {why}");
+            Console.WriteLine($"::warning::dotnet watch exited before the app answered, so it is started once more. {why}");
+            restarted = true;
+            watch = StartWatch();
+            return false;
+        }
         try { return (await http.GetAsync(url)).StatusCode == HttpStatusCode.OK; }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException) { return false; }
     }, limit, $"{url} did not answer");
+}
+
+// What a dotnet watch that exited said last, its exit code, and the machine's load as it went.
+string WhyWatchExited()
+{
+    var said = lines.Select(l => l.Text.Trim()).Where(t => t.Length > 0).TakeLast(12).ToList();
+    var load = LoadAverage() is { } average ? average.ToString("F1", CultureInfo.InvariantCulture) : "unknown";
+    return $"Exit code {watch!.ExitCode}, at a load of {load}; it said: {(said.Count > 0 ? string.Join(" | ", said) : "nothing")}.";
 }
 
 static async Task Until(Func<Task<bool>> condition, TimeSpan limit, string failure)
@@ -487,15 +545,17 @@ static double Median(double[] sorted) =>
 static JsonObject Round(Dictionary<string, double> parts) =>
     new(parts.Where(p => p.Key != "cold").Select(p => KeyValuePair.Create(p.Key, (JsonNode?)Math.Round(p.Value))));
 
+// The counts (#1909) are said as counts, the kilobytes as kilobytes and the rest as milliseconds.
 static string Describe(Dictionary<string, double> parts) =>
     string.Join(", ", parts.Where(p => p.Key != "cold")
-        .Select(p => p.Key is "flips" or "documents" ? $"{p.Key} {p.Value:F0}"
+        .Select(p => p.Key is "flips" or "documents" or "kept" or "walked" or "compiled" or "modules" or "bundled" ? $"{p.Key} {p.Value:F0}"
+            : p.Key is "bundledKb" ? $"bundled {p.Value:0.#}KB"
             : p.Key is "load" ? $"load {p.Value:F1}" : $"{p.Key} {p.Value:F0}ms"));
 
 void WriteSummary()
 {
     var text = new StringBuilder();
-    text.Append("### Edit to view: ").Append(target).Append(", warm median against a bar of ").Append(BarMs).Append("ms\n\n");
+    text.Append("### Edit to view: ").Append(target).Append(", the fastest warm save against a bar of ").Append(BarMs).Append("ms, and the work each save did\n\n");
     text.Append("| part | min | median | max | cold |\n|---|---:|---:|---:|---:|\n");
     var coldRun = measured.FirstOrDefault(r => r["cold"] == 1);
     foreach (var name in partNames)

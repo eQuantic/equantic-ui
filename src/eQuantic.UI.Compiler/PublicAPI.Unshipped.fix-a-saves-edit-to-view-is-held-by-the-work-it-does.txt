@@ -1,0 +1,7 @@
+#nullable enable
+eQuantic.UI.Compiler.Services.AppBuild.BundleWritten.get -> int
+eQuantic.UI.Compiler.Services.AppBuild.BundleWrittenBytes.get -> long
+eQuantic.UI.Compiler.Services.AppBuild.FilesWalked.get -> int
+eQuantic.UI.Compiler.Services.AppBuild.ModulesWritten.get -> int
+eQuantic.UI.Compiler.Services.ModuleBundler.Written.get -> int
+eQuantic.UI.Compiler.Services.ModuleBundler.WrittenBytes.get -> long

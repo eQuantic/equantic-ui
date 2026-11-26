@@ -86,6 +86,29 @@ public class ASaveCompilesWhatItTouchedTests
         warm.Output.Should().Contain("Compiled 1 of 3 file(s)");
     }
 
+    /// <summary>
+    /// The work a save did, as eqc counts it for the edit-to-view measurement (#1909): the files it walked, and the
+    /// modules it wrote, which leave out a module whose text was already on disk. A save of one screen writes that
+    /// screen's module; the cold build writes every one. A loaded machine moves neither number, which is why the
+    /// measurement holds a save to them rather than to the clock alone.
+    /// </summary>
+    [Fact]
+    public void ASaveOfOneScreen_WritesThatScreensModule_AndSaysSo()
+    {
+        using var solution = Shop();
+        var cold = solution.Build();
+        CompilerErrors(cold).Should().BeEmpty();
+        cold.AppBuild.FilesWalked.Should().Be(3);
+        cold.AppBuild.ModulesWritten.Should().Be(cold.Modules.Count(), "a cold build writes every module");
+
+        var (warm, _, _) = Save(solution, cold,
+            () => solution.Write("Shop", "Components/Banner.cs", Banner.Replace("Welcome", "Hello there")));
+
+        warm.AppBuild.FilesWalked.Should().Be(3, "the save walked every file, and compiled one of them");
+        warm.AppBuild.CompiledFiles.Should().ContainSingle();
+        warm.AppBuild.ModulesWritten.Should().Be(1, "the one module whose text the save changed");
+    }
+
     [Fact]
     public void ADefaultInterfaceMembersBody_CompilesTheClassItIsCopiedInto()
     {
