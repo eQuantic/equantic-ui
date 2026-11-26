@@ -23,6 +23,9 @@ call. A list read through such a variable and walked by a `foreach` inferred `un
 - A method's own `out` parameter, which its body assigns inside the arrow the callee contract writes, is declared by
   its type the same way (`OutParameters.Body`, through `CSharpToJsConverter.OutParameterType`). Four library modules
   move, their annotations only: `CodeDocument`, `CodeHistory`, `CodeSnippetExpansion` and `SheetReference`.
+- A `using` with no declaration holds its resource under one fixed name, `$disposable`, in the block its lowering
+  opens. It drew the name from a fresh `Guid`, so the same C# wrote another module on every compile, which the shape
+  holding such a `using` met as a pin that never held.
 - The overloads that took an expression and a `bool` are gone, since no caller needs one. The ones that take names and
   a `bool` stay for what no `out var` types: a pattern's held parts and a lowering's temporaries.
 
@@ -36,4 +39,6 @@ free.
 - The emission shapes the runtime's `tsc` reads: `EmittedScopes`, `EmittedScopedBase`, `EmittedLease`
 - `openspec/specs/transpiler-expression-variables`: the requirement that an expression variable is declared by its
   statement, with C#'s scope
+- `openspec/specs/transpiler-statements`: a new requirement, that a using with no declaration writes the same module
+  on every compile
 - An entry under `docs/ledger/`

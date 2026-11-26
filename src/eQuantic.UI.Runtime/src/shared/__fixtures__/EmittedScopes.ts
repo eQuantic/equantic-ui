@@ -94,12 +94,12 @@ export class EmittedScopes extends EmittedScopedBase {
         let total = 0;
         {
             let held!: EmittedPointer;
-            const _disposable_8bb542 = ($o => (held = $o.held, $o.$))(EmittedScopes.lease(id));
+            const $disposable = ($o => (held = $o.held, $o.$))(EmittedScopes.lease(id));
             try {
                 for (const member of $eq.collections.listWalk(held.members)) total = total + member.length | 0;
             } finally {
-                if (_disposable_8bb542 && typeof _disposable_8bb542.dispose === 'function') {
-                    _disposable_8bb542.dispose();
+                if ($disposable && typeof $disposable.dispose === 'function') {
+                    $disposable.dispose();
                 }
             }
         }

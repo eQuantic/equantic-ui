@@ -41,8 +41,11 @@ public class UsingStatementStrategy : IStatementStrategy
         }
         else
         {
-            // using (expr) ... — the expression is captured under a temporary so it can be disposed.
-            resourceVar = "_disposable_" + Guid.NewGuid().ToString("N").Substring(0, 6);
+            // using (expr) ... — the expression is captured under a temporary so it can be disposed. One name for every
+            // one: the block this lowering opens is its scope, so a nested using's shadows it there, and `$` cannot
+            // begin a C# identifier. A name drawn from a fresh Guid wrote another module on every compile, which no pin
+            // could hold (found by #1865's emission shape).
+            resourceVar = "$disposable";
             init = context.Converter.ConvertIr(usingStmt.Expression!);
             UsingLowering.Fence(context.SemanticHelper.GetType(usingStmt.Expression!), isAsync, usingStmt.Expression!, context);
         }
