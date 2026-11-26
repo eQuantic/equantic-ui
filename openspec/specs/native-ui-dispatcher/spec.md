@@ -1,7 +1,8 @@
 # native-ui-dispatcher Specification
 
 ## Purpose
-TBD - created by archiving change posted-work-marks-no-hosts-tree. Update Purpose after archive.
+How work posted from any thread reaches the thread a Photon window draws on: queued for the top of the next
+frame, which every shell draws while work waits, without telling any host its own tree changed.
 
 ## Requirements
 
