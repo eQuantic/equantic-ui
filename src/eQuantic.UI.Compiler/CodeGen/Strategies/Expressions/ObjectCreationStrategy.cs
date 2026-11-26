@@ -736,7 +736,8 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// Whether this constructor belongs to a COMPONENT and declares a dependency — the only case
     /// where the emitted signature differs from the one the call site was written against. A component is what the
     /// parser writes one's twin for, asked of the model (<see cref="TypeSymbolExtensions.IsUiComponent"/>): a walk of
-    /// the bases' names here answered beside it, and could tell another class of a name apart from it (#1839).
+    /// the bases' names here answered beside it, and could not tell an app's own class named <c>UiComponent</c> from the
+    /// vocabulary's. One rule answers for the parser and the construction site now, so the two never disagree (#1839).
     /// </summary>
     private static bool DeclaresDependency(IMethodSymbol ctor) =>
         ctor.ContainingType.IsUiComponent() && ctor.Parameters.Any(p => CapabilityRule.IsDependency(p.Type));
