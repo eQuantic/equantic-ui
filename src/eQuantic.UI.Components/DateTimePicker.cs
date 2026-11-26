@@ -23,7 +23,7 @@ public sealed class DateTimePicker : StatefulComponent
 
     public DateTimePicker(DateTime? selected = null, Action<DateTime>? onChanged = null,
         DateTime? min = null, DateTime? max = null, int stepMinutes = 30,
-        string dateLabel = "", string timeLabel = "")
+        string dateLabel = "", string timeLabel = "", InputTheme? style = null, CalendarTheme? calendarStyle = null)
     {
         Selected = selected;
         OnChanged = onChanged;
@@ -32,6 +32,8 @@ public sealed class DateTimePicker : StatefulComponent
         StepMinutes = stepMinutes;
         DateLabel = dateLabel;
         TimeLabel = timeLabel;
+        Style = style;
+        CalendarStyle = calendarStyle;
         _date = selected is { } value ? DateOnly.FromDateTime(value) : null;
         _time = selected is { } moment ? TimeOnly.FromDateTime(moment) : null;
     }
@@ -43,6 +45,13 @@ public sealed class DateTimePicker : StatefulComponent
     public int StepMinutes { get; private set; }
     public string DateLabel { get; private set; }
     public string TimeLabel { get; private set; }
+
+    /// <summary>The look of both fields, handed to the <see cref="DatePicker"/> and the <see cref="TimePicker"/>.</summary>
+    public InputTheme? Style { get; private set; }
+
+    /// <summary>The look of the calendar's panel, handed to the <see cref="DatePicker"/>.</summary>
+    public CalendarTheme? CalendarStyle { get; private set; }
+
     /// <summary>Backed by a field, so <see cref="AdoptConfig"/> can carry it: this instance is kept
     /// across the parent's rebuilds, and an <c>init</c> accessor cannot be written from there.</summary>
     public bool Disabled { get => _disabled; init => _disabled = value; }
@@ -76,6 +85,8 @@ public sealed class DateTimePicker : StatefulComponent
         StepMinutes = fresh.StepMinutes;
         DateLabel = fresh.DateLabel;
         TimeLabel = fresh.TimeLabel;
+        Style = fresh.Style;
+        CalendarStyle = fresh.CalendarStyle;
         _disabled = fresh.Disabled;
         _labelHidden = fresh.LabelHidden;
         // The app moved the moment, so both halves follow it — the same rule the Calendar keeps
@@ -94,9 +105,9 @@ public sealed class DateTimePicker : StatefulComponent
         row.Add(new Flexible(new DatePicker(_date, PickDate,
             Min is { } lower ? DateOnly.FromDateTime(lower) : null,
             Max is { } upper ? DateOnly.FromDateTime(upper) : null,
-            DateLabel)
+            DateLabel, Style, CalendarStyle)
         { Disabled = Disabled, LabelHidden = LabelHidden, Composed = true }));
-        row.Add(new Flexible(new TimePicker(_time, PickTime, StepMinutes, label: TimeLabel)
+        row.Add(new Flexible(new TimePicker(_time, PickTime, StepMinutes, label: TimeLabel, style: Style)
         { Disabled = Disabled, Composed = true }));
         return row;
     }

@@ -178,7 +178,7 @@ export class InputTheme {
   }
 
   /** C# `InputTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
-  static merge(under: InputTheme | null, over: InputTheme | null): InputTheme | null {
+  static merge(under: InputTheme | null | undefined, over: InputTheme | null | undefined): InputTheme | null {
     return mergeSlot(under, over);
   }
 }
@@ -236,7 +236,7 @@ export class SegmentedTheme {
   }
 
   /** C# `SegmentedTheme.Merge`: `over`'s members laid over `under`'s (`mergeSlot`). */
-  static merge(under: SegmentedTheme | null, over: SegmentedTheme | null): SegmentedTheme | null {
+  static merge(under: SegmentedTheme | null | undefined, over: SegmentedTheme | null | undefined): SegmentedTheme | null {
     return mergeSlot(under, over);
   }
 }
