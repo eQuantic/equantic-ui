@@ -71,11 +71,17 @@ describe('an owned click guard', () => {
     const owner = clickGuards();
     const press = document.createElement('button');
     document.body.appendChild(press);
-    owner.arm(document, 50, (event) => event.target instanceof Node && press.contains(event.target));
+    owner.arm(
+      document,
+      50,
+      (event) => event.target instanceof Node && press.contains(event.target),
+    );
 
     expect(click(document.body).defaultPrevented, 'a click elsewhere is the page’s').toBe(false);
     expect(vi.getTimerCount(), 'and the guard still waits for its own').toBe(1);
-    expect(click(press).defaultPrevented, 'the click on the press it guards does nothing').toBe(true);
+    expect(click(press).defaultPrevented, 'the click on the press it guards does nothing').toBe(
+      true,
+    );
     expect(vi.getTimerCount()).toBe(0);
     press.remove();
   });
