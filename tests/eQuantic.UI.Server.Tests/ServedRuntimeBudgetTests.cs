@@ -46,17 +46,7 @@ public class ServedRuntimeBudgetTests
         var gzip = Gzip(Served());
         var root = Repository.Root();
 
-        if (Environment.GetEnvironmentVariable("EQ_UPDATE_RUNTIME_BUDGET") == "1")
-        {
-            var change = RuntimeBudget.ChangeName(root);
-            change.Should().NotBeNull("a delta is recorded for a change: run it on the change's branch, "
-                + "or name the change with EQ_BUDGET_CHANGE");
-            var bought = Environment.GetEnvironmentVariable("EQ_RUNTIME_BOUGHT");
-            bought.Should().NotBeNullOrWhiteSpace("a delta says what its bytes bought: set EQ_RUNTIME_BOUGHT");
-            var (basis, grown) = Grown(root, gzip);
-            _output.WriteLine($"recording {RuntimeBudget.Text(grown)} bytes for {change}, measured from {basis}");
-            RuntimeBudget.Record(root, change!, grown, bought!);
-        }
+        if (Recording) RecordOwn(root, Grown(root, gzip));
 
         File.Exists(Path.Combine(root, RuntimeBudget.BaseFile)).Should().BeTrue(
             $"the budget's base is recorded at {RuntimeBudget.BaseFile}");
@@ -86,6 +76,8 @@ public class ServedRuntimeBudgetTests
     {
         var root = Repository.Root();
         var (basis, grown) = Grown(root, Gzip(Served()));
+        // The guard is the test that asks for the record, so it writes it too, run alone or first.
+        if (Recording) RecordOwn(root, (basis, grown));
         var recorded = ChangeGrowth.RecordedSince(root, basis);
         var budget = RuntimeBudget.Load(root);
         _output.WriteLine($"grown by {RuntimeBudget.Text(grown)} bytes from {basis}, recorded {RuntimeBudget.Text(recorded)}");
@@ -138,6 +130,10 @@ public class ServedRuntimeBudgetTests
             Directory.CreateDirectory(Path.GetDirectoryName(record)!);
             File.WriteAllText(record, $"{{ \"gzipBytes\": 1000, \"measuredWith\": \"{MeasuredWith}\" }}");
 
+            // No delta folder yet, as after a release's fold: a change that grows nothing records nothing, and throws nothing.
+            RuntimeBudget.Record(root, "feat-none", 0, "nothing");
+            Directory.Exists(Path.Combine(root, RuntimeBudget.DeltaFolder)).Should().BeFalse();
+
             RuntimeBudget.Record(root, "feat-a-grows", 30, "a component");
             RuntimeBudget.Record(root, "fix-b-shrinks", -10, "a smaller lowering");
             RuntimeBudget.Load(root).Bytes.Should().Be(1020, "the base and both deltas, +30 and -10");
@@ -166,6 +162,21 @@ public class ServedRuntimeBudgetTests
             + "branch's fork from origin/main, or the checkout's first parent, which a checkout of one commit does not "
             + "hold (CI's test job fetches two)");
         return (basis!, served - Gzip(ChangeGrowth.BundleAt(root, basis!)));
+    }
+
+    /// <summary>Whether the run records the change's delta: <c>EQ_UPDATE_RUNTIME_BUDGET=1</c>.</summary>
+    private static bool Recording => Environment.GetEnvironmentVariable("EQ_UPDATE_RUNTIME_BUDGET") == "1";
+
+    /// <summary>Writes the change's own growth as its delta, saying what <c>EQ_RUNTIME_BOUGHT</c> says it bought.</summary>
+    private void RecordOwn(string root, (string Basis, long Grown) measured)
+    {
+        var change = RuntimeBudget.ChangeName(root);
+        change.Should().NotBeNull("a delta is recorded for a change: run it on the change's branch, "
+            + "or name the change with EQ_BUDGET_CHANGE");
+        var bought = Environment.GetEnvironmentVariable("EQ_RUNTIME_BOUGHT");
+        bought.Should().NotBeNullOrWhiteSpace("a delta says what its bytes bought: set EQ_RUNTIME_BOUGHT");
+        _output.WriteLine($"recording {RuntimeBudget.Text(measured.Grown)} bytes for {change}, measured from {measured.Basis}");
+        RuntimeBudget.Record(root, change!, measured.Grown, bought!);
     }
 
     /// <summary>The margin the budget keeps for measurement noise, in bytes.</summary>

@@ -84,7 +84,9 @@ internal sealed partial class RuntimeBudget
         // a delta of no bytes says nothing it bought.
         if (grew == 0)
         {
-            File.Delete(Path.Combine(folder, change + ".json"));
+            // After a fold the folder may not exist, where File.Delete throws.
+            var own = Path.Combine(folder, change + ".json");
+            if (File.Exists(own)) File.Delete(own);
             return;
         }
         Directory.CreateDirectory(folder);
