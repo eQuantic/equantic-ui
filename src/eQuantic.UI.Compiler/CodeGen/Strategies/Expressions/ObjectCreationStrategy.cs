@@ -734,10 +734,12 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
     /// <summary>
     /// Whether this constructor belongs to a COMPONENT and declares a dependency — the only case
-    /// where the emitted signature differs from the one the call site was written against.
+    /// where the emitted signature differs from the one the call site was written against. A component is what the
+    /// parser writes one's twin for, asked of the model (<see cref="TypeSymbolExtensions.IsUiComponent"/>): a walk of
+    /// the bases' names here answered beside it, and could tell another class of a name apart from it (#1839).
     /// </summary>
     private static bool DeclaresDependency(IMethodSymbol ctor) =>
-        IsComponent(ctor.ContainingType) && ctor.Parameters.Any(p => CapabilityRule.IsDependency(p.Type));
+        ctor.ContainingType.IsUiComponent() && ctor.Parameters.Any(p => CapabilityRule.IsDependency(p.Type));
 
     /// <summary>
     /// Whether the twin's constructor leaves this parameter out of its signature: a dependency, when its constructor
@@ -747,13 +749,6 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// </summary>
     private static bool LeavesOut(IParameterSymbol parameter, bool declaresDependency) =>
         declaresDependency && CapabilityRule.IsDependency(parameter.Type);
-
-    private static bool IsComponent(INamedTypeSymbol? symbol)
-    {
-        for (var b = symbol; b is not null; b = b.BaseType)
-            if (b.Name is "StatelessComponent" or "StatefulComponent" or "UiComponent") return true;
-        return false;
-    }
 
     /// <summary>The TS literal for a parameter's C# default value: the constant it is in the parameter's
     /// type (<see cref="ConstantLiteral"/>), an enum's in the enum's representation. Shared with
