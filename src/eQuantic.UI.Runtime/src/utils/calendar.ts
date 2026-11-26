@@ -88,6 +88,21 @@ export interface Calendar {
   /** A year of one or two digits, as .NET's `ToFourDigitYear` reads it against `TwoDigitYearMax`: 2049
    * in the Gregorian calendar puts 00 to 49 in this century and 50 to 99 in the last. */
   fourDigitYear(year: number): number;
+  /** The first and the last day it writes, as days since 0001-01-01: `MinSupportedDateTime` and
+   * `MaxSupportedDateTime`'s days (#1849). */
+  readonly firstDay: number;
+  readonly lastDay: number;
+  /** Why .NET refuses a move (`AddMonths`, `AddYears`) to month `month` of year `year`, in its words, or
+   * null where the calendar counts that month (#1849). */
+  refusedMove(year: number, month: number): MoveRefusal | null;
+}
+
+/** .NET's `ArgumentOutOfRangeException` for a move past a calendar's range: its message, and the
+ * parameter and value it names where it names them. */
+export interface MoveRefusal {
+  readonly message: string;
+  readonly paramName?: string;
+  readonly actualValue?: number;
 }
 
 /** What every calendar's description says besides its arithmetic: its name, its refusal, its range and
@@ -96,8 +111,8 @@ abstract class DescribedCalendar implements Calendar {
   readonly name: string;
   readonly outOfRange: string | null;
   readonly timeOfDayInvariant: boolean;
-  private readonly firstDay: number;
-  private readonly lastDay: number;
+  readonly firstDay: number;
+  readonly lastDay: number;
   private readonly twoDigitYearMax: number;
 
   constructor(data: CalendarData) {
@@ -116,6 +131,7 @@ abstract class DescribedCalendar implements Calendar {
 
   abstract dateOf(day: number): CalendarDate | null;
   abstract dayOf(date: CalendarDate): number | null;
+  abstract refusedMove(year: number, month: number): MoveRefusal | null;
 
   fourDigitYear(year: number): number {
     if (year >= 100) return year;
@@ -145,6 +161,15 @@ class OffsetCalendar extends DescribedCalendar {
     if (day > daysInMonth(gregorian, month)) return null;
     const at = daysFromCivil(gregorian, month, day);
     return this.writes(at) ? at : null;
+  }
+
+  /** A year past the Gregorian ones a `DateTime` holds, as .NET's Gregorian and Thai Buddhist calendars
+   * word it, with no parameter. */
+  refusedMove(year: number): MoveRefusal | null {
+    const gregorian = year - this.offset;
+    return gregorian >= 1 && gregorian <= 9999
+      ? null
+      : { message: 'Year, Month, and Day parameters describe an un-representable DateTime.' };
   }
 }
 
@@ -218,6 +243,20 @@ class MonthsCalendar extends DescribedCalendar {
     let at = this.yearStarts()[index] + day - 1;
     for (let before = 0; before < month - 1; before++) at += this.length(index, before);
     return this.writes(at) ? at : null;
+  }
+
+  /** A year outside the ones it counts, then a month past its last year's last, as the Persian and Um Al
+   * Qura calendars word them: the Persian calendar's last year, 9378, ends in its tenth month. */
+  refusedMove(year: number, month: number): MoveRefusal | null {
+    const lastYear = this.firstYear + this.years - 1;
+    if (year < this.firstYear || year > lastYear) {
+      return { message: `Valid values are between ${this.firstYear} and ${lastYear}, inclusive.`, paramName: 'year', actualValue: year };
+    }
+    const last = this.dateOf(this.lastDay);
+    if (last !== null && year === last.year && month > last.month) {
+      return { message: `Valid values are between 1 and ${last.month}, inclusive.`, paramName: 'month', actualValue: month };
+    }
+    return null;
   }
 }
 

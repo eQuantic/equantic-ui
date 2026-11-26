@@ -225,6 +225,16 @@ public class ServerActionInfo
     public List<ParameterDefinition> Parameters { get; set; } = new();
     public bool IsAsync { get; set; }
     public Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax? SyntaxNode { get; set; }
+
+    /// <summary>
+    /// The seconds the browser waits for the action, as <c>[ServerAction(TimeoutSeconds = …)]</c> states
+    /// them, or null where it states none and the runtime's default holds. A value the build could not
+    /// read as a constant is null too, and <see cref="TimeoutArgument"/> still names it.
+    /// </summary>
+    public int? TimeoutSeconds { get; set; }
+
+    /// <summary>The <c>TimeoutSeconds = …</c> argument as it is written, where the action states one.</summary>
+    public Microsoft.CodeAnalysis.CSharp.Syntax.AttributeArgumentSyntax? TimeoutArgument { get; set; }
 }
 
 /// <summary>

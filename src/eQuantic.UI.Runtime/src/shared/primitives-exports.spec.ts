@@ -25,7 +25,7 @@ import {
   SpringSpec,
   WindowSizeClasses,
 } from './primitive-values';
-import { Point, Rect } from './value-types';
+import { BoxConstraints, EdgeInsets, Point, Rect, Size } from './value-types';
 import { Curve, Motion } from './design-system.generated';
 import { TransitionSpec } from './vocabulary';
 
@@ -262,5 +262,66 @@ describe('Primitives value twins carry the C# values', () => {
     // 0.500000011920929 in doubles.
     expect(new Point(0.3, 0.4).length()).toBe(p.length);
     expect(new Point(0.1, 0.2).length()).toBe(p.lengthFractional);
+  });
+});
+
+/** An unbounded bound as the fixture writes it: null, which JSON can hold and Infinity it cannot. */
+const bound = (value: number | null) => (value === null ? Infinity : value);
+
+function boundsOf(c: BoxConstraints) {
+  return { minWidth: c.minWidth, maxWidth: c.maxWidth, minHeight: c.minHeight, maxHeight: c.maxHeight };
+}
+
+function expectBounds(c: BoxConstraints, pinned: { minWidth: number; maxWidth: number | null; minHeight: number; maxHeight: number | null }) {
+  expect(boundsOf(c)).toEqual({
+    minWidth: pinned.minWidth,
+    maxWidth: bound(pinned.maxWidth),
+    minHeight: pinned.minHeight,
+    maxHeight: bound(pinned.maxHeight),
+  });
+}
+
+function expectSize(size: Size, pinned: { width: number | null; height: number | null }) {
+  expect({ width: size.width, height: size.height }).toEqual({ width: bound(pinned.width), height: bound(pinned.height) });
+}
+
+describe('BoxConstraints answers what .NET answers (#1555)', () => {
+  const pinned = pinnedValues.boxConstraints;
+
+  it('enforces by moving every bound into the parent\'s range', () => {
+    expectBounds(new BoxConstraints(100, 400).enforce(BoxConstraints.tight(new Size(300, 50))), pinned.enforceTight);
+    expectBounds(new BoxConstraints(10, 1000, 0, 80).enforce(new BoxConstraints(0, 500, 20, 60)), pinned.enforceInside);
+  });
+
+  it('loosens to the same maximums', () => {
+    expectBounds(BoxConstraints.tight(new Size(120, 40)).loosen(), pinned.loosen);
+  });
+
+  it('deflates in single precision, never below zero, keeping an unbounded maximum unbounded', () => {
+    expectBounds(new BoxConstraints(10, 300.3, 5).deflate(new EdgeInsets(0.1, 0.2, 0.3, 0.4)), pinned.deflateFractional);
+    expectBounds(new BoxConstraints(4, 6, 0, 10).deflate(EdgeInsets.all(5)), pinned.deflatePastZero);
+  });
+
+  it('constrains a size and answers its extremes', () => {
+    expectSize(new BoxConstraints(10, 100, 10, 100).constrain(new Size(5, 500)), pinned.constrained);
+    expectSize(BoxConstraints.unbounded.constrain(new Size(1e6, 3)), pinned.constrainedUnbounded);
+    expectSize(BoxConstraints.loose(new Size(320, 480)).biggest, pinned.biggest);
+    expectSize(new BoxConstraints(7, 9, 11, 13).smallest, pinned.smallest);
+  });
+
+  it('says whether it is tight and which axes are bounded', () => {
+    expect(BoxConstraints.tight(new Size(1, 2)).isTight).toBe(pinned.tightIsTight);
+    expect(BoxConstraints.loose(new Size(1, 2)).isTight).toBe(pinned.looseIsTight);
+    expect(BoxConstraints.unbounded.hasBoundedWidth).toBe(pinned.unboundedHasBoundedWidth);
+    expect(BoxConstraints.loose(new Size(1, 2)).hasBoundedHeight).toBe(pinned.looseHasBoundedHeight);
+  });
+
+  it('refuses a null parent to enforce, as the C# method does', () => {
+    expect(() => BoxConstraints.unbounded.enforce(null as never)).toThrow(pinned.enforceNull);
+  });
+
+  it('refuses a minimum above its maximum, as the C# constructor does', () => {
+    expect(() => new BoxConstraints(10, 5)).toThrow(/Parameter 'maxWidth'/);
+    expect(() => new BoxConstraints(-1)).toThrow(/Parameter 'minWidth'/);
   });
 });

@@ -192,13 +192,35 @@ internal sealed partial class SemanticsVisitor
             node.Label, node.Spoken, false, Range: node.Value));
 
     /// <summary>
-    /// A navigable region is a GROUP: the reader names it and then walks its rows. Consuming it —
-    /// the only shape available before <see cref="SemanticRole.Group"/> (#187) — would have hidden
-    /// every row inside, which is why this declined while the web honoured it.
+    /// A navigable region is a TREE or a GRID, named by its label, which the reader names and then walks
+    /// (web twin: <c>LowerNavigable</c>, whose host is <c>role="tree"</c> or <c>role="grid"</c>). A grid that
+    /// says its first row heads the columns (<see cref="Navigable.HasHeaderRow"/>) reads that row's cells as
+    /// COLUMN HEADERS, each named by the words in it: the row content's direct children, one per column, the
+    /// cells the web marks <c>columnheader</c>. Its other rows are walked as they are, so its days stay the
+    /// grid cells they say they are.
+    /// <para>
+    /// A grid was read as a group until #1330, its weekdays as plain text, so a reader on Photon lost the
+    /// grid's rows and columns and the header that says which weekday a day falls on.
+    /// </para>
     /// </summary>
-    public bool Visit(Navigable node, LayoutNode laidOut) =>
-        AnnounceGroup(new(node.Role == NavigableRole.Tree ? SemanticRole.Tree : SemanticRole.Group,
-            IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
+    public bool Visit(Navigable node, LayoutNode laidOut)
+    {
+        if (node.Role == NavigableRole.Tree)
+            return AnnounceGroup(new(SemanticRole.Tree, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
+        _nodes.Add(new(SemanticRole.Grid, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
+        for (var index = 0; index < laidOut.Children.Count; index++)
+        {
+            var row = laidOut.Children[index];
+            if (node.HasHeaderRow && index == 0)
+            {
+                foreach (var header in row)
+                    Announce(new(SemanticRole.ColumnHeader, IdOf(header), header.Bounds, TextWithin(header), null, false));
+                continue;
+            }
+            SemanticsTree.Walk(row, this);
+        }
+        return Consumed;
+    }
 
     /// <summary>
     /// A table viewport is a GROUP named by its label, over the cells it holds in view: a reader walks
@@ -305,6 +327,9 @@ internal sealed partial class SemanticsVisitor
 
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(Listener node, LayoutNode laidOut) => Wraps;
+
+    /// <inheritdoc cref="Wraps"/>
+    public bool Visit(RawGestureDetector node, LayoutNode laidOut) => Wraps;
 
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(DropTarget node, LayoutNode laidOut) => Wraps;

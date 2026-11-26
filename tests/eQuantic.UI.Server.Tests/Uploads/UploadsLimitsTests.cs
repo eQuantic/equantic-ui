@@ -60,6 +60,8 @@ public sealed class UploadsLimitsTests : IDisposable
         {
             third.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
             (await third.Content.ReadAsStringAsync()).Should().Be("At most 2 uploads may be kept at a time.");
+            // A finished upload frees its place only when it is deleted or expires: nothing to wait for.
+            third.Headers.RetryAfter.Should().BeNull();
         }
 
         using (var deleted = await browser.DeleteAsync(first)) deleted.StatusCode.Should().Be(HttpStatusCode.NoContent);

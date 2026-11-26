@@ -161,9 +161,10 @@ internal sealed partial class WebLoweringVisitor
             if (adjustable.ValueText is { Length: > 0 } spoken)
                 attributes["aria-valuetext"] = spoken;
         }
-        // The arrows the twin answers (lowerAdjustable): a slider's or a separator's vertical axis is
-        // VALUE (up increases), a radio group's or tab list's is READING ORDER (down is next).
-        var downIsNext = adjustable.Role is not (AdjustableRole.Slider or AdjustableRole.Separator);
+        // The arrows the twin answers (lowerAdjustable), from the one table Photon reads too (AdjustableKeys):
+        // a slider's or a separator's vertical axis is VALUE (up increases), a radio group's or tab list's is
+        // READING ORDER (down is next).
+        var role = adjustable.Role;
         var onAdjust = adjustable.OnAdjust;
         // The horizontal arrows are next and previous in the direction the element reads in, which the
         // browser's handler reads from the nearest [dir] at the key and this one names from where it was
@@ -171,15 +172,7 @@ internal sealed partial class WebLoweringVisitor
         var reads = _direction;
         element.OnKeyDown = key =>
         {
-            var direction = key.Key switch
-            {
-                "ArrowRight" => reads == TextDirection.RightToLeft ? -1 : 1,
-                "ArrowLeft" => reads == TextDirection.RightToLeft ? 1 : -1,
-                "ArrowUp" => downIsNext ? -1 : 1,
-                "ArrowDown" => downIsNext ? 1 : -1,
-                _ => 0,
-            };
-            if (direction != 0) onAdjust(direction);
+            if (AdjustableKeys.Step(key.Key, role, reads) is { } step) onAdjust(step);
         };
         if (Lower(adjustable.Child, null, LoweringPath.Child) is { } child) element.Children.Add(child);
         return element;
@@ -462,6 +455,7 @@ internal sealed partial class WebLoweringVisitor
         DropTarget target => CapsAt(target.Child),
         ContextTarget target => CapsAt(target.Child),
         Listener listener => CapsAt(listener.Child),
+        RawGestureDetector detector => CapsAt(detector.Child),
         Sortable sortable => CapsAt(sortable.Child),
         SortableItem item => CapsAt(item.Child),
         Adjustable adjustable => CapsAt(adjustable.Child),
@@ -1049,6 +1043,39 @@ internal sealed partial class WebLoweringVisitor
         };
         element.CustomEvents["eq-pointer"] = ClientDispatches;
         if (Lower(listener.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
+            element.Children.Add(child);
+        return element;
+    }
+
+    /// <summary>
+    /// Gestures of the app's own over a subtree (<see cref="RawGestureDetector"/>, #1563): the same layout-transparent
+    /// div as a listener, marked with its behaviour as a listener is, so the browser's hit test reads it by the same
+    /// rule, and marked <c>data-eq-gestures</c> for the runtime's arena (<c>dom/gesture-arena.ts</c>), which asks it
+    /// for its factories through <c>eq-gestures</c> before its recognizers hear anything. The server declares the
+    /// event and answers none: the recognizers are the client's. The client twin is <c>lowerRawGestureDetector</c>.
+    /// </summary>
+    private HtmlElement LowerRawGestureDetector(RawGestureDetector detector)
+    {
+        var fills = Fills(detector.Child);
+        var cap = CapsAt(detector.Child);
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = fills.Width ? "100%" : null,
+                MaxWidth = Size(cap),
+                // In the browser's hit test, as a listener says it.
+                PointerEvents = "auto",
+                Height = fills.Height ? "100%" : null,
+            },
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["data-eq-listener"] = ListenerMark(detector.Behavior),
+                ["data-eq-gestures"] = "",
+            },
+        };
+        element.CustomEvents["eq-gestures"] = ClientDispatches;
+        if (Lower(detector.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
             element.Children.Add(child);
         return element;
     }

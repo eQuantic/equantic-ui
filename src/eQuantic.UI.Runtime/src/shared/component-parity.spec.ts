@@ -30,6 +30,7 @@ import {
   ContextTarget,
   Directionality,
   Listener,
+  RawGestureDetector,
   Sortable,
   SortableItem,
   Draggable,
@@ -407,6 +408,7 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     listener: still(new Listener(new Box(new BoxStyle({ width: SizeValue.fill, height: 40 })))),
     'listener-opaque': still(new Listener(new Box(new BoxStyle({ height: 40 })), { behavior: 'opaque' })),
     'listener-translucent': still(new Listener(new Box(new BoxStyle({ height: 40 })), { behavior: 'translucent' })),
+    'raw-gesture-detector': still(new RawGestureDetector(new Box(new BoxStyle({ width: SizeValue.fill, height: 40 })), [])),
     'anchored-at': still(
       new Anchored(new Box(new BoxStyle({ width: 200, height: 40 })), new Box(new BoxStyle({ width: 120, height: 80 })), {
         at: new Point(120, 30),
@@ -1010,10 +1012,12 @@ function canonical(node: HtmlNode): unknown {
     // by it after the render. A gliding mark's is a sixth: the table's after-pass finds the mark it glides
     // by it, and the server's first pass has nothing to glide from. A focus-scoped shortcut's scope is
     // a seventh (#1530, the first case here with one): its value is the shortcut's position id in the
-    // client's frame, which lowerShortcut stamps for the same reason ("only the client stamps it").
+    // client's frame, which lowerShortcut stamps for the same reason ("only the client stamps it"). A
+    // layout builder's box is an eighth: the pass's commit measures the box by it (#1555), and the server
+    // has no room to measure.
     if (key === 'data-eq-scroll' || key === 'data-eq-inview' || key === 'data-eq-table' || key === 'data-eq-cell'
       || key === 'data-eq-sheet' || key === 'data-eq-code' || key === 'data-eq-glide'
-      || key === 'data-eq-focus-scope')
+      || key === 'data-eq-focus-scope' || key === 'data-eq-layout-builder')
       continue;
     const value = node.attributes[key];
     if (value !== undefined && value !== null) attrs[key] = normalize(key, value);

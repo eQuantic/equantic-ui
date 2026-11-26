@@ -53,6 +53,26 @@ public class CultureCalendarTwinTests
         ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(Moved, culture);
     }
 
+    /// <summary>A move past the months the calendar counts is refused in its words (#1849): Um Al Qura's
+    /// years, the Persian calendar's years and its last year's tenth month, and a Gregorian or Thai date a
+    /// DateTime cannot hold. Its first and last days are its MinSupportedDateTime's and MaxSupportedDateTime's.</summary>
+    [SkippableTheory]
+    [InlineData("fa-IR")]
+    [InlineData("ar-SA")]
+    [InlineData("th-TH")]
+    [InlineData("en-US")]
+    public void AMovePastTheCalendarsRange_IsRefusedInItsWords(string culture)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertVocabularyStatementsSameAsDotNetExceptTheHostsNewline(
+            "string Try(Func<DateOnly> f) { try { return f().DayNumber.ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; } } "
+            + "var first = CultureCalendar.FirstDay; var last = CultureCalendar.LastDay; "
+            + "return first.DayNumber + \"|\" + last.DayNumber + \"|\" + Try(() => CultureCalendar.AddMonths(last, 1)) + \"|\" "
+            + "+ Try(() => CultureCalendar.AddMonths(first, -1)) + \"|\" + Try(() => CultureCalendar.AddYears(last, 1)) + \"|\" "
+            + "+ Try(() => CultureCalendar.AddYears(first, -1)) + \"|\" + Try(() => CultureCalendar.AddMonths(last, -1));",
+            "an ArgumentOutOfRangeException writes its actual value after the host's newline", culture);
+    }
+
     /// <summary>A day the calendar does not write is refused in its words: ar-SA's Um Al Qura calendar
     /// writes from 1900 to 2077 (and Linux's ar-SA, whose ICU counts it Gregorian, answers the year on both
     /// sides).</summary>

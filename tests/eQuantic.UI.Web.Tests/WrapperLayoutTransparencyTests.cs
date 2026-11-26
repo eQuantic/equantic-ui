@@ -44,6 +44,7 @@ public class WrapperLayoutTransparencyTests
         { "DropTarget", new DropTarget(CappedCard(), _ => { }) },
         { "ContextTarget", new ContextTarget(CappedCard(), _ => { }) },
         { "Listener", new Listener(CappedCard()) },
+        { "RawGestureDetector", new RawGestureDetector(CappedCard(), []) },
         { "Sortable", new Sortable(CappedCard(), "list", _ => { }) },
         { "SortableItem", new SortableItem(CappedCard(), "item") },
         { "Link", new Link("/somewhere", CappedCard()) },

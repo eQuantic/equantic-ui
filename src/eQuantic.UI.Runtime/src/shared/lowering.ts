@@ -24,11 +24,14 @@ import { floatText, hex, modifiersOf, num, tokenValue } from './css-values';
 export { num, tokenValue };
 import { DomCanvasPainter } from './canvas-painter';
 import { declareCanvas } from './canvas-surface';
+import { declareLayoutBuilder } from './layout-builders';
 import { installDraggableController } from '../dom/draggable';
 import { installSortableController } from '../dom/sortable';
 import { dropHandlers, installDropGuard } from '../dom/file-drop';
 import { installContextController } from '../dom/context-request';
 import { installPointerListener } from '../dom/pointer-listener';
+import { installGestureArena, type GestureRequest } from '../dom/gesture-arena';
+import type { GestureRecognizerFactory } from './components/GestureRecognizerFactory';
 import { MOUNTED_HOOK, clickWithEvent } from '../dom/reconciler';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import {
@@ -76,6 +79,7 @@ import type {
   BoxStyleValue,
   ColorTokenValue,
   CanvasNodeValue,
+  LayoutBuilderValue,
   DrawingNode,
   VectorGradientValue,
   VectorPaintValue,
@@ -117,6 +121,7 @@ import type {
   DropTargetNode,
   ContextTargetNode,
   ListenerNode,
+  RawGestureDetectorNode,
   SortableItemNode,
   SortDropValue,
   SortableNode,
@@ -821,6 +826,9 @@ function lowerNodeKind(
     // C# twin (W3): the app's own shapes as inline SVG, in call order.
     case 'canvas':
       return lowerCanvas(node as unknown as CanvasNodeValue, context);
+    // C# twin (#1555): the builder's box, empty until the browser has measured the room it is given.
+    case 'layoutBuilder':
+      return lowerLayoutBuilder(node as unknown as LayoutBuilderValue, context, path);
     // C# twin: artwork stays VECTOR in the DOM — one <path> per shape, the paint the file chose.
     case 'drawing':
       return lowerDrawing(node as unknown as DrawingNode);
@@ -869,6 +877,8 @@ function lowerNodeKind(
       return lowerContextTarget(node as unknown as ContextTargetNode, context, path);
     case 'listener':
       return lowerListener(node as unknown as ListenerNode, context, path);
+    case 'rawGestureDetector':
+      return lowerRawGestureDetector(node as unknown as RawGestureDetectorNode, context, path);
     case 'sortable':
       return lowerSortable(node as unknown as SortableNode, context, horizontalAxis, path);
     case 'sortableItem':
@@ -3767,6 +3777,25 @@ function paintsNothing(box: BoxNode): boolean {
   );
 }
 
+/** A builder's box: one that fills on both axes and holds nothing else (C# `UnbuiltBuilder`). */
+const BUILDER_BOX_STYLE = { width: { kind: 'fill', value: 0 }, height: { kind: 'fill', value: 0 } } as BoxStyleValue;
+
+/**
+ * A `LayoutBuilder` (#1555): the box that fills on both axes, holding what the builder answers for the
+ * room the browser last measured it at, shown in the position's slot as a layer is. Before the first
+ * measurement it holds nothing, which is what the server writes, so hydration adopts it. The box is
+ * marked for the pass's commit, which measures it (layout-builders.ts); a box the server wrote carries
+ * no mark, and the client's adds it, as a canvas's.
+ */
+function lowerLayoutBuilder(node: LayoutBuilderValue, context: LoweringContext, path: string): HtmlNode {
+  const { id, state } = declareLayoutBuilder(positionOf(frameOf(context), node));
+  const built = state.childFor(node, node.builder);
+  const child = built ? showLayer(node, built, context) : null;
+  const box = lowerBox({ nodeKind: 'box', style: BUILDER_BOX_STYLE, child }, context, path);
+  box.attributes['data-eq-layout-builder'] = id;
+  return box;
+}
+
 function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNode {
   const style = box.style ?? ({} as BoxStyleValue);
   // A CAP with no decided height bounds the child (the C# twin, CapsItsChild): as a flex column, a
@@ -4417,6 +4446,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'dropTarget':
     case 'contextTarget':
     case 'listener':
+    case 'rawGestureDetector':
     case 'sortable':
     case 'sortableItem':
     case 'adjustable':
@@ -4443,6 +4473,9 @@ function capsAt(node: unknown): SizeValueValue | undefined {
 /** Whether a node requests Fill per axis — wrappers must stretch for the 100% chain to reach it. */
 function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
   switch (node.nodeKind) {
+    // A builder's box fills on both axes, whatever it built inside it (C# twin).
+    case 'layoutBuilder':
+      return { width: true, height: true };
     case 'box': {
       const style = (node as BoxNode).style ?? ({} as BoxStyleValue);
       return { width: style.width?.kind === 'fill', height: style.height?.kind === 'fill' };
@@ -4496,6 +4529,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as ContextTargetNode).child);
     case 'listener':
       return fills((node as unknown as ListenerNode).child);
+    case 'rawGestureDetector':
+      return fills((node as unknown as RawGestureDetectorNode).child);
     case 'sortable':
       return fills((node as unknown as SortableNode).child);
     case 'sortableItem':
@@ -6206,6 +6241,35 @@ function lowerListener(node: ListenerNode, context: LoweringContext, path: strin
     callbacks[heard.phase]?.(heard);
   }) as unknown as EventHandler;
   installPointerListener();
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
+/**
+ * Gestures of the app's own over a subtree (#1563, the C# LowerRawGestureDetector twin): the same layout-transparent
+ * div as a listener, marked with its behaviour as a listener is, so the browser's hit test reads it by the same
+ * rule, and marked `data-eq-gestures` for the arena's controller (dom/gesture-arena.ts). The controller asks it for
+ * its factories with `eq-gestures` before its recognizers hear anything, and this handler, which every build
+ * replaces, answers with the ones the latest build wrote.
+ */
+function lowerRawGestureDetector(node: RawGestureDetectorNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const cap = capsAt(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : undefined,
+    'max-width': sizeValue(cap),
+    'pointer-events': 'auto',
+    height: fill.height ? '100%' : undefined,
+  });
+  host.attributes['data-eq-listener'] =
+    node.behavior === 'opaque' ? 'opaque' : node.behavior === 'translucent' ? 'translucent' : 'defer';
+  host.attributes['data-eq-gestures'] = '';
+  const gestures = node.gestures ?? [];
+  host.events['eq-gestures'] = ((ev: Event) => {
+    (ev as CustomEvent<GestureRequest>).detail.gestures = gestures as readonly GestureRecognizerFactory[];
+  }) as unknown as EventHandler;
+  installGestureArena();
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;

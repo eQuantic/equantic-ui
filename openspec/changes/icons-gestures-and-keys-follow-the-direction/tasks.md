@@ -19,7 +19,7 @@
 - [x] 3.2 `LowerGlyph`: a glyph with `MatchTextDirection` writes `scale: var(--eq-inline, 1) 1` on its `<svg>`; one without writes nothing new
 - [x] 3.3 `TokenCss`: one helper for "a horizontal length toward the end" (`calc(var(--eq-inline, 1) * <length>)`), used by `LowerDraggable` for a horizontal rest offset (px and normalized %); a vertical rest is unchanged
 - [x] 3.4 The visitor knows the direction where it lowers: the UI culture's, overridden under a `Directionality` and set to `LeftToRight` under the hosts it writes `dir="ltr"` on; restored when it leaves them (design D5)
-- [x] 3.5 `LowerAdjustable` and `LowerNavigable` declare their keydown with that direction (`NavigableKeys.Move(key, shift, direction)`; the Adjustable arm swaps ArrowLeft and ArrowRight under `RightToLeft`)
+- [x] 3.5 `LowerAdjustable` and `LowerNavigable` declare their keydown with that direction (`NavigableKeys.Move(key, shift, direction)`; `AdjustableKeys.Step(key, role, direction)`, which swaps ArrowLeft and ArrowRight under `RightToLeft`)
 - [x] 3.6 Check: `dotnet test tests/eQuantic.UI.Web.Tests --filter "TextDirection|NavigableKeyTable|ComponentParity"` with the new cases of group 7 failing before 3.2 to 3.5 and passing after
 
 ## 4. The web runtime (TypeScript)
@@ -42,13 +42,13 @@
 
 ## 6. Photon, unchanged
 
-- [x] 6.1 `PhotonHost` passes `TextDirection.LeftToRight` to `NavigableKeys.Move`, with a comment that Photon binds physical = logical until it mirrors (outside 1.0)
+- [x] 6.1 `PhotonHost` passes `TextDirection.LeftToRight` to `NavigableKeys.Move` and `AdjustableKeys.Step`, with a comment that Photon binds physical = logical until it mirrors (outside 1.0)
 - [x] 6.2 `TextDirectionPhotonTests`: under the culture `ar` and under `Directionality(RightToLeft)`, a `MatchTextDirection` glyph emits the same draw command as under `en`, ArrowRight still steps an `Adjustable` +1 and a `Navigable` `NextItem`, and a horizontal drag reports the same offset
 - [x] 6.3 Check: `dotnet test tests/eQuantic.UI.Native.Engine.Tests --filter "TextDirection|Keyboard|VariantMatrix"` green
 
 ## 7. Tests on both sides
 
-- [x] 7.1 `NavigableKeyTableTests` enumerates every key at both directions and cross-pins `NavigableKeys.Move` against `navigableMove`
+- [x] 7.1 `NavigableKeyTableTests` enumerates every key at both directions and cross-pins `NavigableKeys.Move` against `navigableMove`; `AdjustableKeyTableTests` does the same for `AdjustableKeys.Step` against `lowerAdjustable`, every role at both directions
 - [x] 7.2 `ComponentParityFixtureTests` cases (regenerated with its variable, diff read): an `Icon(Icons.ChevronLeft)` and a pack-style glyph without the flag, a horizontal `Draggable` at a px rest and at a normalized rest, a vertical one, each under `Directionality(RightToLeft)`
 - [x] 7.3 `draggable.spec.ts` under `dir="rtl"`: a `Switch` off dragged toward its end flips it on and stays in its track; a `SwipeableRow` swiped toward its start opens; a `Slider` dragged toward its end rises; the same drags under `dir="ltr"` inside an `rtl` page behave as in English; each fails with the travel left physical and with only the travel negated (paint still physical)
 - [x] 7.4 Keyboard specs under `dir="rtl"`: ArrowLeft selects the next tab (`Tabs`), the next option (`RadioGroup`, `SegmentedControl`), raises a `Slider`, walks a `Calendar` to the next day, and expands a closed `TreeView` node (ArrowRight collapses it); ArrowUp/ArrowDown unchanged; inside a `dir="ltr"` surface the English mapping holds

@@ -365,6 +365,9 @@ public sealed partial class PhotonHost
         // A finger's hold over what a person may ask the menu of becomes a long press here (#1531), after the
         // sort's: a hold that lifted a sortable item is the lift's.
         TickContext(timeMs);
+        // The recognizers' deadlines pass on the same clock (#1563), after the host's own holds: a hold that lifted a
+        // sortable item or asked for a menu took the pointer first.
+        TickGestures(timeMs);
         // The tree lays out above what the system covers, and a SafeArea at the bottom pads only
         // what the keyboard leaves of the home indicator: the keyboard is already in its way.
         var height = MathF.Max(0, Height - _viewInsets.Bottom);
@@ -393,6 +396,8 @@ public sealed partial class PhotonHost
             hoveredAt: _hoverAt, hoveredPart: _hoveredPart,
             nodePool: RecycleFrames ? _nodePool : null,
             windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame, rebuildAll: rebuildAll, log: Log);
+        // Every detector this build drew keeps its recognizers, handed what the build wrote (#1563).
+        KeepDetectors();
         // The carried item's copy goes over everything the frame drew, as the web's lies over the page.
         PaintSort(builder, sortScrolled);
         if (_lift != 0) builder.Pop();
@@ -469,6 +474,9 @@ public sealed partial class PhotonHost
         // A finger holding a target is due a frame when its hold is long enough (#1531).
         if (ContextDueMs() is { } contextDue)
             _nextFrameDueMs = _nextFrameDueMs is { } soonest ? MathF.Min(soonest, contextDue) : contextDue;
+        // A recognizer waiting for a time is due a frame when it passes (#1563), as a context hold is.
+        if (GestureDueMs() is { } gestureDue)
+            _nextFrameDueMs = _nextFrameDueMs is { } first ? MathF.Min(first, gestureDue) : gestureDue;
         // Said once per edit, on the frame that draws it, as the web's server says each rebuild: the
         // person sees how long an edit took to reach the window, and the edit-to-view measurement
         // (#900) reads the same line. The shell presents this frame next, within a vsync.
@@ -2149,12 +2157,19 @@ public sealed partial class PhotonHost
     /// platform shell's pointer-move events; it is a no-op until a frame has been rendered.
     /// A <see cref="PointerKind.Touch"/> move drives drags, pans and selections exactly the same —
     /// it only skips the hover resolution at the tail (spec S5: hover never fires on touch).
+    /// <paramref name="timeMs"/> is when the shell saw the move, in milliseconds on its monotonic clock (#1563);
+    /// without it, the host's own clock.
     /// </summary>
-    public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse, KeyModifiers modifiers = KeyModifiers.None)
+    public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse, KeyModifiers modifiers = KeyModifiers.None,
+        double? timeMs = null)
     {
         y += _lift;
+        var time = PointerTime(timeMs);
         // The listeners hear it beside everything below, which they change nothing of (#1562).
-        HearMove(new Point(x, y), kind, modifiers);
+        HearMove(new Point(x, y), kind, modifiers, time);
+        // The recognizers tracking a pressed pointer hear it before the host's own gestures (#1563): one that takes
+        // the pointer here has already dropped what those armed.
+        if (_held) Route(PointerPhase.Move, new Point(x, y), kind, PointerButtons.Primary, modifiers, time);
         MoveContext(new Point(x, y));
         // What the pointer holds is what a code surface hears with its hover (#1084): ⌘ over a name links it. Where it
         // is is kept through a drag, which hovers nothing, so a modifier changed after the release is heard there.
@@ -2195,6 +2210,7 @@ public sealed partial class PhotonHost
                 CancelSheetPress(kind);
                 table.Active = true;
                 _tablePress = table;
+                AskFor(BuiltInGestureKind.TablePan);
             }
             if (table.Active)
             {
@@ -2277,6 +2293,7 @@ public sealed partial class PhotonHost
                 _pressed = null;
                 _pressedAt = null;
                 drag = _drag.Value;
+                AskFor(BuiltInGestureKind.Drag);
             }
             if (drag.Active)
             {
@@ -2318,6 +2335,8 @@ public sealed partial class PhotonHost
                 _pressed = null;
                 _pressedAt = null;
                 pan.Active = true;
+                _pan = pan;
+                AskFor(BuiltInGestureKind.Pan);
             }
 
             if (pan.Active)
@@ -2408,15 +2427,17 @@ public sealed partial class PhotonHost
     /// each axis to the topmost one that moves along it: a horizontal view takes the horizontal
     /// movement, or the vertical one when there is none, as a mouse with one wheel expects. Returns true
     /// (and marks the frame dirty) when something moved or began to glide.
+    /// <paramref name="timeMs"/> is when the shell saw the scroll, in milliseconds on its monotonic clock (#1563);
+    /// without it, the host's own clock.
     /// </summary>
     public bool ScrollBy(float x, float y, float across, float down, bool stepped = true,
-        KeyModifiers modifiers = KeyModifiers.None)
+        KeyModifiers modifiers = KeyModifiers.None, double? timeMs = null)
     {
         y += _lift;
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
         // The listeners under it hear the scroll, and the scroll views still take it (#1562).
-        HearScroll(point, across, down, modifiers);
+        HearScroll(point, across, down, modifiers, PointerTime(timeMs));
         var leftAcross = across;
         var leftDown = down;
         var moved = false;
@@ -2678,18 +2699,38 @@ public sealed partial class PhotonHost
     /// Begins a press: the topmost enabled hit region under the point becomes the pressed node and
     /// the next frame renders its pressed token swap. Returns whether a region captured the press.
     /// (v1 fence: drag-slop/cancel and fling join the gesture system.)
+    /// <paramref name="timeMs"/> is when the shell saw the press, in milliseconds on its monotonic clock (#1563);
+    /// without it, the host's own clock.
+    /// <para>
+    /// Whatever the press armed then enters the pointer's arena beside the recognizers of the detectors under it
+    /// (#1563), whichever branch armed it: the gestures keep their arming, and the arena says who takes the pointer.
+    /// </para>
     /// </summary>
     public bool PressDown(float x, float y, int clickCount = 1, KeyModifiers modifiers = KeyModifiers.None,
-        PointerKind kind = PointerKind.Mouse)
+        PointerKind kind = PointerKind.Mouse, double? timeMs = null)
     {
         y += _lift;
         _held = true;
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
+        var time = PointerTime(timeMs);
         // The listeners under the press hear it and follow it, beside the press itself (#1562).
-        HearDown(point, kind, PointerButtons.Primary, modifiers);
+        HearDown(point, kind, PointerButtons.Primary, modifiers, time);
         // A press puts back an item the keyboard carries, wherever it lands (#1537).
         if (_sort is { ByKeyboard: true } carried) CancelSort(carried);
+        // A canvas under the press takes it alone, before any gesture of the host's is armed (Arm).
+        var canvas = CanvasUnder(point) is not null;
+        var armed = Arm(x, y, clickCount, modifiers, kind);
+        var joined = OpenArena(point, kind, PointerButtons.Primary, modifiers, time, recognizersOnly: canvas);
+        return armed || joined;
+    }
+
+    /// <summary>What a press at (<paramref name="x"/>, <paramref name="y"/>), already lifted, arms: the host's own
+    /// gestures, in the fixed order they have always been armed in. Returns whether a region captured the press.</summary>
+    private bool Arm(float x, float y, int clickCount, KeyModifiers modifiers, PointerKind kind)
+    {
+        if (_lastFrame is null) return false;
+        var point = new Point(x, y);
 
         // W3: a canvas owns the pointer inside its box. It is asked FIRST because it draws its own
         // content and therefore knows its own hit-testing — the engine has no idea what is under
@@ -2948,10 +2989,16 @@ public sealed partial class PhotonHost
     /// <c>touchesCancelled</c>, a window losing key, a call arriving. Nothing was decided, so
     /// nothing is reported: the press drops and the surface glides back to where the caller last
     /// put it. The web controller answers <c>pointercancel</c> the same way.
+    /// <paramref name="timeMs"/> is when the shell saw the cancel, in milliseconds on its monotonic clock (#1563);
+    /// without it, the host's own clock.
     /// </summary>
-    public void PointerCancel(PointerKind kind = PointerKind.Mouse)
+    public void PointerCancel(PointerKind kind = PointerKind.Mouse, double? timeMs = null)
     {
-        HearCancel();
+        var time = PointerTime(timeMs);
+        HearCancel(time);
+        // The recognizers tracking the pointer hear the cancel, and every member of its arena loses it (#1563).
+        Route(PointerPhase.Cancel, _routedAt, kind, PointerButtons.None, _pointerModifiers, time);
+        _gestureTaken = false;
         // The press is over, released or not: the pointer moving next rests on the code again.
         _held = false;
         // The input sequence died with the finger still down — the finger is gone, so nothing
@@ -3038,11 +3085,17 @@ public sealed partial class PhotonHost
     /// <summary>
     /// Ends a press: fires <c>OnPressed</c> when the release lands inside the pressed node's region
     /// (release outside cancels), clears the pressed visual either way.
+    /// <paramref name="timeMs"/> is when the shell saw the release, in milliseconds on its monotonic clock (#1563);
+    /// without it, the host's own clock.
     /// </summary>
-    public bool PressUp(float x, float y, PointerKind kind = PointerKind.Mouse)
+    public bool PressUp(float x, float y, PointerKind kind = PointerKind.Mouse, double? timeMs = null)
     {
         y += _lift;
-        HearUp(new Point(x, y), _pointerModifiers);
+        var time = PointerTime(timeMs);
+        HearUp(new Point(x, y), _pointerModifiers, time);
+        // The recognizers tracking the pointer hear the up first, and the arena is swept (#1563): with nothing
+        // decided the first member, the innermost under the press, takes the pointer, which may be a recognizer's.
+        Route(PointerPhase.Up, new Point(x, y), kind, PointerButtons.None, _pointerModifiers, time);
         _held = false;
         _contextHold = null;
         // Where a drag ended is where the pointer is (#1084): ⌘ pressed next, with no move, is heard there.
@@ -3117,8 +3170,10 @@ public sealed partial class PhotonHost
                 return true;
             }
         }
-        if (_pressSwallowed)
+        // A recognizer that took the pointer took it from the press too: the release performs nothing (#1563).
+        if (_pressSwallowed || _gestureTaken)
         {
+            _gestureTaken = false;
             // Suppressed OUTCOME, not suppressed CLEANUP. The press-down armed the same gesture
             // candidates every press arms — the pan for a scrollable under the point above all —
             // and returning without clearing them left the pan latched: every mouse move after
@@ -3682,7 +3737,10 @@ public sealed partial class PhotonHost
         if (TextTarget is { } editing && EditKey(editing, key, modifiers)) return true;
 
         // An Adjustable under focus answers the arrows — the reason it exists. Resolved out of
-        // THIS frame's stops by id: the node from the frame it was focused in is long gone.
+        // THIS frame's stops by id: the node from the frame it was focused in is long gone. The step is the
+        // web's, by role (AdjustableKeys): up was +1 for every role, so a vertical radio group or tab strip
+        // stepped backwards here (#1873). Left to right, whatever the culture says, for the reason the
+        // Navigable keys below give: Photon does not mirror its layout for 1.0 (#1569).
         if (modifiers == KeyModifiers.None && _focusedId != 0
             && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
             && _lastFrame?.FocusStops is { } stops)
@@ -3690,7 +3748,7 @@ public sealed partial class PhotonHost
             for (var i = 0; i < stops.Count; i++)
             {
                 if (stops[i].Id != _focusedId || stops[i].Adjustable is not { } adjustable) continue;
-                adjustable.OnAdjust(key is "ArrowRight" or "ArrowUp" ? 1 : -1);
+                adjustable.OnAdjust(AdjustableKeys.Step(key, adjustable.Role, TextDirection.LeftToRight)!.Value);
                 NeedsRender = true;
                 return true;
             }

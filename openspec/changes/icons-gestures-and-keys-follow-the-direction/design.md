@@ -168,9 +168,11 @@ physical on purpose: they follow the finger on the screen.
   means, so it belongs in the table both realizers read. Photon's call site then says explicitly what it binds
   (`TextDirection.LeftToRight`, with the reason), and when Photon mirrors it passes its own direction and nothing
   else moves.
-- The `Adjustable` keydown, which is inline in each web twin (`WebLoweringVisitor.Interaction.cs:165-179`,
-  `lowering.ts:5298-5320`), swaps ArrowLeft and ArrowRight under `rtl`. It stays inline: Photon has its own
-  mapping (D9) and a new public table for one C# reader would be surface with no second reader.
+- The `Adjustable` keydown reads `AdjustableKeys`, the table #1873 gave the web and Photon in common while this
+  change was in review, and it widens the same way: `AdjustableKeys.Step(string key, AdjustableRole role,
+  TextDirection direction)` swaps ArrowLeft and ArrowRight under `RightToLeft` and leaves the vertical arrows to the
+  role. The browser's `lowerAdjustable` answers the same, and `AdjustableKeyTableTests` pins the table at both
+  directions for it, as `NavigableKeyTableTests` does for the grid.
 
 **Where each twin reads the direction (the question the brief left open).**
 
@@ -230,17 +232,18 @@ so under `rtl` the gutter stands on the right and the overflow opens to the left
 
 ### D8. Photon does not change, and a pin says so
 
-`PhotonHost` passes `TextDirection.LeftToRight` to `NavigableKeys.Move`; its `Adjustable` arm, its drag and its glyph
-drawing are untouched. `TextDirectionPhotonTests` pins that under `ar` and under `Directionality(RightToLeft)` a
+`PhotonHost` passes `TextDirection.LeftToRight` to `NavigableKeys.Move` and to `AdjustableKeys.Step`; its drag and
+its glyph drawing are untouched. `TextDirectionPhotonTests` pins that under `ar` and under `Directionality(RightToLeft)` a
 matching glyph draws, an arrow steps and a drag reports exactly as under `en`. The variant matrix gains one
 right-to-left cell per control whose Photon reading is asserted equal to its left-to-right cell's: that is the
 instrument that fails if a component starts flipping by the context (D1).
 
 ### D9. Photon's `Adjustable` vertical arrows (not this change)
 
-`PhotonHost.cs:3685-3696` maps ArrowUp to +1 for every role, where the web maps ArrowDown to +1 for a tab list and a
-radio group (`downIsNext`, WAI-ARIA's reading order). A pre-existing disagreement between the twins, unrelated to
-direction: a bug to file under #1587, not fixed here (fixing it would be the Photon behaviour change D8 excludes).
+`PhotonHost` mapped ArrowUp to +1 for every role, where the web maps ArrowDown to +1 for a tab list and a radio group
+(`downIsNext`, WAI-ARIA's reading order). A pre-existing disagreement between the twins, unrelated to direction, filed
+as #1873 and fixed on main by #1880, which moved both targets onto `AdjustableKeys`; this change only adds the
+direction to that table (D5).
 
 ### D10. Documentation
 

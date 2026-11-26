@@ -12,7 +12,8 @@ import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from '.
 import type { NodeKind } from './node-kinds.generated';
 import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue, TextDirectionValue, TextEntryKindValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
-import type { AppTheme, ContextRequest, PointerEvent } from './value-types';
+import type { AppTheme, BoxConstraints, ContextRequest, PointerEvent } from './value-types';
+import type { GestureRecognizerFactory } from './components/GestureRecognizerFactory';
 import { iconPaths, iconsMatchingTextDirection } from './icons.generated';
 import { exception } from '../utils/exceptions';
 import type {
@@ -553,6 +554,22 @@ export class AdaptiveNode extends VisualNode {
     if (this.expanded && widthDp >= this.expandedFrom) return 2;
     if (this.medium && widthDp >= this.mediumFrom) return 1;
     return 0;
+  }
+}
+
+/**
+ * Mirror of the C# `LayoutBuilder` (#1555): a child built for the room its box has. The box fills on
+ * both axes; the browser measures the room it is given after the pass and hands it to `builder`.
+ */
+export class LayoutBuilder extends VisualNode {
+  readonly nodeKind = 'layoutBuilder';
+
+  constructor(
+    readonly builder: (constraints: BoxConstraints) => VisualNode,
+    config?: EqConfig,
+  ) {
+    super();
+    if (config) Object.assign(this, config);
   }
 }
 
@@ -1422,6 +1439,24 @@ export const KeyModifiers = {
   command: 4,
   control: 8,
 } as const;
+
+/**
+ * Mirror of the C# `RawGestureDetector` (#1563): gestures of the app's own over any subtree, each factory making a
+ * recognizer the detector keeps across rebuilds; `behavior` says where it is hit, as a listener's does.
+ */
+export class RawGestureDetector extends VisualNode {
+  readonly nodeKind = 'rawGestureDetector';
+  child: VisualChild;
+  gestures: readonly GestureRecognizerFactory[];
+  behavior: HitTestBehaviorValue = 'deferToChild';
+
+  constructor(child: VisualChild, gestures: readonly GestureRecognizerFactory[], config?: EqConfig) {
+    super();
+    this.child = child;
+    this.gestures = gestures;
+    if (config) Object.assign(this, config);
+  }
+}
 
 /** Mirror of the C# `[Flags] PointerButtons` (#1562): Flutter's constants, which are also the DOM's `buttons`. */
 export const PointerButtons = {

@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "GestureRecognizerFactoryWithHandlers.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Primitives/Gestures/GestureRecognizerFactoryWithHandlers.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAYA;;QAG6B;QACE;QAQvB;QACA;;;IAVqB;IACE;;IAY3B;QAAgD;;;IAEhD;QAAmE"
+}
