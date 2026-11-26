@@ -224,20 +224,26 @@ public sealed class DisplayListBuilder
     /// </summary>
     private static Rect OnDevicePixels(Rect rect, in Matrix2D transform)
     {
-        if (transform.M12 != 0 || transform.M21 != 0 || transform.M11 <= 0 || transform.M22 <= 0) return rect;
+        if (!AxisAligned(transform)) return rect;
         var (left, right) = Snap(rect.Left * transform.M11 + transform.M31, rect.Right * transform.M11 + transform.M31);
         var (top, bottom) = Snap(rect.Top * transform.M22 + transform.M32, rect.Bottom * transform.M22 + transform.M32);
         return Rect.FromLTRB((left - transform.M31) / transform.M11, (top - transform.M32) / transform.M22,
             (right - transform.M31) / transform.M11, (bottom - transform.M32) / transform.M22);
+    }
 
-        // Half a pixel goes up, as a browser rounds it, never to the even neighbour.
-        static (float From, float To) Snap(float from, float to)
-        {
-            var snappedFrom = MathF.Floor(from + 0.5f);
-            var snappedTo = MathF.Floor(to + 0.5f);
-            if (to > from && snappedTo <= snappedFrom) snappedTo = snappedFrom + 1;
-            return (snappedFrom, snappedTo);
-        }
+    /// <summary>Whether <paramref name="transform"/> keeps a rect's edges on the device's axes: no turn, no skew,
+    /// no mirror. Only then does a whole device pixel mean anything for them.</summary>
+    private static bool AxisAligned(in Matrix2D transform) =>
+        transform.M12 == 0 && transform.M21 == 0 && transform.M11 > 0 && transform.M22 > 0;
+
+    /// <summary>A span's two ends on whole device pixels. Half a pixel goes up, as a browser rounds it, never to the
+    /// even neighbour, and a span thinner than a pixel keeps one.</summary>
+    private static (float From, float To) Snap(float from, float to)
+    {
+        var snappedFrom = MathF.Floor(from + 0.5f);
+        var snappedTo = MathF.Floor(to + 0.5f);
+        if (to > from && snappedTo <= snappedFrom) snappedTo = snappedFrom + 1;
+        return (snappedFrom, snappedTo);
     }
 
     /// <summary>A filled circle — sugar over <see cref="FillRRect"/> at full radius, here because
@@ -469,6 +475,15 @@ public sealed class DisplayListBuilder
         _clipStack.Push(_clip);
         var normalized = shape.Normalized();
         var deviceRect = _current.TransformBounds(normalized.Rect);
+        // A clip's edges land on whole device pixels as a fill's do, as a browser snaps an overflow clip (#1344): a
+        // clip that ended on a fractional pixel took the same fraction off every layer under it, the one in front and
+        // the one behind alike, so a swipeable row's red action still showed through its closed surface.
+        if (AxisAligned(_current))
+        {
+            var (left, right) = Snap(deviceRect.Left, deviceRect.Right);
+            var (top, bottom) = Snap(deviceRect.Top, deviceRect.Bottom);
+            deviceRect = Rect.FromLTRB(left, top, right, bottom);
+        }
         var scale = _current.AverageScale();
         var radii = new CornerRadii(
             normalized.Radii.TopLeft * scale, normalized.Radii.TopRight * scale,

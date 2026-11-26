@@ -1,3 +1,4 @@
+using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine.Reference;
 using eQuantic.UI.Primitives;
@@ -33,13 +34,26 @@ public class LayerSeamTests
         return stack;
     }
 
-    private static (byte[] Pixels, int Width) Render()
+    /// <summary>The page, and a closed swipeable row 78dp tall from the top: its action behind, pinned to the end,
+    /// and its surface over it, both under the clip the row draws its layers in.</summary>
+    private static VisualNode ClosedSwipeableRow()
+    {
+        var stack = new Stack();
+        stack.Add(new Box(new BoxStyle { Width = WidthDp, Height = HeightDp, Background = new ColorToken(Page) }));
+        stack.Add(new Positioned(new SwipeableRow(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 78 }), "Dispute", Icons.Warning),
+            top: 0, start: 0, end: 0));
+        return stack;
+    }
+
+    private static (byte[] Pixels, int Width) Render() => Render(Row());
+
+    private static (byte[] Pixels, int Width) Render(VisualNode root)
     {
         var width = (int)MathF.Ceiling(WidthDp * Scale);
         var height = (int)MathF.Ceiling(HeightDp * Scale);
         using var backend = new ReferenceBackend();
         using var surface = backend.CreateSurface(width, height);
-        var host = new PhotonHost(Row(), PhotonTheme.Instance, ThemeMode.Light, WidthDp, HeightDp) { RenderScale = Scale };
+        var host = new PhotonHost(root, PhotonTheme.Instance, ThemeMode.Light, WidthDp, HeightDp) { RenderScale = Scale };
         var builder = new DisplayListBuilder();
         host.RenderFrame(builder);
         backend.Render(builder.Build(), surface);
@@ -60,6 +74,26 @@ public class LayerSeamTests
             var (r, g, b) = (pixels[at], pixels[at + 1], pixels[at + 2]);
             (r - Math.Min(g, b)).Should().BeLessThanOrEqualTo(4,
                 $"row 204 at x {x} holds none of the action's red, where the surface covers it: read ({r}, {g}, {b})");
+        }
+    }
+
+    /// <summary>
+    /// The row itself, as the Android emulator showed it (#1344): its layers are drawn under the clip the row's box
+    /// keeps them in, and that clip ended on the same fractional pixel. Snapping the fills alone left the clip taking a
+    /// quarter off both layers in that row, so the red still showed; the clip lands on whole pixels too.
+    /// </summary>
+    [Fact]
+    public void AClosedSwipeableRow_ShowsNoneOfItsActionUnderItsEdge_OnAFractionalPixel()
+    {
+        var (pixels, width) = Render(ClosedSwipeableRow());
+
+        // The action is the row's end, 96dp of it; row 204 is the one the row's bottom edge cuts.
+        foreach (var x in new[] { width - 10, width - 60, width - 120 })
+        {
+            var at = (204 * width + x) * 4;
+            var (r, g, b) = (pixels[at], pixels[at + 1], pixels[at + 2]);
+            (r - Math.Min(g, b)).Should().BeLessThanOrEqualTo(4,
+                $"row 204 at x {x}, over the action, holds none of its red: read ({r}, {g}, {b})");
         }
     }
 }
