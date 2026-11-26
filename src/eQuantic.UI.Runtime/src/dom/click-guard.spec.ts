@@ -67,6 +67,31 @@ describe('an owned click guard', () => {
     expect(heard, 'nothing of the owner’s is left to stop the next one').toHaveBeenCalledTimes(1);
   });
 
+  it('stops only the click it accepts, and lets every other one through', () => {
+    const owner = clickGuards();
+    const press = document.createElement('button');
+    document.body.appendChild(press);
+    owner.arm(document, 50, (event) => event.target instanceof Node && press.contains(event.target));
+
+    expect(click(document.body).defaultPrevented, 'a click elsewhere is the page’s').toBe(false);
+    expect(vi.getTimerCount(), 'and the guard still waits for its own').toBe(1);
+    expect(click(press).defaultPrevented, 'the click on the press it guards does nothing').toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+    press.remove();
+  });
+
+  it('waits with no time until its owner starts it, and then lets go after that time', () => {
+    const owner = clickGuards();
+    const guard = owner.arm(document);
+    expect(vi.getTimerCount(), 'no time is running before the press ends').toBe(0);
+
+    guard.expireAfter(50);
+    expect(vi.getTimerCount()).toBe(1);
+    vi.advanceTimersByTime(50);
+    expect(click().defaultPrevented, 'its time ran out').toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('lets go of nothing twice: a guard that went with its click is not let go again by its owner', () => {
     const owner = clickGuards();
     owner.arm(document, 600);
