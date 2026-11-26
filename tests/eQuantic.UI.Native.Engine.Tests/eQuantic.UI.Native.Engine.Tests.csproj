@@ -90,6 +90,9 @@
          its reading of a call is asked here as the panel asks it (LedgerSignaturesTests). The web
          sample is no project this one can reference: it is an app over the web SDK. -->
     <Compile Include="..\..\samples\DefaultUIDashboard\Screens\LedgerSignatures.cs" Link="Samples\LedgerSignatures.cs" />
+    <!-- The dashboard's own gesture recognizer (#1563), compiled in rather than copied: the class the browser runs
+         transpiled is the class RawGestureDetectorHostTests drives through the Photon host. -->
+    <Compile Include="..\..\samples\DefaultUIDashboard\Gestures\HoldThenDrag.cs" Link="Samples\HoldThenDrag.cs" />
   </ItemGroup>
 
   <ItemGroup>

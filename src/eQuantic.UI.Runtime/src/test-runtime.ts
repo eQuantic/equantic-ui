@@ -6,3 +6,13 @@
  * the lowering cannot import it itself). Nothing the runtime ships imports this file.
  */
 import './shared/runtime-exports';
+import { afterAll } from 'vitest';
+import { releaseDetachedTableViewports } from './shared/table-viewports';
+
+// A spec file's page leaves when the file ends, as a page does in a browser, and the tables it left take
+// with them what they armed: a pan's click guard and its 400 ms timer, which otherwise fired after the
+// file's window was torn down (#1876). A spec that pans a table needs no teardown of its own for it.
+afterAll(() => {
+  document.body.innerHTML = '';
+  releaseDetachedTableViewports();
+});

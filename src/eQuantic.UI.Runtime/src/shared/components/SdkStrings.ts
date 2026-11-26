@@ -145,6 +145,14 @@ export class SdkStrings {
         return $eq.str('SdkResources', 'NextMonth');
     }
 
+    static get previousPage(): string {
+        return $eq.str('SdkResources', 'PreviousPage');
+    }
+
+    static get nextPage(): string {
+        return $eq.str('SdkResources', 'NextPage');
+    }
+
     static get today(): string {
         return $eq.str('SdkResources', 'Today');
     }
@@ -339,6 +347,10 @@ export class SdkStrings {
 
     static unfoldLines(from: number, to: number) {
         return $eq.text.stringFormat($eq.str('SdkResources', 'UnfoldLines'), $eq.text.asNumber(from, 'int32'), $eq.text.asNumber(to, 'int32'));
+    }
+
+    static pageNumbered(page: number) {
+        return $eq.text.stringFormat($eq.str('SdkResources', 'PageNumbered'), $eq.text.asNumber(page, 'int32'));
     }
 
     static amountExpected(example: string) {

@@ -57,9 +57,10 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     internal void Emit(in EmitState s)
     {
         var node = s.Node;
-        // The listeners' hit test reads the frame's nodes in paint order from its first listener on (#1562): what
-        // was drawn before it can be neither its child nor above it. A frame with no listener records nothing.
-        if (node.Source is Listener && s.Input.Targets is null) s.Input.StartTargets();
+        // The listeners' hit test reads the frame's nodes in paint order from its first listener on (#1562), and a
+        // gesture detector is hit by the same rule (#1563): what was drawn before the first of them can be neither its
+        // child nor above it. A frame with neither records nothing.
+        if (node.Source is Listener or RawGestureDetector && s.Input.Targets is null) s.Input.StartTargets();
         var targets = s.Input.Targets;
         // Spec S1 — group opacity + static transform wrap the WHOLE box (chrome and children):
         // opacity is one PushLayer composite (overlaps never double-blend); the transform is the
@@ -131,7 +132,7 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     {
         if (targets is null) return;
         var (bounds, visible) = s.Input.Locate(s.Node.Bounds);
-        targets.Enter(bounds, visible, s.Node.Source as Listener, s.Node.Element, s.Builder.CommandCount);
+        targets.Enter(bounds, visible, s.Node.Source, s.Node.Element, s.Builder.CommandCount);
     }
 
     /// <summary>
@@ -307,6 +308,10 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     // A listener draws nothing and registers nothing of its own: the walk records it as a pointer target (#1562).
     public Nothing Visit(Listener node, EmitState s) { Descend(s); return Nothing.Value; }
 
+    // A detector draws nothing and registers nothing of its own (#1563): the walk records it as a pointer target, by
+    // which the host offers a pointer that goes down on it to its recognizers.
+    public Nothing Visit(RawGestureDetector node, EmitState s) { Descend(s); return Nothing.Value; }
+
     // Each registers where it was drawn for the host to carry an item by, and a carried item is dimmed in
     // its place under the copy that follows the pointer (#1537).
     public Nothing Visit(Sortable node, EmitState s) { EmitSortable(node, s); return Nothing.Value; }
@@ -380,6 +385,9 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
 
     /// <summary>Resolved into geometry: the variant IS this node by the time paint runs.</summary>
     public Nothing Visit(AdaptiveNode node, EmitState s) { Descend(s); return Nothing.Value; }
+
+    /// <summary>The builder's child, which the layout built and measured: the node draws nothing of its own.</summary>
+    public Nothing Visit(LayoutBuilder node, EmitState s) { Descend(s); return Nothing.Value; }
 
     /// <summary>Resolved into geometry: a weight the flex pass already spent.</summary>
     public Nothing Visit(Flexible node, EmitState s) { Descend(s); return Nothing.Value; }

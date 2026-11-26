@@ -3,10 +3,10 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Email;
 
 /// <summary>
-/// Containers and layout — fourteen words, of which the medium has three. Column, Row and Box are
-/// what nested tables can express; the other eleven need a layout engine an email client does not
-/// have (there is no flexbox, no grid and no <c>gap</c> in Word's engine) or a viewport a printed
-/// page does not have.
+/// Containers and layout — fifteen words, of which the medium has three. Column, Row and Box are
+/// what nested tables can express; the other twelve need a layout engine an email client does not
+/// have (there is no flexbox, no grid and no <c>gap</c> in Word's engine), a viewport a printed
+/// page does not have, or a box measured before its child is built, which a message never is.
 /// </summary>
 internal abstract partial class EmailWalk
 {
@@ -26,6 +26,8 @@ internal abstract partial class EmailWalk
     public Nothing Visit(Flexible node, Nothing state) => Refuse(node);
 
     public Nothing Visit(Grid node, Nothing state) => Refuse(node);
+
+    public Nothing Visit(LayoutBuilder node, Nothing state) => Refuse(node);
 
     public Nothing Visit(Overlay node, Nothing state) => Refuse(node);
 

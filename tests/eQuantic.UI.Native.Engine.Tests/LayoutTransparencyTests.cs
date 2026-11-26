@@ -62,6 +62,7 @@ public class LayoutTransparencyTests
         new DropTarget(c, _ => { }),
         new ContextTarget(c, _ => { }),
         new Listener(c),
+        new RawGestureDetector(c, []),
         new Sortable(c, "list", _ => { }),
         new SortableItem(c, "item"),
         new Flexible(c),

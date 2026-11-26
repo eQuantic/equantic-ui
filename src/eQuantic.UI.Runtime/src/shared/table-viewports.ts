@@ -16,6 +16,7 @@
  * from where the viewport starts.
  */
 
+import { joinGestureArena, type ArenaMembership } from '../dom/arena-membership';
 import { logger } from '../utils/logger';
 import { modifiersOf } from './css-values';
 import type { TableScrollModelLike, TableViewCellNode, TableViewportNode } from './nodes';
@@ -84,6 +85,8 @@ interface TableElement extends HTMLElement {
   __eqTablePointerAt?: number;
   /** Set while the Tab order leaves past the last cell: that focus is a step out, not one to reveal. */
   __eqTableLeaving?: boolean;
+  /** Lets go of the click guard a pan armed, at once: the table's own, so it leaves with the table (#1876). */
+  __eqTableClickGuard?: () => void;
 }
 
 /**
@@ -101,6 +104,7 @@ export function declareTableViewport(position: Position, declaration: TableViewp
 const watched = new Set<TableElement>();
 
 function stopWatching(view: TableElement): void {
+  view.__eqTableClickGuard?.();
   view.__eqTableObserver?.disconnect();
   view.__eqTableObserver = undefined;
   if (view.__eqTableFrame !== undefined) cancelAnimationFrame(view.__eqTableFrame);
@@ -153,6 +157,8 @@ export function commitTableViewports(): void {
     // A drag the composing component holds past the edge scrolls on the clock, which a pass can start
     // without any event of this viewport's own; with nothing moving, the first frame ends it.
     animate(view);
+    // Watched whether or not it is observed: what it holds (a pan's click guard, a frame) leaves with it.
+    watched.add(view);
     if (typeof ResizeObserver === 'function' && !view.__eqTableObserver) {
       // A resize is answered without touching the element's own size: re-deciding it here resized
       // what is being observed inside its own notification, which the browser reports as a loop.
@@ -163,7 +169,6 @@ export function commitTableViewports(): void {
       });
       observer.observe(view);
       view.__eqTableObserver = observer;
-      watched.add(view);
     }
     // A viewport that took its scroller's extent follows that scroller's size, which is what changes
     // when the window does.
@@ -517,7 +522,26 @@ function listen(view: TableElement): void {
     time: number;
     active: boolean;
     around?: PassedOn;
+    /** Its place in the pointer's gesture arena, under a `RawGestureDetector` (#1563), or null. */
+    member: ArenaMembership | null;
   } | null = null;
+
+  /**
+   * Another member of the arena won the pointer (an app's recognizer): a candidate pan is dropped, and a scroll the
+   * bar had already taken is cancelled where it began, as the system's cancel ends it.
+   */
+  const lost = (id: number) => (): void => {
+    if (!press || press.id !== id) return;
+    const ended = press;
+    press = null;
+    if (!ended.active) return;
+    const declaration = view.__eqTableState?.declaration;
+    if (!declaration) return;
+    declaration.node.scroll.pointer('cancel', ended.start, ended.kind, performance.now());
+    capture(view, id, 'release');
+    paint(view);
+    report(view);
+  };
 
   /** Where the pan stands in the table's own space: where it began, plus the finger's travel since. */
   const followed = (event: PointerEvent) =>
@@ -540,7 +564,11 @@ function listen(view: TableElement): void {
     const client = { x: event.clientX, y: event.clientY };
     if (onScrollbar(scroll, at)) {
       if (!scroll.pointer('down', at, kind, performance.now())) return;
-      press = { id: event.pointerId, start: at, client, kind, time: performance.now(), active: true };
+      const member = joinGestureArena(event, view, lost(event.pointerId));
+      press = { id: event.pointerId, start: at, client, kind, time: performance.now(), active: true, member };
+      // The bar's scroll is the pointer's from the start; a member that won it already has dropped this press.
+      member?.accept();
+      if (!press) return;
       capture(view, event.pointerId, 'take');
       event.preventDefault();
       paint(view);
@@ -551,7 +579,10 @@ function listen(view: TableElement): void {
     const target = event.target as Element | null;
     const drag = target?.closest?.('[data-eq-drag]');
     if (drag && view.contains(drag)) return;
-    if (kind !== 'mouse') press = { id: event.pointerId, start: at, client, kind, time: performance.now(), active: false };
+    if (kind !== 'mouse') {
+      const member = joinGestureArena(event, view, lost(event.pointerId));
+      press = { id: event.pointerId, start: at, client, kind, time: performance.now(), active: false, member };
+    }
   });
 
   view.addEventListener('pointermove', (event: PointerEvent) => {
@@ -563,13 +594,17 @@ function listen(view: TableElement): void {
     if (!press.active) {
       if (Math.max(Math.abs(at.x - press.start.x), Math.abs(at.y - press.start.y)) <= PRESS_SLOP) return;
       if (!scroll.pointer('down', press.start, press.kind, press.time)) {
+        press.member?.reject();
         press = null;
         return;
       }
+      // Past the slop the pan asks for the pointer; a member that won it already has dropped this press.
+      press.member?.accept();
+      if (!press) return;
       press.active = true;
       if (press.kind !== 'mouse') press.around = passedOn(view, scroll);
       capture(view, event.pointerId, 'take');
-      swallowNextClick();
+      swallowNextClick(view);
     }
     scroll.pointer('move', at, press.kind, performance.now());
     if (press.around) passOn(press.around, scroll, event.clientX - press.client.x, event.clientY - press.client.y);
@@ -807,17 +842,32 @@ function capture(view: HTMLElement, pointerId: number, action: 'take' | 'release
 /** How far a finger travels before it is a pan rather than a press: the C# `Touch.PressCancelSlop`. */
 const PRESS_SLOP = 12;
 
-/** The click a browser sends where a pan ended was no click: it is stopped once, before anything
- * under the finger hears it. */
-function swallowNextClick(): void {
+/**
+ * The click a browser sends where a pan ended was no click: it is stopped once, before anything under the
+ * finger hears it, and the guard goes with it. A pan whose lift sends no click must not eat the next real
+ * one, so the guard goes after 400 ms otherwise. It is the TABLE's (#1876): kept on its element and let go
+ * at once when the table stops being watched (`stopWatching`, which an unmount and a disposed position both
+ * reach), so its timer never runs after the table left. It ran on a bare timer, which fired after a spec's
+ * teardown against a page that was gone and failed the runtime suite now and then, and kept the guard
+ * alive in an app for its 400 ms.
+ */
+function swallowNextClick(view: TableElement): void {
+  view.__eqTableClickGuard?.();
+  // The click it stops is the one it waited for: it goes then, with its timer.
   const stop = (event: Event) => {
     event.stopPropagation();
     event.preventDefault();
+    release();
   };
   // Held before the timer: by the time it fires the page may be gone (deferred-cleanup.spec.ts).
   const target = window;
   target.addEventListener('click', stop, { capture: true, once: true });
-  // A pan whose lift sends no click must not eat the next real one.
-  setTimeout(() => target.removeEventListener('click', stop, { capture: true }), 400);
+  const timer = setTimeout(release, 400);
+  function release(): void {
+    clearTimeout(timer);
+    target.removeEventListener('click', stop, { capture: true });
+    if (view.__eqTableClickGuard === release) view.__eqTableClickGuard = undefined;
+  }
+  view.__eqTableClickGuard = release;
 }
 

@@ -822,6 +822,16 @@ async loadTodos() {
 }
 ```
 
+**How long the browser waits:** 30 seconds, then the call is abandoned and the page's `await` throws.
+A slow but bounded action states its own, read at build time as a constant and handed to the stub
+(#1881); 0 or none keeps the 30, and a value below 0 or above 600 is EQ2017:
+
+```csharp
+[ServerAction(TimeoutSeconds = 120)]
+public async Task<Report> BuildReport(int year) { ... }
+// → invoke("MyApp.Pages.Reports/BuildReport", [year], { timeoutMs: 120000 })
+```
+
 **Security:**
 - Only `[ServerAction]` methods are callable (whitelist)
 - `[Authorize]` enforces RBAC before execution

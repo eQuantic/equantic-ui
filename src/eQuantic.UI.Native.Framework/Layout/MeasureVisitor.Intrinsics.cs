@@ -43,6 +43,10 @@ internal sealed partial class MeasureVisitor
         Drawing drawing => drawing.Width.Kind == SizeKind.Fixed ? drawing.Width.Value : 0,
         // A canvas's floor is whatever it was told to be, or nothing when it fills.
         Canvas canvas => canvas.Width.Kind == SizeKind.Fixed ? canvas.Width.Value : 0,
+        // A builder's floor is nothing, as a filling canvas's is, and not what it built: a floor at its
+        // child's would keep it as wide as the child it built for a wider room, and the builder would
+        // never be told the narrower room it is in, which is the one thing it exists to hear.
+        LayoutBuilder => 0,
         Spinner spinner => spinner.Size,
         CameraPreview camera => camera.Width,
         Spacer spacer => spacer.FixedLength,
@@ -168,6 +172,7 @@ internal sealed partial class MeasureVisitor
                 (MathF.Max(box.Style.MinHeight, InsetsOf(box.Style).Vertical), InsetsOf(box.Style).Vertical),
             FlexNode { Height.Kind: SizeKind.Fill, Width.Kind: not SizeKind.Fixed } flex =>
                 (flex.Padding.Vertical, flex.Padding.Vertical),
+            LayoutBuilder => (0, 0),
             ScrollView { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => (0, 0),
             TableViewport { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => (0, 0),
             _ => null,
@@ -267,6 +272,8 @@ internal sealed partial class MeasureVisitor
             ? (horizontal ? table.Width : table.Height).Kind
             : SizeKind.Fill,
         Canvas canvas => (horizontal ? canvas.Width : canvas.Height).Kind,
+        // A builder's box fills on both axes, whatever it built inside it.
+        LayoutBuilder => SizeKind.Fill,
         WebFrame frame => (horizontal ? frame.Width : frame.Height).Kind,
         Image or Icon or Vector or Spinner or CameraPreview => SizeKind.Fixed,
         // A drawing's width is dp or a fill of what its parent offers; its height always follows

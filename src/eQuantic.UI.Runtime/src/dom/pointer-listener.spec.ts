@@ -53,11 +53,12 @@ function pointer(
   type: string,
   x: number,
   y: number,
-  init: { buttons?: number; pointerType?: string; pointerId?: number } = {},
+  init: { buttons?: number; pointerType?: string; pointerId?: number; timeStamp?: number } = {},
 ): MouseEvent {
   const event = new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, buttons: init.buttons ?? 0 });
   Object.defineProperty(event, 'pointerType', { value: init.pointerType ?? 'mouse' });
   Object.defineProperty(event, 'pointerId', { value: init.pointerId ?? 1 });
+  if (init.timeStamp !== undefined) Object.defineProperty(event, 'timeStamp', { value: init.timeStamp });
   document.body.dispatchEvent(event);
   return event;
 }
@@ -93,6 +94,49 @@ describe('a Listener, hearing the pointer in the browser', () => {
       ['up', 210, 6, 0],
     ]);
     expect(heard.every((h) => h.event.kind === 'mouse' && h.event.pointer === 1)).toBe(true);
+  });
+
+  it('tells each event the time the browser saw it, so two moves 16 ms apart read 16 apart (#1563)', () => {
+    const child = filled();
+    const l = listener('L', 'defer', heard, child);
+    document.body.appendChild(l);
+    placeAt(l, 0, 0);
+    under(child, l);
+
+    pointer('pointerdown', 10, 10, { buttons: 1, timeStamp: 1000.25 });
+    pointer('pointermove', 20, 10, { buttons: 1, timeStamp: 1016.5 });
+    pointer('pointermove', 30, 10, { buttons: 1, timeStamp: 1032.5 });
+    pointer('pointerup', 30, 10, { timeStamp: 1040 });
+    const wheel = new WheelEvent('wheel', { bubbles: true, clientX: 10, clientY: 10, deltaY: 3 });
+    Object.defineProperty(wheel, 'timeStamp', { value: 1100 });
+    document.body.dispatchEvent(wheel);
+
+    expect(heard.map((h) => [h.event.phase, h.event.timeMs])).toEqual([
+      ['down', 1000.25],
+      ['move', 1016.5],
+      ['move', 1032.5],
+      ['up', 1040],
+      ['scroll', 1100],
+    ]);
+    expect(heard[2].event.timeMs - heard[1].event.timeMs).toBe(16);
+  });
+
+  it("reads the browser's own clock, which never runs backwards (#1563)", () => {
+    const child = filled();
+    const l = listener('L', 'defer', heard, child);
+    document.body.appendChild(l);
+    placeAt(l, 0, 0);
+    under(child, l);
+
+    pointer('pointerdown', 10, 10, { buttons: 1 });
+    pointer('pointermove', 20, 10, { buttons: 1 });
+    pointer('pointermove', 30, 10, { buttons: 1 });
+    pointer('pointerup', 30, 10);
+
+    const times = heard.map((h) => h.event.timeMs);
+    expect(times).toHaveLength(4);
+    expect(times.every((time) => Number.isFinite(time) && time > 0)).toBe(true);
+    for (let i = 1; i < times.length; i++) expect(times[i]).toBeGreaterThanOrEqual(times[i - 1]);
   });
 
   it('takes nothing from a button inside it', () => {

@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "GestureDeadline.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Primitives/Gestures/GestureDeadline.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAOA;QASI;QAEA;QAEA;QAGA;QAZI;QACA;QACA;;;IAGJ;IAEA;IAEA;IAGA;;IAhBJ"
+}
