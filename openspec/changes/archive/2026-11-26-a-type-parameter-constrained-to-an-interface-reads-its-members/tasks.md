@@ -11,7 +11,7 @@
 
 ## 3. The constraint
 
-- [ ] 3.1 The class's, the component's and the record's constraint namers name an interface with a twin, imported. Verify `Measured<T> where T : IShaped`, reading a property and calling a method on a `T`, is refused by the runtime's `tsc` on main (TS2339) and taken with the fix.
+- [x] 3.1 The class's, the component's and the record's constraint namers name an interface with a twin, imported. Verify `Measured<T> where T : IShaped`, reading a property and calling a method on a `T`, is refused by the runtime's `tsc` on main (TS2339) and taken with the fix.
 - [x] 3.2 A conformance case builds a generic class constrained to an interface and a class implementing it, as an app builds them, and reads the members through `T`, with type annotations on and off.
 
 ## 4. The record
