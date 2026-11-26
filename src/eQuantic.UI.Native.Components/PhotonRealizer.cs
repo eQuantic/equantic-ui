@@ -232,6 +232,11 @@ public sealed class RealizeResult
     /// </summary>
     public IReadOnlyList<Overlay> OverlayLayers { get; }
 
+    /// <summary>The look in effect where each of those layers was queued, index for index
+    /// (<see cref="ContentStyle"/>, #1577): what the semantics walk reads a layer's texts under, as the
+    /// layout measured and the paint drew them. Empty for a frame made without the realizer.</summary>
+    internal IReadOnlyList<ContentStyle?> OverlayLooks { get; init; } = Array.Empty<ContentStyle?>();
+
     /// <summary>Everything Tab visits, in tree order: buttons and fields in one sequence.</summary>
     public IReadOnlyList<FocusStop> FocusStops { get; }
 
@@ -428,6 +433,7 @@ public static class PhotonRealizer
         // layer blocks (and optionally handles) everything behind it.
         var overlayRoots = new List<LayoutNode>();
         var realizedLayers = new List<Overlay>();
+        var layerLooks = new List<ContentStyle?>();
         for (var i = 0; i < overlays.Count; i++)
         {
             // A CLOSED layer is realized NOWHERE — no pixels, no hit region, no focus stop, no
@@ -450,14 +456,16 @@ public static class PhotonRealizer
             var layerElement = (queued.Holder ?? throw new InvalidOperationException(
                     $"Overlay layer {i} of this frame has no position to build in."))
                 .ShowDeferred(queued.Layer.Child);
+            // Under the look where the layer was queued (#1577), measured and painted alike.
             var overlayLayout = LayoutEngine.Layout(queued.Layer.Child, viewportWidth, viewportHeight,
-                context, rootElement: layerElement);
+                context, rootElement: layerElement, around: queued.Content);
             overlayRoots.Add(overlayLayout);
             realizedLayers.Add(queued.Layer);
+            layerLooks.Add(queued.Content);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
             EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedAt, focusedId, textAt, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredAt) { HoveredPart = hoveredPart, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), ReportsInView = reportsInView, InScrolledHeader = queued.InScrolledHeader },
-                theme, mode, contrast, builder, motion, overlays));
+                theme, mode, contrast, builder, motion, overlays) { Content = queued.Content });
             // What an editable combobox's list says, ONE mark a frame, read from the layer's layout (#1088).
             if (queued.Combo is { } combo) input.Add(combo.Mark(overlayLayout));
         }
@@ -503,6 +511,7 @@ public static class PhotonRealizer
             ContextRegions = regions.ContextsOrEmpty,
             PointerTargets = regions.PointerOrEmpty,
             SortRegions = regions.SortsOrEmpty,
+            OverlayLooks = layerLooks,
         };
     }
 

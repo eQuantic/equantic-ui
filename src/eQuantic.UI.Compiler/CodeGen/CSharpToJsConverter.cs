@@ -536,10 +536,33 @@ public class CSharpToJsConverter
     public string ConvertInitializer(ExpressionSyntax expression, Func<string> convert, bool typeAnnotations)
     {
         var (converted, bound) = _context.Temporaries.In(convert);
-        var declared = ExpressionVariableScanner.Declarations(expression, typeAnnotations)
+        var declared = ExpressionVariables(expression, typeAnnotations)
             + _context.Temporaries.Declarations(bound, typeAnnotations);
         return declared.Length == 0 ? converted : $"(() => {{ {declared}return {converted}; }})()";
     }
+
+    /// <summary>
+    /// The TypeScript type a method's own <c>out</c> parameter is declared by in the body that assigns it, where its
+    /// type has one to say: a named type, or a list of a named item, as an <c>out var</c> is (#1865), and null for any
+    /// other, which keeps <c>any</c>. A parameter declared nullable admits its null.
+    /// </summary>
+    internal string? OutParameterType(ParameterSyntax parameter)
+    {
+        if (_context.SemanticHelper.GetDeclaredSymbol(parameter) is not IParameterSymbol symbol) return null;
+        var declared = symbol.Type.WithNullableAnnotation(NullableAnnotation.NotAnnotated);
+        if ((TsNamedType.For(declared, _context) ?? Strategies.Statements.LocalDeclarationStrategy.ListType(declared, _context))
+            is not { } type || type == "any")
+            return null;
+        return symbol.Type.NullableAnnotation == NullableAnnotation.Annotated ? TypeScriptEmitter.OrNull(type) : type;
+    }
+
+    /// <summary>
+    /// The declarations of what <paramref name="expression"/> declares, for a writer outside any statement (an
+    /// initializer's arrow, a constructor's base call), with or without types as that writer's own annotations say:
+    /// an <c>out var</c> of a named type is declared by it in TypeScript, as a statement's is (#1865).
+    /// </summary>
+    internal string ExpressionVariables(ExpressionSyntax expression, bool typeAnnotations) =>
+        ExpressionVariableScanner.Declarations(ExpressionVariableScanner.Names(expression), [expression], _context, typeAnnotations);
 
     public string Convert(SyntaxNode node)
     {

@@ -35,7 +35,7 @@ export class Chip extends StatelessComponent {
         let quietFill = slot?.fill ?? theme.surfaceSubtle;
         let fill = (() => { const $s = this.kind; if (($s === 'filter') && (this.selected)) return primary.subtle; if ($s === 'filter') return null; if ($s === 'tag') return tint.subtle; return quietFill; })();
         let textColor = (() => { const $s = this.kind; if (($s === 'filter') && (this.selected)) return primary.onSubtle; if ($s === 'tag') return tint.onSubtle; return theme.textPrimary; })();
-        let label = new Text(this.label, 'caption', textColor, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(slot?.labelSize ?? 13, slot?.labelLineHeight ?? 16, slot?.labelWeight ?? 'semiBold', slot?.labelTracking ?? 0, Math.fround(1.3)) });
+        let label = new Text(this.label, 'caption', textColor, 1, null, false, false, null, 0, { styleOverride: new TypeStyle(slot?.labelSize ?? 13, slot?.labelLineHeight ?? 16, slot?.labelWeight ?? 'semiBold', slot?.labelTracking ?? 0, Math.fround(1.3)) });
         let content = new Row(slot?.gap ?? 6, 'start', 'center', false, null, null, { main: 'center', height: SizeValue.fill });
         if (this.kind === 'filter' && this.selected) {
             content.add(new Icon(IconGlyph.fromIcons('check'), slot?.iconSize ?? 16, textColor));

@@ -48,16 +48,24 @@ public class UiDispatcherTests : IDisposable
     }
 
     [Fact]
-    public void PostingWakesAnIdleWindow()
+    public void PostingWakesAnIdleWindow_WithoutTellingItsTreeItChanged()
     {
         var host = Mount();
         host.RenderFrame(new DisplayListBuilder(), 16);
-        host.NeedsRender.Should().BeFalse("a settled screen asks for no frames");
+        host.WantsFrame(16).Should().BeFalse("a settled screen asks for no frames");
 
-        PhotonDispatcher.Shared.Post(() => { });
+        var worker = new Thread(() => PhotonDispatcher.Shared.Post(() => { }));
+        worker.Start();
+        worker.Join();
 
-        host.NeedsRender.Should().BeTrue(
+        host.WantsFrame(16).Should().BeTrue(
             "otherwise a scanner's results appear whenever something else next needs a frame");
+        // #1239: the work is the process's. It told every live host its own tree had changed, so a host that
+        // owed nothing read as owing a frame, and skipped scheduling what it did owe.
+        host.NeedsRender.Should().BeFalse("nothing of this host's tree changed");
+
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        host.WantsFrame(32).Should().BeFalse("the frame ran the work, and nothing is waiting any more");
     }
 
     [Fact]
@@ -108,9 +116,9 @@ public class PhotonDispatcherLifetimeTests
     }
 
     [Fact]
-    public void AHostThatIsGone_IsCollectable_AndStopsBeingWoken()
+    public void AHostThatIsGone_IsCollectable_AndPostingStillWorks()
     {
-        // Subscribing to a static must not be a lifetime: an app that opens and closes windows would
+        // Being reachable from a static must not be a lifetime: an app that opens and closes windows would
         // otherwise keep every one of them, with its whole tree, until the process ends.
         static WeakReference MountAndForget()
         {
@@ -125,10 +133,11 @@ public class PhotonDispatcherLifetimeTests
         GC.WaitForPendingFinalizers();
         GC.Collect();
 
-        reference.IsAlive.Should().BeFalse("the dispatcher holds hosts weakly, like PhotonHotReload");
+        reference.IsAlive.Should().BeFalse("the dispatcher holds no host, and PhotonHotReload holds them weakly");
 
-        // And waking survives the collection rather than throwing on a dead entry.
+        // And posting after the collection reaches nothing that is gone.
         PhotonDispatcher.Shared.Post(() => { });
+        PhotonDispatcher.Shared.Drain();
     }
 
     [Fact]
