@@ -67,7 +67,7 @@ public class CollectionExpressionStrategy : IExpressionIrStrategy
         if (runtimeClass && collection.Elements.Any(element => element is not WithElementSyntax))
             return JsExpr.Opaque(context.Unhandled(collection, "collection expression"));
         if (target.IsDictionary()) return DictionaryStrategy.Empty(target!, Capacity(collection, context), context);
-        if (runtimeClass) return QueueStackStrategy.Empty(kind!, Capacity(collection, context), context);
+        if (runtimeClass) return QueueStackStrategy.Empty(kind!, target, Capacity(collection, context), context);
 
         var array = JsExpr.Array(collection.Elements
             .Where(element => element is not WithElementSyntax)
@@ -78,9 +78,10 @@ public class CollectionExpressionStrategy : IExpressionIrStrategy
         {
             // In its element type's order (ValueOrdering), as a constructed one is.
             context.UsedHelpers.Add(Eq.Import);
+            var sorted = JsExpr.Identifier(Eq.SortedSet + TsNamedType.TypeArguments(target, context));
             return target is INamedTypeSymbol { TypeArguments: [var element] } && ValueOrdering.Of(element) is { } ordering
-                ? JsExpr.Call(JsExpr.Identifier(Eq.SortedSet), array, JsExpr.Literal(ordering))
-                : JsExpr.Call(JsExpr.Identifier(Eq.SortedSet), array);
+                ? JsExpr.Call(sorted, array, JsExpr.Literal(ordering))
+                : JsExpr.Call(sorted, array);
         }
         if (definition.StartsWith("System.Collections.Generic.HashSet")
             || definition.StartsWith("System.Collections.Generic.ISet")
@@ -88,9 +89,10 @@ public class CollectionExpressionStrategy : IExpressionIrStrategy
         {
             context.UsedHelpers.Add(Eq.Import);
             var element = target is INamedTypeSymbol { TypeArguments: [var item] } ? item : null;
+            var set = JsExpr.Identifier(Eq.HashSetOf + TsNamedType.TypeArguments(target, context));
             return ElementEquality.Of(element, node, context) is { } equality
-                ? JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf), array, JsExpr.Literal(equality))
-                : JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf), array);
+                ? JsExpr.Call(set, array, JsExpr.Literal(equality))
+                : JsExpr.Call(set, array);
         }
 
         return array;

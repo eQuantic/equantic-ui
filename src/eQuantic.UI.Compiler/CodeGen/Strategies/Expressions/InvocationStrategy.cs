@@ -376,8 +376,10 @@ public class InvocationStrategy : IExpressionIrStrategy
                 context.UsedRuntimeTypes.Add(declaring.TwinReference());
             else
                 context.UsedAppTypes.Add(declaring.TwinReference());
-            // By the name the bound method holds on its twin (#563).
-            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(declaring.TwinReference()), TwinMethodName.Of(symbol, methodName)), argIrs);
+            // By the name the bound method holds on its twin (#563), on its closed type's statics where the
+            // class keeps them per closure (#1855).
+            var home = ClosedStatics.Home(declaring, invocation, context) ?? JsExpr.Identifier(declaring.TwinReference());
+            return JsExpr.Call(JsExpr.Member(home, TwinMethodName.Of(symbol, methodName)), argIrs);
         }
 
         // STANDALONE factory calls (no semantic model — the playground's mode): nothing can RESOLVE

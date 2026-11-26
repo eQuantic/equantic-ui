@@ -46,10 +46,10 @@ export class BuildOwner {
         this.windowWidth = 0;
         this.navigationRequested = null;
         this.keepsInstance = null;
-        this.keyScratch = $eq.collections.dictionary();
-        this._held = $eq.collections.dictionary(null, 'item');
-        this._parked = $eq.collections.dictionary(null, 'item');
-        this._placed = $eq.collections.hashSet('item');
+        this.keyScratch = $eq.collections.dictionary<string, Element>();
+        this._held = $eq.collections.dictionary<GlobalKey, any>(null, 'item');
+        this._parked = $eq.collections.dictionary<GlobalKey, Element>(null, 'item');
+        this._placed = $eq.collections.hashSet<Element>('item');
         this._forgetful = [];
         this._settlingParked = false;
         $eq.guard.throwIfNull(buildComponent, 'buildComponent');

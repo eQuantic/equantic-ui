@@ -2,7 +2,7 @@
 ### web
 <div class="eq-11yg588 eq-1eb13m5 eq-1iu691c eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-akjizx eq-g7fowl" data-eq-drop="off">
-<div class="eq-12kbhu0 eq-12ve49g eq-13qs2y8 eq-15bwtfr eq-1eb13m5 eq-1to62bo eq-5ew4ww eq-akjizx eq-g7fowl">
+<div class="eq-12kbhu0 eq-12ve49g eq-13qs2y8 eq-1eb13m5 eq-1o1uad7 eq-1to62bo eq-5ew4ww eq-akjizx eq-g7fowl">
 <div class="eq-19dgm5h eq-1eb13m5 eq-aexooi eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
 <span class="eq-type-label eq-12qw9lh eq-1txto41 eq-7gvrt4 eq-h7owsy eq-mbtjfn eq-xkrzsg">Drop files here, or choose them</span>
 <span class="eq-type-caption eq-115fhry eq-12qw9lh eq-1txto41 eq-h7owsy eq-mbtjfn eq-xkrzsg">Any file, up to 1 B</span>
@@ -31,7 +31,6 @@
 .eq-13qs2y8{opacity:0.6}
 .eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
-.eq-15bwtfr{border-radius:14px}
 .eq-16x7aca{display:block}
 .eq-17x308w{background-color:light-dark(#e9edf261, #242c3661)}
 .eq-19dgm5h{gap:8px}
@@ -98,7 +97,7 @@ FileUpload 0 0 480x158
 ### web
 <div class="eq-11yg588 eq-1eb13m5 eq-1iu691c eq-5ew4ww eq-aexooi eq-akjizx eq-kngwsg eq-m92pvu eq-mc2xdp">
 <div class="eq-akjizx eq-g7fowl" data-eq-drop="off">
-<div class="eq-12kbhu0 eq-12ve49g eq-13qs2y8 eq-15bwtfr eq-1eb13m5 eq-1to62bo eq-5ew4ww eq-akjizx eq-g7fowl">
+<div class="eq-12kbhu0 eq-12ve49g eq-13qs2y8 eq-1eb13m5 eq-1o1uad7 eq-1to62bo eq-5ew4ww eq-akjizx eq-g7fowl">
 <div class="eq-19dgm5h eq-1eb13m5 eq-aexooi eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp">
 <span class="eq-type-label eq-12qw9lh eq-1txto41 eq-7gvrt4 eq-h7owsy eq-mbtjfn eq-xkrzsg">Drop files here, or choose them</span>
 <span class="eq-type-caption eq-115fhry eq-12qw9lh eq-1txto41 eq-h7owsy eq-mbtjfn eq-xkrzsg">Any file, up to 1 B</span>
@@ -128,7 +127,6 @@ FileUpload 0 0 480x158
 .eq-13qs2y8{opacity:0.6}
 .eq-14ehxct{color:inherit}
 .eq-1566de{white-space:pre}
-.eq-15bwtfr{border-radius:14px}
 .eq-16x7aca{display:block}
 .eq-17x308w{background-color:light-dark(#e9edf261, #242c3661)}
 .eq-19dgm5h{gap:8px}

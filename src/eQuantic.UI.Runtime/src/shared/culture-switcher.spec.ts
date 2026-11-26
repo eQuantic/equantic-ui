@@ -53,7 +53,7 @@ describe('CultureSwitcher', () => {
   });
 
   it('Shape.menu shows the CURRENT language as a short code, not all three names', () => {
-    const { container } = mount(new CultureSwitcher(LANGUAGES, { shape: 'menu' }), 'pt-BR');
+    const { container } = mount(new CultureSwitcher(LANGUAGES, null, { shape: 'menu' }), 'pt-BR');
     expect(container.textContent).toContain('PT');
     // The point of the menu shape: a crowded header pays for one control, not three names.
     expect(container.textContent).not.toContain('English');
@@ -62,7 +62,7 @@ describe('CultureSwitcher', () => {
   });
 
   it('Shape.menu opens a menu of flag + endonym, and choosing one switches', async () => {
-    const { container, controller } = mount(new CultureSwitcher(LANGUAGES, { shape: 'menu' }));
+    const { container, controller } = mount(new CultureSwitcher(LANGUAGES, null, { shape: 'menu' }));
 
     const trigger = container.querySelector('[aria-haspopup="menu"]') as HTMLElement;
     expect(trigger).not.toBeNull();
@@ -86,7 +86,7 @@ describe('CultureSwitcher', () => {
 
   it('Shape.segments keeps segments past three languages, where auto would give up', () => {
     const many = [...LANGUAGES, Object.assign(new CultureOption('fr', 'Français'), { short: 'FR', flag: '🇫🇷' })];
-    const { container } = mount(new CultureSwitcher(many, { shape: 'segments' }));
+    const { container } = mount(new CultureSwitcher(many, null, { shape: 'segments' }));
     expect(container.textContent).toContain('Français');
     expect(container.querySelector('[aria-haspopup="menu"]')).toBeNull();
     container.remove();
@@ -94,7 +94,7 @@ describe('CultureSwitcher', () => {
 
   it('falls back to the endonym when an option carries no short code', () => {
     const bare = [new CultureOption('en', 'English'), new CultureOption('pt-BR', 'Português')];
-    const { container } = mount(new CultureSwitcher(bare, { shape: 'menu' }));
+    const { container } = mount(new CultureSwitcher(bare, null, { shape: 'menu' }));
     expect(container.textContent).toContain('English');
     container.remove();
   });

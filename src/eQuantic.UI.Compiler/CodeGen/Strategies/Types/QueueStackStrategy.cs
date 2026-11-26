@@ -196,7 +196,7 @@ public class QueueStackStrategy : IExpressionIrStrategy
         var kind = KindOfCreation(creation, context) ?? "queue";
         JsExpr construction = kind == "sortedSet" && SortedSetConstruction(creation, resolved, context) is { } sorted
             ? sorted
-            : JsExpr.Call(JsExpr.Identifier($"$eq.collections.{kind}"),
+            : JsExpr.Call(JsExpr.Identifier($"$eq.collections.{kind}{TsNamedType.TypeArguments(resolved, context)}"),
                 (creation.ArgumentList?.Arguments ?? default).Select(argument => context.Converter.ConvertIr(argument.Expression)).ToList());
         // `new SortedSet<int> { 2, 1 }` is a construction and then one Add per element, as C# runs it.
         // The initializer was dropped, so the set began empty in the browser alone. A node's `Value` is
@@ -210,11 +210,12 @@ public class QueueStackStrategy : IExpressionIrStrategy
 
     /// <summary>The empty queue, stack or linked list a collection expression builds
     /// (<c>Queue&lt;int&gt; pending = []</c>), constructed as <c>new()</c> constructs it, with the capacity
-    /// its <c>with(…)</c> hands the constructor. It went out as an array (#1144).</summary>
-    internal static JsExpr Empty(string kind, JsExpr? capacity, ConversionContext context)
+    /// its <c>with(…)</c> hands the constructor, and the type arguments of the type it builds (#1866). It
+    /// went out as an array (#1144).</summary>
+    internal static JsExpr Empty(string kind, ITypeSymbol? type, JsExpr? capacity, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
-        var factory = JsExpr.Identifier($"$eq.collections.{kind}");
+        var factory = JsExpr.Identifier($"$eq.collections.{kind}{TsNamedType.TypeArguments(type, context)}");
         return capacity is null ? JsExpr.Call(factory) : JsExpr.Call(factory, capacity);
     }
 
@@ -247,7 +248,7 @@ public class QueueStackStrategy : IExpressionIrStrategy
                 parameter = argument.Parameter?.Name;
             }
         }
-        var factory = JsExpr.Identifier("$eq.collections.sortedSet");
+        var factory = JsExpr.Identifier($"$eq.collections.sortedSet{TsNamedType.TypeArguments(type, context)}");
         if (source is not null && parameter is not null)
             return JsExpr.Call(factory, source, JsExpr.Literal(ordering ?? "undefined"), JsExpr.Literal($"'{parameter}'"));
         if (ordering is null)

@@ -1,27 +1,37 @@
 {
   "$comment": [
-    "What scripts/measure-edit-to-view.cs holds each target to, in milliseconds: the warm median of each",
-    "part named, and the run fails over it (#900). The roadmap's bar is a second. The desktop meets it and",
-    "is held to it. The web does not, by tens of seconds, so its total is held to a CEILING that only comes",
-    "down: set from the first CI run that measured it (a warm median of 22.9s, its warm runs 22.9 to 39.2s)",
-    "with room for the runner's spread. Each slice of #900 lowers it by what it measured, and the run says",
-    "when the median falls under half of it. #1274 took 0.5s off the wait after a save (553ms on CI, under",
-    "100ms after it), and #1276 took the MSBuild part off a save (6.8s on CI, a few milliseconds after it). #1278 took",
-    "1.9s off eqc's part, its median from 5.5s at a load average of 35 to 38 to 3.6s at 27 to 31.",
-    "#1280 kept one bun between saves and wrote only what changed: bun's part from a median of 508ms (its",
-    "runs 261 to 1230ms, a load average of 198 to 235) to 145ms (77 to 439ms, at 147 to 204). It lowers the",
-    "ceiling by 0.3s, under the 0.36s it measured, since the two ran at different loads.",
-    "#1364 and #1380 took eqc's part to the files a save can have changed. The web's warm medians over",
-    "six of main's samples jobs were 479, 634, 708, 722, 818 and 1053ms: under the bar on five. The 1053ms",
-    "run was not the load, the lowest of them (39); its eqc part ran 520 to 2129ms, against 166 to 492ms",
-    "in the others. A ceiling of a second would have failed it, so it is 1.5s, the runner's spread over",
-    "the bar, and within that spread the run says whether the median met the bar rather than asking for",
-    "the ceiling to come down."
+    "What scripts/measure-edit-to-view.cs holds each target to (#900). Since #1909 a save is held two ways, and",
+    "the run fails over either.",
+    "WORK, the most any warm save did, counted by eqc (EQC_TIMINGS), which no machine's load moves: the files it",
+    "compiled, the TypeScript modules it wrote, and the files and kilobytes bun wrote. A save of the dashboard's",
+    "one screen compiled 1 of 159 files, wrote 1 module and had bun write 2 files, 2.7KB; the cold build did",
+    "159, 30 and 285KB. Each number leaves room for one more of the same, and a save that compiles, writes or",
+    "bundles the app again fails it whatever the clock says. A warm save that loaded the project cold, instead",
+    "of keeping the compilation the save before it loaded, fails too.",
+    "TIME, the FASTEST warm save of each part named, in milliseconds. It was the warm median until #1909: a",
+    "median of three saves on a loaded macOS runner moved with the load, 1509 and 1898ms on runs whose fastest",
+    "saves were 1471 and 1074ms, and dropped pull requests that never touched hot reload from the merge queue. A",
+    "loaded runner slows some saves and never makes one faster, so the fastest is what a save costs when nothing",
+    "else runs; the medians are still reported beside it. The roadmap's bar is a second. The desktop meets it",
+    "and is held to it. The web is held to a CEILING that only comes down: it came down with each slice of #900",
+    "(#1274, #1276, #1278, #1280, #1364, #1380), from tens of seconds to the runner's spread over the bar, 1.5s,",
+    "within which the run says whether the fastest save met the bar rather than asking for the ceiling to come",
+    "down."
   ],
   "desktop": {
-    "total": 1000
+    "time": {
+      "total": 1000
+    }
   },
   "web": {
-    "total": 1500
+    "work": {
+      "compiled": 2,
+      "modules": 2,
+      "bundled": 4,
+      "bundledKb": 16
+    },
+    "time": {
+      "total": 1500
+    }
   }
 }

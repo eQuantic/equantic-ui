@@ -42,6 +42,14 @@ public class IdentifierStrategy : IExpressionIrStrategy
         if (symbol is INamedTypeSymbol nested && nested.RenamedTwin() is not null)
             return JsExpr.Identifier(nested.IntroduceTwin(context));
 
+        // An alias of a static generic class's closed type (`using IntCache = Cache<int>;`, or one named `Cache`, which
+        // the generic class's own name leaves free) reaches that closed type's statics, as its own spelling does
+        // (#1855). A bare name binds a generic class through an alias alone.
+        if (symbol is INamedTypeSymbol aliasedClosed
+            && identifier.Parent is MemberAccessExpressionSyntax aliasAccess && aliasAccess.Expression == identifier
+            && ClosedStatics.Home(aliasedClosed, identifier, context) is { } aliasStatics)
+            return aliasStatics;
+
         // A type named through a using alias is written by its own name and imported by it, as through its
         // namespace (#625): `using F = Falei.Web.Portal.Fold;` then `F.Text(1)` wrote `F.text(1)`, a name
         // nothing defines. A name that differs from the type's own is only ever an alias.
@@ -113,9 +121,16 @@ public class IdentifierStrategy : IExpressionIrStrategy
                     if (!isMemberName && symbol.ReportIfPlatformReachedBare(identifier, context))
                         return JsExpr.Literal("undefined");
                     var staticName = Named(symbol, name);
-                    return isMemberName
-                        ? JsExpr.Identifier(staticName)
-                        : JsExpr.Member(JsExpr.Identifier(StaticHome(symbol.ContainingType, context)), staticName);
+                    if (isMemberName) return JsExpr.Identifier(staticName);
+                    // A static generic class's statics are its closed type's (#1855): `this` in its own code, a
+                    // method group bound to it, since its body reads `this` too.
+                    if (ClosedStatics.Home(symbol.ContainingType, identifier, context) is { } closed)
+                    {
+                        if (symbol is not IMethodSymbol) return JsExpr.Member(closed, staticName);
+                        context.UsedHelpers.Add(Eq.Import);
+                        return JsExpr.Template($"{Eq.DelegateBound}({{0}}, {{0}}.{staticName})", closed);
+                    }
+                    return JsExpr.Member(JsExpr.Identifier(StaticHome(symbol.ContainingType, context)), staticName);
                 }
 
                 // If it's a member of the current class and not static, add 'this.'. A field is read in

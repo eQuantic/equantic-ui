@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, StyleDiff, TextEntry, VisualNodeExtensions } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, InputTheme, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, StyleDiff, TextEntry, VisualNodeExtensions } from "../runtime-exports";
 
 export class SearchField extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.SearchField';
@@ -6,23 +6,26 @@ export class SearchField extends StatelessComponent {
     declare onChanged: ((string: string) => void) | null;
     declare placeholder: string;
     declare onSubmit: (() => void) | null;
+    declare style: any;
 
-    constructor(query?: any, onChanged: any = null, placeholder: any = null, onSubmit: any = null, props?: any) {
+    constructor(query?: any, onChanged: any = null, placeholder: any = null, onSubmit: any = null, style: any = null, props?: any) {
         super();
         if (query !== undefined) this.query = query;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (placeholder !== undefined) this.placeholder = placeholder;
         if (onSubmit !== undefined) this.onSubmit = onSubmit;
+        if (style !== undefined) this.style = style;
         this.query = query;
         this.onChanged = onChanged;
         this.placeholder = placeholder ?? SdkStrings.searchPlaceholder;
         this.onSubmit = onSubmit;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let slot = theme.input;
+        let slot = InputTheme.merge(theme.input, this.style);
         let height = ControlMetrics.height(context, 'medium', (slot?.controls ?? null));
         let fill = slot?.searchFill ?? theme.surfaceSubtle;
         let iconSize = slot?.iconSize ?? 20;

@@ -13,7 +13,7 @@ export class CodeDiff extends StatefulComponent {
     _comparedModified: any = null;
     _layout: any = null;
     _toldDocument: any = null;
-    _expanded: any = $eq.collections.hashSet();
+    _expanded: any = $eq.collections.hashSet<number>();
     _inlineChosen: boolean = false;
     _inlineChoice: boolean = false;
     _offset: number = 0;

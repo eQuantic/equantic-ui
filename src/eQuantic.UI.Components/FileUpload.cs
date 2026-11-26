@@ -49,14 +49,17 @@ public sealed class FileUpload : StatefulComponent
     /// <param name="label">The area's invitation, in place of the SDK's own.</param>
     /// <param name="hint">What the area says it accepts, in place of the formats and largest size the
     /// policy states.</param>
+    /// <param name="style">The area's own look: its border, fill and radius, laid over the theme's
+    /// <see cref="IAppTheme.Input"/> slot with <see cref="InputTheme.Merge"/>.</param>
     public FileUpload(UploadPolicy policy, Action<UploadedFile> onCompleted, bool multiple = true,
-        string? label = null, string? hint = null)
+        string? label = null, string? hint = null, InputTheme? style = null)
     {
         Policy = policy;
         OnCompleted = onCompleted;
         Multiple = multiple;
         Label = label;
         Hint = hint;
+        Style = style;
         _config = this;
     }
 
@@ -74,6 +77,9 @@ public sealed class FileUpload : StatefulComponent
 
     /// <summary>What the area says it accepts; null for the policy's formats and largest size.</summary>
     public string? Hint { get; init; }
+
+    /// <summary>The area's own look, laid over the theme's <see cref="IAppTheme.Input"/> slot; null is the theme's.</summary>
+    public InputTheme? Style { get; init; }
 
     public override void AdoptConfig(UiComponent next)
     {
@@ -101,6 +107,9 @@ public sealed class FileUpload : StatefulComponent
         var config = _config;
         var picker = context.GetService<IFilePicker>();
         var uploads = context.GetService<IUploads>();
+        // The instance's style over the theme's Input slot: what the area draws that the slot names is read
+        // from it first, and from the theme's tokens after.
+        var slot = InputTheme.Merge(theme.Input, config.Style);
         var enabled = _live && picker is { IsAvailable: true } && uploads is { IsAvailable: true };
 
         var invitation = new Column(gap: Space.S2, cross: CrossAlign.Center);
@@ -119,10 +128,10 @@ public sealed class FileUpload : StatefulComponent
         {
             Width = SizeValue.Fill,
             Padding = EdgeInsets.All(Space.S6),
-            Background = _over && enabled ? theme.Colors(Variant.Primary).Subtle : theme.SurfaceSubtle,
-            BorderWidth = _over && enabled ? 2 : 1,
-            BorderColor = _over && enabled ? theme.Colors(Variant.Primary).Base : theme.BorderStrong,
-            CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Large)),
+            Background = _over && enabled ? theme.Colors(Variant.Primary).Subtle : slot?.Fill ?? theme.SurfaceSubtle,
+            BorderWidth = _over && enabled ? 2 : slot?.BorderWidth ?? 1,
+            BorderColor = _over && enabled ? theme.Colors(Variant.Primary).Base : slot?.BorderColor ?? theme.BorderStrong,
+            CornerRadius = new CornerRadii(slot?.Radius ?? theme.Shape(ShapeScale.Large)),
             Opacity = enabled ? null : 0.6f,
         }, invitation);
 
