@@ -261,6 +261,12 @@ jobs:
       - name: Each change's API and budget fold whole at a release
         run: ./scripts/check-release-folds.sh
 
+      # The README's phone pictures are taken on a developer's Mac and never here, so this is where the
+      # script's refusals are proven: a picture that cannot be taken says why at once (#1198). Run
+      # against stubs of the simulator, the checker and the build, beside the other script checks.
+      - name: A README capture that cannot be taken says why
+        run: ./scripts/check-capture-readme.sh
+
   # The runtime's TypeScript, proven once: the command a developer runs, through the embedded bun
   # (bun.lock as pinned, tsc, vitest). It hands nothing on. The bundle an app runs is written by
   # the Server's own build, in every job that builds it, and a library build of the same sources
