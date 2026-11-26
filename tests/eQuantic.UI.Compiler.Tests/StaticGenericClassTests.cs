@@ -87,6 +87,53 @@ public class StaticGenericClassTests
     }
 
     [Fact]
+    public void ItsOwnMethodGroup_IsBoundToItsClosedType_AndImportsWhatBindsIt()
+    {
+        var pick = Compile("""
+            using System;
+            namespace NS;
+            public static class Pick<T>
+            {
+                private static T Echo(T value) => value;
+                public static Func<T, T> Picker => Echo;
+            }
+            """).Single(result => result.ComponentName == "Pick").TypeScript;
+
+        pick.Should().Contain("$eq.delegates.bound(this, this.echo)")
+            .And.Contain("import { $eq } from \"@equantic/runtime\";", "nothing else in the class names $eq");
+    }
+
+    [Fact]
+    public void ANamespaceQualifiedClosedType_IsItsOwn()
+    {
+        var user = Compile(Cache + """
+            public sealed class User { public int Use() { global::NS.Cache<int>.Keep(1); return NS.Cache<string>.Last?.Length ?? 0; } }
+            """).Single(result => result.ComponentName == "User");
+
+        user.Errors.Should().BeEmpty();
+        user.TypeScript.Should().Contain("$eq.statics(Cache, 'int').keep(1);").And.Contain("$eq.statics(Cache, 'string').last");
+    }
+
+    [Fact]
+    public void AStaticClassInAGenericType_KeepsItsStaticsOnItsClass()
+    {
+        var results = Compile("""
+            namespace NS;
+            public class Outer<T>
+            {
+                public static class Counter { public static int N; public static int Bump() => ++N; }
+                public static class Typed<U> { public static int N; public static int Bump() => ++N; }
+            }
+            public sealed class User { public int Use() => Outer<int>.Counter.Bump() + Outer<int>.Typed<string>.Bump(); }
+            """);
+
+        results.SelectMany(result => result.Errors).Should().BeEmpty();
+        results.Single(result => result.ComponentName == "User").TypeScript.Should().NotContain("$eq.statics");
+        results.Should().OnlyContain(result => !result.TypeScript.Contains("this.n"),
+            "a class nested in a generic type keeps the statics on its class, as before");
+    }
+
+    [Fact]
     public void ATypeDeclaredInsideIt_HasNoClosedTypeOfIt()
     {
         var results = Compile("""

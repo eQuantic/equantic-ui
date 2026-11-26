@@ -22,16 +22,20 @@ namespace eQuantic.UI.Compiler.CodeGen;
 internal static class ClosedStatics
 {
     /// <summary>Whether <paramref name="type"/> is a static generic class whose twin the build writes, so its
-    /// statics are kept per closed type.</summary>
+    /// statics are kept per closed type: a class of type parameters of its own, declared in no generic type, whose
+    /// closed type its own type arguments name. Roslyn calls a class nested in a generic type generic too, with
+    /// none of its own.</summary>
     internal static bool KeepsPerClosure(this INamedTypeSymbol? type) =>
-        type is { IsStatic: true, IsGenericType: true, TypeKind: TypeKind.Class }
+        type is { IsStatic: true, Arity: > 0, TypeKind: TypeKind.Class }
+        && type.ContainingType is not { IsGenericType: true }
         && (type.OriginalDefinition.Locations.Any(location => location.IsInSource) || type.IsRuntimeProvided());
 
     /// <summary>Whether the declaration <paramref name="type"/> is a static generic class, read from its syntax
-    /// where its twin is written.</summary>
+    /// where its twin is written, by the rule <see cref="KeepsPerClosure(INamedTypeSymbol?)"/> reads its symbol.</summary>
     internal static bool KeepsPerClosure(TypeDeclarationSyntax type) =>
         type is ClassDeclarationSyntax { TypeParameterList.Parameters.Count: > 0 } cls
-        && cls.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
+        && cls.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
+        && !cls.Ancestors().OfType<TypeDeclarationSyntax>().Any(owner => owner.TypeParameterList is { Parameters.Count: > 0 });
 
     /// <summary>The receiver its static members read: <c>this</c>, the closed type they were reached through.</summary>
     internal const string Own = "this";

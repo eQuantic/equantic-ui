@@ -117,9 +117,11 @@ public class IdentifierStrategy : IExpressionIrStrategy
                     // A static generic class's statics are its closed type's (#1855): `this` in its own code, a
                     // method group bound to it, since its body reads `this` too.
                     if (ClosedStatics.Home(symbol.ContainingType, identifier, context) is { } closed)
-                        return symbol is IMethodSymbol
-                            ? JsExpr.Template($"{Eq.DelegateBound}({{0}}, {{0}}.{staticName})", closed)
-                            : JsExpr.Member(closed, staticName);
+                    {
+                        if (symbol is not IMethodSymbol) return JsExpr.Member(closed, staticName);
+                        context.UsedHelpers.Add(Eq.Import);
+                        return JsExpr.Template($"{Eq.DelegateBound}({{0}}, {{0}}.{staticName})", closed);
+                    }
                     return JsExpr.Member(JsExpr.Identifier(StaticHome(symbol.ContainingType, context)), staticName);
                 }
 

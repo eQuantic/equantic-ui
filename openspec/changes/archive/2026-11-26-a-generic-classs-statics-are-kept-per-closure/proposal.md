@@ -32,15 +32,16 @@ For a developer using the SDK nothing they write changes. A static generic class
 - **The class's static members read their statics through `this`**, the closed type they were reached through
   (`ClosedStatics`): a static's getter and setter, the type initializer (`$init`, `$slots`), a static method, a call or a
   method group of a sibling, a lambda's body inside one.
-- **Other code reaches the closed type it names.** `Cache<int>.Keep(1)` is `$eq.statics(Cache, 'int').keep(1)`, a method
-  group is bound to it, and `using static` follows the same rule. The module imports the class.
+- **Other code reaches the closed type it names.** `Cache<int>.Keep(1)` and `NS.Cache<int>.Keep(1)` are
+  `$eq.statics(Cache, 'int').keep(1)`, a method group is bound to it, and `using static` follows the same rule. The module
+  imports the class.
 - **The twin declares no type parameters**, and names those its members read with `any` aliases after the class, since
   one class serves every closed type.
 - **A type argument known only at run time is refused** (EQ2018): `Cache<U>` in generic code, and `Cache<T>` from a type
   declared inside the class, name no closed type the browser can tell apart.
 
 A generic class that is not static keeps its statics on the class: its instance members read them with no closed type in
-hand. Parts reached: eqc (`ClosedStatics`, the identifier, invocation and generic-name strategies, the class module
+hand. So does a static class declared inside a generic type, whose closed type its own type arguments do not name. Parts reached: eqc (`ClosedStatics`, the identifier, invocation and generic-name strategies, the class module
 writer) and the runtime's `closures.ts`. No contract surface or developer surface moves. `Eq.Statics` joins the
 compiler's tool surface.
 
