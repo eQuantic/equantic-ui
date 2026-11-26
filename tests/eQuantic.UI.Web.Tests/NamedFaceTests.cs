@@ -236,7 +236,7 @@ public class NamedFaceTests
     public void TheNodeAddsToTheRole_AndTheCodeFaceFollows()
     {
         var theme = new CodeFacedTheme(Theme, "JetBrains Mono");
-        var style = new Text("git log", TypeRole.Caption) { Mono = true }.Resolve(theme);
+        var style = new Text("git log", TypeRole.Caption) { Mono = true }.Resolve(theme, around: null);
 
         style.Mono.Should().BeTrue();
         style.Family.Should().Be(new FontFamily("JetBrains Mono"));
@@ -313,7 +313,7 @@ public class NamedFaceTests
     {
         var theme = new BrandedTheme(Theme, sans: "IBM Plex Sans", mono: "JetBrains Mono");
 
-        new Text("git log", TypeRole.Caption) { Mono = true }.Resolve(theme).Family
+        new Text("git log", TypeRole.Caption) { Mono = true }.Resolve(theme, around: null).Family
             .Should().Be(new FontFamily("JetBrains Mono"),
                 "the role's face is a DEFAULT, and a proportional default must not outlive a node "
                 + "that asked for code");
@@ -326,7 +326,7 @@ public class NamedFaceTests
     {
         var theme = new BrandedTheme(Theme, sans: "IBM Plex Sans", mono: "JetBrains Mono");
 
-        new Text("hello", TypeRole.BodyM).Resolve(theme).Family.Should().Be(new FontFamily("IBM Plex Sans"));
+        new Text("hello", TypeRole.BodyM).Resolve(theme, around: null).Family.Should().Be(new FontFamily("IBM Plex Sans"));
     }
 
     /// <summary>
@@ -339,8 +339,8 @@ public class NamedFaceTests
         var theme = new RoleTheme(new BrandedTheme(Theme, sans: "IBM Plex Sans", mono: "JetBrains Mono"),
             TypeRole.Caption, Theme.Type(TypeRole.Caption) with { Mono = true, Family = new("Fira Code") });
 
-        new Text("git log", TypeRole.Caption).Resolve(theme).Family.Should().Be(new FontFamily("Fira Code"));
-        new Text("git log", TypeRole.Caption) { Mono = true }.Resolve(theme).Family
+        new Text("git log", TypeRole.Caption).Resolve(theme, around: null).Family.Should().Be(new FontFamily("Fira Code"));
+        new Text("git log", TypeRole.Caption) { Mono = true }.Resolve(theme, around: null).Family
             .Should().Be(new FontFamily("Fira Code"), "the node repeating what the role already said changes nothing");
     }
 
@@ -354,7 +354,7 @@ public class NamedFaceTests
             StyleOverride = theme.Type(TypeRole.BodyM) with { Family = new("Fira Code"), Mono = true },
         };
 
-        text.Resolve(theme).Family.Should().Be(new FontFamily("Fira Code"));
+        text.Resolve(theme, around: null).Family.Should().Be(new FontFamily("Fira Code"));
     }
 
     /// <summary>A theme that brands its type: a face per role, and a code face beside it — the shape

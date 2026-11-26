@@ -85,10 +85,12 @@ public sealed class ListItem : StatelessComponent
     }
 
     /// <summary>The leading slot's width, DERIVED for the two conventional slots and taken on trust
-    /// for anything else. A component that can read the number should not ask for it.</summary>
+    /// for anything else. A component that can read the number should not ask for it. An icon that
+    /// names no size is 24 here: the row states no <see cref="ContentStyle.IconSize"/> of its own, and
+    /// <see cref="Icon.SizeUnder"/> is the realizers' (it stays on the server).</summary>
     private static float SlotWidth(VisualNode leading, float declared, IAppTheme theme) => leading switch
     {
-        Icon icon => icon.Size,
+        Icon icon => icon.Size ?? 24,
         Avatar avatar => Avatar.SideOf(theme, avatar.Size),
         _ => declared,
     };

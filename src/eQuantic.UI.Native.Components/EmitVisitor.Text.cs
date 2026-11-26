@@ -12,13 +12,15 @@ internal sealed partial class EmitVisitor
 {
     private void EmitTextNode(Text text, EmitState s)
     {
-        EmitText(s.Node, text, s.Ink(text.Color), s.Theme, s.Mode, s.Contrast, s.Builder, s.Motion);
+        // Under the look the boxes above it state (#1577), the one the measure pass measured it in.
+        var align = text.Under(s.Content).Align;
+        EmitText(s.Node, text, s.Content, s.Ink(text.Color), s.Theme, s.Mode, s.Contrast, s.Builder, s.Motion);
         // A LINKED RUN is a navigation surface of its own: the layout knows which pixels the words
         // cover, and nothing else does on a target that draws its own glyphs. The POINTER registers
         // one region per piece, so a link that wraps is pressable on both its lines; the KEYBOARD
         // gets one stop for the link, under the id RichTextRuns gives it (#255), in the paragraph's
         // position.
-        foreach (var link in RichTextRuns.LinksOf(s.Node, text))
+        foreach (var link in RichTextRuns.LinksOf(s.Node, align))
         {
             foreach (var rect in link.Rects)
                 s.Input.Add(new LinkRegion(rect, link.Destination, link.Id));
@@ -72,8 +74,9 @@ internal sealed partial class EmitVisitor
     /// assembly.
     /// </para>
     /// </summary>
-    private static void EmitText(LayoutNode node, Text text, ColorToken ink, IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder, MotionScope motion)
+    private static void EmitText(LayoutNode node, Text text, ContentStyle? around, ColorToken ink, IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder, MotionScope motion)
     {
+        var look = text.Under(around);
         // A RICH paragraph is drawn PIECE BY PIECE — one raster per run per line, each in its own
         // style. Drawn as one raster of the joined text, a sentence lost its bold, its inline code
         // and its links at once, and the native side of every markdown page was flat prose.
@@ -93,7 +96,7 @@ internal sealed partial class EmitVisitor
                     float.PositiveInfinity, 1, motion.RenderScale, TextAlignment.Start);
                 if (raster is null) continue;
                 var rect = new Rect(
-                    node.Bounds.X + fragment.X + RichTextRuns.Shift(node, text, fragment),
+                    node.Bounds.X + fragment.X + RichTextRuns.Shift(node, look.Align, fragment),
                     node.Bounds.Y + fragment.Y - raster.PadTop / motion.RenderScale,
                     raster.Texture.Width / motion.RenderScale,
                     raster.Texture.Height / motion.RenderScale);
@@ -106,11 +109,11 @@ internal sealed partial class EmitVisitor
         if (motion.TextRasterizer is { } rasterizer && node.Text is { } measured)
         {
             // At the window layout measured it against, so the raster is the box layout made.
-            var style = text.Resolve(theme).AtWindow(motion.ViewportW);
+            var style = text.Resolve(theme, around).AtWindow(motion.ViewportW);
         if (text.Italic) style = style with { Italic = true };
             var raster = (motion.TextCache ?? TextRasterCache.Shared).Get(
-                rasterizer, text.PlainContent, style, motion.TypeScale, node.Bounds.Width, text.MaxLines,
-                motion.RenderScale, text.Align);
+                rasterizer, text.PlainContent, style, motion.TypeScale, node.Bounds.Width, look.MaxLines,
+                motion.RenderScale, look.Align);
             if (raster is not null)
             {
                 // The bitmap may carry ink ABOVE the line box (a tall ascender, an accent); it
@@ -144,10 +147,10 @@ internal sealed partial class EmitVisitor
                 return;
             }
         }
-        EmitTextPlaceholder(node, text, ink, mode, contrast, builder);
+        EmitTextPlaceholder(node, look.Align, ink, mode, contrast, builder);
     }
 
-    private static void EmitTextPlaceholder(LayoutNode node, Text text, ColorToken ink, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder)
+    private static void EmitTextPlaceholder(LayoutNode node, TextAlignment align, ColorToken ink, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder)
     {
         if (node.Text is not { } measurement) return;
         var color = ink.Resolve(mode, contrast).WithOpacity(0.30f);
@@ -163,7 +166,7 @@ internal sealed partial class EmitVisitor
             // without a Mac, an emulator or a Windows box in the loop.
             var barWidth = MathF.Min(line.Width, node.Bounds.Width);
             builder.FillRRect(
-                new RRect(new Rect(node.Bounds.X + text.Align.Offset(node.Bounds.Width, barWidth), y,
+                new RRect(new Rect(node.Bounds.X + align.Offset(node.Bounds.Width, barWidth), y,
                         barWidth, barHeight),
                     new CornerRadii(barHeight / 3)),
                 Paint.Solid(color));

@@ -49,6 +49,14 @@ public readonly record struct BoxStyle
     /// </summary>
     public ColorToken? Foreground { get; init; }
 
+    /// <summary>
+    /// The rest of what the text and the icons inside take when they name none of their own: the role, the type
+    /// style, the line limit and the alignment of a <see cref="Text"/>, and the size of an <see cref="Icon"/>
+    /// (Flutter's <c>DefaultTextStyle</c> and <c>IconTheme</c> beside <see cref="Foreground"/>, #1577). Laid over the
+    /// look of the box above it member by member; <c>null</c> = take the one above.
+    /// </summary>
+    public ContentStyle? Content { get; init; }
+
     /// <summary>2-stop linear gradient fill (the engine fence's exact gradient primitive) — draws
     /// OVER <see cref="Background"/> when both are set (translucent stops show the solid through,
     /// the CSS background-image/background-color composition). <c>null</c> = no gradient.</summary>

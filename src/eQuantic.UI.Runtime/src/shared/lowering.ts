@@ -77,6 +77,7 @@ import {
 import type {
   BoxNode,
   BoxStyleValue,
+  ContentStyleValue,
   ColorTokenValue,
   CanvasNodeValue,
   LayoutBuilderValue,
@@ -163,6 +164,7 @@ import { StyleChannels } from './value-types';
 import type { ContextRequest, PointerEvent as HeardPointer } from './value-types';
 import { writtenDestination } from '../utils/link-scheme';
 import { declareFamily } from './face-declarations';
+import { ContentStyle } from './content-style';
 import { DISPOSABLE, nodeStateFor, positionOf, type NodeState } from './node-states';
 import { collectBuilds, declarerAmong, lowerRecorded, patchableAt, reachedInto, replay, type LoweredRecord } from './lowered-records';
 
@@ -180,6 +182,13 @@ export interface LoweringContext {
    * C# visitor's `ElementFrame` field). Absent for a subtree the tree does not hold.
    */
   frame?: ElementFrame;
+  /**
+   * The look the boxes above hand the text and icons they hold (C# `WebLoweringVisitor`'s content
+   * look, #1577): each box lays its `content` over this one, and a text or an icon that names none
+   * takes what is here. Part of what a lowered record keeps, so a component lowered again alone is
+   * lowered under the look it first was.
+   */
+  content?: ContentStyleValue | null;
 }
 
 /**
@@ -771,7 +780,7 @@ function lowerNodeKind(
     case 'column':
       return lowerFlex(node as FlexNodeValue, context, path);
     case 'text':
-      return lowerText(node as TextNode);
+      return lowerText(node as TextNode, context);
     case 'textEntry':
       return lowerTextEntry(node as TextEntryNode, context);
     case 'overlay':
@@ -810,7 +819,7 @@ function lowerNodeKind(
     case 'image':
       return lowerImage(node as ImageNode);
     case 'icon':
-      return lowerIcon(node as IconNode);
+      return lowerIcon(node as IconNode, context);
     // C# twin: a vector IS an icon free of the §07 size whitelist, and free of the square box.
     case 'vector': {
       const vector = node as unknown as VectorNode;
@@ -3068,8 +3077,10 @@ function lowerSpinner(node: SpinnerNode): HtmlNode {
 }
 
 /** Spec A10 mirror: inline SVG, registry path, fill=currentColor riding the color token. */
-function lowerIcon(node: IconNode): HtmlNode {
-  return lowerGlyph(node.glyph, node.size, node.size, node.color ?? null, node.label ?? null);
+function lowerIcon(node: IconNode, context: LoweringContext): HtmlNode {
+  // Its own size, else the box's, else 24 (C# `Icon.SizeUnder`, #1577).
+  const size = node.size ?? context.content?.iconSize ?? 24;
+  return lowerGlyph(node.glyph, size, size, node.color ?? null, node.label ?? null);
 }
 
 /** The shape both an icon and a vector draw as — the C# `LowerGlyph`, box included. */
@@ -3911,7 +3922,9 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
   }
 
   if (box.child) {
-    const child = lowerNode(box.child, context, null, path + '/0');
+    // This box's look laid over the one around it, for what it holds (C# twin, #1577).
+    const inside = style.content ? { ...context, content: ContentStyle.merge(context.content, style.content) } : context;
+    const child = lowerNode(box.child, inside, null, path + '/0');
     if (child) {
       // A box with a DECIDED height hands it to an auto-sized CONTAINER child — the C# twin, and
       // the web half of the layout engine's block stretch. `100%` rather than a number so CSS
@@ -4268,7 +4281,32 @@ function faceStack(family: string, mono: boolean): string {
   return `"${family}", ` + (mono ? MONO_STACK : SANS_STACK);
 }
 
-function lowerText(text: TextNode): HtmlNode {
+/** A text as drawn under the look in effect: every member resolved (C# `Text.Under`, #1577). */
+interface ResolvedText extends TextNode {
+  role: string;
+  maxLines: number;
+  align: string;
+}
+
+/**
+ * The look a paragraph is drawn in under `around`: its own role, line limit and alignment where it
+ * names them, else the box's, else `bodyL`, no limit and the start. Its own style override, else the
+ * box's type when the text took the box's role: a style was written for its role, so a text that
+ * names its own role keeps that role's type whole.
+ */
+function underContent(text: TextNode, around: ContentStyleValue | null | undefined): ResolvedText {
+  return {
+    ...text,
+    role: text.role ?? around?.role ?? 'bodyL',
+    styleOverride: text.styleOverride ?? (text.role == null ? around?.type : null),
+    maxLines: text.maxLines ?? around?.maxLines ?? 0,
+    align: text.align ?? around?.align ?? 'start',
+  } as ResolvedText;
+}
+
+function lowerText(held: TextNode, context: LoweringContext): HtmlNode {
+  // From here on `text` is the paragraph as drawn, and `held` the one the tree holds.
+  const text = underContent(held, context.content);
   // A family the node names that ships files is declared in the document the first time text is set
   // in it (#1056), as the server declares it in the head of a page it renders.
   if (isWellFormedFace(text.styleOverride?.family?.name)) declareFamily(text.styleOverride!.family);

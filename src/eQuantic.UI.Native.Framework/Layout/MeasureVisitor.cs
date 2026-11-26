@@ -40,6 +40,21 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     /// <summary>The theme, the text metrics and the node pool this pass runs against — fixed for it.</summary>
     private readonly LayoutContext _ctx;
 
+    /// <summary>
+    /// The look the boxes above the node being measured state (<see cref="BoxStyle.Content"/>, #1577):
+    /// what a <see cref="Text"/> or an <see cref="Icon"/> that names none of its own is measured in.
+    /// <para>
+    /// A FIELD rather than a member of <see cref="MeasureState"/>, as <c>WebLoweringVisitor</c> scopes
+    /// its <c>_inControl</c>: it changes only where a box states a look, which is rare, while the state
+    /// is built once per node of every frame and is pinned to allocate nothing. It is set around a
+    /// box's child measurement (<see cref="MeasureBox"/>) and restored after it, on a throw too, so
+    /// every re-measure the flex pass makes inside the box's measurement reads the box's look, and a
+    /// root measured on its own (an overlay layer) starts from the look where its layer stands
+    /// (<see cref="MeasureRoot"/>).
+    /// </para>
+    /// </summary>
+    private ContentStyle? _content;
+
     internal MeasureVisitor(LayoutContext context)
     {
         _ctx = context;
@@ -70,6 +85,27 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
         var measured = node.Accept(this, new MeasureState(constraints, at));
         measured.Element ??= at;
         return measured;
+    }
+
+    /// <summary>
+    /// Measures a ROOT — the page, or an overlay layer laid out against the viewport — under
+    /// <paramref name="around"/>, the look in effect where that root stands in the vocabulary tree:
+    /// <c>null</c> for the page, and for a layer the look of the boxes above the <see cref="Overlay"/>
+    /// or <see cref="Anchored"/> node that queued it, so a panel shown in a layer of its own is drawn
+    /// in the look it would have had in place, as the web lowers it in place (#1577).
+    /// </summary>
+    internal LayoutNode MeasureRoot(VisualNode root, LayoutConstraints constraints, Element? at, ContentStyle? around)
+    {
+        var outer = _content;
+        _content = around;
+        try
+        {
+            return Measure(root, constraints, _ctx, at);
+        }
+        finally
+        {
+            _content = outer;
+        }
     }
 
     /// <summary>
@@ -139,7 +175,12 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
         _ctx.Node(node, new Rect(0, 0, node.Width, node.Height));
 
     // Icons are a fixed square em-box (§07 whitelist) and ignore Dynamic Type (spec A10).
-    public LayoutNode Visit(Icon node, MeasureState s) => _ctx.Node(node, new Rect(0, 0, node.Size, node.Size));
+    // An icon that names no size takes the one the boxes above it state (#1577).
+    public LayoutNode Visit(Icon node, MeasureState s)
+    {
+        var side = node.SizeUnder(_content);
+        return _ctx.Node(node, new Rect(0, 0, side, side));
+    }
 
     // A vector is the same em-box at the size the author asked for — square unless they gave it an
     // aspect, which is what a diagram's connector or a banner rule needs.
