@@ -1,4 +1,4 @@
-import { $AdjustableRoleValue, $AlignmentValue, $CrossAlignValue, $DragAxisValue, $eq, $HitTestBehaviorValue, $IconsValue, $ImageFitValue, $LiveRegionUrgencyValue, $LoopEffectValue, $MainAlignValue, $NavigableMoveValue, $NavigableRoleValue, $PresenceMotionValue, $PressableRoleValue, $ScrollAxisValue, $SizeVariantValue, $TableCellRoleValue, $TableRoleValue, $TextAlignmentValue, $TextDirectionValue, $TextEntryKindValue, $TypeRoleValue, $VariantValue, AdaptiveNode, Adjustable, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, CalendarTheme, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, CodeSurface, ColorToken, Column, ContextMenu, ContextRequest, ContextTarget, CookieConsent, CornerRadii, CultureOption, CultureSwitcher, Currency, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Directionality, Divider, DragDismiss, Draggable, Drawer, Drawing, DropTarget, EdgeInsets, EmptyState, ExcludeSemantics, FileUpload, Flexible, Grid, GridTrack, Group, Hoverable, Icon, IconButton, IconGlyph, Image, InFlow, InputTheme, InView, KeyChord, Link, ListDetail, Listener, ListItem, ListTheme, ListView, LiveRegion, LoopMotion, Markdown, MenuItem, MergeSemantics, Mermaid, MoneyInput, Navigable, NavigationRail, NavItem, NumberInput, OptionGroup, Overlay, PickedFile, Pinned, PointerEvent, Positioned, Presence, Pressable, Progress, ProgressBar, RangeValue, Row, SafeArea, ScrollView, SdkStrings, SearchField, SegmentedControl, SegmentedTheme, Select, SheetSurface, Shortcut, Simulated, Size, SizeValue, Skeleton, Slider, Sortable, SortableItem, SortableTheme, SortAnnouncements, SortDrop, Spacer, Spinner, Stack, Stepper, Switch, TableOffset, TableRange, TableScroll, TableScrollRequest, TableSpans, TableView, TableViewCell, TableViewport, Tabs, Text, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TreeEditRequest, TreeMove, TreeNode, TreeReloadRequest, TreeRowState, TreeView, TypeStyle, UploadedFile, UploadPolicy, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "../runtime-exports";
+import { $AdjustableRoleValue, $AlignmentValue, $CrossAlignValue, $DragAxisValue, $eq, $HitTestBehaviorValue, $IconsValue, $ImageFitValue, $LiveRegionUrgencyValue, $LoopEffectValue, $MainAlignValue, $NavigableMoveValue, $NavigableRoleValue, $PresenceMotionValue, $PressableRoleValue, $ScrollAxisValue, $SizeVariantValue, $TableCellRoleValue, $TableRoleValue, $TextAlignmentValue, $TextDirectionValue, $TextEntryKindValue, $TypeRoleValue, $VariantValue, AdaptiveNode, Adjustable, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxConstraints, BoxStyle, Button, Calendar, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, CodeSurface, ColorToken, Column, ConstrainedBox, ContextMenu, ContextRequest, ContextTarget, CookieConsent, CornerRadii, CultureOption, CultureSwitcher, Currency, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Directionality, Divider, DragDismiss, Draggable, Drawer, Drawing, DropTarget, EdgeInsets, EmptyState, ExcludeSemantics, FileUpload, Flexible, GestureRecognizerFactory, Grid, GridTrack, Group, Hoverable, Icon, IconButton, IconGlyph, Image, InFlow, InView, KeyChord, LayoutBuilder, Link, ListDetail, Listener, ListItem, ListTheme, ListView, LiveRegion, LoopMotion, Markdown, MenuItem, MergeSemantics, Mermaid, MoneyInput, Navigable, NavigationRail, NavItem, NumberInput, OptionGroup, Overlay, PickedFile, Pinned, PointerEvent, Positioned, Presence, Pressable, Progress, ProgressBar, RangeValue, RawGestureDetector, Row, SafeArea, ScrollView, SdkStrings, SearchField, SegmentedControl, Select, SheetSurface, Shortcut, Simulated, Size, SizeValue, Skeleton, Slider, Sortable, SortableItem, SortableTheme, SortAnnouncements, SortDrop, Spacer, Spinner, Stack, Stepper, Switch, TableOffset, TableRange, TableScroll, TableScrollRequest, TableSpans, TableView, TableViewCell, TableViewport, Tabs, Text, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TreeEditRequest, TreeMove, TreeNode, TreeReloadRequest, TreeRowState, TreeView, TypeStyle, UploadedFile, UploadPolicy, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "../runtime-exports";
 
 export class UI {
     static column(gap: number = 0, main: $MainAlignValue = 'start', cross: $CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
@@ -47,6 +47,10 @@ export class UI {
 
     static box(style?: BoxStyle, child: VisualNode | null = null) {
         return new Box(style, child);
+    }
+
+    static constrainedBox(constraints: BoxConstraints, child: VisualNode) {
+        return new ConstrainedBox(constraints, child);
     }
 
     static text(content: string, role: $TypeRoleValue = 'bodyL', color: ColorToken | null = null, maxLines: number = 0, align: $TextAlignmentValue = 'start', mono: boolean = false, tabular: boolean = false, styleOverride: TypeStyle | null = null, headingLevel: number = 0) {
@@ -183,6 +187,10 @@ export class UI {
         return new AdaptiveNode(compact, medium, expanded);
     }
 
+    static layoutBuilder(builder: (value: BoxConstraints) => VisualNode) {
+        return new LayoutBuilder(builder);
+    }
+
     static cameraPreview(session: any, width: number, height: number, cornerRadius?: CornerRadii, label: string = '') {
         return new CameraPreview(session, width, height, { cornerRadius: cornerRadius, label: label });
     }
@@ -247,8 +255,8 @@ export class UI {
         return new Slider(value, onChanged, { min: min, max: max, step: step, label: label, valueText: valueText, disabled: disabled, variant: variant });
     }
 
-    static stepper(value: number, onChanged: ((int: number) => void) | null = null, style: SegmentedTheme | null = null) {
-        return new Stepper(value, onChanged, style);
+    static stepper(value: number, onChanged: ((int: number) => void) | null = null) {
+        return new Stepper(value, onChanged);
     }
 
     static moneyInput(amount: bigint | null, onChanged: ((long: bigint | null) => void) | null, label: string, currency: Currency, min: bigint | null = null, max: bigint | null = null, placeholder: string | null = null, helper: string | null = null, error: string | null = null, size: $SizeVariantValue = 'large') {
@@ -259,32 +267,32 @@ export class UI {
         return new NumberInput(value, onChanged, label, unit, min, max, placeholder, helper, error, size);
     }
 
-    static datePicker(selected: DateOnly | null = null, onChanged: ((dateOnly: DateOnly) => void) | null = null, min: DateOnly | null = null, max: DateOnly | null = null, label: string = '', style: InputTheme | null = null, calendarStyle: CalendarTheme | null = null, labelHidden: boolean = false) {
-        return new DatePicker(selected, onChanged, min, max, label, style, calendarStyle, { labelHidden: labelHidden });
+    static datePicker(selected: DateOnly | null = null, onChanged: ((dateOnly: DateOnly) => void) | null = null, min: DateOnly | null = null, max: DateOnly | null = null, label: string = '', labelHidden: boolean = false) {
+        return new DatePicker(selected, onChanged, min, max, label, { labelHidden: labelHidden });
     }
 
-    static timePicker(selected: TimeOnly | null = null, onChanged: ((timeOnly: TimeOnly) => void) | null = null, stepMinutes: number = 30, min: TimeOnly | null = null, max: TimeOnly | null = null, label: string = '', style: InputTheme | null = null) {
-        return new TimePicker(selected, onChanged, stepMinutes, min, max, label, style);
+    static timePicker(selected: TimeOnly | null = null, onChanged: ((timeOnly: TimeOnly) => void) | null = null, stepMinutes: number = 30, min: TimeOnly | null = null, max: TimeOnly | null = null, label: string = '') {
+        return new TimePicker(selected, onChanged, stepMinutes, min, max, label);
     }
 
-    static dateTimePicker(selected: DateTime | null = null, onChanged: ((dateTime: DateTime) => void) | null = null, min: DateTime | null = null, max: DateTime | null = null, stepMinutes: number = 30, dateLabel: string = '', timeLabel: string = '', style: InputTheme | null = null, calendarStyle: CalendarTheme | null = null, labelHidden: boolean = false) {
-        return new DateTimePicker(selected, onChanged, min, max, stepMinutes, dateLabel, timeLabel, style, calendarStyle, { labelHidden: labelHidden });
+    static dateTimePicker(selected: DateTime | null = null, onChanged: ((dateTime: DateTime) => void) | null = null, min: DateTime | null = null, max: DateTime | null = null, stepMinutes: number = 30, dateLabel: string = '', timeLabel: string = '', labelHidden: boolean = false) {
+        return new DateTimePicker(selected, onChanged, min, max, stepMinutes, dateLabel, timeLabel, { labelHidden: labelHidden });
     }
 
-    static calendar(selected: DateOnly | null = null, onChanged: ((dateOnly: DateOnly) => void) | null = null, min: DateOnly | null = null, max: DateOnly | null = null, style: CalendarTheme | null = null) {
-        return new Calendar(selected, onChanged, min, max, style);
+    static calendar(selected: DateOnly | null = null, onChanged: ((dateOnly: DateOnly) => void) | null = null, min: DateOnly | null = null, max: DateOnly | null = null) {
+        return new Calendar(selected, onChanged, min, max);
     }
 
-    static select(options: string[] | null = null, selectedIndex: number = -1, onChanged: ((int: number) => void) | null = null, placeholder: string | null = null, groups: OptionGroup[] | null = null, style: InputTheme | null = null, optionBuilder: ((value: number) => VisualNode) | null = null) {
-        return new Select(options, selectedIndex, onChanged, placeholder, groups, style, optionBuilder);
+    static select(options: string[] | null = null, selectedIndex: number = -1, onChanged: ((int: number) => void) | null = null, placeholder: string | null = null, groups: OptionGroup[] | null = null) {
+        return new Select(options, selectedIndex, onChanged, placeholder, groups);
     }
 
-    static textInput(value: string, onChanged: ((string: string) => void) | null = null, label: string = '', placeholder: string | null = null, helper: string | null = null, error: string | null = null, leading: $IconsValue | null = null, size: $SizeVariantValue = 'large', trailing: VisualNode | null = null, kind: $TextEntryKindValue = 'text', prefix: string | null = null, suffix: string | null = null, style: InputTheme | null = null, labelHidden: boolean = false) {
-        return new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing, kind, prefix, suffix, style, { labelHidden: labelHidden });
+    static textInput(value: string, onChanged: ((string: string) => void) | null = null, label: string = '', placeholder: string | null = null, helper: string | null = null, error: string | null = null, leading: $IconsValue | null = null, size: $SizeVariantValue = 'large', trailing: VisualNode | null = null, kind: $TextEntryKindValue = 'text', prefix: string | null = null, suffix: string | null = null, labelHidden: boolean = false) {
+        return new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing, kind, prefix, suffix, { labelHidden: labelHidden });
     }
 
-    static searchField(query: string, onChanged: ((string: string) => void) | null = null, placeholder: string | null = null, onSubmit: (() => void) | null = null, style: InputTheme | null = null) {
-        return new SearchField(query, onChanged, placeholder, onSubmit, style);
+    static searchField(query: string, onChanged: ((string: string) => void) | null = null, placeholder: string | null = null, onSubmit: (() => void) | null = null) {
+        return new SearchField(query, onChanged, placeholder, onSubmit);
     }
 
     static progressBar(value: number | null = null, variant: $VariantValue = 'primary', label: string = '', valueText: string | null = null, prominent: boolean = false) {
@@ -303,8 +311,8 @@ export class UI {
         return new Mermaid(source);
     }
 
-    static cultureSwitcher(options: CultureOption[], style: SegmentedTheme | null = null) {
-        return new CultureSwitcher(options, style);
+    static cultureSwitcher(options: CultureOption[]) {
+        return new CultureSwitcher(options);
     }
 
     static iconButton(glyph: Icon, label: string, kind: string = 'standard', size: $SizeVariantValue = 'medium', onPressed: (() => void) | null = null) {
@@ -315,8 +323,8 @@ export class UI {
         return new EmptyState(icon, title, body);
     }
 
-    static segmentedControl(segments: string[], selectedIndex: number, onChanged: ((int: number) => void) | null = null, style: SegmentedTheme | null = null, segmentBuilder: ((value: number) => VisualNode) | null = null, stretch: boolean = true) {
-        return new SegmentedControl(segments, selectedIndex, onChanged, style, segmentBuilder, { stretch: stretch });
+    static segmentedControl(segments: string[], selectedIndex: number, onChanged: ((int: number) => void) | null = null, stretch: boolean = true) {
+        return new SegmentedControl(segments, selectedIndex, onChanged, { stretch: stretch });
     }
 
     static tabs(labels: string[], selected: number, onSelect: ((int: number) => void) | null = null) {
@@ -395,12 +403,16 @@ export class UI {
         return new Listener(child, { onPointerDown: onPointerDown, onPointerMove: onPointerMove, onPointerUp: onPointerUp, onPointerCancel: onPointerCancel, onPointerHover: onPointerHover, onPointerScroll: onPointerScroll, behavior: behavior });
     }
 
+    static rawGestureDetector(child: VisualNode, gestures: GestureRecognizerFactory[], behavior: $HitTestBehaviorValue = 'deferToChild') {
+        return Object.assign(new RawGestureDetector(child, gestures), { behavior: behavior });
+    }
+
     static contextMenu(child: VisualNode, items: MenuItem[], onSelect: ((int: number) => void) | null = null, enabled: boolean = true) {
         return new ContextMenu(child, items, onSelect, { enabled: enabled });
     }
 
-    static fileUpload(policy: UploadPolicy, onCompleted: (uploadedFile: UploadedFile) => void, multiple: boolean = true, label: string | null = null, hint: string | null = null, style: InputTheme | null = null) {
-        return new FileUpload(policy, onCompleted, multiple, label, hint, style);
+    static fileUpload(policy: UploadPolicy, onCompleted: (uploadedFile: UploadedFile) => void, multiple: boolean = true, label: string | null = null, hint: string | null = null) {
+        return new FileUpload(policy, onCompleted, multiple, label, hint);
     }
 }
 

@@ -85,6 +85,7 @@ function onPointerDown(down: Event): void {
   };
 
   followPointer(pointer, {
+    element: surface,
     arms: (ev) => Math.abs(travelled(ev)) > slop,
     armed: () => {
       if (follows) surface.style.transition = 'none';

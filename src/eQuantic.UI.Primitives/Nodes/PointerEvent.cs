@@ -14,6 +14,12 @@ namespace eQuantic.UI.Primitives;
 /// pointers.</param>
 /// <param name="ScrollDelta">How far a scroll moves, in dp toward the content's end (right and down), and zero
 /// for every other phase.</param>
+/// <param name="TimeMs">When the platform saw it, in milliseconds on a monotonic clock (Flutter's
+/// <c>timeStamp</c>, #1563): the web's event <c>timeStamp</c>, a native shell's event time, or the host's own
+/// clock when the shell hands none. The unit is the same on every target and the origin is each target's own,
+/// so the difference of two events' times is the time between them, which is what a recognizer measures a
+/// velocity by. A double, because a shell's clock counts from the boot and a float would round it to tens of
+/// milliseconds.</param>
 public sealed record PointerEvent(
     PointerPhase Phase,
     Point Position,
@@ -21,4 +27,5 @@ public sealed record PointerEvent(
     PointerButtons Buttons,
     KeyModifiers Modifiers,
     int Pointer,
-    Point ScrollDelta);
+    Point ScrollDelta,
+    double TimeMs);

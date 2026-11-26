@@ -1,0 +1,8 @@
+#nullable enable
+eQuantic.UI.Components.ConstrainedBox
+eQuantic.UI.Components.ConstrainedBox.ConstrainedBox(eQuantic.UI.Primitives.BoxConstraints! constraints, eQuantic.UI.Primitives.VisualNode! child) -> void
+eQuantic.UI.Components.ConstrainedBox.Constraints.get -> eQuantic.UI.Primitives.BoxConstraints!
+eQuantic.UI.Components.ConstrainedBox.Child.get -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.ConstrainedBox.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+static eQuantic.UI.Components.UI.ConstrainedBox(eQuantic.UI.Primitives.BoxConstraints! constraints, eQuantic.UI.Primitives.VisualNode! child) -> eQuantic.UI.Components.ConstrainedBox!
+static eQuantic.UI.Components.UI.LayoutBuilder(System.Func<eQuantic.UI.Primitives.BoxConstraints!, eQuantic.UI.Primitives.VisualNode!>! builder) -> eQuantic.UI.Primitives.LayoutBuilder!

@@ -1,4 +1,4 @@
-import type { ContextRequest, FontFamily, Point, PointerEvent, Rect, Size } from './value-types';
+import type { BoxConstraints, ContextRequest, FontFamily, Point, PointerEvent, Rect, Size } from './value-types';
 import type { PickedFile } from './picked-file';
 /**
  * The SHARED abstract vocabulary on the client (docs/SHARED-COMPONENTS-PLAN.md) — the JS shapes of
@@ -204,6 +204,14 @@ export interface AdaptiveNodeValue {
   /** Custom thresholds in dp (default 600/840) — a design that switches elsewhere brings its own. */
   mediumFrom?: number;
   expandedFrom?: number;
+}
+
+/** Wire shape of the C# `LayoutBuilder` (#1555): a child built for the room its box has, which the
+ * browser measures after the pass and builds the child for. */
+export interface LayoutBuilderValue {
+  nodeKind: 'layoutBuilder';
+  key?: string | null;
+  builder: (constraints: BoxConstraints) => VisualNodeValue;
 }
 
 /** Wire shape of the C# `KeyChord`: a DOM `KeyboardEvent.key` name plus [Flags] KeyModifiers
@@ -494,6 +502,14 @@ export interface ListenerNode extends VisualNodeValue {
   onPointerCancel?: ((event: PointerEvent) => void) | null;
   onPointerHover?: ((event: PointerEvent) => void) | null;
   onPointerScroll?: ((event: PointerEvent) => void) | null;
+  behavior?: HitTestBehaviorValue;
+}
+
+/** Wire shape of the C# `RawGestureDetector` (#1563): gestures of the app's own over its child. */
+export interface RawGestureDetectorNode extends VisualNodeValue {
+  nodeKind: 'rawGestureDetector';
+  child: VisualNodeValue;
+  gestures?: readonly unknown[];
   behavior?: HitTestBehaviorValue;
 }
 

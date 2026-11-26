@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "GestureRecognizerMember.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Primitives/Gestures/GestureRecognizerMember.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAOA;;IAAA;QAEuC;QAI/B;;;IAJ+B;;IAOnC;QAA0C;;;IAE1C;QAA0C;;;IAX9C"
+}

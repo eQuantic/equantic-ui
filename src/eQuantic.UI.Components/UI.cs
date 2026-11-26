@@ -120,6 +120,10 @@ public static class UI
     public static Box Box(BoxStyle style = default, VisualNode? child = null) =>
         new Box(style, child);
 
+    /// <summary>A box that applies the constraints an author holds to <paramref name="child"/>.</summary>
+    public static ConstrainedBox ConstrainedBox(BoxConstraints constraints, VisualNode child) =>
+        new ConstrainedBox(constraints, child);
+
     /// <summary>A shaped paragraph (spec A8) — role-driven type, token color.</summary>
     public static Text Text(string content, TypeRole role = TypeRole.BodyL, ColorToken? color = null,
         int maxLines = 0, TextAlignment align = TextAlignment.Start, bool mono = false,
@@ -438,6 +442,11 @@ public static class UI
     public static AdaptiveNode AdaptiveNode(VisualNode compact, VisualNode? medium = null,
         VisualNode? expanded = null) =>
         new AdaptiveNode(compact, medium, expanded);
+
+    /// <summary>A child built for the room its box is given: <paramref name="builder"/> is handed the
+    /// <see cref="BoxConstraints"/>, and what it answers is the child.</summary>
+    public static LayoutBuilder LayoutBuilder(Func<BoxConstraints, VisualNode> builder) =>
+        new LayoutBuilder(builder);
 
     /// <summary>A LIVE camera surface. Explicitly sized like <see cref="Image"/>, and for the same
     /// reason: layout cannot infer an extent from a source that has not answered yet. A null
@@ -920,6 +929,17 @@ public static class UI
             OnPointerScroll = onPointerScroll,
             Behavior = behavior,
         };
+
+    /// <summary>
+    /// <paramref name="child"/>, with gestures of the app's own over it: each of <paramref name="gestures"/> makes a
+    /// recognizer, written in C# from the raw pointer, which the detector keeps across rebuilds and which competes
+    /// for each pointer that goes down on it with the SDK's own gestures under it. <paramref name="behavior"/> says
+    /// where it is hit, as a listener's does.
+    /// </summary>
+    public static RawGestureDetector RawGestureDetector(VisualNode child,
+        IReadOnlyList<GestureRecognizerFactory> gestures,
+        HitTestBehavior behavior = HitTestBehavior.DeferToChild) =>
+        new RawGestureDetector(child, gestures) { Behavior = behavior };
 
     /// <summary>
     /// A menu of <paramref name="items"/> for what <paramref name="child"/> is, opened where a person asks for it

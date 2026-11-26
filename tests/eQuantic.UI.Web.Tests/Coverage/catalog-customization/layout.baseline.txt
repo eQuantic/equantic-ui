@@ -1,0 +1,3 @@
+# The layout components: a box made from a value an author holds, with no look of its own. The format is README.md's.
+# owns: ConstrainedBox
+ConstrainedBox  style  kept: a Box with the constraints' bounds and no other style, so it has no look of its own to restyle

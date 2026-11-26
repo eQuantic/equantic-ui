@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "ConstrainedBox.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Components/ConstrainedBox.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;;IA4BI;IAGA;;;;;;QATI;QACA;QACA;;;;;QAS0D"
+}
