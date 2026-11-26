@@ -49,6 +49,7 @@ internal static class ChildSlots
         "dropTarget" => NodeSlots.One(((DropTarget)node).Child),
         "contextTarget" => NodeSlots.One(((ContextTarget)node).Child),
         "listener" => NodeSlots.One(((Listener)node).Child),
+        "rawGestureDetector" => NodeSlots.One(((RawGestureDetector)node).Child),
         "sortable" => NodeSlots.One(((Sortable)node).Child),
         "sortableItem" => NodeSlots.One(((SortableItem)node).Child),
         "flexible" => NodeSlots.One(((Flexible)node).Child),
@@ -63,6 +64,9 @@ internal static class ChildSlots
         // A value for a subtree holds its one child through an element of its own; that never asks this.
         "inherited" => NodeSlots.None,
         "inView" => NodeSlots.One(((InView)node).Child),
+        // The child is what the builder answers for the room the node has, which only the realizer knows,
+        // in its layout pass or right after it: the slot is built when the realizer shows it.
+        "layoutBuilder" => NodeSlots.WithDeferred(NodeSlots.One(null), 0),
         "link" => NodeSlots.One(((Link)node).Child),
         "loopMotion" => NodeSlots.One(((LoopMotion)node).Child),
         "navigable" => NodeSlots.Listed(((Navigable)node).Rows),

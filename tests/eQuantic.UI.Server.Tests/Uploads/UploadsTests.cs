@@ -211,6 +211,9 @@ public sealed class UploadsTests : IDisposable
         {
             third.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
             (await third.Content.ReadAsStringAsync()).Should().Be("At most 2 uploads may be unfinished at a time.");
+            // The limit frees itself as the owner's uploads finish, so the page is told when to ask again.
+            third.Headers.RetryAfter.Should().NotBeNull();
+            third.Headers.RetryAfter!.Delta.Should().Be(TimeSpan.FromSeconds(5));
         }
 
         // Another person is not counted against this one.

@@ -15,6 +15,37 @@ namespace eQuantic.UI.Web.Tests;
 /// </summary>
 public class PrimitiveValueFixtureTests
 {
+    /// <summary>A constraint's four bounds, an unbounded maximum as null, each the single C# holds.</summary>
+    private static object Bounds(BoxConstraints c) => new
+    {
+        minWidth = (double)c.MinWidth,
+        maxWidth = c.HasBoundedWidth ? (double?)c.MaxWidth : null,
+        minHeight = (double)c.MinHeight,
+        maxHeight = c.HasBoundedHeight ? (double?)c.MaxHeight : null,
+    };
+
+    /// <summary>A size, an unbounded side as null.</summary>
+    private static object SizeOf(Size size) => new
+    {
+        width = float.IsPositiveInfinity(size.Width) ? (double?)null : size.Width,
+        height = float.IsPositiveInfinity(size.Height) ? (double?)null : size.Height,
+    };
+
+    /// <summary>What a call that refuses its arguments says, the exception's message as .NET writes it.</summary>
+    private static string Refusal(Action call)
+    {
+        try
+        {
+            call();
+        }
+        catch (ArgumentException refused)
+        {
+            return refused.Message;
+        }
+
+        throw new InvalidOperationException("The call was expected to refuse its arguments.");
+    }
+
     /// <summary>A box as its four numbers, so a mismatch says WHICH edge moved.</summary>
     private static object Corners(Rect rect) =>
         new { x = rect.X, y = rect.Y, width = rect.Width, height = rect.Height };
@@ -153,6 +184,31 @@ public class PrimitiveValueFixtureTests
                 atMedium = WindowSizeClasses.FromWidth(600).ToString().ToLowerInvariant(),
                 belowExpanded = WindowSizeClasses.FromWidth(839).ToString().ToLowerInvariant(),
                 atExpanded = WindowSizeClasses.FromWidth(840).ToString().ToLowerInvariant(),
+            },
+            // THE AUTHOR'S CONSTRAINTS (#1555), whose arithmetic the browser's twin repeats for every
+            // builder a page holds. Chosen for what a twin gets wrong: Enforce moves every bound INTO the
+            // parent's range rather than intersecting the two; Deflate rounds the insets' sum before it
+            // takes it away, never goes below zero and keeps a maximum at its minimum; an unbounded
+            // maximum stays unbounded through all of it (written null, which JSON can hold).
+            boxConstraints = new
+            {
+                enforceTight = Bounds(new BoxConstraints(minWidth: 100, maxWidth: 400)
+                    .Enforce(BoxConstraints.Tight(new Size(300, 50)))),
+                enforceInside = Bounds(new BoxConstraints(10, 1000, 0, 80)
+                    .Enforce(new BoxConstraints(0, 500, 20, 60))),
+                loosen = Bounds(BoxConstraints.Tight(new Size(120, 40)).Loosen()),
+                deflateFractional = Bounds(new BoxConstraints(10, 300.3f, 5)
+                    .Deflate(new EdgeInsets(0.1f, 0.2f, 0.3f, 0.4f))),
+                deflatePastZero = Bounds(new BoxConstraints(4, 6, 0, 10).Deflate(EdgeInsets.All(5))),
+                constrained = SizeOf(new BoxConstraints(10, 100, 10, 100).Constrain(new Size(5, 500))),
+                constrainedUnbounded = SizeOf(BoxConstraints.Unbounded.Constrain(new Size(1e6f, 3))),
+                biggest = SizeOf(BoxConstraints.Loose(new Size(320, 480)).Biggest),
+                smallest = SizeOf(new BoxConstraints(7, 9, 11, 13).Smallest),
+                tightIsTight = BoxConstraints.Tight(new Size(1, 2)).IsTight,
+                looseIsTight = BoxConstraints.Loose(new Size(1, 2)).IsTight,
+                unboundedHasBoundedWidth = BoxConstraints.Unbounded.HasBoundedWidth,
+                looseHasBoundedHeight = BoxConstraints.Loose(new Size(1, 2)).HasBoundedHeight,
+                enforceNull = Refusal(() => BoxConstraints.Unbounded.Enforce(null!)),
             },
         };
 

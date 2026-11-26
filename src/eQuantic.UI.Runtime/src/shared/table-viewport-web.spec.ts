@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { lowerVisualNode, type LoweringContext } from './lowering';
 import { effectiveStyle } from './style-atomizer';
 import { photonTheme } from './design-system.generated';
-import { commitTableViewports, scheduleTableViewportCommit } from './table-viewports';
+import { commitTableViewports, releaseDetachedTableViewports, scheduleTableViewportCommit } from './table-viewports';
 import { TableScroll } from './components/TableScroll';
 import { UniformTableSpans } from './components/UniformTableSpans';
 import { Point, TableRange, TableScrollRequest } from './value-types';
@@ -93,6 +93,13 @@ function pointer(view: HTMLElement, type: string, x: number, y: number, pointerT
 }
 
 describe('TableViewport on the web', () => {
+  // A table a case leaves in the page goes with the case, and so does what it armed: a pan's click guard and
+  // its timer, which fired after the suite's teardown when nothing let it go (#1876).
+  afterEach(() => {
+    document.body.innerHTML = '';
+    releaseDetachedTableViewports();
+  });
+
   beforeEach(() => {
     document.body.innerHTML = '';
     // Reduced motion, so a wheel's notch lands at once instead of gliding over frames the spec does
@@ -205,6 +212,22 @@ describe('TableViewport on the web', () => {
 
     view.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(pressed).not.toHaveBeenCalled();
+  });
+
+  it('lets go of the click guard with the click it swallowed, so no timer of its waits (#1876)', () => {
+    vi.useFakeTimers();
+    try {
+      const { view } = build();
+      pointer(view, 'pointerdown', 400, 400);
+      pointer(view, 'pointermove', 400, 340);
+      pointer(view, 'pointerup', 400, 340);
+      const armed = vi.getTimerCount();
+      view.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(vi.getTimerCount(), 'the guard and its timer went with the click it stopped').toBe(armed - 1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   // #1007: what a finger's pan cannot follow passes to the page around the table.
@@ -404,6 +427,39 @@ describe('TableViewport on the web', () => {
     expect(scrolled[scrolled.length - 1]).toBe(40);
     expect(layer(view, 0).style.transform).toBe('translate(0px, -40px)');
     expect(server.isConnected).toBe(true);
+  });
+
+  // #1876: the click guard a pan arms is the table's, and leaves with it. Its 400 ms timer outlived the table and
+  // fired after a spec's teardown, against a page that was gone, failing the runtime suite now and then.
+  // Where nothing observes a table's size, the table is still the one it leaves with: it was watched only
+  // through its ResizeObserver, so without one an unmount never reached the guard.
+  it.each([
+    ['a ResizeObserver', true],
+    ['no ResizeObserver', false],
+  ])("lets go of a pan's click guard when its table leaves, with %s, and its timer touches nothing after", async (_, observed) => {
+    const original = globalThis.ResizeObserver;
+    if (!observed) (globalThis as { ResizeObserver?: unknown }).ResizeObserver = undefined;
+    vi.useFakeTimers();
+    try {
+      const { view } = build();
+      pointer(view, 'pointerdown', 400, 400);
+      pointer(view, 'pointermove', 400, 340);
+
+      // The table leaves before the lift's click: a rerender dropped it.
+      view.remove();
+      scheduleTableViewportCommit();
+      await Promise.resolve();
+
+      const heard = vi.fn();
+      document.body.addEventListener('click', heard);
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(heard, 'a click on the page after the table left is the page\'s').toHaveBeenCalledTimes(1);
+
+      expect(vi.getTimerCount(), 'no timer of the table is left to fire against a page that may be gone').toBe(0);
+    } finally {
+      vi.useRealTimers();
+      globalThis.ResizeObserver = original;
+    }
   });
 
   it('lets go of the observer of a table a pass removed, though the pass declared no other', async () => {

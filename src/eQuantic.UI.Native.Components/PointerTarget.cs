@@ -5,7 +5,8 @@ namespace eQuantic.UI.Native.Components;
 
 /// <summary>
 /// One node of a frame as the listeners' hit test sees it (#1562), in paint order: what the web's
-/// <c>elementsFromPoint</c> is to the browser's controller. A <see cref="Listener"/> entry hears; a
+/// <c>elementsFromPoint</c> is to the browser's controller. A <see cref="Listener"/> entry hears, a
+/// <see cref="Detector"/> entry offers the pointer to its recognizers (#1563), and both are hit by the same rule; a
 /// <see cref="Solid"/> one draws or answers and so is hit (<see cref="ListenerHits"/>).
 /// </summary>
 /// <param name="Bounds">The node's box on screen, whole: a listener's positions are measured from it.</param>
@@ -13,6 +14,11 @@ namespace eQuantic.UI.Native.Components;
 /// <param name="End">The index past the node's subtree in the frame's entries: what lies between is inside it.</param>
 /// <param name="Solid">Whether the node painted something of its own or registered input.</param>
 /// <param name="Listener">The listener this entry is, or null.</param>
+/// <param name="Detector">The gesture detector this entry is, or null.</param>
 /// <param name="Element">Its position, by which a pointer followed from its down finds it in a later frame.</param>
 internal readonly record struct PointerTarget(
-    Rect Bounds, Rect Visible, int End, bool Solid, Listener? Listener, Element? Element);
+    Rect Bounds, Rect Visible, int End, bool Solid, Listener? Listener, RawGestureDetector? Detector, Element? Element)
+{
+    /// <summary>How the entry is hit when it hears the pointer, a listener or a detector: null for any other node.</summary>
+    public HitTestBehavior? Behavior => Listener?.Behavior ?? Detector?.Behavior;
+}

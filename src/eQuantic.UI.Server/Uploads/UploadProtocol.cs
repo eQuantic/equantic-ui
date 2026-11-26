@@ -32,6 +32,9 @@ internal sealed class UploadProtocol
     /// <summary>Where the request keeps the place its creation holds until the record is written.</summary>
     private static readonly object Reservation = new();
 
+    /// <summary>How long a page waits before it asks again for a creation the owner's unfinished limit refused.</summary>
+    internal const string RetryAfterSeconds = "5";
+
     /// <summary>The type a file is, read from the extension its policy accepted it by, as ASP.NET Core's
     /// static files read it.</summary>
     private static readonly FileExtensionContentTypeProvider Types = new();
@@ -48,7 +51,7 @@ internal sealed class UploadProtocol
     private readonly TimeProvider _time;
     private readonly ILogger<UploadProtocol> _logger;
 
-    public UploadProtocol(UploadStore store, UploadPolicies policies, AllowedRequestOrigins origins,
+    public UploadProtocol(UploadStore store, TusStorageAdapter adapter, UploadPolicies policies, AllowedRequestOrigins origins,
         IOptions<UploadsOptions> options, TimeProvider time, ILogger<UploadProtocol> logger)
     {
         _store = store;
@@ -59,21 +62,24 @@ internal sealed class UploadProtocol
         _logger = logger;
         Configuration = new DefaultTusConfiguration
         {
-            Store = store.Tus,
+            // The engine's store is the app's storage, so every instance over one storage answers every
+            // request of an upload.
+            Store = adapter,
             // The largest file any policy accepts, which the engine announces and holds every upload to;
             // each policy's own limit is checked when an upload names it.
             MaxAllowedUploadSizeInBytesLong = policies.LargestSize > 0 ? policies.LargestSize : null,
             Expiration = new AbsoluteExpiration(_options.Expiry),
             // An upload states its size when it starts, so its policy can weigh it, and is one file: a
-            // concatenation of parts would make a file no creation declared.
-            AllowedExtensions = TusExtensions.All.Except(TusExtensions.Concatenation, TusExtensions.CreationDeferLength),
+            // concatenation of parts would make a file no creation declared. A creation that carries data
+            // would append before the record is kept, and a checksum is not something a storage keeps: the
+            // SDK's client sends neither.
+            AllowedExtensions = TusExtensions.All.Except(TusExtensions.Concatenation, TusExtensions.CreationDeferLength,
+                TusExtensions.CreationWithUpload, TusExtensions.Checksum),
             Events = new Events
             {
                 OnAuthorizeAsync = AuthorizeAsync,
                 OnBeforeCreateAsync = BeforeCreateAsync,
                 OnCreateCompleteAsync = CreateCompleteAsync,
-                OnFileCompleteAsync = context => _store.FinishAsync(context.FileId),
-                OnDeleteCompleteAsync = context => _store.ForgetAsync(context.FileId),
             },
         };
     }
@@ -143,10 +149,12 @@ internal sealed class UploadProtocol
 
         // The limits the app set on its uploads, a finished one counted until it expires and everyone's
         // counted together: a visitor without the cookie is a new owner each time (#1287).
-        var (reservation, status, quota) = await _store.ReserveAsync(owner, context.UploadLength);
-        if (reservation is null)
+        var place = await _store.ReserveAsync(owner, context.UploadLength, context.CancellationToken);
+        if (place.Reservation is not { } reservation)
         {
-            context.FailRequest(status, quota!);
+            // The owner's unfinished uploads free their places as they finish: the page waits and asks again.
+            if (place.FreesItself) context.HttpContext.Response.Headers.RetryAfter = RetryAfterSeconds;
+            context.FailRequest(place.Status, place.Refusal!);
             return;
         }
 
@@ -160,7 +168,7 @@ internal sealed class UploadProtocol
         var http = context.HttpContext;
         var now = _time.GetUtcNow();
         // BeforeCreateAsync accepted the metadata, so the policy and the name are there.
-        var record = new UploadRecord(
+        var record = new StoredUpload(
             context.FileId,
             UploadOwner.Resolve(http),
             Text(context.Metadata, "policy")!,
