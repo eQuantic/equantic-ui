@@ -202,6 +202,10 @@ foreach (var index in warm.Select((r, i) => (r, i)).Where(p => p.r.TryGetValue("
     failures.Add($"{target} warm save {index + 2}: eqc loaded the project cold, where a save keeps the compilation the save before it loaded");
 if (budgetPath is not null && JsonNode.Parse(File.ReadAllText(budgetPath))?[target] is JsonObject budget)
 {
+    // A budget holds a target two ways and no other: a key this does not read would hold nothing and say
+    // nothing, which is how a budget written before #1909 (`"total": 1500` beside them) would pass any run.
+    foreach (var (key, _) in budget.Where(pair => pair.Key is not ("work" or "time")))
+        failures.Add($"the budget's {target} names {key}, which is neither its work nor its time, so it would hold nothing");
     // The work, the most any warm save did: counted by eqc, so no runner's load moves it.
     if (budget["work"] is JsonObject work)
     {
