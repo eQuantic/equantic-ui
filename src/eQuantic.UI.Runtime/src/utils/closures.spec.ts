@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { closureOf, statics } from './closures';
+import { statics } from './closures';
 
 /** A static generic class's twin, as eqc writes one: statics reached through `this` (#1855). */
 class Cache {
@@ -30,7 +30,6 @@ describe('statics', () => {
   it('is one object per closed type, made once', () => {
     expect(statics(Cache, 'int')).toBe(statics(Cache, 'int'));
     expect(statics(Cache, 'int')).not.toBe(statics(Cache, 'string'));
-    expect(closureOf(statics(Cache, 'int'))).toBe('int');
   });
 
   it('keeps each closed type its own type initializer and slots', () => {

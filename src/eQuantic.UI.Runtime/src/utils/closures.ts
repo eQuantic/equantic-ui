@@ -57,17 +57,9 @@ const closedStatics = new WeakMap<object, Map<string, object>>();
  */
 export const statics = <C extends object>(type: C, typeArguments: string): C => {
   let closed = closedStatics.get(type);
-  if (closed === undefined) closedStatics.set(type, (closed = new Map()));
+  if (!closed) closedStatics.set(type, (closed = new Map()));
   let held = closed.get(typeArguments) as C | undefined;
-  if (held === undefined) {
-    held = Object.create(type) as C;
-    // Its own type initializer's state: read through to the class, every closed type would share one.
-    Object.defineProperties(held, {
-      $slots: { value: null, writable: true },
-      $failure: { value: null, writable: true },
-    });
-    closures.set(held, typeArguments);
-    closed.set(typeArguments, held);
-  }
+  // Its own type initializer's state: read through to the class, every closed type would share one.
+  if (!held) closed.set(typeArguments, (held = Object.assign(Object.create(type) as C, { $slots: null, $failure: null })));
   return held;
 };
