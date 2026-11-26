@@ -65,7 +65,8 @@ when no stop of the scope has the keyboard. Past a scope's last stop (or before 
 SHALL decide: `ClosedLoop` wraps inside it, `Stop` leaves the keyboard where it is, `ParentScope` goes on in
 the enclosing scope from the scope's place. At the outermost scope Photon SHALL wrap, and the web SHALL let
 the browser take the keyboard out of the page. A Tab a focused control consumed (a code editor's indent)
-SHALL NOT move the keyboard.
+SHALL NOT move the keyboard. On the web, content the manager does not own (an `HtmlElement`'s native
+focusables, an `iframe`, a native form control) SHALL stay reachable by Tab in the browser's order.
 
 #### Scenario: NextFocus and Tab agree
 
@@ -93,6 +94,13 @@ SHALL NOT move the keyboard.
 - **WHEN** no scope is declared and Tab is pressed from the page's last control
 - **THEN** on Photon the page's first control has the keyboard, and on the web the browser's own Tab takes
   the keyboard out of the page
+
+#### Scenario: Content the manager does not own
+
+- **WHEN** a web page holds a button A, then an `HtmlElement` whose raw markup holds an `input` and a link,
+  then an `iframe`, then a native `select`, then a button B, and Tab is pressed from A repeatedly
+- **THEN** the keyboard reaches the `input`, the link, the `iframe`'s content, the `select` and B in that
+  order, the order the browser's own Tab takes over the same page
 
 #### Scenario: A node that skips traversal
 

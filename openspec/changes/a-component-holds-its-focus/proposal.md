@@ -1,6 +1,8 @@
 ## Why
 
-Closes #1565, a sub-issue of #194 (pointer, gestures and focus), itself under the block catalog #190.
+Closes #1897, slice 1 of #1565 (a component holds a focus object and moves the focus with it), a sub-issue of
+#194 (pointer, gestures and focus), itself under the block catalog #190. Slices 2 to 4 are #1898, #1899 and
+#1900.
 
 A component cannot hold the focus and move it from code. `docs/FLUTTER-PARITY.md` §5 reads `FocusNode`,
 `FocusScope`, `FocusManager` as **PARTIAL**: "there is no focus object to hold or move imperatively". What
@@ -35,7 +37,8 @@ modal layer's Tab walk folded into it.
   itself. The web stops leaving Tab to the browser: one driver (`dom/focus-manager.ts`, which absorbs the
   FOCUSABLE selector and the Tab handler of `dom/focus-trap.ts`) hands the manager the stops in document
   order and moves the focus where it answers; at the root's edge it lets the browser's Tab leave the page,
-  as Flutter's web embedding does.
+  as Flutter's web embedding does. Content the manager does not own (an `HtmlElement`'s native focusables,
+  an iframe, a native form control) stays reachable in the browser's order.
 - **The modal layer's Tab walk is a scope's.** A modal, open layer stands in the manager's tree as a
   closed-loop scope, so the trap's Tab half (#1066, #1833) is no longer code of its own on either target.
   The trap's restore half (#1813, #1829) and the initial focus into a layer stay as they are in this slice
@@ -86,7 +89,7 @@ modal layer's Tab walk folded into it.
 - **Developer surface** (`developer-surface.baseline.txt`): does not move (no MSBuild property, setting or
   template parameter).
 - **Docs**: the `FocusNode` row of `docs/FLUTTER-PARITY.md` is rewritten (it stays PARTIAL until slice 4,
-  naming what is left), the wiki's Components page in every language, a ledger entry citing #1565.
+  naming what is left), the wiki's Components page in every language, a ledger entry citing #1897.
 
 ## Principles
 

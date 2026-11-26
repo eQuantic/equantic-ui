@@ -220,6 +220,14 @@ order as long as no positive `tabindex` exists and the selector names every focu
 is a claim NOT measured yet, and task 4.5 measures it (the driver switched off, the browser's Tab walked over
 every dashboard screen in Chromium, compared with the manager's order, the test failing on any difference).
 
+Content the manager does not own SHALL stay reachable, in the browser's order, once the driver takes Tab
+everywhere: an `HtmlElement` escape hatch's native focusables (an `input` or a link in raw markup), an
+`iframe`, and a native form control. Either the snapshot reads them as stops (they are focusable elements in
+document order, so the selector names them), or the driver hands Tab to the browser inside them and takes it
+back past them (an `iframe` holds a document of its own, whose Tab the outer page cannot walk). The
+measurement of task 4.5 runs over a page that holds all three and writes the answer here; the release
+coordinator added this guard on 2026-11-26.
+
 ### 7. Measured: what C# events do when a handler changes them mid-dispatch
 
 `FocusNode.Changed` is a C# event, and the twin must dispatch it as .NET does: a dispatch calls the
@@ -231,10 +239,10 @@ The whole capability is about 29 points; each slice ships and is proved on both 
 
 | Slice | Points | What it delivers | What goes |
 |---|---|---|---|
-| **1, this change** | 8 | the object, the manager, the tree order, Tab on both targets through it with the modal walk folded, requests, notification, `Focus` and `FocusScope`, the sample | `Navigable.FocusVersion`, `AdoptCompositeFocus`, `CompositeFocusState`'s version, the trap's Tab handler on both targets |
-| 2 | 5 | `FocusInDirection(TraversalDirection)` (`Up`, `Down`, `Left`, `Right`), Flutter's directional policy over the stops' rects, which `TraversalStop` gains (Photon's `Bounds`, the web's box read only when a direction is asked) | nothing |
-| 3 | 8 | a scope traps AND restores: the layer's initial focus becomes autofocus inside its scope, the focus given back when it closes becomes the scope beneath restoring its `FocusedChild` (#1811, #1813, #1829); `focus-trap.ts` and `PhotonHost.ModalFocus.cs` become thin drivers | `Pressable.InitialFocus`, `Button.InitialFocus` (migration: `Focus(autofocus: true, child: …)`), the `data-eq-initial-focus` mark, the focus-in guard as code of its own |
-| 4 | 8 | text fields, code and sheet surfaces and the table viewport join: each holds or is handed a `FocusNode`, the table viewport's cell order is the realizer's snapshot order on the web as on Photon | `TextEntry.Autofocus`, `TextEntry.OnFocusChanged`, `CodeSurface.Autofocus`, the surface models' `FocusVersion`/`FocusChanged`, the controllers' `RequestFocus()` (replaced by a held `FocusNode`), the table viewport's own `tab()`; the parity row reads SAME |
+| **1, this change (#1897)** | 8 | the object, the manager, the tree order, Tab on both targets through it with the modal walk folded, requests, notification, `Focus` and `FocusScope`, the sample | `Navigable.FocusVersion`, `AdoptCompositeFocus`, `CompositeFocusState`'s version, the trap's Tab handler on both targets |
+| 2 (#1898) | 5 | `FocusInDirection(TraversalDirection)` (`Up`, `Down`, `Left`, `Right`), Flutter's directional policy over the stops' rects, which `TraversalStop` gains (Photon's `Bounds`, the web's box read only when a direction is asked) | nothing |
+| 3 (#1899) | 8 | a scope traps AND restores: the layer's initial focus becomes autofocus inside its scope, the focus given back when it closes becomes the scope beneath restoring its `FocusedChild` (#1811, #1813, #1829); `focus-trap.ts` and `PhotonHost.ModalFocus.cs` become thin drivers | `Pressable.InitialFocus`, `Button.InitialFocus` (migration: `Focus(autofocus: true, child: …)`), the `data-eq-initial-focus` mark, the focus-in guard as code of its own |
+| 4 (#1900) | 8 | text fields, code and sheet surfaces and the table viewport join: each holds or is handed a `FocusNode`, the table viewport's cell order is the realizer's snapshot order on the web as on Photon | `TextEntry.Autofocus`, `TextEntry.OnFocusChanged`, `CodeSurface.Autofocus`, the surface models' `FocusVersion`/`FocusChanged`, the controllers' `RequestFocus()` (replaced by a held `FocusNode`), the table viewport's own `tab()`; the parity row reads SAME |
 
 ## Risks / Trade-offs
 
@@ -273,11 +281,13 @@ lines; Components' gains `UI.Focus` and `UI.FocusScope`. `developer-surface.base
   (task 2.3) confirms it on the language itself.
 - **The web's Tab order equals the manager's**: NOT measured; task 4.5 measures it.
 
-## Open Questions
+## Decided Questions
 
-- Whether `Pressable.CanRequestFocus` and `TableViewport.CanRequestFocus` go in slice 4 in favour of
-  `Focus(canRequestFocus: false, child: …)` (PRINCIPLES 15 says a capability is a node; their parity row reads
-  SAME with Flutter's `InkWell.canRequestFocus`, and the press's "keep the keyboard where it is" would move
-  onto the `Focus` on both targets). Does not change slice 1.
-- Whether `FocusNode` exposes its tree (`Parent`, `Children`, `EnclosingScope`) publicly. Slice 1 keeps it
-  internal; nothing in the catalog needs it.
+The release coordinator answered the two open questions on 2026-11-26:
+
+- `Pressable.CanRequestFocus` and `TableViewport.CanRequestFocus` stay, and slice 4 realizes each through the
+  `Focus` node, as Flutter's `InkWell` builds a `Focus` inside itself: one mechanism, the parity row stays SAME
+  with `InkWell`, and PRINCIPLES 15 holds, since the capability is still the wrapping node and the parameter a
+  convenience over it.
+- The focus tree (`Parent`, `Children`, `EnclosingScope`) stays internal. After 1.0 a public member is added in
+  a minor and removed only in a major, so it is exposed when an app needs it.
