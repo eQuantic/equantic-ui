@@ -10,7 +10,8 @@ The look a box hands the text and the icons inside it when they name none of the
 A `Text` that names no role, no line limit or no alignment SHALL be drawn with the ones the nearest enclosing box
 states in `BoxStyle.Content`, on the web (server and browser), on Photon and in email. Where no box states one it SHALL
 be drawn in `BodyL`, with no line limit, at the start, as before. A text that takes the box's role SHALL also take the
-box's `Type`; a text that names its own role SHALL keep that role's type whole.
+box's `Type`; a text that names its own role SHALL keep that role's type whole. Email SHALL refuse a line limit a
+box states, as it refuses one a `Text` names, since no mail client clamps lines.
 
 #### Scenario: A label inside a box that states the button's look
 

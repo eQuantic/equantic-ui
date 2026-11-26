@@ -122,4 +122,27 @@ public class AllowedValueAnalyzerTests
         diagnostics.Select(diagnostic => diagnostic.GetMessage())
             .Should().Equal("3 is not a value 'zoom' of new Marked(…) allows: it takes 1 or 2.");
     }
+
+    [Fact]
+    public async Task ANull_HandedToANullableParameterWhoseValuesLeaveItOut_IsABuildError()
+    {
+        // Unlike 22 on its way to a float?, a null literal converted to Nullable<int> is a constant C# folds itself,
+        // written cast or not: a mark that leaves null out refuses it, and one that lists it takes it.
+        var diagnostics = await AnalyzeAsync("""
+            using System.ComponentModel.DataAnnotations;
+
+            public static class Probe
+            {
+                public static int? Take([AllowedValues(1, 2)] int? count) => count;
+                public static int? Maybe([AllowedValues(null, 1, 2)] int? count) => count;
+                public static int? None() => Take(null);
+                public static int? Cast() => Take((int?)null);
+                public static int? Listed() => Maybe(null);
+            }
+            """);
+
+        diagnostics.Select(diagnostic => diagnostic.GetMessage()).Should().Equal(
+            "null is not a value 'count' of Take(…) allows: it takes 1 or 2.",
+            "null is not a value 'count' of Take(…) allows: it takes 1 or 2.");
+    }
 }

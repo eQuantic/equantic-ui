@@ -20,7 +20,7 @@ const lower = (node: unknown): HtmlNode => lowerVisualNode(node as VisualNodeVal
 const boxOf = (content: ContentStyle | null, child: unknown): Box =>
   new Box(new BoxStyle({ content }), child as VisualNode);
 
-/** The first node in the tree whose class list names `cls`, or null. */
+/** The first node in the tree that `test` accepts, or null. */
 function find(node: HtmlNode, test: (n: HtmlNode) => boolean): HtmlNode | null {
   if (test(node)) return node;
   for (const child of node.children ?? []) {
