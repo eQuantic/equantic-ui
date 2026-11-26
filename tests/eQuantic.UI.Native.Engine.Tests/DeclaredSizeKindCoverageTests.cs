@@ -146,7 +146,11 @@ public class DeclaredSizeKindCoverageTests
         return null;
     }
 
-    private static bool IsNumber(Type type) => type == typeof(float) || type == typeof(double) || type == typeof(int);
+    /// <summary>A number, or an optional one: an <see cref="Icon"/> that names no size takes its box's
+    /// (#1577), and is a fixed square whichever size it resolves to.</summary>
+    private static bool IsNumber(Type type) =>
+        (Nullable.GetUnderlyingType(type) ?? type) is var number
+        && (number == typeof(float) || number == typeof(double) || number == typeof(int));
 
     /// <summary>
     /// An instance whose only state is the size it declares. No constructor runs, which is the

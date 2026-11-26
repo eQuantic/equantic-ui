@@ -45,6 +45,27 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes,
     /// rather than travelling down with each visit.</summary>
     private readonly List<SemanticNode> _nodes = nodes;
 
+    /// <summary>The look the boxes above the node being read state (<see cref="BoxStyle.Content"/>,
+    /// #1577), the one the layout measured it in and the paint drew it in: set around a box's children
+    /// (<c>Visit(Box)</c>) and around an overlay layer's root (<see cref="WalkUnder"/>).</summary>
+    private ContentStyle? _content;
+
+    /// <summary>Walks a root laid out on its own, an overlay layer's, under <paramref name="around"/>,
+    /// the look where the layer was queued.</summary>
+    internal void WalkUnder(LayoutNode root, ContentStyle? around)
+    {
+        var outer = _content;
+        _content = around;
+        try
+        {
+            SemanticsTree.Walk(root, this);
+        }
+        finally
+        {
+            _content = outer;
+        }
+    }
+
     /// <summary>The layer each anchored node's panel was laid out in, by the anchored node's position: read
     /// in place, right after the anchor (#1868). Empty for a walk over one subtree.</summary>
     private readonly IReadOnlyDictionary<Element, LayoutNode> _panels =

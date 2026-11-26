@@ -127,7 +127,7 @@ public class MonoRunFaceTests
             StyleOverride = Branded.Type(TypeRole.BodyM) with { Family = new("Fira Code"), Mono = true },
         };
 
-        chosen.Resolve(Branded).Family.Should().Be(new FontFamily("Fira Code"),
+        chosen.Resolve(Branded, around: null).Family.Should().Be(new FontFamily("Fira Code"),
             "the call site was specific; only an INHERITED family is the theme's to replace");
     }
 

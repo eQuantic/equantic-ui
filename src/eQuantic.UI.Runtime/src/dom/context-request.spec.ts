@@ -157,6 +157,7 @@ describe('a ContextTarget, asked for its menu in the browser', () => {
     expect(heard).toEqual([]);
     vi.advanceTimersByTime(1);
     pointer('pointerup', target, 70, 120);
+    const armed = vi.getTimerCount();
     const click = new MouseEvent('click', { bubbles: true, cancelable: true });
     target.dispatchEvent(click);
 
@@ -164,6 +165,30 @@ describe('a ContextTarget, asked for its menu in the browser', () => {
     expect(heard).toHaveLength(1);
     expect((heard[0] as ContextRequest).at?.x).toBe(20);
     expect(click.defaultPrevented).toBe(true);
+    // #1889: the guard goes with the click it swallowed, and leaves no timer of its own waiting.
+    expect(vi.getTimerCount(), 'the guard’s timer went with its click').toBe(armed - 1);
+  });
+
+  // #1889: the guard on the click a hold's release ends in is the controller's, and leaves with it. Its 600 ms
+  // timer was a bare one, which could fire after a spec's page was torn down.
+  it("lets go of a hold's click guard when the controller goes, and leaves no timer of it", () => {
+    vi.useFakeTimers();
+    const host = mount(row('docs'));
+    const target = host.querySelector('[data-eq-context]')!;
+    placeAt(target);
+
+    pointer('pointerdown', target, 70, 120);
+    vi.advanceTimersByTime(HOLD_MS);
+    pointer('pointerup', target, 70, 120);
+    expect(heard).toHaveLength(1);
+    const armed = vi.getTimerCount();
+
+    resetContextController();
+
+    expect(vi.getTimerCount(), 'the guard’s timer went with the controller').toBe(armed - 1);
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+    target.dispatchEvent(click);
+    expect(click.defaultPrevented, 'a click afterwards is the page’s').toBe(false);
   });
 
   it('takes a finger that travels for a scroll, and asks nothing', () => {

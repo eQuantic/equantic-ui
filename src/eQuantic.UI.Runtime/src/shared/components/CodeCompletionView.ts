@@ -115,13 +115,13 @@ export class CodeCompletionView {
         let label = CodeCompletionView.fit(item.label, columns);
         let row = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
         row.add(CodeCompletionView.glyph(theme, metrics, item.kind));
-        row.add(new Text(label, 'labelSmall', ink, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(label, match.highlights, ink, theme.colors('primary').base) }));
+        row.add(new Text(label, 'labelSmall', ink, 1, null, false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(label, match.highlights, ink, theme.colors('primary').base) }));
         let room = (columns - CodeCompletionView.cellsOf(label) | 0) - 2 | 0;
         let said: any; 
         let detail = (($0) => (($0 != null && $0.length > 0) && (said = $0, true)))(item.detail) && room >= 2 ? CodeCompletionView.fit(said, room) : null;
         if (!(detail == null)) {
             row.add(new Flexible(new Spacer()));
-            row.add(new Text(detail, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style }));
+            row.add(new Text(detail, 'labelSmall', theme.textMuted, 1, null, false, false, null, 0, { mono: true, styleOverride: metrics.style }));
         }
         let whole: any; 
         return new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: metrics.lineHeight, padding: EdgeInsets.symmetric(8, 0), background: selected ? theme.colors('primary').subtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), pressed, { role: 'option', selected: selected, canRequestFocus: false, label: (($0) => (($0 != null && $0.length > 0) && (whole = $0, true)))(item.detail) ? item.label + ', ' + whole : item.label });
@@ -146,7 +146,7 @@ export class CodeCompletionView {
 
     static glyph(theme: any, metrics: CodeBlock$CodeMetrics, kind: $CodeCompletionKindValue) {
         let cell = new Row(0, 'center', 'center', false, null, null, { width: SizeValue.fixed(metrics.lineHeight), height: SizeValue.fixed(metrics.lineHeight) });
-        cell.add(new Text(CodeCompletionView.glyphOf(kind), 'labelSmall', theme.code(CodeCompletionView.inkOf(kind)), 1, 'start', false, false, null, 0, { mono: true, styleOverride: $eq.withPatch(metrics.style, { weight: 'bold' }) }));
+        cell.add(new Text(CodeCompletionView.glyphOf(kind), 'labelSmall', theme.code(CodeCompletionView.inkOf(kind)), 1, null, false, false, null, 0, { mono: true, styleOverride: $eq.withPatch(metrics.style, { weight: 'bold' }) }));
         return cell;
     }
 
@@ -188,7 +188,7 @@ export class CodeCompletionView {
         if (lines === 0 || !(((documentation != null && documentation.length > 0) && (text = documentation, true)))) return null;
         let theme = context.theme;
         let rule = new Box(new BoxStyle({ width: SizeValue.fill, height: 1, background: theme.border }));
-        let body = new Box(new BoxStyle({ width: SizeValue.fill, height: Math.fround(CodeCompletionView.documentationHeightOf(CodeCompletionView.documentationLineOf(context, metrics), lines) - 1), padding: EdgeInsets.symmetric(8, 4), clip: true }), new Text(CodeCompletionView.shown(text), 'labelSmall', theme.textSecondary, lines, 'start', false, false, null, 0, { styleOverride: CodeCompletionView.documentationStyle(metrics) }));
+        let body = new Box(new BoxStyle({ width: SizeValue.fill, height: Math.fround(CodeCompletionView.documentationHeightOf(CodeCompletionView.documentationLineOf(context, metrics), lines) - 1), padding: EdgeInsets.symmetric(8, 4), clip: true }), new Text(CodeCompletionView.shown(text), 'labelSmall', theme.textSecondary, lines, null, false, false, null, 0, { styleOverride: CodeCompletionView.documentationStyle(metrics) }));
         let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         if (above) {
             column.add(body);
