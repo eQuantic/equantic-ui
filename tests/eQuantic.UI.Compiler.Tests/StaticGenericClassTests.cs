@@ -115,6 +115,17 @@ public class StaticGenericClassTests
     }
 
     [Fact]
+    public void AnAliasOfAClosedType_IsItsOwn()
+    {
+        var user = Compile(Cache.Replace("namespace NS;", "namespace NS;\nusing IntCache = NS.Cache<int>;") + """
+            public sealed class User { public int Use() { IntCache.Keep(1); return IntCache.Last; } }
+            """).Single(result => result.ComponentName == "User");
+
+        user.Errors.Should().BeEmpty();
+        user.TypeScript.Should().Contain("$eq.statics(Cache, 'int').keep(1);").And.Contain("return $eq.statics(Cache, 'int').last;");
+    }
+
+    [Fact]
     public void AStaticClassInAGenericType_KeepsItsStaticsOnItsClass()
     {
         var results = Compile("""

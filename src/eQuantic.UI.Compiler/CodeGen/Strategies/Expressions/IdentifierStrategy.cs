@@ -48,6 +48,11 @@ public class IdentifierStrategy : IExpressionIrStrategy
         if (symbol is INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct } aliased && aliased.Name != name
             && !aliased.IsHostOnly() && aliased.HasTwin())
         {
+            // An alias of a static generic class's closed type (`using IntCache = Cache<int>;`) reaches that closed
+            // type's statics, as its own spelling does (#1855).
+            if (identifier.Parent is MemberAccessExpressionSyntax aliasAccess && aliasAccess.Expression == identifier
+                && ClosedStatics.Home(aliased, identifier, context) is { } aliasStatics)
+                return aliasStatics;
             aliased.RegisterIntroduced(context);
             return JsExpr.Identifier(aliased.TwinReference());
         }

@@ -52,9 +52,10 @@ internal static class ClosedStatics
         var definition = declaring!.OriginalDefinition;
         if (SymbolEqualityComparer.Default.Equals(declaring, definition) && WrittenIn(definition, at, context))
             return JsExpr.Identifier(Own);
+        // Imported as any reference to the class is, from the runtime where the runtime provides it.
         var twin = definition.Locations.Any(location => location.IsInSource)
             ? definition.IntroduceTwin(context)
-            : definition.TwinReference();
+            : Registered(definition, context);
         if (ObjectCreationStrategy.ClosureOf(declaring) is { } closure)
         {
             context.UsedHelpers.Add(Eq.Import);
@@ -66,6 +67,13 @@ internal static class ClosedStatics
             + "so nothing can say which closed type's statics this is. Reach it through a closed type "
             + $"('{definition.Name}<int>'), or pass in what it holds.");
         return JsExpr.Identifier(twin);
+    }
+
+    /// <summary>The twin of a class read from metadata, registered for its module's import.</summary>
+    private static string Registered(INamedTypeSymbol definition, ConversionContext context)
+    {
+        definition.RegisterIntroduced(context);
+        return definition.TwinReference();
     }
 
     /// <summary>Whether <paramref name="at"/> is code of <paramref name="definition"/>'s own declarations, not of a
