@@ -763,6 +763,7 @@ public class ComponentCompiler
             {
                 var im = component.SyntaxTree != null ? _semanticModelProvider.GetSemanticModel(component.SyntaxTree) : null;
                 result.TypeScript = _tsEmitter.EmitInterfaceModule(face, im);
+                result.IsInterfaceTwin = true;
                 result.Success = true;
                 CollectDiagnostics(result, component.SourcePath, _tsEmitter.GetLastDiagnostics());
                 return result;
@@ -982,6 +983,10 @@ public class CompilationResult
     /// <summary>A component's module, rather than a record's, a plain class's, a static class's or a union's:
     /// a component is a root of what the browser reaches (AppModules).</summary>
     internal bool IsComponent { get; set; }
+
+    /// <summary>An interface's twin (#1878), whose only use is a constraint's type: a barrel re-exports it with
+    /// <c>export type</c>, so no value of it is reachable from the runtime's entry and the bundle carries none of it.</summary>
+    public bool IsInterfaceTwin { get; set; }
     public string TypeScript { get; set; } = string.Empty;
     public string JavaScript { get; set; } = string.Empty;
     public string? SourceMap { get; set; }
