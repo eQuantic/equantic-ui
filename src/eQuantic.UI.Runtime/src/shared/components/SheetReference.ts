@@ -4,7 +4,7 @@ export class SheetReference {
     static maxRows: number = 1048576;
 
     static tryParse(text: string, rows: number, cols: number) {
-        let range: any;
+        let range!: SheetRange;
         const $r = (() => {
             range = new SheetRange(new CellRef(0, 0));
             let trimmed = $eq.text.toUpper($eq.text.trim(text), true);
@@ -50,7 +50,7 @@ export class SheetReference {
     }
 
     static readCell(text: string) {
-        let cell: any;
+        let cell!: CellRef;
         const $r = (() => {
             cell = new CellRef(0, 0);
             let at = 0;

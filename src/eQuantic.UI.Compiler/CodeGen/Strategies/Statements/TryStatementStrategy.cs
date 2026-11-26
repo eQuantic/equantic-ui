@@ -75,7 +75,8 @@ public class TryStatementStrategy : IStatementStrategy
         var declared = ExpressionVariableScanner.Declarations(
             clauses.SelectMany(clause => ExpressionVariableScanner.Names(clause.Filter?.FilterExpression))
                 .Where(name => !variables.Contains(name)),
-            context.TypeAnnotations);
+            clauses.Select(clause => clause.Filter?.FilterExpression),
+            context);
         if (declared.Length > 0) statements.Add(JsStatement.Raw(declared.TrimEnd()));
 
         var dispatch = Dispatch(clauses, 0, context);

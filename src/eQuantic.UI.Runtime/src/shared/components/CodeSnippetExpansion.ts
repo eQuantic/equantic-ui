@@ -119,7 +119,7 @@ export class CodeSnippetExpansion {
     }
 
     variableText(part: CodeSnippetPart) {
-        let nested: any;
+        let nested!: CodeSnippetPart[] | null;
         const $r = (() => {
             nested = null;
             let value = this._variable(part.text) ?? '';
