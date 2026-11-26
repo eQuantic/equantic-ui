@@ -24,6 +24,7 @@ import { floatText, hex, modifiersOf, num, tokenValue } from './css-values';
 export { num, tokenValue };
 import { DomCanvasPainter } from './canvas-painter';
 import { declareCanvas } from './canvas-surface';
+import { declareLayoutBuilder } from './layout-builders';
 import { installDraggableController } from '../dom/draggable';
 import { installSortableController } from '../dom/sortable';
 import { dropHandlers, installDropGuard } from '../dom/file-drop';
@@ -76,6 +77,7 @@ import type {
   BoxStyleValue,
   ColorTokenValue,
   CanvasNodeValue,
+  LayoutBuilderValue,
   DrawingNode,
   VectorGradientValue,
   VectorPaintValue,
@@ -820,6 +822,9 @@ function lowerNodeKind(
     // C# twin (W3): the app's own shapes as inline SVG, in call order.
     case 'canvas':
       return lowerCanvas(node as unknown as CanvasNodeValue, context);
+    // C# twin (#1555): the builder's box, empty until the browser has measured the room it is given.
+    case 'layoutBuilder':
+      return lowerLayoutBuilder(node as unknown as LayoutBuilderValue, context, path);
     // C# twin: artwork stays VECTOR in the DOM — one <path> per shape, the paint the file chose.
     case 'drawing':
       return lowerDrawing(node as unknown as DrawingNode);
@@ -3750,6 +3755,25 @@ function paintsNothing(box: BoxNode): boolean {
   );
 }
 
+/** A builder's box: one that fills on both axes and holds nothing else (C# `UnbuiltBuilder`). */
+const BUILDER_BOX_STYLE = { width: { kind: 'fill', value: 0 }, height: { kind: 'fill', value: 0 } } as BoxStyleValue;
+
+/**
+ * A `LayoutBuilder` (#1555): the box that fills on both axes, holding what the builder answers for the
+ * room the browser last measured it at, shown in the position's slot as a layer is. Before the first
+ * measurement it holds nothing, which is what the server writes, so hydration adopts it. The box is
+ * marked for the pass's commit, which measures it (layout-builders.ts); a box the server wrote carries
+ * no mark, and the client's adds it, as a canvas's.
+ */
+function lowerLayoutBuilder(node: LayoutBuilderValue, context: LoweringContext, path: string): HtmlNode {
+  const { id, state } = declareLayoutBuilder(positionOf(frameOf(context), node));
+  const built = state.childFor(node, node.builder);
+  const child = built ? showLayer(node, built, context) : null;
+  const box = lowerBox({ nodeKind: 'box', style: BUILDER_BOX_STYLE, child }, context, path);
+  box.attributes['data-eq-layout-builder'] = id;
+  return box;
+}
+
 function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNode {
   const style = box.style ?? ({} as BoxStyleValue);
   // A CAP with no decided height bounds the child (the C# twin, CapsItsChild): as a flex column, a
@@ -4426,6 +4450,9 @@ function capsAt(node: unknown): SizeValueValue | undefined {
 /** Whether a node requests Fill per axis — wrappers must stretch for the 100% chain to reach it. */
 function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
   switch (node.nodeKind) {
+    // A builder's box fills on both axes, whatever it built inside it (C# twin).
+    case 'layoutBuilder':
+      return { width: true, height: true };
     case 'box': {
       const style = (node as BoxNode).style ?? ({} as BoxStyleValue);
       return { width: style.width?.kind === 'fill', height: style.height?.kind === 'fill' };

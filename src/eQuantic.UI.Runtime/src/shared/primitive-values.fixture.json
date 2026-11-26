@@ -143,5 +143,58 @@
     "atMedium": "medium",
     "belowExpanded": "medium",
     "atExpanded": "expanded"
+  },
+  "boxConstraints": {
+    "enforceTight": {
+      "minWidth": 300,
+      "maxWidth": 300,
+      "minHeight": 50,
+      "maxHeight": 50
+    },
+    "enforceInside": {
+      "minWidth": 10,
+      "maxWidth": 500,
+      "minHeight": 20,
+      "maxHeight": 60
+    },
+    "loosen": {
+      "minWidth": 0,
+      "maxWidth": 120,
+      "minHeight": 0,
+      "maxHeight": 40
+    },
+    "deflateFractional": {
+      "minWidth": 9.600000381469727,
+      "maxWidth": 299.8999938964844,
+      "minHeight": 4.400000095367432,
+      "maxHeight": null
+    },
+    "deflatePastZero": {
+      "minWidth": 0,
+      "maxWidth": 0,
+      "minHeight": 0,
+      "maxHeight": 0
+    },
+    "constrained": {
+      "width": 10,
+      "height": 100
+    },
+    "constrainedUnbounded": {
+      "width": 1000000,
+      "height": 3
+    },
+    "biggest": {
+      "width": 320,
+      "height": 480
+    },
+    "smallest": {
+      "width": 7,
+      "height": 11
+    },
+    "tightIsTight": true,
+    "looseIsTight": false,
+    "unboundedHasBoundedWidth": false,
+    "looseHasBoundedHeight": true,
+    "enforceNull": "Value cannot be null. (Parameter \u0027parent\u0027)"
   }
 }

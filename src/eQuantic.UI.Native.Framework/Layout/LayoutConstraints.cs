@@ -1,3 +1,5 @@
+using eQuantic.UI.Primitives;
+
 namespace eQuantic.UI.Native.Framework;
 
 /// <summary>
@@ -54,6 +56,14 @@ public readonly record struct AxisConstraint(float Max, bool Indeterminate, Stre
 
     /// <summary>Whether the parent decided this child's size on this axis.</summary>
     public bool IsStretched => Stretch != StretchKind.None;
+
+    /// <summary>
+    /// The extent a box that FILLS takes on this axis, as an author is told it: the room, where the
+    /// parent decides it, and <see cref="float.PositiveInfinity"/> where the box's size is left to what
+    /// it holds, on an unbounded axis or one a hugging parent sizes from content. The rule
+    /// <c>ResolveSelf</c> applies to a <see cref="SizeKind.Fill"/>, read before the box is measured.
+    /// </summary>
+    internal float FillingExtent => !Indeterminate && !IsUnbounded ? Max : float.PositiveInfinity;
 
     /// <summary>The same constraint with different room.</summary>
     public AxisConstraint WithMax(float max) => this with { Max = max };
@@ -139,6 +149,13 @@ public readonly record struct LayoutConstraints(AxisConstraint Width, AxisConstr
 
     public float MaxWidth => Width.Max;
     public float MaxHeight => Height.Max;
+
+    /// <summary>
+    /// What a <see cref="Primitives.LayoutBuilder"/> is told: the room a box that fills has under these
+    /// constraints, with no minimum. The engine's flags stay here; the author's value carries what the
+    /// web can answer too, and this is the one place the first is projected onto the second.
+    /// </summary>
+    internal BoxConstraints FillingRoom() => new(0, Width.FillingExtent, 0, Height.FillingExtent);
 
     public LayoutConstraints WithMax(float maxWidth, float maxHeight) =>
         this with { Width = Width.WithMax(maxWidth), Height = Height.WithMax(maxHeight) };

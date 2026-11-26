@@ -1,4 +1,4 @@
-import { $AdjustableRoleValue, $AlignmentValue, $CrossAlignValue, $DragAxisValue, $eq, $HitTestBehaviorValue, $IconsValue, $ImageFitValue, $LiveRegionUrgencyValue, $LoopEffectValue, $MainAlignValue, $NavigableMoveValue, $NavigableRoleValue, $PresenceMotionValue, $PressableRoleValue, $ScrollAxisValue, $SizeVariantValue, $TableCellRoleValue, $TableRoleValue, $TextAlignmentValue, $TextDirectionValue, $TextEntryKindValue, $TypeRoleValue, $VariantValue, AdaptiveNode, Adjustable, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, CodeSurface, ColorToken, Column, ContextMenu, ContextRequest, ContextTarget, CookieConsent, CornerRadii, CultureOption, CultureSwitcher, Currency, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Directionality, Divider, DragDismiss, Draggable, Drawer, Drawing, DropTarget, EdgeInsets, EmptyState, ExcludeSemantics, FileUpload, Flexible, Grid, GridTrack, Group, Hoverable, Icon, IconButton, IconGlyph, Image, InFlow, InView, KeyChord, Link, ListDetail, Listener, ListItem, ListTheme, ListView, LiveRegion, LoopMotion, Markdown, MenuItem, MergeSemantics, Mermaid, MoneyInput, Navigable, NavigationRail, NavItem, NumberInput, OptionGroup, Overlay, PickedFile, Pinned, PointerEvent, Positioned, Presence, Pressable, Progress, ProgressBar, RangeValue, Row, SafeArea, ScrollView, SdkStrings, SearchField, SegmentedControl, Select, SheetSurface, Shortcut, Simulated, Size, SizeValue, Skeleton, Slider, Sortable, SortableItem, SortableTheme, SortAnnouncements, SortDrop, Spacer, Spinner, Stack, Stepper, Switch, TableOffset, TableRange, TableScroll, TableScrollRequest, TableSpans, TableView, TableViewCell, TableViewport, Tabs, Text, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TreeEditRequest, TreeMove, TreeNode, TreeReloadRequest, TreeRowState, TreeView, TypeStyle, UploadedFile, UploadPolicy, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "../runtime-exports";
+import { $AdjustableRoleValue, $AlignmentValue, $CrossAlignValue, $DragAxisValue, $eq, $HitTestBehaviorValue, $IconsValue, $ImageFitValue, $LiveRegionUrgencyValue, $LoopEffectValue, $MainAlignValue, $NavigableMoveValue, $NavigableRoleValue, $PresenceMotionValue, $PressableRoleValue, $ScrollAxisValue, $SizeVariantValue, $TableCellRoleValue, $TableRoleValue, $TextAlignmentValue, $TextDirectionValue, $TextEntryKindValue, $TypeRoleValue, $VariantValue, AdaptiveNode, Adjustable, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxConstraints, BoxStyle, Button, Calendar, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, CodeSurface, ColorToken, Column, ConstrainedBox, ContextMenu, ContextRequest, ContextTarget, CookieConsent, CornerRadii, CultureOption, CultureSwitcher, Currency, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Directionality, Divider, DragDismiss, Draggable, Drawer, Drawing, DropTarget, EdgeInsets, EmptyState, ExcludeSemantics, FileUpload, Flexible, Grid, GridTrack, Group, Hoverable, Icon, IconButton, IconGlyph, Image, InFlow, InView, KeyChord, LayoutBuilder, Link, ListDetail, Listener, ListItem, ListTheme, ListView, LiveRegion, LoopMotion, Markdown, MenuItem, MergeSemantics, Mermaid, MoneyInput, Navigable, NavigationRail, NavItem, NumberInput, OptionGroup, Overlay, PickedFile, Pinned, PointerEvent, Positioned, Presence, Pressable, Progress, ProgressBar, RangeValue, Row, SafeArea, ScrollView, SdkStrings, SearchField, SegmentedControl, Select, SheetSurface, Shortcut, Simulated, Size, SizeValue, Skeleton, Slider, Sortable, SortableItem, SortableTheme, SortAnnouncements, SortDrop, Spacer, Spinner, Stack, Stepper, Switch, TableOffset, TableRange, TableScroll, TableScrollRequest, TableSpans, TableView, TableViewCell, TableViewport, Tabs, Text, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TreeEditRequest, TreeMove, TreeNode, TreeReloadRequest, TreeRowState, TreeView, TypeStyle, UploadedFile, UploadPolicy, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "../runtime-exports";
 
 export class UI {
     static column(gap: number = 0, main: $MainAlignValue = 'start', cross: $CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
@@ -47,6 +47,10 @@ export class UI {
 
     static box(style?: BoxStyle, child: VisualNode | null = null) {
         return new Box(style, child);
+    }
+
+    static constrainedBox(constraints: BoxConstraints, child: VisualNode) {
+        return new ConstrainedBox(constraints, child);
     }
 
     static text(content: string, role: $TypeRoleValue = 'bodyL', color: ColorToken | null = null, maxLines: number = 0, align: $TextAlignmentValue = 'start', mono: boolean = false, tabular: boolean = false, styleOverride: TypeStyle | null = null, headingLevel: number = 0) {
@@ -181,6 +185,10 @@ export class UI {
 
     static adaptiveNode(compact: VisualNode, medium: VisualNode | null = null, expanded: VisualNode | null = null) {
         return new AdaptiveNode(compact, medium, expanded);
+    }
+
+    static layoutBuilder(builder: (value: BoxConstraints) => VisualNode) {
+        return new LayoutBuilder(builder);
     }
 
     static cameraPreview(session: any, width: number, height: number, cornerRadius?: CornerRadii, label: string = '') {
