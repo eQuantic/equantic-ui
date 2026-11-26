@@ -1,5 +1,5 @@
 {
-  "about": "The arena's cases (#1563), run by GestureArenaFixtureTests against the C# GestureRouter and by gesture-arena.spec.ts against its transpiled twin. Members are listed in hit order, the innermost first: a probe is an ArenaProbe recognizer kept by the router for a detector named like it, whose box starts at its origin; a plain member is a gesture of the SDK's (ArenaMember), which resolves through the entry the down hands it; a sample member is the dashboard's own HoldThenDrag, whose callbacks say what it reported. Each step says what was heard while it ran, in order, and a tick may say when the next deadline is due.",
+  "about": "The arena's cases (#1563), run by GestureArenaFixtureTests against the C# GestureRouter and by gesture-arena.spec.ts against its transpiled twin. Members are listed in hit order, the innermost first: a probe is an ArenaProbe recognizer kept by the router for a detector named like it, whose box starts at its origin; a plain member is a gesture of the SDK's (ArenaMember), which resolves through the entry the down hands it; a sample member is the dashboard's own HoldThenDrag, whose callbacks say what it reported. A probe's whenRejected resolves another member, as a step would, once the arena has told the probe it lost. Each step says what was heard while it ran, in order, and a tick may say when the next deadline is due.",
   "cases": [
     {
       "name": "a lone gesture of the SDK's wins at the close, as it did before any arena",
@@ -65,6 +65,16 @@
         { "move": [11, 6], "heard": ["b.move 1 11,6", "c.move 1 11,6"] },
         { "resolve": "b", "as": "rejected", "heard": ["b.reject 1", "c.accept 1"] },
         { "up": [11, 6], "heard": ["c.up 1 11,6"] }
+      ]
+    },
+    {
+      "name": "a rejection that lets another member go decides the arena once: the last one left wins once",
+      "members": [{ "name": "a", "whenRejected": { "resolve": "b", "as": "rejected" } }, { "name": "b" }, { "name": "c" }],
+      "built": ["a.create", "b.create", "c.create"],
+      "steps": [
+        { "down": [10, 6], "heard": ["a.add 1 10,6", "b.add 1 10,6", "c.add 1 10,6"] },
+        { "resolve": "a", "as": "rejected", "heard": ["a.reject 1", "b.reject 1", "c.accept 1"] },
+        { "up": [10, 6], "heard": ["c.up 1 10,6"] }
       ]
     },
     {

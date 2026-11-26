@@ -101,13 +101,7 @@ public class GestureArenaFixtureTests
             else if (step.TryGetProperty("tick", out var tick)) Router.Tick(tick.GetDouble());
             else if (step.TryGetProperty("rebuild", out _)) Build();
             else if (step.TryGetProperty("stop", out var stop)) _probes[stop.GetString()!].Stop(1);
-            else if (step.TryGetProperty("resolve", out var resolve))
-            {
-                var disposition = Disposition(step.GetProperty("as"));
-                var who = resolve.GetString()!;
-                if (_probes.TryGetValue(who, out var probe)) probe.Say(disposition);
-                else _entries[who].Resolve(disposition);
-            }
+            else if (step.TryGetProperty("resolve", out var resolve)) Resolve(resolve.GetString()!, Disposition(step.GetProperty("as")));
             else throw new InvalidOperationException($"A step the runner does not know: {step}");
         }
 
@@ -129,9 +123,23 @@ public class GestureArenaFixtureTests
                         Heard.Add($"{memberName}.create");
                         return Probe(memberName, spec);
                     },
-                    probe => probe.OnDeadline = who => Heard.Add($"{who}.called by build {build}"));
+                    probe =>
+                    {
+                        probe.OnDeadline = who => Heard.Add($"{who}.called by build {build}");
+                        probe.OnRejected = spec.TryGetProperty("whenRejected", out var then)
+                            ? () => Resolve(then.GetProperty("resolve").GetString()!, Disposition(then.GetProperty("as")))
+                            : null;
+                    });
                 _probes[memberName] = (ArenaProbe)Router.Recognizers(memberName, [factory]).Single();
             }
+        }
+
+        /// <summary>A member asks for the pointer or lets it go: a probe through its recognizer, a plain member
+        /// through the entry its down handed it.</summary>
+        private void Resolve(string who, GestureDisposition disposition)
+        {
+            if (_probes.TryGetValue(who, out var probe)) probe.Say(disposition);
+            else _entries[who].Resolve(disposition);
         }
 
         private void Down(JsonElement step, Point at)

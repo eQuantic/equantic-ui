@@ -35,6 +35,7 @@ interface MemberSpec {
   onMove?: Disposition;
   primaryOnly?: boolean;
   thenDeadline?: number;
+  whenRejected?: { resolve: string; as: Disposition };
 }
 
 interface StepSpec {
@@ -86,11 +87,16 @@ class Run {
     else if (step.tick !== undefined) this.router.tick(step.tick);
     else if (step.rebuild) this.rebuild();
     else if (step.stop) this.probes.get(step.stop)!.stop(1);
-    else if (step.resolve) {
-      const probe = this.probes.get(step.resolve);
-      if (probe) probe.say(step.as!);
-      else this.entries.get(step.resolve)!.resolve(step.as!);
-    } else throw new Error(`A step the runner does not know: ${JSON.stringify(step)}`);
+    else if (step.resolve) this.resolve(step.resolve, step.as!);
+    else throw new Error(`A step the runner does not know: ${JSON.stringify(step)}`);
+  }
+
+  /** A member asks for the pointer or lets it go: a probe through its recognizer, a plain member through the entry its
+   * down handed it. */
+  private resolve(who: string, as: Disposition): void {
+    const probe = this.probes.get(who);
+    if (probe) probe.say(as);
+    else this.entries.get(who)!.resolve(as);
   }
 
   /** Each detector is built again: the router keeps its recognizer and hands it this build's callback. */
@@ -118,6 +124,8 @@ class Run {
         },
         (probe: ArenaProbe) => {
           probe.onDeadline = (who: string) => this.heard.push(`${who}.called by build ${build}`);
+          const then = member.whenRejected;
+          probe.onRejected = then ? () => this.resolve(then.resolve, then.as) : null;
         },
       );
       this.probes.set(member.name, this.router.recognizers(member.name, [factory])[0] as ArenaProbe);

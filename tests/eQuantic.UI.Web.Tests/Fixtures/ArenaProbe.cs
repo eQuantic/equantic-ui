@@ -46,6 +46,10 @@ public sealed class ArenaProbe : GestureRecognizer
     /// recognizer.</summary>
     public Action<string>? OnDeadline { get; set; }
 
+    /// <summary>What it does once the arena has told it it lost: the case's reach into another member, which a
+    /// rejection may resolve while the arena is still deciding.</summary>
+    public Action? OnRejected { get; set; }
+
     public override bool IsPointerAllowed(PointerEvent down) =>
         !_primaryOnly || (down.Buttons & PointerButtons.Primary) != 0;
 
@@ -68,7 +72,11 @@ public sealed class ArenaProbe : GestureRecognizer
 
     public override void AcceptGesture(int pointer) => Write($"accept {pointer}");
 
-    public override void RejectGesture(int pointer) => Write($"reject {pointer}");
+    public override void RejectGesture(int pointer)
+    {
+        Write($"reject {pointer}");
+        OnRejected?.Invoke();
+    }
 
     public override void DidExceedDeadline(int pointer)
     {

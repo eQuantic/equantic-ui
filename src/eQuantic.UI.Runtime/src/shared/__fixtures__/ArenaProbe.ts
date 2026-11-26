@@ -14,6 +14,7 @@ export class ArenaProbe extends GestureRecognizer {
         this._onMove = null;
         this._thenDeadlineMs = 0;
         this.onDeadline = null;
+        this.onRejected = null;
         this._name = name;
         this._heard = heard;
         this._deadlineMs = deadlineMs;
@@ -33,6 +34,7 @@ export class ArenaProbe extends GestureRecognizer {
     _onMove!: $GestureDispositionValue | null;
     _thenDeadlineMs!: number;
     onDeadline!: ((string: string) => void) | null;
+    onRejected!: (() => void) | null;
 
     isPointerAllowed(down: PointerEvent) {
         return !this._primaryOnly || (down.buttons & 1) !== 0;
@@ -59,7 +61,8 @@ export class ArenaProbe extends GestureRecognizer {
     }
 
     rejectGesture(pointer: number) {
-        return this.write(`reject ${$eq.text.format(pointer, null, undefined, undefined, 'int32')}`);
+        this.write(`reject ${$eq.text.format(pointer, null, undefined, undefined, 'int32')}`);
+        this.onRejected?.();
     }
 
     didExceedDeadline(pointer: number) {
