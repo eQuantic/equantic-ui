@@ -421,7 +421,29 @@ text and draws nothing from a path.
 #### Scenario: A capture of nothing
 
 - **WHEN** a capture holds almost no colour under its status bar
-- **THEN** `scripts/capture-readme.sh` refuses it where it is taken
+- **THEN** `scripts/capture-readme.sh` refuses it where it is taken, and a phone target takes it again
+  for up to a minute, since that is an app that has not drawn yet
+
+#### Scenario: A python3 with no Pillow
+
+- **WHEN** a target of `scripts/capture-readme.sh` runs with a `python3` that has no Pillow
+- **THEN** it fails before it builds anything, saying Pillow is missing
+
+#### Scenario: A screenshot that cannot be taken
+
+- **WHEN** the simulator or the emulator refuses a screenshot
+- **THEN** the target fails after that one try, with the refusal's own words
+
+#### Scenario: A check that refuses for another reason
+
+- **WHEN** the check refuses a capture for a reason other than a picture of nothing
+- **THEN** the target fails after that one try, with the check's own reason
+
+#### Scenario: A repository on an external volume
+
+- **WHEN** the repository lives where the simulator may not write, as an external volume under `/Volumes`
+- **THEN** the simulator's screenshot is written into the user's temporary directory and moved into the
+  raw captures, and the target takes its pictures
 
 ### Requirement: A docs guard reads every language a page is written in
 
