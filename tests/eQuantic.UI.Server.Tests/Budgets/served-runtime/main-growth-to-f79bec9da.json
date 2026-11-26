@@ -1,0 +1,4 @@
+{
+  "deltaBytes": 3907,
+  "bought": "The growth main made past the base and its deltas without recording it, by first-parent merge from #1852's record (187ac4540) to f79bec9da, each measured as docs/SERVED-RUNTIME-GROWTH.md builds its table: #1871 508, #1879 64, #1891 592, #1888 62, #1895 1,687, #1884 70 (of its 5,409, past the 5,339 it recorded), #1896 67, #1902 347, #1908 19, #1917 491."
+}

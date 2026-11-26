@@ -154,6 +154,16 @@ at 62e5680d2 measures 357,984, inside that base's 1%.
 |---|---|---:|---:|---:|---:|---|---|
 | #1584 | | 357,984 | 361,698 | +3,714 | +29,011 | a LINQ query runs when it is walked, and a list changed while it is walked throws, as .NET's do | yes |
 | #1620 | | 370,922 | 372,479 | +1,557 | +5,069 | a date is written and read in the calendar of its culture, th-TH's Thai Buddhist years, fa-IR's Persian calendar and ar-SA's Um Al Qura, as .NET counts them | yes |
+| #1871 | b7490b4fb | 390,447 | 390,955 | +508 | +2,212 | a month grid stops at its calendar's range | yes |
+| #1879 | 5d6ec6a1c | 390,955 | 391,019 | +64 | +324 | a pager speaks the reader's language | yes |
+| #1891 | 4ddb84f60 | 391,019 | 391,611 | +592 | +1,808 | uploads hold many files at once and several instances of an app | yes |
+| #1888 | a53d40924 | 391,611 | 391,673 | +62 | +232 | a table pan's click guard leaves with its click or its table | yes |
+| #1895 | 2dda360cc | 391,673 | 393,360 | +1,687 | +7,177 | a component builds its child against the box its parent gives it | yes |
+| #1884 | 3187a51df | 393,360 | 398,769 | +5,409 | +21,893 | a gesture of the app's own is recognized, in one arena with the SDK's | yes |
+| #1896 | f9b004ca6 | 398,769 | 398,836 | +67 | -111 | a hold's, a drag's, a lost press's and a pan's click guards are one owned guard | yes |
+| #1902 | 90f1d61fa | 398,836 | 399,183 | +347 | +1,065 | content takes the look its component hands down, and a string is a node | yes |
+| #1908 | 96323817f | 399,183 | 399,202 | +19 | +91 | Photon fills an even-odd shape by its rule, as the web does | yes |
+| #1917 | 525c9bf3f | 399,202 | 399,693 | +491 | +2,571 | inputs and pickers take a style of their own, and builders for what they repeat | yes |
 | #1913 | | 399,693 | 399,799 | +106 | +301 | a static generic class keeps its statics per closed type | yes |
 
 It records a delta of 3,996 bytes, measured against the base rather than against `main`, which had grown
@@ -197,10 +207,18 @@ Qura culture pays for that calendar's months: 385 bytes gzipped of fa-IR's data 
 Persian calendar's arithmetic in .NET computes each year from the equinox; carried in the runtime, every
 page would pay for it.
 
+From #1852's record to f79bec9da, `main` grew 3,907 bytes past the base and its deltas without a change recording
+them, each merge inside the ceiling the ones before it left. #1852's merge (187ac4540) measures 390,447, the base and
+its own delta exactly, so the rows above start there, measured as this page's tables are, at every first-parent
+merge that touched a source of the bundle; #1880 and #1901 changed no byte of it. #1884 grew 5,409 bytes and
+recorded 5,339, so 70 of its bytes are in the 3,907. They are recorded as an entry of their own,
+`Budgets/served-runtime/main-growth-to-f79bec9da.json`, so no change's delta carries another's growth. #1852's own
+record did: its 4,530 bytes held the 3,685 that the merges before it had grown past the base, and 0.2.0-preview.72
+(a27703d6a) already measured 388,072, 2,155 over the 385,917 its release folded.
+
 #1913 is measured against `main` at f79bec9da, which stood 50 bytes under the ceiling of the base and its two
 deltas, floor(395,786 × 1.01) = 399,743. Its 106 bytes are `statics` in `utils/closures.ts`, the object it makes
 once per closed type of a static generic class, which keeps that type's statics and its type initializer apart
 from every other closed type's, as .NET does (#1855). They are the helper's least shape: a mark of the closed type
-on that object, which nothing reads, was dropped to reach them. It records its own 106 bytes as its delta. The 3,907
-bytes `main` had grown past the base and its deltas without crossing the ceiling are other pull requests' growth,
-which this one does not record.
+on that object, which nothing reads, was dropped to reach them. It records its own 106 bytes as its delta, and the 3,907
+bytes `main` had grown past the base and its deltas are the entry of their own above.
