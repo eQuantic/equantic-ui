@@ -15,8 +15,8 @@
 - [x] 2.3 A drag's guard goes with its click, and with the controller's reset; both fail with main's code
 - [x] 2.5 A lost press's guard goes with its click, and with the arena's reset after the press ended; both fail with main's code
 - [x] 2.6 The guard stops only what it accepts, and waits with no time until its owner starts it
-- [ ] 2.4 The runtime suite runs repeatedly without the error
+- [x] 2.4 The runtime suite runs repeatedly without the error (five runs in a row)
 
 ## 3. Documentation
 
-- [ ] 3.1 One entry under `docs/ledger/`
+- [x] 3.1 One entry under `docs/ledger/`

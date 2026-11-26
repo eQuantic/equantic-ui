@@ -43,7 +43,9 @@ describe('an owned click guard', () => {
     const owner = clickGuards();
     owner.arm(document, 50);
     vi.advanceTimersByTime(49);
+    expect(vi.getTimerCount(), 'still armed before its time is up').toBe(1);
     vi.advanceTimersByTime(1);
+    expect(vi.getTimerCount(), 'its timer went when its time ran out').toBe(0);
 
     const next = click();
     expect(next.defaultPrevented).toBe(false);
