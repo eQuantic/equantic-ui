@@ -29,7 +29,7 @@ public class WhileStatementStrategy : IStatementStrategy
         var body = context.Converter.ConvertStatementIr(whileStmt.Statement);
         if (declared.Count == 0) return JsStatement.While(condition, body);
 
-        var names = ExpressionVariableScanner.List(declared, context.TypeAnnotations);
+        var names = ExpressionVariableScanner.List(declared, [whileStmt.Condition], context);
         return JsStatement.Headed($"for (let {names}; {JsExprWriter.Write(condition)};)", body);
     }
 
