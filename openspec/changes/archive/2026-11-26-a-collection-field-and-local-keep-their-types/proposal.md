@@ -35,7 +35,7 @@ app's modules are TypeScript the runtime's `tsc` takes in these shapes.
   without type annotations is JavaScript, where `f<A>()` does not parse, and carries none.
 
 Parts reached: eqc (`TypeScriptEmitter`, `TsNamedType`, `QueueStackStrategy`, `DictionaryStrategy`, `HashSetStrategy`,
-`CollectionExpressionStrategy`). No contract surface or developer surface moves. Twenty-two of the runtime's library
+`CollectionExpressionStrategy`). No contract surface or developer surface moves. Twenty-five of the runtime's library
 modules carry type arguments on their factories, and their JavaScript is unchanged.
 
 ## Capabilities
