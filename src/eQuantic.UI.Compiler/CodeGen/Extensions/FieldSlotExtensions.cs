@@ -111,7 +111,7 @@ internal static class FieldSlotExtensions
         && type.Locations.Any(location => location.IsInSource)
         && (field.IsStatic
             ? !type.IsRuntimeProvided()
-            : type is { TypeKind: TypeKind.Class, IsRecord: false } && !IsComponent(type));
+            : type is { TypeKind: TypeKind.Class, IsRecord: false } && !type.IsUiComponent());
 
     /// <summary>Whether a member of the field's own type holds its twin name: a property, an event or a
     /// method, an explicit implementation's included under the name of the member it implements
@@ -209,12 +209,4 @@ internal static class FieldSlotExtensions
     private static bool HoldsAName(ISymbol member) =>
         member is IPropertySymbol or IEventSymbol
             or IMethodSymbol { MethodKind: MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation };
-
-    /// <summary>A component, whose fields the server hydrates under their twin names.</summary>
-    private static bool IsComponent(INamedTypeSymbol type)
-    {
-        for (var holder = type; holder is not null; holder = holder.BaseType)
-            if (holder.Name is "StatelessComponent" or "StatefulComponent" or "UiComponent") return true;
-        return false;
-    }
 }
