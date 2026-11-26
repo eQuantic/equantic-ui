@@ -27,9 +27,11 @@ public class HotReloadAnnouncementTests
         var host = new PhotonHost(new Label(), PhotonTheme.Instance, ThemeMode.Light, 400, 300);
         host.RenderFrame(new DisplayListBuilder());
 
-        var original = Console.Out;
+        // System's, by its full name: the dashboard's recognizer compiled into this project (HoldThenDrag.cs) declares
+        // the namespace eQuantic.Console, which a bare Console inside eQuantic.* resolves to first.
+        var original = System.Console.Out;
         using var captured = new StringWriter();
-        Console.SetOut(captured);
+        System.Console.SetOut(captured);
         try
         {
             host.RenderFrame(new DisplayListBuilder());
@@ -41,7 +43,7 @@ public class HotReloadAnnouncementTests
         }
         finally
         {
-            Console.SetOut(original);
+            System.Console.SetOut(original);
         }
 
         var said = captured.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

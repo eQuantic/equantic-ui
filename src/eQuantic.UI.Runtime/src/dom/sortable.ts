@@ -228,6 +228,7 @@ function onPointerDown(down: PointerEvent): void {
   };
 
   const gesture = followPointer(down, {
+    element: item,
     arms:
       down.pointerType === 'touch'
         ? undefined

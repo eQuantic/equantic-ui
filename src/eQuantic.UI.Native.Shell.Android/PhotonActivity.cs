@@ -481,8 +481,8 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         var forced = Application?.Options.MaxFrames > 0;
         if (_startedAt == 0) _startedAt = frameTimeNanos;
         var nowMs = (frameTimeNanos - _startedAt) / 1_000_000f;
-        // Dirty, forced, or DUE — the caret's next blink transition (see PhotonHost.IsFrameDue).
-        if (!_host.NeedsRender && !_host.IsFrameDue(nowMs) && forced != true) return;
+        // Dirty, forced, DUE (the caret's next blink transition), or posted work waiting (see PhotonHost.WantsFrame).
+        if (!_host.WantsFrame(nowMs) && forced != true) return;
 
         // Insets can change without a resize — a keyboard, a call banner, a rotation mid-gesture.
         ApplyInsets(Resources!.DisplayMetrics!.Density);

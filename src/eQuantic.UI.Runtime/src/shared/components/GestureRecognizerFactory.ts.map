@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "GestureRecognizerFactory.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Primitives/Gestures/GestureRecognizerFactory.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAQA;;IAOI;IAGA;;IAVJ"
+}

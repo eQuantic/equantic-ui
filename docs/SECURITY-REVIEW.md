@@ -123,7 +123,7 @@ owner and across the server, in uploads and in bytes.
 
 ```text
 src/eQuantic.UI.Server/Uploads/UploadOwner.cs  var made = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(16));
-src/eQuantic.UI.Server/Uploads/UploadStore.cs  if (_total.Uploads + _total.ReservedUploads >= _options.MaxTotalUploads)
+src/eQuantic.UI.Server/Uploads/UploadStore.cs  if (all.Uploads >= _options.MaxTotalUploads)
 ```
 
 **#1293, low, fixed in 0.2.0-preview.68 (#1326).** The type was the client's, the name kept `..`, a

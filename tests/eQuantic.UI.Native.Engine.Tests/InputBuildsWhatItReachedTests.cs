@@ -193,7 +193,8 @@ public class InputBuildsWhatItReachedTests
         builds.Clear();
 
         PhotonDispatcher.Shared.Post(() => cards[2].Bump());
-        host.NeedsRender.Should().BeTrue("posted work wakes the host for the frame it runs in");
+        host.WantsFrame(0).Should().BeTrue("posted work wakes the host for the frame it runs in");
+        host.NeedsRender.Should().BeFalse("and tells its tree nothing: the work marks what it changes (#1239)");
         var frame = Frame(host);
 
         builds.Should().Equal(["card 2"], "the work marked one card, and waking the host marks nothing");
