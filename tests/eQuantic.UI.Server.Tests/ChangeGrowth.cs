@@ -59,22 +59,28 @@ internal static class ChangeGrowth
     }
 
     /// <summary>
-    /// The bytes the change records for itself: each delta of this checkout that <paramref name="basis"/> does not
-    /// hold, and what each it holds moved by. A delta the base held unchanged is another change's, and one the
-    /// change removed is a release's fold.
+    /// The bytes the change records for itself: what it moved the budget, the base and every delta, by since
+    /// <paramref name="basis"/>. A delta another change recorded and this one kept moves nothing; one this change
+    /// removes, reverting what added it, is taken off; and a release's fold, which moves the deltas into the base,
+    /// moves nothing. Read per surviving file, a revert that deleted another change's delta recorded nothing, and a
+    /// negative delta recorded for it took the bytes off twice (found by the review).
     /// </summary>
-    public static long RecordedSince(string root, string basis)
+    public static long RecordedSince(string root, string basis) => RuntimeBudget.Load(root).Bytes - BudgetAt(root, basis);
+
+    /// <summary>The budget as <paramref name="commit"/> recorded it: its base and every delta it held.</summary>
+    private static long BudgetAt(string root, string commit)
     {
-        var folder = Path.Combine(root, RuntimeBudget.DeltaFolder);
-        if (!Directory.Exists(folder)) return 0;
-        long recorded = 0;
-        foreach (var file in Directory.GetFiles(folder, "*.json"))
+        long budget = 0;
+        if (Git(root, "show", $"{commit}:{RuntimeBudget.BaseFile}") is { } held)
         {
-            var path = $"{RuntimeBudget.DeltaFolder}/{Path.GetFileName(file)}";
-            var before = Git(root, "show", $"{basis}:{path}") is { } held ? Bytes(held) : 0;
-            recorded += Bytes(File.ReadAllText(file)) - before;
+            using var record = JsonDocument.Parse(held);
+            budget = record.RootElement.GetProperty("gzipBytes").GetInt64();
         }
-        return recorded;
+        var deltas = Git(root, "ls-tree", "--name-only", $"{commit}:{RuntimeBudget.DeltaFolder}") ?? "";
+        foreach (var name in deltas.Split('\n', StringSplitOptions.RemoveEmptyEntries).Where(name => name.EndsWith(".json", StringComparison.Ordinal)))
+            if (Git(root, "show", $"{commit}:{RuntimeBudget.DeltaFolder}/{name}") is { } delta)
+                budget += Bytes(delta);
+        return budget;
     }
 
     /// <summary>
