@@ -34,12 +34,16 @@ export class EmittedWaiting {
         let ids = $eq.collections.sortedSet<string>();
         let maybe = $eq.collections.queue<EmittedPointer | null>();
         let kept = $eq.collections.stack<any>();
+        let byName: any = $eq.collections.sortedDictionary<string, EmittedPointer>(null, 'text');
+        let ranked: any = $eq.collections.sortedList<number, EmittedPointer>(null, 'value');
         kept.push(item);
+        $eq.mapSet(byName, 'a', new EmittedPointer());
+        $eq.mapSet(ranked, 1, $eq.mapGet(byName, 'a'));
         maybe.enqueue(null);
         $eq.mapSet(byDay, $eq.time.dateTime.unixEpoch(), $eq.num.dec("1.5"));
         $eq.collections.setAdd(spans, $eq.time.timeSpan.zero);
         ids.add('00000000-0000-0000-0000-000000000000');
-        return (((byDay.size + spans.size | 0) + ids.count | 0) + maybe.count | 0) + kept.count | 0;
+        return (((((byDay.size + spans.size | 0) + ids.count | 0) + maybe.count | 0) + kept.count | 0) + byName.size | 0) + ranked.size | 0;
     }
 
     advance() {

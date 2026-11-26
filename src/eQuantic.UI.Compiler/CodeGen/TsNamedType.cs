@@ -27,16 +27,21 @@ internal static class TsNamedType
     /// <c>Queue&lt;unknown&gt;</c> to TypeScript, so a take from it was refused into a typed variable (#1866).
     /// Each argument is named as a local's type is, its primitive spelled as the mapper spells it, and
     /// <c>any</c> where no module could name it; a nullable reference is <c>T | null</c>, as the C# collection
-    /// takes a null then.
+    /// takes a null then. Nothing where the module is written without type annotations, which is
+    /// JavaScript, where <c>f&lt;A, B&gt;()</c> does not parse.
     /// </summary>
     internal static string TypeArguments(ITypeSymbol? constructed, ConversionContext context) =>
-        constructed is INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: > 0 } named
+        context.TypeAnnotations && constructed is INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: > 0 } named
             ? $"<{string.Join(", ", named.TypeArguments.Select(argument => Argument(argument, context)))}>"
             : "";
 
     private static string Argument(ITypeSymbol argument, ConversionContext context)
     {
-        if (argument is ITypeParameterSymbol) return "any";
+        // A type the build keeps on the server has no twin to name, and a type argument is a position the
+        // module writes as nothing, which client code may hold freely: `any`, never EQ2010.
+        if (argument is ITypeParameterSymbol || argument is INamedTypeSymbol { } kept
+            && kept.Locations.Any(location => location.IsInSource) && kept.IsKeptOut())
+            return "any";
         var ts = For(argument, context) ?? Mapped(argument) ?? "any";
         return ts != "any" && argument is { IsReferenceType: true, NullableAnnotation: NullableAnnotation.Annotated }
             ? TypeScriptEmitter.OrNull(ts)

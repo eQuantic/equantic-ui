@@ -405,7 +405,7 @@ public class RealWorldUITests
         // where that read is null, as C# calls the setter only then: the guarded read is not a target,
         // so it cannot be written as `a ?? (a = b)`. The receiver and the key are each bound once, so
         // neither is evaluated twice.
-        result.Should().Contain("this.cache ?? (this.cache = $eq.collections.dictionary<string, string>())");
+        result.Should().Contain("this.cache ?? (this.cache = $eq.collections.dictionary())");
         result.Should().Contain("$eq.mapGet($0, $1) ?? $eq.mapSet($0, $1, this.fetchValue(this.key))");
         result.Should().Contain("(this.cache, this.key)");
     }

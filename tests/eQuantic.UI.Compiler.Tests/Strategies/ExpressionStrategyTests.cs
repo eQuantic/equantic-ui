@@ -39,7 +39,7 @@ public class ExpressionStrategyTests
     public void ObjectCreation_Dictionary_IsTheRuntimesDictionary()
     {
         var result = TestHelper.ConvertExpression("new Dictionary<string, int>()");
-        result.Should().Be("$eq.collections.dictionary<string, number>()");
+        result.Should().Be("$eq.collections.dictionary()");
     }
 
     [Fact]

@@ -65,11 +65,11 @@ public class CollectionSurfaceTranslationTests
             "var n = new LinkedListNode<int>(1); l.AddFirst(n); l.Remove(n); l.AddLast(n); l.AddAfter(n, new LinkedListNode<int>(2)); l.AddBefore(n, 3); l.Remove(3);");
 
         Assert.Empty(errors);
-        Assert.Contains("$eq.collections.linkedListNode<number>(1)", js);
+        Assert.Contains("$eq.collections.linkedListNode(1)", js);
         Assert.Contains("l.addNodeFirst(n)", js);
         Assert.Contains("l.removeNode(n)", js);
         Assert.Contains("l.addNodeLast(n)", js);
-        Assert.Contains("l.addNodeAfter(n, $eq.collections.linkedListNode<number>(2))", js);
+        Assert.Contains("l.addNodeAfter(n, $eq.collections.linkedListNode(2))", js);
         Assert.Contains("l.addBefore(n, 3)", js);
         Assert.Contains("l.remove(3)", js);
     }

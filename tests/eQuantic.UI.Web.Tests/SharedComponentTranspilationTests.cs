@@ -412,12 +412,16 @@ public class SharedComponentTranspilationTests
                 var ids = new SortedSet<Guid>();
                 var maybe = new Queue<EmittedPointer?>();
                 var kept = new Stack<T>();
+                var byName = new SortedDictionary<string, EmittedPointer>();
+                var ranked = new SortedList<int, EmittedPointer>();
                 kept.Push(item);
+                byName["a"] = new EmittedPointer();
+                ranked[1] = byName["a"];
                 maybe.Enqueue(null);
                 byDay[DateTime.UnixEpoch] = 1.5m;
                 spans.Add(TimeSpan.Zero);
                 ids.Add(Guid.Empty);
-                return byDay.Count + spans.Count + ids.Count + maybe.Count + kept.Count;
+                return byDay.Count + spans.Count + ids.Count + maybe.Count + kept.Count + byName.Count + ranked.Count;
             }
 
             public bool Advance()

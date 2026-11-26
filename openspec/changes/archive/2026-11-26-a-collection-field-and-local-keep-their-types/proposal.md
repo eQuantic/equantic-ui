@@ -30,8 +30,9 @@ app's modules are TypeScript the runtime's `tsc` takes in these shapes.
 - **The runtime's collection factories carry the type arguments of the type they build** (`TsNamedType.TypeArguments`):
   `$eq.collections.queue<Shape>()`, `dictionary<string, number>()`, `hashSetOf<Shape>([…])`, for a construction with
   `new` and for a collection expression alike. Each argument is named as a local's type is, its twin imported; a type
-  parameter, or a type no module names, is `any`, and a nullable reference is `T | null`. A local built by one keeps its
-  element type, and a take from it lands in a typed variable.
+  parameter, a type the build keeps on the server, or a type no module names is `any`, and a nullable reference is
+  `T | null`. A local built by one keeps its element type, and a take from it lands in a typed variable. A module written
+  without type annotations is JavaScript, where `f<A>()` does not parse, and carries none.
 
 Parts reached: eqc (`TypeScriptEmitter`, `TsNamedType`, `QueueStackStrategy`, `DictionaryStrategy`, `HashSetStrategy`,
 `CollectionExpressionStrategy`). No contract surface or developer surface moves. Twenty-two of the runtime's library
@@ -52,4 +53,6 @@ modules carry type arguments on their factories, and their JavaScript is unchang
 - `SharedComponentTranspilationTests` gains `EmittedWaiting` among its emission shapes: a field and a local of each
   collection, collection expressions, and type arguments a module names without an import of its own. The runtime's `tsc`
   refuses it on main with TS2304 and TS2322.
-- The compiler's tests that pinned a factory's text pin it with its type arguments.
+- The compiler's tests that convert with type annotations pin a factory's text with its type arguments; those that
+  convert without them keep the bare factory. `ServerOnlyTypeOfTheAppTests` holds a queue and a dictionary of a kept-out
+  type as a free position.

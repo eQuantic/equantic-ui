@@ -139,21 +139,21 @@ public class DictionaryStrategyTests
     /// a record or a decimal (found in review, #443).
     /// </summary>
     [Theory]
-    [InlineData("decimal", "$eq.collections.dictionary<Decimal, number>(null, true)")]
-    [InlineData("DateTime", "$eq.collections.dictionary<DateTime, number>(null, true)")]
-    [InlineData("TimeSpan", "$eq.collections.dictionary<TimeSpan, number>(null, true)")]
-    [InlineData("(int, int)", "$eq.collections.dictionary<any, number>(null, true)")]
-    [InlineData("Version", "$eq.collections.dictionary<any, number>(null, 'own')")]
-    [InlineData("string", "$eq.collections.dictionary<string, number>()")]
-    [InlineData("int", "$eq.collections.dictionary<number, number>()")]
-    [InlineData("long", "$eq.collections.dictionary<bigint, number>()")]
-    [InlineData("char", "$eq.collections.dictionary<string, number>()")]
-    [InlineData("DayOfWeek", "$eq.collections.dictionary<string, number>()")]
-    [InlineData("Guid", "$eq.collections.dictionary<string, number>()")]
-    [InlineData("TestClass", "$eq.collections.dictionary<TestClass, number>(null, 'item')")]
-    [InlineData("List<int>", "$eq.collections.dictionary<any, number>(null, 'item')")]
-    [InlineData("object", "$eq.collections.dictionary<any, number>(null, 'own')")]
-    [InlineData("IComparable", "$eq.collections.dictionary<any, number>(null, 'own')")]
+    [InlineData("decimal", "$eq.collections.dictionary(null, true)")]
+    [InlineData("DateTime", "$eq.collections.dictionary(null, true)")]
+    [InlineData("TimeSpan", "$eq.collections.dictionary(null, true)")]
+    [InlineData("(int, int)", "$eq.collections.dictionary(null, true)")]
+    [InlineData("Version", "$eq.collections.dictionary(null, 'own')")]
+    [InlineData("string", "$eq.collections.dictionary()")]
+    [InlineData("int", "$eq.collections.dictionary()")]
+    [InlineData("long", "$eq.collections.dictionary()")]
+    [InlineData("char", "$eq.collections.dictionary()")]
+    [InlineData("DayOfWeek", "$eq.collections.dictionary()")]
+    [InlineData("Guid", "$eq.collections.dictionary()")]
+    [InlineData("TestClass", "$eq.collections.dictionary(null, 'item')")]
+    [InlineData("List<int>", "$eq.collections.dictionary(null, 'item')")]
+    [InlineData("object", "$eq.collections.dictionary(null, 'own')")]
+    [InlineData("IComparable", "$eq.collections.dictionary(null, 'own')")]
     public void AKey_IsFound_AsItsDefaultComparerFindsIt(string key, string factory)
     {
         var js = TestHelper.ConvertStatement($"var d = new Dictionary<{key}, int>();");
@@ -175,13 +175,13 @@ public class DictionaryStrategyTests
     [Theory]
     // A capacity sizes the dictionary as .NET's (#463); a copy copies, refusing a null source by the
     // name of the parameter it binds to (#726); an initializer seeds after what is copied.
-    [InlineData("new Dictionary<string, string>(16)", "$eq.collections.dictionary<string, string>(16)")]
-    [InlineData("new Dictionary<string, string>(dict)", "$eq.collections.dictionary<string, string>(this.dict, undefined, 'dictionary')")]
-    [InlineData("new Dictionary<string, string>(dict) { [\"a\"] = \"b\" }", "$eq.collections.dictionary<string, string>(this.dict, undefined, 'dictionary').set('a', 'b')")]  // an indexer overwrites what the copy has
-    [InlineData("new Dictionary<string, int> { { \"a\", 1 }, { \"b\", 2 } }", "$eq.collections.dictionary<string, number>().add('a', 1).add('b', 2)")]  // one Add per entry, in order
-    [InlineData("new SortedDictionary<int, string>()", "$eq.collections.sortedDictionary<number, string>(null, 'value')")]
-    [InlineData("new SortedList<int, string>(dictionaryOfInts)", "$eq.collections.sortedList<number, string>(dictionaryOfInts, 'value', 'dictionary')")]
-    [InlineData("new SortedDictionary<string, int>()", "$eq.collections.sortedDictionary<string, number>(null, 'text')")]
+    [InlineData("new Dictionary<string, string>(16)", "$eq.collections.dictionary(16)")]
+    [InlineData("new Dictionary<string, string>(dict)", "$eq.collections.dictionary(this.dict, undefined, 'dictionary')")]
+    [InlineData("new Dictionary<string, string>(dict) { [\"a\"] = \"b\" }", "$eq.collections.dictionary(this.dict, undefined, 'dictionary').set('a', 'b')")]  // an indexer overwrites what the copy has
+    [InlineData("new Dictionary<string, int> { { \"a\", 1 }, { \"b\", 2 } }", "$eq.collections.dictionary().add('a', 1).add('b', 2)")]  // one Add per entry, in order
+    [InlineData("new SortedDictionary<int, string>()", "$eq.collections.sortedDictionary(null, 'value')")]
+    [InlineData("new SortedList<int, string>(dictionaryOfInts)", "$eq.collections.sortedList(dictionaryOfInts, 'value', 'dictionary')")]
+    [InlineData("new SortedDictionary<string, int>()", "$eq.collections.sortedDictionary(null, 'text')")]
     public void Construction_SeedsTheFactory(string csharp, string js)
     {
         var converted = csharp.Contains("dictionaryOfInts")
