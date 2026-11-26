@@ -154,6 +154,7 @@ at 62e5680d2 measures 357,984, inside that base's 1%.
 |---|---|---:|---:|---:|---:|---|---|
 | #1584 | | 357,984 | 361,698 | +3,714 | +29,011 | a LINQ query runs when it is walked, and a list changed while it is walked throws, as .NET's do | yes |
 | #1620 | | 370,922 | 372,479 | +1,557 | +5,069 | a date is written and read in the calendar of its culture, th-TH's Thai Buddhist years, fa-IR's Persian calendar and ar-SA's Um Al Qura, as .NET counts them | yes |
+| #1913 | | 399,693 | 399,799 | +106 | +301 | a static generic class keeps its statics per closed type | yes |
 
 It records a delta of 3,996 bytes, measured against the base rather than against `main`, which had grown
 282 bytes past it. It is the largest single growth the runtime has had, so it answers the three
@@ -195,3 +196,11 @@ calendar, measured by the server from .NET's (`CalendarBridge`), so only a page 
 Qura culture pays for that calendar's months: 385 bytes gzipped of fa-IR's data and 516 of ar-SA's. The
 Persian calendar's arithmetic in .NET computes each year from the equinox; carried in the runtime, every
 page would pay for it.
+
+#1913 is measured against `main` at f79bec9da, which stood 50 bytes under the ceiling of the base and its two
+deltas, floor(395,786 × 1.01) = 399,743. Its 106 bytes are `statics` in `utils/closures.ts`, the object it makes
+once per closed type of a static generic class, which keeps that type's statics and its type initializer apart
+from every other closed type's, as .NET does (#1855). They are the helper's least shape: a mark of the closed type
+on that object, which nothing reads, was dropped to reach them. It records its own 106 bytes as its delta. The 3,907
+bytes `main` had grown past the base and its deltas without crossing the ceiling are other pull requests' growth,
+which this one does not record.

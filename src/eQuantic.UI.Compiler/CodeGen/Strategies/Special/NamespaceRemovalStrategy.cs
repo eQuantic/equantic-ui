@@ -51,6 +51,11 @@ public class NamespaceRemovalStrategy : IConversionStrategy
         if (context.SemanticHelper.GetSymbol(memberAccess) is INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct } type
             && !type.IsHostOnly() && type.HasTwin())
         {
+            // A static generic class's member is its closed type's, `NS.Cache<int>.Keep(1)` as `Cache<int>.Keep(1)` is
+            // (#1855): `$eq.statics(Cache, 'int').keep(1)`.
+            if (memberAccess.Parent is MemberAccessExpressionSyntax outer && outer.Expression == memberAccess
+                && ClosedStatics.Home(type, memberAccess, context) is { } closed)
+                return Ir.JsExprWriter.Write(closed);
             type.RegisterIntroduced(context);
             return type.TwinReference();
         }
