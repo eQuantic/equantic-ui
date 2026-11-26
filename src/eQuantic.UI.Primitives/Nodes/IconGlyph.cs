@@ -14,13 +14,20 @@ public enum IconGlyphStyle : byte
 /// <c>&lt;svg&gt;&lt;path&gt;</c>, the native glyph atlas (W4) rasterizes the same data. Icon PACKS
 /// (Lucide, Heroicons, …) are catalogs of these referencing ONLY Primitives, so one authored tree
 /// carries any pack glyph to both targets.
+/// <para>
+/// <paramref name="EvenOdd"/> is the fill's rule, SVG's <c>fill-rule</c>: even-odd paints a point
+/// inside an odd number of the path's outlines, so a ring drawn as two circles turned the same way has
+/// its hole, and nonzero (the default, as in SVG) fills it. Every target fills by it: the web writes
+/// <c>fill-rule="evenodd"</c>, and every Photon rasterizer fills by the same rule (#1210).
+/// </para>
 /// </summary>
 public readonly record struct IconGlyph(
     string Name,
     string Path,
     IconGlyphStyle Style = IconGlyphStyle.Fill,
     string ViewBox = "0 0 24 24",
-    float StrokeWidth = 2)
+    float StrokeWidth = 2,
+    bool EvenOdd = false)
 {
     /// <summary>
     /// A CURATED glyph is a glyph, so <c>Icon(Icons.Search)</c> needs no second constructor to say

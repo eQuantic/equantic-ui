@@ -23,11 +23,11 @@ export class CodeHoverCard {
             let signature: any; 
             if ((($0) => (($0 != null && $0.length > 0) && (signature = $0, true)))(answer.signature)) {
                 let lines = note.linesOf(signature, note.code, room);
-                note.add(new Text(signature, 'labelSmall', theme.textPrimary, lines, 'start', false, false, null, 0, { mono: true, styleOverride: note.code }), Math.fround(Math.fround(lines) * note.codeLine));
+                note.add(new Text(signature, 'labelSmall', theme.textPrimary, lines, null, false, false, null, 0, { mono: true, styleOverride: note.code }), Math.fround(Math.fround(lines) * note.codeLine));
             }
             if (answer.text.length > 0) {
                 let lines = note.linesOf(answer.text, note.prose, room);
-                note.add(new Text(answer.text, 'labelSmall', theme.textSecondary, lines, 'start', false, false, null, 0, { styleOverride: note.prose }), Math.fround(Math.fround(lines) * note.proseLine));
+                note.add(new Text(answer.text, 'labelSmall', theme.textSecondary, lines, null, false, false, null, 0, { styleOverride: note.prose }), Math.fround(Math.fround(lines) * note.proseLine));
             }
         }
         return note.build(hover.byKeyboard);
@@ -37,7 +37,7 @@ export class CodeHoverCard {
         let note = new CodeNoteBuilder(context, metrics, viewWidth);
         note.want(note.widest(said, note.prose));
         let lines = note.linesOf(said, note.prose, note.fit());
-        return note.frame(new Text(said, 'labelSmall', context.theme.textSecondary, lines, 'start', false, false, null, 0, { styleOverride: note.prose }), Math.fround(Math.fround(lines) * note.proseLine), true);
+        return note.frame(new Text(said, 'labelSmall', context.theme.textSecondary, lines, null, false, false, null, 0, { styleOverride: note.prose }), Math.fround(Math.fround(lines) * note.proseLine), true);
     }
 
     static said(problem: CodeDiagnostic) {
@@ -60,7 +60,7 @@ export class CodeHoverCard {
         if ((origin = CodeHoverCard.origin(problem)) != null) $eq.collections.listAdd(runs, new TextRun(`  ${origin}`, theme.textMuted));
         let row = new Row(4, 'start', 'start', false, null, null, { width: SizeValue.fill });
         row.add(new Box(new BoxStyle({ width: CodeHoverCard.mark, padding: new EdgeInsets(0, Math.max(0, Math.fround(Math.fround(proseLine - CodeHoverCard.mark) / 2)), 0, 0) }), new Box(new BoxStyle({ width: CodeHoverCard.mark, height: CodeHoverCard.mark, cornerRadius: new CornerRadii(Math.fround(CodeHoverCard.mark / 2)), background: CodeHoverCard.severityColor(theme, problem.severity) }))));
-        row.add(new Flexible(new Text(CodeHoverCard.said(problem), 'labelSmall', theme.textPrimary, lines, 'start', false, false, null, 0, { styleOverride: prose, spans: runs })));
+        row.add(new Flexible(new Text(CodeHoverCard.said(problem), 'labelSmall', theme.textPrimary, lines, null, false, false, null, 0, { styleOverride: prose, spans: runs })));
         return row;
     }
 

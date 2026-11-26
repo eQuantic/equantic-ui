@@ -121,7 +121,7 @@ internal sealed partial class EmitVisitor
 
         EmitChrome(s.Node.Bounds, fill, style.CornerRadius,
             borderColor, borderWidth, s.Theme, s.Mode, s.Contrast, s.Builder,
-            style.Gradient, style.Pattern, style.Glow, style.BorderSides);
+            style.Gradient, style.Pattern, style.Glow, style.BorderSides, style.InsetHighlight);
 
         // Focus double ring (spec §01): 2dp Surface gap + 2dp FocusRing OUTSIDE the control,
         // following the control's own radius — the first Box under the focused Pressable
@@ -180,7 +180,7 @@ internal sealed partial class EmitVisitor
     private static void EmitChrome(Rect bounds, ColorToken? background, CornerRadii radius,
         ColorToken borderColor, float borderWidth, IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder,
         LinearGradient? gradient = null, GridPattern? pattern = null, RadialGradient? glow = null,
-        BorderSides sides = BorderSides.All)
+        BorderSides sides = BorderSides.All, ColorToken? insetHighlight = null)
     {
         if (bounds.IsEmpty) return;
 
@@ -234,6 +234,11 @@ internal sealed partial class EmitVisitor
                 Paint.Linear(start, end, g.From.Resolve(mode, contrast), g.To.Resolve(mode, contrast)));
         }
 
+        // The inner top highlight draws over every background layer and under the border: CSS paints an inset shadow
+        // inside the padding box, above the background (#1036).
+        if (insetHighlight is { } highlight)
+            EmitInsetHighlight(bounds, radius, highlight, borderWidth, sides, mode, contrast, builder);
+
         if (borderWidth > 0 && sides != BorderSides.None)
         {
             var color = borderColor.Resolve(mode, contrast);
@@ -268,6 +273,40 @@ internal sealed partial class EmitVisitor
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// <see cref="BoxStyle.InsetHighlight"/>, the 1dp inner top highlight: a hairline fill clipped to the top edge of
+    /// the box's inner rrect, which is the web's <c>inset 0 1px 0</c> box-shadow entry. The inner rrect is the padding
+    /// box an inset shadow paints in: past the border on each side that has one, its corners rounded by the outer
+    /// radius less that border, as CSS's inner border radius is. Clipping the rule to it keeps the highlight inside a
+    /// rounded corner (#1036).
+    /// </summary>
+    private static void EmitInsetHighlight(Rect bounds, CornerRadii radius, ColorToken highlight, float borderWidth,
+        BorderSides sides, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder)
+    {
+        var color = highlight.Resolve(mode, contrast);
+        if (color.A == 0) return;
+
+        var width = Math.Max(borderWidth, 0);
+        var top = sides.HasFlag(BorderSides.Top) ? width : 0;
+        var bottom = sides.HasFlag(BorderSides.Bottom) ? width : 0;
+        var start = sides.HasFlag(BorderSides.Start) ? width : 0;
+        var end = sides.HasFlag(BorderSides.End) ? width : 0;
+        var inner = new Rect(bounds.X + start, bounds.Y + top, bounds.Width - start - end, bounds.Height - top - bottom);
+        if (inner.Width <= 0 || inner.Height <= 0) return;
+
+        // CSS shrinks each corner's two radii by the border beside it, an ellipse; one radius per corner here takes
+        // the larger of the two borders, so the clip never reaches past the inner edge.
+        var radii = new CornerRadii(
+            Math.Max(0, radius.TopLeft - Math.Max(start, top)),
+            Math.Max(0, radius.TopRight - Math.Max(end, top)),
+            Math.Max(0, radius.BottomRight - Math.Max(end, bottom)),
+            Math.Max(0, radius.BottomLeft - Math.Max(start, bottom)));
+
+        builder.PushClip(new RRect(inner, radii));
+        builder.FillRect(new Rect(inner.X, inner.Y, inner.Width, Math.Min(1, inner.Height)), Paint.Solid(color));
+        builder.PopClip();
     }
 
     private static void EmitBorderEdge(BorderSides sides, BorderSides edge, Rect bounds, float width,

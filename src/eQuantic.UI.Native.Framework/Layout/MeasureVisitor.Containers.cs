@@ -383,9 +383,26 @@ internal sealed partial class MeasureVisitor
     /// A box: <paramref name="source"/> laid out with <paramref name="style"/> around
     /// <paramref name="content"/>, the child at slot 0 of <paramref name="at"/>. A <see cref="Box"/> is
     /// one, and so is a <see cref="LayoutBuilder"/>, which takes its room as a box that fills and lays
-    /// out the child it built inside it.
+    /// out the child it built inside it. The child is measured with the box's look laid over the look
+    /// around it (<see cref="BoxStyle.Content"/>, <see cref="ContentStyle.Merge"/>, #1577), and the look
+    /// around it is back after, whatever the child's measurement did.
     /// </summary>
     private LayoutNode MeasureBox(VisualNode source, BoxStyle style, VisualNode? content,
+        LayoutConstraints constraints, LayoutContext ctx, Element? at)
+    {
+        var around = _content;
+        _content = ContentStyle.Merge(around, style.Content);
+        try
+        {
+            return MeasureBoxUnderItsLook(source, style, content, constraints, ctx, at);
+        }
+        finally
+        {
+            _content = around;
+        }
+    }
+
+    private LayoutNode MeasureBoxUnderItsLook(VisualNode source, BoxStyle style, VisualNode? content,
         LayoutConstraints constraints, LayoutContext ctx, Element? at)
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);

@@ -6,11 +6,11 @@ namespace eQuantic.UI.Native.Shell.Windows.Graphics;
 /// <summary>
 /// The W4 icon rasterizer on Windows — Direct2D only (the zero third-party rule, the twin of the
 /// Mac's CoreGraphics one): the shared <see cref="VectorPath"/> parser lowers the glyph's path data to
-/// moves/lines/cubics, a path geometry fills (nonzero) or strokes (round caps/joins, the icon-pack
-/// convention) into an A8 coverage bitmap at device scale. The transform scales viewBox units to
-/// pixels and Direct2D scales stroke widths with it, so strokes stay in glyph units — exactly the
-/// CTM arrangement on the Mac. v1 fences: single fill rule (nonzero — IconGlyph carries none),
-/// per-glyph raster (no atlas packing yet).
+/// moves/lines/cubics, a path geometry fills by the glyph's own rule (even-odd or nonzero, #1210) or
+/// strokes (round caps/joins, the icon-pack convention) into an A8 coverage bitmap at device scale.
+/// The transform scales viewBox units to pixels and Direct2D scales stroke widths with it, so strokes
+/// stay in glyph units — exactly the CTM arrangement on the Mac. v1 fence: per-glyph raster (no atlas
+/// packing yet).
 /// </summary>
 public sealed unsafe class Direct2DIconRasterizer : IIconRasterizer, IDisposable
 {
@@ -59,7 +59,8 @@ public sealed unsafe class Direct2DIconRasterizer : IIconRasterizer, IDisposable
         void* geometry = null;
         try
         {
-            geometry = Geometry(segments);
+            // A stroke ignores the rule; a fill takes the glyph's own.
+            geometry = Geometry(segments, glyph.Style == IconGlyphStyle.Fill && glyph.EvenOdd);
             if (geometry is null) return null;
             var shape = geometry;
             var stroke = glyph.Style == IconGlyphStyle.Stroke;
@@ -83,7 +84,7 @@ public sealed unsafe class Direct2DIconRasterizer : IIconRasterizer, IDisposable
 
     /// <summary>The path as a Direct2D geometry — figures opened on every Move, closed on Close,
     /// left open (a stroke's open contour) otherwise.</summary>
-    private void* Geometry(IReadOnlyList<VectorSegment> segments)
+    private void* Geometry(IReadOnlyList<VectorSegment> segments, bool evenOdd)
     {
         void* geometry;
         Com.Check(D2D.CreatePathGeometry(_d2d, &geometry), "path geometry");
@@ -91,7 +92,7 @@ public sealed unsafe class Direct2DIconRasterizer : IIconRasterizer, IDisposable
         try
         {
             Com.Check(D2D.Open(geometry, &sink), "geometry sink");
-            D2D.SetFillMode(sink, D2D.FillModeWinding);
+            D2D.SetFillMode(sink, evenOdd ? D2D.FillModeAlternate : D2D.FillModeWinding);
             var open = false;
             foreach (var segment in segments)
             {

@@ -225,8 +225,11 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         var style = EffectiveStyle(node, s);
         EmitStyledChrome(style, node, s);
         // The foreground descends to the text and icons inside that name none, in the box's state
-        // (#614); a box that states none hands down the one it was given.
+        // (#614); a box that states none hands down the one it was given. Its look descends beside
+        // it, laid over the look around it (#1577), and is not a state's: a diff changes no look.
         var inner = style.Foreground is { } foreground ? s with { Foreground = foreground } : s;
+        var content = ContentStyle.Merge(s.Content, node.Style.Content);
+        if (!ReferenceEquals(content, s.Content)) inner = inner with { Content = content };
         if (node.Style.Clip) EmitClippedBox(node, inner); else Descend(inner);
         return Nothing.Value;
     }
