@@ -22,6 +22,10 @@
 # `ios` an iOS simulator runtime, `android` an emulator already booted, and every one a python3 with
 # Pillow, which reads each capture. The emulator is its owner's: `android` replaces no Wallet it
 # finds there, and photographs one only when EQ_README_ANDROID_INSTALLED=1 says it is this tree's.
+#
+# A capture that cannot be taken stops the target at once, saying why: a python3 with no Pillow before
+# anything is built, a screenshot with its own error, and a check with its own refusal. Only a picture
+# of nothing is waited out, since that is an app that has not drawn yet (#1198).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -62,18 +66,31 @@ drew() {
 # the Wallet stayed black for more than twenty seconds, after a launch spent to warm it up. So the
 # screen is photographed until it holds a picture, for up to a minute, and then once more after two
 # seconds, when what slides in has settled.
+#
+# Only a picture of nothing is waited out. The command that takes the picture fails the target itself,
+# with its own error, and a check that refuses for another reason fails it here with that reason: both
+# were sent to /dev/null, and a capture that could not be written was a minute of retries ending in
+# "no capture there", or no line at all (#1198).
 when_drawn() {
-    local out="$1" seconds=0
+    local out="$1" seconds=0 refused
     shift
-    until "$@" "$out" && python3 "$ROOT/scripts/readme-captures.py" check "$out" 2> /dev/null; do
+    while true; do
+        "$@" "$out"
+        refused=0
+        python3 "$ROOT/scripts/readme-captures.py" check "$out" 2> "$RAW/check.log" || refused=$?
+        [ "$refused" -ne 0 ] || break
+        [ "$refused" -eq "$NOTHING_DRAWN" ] || fail "$(cat "$RAW/check.log")"
+        [ "$seconds" -lt 60 ] || break
         sleep 2
         seconds=$((seconds + 2))
-        [ "$seconds" -lt 60 ] || break
     done
     sleep 2
     "$@" "$out"
     drew "$out"
 }
+
+# The exit readme-captures.py gives a picture of nothing, the one refusal taking it again can cure.
+NOTHING_DRAWN=3
 
 # web_picture <chrome> <profile> <port> <scheme> <route>
 web_picture() {
@@ -172,8 +189,20 @@ ios_screen() {
     when_drawn "$out" ios_photograph "$udid"
 }
 
+# The simulator writes the screenshot itself, and it may not write where the tree is: with the
+# repository on an external volume, `simctl io screenshot` failed under /Volumes and worked under
+# /private/tmp. So it writes into a folder of the user's temporary directory, and the picture is moved
+# from there; a screenshot that fails anyway fails the target with the simulator's own words.
 ios_photograph() {
-    xcrun simctl io "$1" screenshot --type=png "$2" > /dev/null 2>&1
+    local shot temporary="${TMPDIR:-/tmp}"
+    shot="$(mktemp -d "${temporary%/}/eq-readme-shot.XXXXXX")"
+    if ! xcrun simctl io "$1" screenshot --type=png "$shot/screen.png" > "$shot/simctl.log" 2>&1; then
+        local said; said="$(cat "$shot/simctl.log")"
+        rm -rf "$shot"
+        fail "the simulator took no screenshot: ${said:-it said nothing}"
+    fi
+    mv -f "$shot/screen.png" "$2"
+    rm -rf "$shot"
 }
 
 ios() {
@@ -232,7 +261,7 @@ android_screen() {
 # photograph wakes it, which also keeps it from going back to sleep while an app takes its time.
 android_photograph() {
     adb shell input keyevent KEYCODE_WAKEUP
-    adb exec-out screencap -p > "$1"
+    adb exec-out screencap -p > "$1" || fail "the emulator took no screenshot into $1 (its error is above)"
 }
 
 android_demo() {
@@ -321,22 +350,32 @@ compose() {
     python3 "$ROOT/scripts/readme-captures.py" compose "$RAW" "$OUT"
 }
 
-if [ "$#" -eq 0 ]; then
-    sed -n '3,9p' "$0" | sed -E 's/^# ?//'
-    exit 2
+main() {
+    if [ "$#" -eq 0 ]; then
+        sed -n '3,9p' "$0" | sed -E 's/^# ?//'
+        exit 2
+    fi
+    # Every target reads what it takes with Pillow, so a python3 without it is said before anything builds.
+    python3 "$ROOT/scripts/readme-captures.py" ready || fail "nothing was built: install Pillow and run it again"
+    for target in "$@"; do
+        case "$target" in
+            web | desktop | ios | android | compose)
+                echo "$target:"
+                "$target"
+                ;;
+            all)
+                for each in web desktop ios android compose; do
+                    echo "$each:"
+                    "$each"
+                done
+                ;;
+            *) fail "no target named $target. One of: web, desktop, ios, android, compose, all" ;;
+        esac
+    done
+}
+
+# Run, the targets are taken. Sourced, by scripts/check-capture-readme.sh, the functions are what it
+# asserts, with the programs they start replaced by stubs.
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+    main "$@"
 fi
-for target in "$@"; do
-    case "$target" in
-        web | desktop | ios | android | compose)
-            echo "$target:"
-            "$target"
-            ;;
-        all)
-            for each in web desktop ios android compose; do
-                echo "$each:"
-                "$each"
-            done
-            ;;
-        *) fail "no target named $target. One of: web, desktop, ios, android, compose, all" ;;
-    esac
-done
