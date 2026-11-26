@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "GestureArenaEntry.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Primitives/Gestures/GestureArenaEntry.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAOA;QAEkC;QACO;QACA;QAIjC;QACA;QACA;;;IAR0B;IACO;IACA;;IAUrC;QAAsB;;;IAItB;QAAuD;;;IAlB3D"
+}

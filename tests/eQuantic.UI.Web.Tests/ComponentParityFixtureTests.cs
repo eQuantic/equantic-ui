@@ -112,6 +112,8 @@ public class ComponentParityFixtureTests
         ("listener", new Listener(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 })), NoPresses),
         ("listener-opaque", new Listener(new Box(new BoxStyle { Height = 40 })) { Behavior = HitTestBehavior.Opaque }, NoPresses),
         ("listener-translucent", new Listener(new Box(new BoxStyle { Height = 40 })) { Behavior = HitTestBehavior.Translucent }, NoPresses),
+        // Gestures of the app's own (#1563): the same transparent div, its child's box being its box, on both producers.
+        ("raw-gesture-detector", new RawGestureDetector(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), []), NoPresses),
         ("anchored-at", new Anchored(new Box(new BoxStyle { Width = 200, Height = 40 }), new Box(new BoxStyle { Width = 120, Height = 80 }))
         {
             At = new Point(120, 30),

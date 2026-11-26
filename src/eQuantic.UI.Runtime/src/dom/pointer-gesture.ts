@@ -4,6 +4,11 @@
  * means it (it travelled past the slop, or a finger held still), follows the pointer while it is armed,
  * and ends on the release or when the system takes the pointer away.
  *
+ * Where a `RawGestureDetector` is under the press, the gesture is a member of the pointer's arena (#1563): it
+ * asks for the pointer when it arms, leaves when a hold it watched for travelled first, and, when an app's
+ * recognizer wins the pointer before it armed, lets it go with nothing reported. Under no detector it owns its
+ * pointer as it always did.
+ *
  * `draggable.ts` and `drag-dismiss.ts` each wrote this skeleton by hand, and had drifted: the sheet never
  * listened for `pointercancel`, so a browser that claimed the pointer left its listeners behind. The
  * sortable controller is the third gesture, and the reason the skeleton is one module now. What a gesture
@@ -11,12 +16,17 @@
  */
 import { clickGuards, type ClickGuards } from './click-guard';
 
+import { joinGestureArena } from './arena-membership';
+
 /** Touch.PressCancelSlop: the travel, in screen pixels, past which a press is a drag (cross-pinned with
  * the C# host). */
 export const SLOP = 12;
 
 /** One gesture, from the press that may start it. */
 export interface PointerGesture {
+  /** The element the gesture is on (the surface it moves, the item it lifts), which places it among the members of
+   * the pointer's gesture arena, the innermost first (#1563). Left out, the press's own target. */
+  element?: Element;
   /** Whether the pointer, this far from its press, starts the gesture: asked on every move until it does.
    * Left out, only a press held for {@link holdMs} arms it. */
   arms?(ev: PointerEvent): boolean;
@@ -90,6 +100,10 @@ export function followPointer(
   let holding = false;
 
   const arm = (ev: PointerEvent | null): void => {
+    // It asks the arena for the pointer first: a member that won it already has rejected this one, which then
+    // stopped following it and never arms.
+    membership?.accept();
+    if (over) return;
     armed = true;
     if (hold !== null) clearTimeout(hold);
     hold = null;
@@ -127,7 +141,10 @@ export function followPointer(
     if (!armed) {
       if (gesture.holdMs !== undefined && gesture.arms === undefined) {
         // Watching for a hold: travel first is a scroll, and the watch ends there.
-        if (Math.hypot(pointer.clientX - startX, pointer.clientY - startY) > SLOP) detach();
+        if (Math.hypot(pointer.clientX - startX, pointer.clientY - startY) > SLOP) {
+          detach();
+          membership?.reject();
+        }
         return;
       }
       if (!gesture.arms?.(pointer)) return;
@@ -148,6 +165,11 @@ export function followPointer(
     detach();
     if (armed) gesture.cancel();
   };
+
+  // Another member that wins the pointer first takes it from this gesture, which ends as the system's cancel ends it.
+  const membership = joinGestureArena(down, gesture.element ?? (down.target as Element), () => {
+    if (!over) cancelled();
+  });
 
   if (gesture.holdMs !== undefined)
     hold = setTimeout(() => {
@@ -178,7 +200,10 @@ export function followPointer(
 let selectionHolds = 0;
 let pageSelect: { standard: string; webkit: string } = { standard: '', webkit: '' };
 
-function holdSelection(host: Document): void {
+/** Clears the selection the press started and holds off any other until {@link releaseSelection}: by count, so
+ * every gesture that holds it gives it back once. The gesture arena holds it too while an app's recognizer owns
+ * the pointer (#1563). */
+export function holdSelection(host: Document): void {
   host.getSelection()?.removeAllRanges();
   if (selectionHolds++ > 0) return;
   const root = host.documentElement;
@@ -191,7 +216,8 @@ function holdSelection(host: Document): void {
   host.addEventListener('selectstart', noSelection, true);
 }
 
-function releaseSelection(host: Document): void {
+/** Gives back one hold of {@link holdSelection}; the last one restores the page's own selection. */
+export function releaseSelection(host: Document): void {
   if (selectionHolds === 0 || --selectionHolds > 0) return;
   const root = host.documentElement;
   root.style.userSelect = pageSelect.standard;

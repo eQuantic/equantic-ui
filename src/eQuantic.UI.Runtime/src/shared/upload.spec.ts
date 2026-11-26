@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PickedFile } from './picked-file';
 import { FileFilter, UploadPolicy, UploadedFile } from './primitive-values';
-import { Upload, type UploadOptions } from './upload';
+import { Upload, UploadSlots, type UploadOptions } from './upload';
 import { WebUploads } from './devices/uploads';
 
 /**
@@ -23,8 +23,11 @@ interface Received {
 class TusServer {
   readonly uploads = new Map<string, { length: number; bytes: number[] }>();
   readonly received: Received[] = [];
+  /** For each creation the browser sent, how many creations had been answered when it was sent. */
+  readonly answeredWhenCreated: number[] = [];
+  answeredCreations = 0;
   /** Answers the next requests of a method with this, before the server reads them. */
-  readonly planned: { method: string; status: number; body?: string }[] = [];
+  readonly planned: { method: string; status: number; body?: string; headers?: Record<string, string> }[] = [];
   private next = 0;
 
   answer(xhr: FakeXhr, body: Blob | null): void {
@@ -41,7 +44,7 @@ class TusServer {
     if (plan >= 0) {
       const [planned] = this.planned.splice(plan, 1);
       if (planned.status === 0) return xhr.fail();
-      return xhr.reply(planned.status, {}, planned.body ?? '');
+      return xhr.reply(planned.status, planned.headers ?? {}, planned.body ?? '');
     }
 
     const id = url.split('/').pop() as string;
@@ -110,6 +113,7 @@ class FakeXhr {
   }
 
   send(body: Blob | null): void {
+    if (this.method === 'POST') server.answeredWhenCreated.push(server.answeredCreations);
     setTimeout(() => {
       if (!this.done) server.answer(this, body);
     }, 0);
@@ -128,6 +132,7 @@ class FakeXhr {
   reply(status: number, headers: Record<string, string>, text = ''): void {
     if (this.done) return;
     this.done = true;
+    if (this.method === 'POST') server.answeredCreations++;
     this.status = status;
     this.responseHeaders = headers;
     this.responseText = text;
@@ -142,7 +147,8 @@ class FakeXhr {
 }
 
 const models = new UploadPolicy('models', [new FileFilter('3D models', 'stl', 'obj')], 1000n);
-const quick: UploadOptions = { partSize: 8, retryDelays: [0, 0, 0] };
+/** Small parts, no pauses, a second of the server's Retry-After as a millisecond, and the test's own turns. */
+let quick: UploadOptions;
 
 function file(name: string, length: number, lastModified = 1): PickedFile {
   const bytes = Uint8Array.from({ length }, (_, index) => index % 251);
@@ -165,6 +171,7 @@ const patches = () => server.received.filter((request) => request.method === 'PA
 
 describe('Upload', () => {
   beforeEach(() => {
+    quick = { partSize: 8, retryDelays: [0, 0, 0], second: 1, slots: new UploadSlots(3) };
     server = new TusServer();
     vi.stubGlobal('XMLHttpRequest', FakeXhr);
     localStorage.clear();
@@ -323,14 +330,113 @@ describe('Upload', () => {
   });
 
   it("shows the server's reason for a refusal, and does not try again", async () => {
-    server.planned.push({ method: 'POST', status: 429, body: 'At most 3 uploads may be unfinished at a time.' });
+    server.planned.push({ method: 'POST', status: 429, body: 'At most 100 uploads may be kept at a time.' });
 
     const upload = new Upload(file('bracket.stl', 4), models, quick).begin();
     await settled(upload, 'completed', 'failed');
 
     expect(upload.state).toBe('failed');
-    expect(upload.error).toBe('At most 3 uploads may be unfinished at a time.');
+    expect(upload.error).toBe('At most 100 uploads may be kept at a time.');
     expect(server.received).toHaveLength(1);
+  });
+
+  it('waits for a limit the server says frees itself, and then creates the upload', async () => {
+    const reason = 'At most 3 uploads may be unfinished at a time.';
+    server.planned.push({ method: 'POST', status: 429, body: reason, headers: { 'Retry-After': '5' } });
+    const states: string[] = [];
+
+    const upload = new Upload(file('bracket.stl', 12), models, quick).begin();
+    upload.subscribe((changed) => states.push(changed.state));
+    await settled(upload, 'completed', 'failed');
+
+    expect(upload.state).toBe('completed');
+    expect(states).not.toContain('failed');
+    expect(server.received.filter((request) => request.method === 'POST')).toHaveLength(2);
+    expect([...server.uploads.values()][0].bytes).toHaveLength(12);
+  });
+
+  it('fails in the server\'s words once it waited ten minutes of its Retry-After', async () => {
+    const reason = 'At most 3 uploads may be unfinished at a time.';
+    for (let i = 0; i < 2; i++) server.planned.push({ method: 'POST', status: 429, body: reason, headers: { 'Retry-After': '600' } });
+
+    const upload = new Upload(file('bracket.stl', 12), models, quick).begin();
+    await settled(upload, 'completed', 'failed');
+
+    expect(upload.state).toBe('failed');
+    expect(upload.error).toBe(reason);
+    expect(server.received.filter((request) => request.method === 'POST')).toHaveLength(2);
+  });
+
+  it('opens the turns when the first creation waits for the server', async () => {
+    const reason = 'At most 3 uploads may be unfinished at a time.';
+    server.planned.push({ method: 'POST', status: 429, body: reason, headers: { 'Retry-After': '5' } });
+    const uploads = [0, 1, 2].map((i) => new Upload(file(`part-${i}.stl`, 20, i + 1), models, quick).begin());
+    await Promise.all(uploads.map((upload) => settled(upload, 'completed', 'failed')));
+
+    expect(uploads.every((upload) => upload.state === 'completed')).toBe(true);
+    // The others were created while the first waited out the server's five seconds.
+    const creations = server.received.filter((request) => request.method === 'POST').map((request) => request.headers['Upload-Metadata']);
+    expect(creations.map((metadata) => metadata.includes(btoa('part-0.stl'))).lastIndexOf(true)).toBe(3);
+  });
+
+  it('gives its turn back at once when it is paused while it waits for the server', async () => {
+    const slots = new UploadSlots(1);
+    server.planned.push({ method: 'POST', status: 429, body: 'At most 3 uploads may be unfinished at a time.', headers: { 'Retry-After': '600' } });
+    const waiting = new Upload(file('slow.stl', 20, 1), models, { ...quick, slots, second: 1000 }).begin();
+    const next = new Upload(file('next.stl', 20, 2), models, { ...quick, slots }).begin();
+    await settled(waiting, 'waiting');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    waiting.pause();
+    await settled(next, 'completed', 'failed');
+
+    expect(next.state).toBe('completed');
+  });
+
+  it('sends three files at a time, and the others wait their turn in the order they were started', async () => {
+    const files = [0, 1, 2, 3, 4].map((i) => file(`part-${i}.stl`, 20, i + 1));
+
+    const uploads = files.map((picked) => new Upload(picked, models, quick).begin());
+    expect(uploads.map((upload) => upload.state)).toEqual(['waiting', 'waiting', 'waiting', 'waiting', 'waiting']);
+    await Promise.all(uploads.map((upload) => settled(upload, 'completed', 'failed')));
+
+    expect(uploads.every((upload) => upload.state === 'completed')).toBe(true);
+    // Read back from what the server received: when each creation arrived, fewer than three uploads it
+    // had created were still unfinished, and the creations came in the order the files were started.
+    const unfinished = new Map<string, number>();
+    let created = 0;
+    for (const request of server.received) {
+      if (request.method === 'POST') {
+        expect(unfinished.size).toBeLessThan(3);
+        expect(request.headers['Upload-Metadata']).toContain(btoa(`part-${created}.stl`));
+        unfinished.set((++created).toString(16).padStart(32, '0'), 20);
+      } else if (request.method === 'PATCH') {
+        const id = request.url.split('/').pop() as string;
+        const left = (unfinished.get(id) ?? 0) - (request.length ?? 0);
+        if (left <= 0) unfinished.delete(id);
+        else unfinished.set(id, left);
+      }
+    }
+    expect(created).toBe(5);
+  });
+
+  it("sends a page's first creation alone, so the server names a visitor's browser once", async () => {
+    const uploads = [0, 1, 2].map((i) => new Upload(file(`part-${i}.stl`, 20, i + 1), models, quick).begin());
+    await Promise.all(uploads.map((upload) => settled(upload, 'completed', 'failed')));
+
+    expect(uploads.every((upload) => upload.state === 'completed')).toBe(true);
+    expect(server.answeredWhenCreated[0]).toBe(0);
+    expect(server.answeredWhenCreated.slice(1).every((answered) => answered >= 1)).toBe(true);
+  });
+
+  it('gives its turn to the next file when it is cancelled before it starts', async () => {
+    const uploads = [0, 1, 2, 3].map((i) => new Upload(file(`part-${i}.stl`, 20, i + 1), models, quick).begin());
+    uploads[0].cancel();
+    await Promise.all(uploads.slice(1).map((upload) => settled(upload, 'completed', 'failed')));
+
+    expect(uploads[0].state).toBe('cancelled');
+    expect(uploads.slice(1).every((upload) => upload.state === 'completed')).toBe(true);
+    expect(server.received.filter((request) => request.method === 'POST')).toHaveLength(3);
   });
 
   it('refuses before sending what the policy does not accept, in the words the server would use', () => {

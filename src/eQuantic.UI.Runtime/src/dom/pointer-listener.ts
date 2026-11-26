@@ -7,9 +7,15 @@
  * - A pointer that went down on listeners is followed to its up or its cancel, by `pointerId`, wherever it goes.
  * - A mouse or a pen moving with nothing followed hovers the listeners under it; a finger never hovers.
  * - A wheel or a trackpad scrolls the listeners under it, its delta in dp toward the content's end.
+ * - Every event carries its `timeStamp`, the milliseconds the browser saw it at on the document's monotonic clock
+ *   (#1563), so a recognizer measures a velocity by the difference of two.
  *
  * It only listens: the document's handlers are passive and capture-phase, prevent nothing and stop nothing, so a
  * button inside a listener still presses and a scroll view still scrolls.
+ *
+ * A `RawGestureDetector` carries the listener's mark too (#1563): it is hit by the same rule, so an opaque detector
+ * hides the listeners behind it as an opaque listener does, but it is told nothing here. Its recognizers hear the
+ * pointer through the gesture arena (`gesture-arena.ts`).
  */
 import { modifiersOf } from '../shared/css-values';
 import type { HitTestBehaviorValue, PointerKindValue, PointerPhaseValue } from '../shared/enums.generated';
@@ -17,6 +23,8 @@ import { Point, PointerEvent as HeardPointer } from '../shared/value-types';
 import { listenerHits, type UnderEntry } from './listener-hits';
 
 const LISTENER = '[data-eq-listener]';
+/** What a detector carries beside the listener's mark. */
+const DETECTOR = 'data-eq-gestures';
 /**
  * What answers the pointer whatever it paints: a control, a field, an editable, an element Tab reaches. An element
  * taken out of the Tab order (`tabindex="-1"`, a modal layer, a roving item) answers only as what it is: the
@@ -63,7 +71,7 @@ export function resetPointerListener(): void {
 
 function onDown(event: PointerEvent): void {
   if (event.pointerType === 'mouse') mousePointer = event.pointerId;
-  const listeners = heardAt(event.clientX, event.clientY);
+  const listeners = listenersAt(event.clientX, event.clientY);
   followed.delete(event.pointerId);
   if (listeners.length === 0) return;
   const kind = kindOf(event);
@@ -80,7 +88,7 @@ function onMove(event: PointerEvent): void {
   // A hover is a pointer passing over with nothing pressed: a finger never hovers, and a press that went down
   // outside every listener is followed by none of them.
   if (event.pointerType === 'touch' || event.buttons !== 0) return;
-  const listeners = heardAt(event.clientX, event.clientY);
+  const listeners = listenersAt(event.clientX, event.clientY);
   if (listeners.length > 0) tell(listeners, 'hover', event, kindOf(event), 0, ORIGIN);
 }
 
@@ -99,12 +107,12 @@ function onCancel(event: PointerEvent): void {
 }
 
 function onWheel(event: WheelEvent): void {
-  const listeners = heardAt(event.clientX, event.clientY);
+  const listeners = listenersAt(event.clientX, event.clientY);
   if (listeners.length === 0) return;
   const unit = event.deltaMode === 1 ? WHEEL_LINE : event.deltaMode === 2 ? window.innerHeight : 1;
   const delta = new Point(event.deltaX * unit, event.deltaY * unit);
   const pointer = { pointerId: mousePointer, clientX: event.clientX, clientY: event.clientY } as const;
-  tell(listeners, 'scroll', { ...pointer, ...modifierKeys(event) }, 'mouse', 0, delta);
+  tell(listeners, 'scroll', { ...pointer, ...modifierKeys(event), timeStamp: event.timeStamp }, 'mouse', 0, delta);
 }
 
 const ORIGIN = new Point(0, 0);
@@ -117,6 +125,8 @@ interface Pointed {
   altKey?: boolean;
   metaKey?: boolean;
   ctrlKey?: boolean;
+  /** When the browser saw it, in milliseconds since the document's time origin: monotonic. */
+  timeStamp: number;
 }
 
 function modifierKeys(event: WheelEvent): Pick<Pointed, 'shiftKey' | 'altKey' | 'metaKey' | 'ctrlKey'> {
@@ -144,6 +154,7 @@ function tell(
       modifiers,
       event.pointerId,
       scrollDelta,
+      event.timeStamp,
     );
     listener.dispatchEvent(new CustomEvent('eq-pointer', { detail: heard }));
   }
@@ -153,8 +164,13 @@ function kindOf(event: PointerEvent): PointerKindValue {
   return event.pointerType === 'touch' ? 'touch' : event.pointerType === 'pen' ? 'stylus' : 'mouse';
 }
 
+/** The listeners told about a pointer at (`x`, `y`): those that hear it, the detectors among them left out. */
+function listenersAt(x: number, y: number): Element[] {
+  return heardAt(x, y).filter((element) => !element.hasAttribute(DETECTOR));
+}
+
 /**
- * The listeners that hear a pointer at (`x`, `y`), the latest painted first: the browser's hit test, read in paint
+ * The listeners and detectors that hear a pointer at (`x`, `y`), the latest painted first: the browser's hit test, read in paint
  * order (the bottom first), each element marked a listener with its behaviour or a solid when it draws or answers.
  */
 export function heardAt(x: number, y: number): Element[] {

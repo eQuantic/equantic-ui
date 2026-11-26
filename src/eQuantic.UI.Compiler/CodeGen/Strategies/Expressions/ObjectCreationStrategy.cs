@@ -49,14 +49,21 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
     /// <summary>
     /// The type arguments a value of <paramref name="type"/> is marked with: a generic class, record or
-    /// struct the source declares, closed over types the build knows. A type argument that is a type
-    /// parameter is known only at run time, and the value goes unmarked. <c>typeof</c> of a closed type
-    /// is closed over the same text (<c>RuntimeTypeEqualityStrategy</c>).
+    /// struct the source declares or the runtime library twins, closed over types the build knows. A type
+    /// argument that is a type parameter is known only at run time, and the value goes unmarked.
+    /// <c>typeof</c> of a closed type is closed over the same text (<c>RuntimeTypeEqualityStrategy</c>).
+    /// <para>
+    /// The runtime's own generics count as the source's do (#1863): an app reads the framework from
+    /// metadata, so its <c>new GestureRecognizerFactoryWithHandlers&lt;HoldThenDrag&gt;(…)</c> went
+    /// unmarked though the build knew <c>HoldThenDrag</c>, and the browser took two factories over different
+    /// types for one type. A generic the runtime maps to JavaScript's own types (the BCL's collections) is
+    /// neither, and stays as it was.
+    /// </para>
     /// </summary>
     internal static string? ClosureOf(ITypeSymbol? type) =>
         type is INamedTypeSymbol { IsGenericType: true, IsTupleType: false } named
         && named.TypeKind is TypeKind.Class or TypeKind.Struct
-        && named.Locations.Any(location => location.IsInSource)
+        && (named.Locations.Any(location => location.IsInSource) || named.IsRuntimeProvided())
         && !named.TypeArguments.Any(ContainsTypeParameter)
             ? string.Join(", ", named.TypeArguments.Select(RuntimeName))
             : null;
