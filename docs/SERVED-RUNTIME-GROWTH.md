@@ -199,8 +199,8 @@ page would pay for it.
 ## Since the record of #1852
 
 `main` grew 3,907 bytes past the base and its deltas from #1852's record to f79bec9da without a change recording
-them: each merge stayed inside the ceiling the ones before it left, floor(395,786 × 1.01) = 399,743, until #1913, whose
-own 106 bytes met it (#1922). #1852's merge (187ac4540) measures 390,447, the base and its own delta exactly, so the
+them: each merge stayed inside the ceiling of its day, floor(390,447 × 1.01) = 394,351 before #1884's delta and
+floor(395,786 × 1.01) = 399,743 after it, until #1913, whose own 106 bytes met the second (#1922). #1852's merge (187ac4540) measures 390,447, the base and its own delta exactly, so the
 rows start there, measured as this page's tables are, at every first-parent merge that touched a source of the bundle.
 The method reproduces `main` at f79bec9da byte for byte: 399,693. #1880 and #1901 changed no byte of it.
 
