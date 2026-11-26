@@ -64,16 +64,19 @@ public class TypeScriptEmitter
     /// <summary>A type parameter's constraint as its class header writes it (#1854): a class that is not generic and has a
     /// twin, as a downcast asks it (<see cref="Strategies.Expressions.CastExpressionStrategy.NamesATwin"/>), named as any
     /// reference to it is (<see cref="DeclaredType"/>), and null for any other one, which leaves the parameter
-    /// unconstrained. A class the server keeps has no twin to import. Plain JavaScript writes no type parameter, so it
+    /// unconstrained. A class the server keeps has no twin to import. An interface with a twin
+    /// (<see cref="InterfaceTwin"/>) is named the same way (#1878). Plain JavaScript writes no type parameter, so it
     /// names no constraint and imports none: the constraint's import would have been a module plain JavaScript loads for
     /// nothing.</summary>
     private string? ConstraintType(TypeSyntax type)
     {
         if (!TypeAnnotations) return null;
-        if (ModelFor(type)?.GetTypeInfo(type).Type is not INamedTypeSymbol { TypeKind: TypeKind.Class, IsGenericType: false } bound
-            || !Strategies.Expressions.CastExpressionStrategy.NamesATwin(bound))
-            return null;
-        var name = DeclaredType(type);
+        if (ModelFor(type)?.GetTypeInfo(type).Type is not INamedTypeSymbol bound) return null;
+        string name;
+        if (InterfaceTwin.NameOf(bound) is { } face) name = face;
+        else if (bound is { TypeKind: TypeKind.Class, IsGenericType: false } && Strategies.Expressions.CastExpressionStrategy.NamesATwin(bound))
+            name = DeclaredType(type);
+        else return null;
         // Imported as any other name the module writes: the scan of a class's references reads its members, never its
         // where clause, so a constraint only the header names reached no import.
         if (bound.IsRuntimeProvided()) _converter.UsedRuntimeTypes.Add(name);
@@ -2959,6 +2962,72 @@ public class TypeScriptEmitter
     public string EmitStaticHelperModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel) =>
         EmitClassModule(cls, semanticModel, asStatic: true);
 
+    /// <summary>
+    /// An interface's twin (#1878): a module holding <c>export interface</c>, each member under the name the twin of a class
+    /// implementing it gives it and with the type an annotation writes, <c>readonly</c> where the property has no setter,
+    /// so a type parameter's constraint can name it (<c>T extends IShaped</c>). Beside it a value of the same name, as a
+    /// union's alias module holds one, so a plain import resolves whether or not the bundler elides it, with
+    /// <c>isolatedModules</c> on; plain JavaScript writes the value alone. Its imports are what its text names, read as
+    /// the class module reads them. Which interface gets one is <see cref="InterfaceTwin.CanBeWritten(InterfaceDeclarationSyntax)"/>.
+    /// </summary>
+    public string EmitInterfaceModule(InterfaceDeclarationSyntax face, SemanticModel? semanticModel)
+    {
+        var name = face.TwinTypeName();
+        BeginModule(semanticModel, name);
+        if (!TypeAnnotations) return $"export const {name} = undefined;\n";
+
+        var body = new System.Text.StringBuilder($"export interface {name} {{\n");
+        foreach (var member in face.Members)
+        {
+            if (member is PropertyDeclarationSyntax property)
+            {
+                var settable = property.AccessorList!.Accessors.Any(accessor =>
+                    accessor.Keyword.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SetKeyword)
+                    || accessor.Keyword.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.InitKeyword));
+                body.Append($"    {(settable ? "" : "readonly ")}{property.Identifier.ValueText.ToCamelCase()}: {DeclaredType(property.Type)};\n");
+            }
+            else if (member is MethodDeclarationSyntax method)
+            {
+                var (head, returns) = MethodSignature(method);
+                body.Append($"    {head}: {returns};\n");
+            }
+        }
+        body.Append("}\n\n");
+        body.Append($"export const {name} = undefined;\n");
+        var emitted = body.ToString();
+
+        // What the members' types name, as the class module takes it: the runtime's types the scan and the conversion
+        // found, the value types .NET names, the vocabulary's enum unions, then the app's and its referenced projects'
+        // modules, each only where the text names it.
+        var runtimeProvided = new HashSet<string>(_converter.UsedRuntimeTypes, StringComparer.Ordinal);
+        var referencedEnums = new HashSet<string>(StringComparer.Ordinal);
+        if (semanticModel != null)
+            Services.RuntimeProvidedTypeScanner.Collect(face, semanticModel, asComponent: false, runtimeProvided, referencedEnums);
+        runtimeProvided.Add(Decimal);
+        runtimeProvided.UnionWith(RuntimeValueTypes);
+        SeedEnumUnions(emitted, semanticModel?.Compilation, runtimeProvided);
+        runtimeProvided.Remove(name);
+        runtimeProvided.RemoveWhere(referenced => !NamedIn(emitted, referenced));
+        var imports = new List<JsImport>();
+        if (runtimeProvided.Count > 0)
+            imports.Add(new JsImport(runtimeProvided.OrderBy(n => n, StringComparer.Ordinal).ToList(), "@equantic/runtime"));
+        foreach (var t in CollectComponentTypesFromNode(face, asComponent: false, new HashSet<string> { name })
+                     .Concat(_converter.UsedAppTypes).Distinct().OrderBy(x => x, StringComparer.Ordinal))
+        {
+            var ct = t.Trim().TrimEnd('?');
+            if (ct.Contains('<')) ct = ct.Split('<')[0];
+            if (ct.Contains('.')) ct = ct.Substring(ct.LastIndexOf('.') + 1);
+            if (string.IsNullOrEmpty(ct) || ct == name || runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)
+                || !NamedIn(emitted, ct))
+                continue;
+            if (_dependencyResolver?.IsModule(ct) == true
+                || _dependencyResolver is null && ModulesFor(semanticModel)?.IsModule(ct) == true
+                || Referenced.IsModule(ct))
+                imports.Add(new JsImport([ct], $"./{ct}"));
+        }
+        return JsModuleWriter.Write(new JsModule(imports, emitted));
+    }
+
     private string EmitClassModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel, bool asStatic)
     {
         // Its twin's name, its owners' and its own (#584): a nested class is a module of its own too.
@@ -3221,6 +3290,14 @@ public class TypeScriptEmitter
     /// </summary>
     private JsClassMember AbstractMethod(MethodDeclarationSyntax method)
     {
+        var (head, returns) = MethodSignature(method);
+        return JsClassMember.Field("abstract ", head, $": {returns}");
+    }
+
+    /// <summary>A body-less method's TypeScript signature, as <see cref="AbstractMethod"/> declares it: its name, its
+    /// type parameters and its parameters, then its return. An interface twin's method is declared the same way (#1878).</summary>
+    private (string Head, string Returns) MethodSignature(MethodDeclarationSyntax method)
+    {
         var model = ModelFor(method);
         var outNames = OutParameters.Of(method.ParameterList).Where(OutParameters.IsOut)
             .Select(p => p.Identifier.ValueText).ToHashSet(StringComparer.Ordinal);
@@ -3234,7 +3311,7 @@ public class TypeScriptEmitter
             ? $"<{string.Join(", ", list.Parameters.Select(t => t.Identifier.ValueText.ToJsIdentifier()))}>"
             : "";
         var returns = outNames.Count > 0 ? "any" : AbstractReturn(method.ReturnType, model);
-        return JsClassMember.Field("abstract ", TwinMethodName.Of(method, model) + generics + $"({parameters})", $": {returns}");
+        return (TwinMethodName.Of(method, model) + generics + $"({parameters})", returns);
     }
 
     /// <summary>What an abstract method's caller receives: a task as the promise its override answers.</summary>

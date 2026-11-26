@@ -22,6 +22,10 @@ public class ComponentDependencyResolver
     /// <summary>Static utility classes (`static class X`) discovered during the scan — emitted as their
     /// own module, so a component referencing <c>X.Foo()</c> imports it.</summary>
     private readonly HashSet<string> _staticHelpers = new();
+
+    /// <summary>The interfaces whose twin the parser writes (<see cref="CodeGen.InterfaceTwin"/>, #1878), each a module a
+    /// type parameter's constraint imports.</summary>
+    private readonly HashSet<string> _interfaceTwins = new(StringComparer.Ordinal);
     private readonly HashSet<string> _runtimeProvidedTypes = new();
 
     /// <summary>The classes the COMPONENT path emits (<see cref="IsComponentLike"/>), each a module of
@@ -181,6 +185,8 @@ public class ComponentDependencyResolver
                 && CodeGen.RecordTypeEmitter.CanEmit(valueType, SymbolOf(valueType)))
                 _recordTypes.Add(valueType.TwinTypeName());
             if (KeptOut(valueType)) _keptOut.Add(valueType.TwinTypeName());
+            if (valueType is InterfaceDeclarationSyntax face && CodeGen.InterfaceTwin.CanBeWritten(face))
+                _interfaceTwins.Add(face.TwinTypeName());
         }
 
         _scan.Add(root);
@@ -343,7 +349,7 @@ public class ComponentDependencyResolver
 
     /// <summary>
     /// Whether the scan knows <paramref name="name"/> became a module of its own: a record or struct,
-    /// a static helper, a component or a plain class. Every emitter imports an APP type only when this
+    /// a static helper, a component, a plain class or an interface's twin. Every emitter imports an APP type only when this
     /// answers yes, which is what keeps an import from naming a module nobody wrote.
     /// <para>
     /// Modules share ONE flat namespace, named by the type's simple name, so a name is a module when
@@ -358,6 +364,7 @@ public class ComponentDependencyResolver
     public bool IsModule(string name) =>
         _recordTypes.Contains(name)
         || _staticHelpers.Contains(name)
+        || _interfaceTwins.Contains(name)
         || _componentLike.Contains(name)
         || PlainClasses().Contains(name);
 
