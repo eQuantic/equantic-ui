@@ -262,6 +262,21 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("NextMonth", Culture)!; }
         }
 
+        internal static string PreviousPage
+        {
+            get { return ResourceManager.GetString("PreviousPage", Culture)!; }
+        }
+
+        internal static string NextPage
+        {
+            get { return ResourceManager.GetString("NextPage", Culture)!; }
+        }
+
+        internal static string PageNumbered
+        {
+            get { return ResourceManager.GetString("PageNumbered", Culture)!; }
+        }
+
         internal static string Today
         {
             get { return ResourceManager.GetString("Today", Culture)!; }
