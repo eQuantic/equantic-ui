@@ -138,6 +138,9 @@ public class SpreadsheetPerfTests
             + $"(alarm {KeystrokeCeilingMs} ms on the fastest)");
         sheet.Editing.Should().BeTrue();
         sheet.Entry.Document.Text.Length.Should().Be(45);
+        // An absolute ceiling beside the relative one: the frame the nodes are compared with is already editing, so
+        // an entry that laid out a whole row or column in every frame would raise both, and only the cells say so.
+        Cells(host).Count.Should().BeLessThan(1_500, "the window and its overscan, never a row or a column whole");
         walked.Max().Should().BeLessThan(window * 2, "a character lays out a screenful and its editor, as the frame before it did");
         times.Min().Should().BeLessThan(KeystrokeCeilingMs, "a character builds a screenful and its editor");
     }
