@@ -55,7 +55,7 @@
 - [x] 7.5 `sortable.spec.ts` under `dir="rtl"`: a horizontal list places a carried item by reading order, a vertical tree's carry toward the end (leftwards) asks for a deeper depth, and the keyboard carry's horizontal arrows move next/deeper by the direction
 - [x] 7.6 Scroll spec under `dir="rtl"`: a horizontal `ScrollView` scrolled to the end reports a positive offset, and an `Offset` of 100 sets `scrollLeft` to -100
 - [x] 7.7 The variant matrix gains one `RightToLeft` cell per control (default variant and size, Comfortable): its web pin is written, and its Photon reading is asserted equal to the matching left-to-right cell's, not pinned twice
-- [ ] 7.8 Check against the real thing: the dashboard sample served in `ar` in a real browser (`tests/e2e`, a new spec): a calendar's previous-month chevron points right, a `Switch` dragged leftwards turns on, a `SwipeableRow` swiped rightwards opens, ArrowLeft moves to the next tab, a horizontal `ScrollView`'s reported offset grows toward the end, and a code block's fold chevron is unturned
+- [x] 7.8 Check against the real thing: the dashboard sample served in `ar` in a real browser (`tests/e2e/tests/direction.spec.ts`, over a "Direction" section of the `/i18n` screen): a calendar's previous-month chevron points right, a `Switch` dragged leftwards turns on, a `SwipeableRow` swiped rightwards opens, ArrowLeft moves to the next tab, a horizontal `ScrollView`'s reported offset grows toward the end, and a code block's fold chevron is unturned
 - [ ] 7.9 Check: the conformance suite (`tests/eQuantic.UI.Conformance.Tests`) green on both sides, and the full Web, Native.Engine and Compiler suites green before the pull request
 
 ## 8. Documentation
