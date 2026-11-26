@@ -3266,11 +3266,13 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Checkbox.cs`
 - **Handoff**: `new Checkbox(checked, onChanged, label: "…", tristate: false)`
-- **Code**: There is no `tristate` slot. The third state is modelled as an explicit `Indeterminate` init property that states the current mixed value rather than enabling a mode, and the cycle "mixed → checked → unchecked" is left entirely to the caller (OnChanged is a bare `Action`, and the doc says "Pressing it is the caller's call"). Checkbox.cs:15, :38.
+- **Code**: There is no `tristate` slot. The third state is modelled as an explicit `Indeterminate` init property that states the current mixed value rather than enabling a mode, and the cycle "mixed → checked → unchecked" is left entirely to the caller (OnChanged is a bare `Action`, and the doc says "Pressing it is the caller's call") (Checkbox.cs Checkbox.Checkbox, Checkbox.Indeterminate).
 - **Evidence**:
 
   ```
-  Checkbox.cs:15 — `public Checkbox(bool @checked, Action? onChanged = null, string? label = null,`; Checkbox.cs:38 — `public bool Indeterminate { get; init; }`
+  Checkbox.cs  public Checkbox(bool @checked, Action? onChanged = null, string? label = null,
+  Checkbox.cs      SelectionControlsTheme? style = null)
+  Checkbox.cs  public bool Indeterminate { get; init; }
   ```
 
 ### B12 Switch · documented-deviation · **unverified**

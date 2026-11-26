@@ -101,7 +101,12 @@ public class RadioGroupRealizerTests
     public void AnOptionBuilder_DrawsTheContent_AndTheRadiosKeepTheirNames()
     {
         string[] shown = ["Standard, in five days", "Express, tomorrow"];
-        foreach (var (disabled, colour) in new[] { (false, Theme.TextPrimary), (true, Theme.TextMuted) })
+        // The group has no label here, so no caption of its own carries a text colour into the sheet.
+        foreach (var (disabled, colour, other) in new[]
+                 {
+                     (false, Theme.TextPrimary, Theme.TextMuted),
+                     (true, Theme.TextMuted, Theme.TextPrimary),
+                 })
         {
             var sink = new StyleSink();
             var node = WebRealizer.Lower(new RadioGroup(["Standard", "Express"], selected: 1, onChanged: _ => { },
@@ -121,6 +126,8 @@ public class RadioGroupRealizerTests
             // The atomizer writes a theme's colour as its variable with the value as the fallback.
             sink.Css.Should().MatchRegex($@"\{{color:(var\(--eq-color-[a-z-]+, )?{Regex.Escape(TokenCss.Value(colour))}",
                 $"the builder's text takes the option's {(disabled ? "muted" : "primary")} colour from the box around it");
+            sink.Css.Should().NotMatchRegex($@"\{{color:(var\(--eq-color-[a-z-]+, )?{Regex.Escape(TokenCss.Value(other))}",
+                "and no other text colour reaches it");
         }
     }
 }
