@@ -147,6 +147,10 @@ public class ServedRuntimeBudgetTests
             budget.Deltas.Should().HaveCount(2, "a change measured again replaces its own delta");
             budget.Deltas.Single(delta => delta.Change == "feat-a-grows").Bytes.Should().Be(50,
                 "what the change grew the runtime by, never what main grew around it (#1922)");
+
+            RuntimeBudget.Record(root, "feat-a-grows", 0, "a component, taken out again");
+            RuntimeBudget.Load(root).Deltas.Select(delta => delta.Change).Should().Equal(["fix-b-shrinks"],
+                "a change that grows nothing loses its delta rather than recording no bytes");
         }
         finally
         {

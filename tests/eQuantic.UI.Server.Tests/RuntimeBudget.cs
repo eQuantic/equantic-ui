@@ -80,6 +80,13 @@ internal sealed partial class RuntimeBudget
     public static void Record(string root, string change, long grew, string bought)
     {
         var folder = Path.Combine(root, DeltaFolder);
+        // A change that grows nothing records nothing, and one measured again after it stopped growing loses its file:
+        // a delta of no bytes says nothing it bought.
+        if (grew == 0)
+        {
+            File.Delete(Path.Combine(folder, change + ".json"));
+            return;
+        }
         Directory.CreateDirectory(folder);
         var json = JsonSerializer.Serialize(new { deltaBytes = grew, bought },
             new JsonSerializerOptions { WriteIndented = true });
