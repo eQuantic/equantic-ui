@@ -441,9 +441,40 @@ public class ComponentCompiler
                 });
             }
 
+            // How long the browser waits for an action is the stub's to say (`invoke(…, { timeoutMs })`),
+            // so a value the stub could not honour is refused here, where it is written, and not met as
+            // a call abandoned at once or a request held open for an hour.
+            foreach (var action in component.ServerActions.Where(a => a.TimeoutArgument is not null && !Honoured(a.TimeoutSeconds)))
+            {
+                // The argument's own file: a partial method's defining half may be written in another one.
+                var span = action.TimeoutArgument!.GetLocation().GetLineSpan();
+                result.Success = false;
+                result.Errors.Add(new CompilationError
+                {
+                    Code = "EQ2017",
+                    SourcePath = string.IsNullOrEmpty(span.Path) ? component.SourcePath : span.Path,
+                    Line = span.StartLinePosition.Line + 1,
+                    Column = span.StartLinePosition.Character + 1,
+                    Message = $"'{component.Name}.{action.MethodName}' states [ServerAction({action.TimeoutArgument})], "
+                        + (action.TimeoutSeconds is { } seconds
+                            ? $"{seconds} seconds, outside 0 to {LongestServerActionTimeout}. "
+                            : "which the build cannot read as a constant. ")
+                        + "0 keeps the browser's 30 seconds; a longer wait is up to "
+                        + $"{LongestServerActionTimeout} seconds, and work with no bound returns at once and "
+                        + "sends its result over a ServerTopic.",
+                });
+            }
+
             yield return result;
         }
     }
+
+    /// <summary>The longest a browser waits for a Server Action, in seconds (EQ2017): ten minutes, past
+    /// which a request held open is a design to change, not a number to raise.</summary>
+    internal const int LongestServerActionTimeout = 600;
+
+    /// <summary>Whether <paramref name="seconds"/> is a wait the stub can hand the browser: 0 (the default) up to <see cref="LongestServerActionTimeout"/>.</summary>
+    private static bool Honoured(int? seconds) => seconds is >= 0 and <= LongestServerActionTimeout;
     
     /// <summary>
     /// Compile from source code

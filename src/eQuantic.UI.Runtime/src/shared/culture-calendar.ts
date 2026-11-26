@@ -29,6 +29,16 @@ export class CultureCalendar {
     return dateOf(current(), day.dayNumber).day;
   }
 
+  /** The first day the calendar writes, `MinSupportedDateTime`'s (#1849). */
+  static get firstDay(): DateOnly {
+    return new DateOnly(current().firstDay);
+  }
+
+  /** The last day the calendar writes, `MaxSupportedDateTime`'s (#1849). */
+  static get lastDay(): DateOnly {
+    return new DateOnly(current().lastDay);
+  }
+
   /** The first day of the month a day falls in. */
   static firstOfMonth(day: DateOnly): DateOnly {
     return new DateOnly(day.dayNumber + 1 - CultureCalendar.dayOf(day));
@@ -85,6 +95,14 @@ function moved(
   of: number,
   from: DateOnly,
 ): DateOnly {
+  // A month the calendar does not count is refused in its words before any day of it is asked (#1849).
+  const refusal = calendar.refusedMove(year, month);
+  if (refusal !== null) {
+    throw exception('System.ArgumentOutOfRangeException', refusal.message, {
+      paramName: refusal.paramName,
+      actualValue: refusal.actualValue,
+    });
+  }
   for (let day = of; day >= 1; day--) {
     const named = calendar.dayOf({ year, month, day });
     if (named !== null) return new DateOnly(named);

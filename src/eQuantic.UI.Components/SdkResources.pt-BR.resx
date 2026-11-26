@@ -122,6 +122,15 @@
   <data name="NextMonth" xml:space="preserve">
     <value>Próximo mês</value>
   </data>
+  <data name="PreviousPage" xml:space="preserve">
+    <value>Anterior</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>Próxima</value>
+  </data>
+  <data name="PageNumbered" xml:space="preserve">
+    <value>Página {0}</value>
+  </data>
   <data name="Today" xml:space="preserve">
     <value>Hoje</value>
   </data>

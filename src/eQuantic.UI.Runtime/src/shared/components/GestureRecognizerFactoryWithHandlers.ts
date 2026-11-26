@@ -1,7 +1,7 @@
 import { GestureRecognizer } from "../runtime-exports";
 import { GestureRecognizerFactory } from "./GestureRecognizerFactory";
 
-export class GestureRecognizerFactoryWithHandlers<T> extends GestureRecognizerFactory {
+export class GestureRecognizerFactoryWithHandlers<T extends GestureRecognizer> extends GestureRecognizerFactory {
     constructor(create: () => T, initialize: (t: T) => void) {
         super();
         this._create = null!;
@@ -18,7 +18,7 @@ export class GestureRecognizerFactoryWithHandlers<T> extends GestureRecognizerFa
     }
 
     initialize(recognizer: GestureRecognizer) {
-        return this._initialize(recognizer);
+        return this._initialize((recognizer as T));
     }
 }
 

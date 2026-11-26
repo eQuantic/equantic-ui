@@ -3737,7 +3737,9 @@ public sealed partial class PhotonHost
         if (TextTarget is { } editing && EditKey(editing, key, modifiers)) return true;
 
         // An Adjustable under focus answers the arrows — the reason it exists. Resolved out of
-        // THIS frame's stops by id: the node from the frame it was focused in is long gone.
+        // THIS frame's stops by id: the node from the frame it was focused in is long gone. The step is the
+        // web's, by role (AdjustableKeys): up was +1 for every role, so a vertical radio group or tab strip
+        // stepped backwards here (#1873).
         if (modifiers == KeyModifiers.None && _focusedId != 0
             && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
             && _lastFrame?.FocusStops is { } stops)
@@ -3745,7 +3747,7 @@ public sealed partial class PhotonHost
             for (var i = 0; i < stops.Count; i++)
             {
                 if (stops[i].Id != _focusedId || stops[i].Adjustable is not { } adjustable) continue;
-                adjustable.OnAdjust(key is "ArrowRight" or "ArrowUp" ? 1 : -1);
+                adjustable.OnAdjust(AdjustableKeys.Step(key, adjustable.Role)!.Value);
                 NeedsRender = true;
                 return true;
             }

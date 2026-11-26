@@ -337,6 +337,50 @@ public class SharedComponentTranspilationTests
             public EmittedSlot(TValue value) { Value = value; }
         }
 
+        public abstract class EmittedShapeBase { public abstract int Area { get; } }
+
+        public sealed class EmittedMeasured<T> where T : EmittedShapeBase
+        {
+            private readonly T _shape;
+            public EmittedMeasured(T shape) { _shape = shape; }
+            public int Area() => _shape.Area;
+        }
+
+        public sealed record EmittedTagged<T>(T Shape, string Tag) where T : EmittedShapeBase
+        {
+            public int Area => Shape.Area;
+        }
+
+        public sealed class EmittedHandler<T> where T : EmittedShapeBase
+        {
+            private readonly Action<T> _use;
+            public EmittedHandler(Action<T> use) { _use = use; }
+            public void Give(EmittedShapeBase shape) => _use((T)shape);
+            public static EmittedShapeBase Unbox(object value) => (T)value;
+            public EmittedShapeBase Same(object value)
+            {
+                static TOut Cast<TOut>(object held) => (TOut)held;
+                return Cast<EmittedShapeBase>(value);
+            }
+        }
+
+        public sealed class EmittedMaybe<T> where T : EmittedShapeBase?
+        {
+            private readonly T _shape;
+            public EmittedMaybe(T shape) { _shape = shape; }
+            public int Area() => _shape?.Area ?? 0;
+        }
+
+        public sealed class EmittedOwner<T> where T : EmittedShapeBase
+        {
+            public EmittedShapeBase Keep(object value) => (T)value;
+
+            public sealed class Held
+            {
+                public EmittedShapeBase Unwrap(object value) => (T)value;
+            }
+        }
+
         public sealed class EmittedPointer
         {
             public List<string> Members { get; } = new();
@@ -571,7 +615,7 @@ public class SharedComponentTranspilationTests
     [
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
-        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedPointer", "EmittedArena",
+        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedShapeBase", "EmittedMeasured", "EmittedTagged", "EmittedHandler", "EmittedMaybe", "EmittedOwner", "EmittedOwner$Held", "EmittedPointer", "EmittedArena",
         "ArenaProbe", "ArenaMember", "HoldThenDrag", "FactoryTypeChange",
     ];
 

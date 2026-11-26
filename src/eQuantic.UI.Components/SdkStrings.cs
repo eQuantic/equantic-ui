@@ -159,6 +159,15 @@ public static class SdkStrings
     /// <summary>The calendar's step-forward affordance.</summary>
     public static string NextMonth => SdkResources.NextMonth;
 
+    // Pagination: the steps either side of the page list, and how a page announces itself (#1874).
+    public static string PreviousPage => SdkResources.PreviousPage;
+    public static string NextPage => SdkResources.NextPage;
+
+    /// <summary>A page's accessible name: "Page 3". The culture is named, as <see cref="LineNumbered"/>
+    /// says why.</summary>
+    public static string PageNumbered(int page) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.PageNumbered, page);
+
     /// <summary>What today's cell is called beyond its date — the ring is paint, this is the word.</summary>
     public static string Today => SdkResources.Today;
 
