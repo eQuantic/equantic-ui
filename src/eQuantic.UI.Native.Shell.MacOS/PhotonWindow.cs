@@ -321,7 +321,7 @@ public sealed class PhotonWindow
                 host.Resize(_currentWidth, _currentHeight);
             }
             // A due frame is the caret's next blink transition — two a second, not every vsync.
-            if (host.NeedsRender || host.IsFrameDue((float)clock.Elapsed.TotalMilliseconds)) Present();
+            if (host.WantsFrame((float)clock.Elapsed.TotalMilliseconds)) Present();
         }
 
         // A TIMER in the common modes, because that is what still fires while AppKit is tracking a
@@ -362,7 +362,7 @@ public sealed class PhotonWindow
             // Self-test presents EVERY cycle (a static tree renders on demand only and would
             // otherwise idle forever short of maxFrames).
             var forced = maxFrames > 0;
-            var idle = !host.NeedsRender && !forced;
+            var idle = !host.WantsFrame((float)clock.Elapsed.TotalMilliseconds) && !forced;
             var until = idle ? Send(nsDate, Sel("dateWithTimeIntervalSinceNow:"), 0.05) : distantPast;
             while (true)
             {
@@ -389,8 +389,7 @@ public sealed class PhotonWindow
                 host.Resize(newW, newH);
             }
 
-            if (host.NeedsRender || forced
-                || host.IsFrameDue((float)clock.Elapsed.TotalMilliseconds)) Present();
+            if (forced || host.WantsFrame((float)clock.Elapsed.TotalMilliseconds)) Present();
 
             if (maxFrames > 0 && FramesPresented >= maxFrames)
             {
@@ -491,48 +490,51 @@ public sealed class PhotonWindow
         var location = SendPoint(e, Sel("locationInWindow"));
         var x = (float)location.X;
         var y = _currentHeight - (float)location.Y;
+        // When AppKit saw the event, seconds since the boot on a monotonic clock, as the milliseconds a pointer event
+        // carries (#1563): a recognizer measures a velocity by the difference of two of them.
+        var timeMs = SendDouble(e, Sel("timestamp")) * 1000;
 
         switch (type)
         {
             case EventTypeRightMouseDown:
                 // A secondary click asks for the menu of what it lands on (#1531); where nothing answers, AppKit's
                 // own handling of the event goes on as before.
-                host.ContextRequest(x, y);
+                host.ContextRequest(x, y, timeMs: timeMs);
                 break;
             case EventTypeLeftMouseDown:
                 var modifiers = MacKeys.ModifiersOf(SendULong(e, Sel("modifierFlags")));
                 // A Control-click is a Mac's secondary click (#1531). Answered, the release that follows it is the
                 // menu's, not a press's; answered by nothing, it presses as it always did.
                 if (modifiers == KeyModifiers.Control
-                    && host.ContextRequest(x, y, buttons: PointerButtons.Primary, modifiers: KeyModifiers.Control))
+                    && host.ContextRequest(x, y, buttons: PointerButtons.Primary, modifiers: KeyModifiers.Control, timeMs: timeMs))
                 {
                     _contextClickHeld = true;
                     break;
                 }
                 // Shift+click extends a sheet/text selection, ⌥ and a press adds a caret, ⌘ and a press follows a
                 // link: the same bits OnKeyDown reads, all four of them.
-                host.PressDown(x, y, (int)SendULong(e, Sel("clickCount")), modifiers);
+                host.PressDown(x, y, (int)SendULong(e, Sel("clickCount")), modifiers, timeMs: timeMs);
                 break;
             case EventTypeLeftMouseUp:
                 if (_contextClickHeld)
                 {
                     // The release is the menu's, not a press's: the host hears the button let go, and nothing pressed.
                     _contextClickHeld = false;
-                    host.PointerCancel();
+                    host.PointerCancel(timeMs: timeMs);
                     break;
                 }
-                host.PressUp(x, y);
+                host.PressUp(x, y, timeMs: timeMs);
                 break;
             case EventTypeMouseMoved:
             case EventTypeLeftMouseDragged:
-                host.PointerMove(x, y, modifiers: MacKeys.ModifiersOf(SendULong(e, Sel("modifierFlags"))));
+                host.PointerMove(x, y, modifiers: MacKeys.ModifiersOf(SendULong(e, Sel("modifierFlags"))), timeMs: timeMs);
                 _pointerAt = (x, y);
                 Cursors.Apply(_cursorShown = host.CursorAt(x, y));
                 break;
             case EventTypeScrollWheel:
             {
                 var (across, down, stepped) = MacWheel.Read(e);
-                host.ScrollBy(x, y, across, down, stepped);
+                host.ScrollBy(x, y, across, down, stepped, timeMs: timeMs);
                 break;
             }
         }

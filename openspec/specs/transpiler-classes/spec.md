@@ -586,7 +586,14 @@ was handed a scan of the app. A parameter an alternate constructor may leave mis
 value a derived type evaluates before its base's constructor, and a primary constructor's parameter that defaults to
 null SHALL each hold the type C# declares for it. A generic class, a plain one, a record, a struct or a
 component, SHALL declare its type parameters in TypeScript and none in plain JavaScript, and a record's members
-SHALL name its own type by its closure.
+SHALL name its own type by its closure. A type parameter constrained to a class that is not generic and has a twin
+SHALL be declared `T extends` that class, the class imported, a nullable one (`ShapeBase?`) by its class, in TypeScript
+only; any other constraint, an interface's included, since
+an interface has no twin, SHALL leave it unconstrained. A cast
+to a type parameter SHALL assert it in TypeScript, `(value as T)`, checking nothing, as a downcast checks nothing,
+where TypeScript has the parameter in scope: a method's own, and a class's in an instance member of that class. A
+local function's own, a class's in a static member, which TypeScript forbids to read it, and a class's in a type nested
+in it, which is a module of its own, SHALL write the value alone, as before.
 
 #### Scenario: A base calls its abstract members
 
@@ -631,6 +638,36 @@ SHALL name its own type by its closure.
 
 - **WHEN** the same classes and a generic component are compiled with type annotations off
 - **THEN** no class header carries a type parameter list, and the modules parse
+
+#### Scenario: A type parameter constrained to a class
+
+- **WHEN** `class Measured<T> where T : ShapeBase` reads `_shape.Area` on a `T`, and `record Tagged<T>(T Shape, string Tag)
+  where T : ShapeBase` reads `Shape.Area`
+- **THEN** their modules declare `class Measured<T extends ShapeBase>` and `class Tagged<T extends ShapeBase>`, import
+  `ShapeBase`, and `tsc` takes the reads; it refused them with TS2339
+
+#### Scenario: A cast to a type parameter
+
+- **WHEN** `class Handler<T> where T : ShapeBase` holds an `Action<T>` and calls it with `(T)shape` for a `ShapeBase`
+- **THEN** the twin writes `(shape as T)`, and `tsc` takes the call; it refused it with TS2345
+
+#### Scenario: A cast to a type parameter TypeScript cannot see
+
+- **WHEN** the same class's static member returns `(T)value`, and an instance member's local function
+  `static TOut Cast<TOut>(object held) => (TOut)held` casts to its own parameter
+- **THEN** both write the value alone, and `tsc` takes them; asserted, it refused them with TS2302 and TS2304
+
+#### Scenario: A nullable class constraint and a type nested in a generic one
+
+- **WHEN** `class Maybe<T> where T : ShapeBase?` reads `_shape?.Area`, and `class Owner<T>` declares a nested `class Held`
+  whose instance member returns `(T)value`
+- **THEN** `Maybe`'s header is `Maybe<T extends ShapeBase>` and imports `ShapeBase`, `Held` writes the value alone, plain
+  JavaScript imports no class only a constraint names, and `tsc` takes them
+
+#### Scenario: A constraint with no twin
+
+- **WHEN** a type parameter is constrained to an interface, to `struct`, `class`, `new()` or `notnull`
+- **THEN** its class header declares it unconstrained, as before
 
 ### Requirement: A component's store a property guards with field starts as C# starts it
 
@@ -905,3 +942,22 @@ builds whichever way its arguments are written.
 - **WHEN** a component is built with `new Middle("a", null) { Tone = "warm" }`, for
   `Middle(string before, IClock? clock, int after = 3)`
 - **THEN** it reads `Before` `a`, `After` `3` and `Tone` `warm`, as in .NET
+
+### Requirement: A runtime library's generic, built by an app, keeps its type arguments
+
+A closed construction of a generic class, record or struct the runtime library twins SHALL be marked with its
+type arguments wherever an app writes it, as one the app's source declares is, though the app reads that
+generic from metadata. A generic the runtime maps to JavaScript's own types, and a construction whose type
+arguments are known only at run time, SHALL stay unmarked.
+
+#### Scenario: A factory of the framework's over an app's type
+
+- **WHEN** an app builds `new GestureRecognizerFactoryWithHandlers<HoldThenDrag>(…)`, the factory read from
+  the framework's assembly
+- **THEN** the value is marked with `HoldThenDrag`, so its runtime type is not that of a factory over another
+  type, as in .NET
+
+#### Scenario: A collection of the BCL's
+
+- **WHEN** an app builds `new List<int>()`
+- **THEN** it crosses as before, a JavaScript array with no mark
