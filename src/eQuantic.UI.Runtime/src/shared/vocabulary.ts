@@ -2028,6 +2028,8 @@ export class IconGlyph {
   style: string;
   viewBox: string;
   strokeWidth: number;
+  /** The fill's rule: even-odd where true, nonzero otherwise, as SVG's `fill-rule` (#1210). */
+  evenOdd: boolean;
 
   constructor(
     name: string,
@@ -2035,6 +2037,7 @@ export class IconGlyph {
     style = 'fill',
     viewBox = '0 0 24 24',
     strokeWidth = 2,
+    evenOdd = false,
     config?: EqConfig,
   ) {
     this.name = name;
@@ -2042,6 +2045,7 @@ export class IconGlyph {
     this.style = style;
     this.viewBox = viewBox;
     this.strokeWidth = strokeWidth;
+    this.evenOdd = evenOdd;
     if (config) Object.assign(this, config);
   }
 

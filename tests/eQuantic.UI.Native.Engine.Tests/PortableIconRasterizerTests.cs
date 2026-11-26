@@ -16,8 +16,8 @@ public class PortableIconRasterizerTests
     private static readonly PortableIconRasterizer Rasterizer = new();
 
     private static TextRaster Raster(string path, string viewBox, float width, float height,
-        IconGlyphStyle style = IconGlyphStyle.Fill, float strokeWidth = 1) =>
-        Rasterizer.Rasterize(new IconGlyph("", path, style, viewBox, strokeWidth), width, height, 1)!;
+        IconGlyphStyle style = IconGlyphStyle.Fill, float strokeWidth = 1, bool evenOdd = false) =>
+        Rasterizer.Rasterize(new IconGlyph("", path, style, viewBox, strokeWidth, evenOdd), width, height, 1)!;
 
     private static int At(TextRaster raster, int x, int y) => raster.Alpha[y * raster.Width + x];
 
@@ -52,6 +52,31 @@ public class PortableIconRasterizerTests
 
         At(raster, 1, 1).Should().Be(255);
         At(raster, 10, 10).Should().Be(0);
+    }
+
+    /// <summary>The even-odd rule (#1210): a hole turned the SAME way as its outline, which nonzero fills, is left
+    /// empty, as SVG's <c>fill-rule="evenodd"</c> leaves it.</summary>
+    [Fact]
+    public void AHoleTurnedTheSameWay_IsLeftEmpty_ByTheEvenOddRule_AndFilledByNonzero()
+    {
+        const string ring = "M0 0H20V20H0Z M5 5H15V15H5Z";
+
+        var evenOdd = Raster(ring, "0 0 20 20", 20, 20, evenOdd: true);
+        At(evenOdd, 1, 1).Should().Be(255, "inside the outline alone");
+        At(evenOdd, 10, 10).Should().Be(0, "inside both outlines, an even count");
+
+        var nonzero = Raster(ring, "0 0 20 20", 20, 20);
+        At(nonzero, 10, 10).Should().Be(255, "nonzero counts the same turn twice and fills it");
+    }
+
+    /// <summary>A stroke is a union whatever the glyph's rule: the rule is the fill's.</summary>
+    [Fact]
+    public void AStrokeIgnoresTheEvenOddRule()
+    {
+        // Two strokes crossing: where they overlap their outlines' coverage adds, which even-odd would cancel.
+        var raster = Raster("M0 10H20 M10 0V20", "0 0 20 20", 20, 20, IconGlyphStyle.Stroke, 4, evenOdd: true);
+
+        At(raster, 10, 10).Should().Be(255, "the crossing is covered, as a stroke's union is");
     }
 
     [Fact]

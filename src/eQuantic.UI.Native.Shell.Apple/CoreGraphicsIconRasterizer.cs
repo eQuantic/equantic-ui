@@ -8,9 +8,9 @@ namespace eQuantic.UI.Native.Shell.Apple;
 /// The W4 icon rasterizer on macOS — CoreGraphics only (the zero third-party rule): the shared
 /// <see cref="VectorPath"/> parser lowers the glyph's path data to moves/lines/cubics, CG fills
 /// (nonzero) or strokes (round caps/joins, the icon-pack convention) into an A8 coverage bitmap at
-/// device scale. The CTM flips CG's bottom-up frame and scales viewBox units → pixels, so stroke
-/// widths stay in glyph units. v1 fences: single fill rule (nonzero — IconGlyph carries none),
-/// per-glyph raster (no atlas packing yet).
+/// device scale, a fill by the glyph's own rule (even-odd or nonzero, #1210). The CTM flips CG's
+/// bottom-up frame and scales viewBox units → pixels, so stroke widths stay in glyph units. v1
+/// fence: per-glyph raster (no atlas packing yet).
 /// </summary>
 public sealed partial class CoreGraphicsIconRasterizer : IIconRasterizer
 {
@@ -50,6 +50,9 @@ public sealed partial class CoreGraphicsIconRasterizer : IIconRasterizer
 
     [LibraryImport(CoreGraphics)]
     private static partial void CGContextFillPath(IntPtr context);
+
+    [LibraryImport(CoreGraphics)]
+    private static partial void CGContextEOFillPath(IntPtr context);
 
     [LibraryImport(CoreGraphics)]
     private static partial void CGContextStrokePath(IntPtr context);
@@ -119,6 +122,10 @@ public sealed partial class CoreGraphicsIconRasterizer : IIconRasterizer
                 CGContextSetLineCap(context, 1);  // round — the icon-pack convention
                 CGContextSetLineJoin(context, 1); // round
                 CGContextStrokePath(context);
+            }
+            else if (glyph.EvenOdd)
+            {
+                CGContextEOFillPath(context);
             }
             else
             {
