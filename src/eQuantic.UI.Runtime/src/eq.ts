@@ -266,7 +266,7 @@ import {
   tryParse as enumTryParse,
   zero as enumZero,
 } from './utils/enums';
-import { closing, closingLike, sameClosure } from './utils/closures';
+import { closing, closingLike, sameClosure, statics } from './utils/closures';
 import {
   throwIfEqual,
   throwIfGreaterThan,
@@ -408,6 +408,8 @@ export const $eq = {
   /** A generic record's closed type, by value, and the comparison of two — see `closing`. */
   closing,
   closingLike,
+  /** A static generic class's statics for one closed type — see `statics`. */
+  statics,
   sameClosure,
   /** A twin's JSON, a property's store under the property's name — see utils/twin-json. */
   json: twinJson,
