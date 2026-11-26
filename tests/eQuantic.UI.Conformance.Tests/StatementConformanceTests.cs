@@ -81,6 +81,8 @@ public class StatementConformanceTests
     [InlineData("var log = new List<string>(); try { using var r = new Res(log, \"r\"); throw new Exception(); } catch { } return string.Join(\",\", log);")] // "r" — disposed when the body throws
     [InlineData("var log = new List<string>(); { using var a = new Res(log, \"a\"); using var b = new Res(log, \"b\"); log.Add(\"body\"); } return string.Join(\",\", log);")] // "body,b,a" — reverse order
     [InlineData("var log = new List<string>(); { using Res a = new(log, \"a\"), b = new(log, \"b\"); } return string.Join(\",\", log);")] // "b,a" — one declaration, two resources
+    [InlineData("var log = new List<string>(); using (new Res(log, \"a\")) { log.Add(\"body\"); } return string.Join(\",\", log);")] // "body,a" — a resource with no name
+    [InlineData("var log = new List<string>(); using (new Res(log, \"a\")) using (new Res(log, \"b\")) { log.Add(\"body\"); } return string.Join(\",\", log);")] // "body,b,a" — two, nested, each disposing its own
     public void Using_DisposesAnInSourceType(string statements) =>
         ConformanceRunner.AssertStatementsSameAsDotNet(statements,
             "public record struct Res(List<string> Log, string Name) : IDisposable { public void Dispose() => Log.Add(Name); }");

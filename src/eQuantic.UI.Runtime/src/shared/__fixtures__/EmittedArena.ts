@@ -21,7 +21,7 @@ export class EmittedArena {
     }
 
     find(pointer: number) {
-        let found: any;
+        let found!: EmittedPointer | null;
         const $r = (() => {
             let arena!: EmittedPointer; 
             found = (($0) => ($0.has(pointer) ? ((arena = $0.get(pointer)), true) : ((arena = null!), false)))(this._arenas) ? arena : null;

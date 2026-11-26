@@ -33,12 +33,14 @@ public class OutParameterTests
     }
 
     /// <summary>
-    /// An out is declared <c>any</c> in TypeScript, as every variable an arrow binds is: the body assigns it
-    /// inside the arrow it runs in, TypeScript cannot follow that, and an out assigned an empty list read
-    /// as an implicit <c>any[]</c>, which fails the runtime's type check (TS7005, #1034).
+    /// An out is declared in TypeScript by its type where the type has one to say, as an out var is (#1865), and
+    /// <c>any</c> otherwise, definitely assigned either way: the body assigns it inside the arrow it runs in, which
+    /// TypeScript cannot follow. Left untyped, an out assigned an empty list read as an implicit <c>any[]</c>, which
+    /// fails the runtime's type check (TS7005, #1034), and declared <c>any</c>, a list walked through it inferred
+    /// <c>unknown</c> elements (TS18046).
     /// </summary>
     [Fact]
-    public void AnOutInTypeScript_IsDeclaredAny_SoAnEmptyListTypeChecks()
+    public void AnOutInTypeScript_IsDeclaredByItsType_SoAnEmptyListTypeChecks()
     {
         var js = Convert("""
             public bool Take(out List<int> taken, out int count)
@@ -49,7 +51,7 @@ public class OutParameterTests
             }
             """);
 
-        js.Should().Contain("let taken: any, count: any;");
+        js.Should().Contain("let taken!: number[], count: any;");
     }
 
     [Fact]
