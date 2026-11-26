@@ -56,6 +56,7 @@ function onPointerDown(down: PointerEvent): void {
   };
 
   followPointer(down, {
+    element: sheet,
     arms: (ev) => travelled(ev) > slop,
     armed: () => {
       sheet.style.transition = 'none';
@@ -71,5 +72,5 @@ function onPointerDown(down: PointerEvent): void {
       glideBack();
     },
     cancel: glideBack,
-  });
+  }, delegate.guards);
 }

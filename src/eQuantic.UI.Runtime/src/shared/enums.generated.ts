@@ -110,6 +110,10 @@ export type FontWeightValue =
   'thin' | 'extraLight' | 'light' | 'regular' | 'medium' | 'semiBold' | 'bold' | 'extraBold'
   | 'black';
 
+export type GestureArenaPhaseValue = 'open' | 'closed' | 'decided';
+
+export type GestureDispositionValue = 'accepted' | 'rejected';
+
 export type GradientDirectionValue = 'toRight' | 'toBottom' | 'toBottomRight' | 'toBottomLeft';
 
 export type HitTestBehaviorValue = 'deferToChild' | 'opaque' | 'translucent';
@@ -260,6 +264,8 @@ export type {
     DragAxisValue as $DragAxisValue,
     FileSaveOutcomeValue as $FileSaveOutcomeValue,
     FontWeightValue as $FontWeightValue,
+    GestureArenaPhaseValue as $GestureArenaPhaseValue,
+    GestureDispositionValue as $GestureDispositionValue,
     GradientDirectionValue as $GradientDirectionValue,
     HitTestBehaviorValue as $HitTestBehaviorValue,
     HydratedMemberKindValue as $HydratedMemberKindValue,

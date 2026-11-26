@@ -259,9 +259,9 @@ export class CodeDiff extends StatefulComponent {
         }
         let bar = new Row(8, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center' });
         let title = this.modifiedCaption ?? this.originalCaption;
-        bar.add(new Flexible(new Text(title ?? '', 'label', theme.textSecondary, 1, 'start', false, false, null, 0, { mono: true })));
-        bar.add(new Text(`+${$eq.text.format(addedLines, null, undefined, undefined, 'int32')}`, 'labelSmall', theme.colors('success').base, 1, 'start', false, false, null, 0, { tabular: true }));
-        bar.add(new Text(`−${$eq.text.format(removedLines, null, undefined, undefined, 'int32')}`, 'labelSmall', theme.colors('destructive').base, 1, 'start', false, false, null, 0, { tabular: true }));
+        bar.add(new Flexible(new Text(title ?? '', 'label', theme.textSecondary, 1, null, false, false, null, 0, { mono: true })));
+        bar.add(new Text(`+${$eq.text.format(addedLines, null, undefined, undefined, 'int32')}`, 'labelSmall', theme.colors('success').base, 1, null, false, false, null, 0, { tabular: true }));
+        bar.add(new Text(`−${$eq.text.format(removedLines, null, undefined, undefined, 'int32')}`, 'labelSmall', theme.colors('destructive').base, 1, null, false, false, null, 0, { tabular: true }));
         let none = $eq.collections.count(source.changes) === 0;
         bar.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronUp')), SdkStrings.previousChange, 'standard', 'medium', null, null, { size: 'small', disabled: none, onPressed: () => this.stepTo(false) }));
         bar.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronDown')), SdkStrings.nextChange, 'standard', 'medium', null, null, { size: 'small', disabled: none, onPressed: () => this.stepTo(true) }));

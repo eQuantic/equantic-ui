@@ -6,7 +6,7 @@ namespace eQuantic.UI.Server;
 /// The <see cref="UploadedFile"/> a Server Action receives: every member answered from the server's
 /// record, and the content read from where the server keeps it.
 /// </summary>
-internal sealed class ReceivedUploadedFile(UploadRecord record, UploadStore store)
+internal sealed class ReceivedUploadedFile(StoredUpload record, UploadStore store)
     : UploadedFile(record.Id, record.Name, record.MimeType, record.Size, record.Policy)
 {
     public override Task<Stream> OpenRead(CancellationToken cancellationToken = default) =>

@@ -36,6 +36,7 @@ export {
   DropTarget,
   ContextTarget,
   Listener,
+  RawGestureDetector,
   Sortable,
   SortableItem,
   Flexible,
@@ -81,6 +82,7 @@ export {
   SafeArea,
   Pinned,
   AdaptiveNode,
+  LayoutBuilder,
   Vector,
   Canvas,
   CanvasPointer,
@@ -107,6 +109,8 @@ export {
   VariantColors,
 } from './value-types';
 export { ComponentContext } from './photon-context';
+export { ContentStyle } from './content-style';
+
 export { DataPalette, DivergingScale, StatusScale } from './data-palette';
 export { SheetTheme } from './sheet-theme';
 export {
@@ -140,6 +144,7 @@ export { RouteValues } from './route-values';
 // Same promise, same failure shape: a page writing BoxStyle.Transform / .Pattern / .Glow names
 // these, and eqc routes every Primitives name here.
 export {
+  BoxConstraints,
   ContextRequest,
   PointerEvent,
   FaceName,

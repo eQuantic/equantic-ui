@@ -27,7 +27,7 @@ export class Tabs extends StatelessComponent {
         for (let i = 0; i < $eq.collections.count(this.labels); i = i + 1 | 0) {
             let isActive = i === this.selected;
             let index = i;
-            let label = new Text($eq.collections.item(this.labels, i), 'caption', isActive ? primary.base : slot?.inactiveColor ?? theme.textMuted, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(slot?.tabLabelSize ?? 14, slot?.tabLabelLineHeight ?? 18, isActive ? slot?.tabSelectedLabelWeight ?? 'bold' : slot?.tabLabelWeight ?? 'semiBold', slot?.tabLabelTracking ?? Math.fround(0.1), Math.fround(1.3)) });
+            let label = new Text($eq.collections.item(this.labels, i), 'caption', isActive ? primary.base : slot?.inactiveColor ?? theme.textMuted, 1, null, false, false, null, 0, { styleOverride: new TypeStyle(slot?.tabLabelSize ?? 14, slot?.tabLabelLineHeight ?? 18, isActive ? slot?.tabSelectedLabelWeight ?? 'bold' : slot?.tabLabelWeight ?? 'semiBold', slot?.tabLabelTracking ?? Math.fround(0.1), Math.fround(1.3)) });
             let labelRow = new Row(0, 'start', 'center', false, null, null, { main: 'center', height: SizeValue.fill });
             labelRow.add(label);
             let cell = new Column(0, 'start', 'stretch', false, null, null, { height: SizeValue.fill });

@@ -12,7 +12,8 @@ import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from '.
 import type { NodeKind } from './node-kinds.generated';
 import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue, TextDirectionValue, TextEntryKindValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
-import type { AppTheme, ContextRequest, PointerEvent } from './value-types';
+import type { AppTheme, BoxConstraints, ContextRequest, PointerEvent } from './value-types';
+import type { GestureRecognizerFactory } from './components/GestureRecognizerFactory';
 import { iconPaths } from './icons.generated';
 import { exception } from '../utils/exceptions';
 import type {
@@ -49,6 +50,7 @@ import {
   WebContent,
 } from './value-types';
 import { Curve, Motion } from './design-system.generated';
+import type { ContentStyle } from './content-style';
 import type { MotionSpec } from './primitive-values';
 import { hashesByValue } from '../utils/hash';
 import type { SortableTheme } from './theme-slots';
@@ -96,6 +98,18 @@ export abstract class VisualNode {
    * system said so: its own `anchor` is the NODE a popover sits against.
    */
   bookmark?: string | null;
+  /**
+   * C# `implicit operator VisualNode(string)` (#1577): a string where a node is taken IS the Text of it,
+   * naming nothing, so it is drawn in the look the box around it states. eqc calls this wherever the
+   * conversion applies, as it calls `IconGlyph.fromIcons`.
+   */
+  static fromString(text: string): VisualNode;
+  /** A null string is no node, never a Text of nothing, as on the C# side. */
+  static fromString(text: string | null | undefined): VisualNode | null;
+  static fromString(text: string | null | undefined): VisualNode | null {
+    return text == null ? null : new Text(text);
+  }
+
   /** Spec S1 `align-self` — overrides the parent flex container's cross alignment for this child. */
   alignSelf?: CrossAlignValue | null;
   /** Spec S4 — how many grid COLUMNS this child spans. */
@@ -228,6 +242,7 @@ interface BoxStyleConfig {
   background?: ColorTokenValue | null;
   /** The content color the box hands its descendants (C# `BoxStyle.Foreground`, #614). */
   foreground?: ColorTokenValue | null;
+  content?: ContentStyle | null;
   cornerRadius?: CornerRadii;
   borderWidth?: number;
   borderColor?: ColorTokenValue;
@@ -270,6 +285,8 @@ export class BoxStyle {
   background?: ColorTokenValue | null;
   /** What the text and icons inside that name no colour inherit (C# `BoxStyle.Foreground`, #614). */
   foreground?: ColorTokenValue | null;
+  /** What the text and icons inside that name no role, line limit, alignment or size take (C# `BoxStyle.Content`, #1577). */
+  content?: ContentStyle | null;
   cornerRadius: CornerRadii = new CornerRadii();
   borderWidth = 0;
   borderColor?: ColorTokenValue;
@@ -556,6 +573,22 @@ export class AdaptiveNode extends VisualNode {
   }
 }
 
+/**
+ * Mirror of the C# `LayoutBuilder` (#1555): a child built for the room its box has. The box fills on
+ * both axes; the browser measures the room it is given after the pass and hands it to `builder`.
+ */
+export class LayoutBuilder extends VisualNode {
+  readonly nodeKind = 'layoutBuilder';
+
+  constructor(
+    readonly builder: (constraints: BoxConstraints) => VisualNode,
+    config?: EqConfig,
+  ) {
+    super();
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `GridTrack` statics. */
 export class GridTrack {
   /** The narrowest an auto-fill track may be, in dp; 0 for every other track. */
@@ -746,12 +779,15 @@ interface TextConfig extends VisualNodeConfig {
 export class Text extends VisualNode {
   readonly nodeKind = 'text';
   content: string;
-  role: string;
+  /** Null takes the role of the box around it, and `bodyL` where none states one (C# `Text.Role`, #1577). */
+  role: string | null;
   color: ColorTokenValue | null;
-  maxLines: number;
+  /** Null takes the box's line limit, and none where none states one. */
+  maxLines: number | null;
   styleOverride: TypeStyleValue | null = null;
   gradient: LinearGradient | null = null;
-  align: string = 'start';
+  /** Null takes the box's alignment, and the start where none states one. */
+  align: string | null = null;
   mono = false;
   /** The SLANTED cut for the whole paragraph (C# `Text.Italic`). */
   italic = false;
@@ -771,10 +807,10 @@ export class Text extends VisualNode {
    */
   constructor(
     content: string,
-    role = 'bodyL',
+    role: string | null = null,
     color: ColorTokenValue | null = null,
-    maxLines = 0,
-    align?: string | TextConfig,
+    maxLines: number | null = null,
+    align?: string | null | TextConfig,
     mono?: boolean,
     tabular?: boolean,
     styleOverride?: TypeStyleValue | null,
@@ -1423,6 +1459,24 @@ export const KeyModifiers = {
   control: 8,
 } as const;
 
+/**
+ * Mirror of the C# `RawGestureDetector` (#1563): gestures of the app's own over any subtree, each factory making a
+ * recognizer the detector keeps across rebuilds; `behavior` says where it is hit, as a listener's does.
+ */
+export class RawGestureDetector extends VisualNode {
+  readonly nodeKind = 'rawGestureDetector';
+  child: VisualChild;
+  gestures: readonly GestureRecognizerFactory[];
+  behavior: HitTestBehaviorValue = 'deferToChild';
+
+  constructor(child: VisualChild, gestures: readonly GestureRecognizerFactory[], config?: EqConfig) {
+    super();
+    this.child = child;
+    this.gestures = gestures;
+    if (config) Object.assign(this, config);
+  }
+}
+
 /** Mirror of the C# `[Flags] PointerButtons` (#1562): Flutter's constants, which are also the DOM's `buttons`. */
 export const PointerButtons = {
   none: 0,
@@ -2021,19 +2075,20 @@ export class IconGlyph {
 export class Icon extends VisualNode {
   readonly nodeKind = 'icon';
   glyph: IconGlyph;
-  size: number;
+  /** Null takes the box's `content.iconSize`, and 24 where none states one (C# `Icon.Size`, #1577). */
+  size: number | null;
   color: ColorTokenValue | null;
   label: string | null;
 
   constructor(
     glyph: IconGlyph,
-    size = 24,
+    size: number | null = null,
     color: ColorTokenValue | null = null,
     label: string | null = null,
     config?: EqConfig,
   ) {
     super();
-    if (size !== 16 && size !== 20 && size !== 24 && size !== 32) {
+    if (size !== null && size !== 16 && size !== 20 && size !== 24 && size !== 32) {
       throw new RangeError(`Icon size ${size} is not on the §07 whitelist (16/20/24/32).`);
     }
     // A curated glyph arrives through its conversion (`IconGlyph.fromIcons`), a pack glyph as the

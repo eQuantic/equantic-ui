@@ -29,7 +29,7 @@ public class DoWhileStatementStrategy : IStatementStrategy
         var body = context.Converter.ConvertStatementIr(doStmt.Statement);
         if (declared.Count == 0) return JsStatement.DoWhile(body, condition);
 
-        var names = ExpressionVariableScanner.List(declared, context.TypeAnnotations);
+        var names = ExpressionVariableScanner.List(declared, [doStmt.Condition], context);
         var again = JsExprWriter.Write(JsExpr.Binary(JsExpr.Identifier("$again"), "=", condition));
         return JsStatement.Headed($"for (let {names}, $again = true; $again; {again})", body);
     }

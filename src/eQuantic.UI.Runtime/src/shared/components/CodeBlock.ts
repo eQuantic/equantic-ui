@@ -245,7 +245,7 @@ export class CodeBlock extends StatelessComponent {
         let corner = new Row(8, 'start', 'center', false, null, null, { cross: 'center' });
         let text: any; 
         if ((text = caption) != null) {
-            corner.add(new Text(text, 'labelSmall', inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true }));
+            corner.add(new Text(text, 'labelSmall', inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, null, false, false, null, 0, { mono: true }));
         }
         let copy: any; 
         if ((copy = onCopy) != null) {
@@ -279,7 +279,7 @@ export class CodeBlock extends StatelessComponent {
         }
         let text: any; 
         if ((text = label) != null) {
-            numbers.add(new Text(text, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, tabular: true, styleOverride: $eq.withPatch(metrics.style, { weight: 'regular' }) }));
+            numbers.add(new Text(text, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, null, false, false, null, 0, { mono: true, tabular: true, styleOverride: $eq.withPatch(metrics.style, { weight: 'regular' }) }));
         }
         let cell = new Box(new BoxStyle({ width: SizeValue.fixed(metrics.gutterWidth), height: SizeValue.fixed(metrics.lineHeight), padding: new EdgeInsets(0, 0, 12, 0), background: !isLine ? this.fillerColor : this.activeLines.includes(index) ? this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle : null }), numbers);
         if ($eq.collections.count(this.folds) === 0 && this.onFoldPressed == null) {
@@ -359,7 +359,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     muted(text: string, metrics: CodeBlock$CodeMetrics, theme: any) {
-        return new Text(text, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style });
+        return new Text(text, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, null, false, false, null, 0, { mono: true, styleOverride: metrics.style });
     }
 
     lineRow(document: CodeDocument, highlighter: CodeHighlighter, cells: CodeLineCells, index: number, metrics: CodeBlock$CodeMetrics, ink: ColorToken, theme: any, selectable: boolean) {
@@ -555,7 +555,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     static run(content: string, color: ColorToken, style: TypeStyle) {
-        return new Text(content, 'labelSmall', color, 1, 'start', false, false, null, 0, { mono: true, styleOverride: style });
+        return new Text(content, 'labelSmall', color, 1, null, false, false, null, 0, { mono: true, styleOverride: style });
     }
 
     markerFor(line: number) {

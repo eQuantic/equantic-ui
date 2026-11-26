@@ -16,6 +16,10 @@ internal sealed class UploadReservation(UploadStore store, string owner, long si
     /// <summary>The size the creation declared, in bytes.</summary>
     public long Size => size;
 
+    /// <summary>The id of the upload this place is for, once its record is about to be written: a creation
+    /// weighed meanwhile then counts the place and the record as the one upload they are.</summary>
+    public string? Id { get; set; }
+
     /// <summary>
     /// Whether this call takes the place back, for the store to give it back itself in the step that
     /// writes the record: false when it was already given back. Either this or <see cref="Dispose"/> gives

@@ -379,12 +379,35 @@ internal sealed partial class MeasureVisitor
             padding.Bottom + ((sides & BorderSides.Bottom) != 0 ? border : 0));
     }
 
-    private LayoutNode MeasureBox(Box box, LayoutConstraints constraints, LayoutContext ctx, Element? at)
+    /// <summary>
+    /// A box: <paramref name="source"/> laid out with <paramref name="style"/> around
+    /// <paramref name="content"/>, the child at slot 0 of <paramref name="at"/>. A <see cref="Box"/> is
+    /// one, and so is a <see cref="LayoutBuilder"/>, which takes its room as a box that fills and lays
+    /// out the child it built inside it. The child is measured with the box's look laid over the look
+    /// around it (<see cref="BoxStyle.Content"/>, <see cref="ContentStyle.Merge"/>, #1577), and the look
+    /// around it is back after, whatever the child's measurement did.
+    /// </summary>
+    private LayoutNode MeasureBox(VisualNode source, BoxStyle style, VisualNode? content,
+        LayoutConstraints constraints, LayoutContext ctx, Element? at)
+    {
+        var around = _content;
+        _content = ContentStyle.Merge(around, style.Content);
+        try
+        {
+            return MeasureBoxUnderItsLook(source, style, content, constraints, ctx, at);
+        }
+        finally
+        {
+            _content = around;
+        }
+    }
+
+    private LayoutNode MeasureBoxUnderItsLook(VisualNode source, BoxStyle style, VisualNode? content,
+        LayoutConstraints constraints, LayoutContext ctx, Element? at)
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);
         var (stretchW, stretchH) = (constraints.Width.Stretch, constraints.Height.Stretch);
-        var result = ctx.Node(box);
-        var style = box.Style;
+        var result = ctx.Node(source);
 
         // Spec S6, the Size channel: a FIXED width or height that changed glides to its new value
         // under the box's own Transition — measured at the interpolated size, so everything that
@@ -424,7 +447,7 @@ internal sealed partial class MeasureVisitor
             : ResolveForChild(style.Height, selfMaxH)) - insets.Vertical;
 
         LayoutNode? child = null;
-        if (box.Child is not null)
+        if (content is not null)
         {
             // The available space still bounds the child (text has to wrap somewhere), but on an
             // axis this box HUGS there is nothing to fill: say so, and a Fill child measures itself.
@@ -468,7 +491,7 @@ internal sealed partial class MeasureVisitor
             // stops at an inline-block — the same fence the width has always respected.
             var boxStretchH = boxIndetH ? StretchKind.None : StretchKind.Block;
             child = Measure(
-                box.Child,
+                content,
                 constraints.ForChild(MathF.Max(0, childMaxW), MathF.Max(0, childMaxH))
                     .DecidedByContent(boxIndetW, boxIndetH)
                     .Stretched(boxStretchW, boxStretchH),
@@ -503,7 +526,7 @@ internal sealed partial class MeasureVisitor
             // across it, which is what centres a Stepper's reading inside its MinWidth cell.
             result.ReleaseChildren();
             child = Measure(
-                box.Child!,
+                content!,
                 constraints.ForChild(MathF.Max(0, width - insets.Horizontal),
                         MathF.Max(0, height - insets.Vertical))
                     .DecidedByContent(false, clampedIndetH)
@@ -600,6 +623,8 @@ internal sealed partial class MeasureVisitor
         FlexNode flex => (flex.Width.Kind == SizeKind.Fill, flex.Height.Kind == SizeKind.Fill),
         Stack stack => (stack.Width.Kind == SizeKind.Fill, stack.Height.Kind == SizeKind.Fill),
         Drawing drawing => (drawing.Width.Kind == SizeKind.Fill, false),
+        // A builder's box fills on both axes, whatever it built inside it.
+        LayoutBuilder => (true, true),
         SingleChildNode wrapper when wrapper.IsLayoutTransparent() => FillsOf(wrapper.Child),
         _ => (false, false),
     };

@@ -4,8 +4,8 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Native.Components;
 
 /// <summary>
-/// Containers and layout — fourteen words the engine has already resolved into geometry by the time
-/// a screen reader asks. All fourteen descend here, and that is no longer a gap: a modal
+/// Containers and layout — fifteen words the engine has already resolved into geometry by the time
+/// a screen reader asks. All fifteen descend here, and that is no longer a gap: a modal
 /// <see cref="Overlay"/> DOES announce itself now (#187), as a dialog since #501, at its overlay
 /// ROOT rather than at the placeholder this file sees — <see cref="SemanticsVisitor.AnnounceOverlay"/>,
 /// called by <c>SemanticsTree.Collect</c>. The arm below carries the reason, because "it descends"
@@ -40,14 +40,35 @@ internal sealed partial class SemanticsVisitor
         return Consumed;
     }
 
-    /// <inheritdoc cref="PureLayout"/>
-    public bool Visit(Box node, LayoutNode laidOut) => PureLayout;
+    /// <summary>
+    /// Pure layout, which says nothing of its own; its children are walked HERE rather than by the
+    /// tree's descent, because the look the box states (<see cref="BoxStyle.Content"/>, #1577) is in
+    /// effect for them and only for them, as on the paint walk: a linked run's place in a paragraph
+    /// follows the alignment the paragraph takes from it.
+    /// </summary>
+    public bool Visit(Box node, LayoutNode laidOut)
+    {
+        var around = _content;
+        _content = ContentStyle.Merge(around, node.Style.Content);
+        try
+        {
+            foreach (var child in laidOut) SemanticsTree.Walk(child, this);
+        }
+        finally
+        {
+            _content = around;
+        }
+        return Consumed;
+    }
 
     /// <inheritdoc cref="PureLayout"/>
     public bool Visit(Column node, LayoutNode laidOut) => PureLayout;
 
     /// <inheritdoc cref="PureLayout"/>
     public bool Visit(Flexible node, LayoutNode laidOut) => PureLayout;
+
+    /// <inheritdoc cref="PureLayout"/>
+    public bool Visit(LayoutBuilder node, LayoutNode laidOut) => PureLayout;
 
     /// <inheritdoc cref="PureLayout"/>
     public bool Visit(Grid node, LayoutNode laidOut) => PureLayout;

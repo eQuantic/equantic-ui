@@ -24,11 +24,14 @@ import { floatText, hex, modifiersOf, num, tokenValue } from './css-values';
 export { num, tokenValue };
 import { DomCanvasPainter } from './canvas-painter';
 import { declareCanvas } from './canvas-surface';
+import { declareLayoutBuilder } from './layout-builders';
 import { installDraggableController } from '../dom/draggable';
 import { installSortableController } from '../dom/sortable';
 import { dropHandlers, installDropGuard } from '../dom/file-drop';
 import { installContextController } from '../dom/context-request';
 import { installPointerListener } from '../dom/pointer-listener';
+import { installGestureArena, type GestureRequest } from '../dom/gesture-arena';
+import type { GestureRecognizerFactory } from './components/GestureRecognizerFactory';
 import { MOUNTED_HOOK, clickWithEvent } from '../dom/reconciler';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import {
@@ -74,8 +77,10 @@ import {
 import type {
   BoxNode,
   BoxStyleValue,
+  ContentStyleValue,
   ColorTokenValue,
   CanvasNodeValue,
+  LayoutBuilderValue,
   DrawingNode,
   VectorGradientValue,
   VectorPaintValue,
@@ -117,6 +122,7 @@ import type {
   DropTargetNode,
   ContextTargetNode,
   ListenerNode,
+  RawGestureDetectorNode,
   SortableItemNode,
   SortDropValue,
   SortableNode,
@@ -158,6 +164,7 @@ import { StyleChannels } from './value-types';
 import type { ContextRequest, PointerEvent as HeardPointer } from './value-types';
 import { writtenDestination } from '../utils/link-scheme';
 import { declareFamily } from './face-declarations';
+import { ContentStyle } from './content-style';
 import { DISPOSABLE, nodeStateFor, positionOf, type NodeState } from './node-states';
 import { collectBuilds, declarerAmong, lowerRecorded, patchableAt, reachedInto, replay, type LoweredRecord } from './lowered-records';
 
@@ -175,6 +182,13 @@ export interface LoweringContext {
    * C# visitor's `ElementFrame` field). Absent for a subtree the tree does not hold.
    */
   frame?: ElementFrame;
+  /**
+   * The look the boxes above hand the text and icons they hold (C# `WebLoweringVisitor`'s content
+   * look, #1577): each box lays its `content` over this one, and a text or an icon that names none
+   * takes what is here. Part of what a lowered record keeps, so a component lowered again alone is
+   * lowered under the look it first was.
+   */
+  content?: ContentStyleValue | null;
 }
 
 /**
@@ -766,7 +780,7 @@ function lowerNodeKind(
     case 'column':
       return lowerFlex(node as FlexNodeValue, context, path);
     case 'text':
-      return lowerText(node as TextNode);
+      return lowerText(node as TextNode, context);
     case 'textEntry':
       return lowerTextEntry(node as TextEntryNode, context);
     case 'overlay':
@@ -805,7 +819,7 @@ function lowerNodeKind(
     case 'image':
       return lowerImage(node as ImageNode);
     case 'icon':
-      return lowerIcon(node as IconNode);
+      return lowerIcon(node as IconNode, context);
     // C# twin: a vector IS an icon free of the §07 size whitelist, and free of the square box.
     case 'vector': {
       const vector = node as unknown as VectorNode;
@@ -820,6 +834,9 @@ function lowerNodeKind(
     // C# twin (W3): the app's own shapes as inline SVG, in call order.
     case 'canvas':
       return lowerCanvas(node as unknown as CanvasNodeValue, context);
+    // C# twin (#1555): the builder's box, empty until the browser has measured the room it is given.
+    case 'layoutBuilder':
+      return lowerLayoutBuilder(node as unknown as LayoutBuilderValue, context, path);
     // C# twin: artwork stays VECTOR in the DOM — one <path> per shape, the paint the file chose.
     case 'drawing':
       return lowerDrawing(node as unknown as DrawingNode);
@@ -868,6 +885,8 @@ function lowerNodeKind(
       return lowerContextTarget(node as unknown as ContextTargetNode, context, path);
     case 'listener':
       return lowerListener(node as unknown as ListenerNode, context, path);
+    case 'rawGestureDetector':
+      return lowerRawGestureDetector(node as unknown as RawGestureDetectorNode, context, path);
     case 'sortable':
       return lowerSortable(node as unknown as SortableNode, context, horizontalAxis, path);
     case 'sortableItem':
@@ -3058,8 +3077,10 @@ function lowerSpinner(node: SpinnerNode): HtmlNode {
 }
 
 /** Spec A10 mirror: inline SVG, registry path, fill=currentColor riding the color token. */
-function lowerIcon(node: IconNode): HtmlNode {
-  return lowerGlyph(node.glyph, node.size, node.size, node.color ?? null, node.label ?? null);
+function lowerIcon(node: IconNode, context: LoweringContext): HtmlNode {
+  // Its own size, else the box's, else 24 (C# `Icon.SizeUnder`, #1577).
+  const size = node.size ?? context.content?.iconSize ?? 24;
+  return lowerGlyph(node.glyph, size, size, node.color ?? null, node.label ?? null);
 }
 
 /** The shape both an icon and a vector draw as — the C# `LowerGlyph`, box included. */
@@ -3750,6 +3771,25 @@ function paintsNothing(box: BoxNode): boolean {
   );
 }
 
+/** A builder's box: one that fills on both axes and holds nothing else (C# `UnbuiltBuilder`). */
+const BUILDER_BOX_STYLE = { width: { kind: 'fill', value: 0 }, height: { kind: 'fill', value: 0 } } as BoxStyleValue;
+
+/**
+ * A `LayoutBuilder` (#1555): the box that fills on both axes, holding what the builder answers for the
+ * room the browser last measured it at, shown in the position's slot as a layer is. Before the first
+ * measurement it holds nothing, which is what the server writes, so hydration adopts it. The box is
+ * marked for the pass's commit, which measures it (layout-builders.ts); a box the server wrote carries
+ * no mark, and the client's adds it, as a canvas's.
+ */
+function lowerLayoutBuilder(node: LayoutBuilderValue, context: LoweringContext, path: string): HtmlNode {
+  const { id, state } = declareLayoutBuilder(positionOf(frameOf(context), node));
+  const built = state.childFor(node, node.builder);
+  const child = built ? showLayer(node, built, context) : null;
+  const box = lowerBox({ nodeKind: 'box', style: BUILDER_BOX_STYLE, child }, context, path);
+  box.attributes['data-eq-layout-builder'] = id;
+  return box;
+}
+
 function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNode {
   const style = box.style ?? ({} as BoxStyleValue);
   // A CAP with no decided height bounds the child (the C# twin, CapsItsChild): as a flex column, a
@@ -3882,7 +3922,9 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
   }
 
   if (box.child) {
-    const child = lowerNode(box.child, context, null, path + '/0');
+    // This box's look laid over the one around it, for what it holds (C# twin, #1577).
+    const inside = style.content ? { ...context, content: ContentStyle.merge(context.content, style.content) } : context;
+    const child = lowerNode(box.child, inside, null, path + '/0');
     if (child) {
       // A box with a DECIDED height hands it to an auto-sized CONTAINER child — the C# twin, and
       // the web half of the layout engine's block stretch. `100%` rather than a number so CSS
@@ -4239,7 +4281,32 @@ function faceStack(family: string, mono: boolean): string {
   return `"${family}", ` + (mono ? MONO_STACK : SANS_STACK);
 }
 
-function lowerText(text: TextNode): HtmlNode {
+/** A text as drawn under the look in effect: every member resolved (C# `Text.Under`, #1577). */
+interface ResolvedText extends TextNode {
+  role: string;
+  maxLines: number;
+  align: string;
+}
+
+/**
+ * The look a paragraph is drawn in under `around`: its own role, line limit and alignment where it
+ * names them, else the box's, else `bodyL`, no limit and the start. Its own style override, else the
+ * box's type when the text took the box's role: a style was written for its role, so a text that
+ * names its own role keeps that role's type whole.
+ */
+function underContent(text: TextNode, around: ContentStyleValue | null | undefined): ResolvedText {
+  return {
+    ...text,
+    role: text.role ?? around?.role ?? 'bodyL',
+    styleOverride: text.styleOverride ?? (text.role == null ? around?.type : null),
+    maxLines: text.maxLines ?? around?.maxLines ?? 0,
+    align: text.align ?? around?.align ?? 'start',
+  } as ResolvedText;
+}
+
+function lowerText(held: TextNode, context: LoweringContext): HtmlNode {
+  // From here on `text` is the paragraph as drawn, and `held` the one the tree holds.
+  const text = underContent(held, context.content);
   // A family the node names that ships files is declared in the document the first time text is set
   // in it (#1056), as the server declares it in the head of a page it renders.
   if (isWellFormedFace(text.styleOverride?.family?.name)) declareFamily(text.styleOverride!.family);
@@ -4400,6 +4467,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'dropTarget':
     case 'contextTarget':
     case 'listener':
+    case 'rawGestureDetector':
     case 'sortable':
     case 'sortableItem':
     case 'adjustable':
@@ -4426,6 +4494,9 @@ function capsAt(node: unknown): SizeValueValue | undefined {
 /** Whether a node requests Fill per axis — wrappers must stretch for the 100% chain to reach it. */
 function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
   switch (node.nodeKind) {
+    // A builder's box fills on both axes, whatever it built inside it (C# twin).
+    case 'layoutBuilder':
+      return { width: true, height: true };
     case 'box': {
       const style = (node as BoxNode).style ?? ({} as BoxStyleValue);
       return { width: style.width?.kind === 'fill', height: style.height?.kind === 'fill' };
@@ -4479,6 +4550,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as ContextTargetNode).child);
     case 'listener':
       return fills((node as unknown as ListenerNode).child);
+    case 'rawGestureDetector':
+      return fills((node as unknown as RawGestureDetectorNode).child);
     case 'sortable':
       return fills((node as unknown as SortableNode).child);
     case 'sortableItem':
@@ -6176,6 +6249,35 @@ function lowerListener(node: ListenerNode, context: LoweringContext, path: strin
     callbacks[heard.phase]?.(heard);
   }) as unknown as EventHandler;
   installPointerListener();
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
+/**
+ * Gestures of the app's own over a subtree (#1563, the C# LowerRawGestureDetector twin): the same layout-transparent
+ * div as a listener, marked with its behaviour as a listener is, so the browser's hit test reads it by the same
+ * rule, and marked `data-eq-gestures` for the arena's controller (dom/gesture-arena.ts). The controller asks it for
+ * its factories with `eq-gestures` before its recognizers hear anything, and this handler, which every build
+ * replaces, answers with the ones the latest build wrote.
+ */
+function lowerRawGestureDetector(node: RawGestureDetectorNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const cap = capsAt(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : undefined,
+    'max-width': sizeValue(cap),
+    'pointer-events': 'auto',
+    height: fill.height ? '100%' : undefined,
+  });
+  host.attributes['data-eq-listener'] =
+    node.behavior === 'opaque' ? 'opaque' : node.behavior === 'translucent' ? 'translucent' : 'defer';
+  host.attributes['data-eq-gestures'] = '';
+  const gestures = node.gestures ?? [];
+  host.events['eq-gestures'] = ((ev: Event) => {
+    (ev as CustomEvent<GestureRequest>).detail.gestures = gestures as readonly GestureRecognizerFactory[];
+  }) as unknown as EventHandler;
+  installGestureArena();
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;

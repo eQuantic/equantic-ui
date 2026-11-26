@@ -50,6 +50,8 @@ public class SharedComponentTranspilationTests
             .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Elements"), "*.cs"))
             // The arithmetic of a sort (#1537): the browser's controller and the Photon host place an item by it.
             .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Sorting"), "*.cs"))
+            // The gesture arena and the recognizer an app subclasses (#1563): the browser runs the arena Photon runs.
+            .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Gestures"), "*.cs"))
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToArray();
 
@@ -335,6 +337,50 @@ public class SharedComponentTranspilationTests
             public EmittedSlot(TValue value) { Value = value; }
         }
 
+        public abstract class EmittedShapeBase { public abstract int Area { get; } }
+
+        public sealed class EmittedMeasured<T> where T : EmittedShapeBase
+        {
+            private readonly T _shape;
+            public EmittedMeasured(T shape) { _shape = shape; }
+            public int Area() => _shape.Area;
+        }
+
+        public sealed record EmittedTagged<T>(T Shape, string Tag) where T : EmittedShapeBase
+        {
+            public int Area => Shape.Area;
+        }
+
+        public sealed class EmittedHandler<T> where T : EmittedShapeBase
+        {
+            private readonly Action<T> _use;
+            public EmittedHandler(Action<T> use) { _use = use; }
+            public void Give(EmittedShapeBase shape) => _use((T)shape);
+            public static EmittedShapeBase Unbox(object value) => (T)value;
+            public EmittedShapeBase Same(object value)
+            {
+                static TOut Cast<TOut>(object held) => (TOut)held;
+                return Cast<EmittedShapeBase>(value);
+            }
+        }
+
+        public sealed class EmittedMaybe<T> where T : EmittedShapeBase?
+        {
+            private readonly T _shape;
+            public EmittedMaybe(T shape) { _shape = shape; }
+            public int Area() => _shape?.Area ?? 0;
+        }
+
+        public sealed class EmittedOwner<T> where T : EmittedShapeBase
+        {
+            public EmittedShapeBase Keep(object value) => (T)value;
+
+            public sealed class Held
+            {
+                public EmittedShapeBase Unwrap(object value) => (T)value;
+            }
+        }
+
         public sealed class EmittedPointer
         {
             public List<string> Members { get; } = new();
@@ -380,6 +426,141 @@ public class SharedComponentTranspilationTests
 
             private EmittedPointer? _last;
             public bool Remember(int pointer) => _arenas.TryGetValue(pointer, out _last);
+        }
+
+        public sealed class EmittedLease : IDisposable
+        {
+            public void Dispose() { }
+        }
+
+        public abstract class EmittedScopedBase
+        {
+            protected EmittedScopedBase(int count) { Count = count; }
+            public int Count { get; }
+        }
+
+        public sealed class EmittedScopes : EmittedScopedBase
+        {
+            private static readonly Dictionary<int, EmittedPointer> Pointers = new();
+            private readonly int _first = Find(0, out var first) ? first.Members.Count : 0;
+
+            public EmittedScopes() : base(Find(1, out var held) ? held.Members.Count : 0) { }
+
+            private static bool Find(int id, out EmittedPointer found)
+            {
+                found = Pointers.TryGetValue(id, out var pointer) ? pointer : new EmittedPointer();
+                return Pointers.ContainsKey(id);
+            }
+
+            private static EmittedLease Lease(int id, out EmittedPointer held)
+            {
+                Find(id, out held);
+                var total = 0;
+                foreach (var member in held.Members) total += member.Length;
+                return total > 0 ? new EmittedLease() : new EmittedLease();
+            }
+
+            public int While()
+            {
+                var total = 0;
+                var id = 0;
+                while (Pointers.TryGetValue(id++, out var next))
+                    foreach (var member in next.Members) total += member.Length;
+                return total;
+            }
+
+            public int Do()
+            {
+                var id = 0;
+                do { id++; } while (Pointers.TryGetValue(id, out var next) && next.Members.Count > 0);
+                return id;
+            }
+
+            public int For()
+            {
+                var total = 0;
+                for (var id = 0; Pointers.TryGetValue(id, out var next); id++)
+                    foreach (var member in next.Members) total += member.Length;
+                return total;
+            }
+
+            public int Using(int id)
+            {
+                var total = 0;
+                using (Lease(id, out var held))
+                    foreach (var member in held.Members) total += member.Length;
+                return total;
+            }
+
+            public int Filter(Exception thrown)
+            {
+                var total = 0;
+                try { throw thrown; }
+                catch (Exception e) when (Pointers.TryGetValue(e.Message.Length, out var held))
+                {
+                    foreach (var member in held.Members) total += member.Length;
+                }
+                return total;
+            }
+
+            public int Section(int kind)
+            {
+                var total = 0;
+                switch (kind)
+                {
+                    case 1:
+                        Pointers.TryGetValue(kind, out var held);
+                        foreach (var member in held!.Members) total += member.Length;
+                        break;
+                }
+                return total;
+            }
+
+            public int Guarded(int kind)
+            {
+                var total = 0;
+                switch (kind)
+                {
+                    case > 1 when Pointers.TryGetValue(kind, out var held):
+                        foreach (var member in held.Members) total += member.Length;
+                        break;
+                }
+                return total;
+            }
+
+            public int Arm(int kind) => kind switch
+            {
+                > 0 when Pointers.TryGetValue(kind, out var held) => held.Members.Count + _first,
+                _ => 0,
+            };
+
+            private static readonly Dictionary<int, List<string>> Lists = new();
+
+            public int Arms(int kind) => kind switch
+            {
+                > 5 when Pointers.TryGetValue(kind, out var found) => found.Members.Count,
+                > 0 when Lists.TryGetValue(kind, out var found) => found.Count,
+                _ => 0,
+            };
+
+            public int Filters(Exception thrown)
+            {
+                try { throw thrown; }
+                catch (ArgumentException e) when (Pointers.TryGetValue(e.Message.Length, out var found)) { return found.Members.Count; }
+                catch (Exception e) when (Lists.TryGetValue(e.Message.Length, out var found)) { return found.Count; }
+            }
+
+            public int Guards(object value)
+            {
+                switch (value)
+                {
+                    case int id when Pointers.TryGetValue(id, out var found):
+                        return found.Members.Count;
+                    case string found:
+                        return found.Length;
+                }
+                return 0;
+            }
         }
         """;
 
@@ -458,11 +639,13 @@ public class SharedComponentTranspilationTests
     /// (<c>CSharpLanguage</c> from <c>./CurlyBraceLanguage</c>); the element engine's types live in the
     /// vocabulary's namespace, which eqc routes to the runtime, so <c>ComponentElement</c> and
     /// <c>NodeElement</c> read <c>Element</c> through the aggregator, and every spec that entered through
-    /// the barrel failed to load. A base already imported from its module is left as it is.
+    /// the barrel failed to load. A base already imported from its module is left as it is. A generic class's header
+    /// names its type parameters before <c>extends</c> (#1845), and <c>GestureRecognizerFactoryWithHandlers&lt;T&gt;</c>
+    /// read its base off the barrel until the match took them (#1563).
     /// </summary>
     private static string BaseFromItsModule(string typeScript, IReadOnlySet<string> library)
     {
-        var extends = Regex.Match(typeScript, @"export (?:abstract )?class \w+ extends (\w+)");
+        var extends = Regex.Match(typeScript, @"export (?:abstract )?class \w+(?:<[^>]*>)? extends (\w+)");
         if (!extends.Success || !library.Contains(extends.Groups[1].Value)) return typeScript;
         var baseName = extends.Groups[1].Value;
         var import = Regex.Match(typeScript, @"^import \{ ([^}]*) \} from ""\.\./runtime-exports"";", RegexOptions.Multiline);
@@ -497,6 +680,9 @@ public class SharedComponentTranspilationTests
         var nestedPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "NestedReconciler.cs");
         var boundPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "BoundReceivers.cs");
         var shapesPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "EmissionShapes.cs");
+        // The arena's members as an app writes them (#1563): real files, compiled into this suite for the C# side of
+        // the arena's fixture, and transpiled here for the browser's.
+        var gestureFixtures = GestureFixtureSources(root);
         var trees = sourcePaths
             .Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path))
             .ToList();
@@ -504,6 +690,7 @@ public class SharedComponentTranspilationTests
         trees.Add(CSharpSyntaxTree.ParseText(NestedReconcilerSource, path: nestedPath));
         trees.Add(CSharpSyntaxTree.ParseText(BoundReceiversSource, path: boundPath));
         trees.Add(CSharpSyntaxTree.ParseText(EmissionShapesSource, path: shapesPath));
+        trees.AddRange(gestureFixtures.Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path)));
         // The shared sources build with <ImplicitUsings> — mirror the generated global usings, or
         // `Action?` fails to bind (CS0246) and the semantic paths silently degrade.
         trees.Add(SdkImplicitUsings.Tree());
@@ -542,7 +729,8 @@ public class SharedComponentTranspilationTests
             .Append((counterPath, compiler.CompileSource(SharedCounterSource, counterPath)))
             .Append((nestedPath, compiler.CompileSource(NestedReconcilerSource, nestedPath)))
             .Append((boundPath, compiler.CompileSource(BoundReceiversSource, boundPath)))
-            .Append((shapesPath, compiler.CompileSource(EmissionShapesSource, shapesPath)));
+            .Append((shapesPath, compiler.CompileSource(EmissionShapesSource, shapesPath)))
+            .Concat(gestureFixtures.Select(path => (path, compiler.CompileFile(path))));
         foreach (var (path, results) in compilations)
         {
             foreach (var result in results)
@@ -562,7 +750,18 @@ public class SharedComponentTranspilationTests
     [
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
-        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedPointer", "EmittedArena",
+        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedShapeBase", "EmittedMeasured", "EmittedTagged", "EmittedHandler", "EmittedMaybe", "EmittedOwner", "EmittedOwner$Held", "EmittedPointer", "EmittedArena", "EmittedLease", "EmittedScopedBase", "EmittedScopes",
+        "ArenaProbe", "ArenaMember", "HoldThenDrag", "FactoryTypeChange",
+    ];
+
+    /// <summary>The arena's members as an app writes them (#1563): files of this suite's own, and the dashboard's own
+    /// recognizer, read from the sample that ships it.</summary>
+    private static string[] GestureFixtureSources(string root) =>
+    [
+        Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "ArenaProbe.cs"),
+        Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "ArenaMember.cs"),
+        Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "FactoryTypeChange.cs"),
+        Path.Combine(root, "samples", "DefaultUIDashboard", "Gestures", "HoldThenDrag.cs"),
     ];
 
     /// <summary>The source this asks about, kept HERE rather than pointed at a production class.

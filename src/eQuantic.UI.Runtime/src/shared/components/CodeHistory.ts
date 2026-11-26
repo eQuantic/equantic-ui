@@ -75,7 +75,7 @@ export class CodeHistory {
     }
 
     undo(document: CodeDocument) {
-        let selections: any, made: any;
+        let selections!: CodeRange[], made!: CodeEdit[];
         const $r = (() => {
             selections = [];
             made = [];
@@ -102,7 +102,7 @@ export class CodeHistory {
     }
 
     redo(document: CodeDocument) {
-        let selections: any, made: any;
+        let selections!: CodeRange[], made!: CodeEdit[];
         const $r = (() => {
             selections = [];
             made = [];

@@ -45,6 +45,13 @@ internal readonly record struct EmitState(
     /// <c>DefaultTextStyle</c> and <c>IconTheme</c>. Null = none stated, the theme's TextPrimary.</summary>
     public ColorToken? Foreground { get; init; }
 
+    /// <summary>The look the boxes above state, each laid over the one around it
+    /// (<see cref="BoxStyle.Content"/>, <see cref="ContentStyle.Merge"/>, #1577): the role, the type style,
+    /// the line limit and the alignment of a text that names none, and the size of an icon that names
+    /// none, beside <see cref="Foreground"/>'s colour. The measure pass carried the same look down the same
+    /// tree, so a node is painted in the look it was measured in. Null = none stated.</summary>
+    public ContentStyle? Content { get; init; }
+
     /// <summary>What a node that names <paramref name="own"/> (or no colour) is drawn in.</summary>
     public ColorToken Ink(ColorToken? own) => own ?? Foreground ?? Theme.TextPrimary;
 }

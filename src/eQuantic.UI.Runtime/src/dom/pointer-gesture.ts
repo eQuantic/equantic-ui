@@ -4,11 +4,19 @@
  * means it (it travelled past the slop, or a finger held still), follows the pointer while it is armed,
  * and ends on the release or when the system takes the pointer away.
  *
+ * Where a `RawGestureDetector` is under the press, the gesture is a member of the pointer's arena (#1563): it
+ * asks for the pointer when it arms, leaves when a hold it watched for travelled first, and, when an app's
+ * recognizer wins the pointer before it armed, lets it go with nothing reported. Under no detector it owns its
+ * pointer as it always did.
+ *
  * `draggable.ts` and `drag-dismiss.ts` each wrote this skeleton by hand, and had drifted: the sheet never
  * listened for `pointercancel`, so a browser that claimed the pointer left its listeners behind. The
  * sortable controller is the third gesture, and the reason the skeleton is one module now. What a gesture
  * MEANS (how far it travels, what it moves, what it reports) stays in its own module.
  */
+import { clickGuards, type ClickGuards } from './click-guard';
+
+import { joinGestureArena } from './arena-membership';
 
 /** Touch.PressCancelSlop: the travel, in screen pixels, past which a press is a drag (cross-pinned with
  * the C# host). */
@@ -16,6 +24,9 @@ export const SLOP = 12;
 
 /** One gesture, from the press that may start it. */
 export interface PointerGesture {
+  /** The element the gesture is on (the surface it moves, the item it lifts), which places it among the members of
+   * the pointer's gesture arena, the innermost first (#1563). Left out, the press's own target. */
+  element?: Element;
   /** Whether the pointer, this far from its press, starts the gesture: asked on every move until it does.
    * Left out, only a press held for {@link holdMs} arms it. */
   arms?(ev: PointerEvent): boolean;
@@ -27,7 +38,8 @@ export interface PointerGesture {
   /** Every move once armed. The browser's own reaction, a scroll or a selection, is prevented. */
   move(ev: PointerEvent): void;
   /** The pointer lifted on an armed gesture. The click the release ends in is swallowed: a tap on an
-   * inner button that was really a drag never presses it. */
+   * inner button that was really a drag never presses it. The guard that swallows it is the owner's that
+   * {@link followPointer} was handed. */
   release(ev: PointerEvent): void;
   /** The armed gesture ended with nothing decided: the system took the pointer, or the gesture was
    * cancelled (Escape). */
@@ -41,15 +53,19 @@ export interface FollowedPointer {
 
 /**
  * A document-level `pointerdown` delegate, installed once however many lowerings ask for it, and a test
- * seam that uninstalls it.
+ * seam that uninstalls it. It owns the click guards of the gestures it follows (`guards`), so the seam
+ * lets go of them too (#1889).
  */
 export function pointerDownDelegate(onDown: (down: PointerEvent) => void): {
   install(): void;
   reset(): void;
+  readonly guards: ClickGuards;
 } {
   let installed = false;
   const listener = (down: Event): void => onDown(down as PointerEvent);
+  const guards = clickGuards();
   return {
+    guards,
     install(): void {
       if (installed || typeof document === 'undefined') return;
       installed = true;
@@ -58,13 +74,19 @@ export function pointerDownDelegate(onDown: (down: PointerEvent) => void): {
     reset(): void {
       if (typeof document === 'undefined') return;
       installed = false;
+      guards.release();
       document.removeEventListener('pointerdown', listener);
     },
   };
 }
 
-/** Follows one pointer from its press: see {@link PointerGesture} for what each moment means. */
-export function followPointer(down: PointerEvent, gesture: PointerGesture): FollowedPointer {
+/** Follows one pointer from its press: see {@link PointerGesture} for what each moment means. The guard on
+ * the click an armed release ends in is armed in `guards`, its owner's. */
+export function followPointer(
+  down: PointerEvent,
+  gesture: PointerGesture,
+  guards: ClickGuards,
+): FollowedPointer {
   // Listeners and timers hold the DOCUMENT they registered on rather than reading the global when they
   // fire: a torn-down test environment removed the global while a cleanup was pending, and the callback
   // threw `document is not defined` where nothing could catch it.
@@ -78,6 +100,10 @@ export function followPointer(down: PointerEvent, gesture: PointerGesture): Foll
   let holding = false;
 
   const arm = (ev: PointerEvent | null): void => {
+    // It asks the arena for the pointer first: a member that won it already has rejected this one, which then
+    // stopped following it and never arms.
+    membership?.accept();
+    if (over) return;
     armed = true;
     if (hold !== null) clearTimeout(hold);
     hold = null;
@@ -115,7 +141,10 @@ export function followPointer(down: PointerEvent, gesture: PointerGesture): Foll
     if (!armed) {
       if (gesture.holdMs !== undefined && gesture.arms === undefined) {
         // Watching for a hold: travel first is a scroll, and the watch ends there.
-        if (Math.hypot(pointer.clientX - startX, pointer.clientY - startY) > SLOP) detach();
+        if (Math.hypot(pointer.clientX - startX, pointer.clientY - startY) > SLOP) {
+          detach();
+          membership?.reject();
+        }
         return;
       }
       if (!gesture.arms?.(pointer)) return;
@@ -128,8 +157,7 @@ export function followPointer(down: PointerEvent, gesture: PointerGesture): Foll
   const up = (ev: Event): void => {
     detach();
     if (!armed) return;
-    host.addEventListener('click', squashClick, { capture: true, once: true });
-    setTimeout(() => host.removeEventListener('click', squashClick, { capture: true }), 50);
+    guards.arm(host, 50);
     gesture.release(ev as PointerEvent);
   };
 
@@ -137,6 +165,11 @@ export function followPointer(down: PointerEvent, gesture: PointerGesture): Foll
     detach();
     if (armed) gesture.cancel();
   };
+
+  // Another member that wins the pointer first takes it from this gesture, which ends as the system's cancel ends it.
+  const membership = joinGestureArena(down, gesture.element ?? (down.target as Element), () => {
+    if (!over) cancelled();
+  });
 
   if (gesture.holdMs !== undefined)
     hold = setTimeout(() => {
@@ -167,7 +200,10 @@ export function followPointer(down: PointerEvent, gesture: PointerGesture): Foll
 let selectionHolds = 0;
 let pageSelect: { standard: string; webkit: string } = { standard: '', webkit: '' };
 
-function holdSelection(host: Document): void {
+/** Clears the selection the press started and holds off any other until {@link releaseSelection}: by count, so
+ * every gesture that holds it gives it back once. The gesture arena holds it too while an app's recognizer owns
+ * the pointer (#1563). */
+export function holdSelection(host: Document): void {
   host.getSelection()?.removeAllRanges();
   if (selectionHolds++ > 0) return;
   const root = host.documentElement;
@@ -180,7 +216,8 @@ function holdSelection(host: Document): void {
   host.addEventListener('selectstart', noSelection, true);
 }
 
-function releaseSelection(host: Document): void {
+/** Gives back one hold of {@link holdSelection}; the last one restores the page's own selection. */
+export function releaseSelection(host: Document): void {
   if (selectionHolds === 0 || --selectionHolds > 0) return;
   const root = host.documentElement;
   root.style.userSelect = pageSelect.standard;
@@ -190,10 +227,5 @@ function releaseSelection(host: Document): void {
 }
 
 function noSelection(e: Event): void {
-  e.preventDefault();
-}
-
-function squashClick(e: Event): void {
-  e.stopPropagation();
   e.preventDefault();
 }

@@ -752,7 +752,7 @@ internal sealed class TwinConstructor
     /// <summary>The declarations of the variables <paramref name="expression"/> declares (`out var n`),
     /// or null for none.</summary>
     private JsStatement? Declarations(ExpressionSyntax expression) =>
-        ExpressionVariableScanner.Declarations(expression, _annotations).Trim() is { Length: > 0 } declared
+        _converter.ExpressionVariables(expression, _annotations).Trim() is { Length: > 0 } declared
             ? JsStatement.Raw(declared)
             : null;
 

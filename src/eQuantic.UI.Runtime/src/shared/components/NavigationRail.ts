@@ -49,7 +49,7 @@ export class NavigationRail extends StatelessComponent {
             let pill = new Box(new BoxStyle({ width: slot?.railPillWidth ?? 52, height: slot?.railPillHeight ?? 30, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(slot?.pillRadius ?? theme.shape('full')), pressed: isActive ? null : new StyleDiff({ background: primary.subtle.withOpacity(slot?.pillPressOpacity ?? Math.fround(0.4)) }) }), VisualNodeExtensions.centered(iconNode));
             let column = new Column(slot?.pillLabelGap ?? 2, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: slot?.railItemHeight ?? 56, main: 'center', cross: 'center' });
             column.add(pill);
-            column.add(new Text(item.label, 'caption', tint, 1, 'start', false, false, null, 0, { styleOverride: isActive ? new TypeStyle(slot?.railSelectedLabelSize ?? 12, slot?.railSelectedLabelLineHeight ?? 16, slot?.railSelectedLabelWeight ?? 'bold', 0, Math.fround(1.3)) : null }));
+            column.add(new Text(item.label, 'caption', tint, 1, null, false, false, null, 0, { styleOverride: isActive ? new TypeStyle(slot?.railSelectedLabelSize ?? 12, slot?.railSelectedLabelLineHeight ?? 16, slot?.railSelectedLabelWeight ?? 'bold', 0, Math.fround(1.3)) : null }));
             destinations.add(new Pressable(column, this.onSelect == null ? null : () => this.onSelect!(index), { label: item.label, role: 'destination', selected: isActive }));
         }
         let rail = new Column(gap, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center', main: this.alignment });

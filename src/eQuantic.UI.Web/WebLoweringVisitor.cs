@@ -59,6 +59,14 @@ internal sealed partial class WebLoweringVisitor(
     /// then the control's (#614). A disabled control's boxes keep their own, as before.</summary>
     private bool _inEnabledControl;
 
+    /// <summary>The look the boxes above the node being lowered state, each laid over the one around it
+    /// (<see cref="BoxStyle.Content"/>, <see cref="ContentStyle.Merge"/>, #1577): what a <see cref="Text"/>
+    /// or an <see cref="Icon"/> that names none of its own is lowered in. Set around a box's child
+    /// (<see cref="LowerBox"/>) and restored after it. A text is lowered with the role it resolved, as if
+    /// it had named it, rather than leaving the type to CSS inheritance: a line limit and an icon's size
+    /// are not inherited properties, and two mechanisms answering one question is how targets drift.</summary>
+    private ContentStyle? _content;
+
     /// <summary>This node's place in the tree, as the browser's lowering spells it (<see cref="LoweringPath"/>): a
     /// table scopes its cells' ids by it (#1115). Each container steps down by the browser's segment for the same
     /// child, through <see cref="Lower(VisualNode, bool?, string)"/> or <see cref="At{T}"/>.</summary>
@@ -217,6 +225,16 @@ internal sealed partial class WebLoweringVisitor(
 
     public HtmlElement? Visit(Canvas canvas, bool? horizontalAxis) => LowerCanvas(canvas);
 
+    /// <summary>
+    /// A builder's box, written EMPTY: the server has no box to measure, and a guess would draw a child
+    /// the browser then replaces. The browser's first lowering writes the same box, so hydration adopts
+    /// it; the browser then measures the room the box is given and builds the child into it.
+    /// </summary>
+    public HtmlElement? Visit(LayoutBuilder builder, bool? horizontalAxis) => LowerBox(UnbuiltBuilder);
+
+    /// <summary>A builder's box with nothing built in it: a box that fills on both axes.</summary>
+    private static readonly Box UnbuiltBuilder = new(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill });
+
     public HtmlElement? Visit(Spinner spinner, bool? horizontalAxis) => LowerSpinner(spinner);
 
     public HtmlElement? Visit(Primitives.Image image, bool? horizontalAxis) => LowerImage(image);
@@ -237,6 +255,8 @@ internal sealed partial class WebLoweringVisitor(
     public HtmlElement? Visit(ContextTarget target, bool? horizontalAxis) => LowerContextTarget(target);
 
     public HtmlElement? Visit(Listener listener, bool? horizontalAxis) => LowerListener(listener);
+
+    public HtmlElement? Visit(RawGestureDetector detector, bool? horizontalAxis) => LowerRawGestureDetector(detector);
 
     public HtmlElement? Visit(Sortable sortable, bool? horizontalAxis) => LowerSortable(sortable, horizontalAxis);
 
@@ -368,6 +388,8 @@ internal sealed partial class WebLoweringVisitor(
             table.Height.Kind is not (SizeKind.Fixed or SizeKind.WindowMinus)),
         // A drawing at its parent's width fills across; its height follows from its aspect.
         Drawing drawing => (drawing.Width.Kind == SizeKind.Fill, false),
+        // A builder's box fills on both axes, whatever it built inside it.
+        LayoutBuilder => (true, true),
         // Every wrapper the vocabulary calls layout-transparent, by its one rule rather than a list.
         // A wrapper missing from a list does not fail — it answers (false, false), which reads as
         // "the child does not fill" and is indistinguishable from the truth until a child actually

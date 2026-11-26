@@ -127,6 +127,7 @@ export {
   Grid,
   GridTrack,
   AdaptiveNode,
+  LayoutBuilder,
   Anchored,
   StyleDiff,
   ShadowSpec,
@@ -159,6 +160,7 @@ export {
   DropTarget,
   ContextTarget,
   Listener,
+  RawGestureDetector,
   Sortable,
   SortableItem,
   Flexible,
@@ -205,6 +207,7 @@ export {
   ColorToken,
   SizeValue,
   EdgeInsets,
+  BoxConstraints,
   ContextRequest,
   PointerEvent,
   CornerRadii,
@@ -229,6 +232,8 @@ export {
   WebContent,
 } from './shared/value-types';
 export type { AppTheme } from './shared/value-types';
+export { ContentStyle } from './shared/content-style';
+
 export {
   ComponentContext,
   setPhotonTheme,

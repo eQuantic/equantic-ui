@@ -52,7 +52,8 @@ public sealed class AllowedValueAnalyzer : DiagnosticAnalyzer
         var argument = (IArgumentOperation)context.Operation;
         // A default the parameter writes for itself is its author's, and a params array has no single value.
         if (argument.ArgumentKind != ArgumentKind.Explicit || argument.Parameter is not { } parameter) return;
-        if (!argument.Value.ConstantValue.HasValue) return;
+        var written = Unwrapped(argument.Value, context.Compilation);
+        if (!written.ConstantValue.HasValue) return;
 
         foreach (var attribute in parameter.GetAttributes())
         {
@@ -62,19 +63,36 @@ public sealed class AllowedValueAnalyzer : DiagnosticAnalyzer
             var values = attribute.ConstructorArguments[0];
             if (values.Kind != TypedConstantKind.Array) continue;
 
-            var value = argument.Value.ConstantValue.Value;
+            var value = written.ConstantValue.Value;
             if (values.Values.Any(candidate => SameValue(candidate.Value, value))) continue;
 
             var why = attribute.NamedArguments
                 .Where(named => named.Key == "ErrorMessage" && named.Value.Value is string { Length: > 0 })
                 .Select(named => (string)named.Value.Value!)
                 .FirstOrDefault();
-            context.ReportDiagnostic(Diagnostic.Create(OutsideTheAllowedValues, argument.Value.Syntax.GetLocation(),
+            context.ReportDiagnostic(Diagnostic.Create(OutsideTheAllowedValues, written.Syntax.GetLocation(),
                 Written(value), parameter.Name, Owner(parameter),
                 Listed(values.Values.Select(candidate => Written(candidate.Value))),
                 why is null ? "." : ". " + why));
         }
     }
+
+    /// <summary>
+    /// The value the call wrote, out of the conversion to <c>Nullable&lt;T&gt;</c> a nullable parameter wraps it in:
+    /// C# never makes that conversion a constant, so <c>Icon(glyph, 22)</c> handed to a <c>float?</c> size would read
+    /// as a value only the run knows and pass (#1577). Written or not, <c>(float?)22</c> included, the constant inside
+    /// is read when it reaches <c>T</c> without losing anything (an implicit conversion), so the value compared is the
+    /// value the parameter receives. Any other conversion is left as it is.
+    /// </summary>
+    private static IOperation Unwrapped(IOperation value, Compilation compilation) =>
+        value is IConversionOperation
+        {
+            Operand: { ConstantValue.HasValue: true, Type: { } from } operand,
+            Type: INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } target,
+        }
+        && compilation.ClassifyCommonConversion(from, target.TypeArguments[0]).IsImplicit
+            ? operand
+            : value;
 
     /// <summary>Whether two constants are the same value: numbers by their value whatever their type
     /// (the attribute holds <c>16f</c>, a call may hand <c>16</c> or <c>16d</c>), anything else by

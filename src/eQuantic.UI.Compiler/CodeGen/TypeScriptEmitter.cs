@@ -61,6 +61,26 @@ public class TypeScriptEmitter
     private JsStatement Contents(BlockSyntax block) =>
         JsStatement.Sequence(((JsBlock)_converter.ConvertBlockIr(block)).Statements);
 
+    /// <summary>A type parameter's constraint as its class header writes it (#1854): a class that is not generic and has a
+    /// twin, as a downcast asks it (<see cref="Strategies.Expressions.CastExpressionStrategy.NamesATwin"/>), named as any
+    /// reference to it is (<see cref="DeclaredType"/>), and null for any other one, which leaves the parameter
+    /// unconstrained. A class the server keeps has no twin to import. Plain JavaScript writes no type parameter, so it
+    /// names no constraint and imports none: the constraint's import would have been a module plain JavaScript loads for
+    /// nothing.</summary>
+    private string? ConstraintType(TypeSyntax type)
+    {
+        if (!TypeAnnotations) return null;
+        if (ModelFor(type)?.GetTypeInfo(type).Type is not INamedTypeSymbol { TypeKind: TypeKind.Class, IsGenericType: false } bound
+            || !Strategies.Expressions.CastExpressionStrategy.NamesATwin(bound))
+            return null;
+        var name = DeclaredType(type);
+        // Imported as any other name the module writes: the scan of a class's references reads its members, never its
+        // where clause, so a constraint only the header names reached no import.
+        if (bound.IsRuntimeProvided()) _converter.UsedRuntimeTypes.Add(name);
+        else _converter.UsedAppTypes.Add(name);
+        return name;
+    }
+
     /// <summary>The model that can answer for THIS node's tree — a component and the types it
     /// references may live in different files of one compilation, and Roslyn throws for a node
     /// from another tree.</summary>
@@ -866,7 +886,12 @@ public class TypeScriptEmitter
                     // The action's RESULT crosses the typed boundary too: a Task<decimal> arrives
                     // as a string, a Task<List<Todo>> as plain objects — hydrated ONCE here, by
                     // the spec of the C# return type, so the caller computes with runtime types.
-                    var invoke = $"getServerActionsClient().invoke('{action.ActionId}', [{argsList}])";
+                    // An action that states how long the browser waits for it hands the runtime its
+                    // own timeout; one that states none keeps the runtime's default, and its old shape.
+                    var options = action.TimeoutSeconds is > 0 and var seconds
+                        ? $", {{ timeoutMs: {seconds * 1000} }}"
+                        : "";
+                    var invoke = $"getServerActionsClient().invoke('{action.ActionId}', [{argsList}]{options})";
                     var resultSpec = HydrationSpec.Of(ActionValueType(action.SyntaxNode), _hydrationReferences, _hydrationRuntimeReferences);
                     if (resultSpec is not null) component.UsedHelpers.Add(Eq.Import);
 
@@ -885,7 +910,7 @@ public class TypeScriptEmitter
                 // static member, a method included, and not only before the first read of a static.
                 if (orderedStatics && TypeInitializer.HasStaticConstructor(component.ClassSyntax!))
                     c.Rewrite(member => TypeInitializer.StartedIn(member, component.Name, slots));
-            }, component.TypeParameters);
+            }, component.ClassSyntax?.TwinTypeParameters(ConstraintType) ?? component.TypeParameters);
 
         // Generate component code without imports
         var componentCode = _builder.ToString();
@@ -2946,7 +2971,7 @@ public class TypeScriptEmitter
                     c.Member(JsClassMember.Method("", "toString", "", "", TypeAnnotations ? ": string" : "",
                         JsStatement.Block([JsStatement.Return(JsExpr.Literal(JsStringLiteral.Quote(fullName)))])), cls);
             },
-            typeParameters: cls.TwinTypeParameters(),
+            typeParameters: cls.TwinTypeParameters(ConstraintType),
             isAbstract: cls.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword));
         var emitted = builder.ToString();
         // This module used a LOCAL builder, so the mappings it recorded never reached

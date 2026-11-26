@@ -1,0 +1,32 @@
+## Comfortable
+### web
+<div class="eq-1eb13m5 eq-g7fowl">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+### css
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-g7fowl{pointer-events:auto}
+### semantics
+StaticText "x"
+### photon
+ConstrainedBox 0 0 480x24
+  Box 0 0 480x24
+    Text 0 0 480x24 1 line(s)
+
+## Compact
+### web
+<div class="eq-1eb13m5 eq-g7fowl">
+<span class="eq-type-bodyl eq-16x7aca">x</span>
+</div>
+### css
+.eq-16x7aca{display:block}
+.eq-1eb13m5{box-sizing:border-box}
+.eq-g7fowl{pointer-events:auto}
+### semantics
+StaticText "x"
+### photon
+ConstrainedBox 0 0 480x24
+  Box 0 0 480x24
+    Text 0 0 480x24 1 line(s)
+

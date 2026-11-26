@@ -4,9 +4,9 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Native.Components;
 
 /// <summary>
-/// The frame's <see cref="PointerTarget"/>s, collected by the paint walk from the first <see cref="Listener"/> on
-/// (#1562). Before one, nothing a frame draws can be a listener's child or stand above one, so a frame with no
-/// listener collects nothing and allocates nothing for it.
+/// The frame's <see cref="PointerTarget"/>s, collected by the paint walk from the first <see cref="Listener"/> or
+/// <see cref="RawGestureDetector"/> on (#1562, #1563). Before one, nothing a frame draws can be its child or stand
+/// above it, so a frame with neither collects nothing and allocates nothing for it.
 /// <para>
 /// A node is a solid when it painted something of its OWN: a command written while it was the innermost node
 /// open, before its first child, between two of them or after its last. A command counts as the builder counts
@@ -27,11 +27,12 @@ internal sealed class PointerTargets
 
     /// <summary>A node's visit begins, at <paramref name="commands"/> written. What the node around it wrote since
     /// its own mark was its own paint.</summary>
-    public void Enter(Rect bounds, Rect visible, Listener? listener, Element? element, int commands)
+    public void Enter(Rect bounds, Rect visible, VisualNode source, Element? element, int commands)
     {
         if (_open.Count > 0 && commands > _open[^1].Mark) MarkSolid(_open[^1].Index);
         _open.Add((_entries.Count, commands));
-        _entries.Add(new PointerTarget(bounds, visible, End: -1, Solid: false, listener, element));
+        _entries.Add(new PointerTarget(bounds, visible, End: -1, Solid: false, source as Listener,
+            source as RawGestureDetector, element));
     }
 
     /// <summary>The innermost node's visit ends, at <paramref name="commands"/> written: what it wrote since its
@@ -60,7 +61,7 @@ internal sealed class PointerTargets
 
     private void MarkSolid(int index)
     {
-        // A listener draws nothing of its own and is never a solid: what it holds is.
-        if (_entries[index] is { Solid: false, Listener: null } entry) _entries[index] = entry with { Solid = true };
+        // A listener or a detector draws nothing of its own and is never a solid: what it holds is.
+        if (_entries[index] is { Solid: false, Behavior: null } entry) _entries[index] = entry with { Solid = true };
     }
 }
