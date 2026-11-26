@@ -93,7 +93,8 @@ public class InputBuildersTests
         var (host, frame) = Render(Grouped([]));
 
         Paints(frame, 0).Should().BeFalse("the closed field says the option's text, not its drawing");
-        host.Semantics().Single().Label.Should().Be("Lisboa");
+        // The field's value is the option's text: its name is the field's label, which this one has none of.
+        host.Semantics().Single().Value.Should().Be("Lisboa");
     }
 
     [Fact]
