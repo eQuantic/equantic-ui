@@ -148,6 +148,9 @@ public sealed class DatePicker : StatefulComponent
         {
             Open = _open && !Disabled,
             OnDismiss = Close,
+            // Under the END of the field, where the opener is: hung from the opener's start, the calendar grew
+            // past the field's end and out of the viewport at every width, on a field that spans its column (#1933).
+            Placement = AnchorPlacement.BottomEnd,
             // A DIALOG, not a listbox: the calendar owns its own keyboard, so focus moves INTO the
             // panel rather than being driven from the field the way a combobox drives its list.
             PanelRole = AnchorPanelRole.Dialog,

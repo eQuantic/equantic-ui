@@ -1,0 +1,2 @@
+#nullable enable
+[EQX0001]eQuantic.UI.Native.Framework.LayoutNode.Offset(float dx, float dy) -> void

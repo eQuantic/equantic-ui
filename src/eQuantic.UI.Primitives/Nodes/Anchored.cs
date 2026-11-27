@@ -10,9 +10,10 @@ namespace eQuantic.UI.Primitives;
 /// queues a synthetic overlay layer with the panel <c>Positioned</c> from the anchor's absolute
 /// bounds. A dismissible OPEN panel declares Escape through the shortcut pipeline (close = the
 /// same <see cref="OnDismiss"/> the scrim fires), and a hover-revealed one is Esc-SUPPRESSED by
-/// the runtime controller (WCAG 1.4.13). v1 fences: viewport flip/clamp (a panel near the edge
-/// does not reposition), escape from clipping ancestors on web (keep anchors out of
-/// overflow-hidden scrollers).
+/// the runtime controller (WCAG 1.4.13). A panel its placement would put past the viewport's start or end edge
+/// is moved back inside, <see cref="ViewportInset"/> from the edge, on both targets (#1933). v1 fences: a vertical
+/// flip (a panel near the bottom does not open upward), escape from clipping ancestors on web (keep anchors out
+/// of overflow-hidden scrollers).
 /// </summary>
 public sealed class Anchored : VisualNode
 {
@@ -20,6 +21,13 @@ public sealed class Anchored : VisualNode
 
     /// <summary>Default distance (dp) between the anchor's edge and the panel.</summary>
     public const float DefaultGap = 4;
+
+    /// <summary>
+    /// The distance (dp) a panel keeps from the viewport's start and end edges: one its placement would put past an
+    /// edge is moved back inside, and one wider than the room between them starts at the start edge's inset (#1933).
+    /// A date picker's calendar, hung under a field that spans its column, left the viewport at every width.
+    /// </summary>
+    public const float ViewportInset = 8;
 
     public Anchored(VisualNode anchor, VisualNode panel)
     {

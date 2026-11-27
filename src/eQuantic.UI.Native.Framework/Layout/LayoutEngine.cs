@@ -219,6 +219,18 @@ public sealed class LayoutNode
     public IReadOnlyList<LayoutNode> Children => _view;
 
     /// <summary>
+    /// Moves this laid-out node and everything under it by <paramref name="dx"/> and <paramref name="dy"/>, in the
+    /// absolute bounds a finished layout holds: the realizer's place to bring an anchored panel back inside the
+    /// viewport once its width is known (#1933), where the layout of its layer put it past an edge.
+    /// </summary>
+    public void Offset(float dx, float dy)
+    {
+        if (dx == 0 && dy == 0) return;
+        Bounds = Bounds with { X = Bounds.X + dx, Y = Bounds.Y + dy };
+        foreach (var child in _children) child.Offset(dx, dy);
+    }
+
+    /// <summary>
     /// Iterate the node ITSELF — <c>foreach (var child in node)</c> — on any path that runs per
     /// frame. It hands back the list's own struct enumerator, so nothing is allocated.
     ///

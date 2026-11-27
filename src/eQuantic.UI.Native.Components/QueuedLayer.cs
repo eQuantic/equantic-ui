@@ -23,5 +23,7 @@ namespace eQuantic.UI.Native.Components;
 /// shown in a layer of its own looks as it would in place, where the web lowers it.</param>
 /// <param name="Combo">What the layer's listbox says, when a text field it hangs from makes it an editable
 /// combobox's, or null: the option the keyboard is on is said from that field as it changes (#1088).</param>
+/// <param name="KeepsPanelInside">Whether the layer's last child is an anchored panel, which the pass moves back
+/// inside the viewport, <see cref="Anchored.ViewportInset"/> from its edges, once it is laid out (#1933).</param>
 internal readonly record struct QueuedLayer(Overlay Layer, NodeElement? Holder, bool InScrolledHeader,
-    ContentStyle? Content, ComboAnnouncement? Combo = null);
+    ContentStyle? Content, ComboAnnouncement? Combo = null, bool KeepsPanelInside = false);
