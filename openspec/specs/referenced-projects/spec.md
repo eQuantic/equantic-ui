@@ -42,9 +42,13 @@ in whichever referenced project it is declared.
 ### Requirement: Only what the browser code reaches is compiled
 
 A type of a referenced project that no written module names SHALL NOT be compiled or written, and
-SHALL raise no diagnostic, whatever it contains. A type is reached when a written module imports it:
-code that does not cross, and a name the build writes nothing for (inside `nameof`, in an attribute,
-or a constant written as its value), reach nothing.
+SHALL raise no diagnostic, whatever it contains. A type is reached when a written module writes a
+reference to it, and for no other reason: code that does not cross, a name the build writes nothing for
+(inside `nameof`, in an attribute, or a constant written as its value), and syntax that names a type and
+writes nothing of it (a cast of a null, a `default`, a delegate's type, a constant in the old `is` form, a
+member of an enum nested in the type) reach nothing. An import of a sibling's name SHALL mean the types
+whose twin the module's writers wrote under that name, and where a writer wrote the name and recorded no
+type, every type of the name the module's symbols name.
 
 #### Scenario: A referenced project that holds server code
 
@@ -90,6 +94,21 @@ or a constant written as its value), reach nothing.
   `using static`
 - **THEN** the page's module reads it off that class's twin and imports the class, and the bundle
   holds its module
+
+#### Scenario: Syntax that writes no reference names a referenced project's type of the app's name
+
+- **WHEN** a page shows the app's own `Order`, and names the referenced project's `Order`, a class that
+  reads a file, only in a cast of a null, a `default`, a delegate's type, a constant in the old `is` form
+  or a member of an enum nested in it
+- **THEN** the build succeeds with the app's `Order` as the module, and the referenced project's is not
+  compiled
+
+#### Scenario: The app's own type is written another way beside such syntax
+
+- **WHEN** the page writes the app's `Order` as a parameter's annotation, a property's, a static read off
+  the type or a Server Action's answer, and casts a null to the referenced project's `Order`
+- **THEN** the build succeeds with the app's `Order` as the module, and the referenced project's is not
+  compiled
 
 ### Requirement: A referenced project's name is imported only where a symbol names its type
 
