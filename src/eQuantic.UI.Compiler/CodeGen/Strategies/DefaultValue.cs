@@ -45,6 +45,7 @@ public static class DefaultValue
             // field's zero), found by Copilot's third review of #654.
             if (context.Converting is { } at && named.ReportIfKeptOut(at, context)) return;
             (IsRuntimeProvided(named) ? context.UsedRuntimeTypes : context.UsedAppTypes).Add(named.TwinReference());
+            context.WrittenTwins.Wrote(named);
         }, typeParameter);
         if (value.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
         return value;

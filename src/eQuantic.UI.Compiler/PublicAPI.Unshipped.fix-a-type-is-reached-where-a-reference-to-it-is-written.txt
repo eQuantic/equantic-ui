@@ -1,0 +1,7 @@
+#nullable enable
+eQuantic.UI.Compiler.CompilationResult.ImportsOnTheWalk.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Compiler.CompilationResult.ImportsOnTheWalk.set -> void
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Members(Microsoft.CodeAnalysis.INamedTypeSymbol! type, System.Collections.Generic.ISet<string!>! referenced, System.Collections.Generic.ISet<string!>! runtime) -> string?
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Of(Microsoft.CodeAnalysis.ITypeSymbol? type, System.Collections.Generic.ISet<string!>! referenced, System.Collections.Generic.ISet<string!>! runtime) -> string?
+static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Members(Microsoft.CodeAnalysis.INamedTypeSymbol! type, System.Collections.Generic.ISet<string!>! referenced, System.Collections.Generic.ISet<string!>! runtime, System.Action<Microsoft.CodeAnalysis.INamedTypeSymbol!>? wrote = null) -> string?
+static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Of(Microsoft.CodeAnalysis.ITypeSymbol? type, System.Collections.Generic.ISet<string!>! referenced, System.Collections.Generic.ISet<string!>! runtime, System.Action<Microsoft.CodeAnalysis.INamedTypeSymbol!>? wrote = null) -> string?

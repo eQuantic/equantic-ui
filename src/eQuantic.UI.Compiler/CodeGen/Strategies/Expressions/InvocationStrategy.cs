@@ -378,7 +378,7 @@ public class InvocationStrategy : IExpressionIrStrategy
                 context.UsedAppTypes.Add(declaring.TwinReference());
             // By the name the bound method holds on its twin (#563), on its closed type's statics where the
             // class keeps them per closure (#1855).
-            var home = ClosedStatics.Home(declaring, invocation, context) ?? JsExpr.Identifier(declaring.TwinReference());
+            var home = ClosedStatics.Home(declaring, invocation, context) ?? StaticHome(declaring, context);
             return JsExpr.Call(JsExpr.Member(home, TwinMethodName.Of(symbol, methodName)), argIrs);
         }
 
@@ -719,4 +719,11 @@ public class InvocationStrategy : IExpressionIrStrategy
             : "";
 
     public int Priority => 1; // Lowest priority (fallback)
+
+    /// <summary>The class a static call is written on, recorded as a write of it (#830).</summary>
+    private static JsExpr StaticHome(INamedTypeSymbol declaring, ConversionContext context)
+    {
+        context.WrittenTwins.Wrote(declaring);
+        return JsExpr.Identifier(declaring.TwinReference());
+    }
 }

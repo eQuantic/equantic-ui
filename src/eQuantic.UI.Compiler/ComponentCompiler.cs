@@ -586,8 +586,16 @@ public class ComponentCompiler
             };
 
         _tsEmitter.Referenced = referenced;
+        // What this module's writers wrote and no other's: a write on record of the module before it
+        // would answer for a use this one's writers left unrecorded (#830).
+        _tsEmitter.WrittenTwins.Clear();
         var result = CompileModule(component, referenced);
-        if (result.Success) result.ReferencedTypes = referenced.ImportedBy(result.TypeScript);
+        result.Written ??= _tsEmitter.WrittenTwins;
+        if (result.Success)
+        {
+            result.ReferencedTypes = referenced.ImportedBy(result.TypeScript, result.Written);
+            result.ImportsOnTheWalk = ReferencedNames.OnTheWalk(result.TypeScript, result.Written);
+        }
         return result;
     }
 
@@ -691,7 +699,11 @@ public class ComponentCompiler
             if (component.IsUnionType
                 && component.ValueTypeSyntax is Microsoft.CodeAnalysis.CSharp.Syntax.UnionDeclarationSyntax union)
             {
-                result.TypeScript = EmitUnionAlias(union, TypeAnnotations, out var unionError);
+                var unionWritten = new CodeGen.WrittenTwins();
+                result.TypeScript = EmitUnionAlias(union, TypeAnnotations,
+                    component.SyntaxTree is null ? null : _semanticModelProvider.GetSemanticModel(component.SyntaxTree),
+                    unionWritten, out var unionError);
+                result.Written = unionWritten;
                 if (unionError is not null)
                 {
                     result.Success = false;
@@ -749,6 +761,7 @@ public class ComponentCompiler
                 // for a consumer that runs the module directly, and nothing upstream would notice.
                 result.TypeScript = new RecordTypeEmitter(recordConverter, modules) { Referenced = referenced }
                     .EmitModule(component.ValueTypeSyntax, TypeAnnotations);
+                result.Written = recordConverter.WrittenTwins;
                 CollectResourceUses(recordConverter.ResourceUses, result);
                 result.Success = true;
                 CollectDiagnostics(result, component.SourcePath, recordConverter.Diagnostics);
@@ -856,7 +869,7 @@ public class ComponentCompiler
     /// </summary>
     private static string EmitUnionAlias(
         Microsoft.CodeAnalysis.CSharp.Syntax.UnionDeclarationSyntax union,
-        bool typeAnnotations, out string? error)
+        bool typeAnnotations, SemanticModel? model, CodeGen.WrittenTwins written, out string? error)
     {
         error = null;
         var cases = (union.ParameterList?.Parameters ?? default)
@@ -882,6 +895,10 @@ public class ComponentCompiler
                 builder.Append($"import {{ {caseType} }} from \"./{caseType}\";\n");
             builder.Append('\n');
             builder.Append($"export type {name} = {string.Join(" | ", cases)};\n");
+            // The alias writes each case once, a write of its type (#830).
+            foreach (var parameter in union.ParameterList?.Parameters ?? default)
+                if (parameter.Type is { } caseType && model is not null)
+                    written.Wrote(model.GetTypeInfo(caseType).Type, caseType.ValueText());
         }
         builder.Append($"export const {name} = undefined;\n");
         return builder.ToString();
@@ -969,6 +986,18 @@ public class CompilationResult
     /// <summary>A component's module, rather than a record's, a plain class's, a static class's or a union's:
     /// a component is a root of what the browser reaches (AppModules).</summary>
     internal bool IsComponent { get; set; }
+
+    /// <summary>
+    /// The sibling imports whose type is still decided by the names the declaration's symbols name, since a writer
+    /// wrote the name and recorded no symbol (#830): each one's every use is not a write on record. A build reads
+    /// what the module writes for every other import. The writers that record nothing are what this lists, and a
+    /// baseline that may only shrink holds it, so a new writer records its writes or is named.
+    /// </summary>
+    public IReadOnlyList<string> ImportsOnTheWalk { get; set; } = [];
+
+    /// <summary>Each twin the module's writers wrote, by its symbol (#830), from the converter that wrote it: a
+    /// record's own, or the emitter's for every other module.</summary>
+    internal CodeGen.WrittenTwins? Written { get; set; }
     public string TypeScript { get; set; } = string.Empty;
     public string JavaScript { get; set; } = string.Empty;
     public string? SourceMap { get; set; }

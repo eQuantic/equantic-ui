@@ -411,10 +411,13 @@ public static class TypeSymbolExtensions
     /// <summary>
     /// Registers a type name the conversion INTRODUCED into the output (the source never names the
     /// extension home — the call is written on the receiver), in the bucket its namespace decides,
-    /// so the import scanner can see it. Same routing the static-call path uses.
+    /// so the import scanner can see it. Same routing the static-call path uses. It is a write of the
+    /// type, and recorded as one, by its symbol, which says what the module's import of the name means
+    /// (#830).
     /// </summary>
     public static void RegisterIntroduced(this INamedTypeSymbol home, ConversionContext context)
     {
+        context.WrittenTwins.Wrote(home);
         if (home.IsRuntimeProvided())
             context.UsedRuntimeTypes.Add(home.TwinReference());
         else

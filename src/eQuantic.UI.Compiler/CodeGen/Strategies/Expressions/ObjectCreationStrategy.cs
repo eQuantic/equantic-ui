@@ -217,10 +217,14 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // A nested type, a component among them, is constructed by its twin's name and imported from
         // there, whichever branch below builds it (#584): `new Host.Page()` constructed `Page`.
         if (createdType is INamedTypeSymbol keptOut && keptOut.ReportIfKeptOut(creation, context)) return Undefined;
+        // Whoever names the type records the write (#830): a name registered as introduced (a nested
+        // type's twin, an alias's type) is recorded there, and every other where `new` writes it, below.
+        var introduced = false;
         if (createdType is INamedTypeSymbol nestedType && nestedType.RenamedTwin() is not null)
         {
             typeName = nestedType.IntroduceTwin(context);
             genericTypeName = null;
+            introduced = true;
         }
 
         // A type named through a using alias is built by its own name and imported by it, as a read of
@@ -230,6 +234,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         {
             aliased.RegisterIntroduced(context);
             typeName = aliased.TwinReference();
+            introduced = true;
         }
 
         // A HOST-ONLY type constructed from client code. `new Matrix2D(...)` compiled, emitted an
@@ -307,7 +312,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             && !IsCollectionLikeTypeName(typeName))
         {
             return AddPerElementConstruction(
-                creation.Initializer, JsExpr.New(JsExpr.Identifier(genericTypeName ?? typeName), arguments), context);
+                creation.Initializer, JsExpr.New(Constructed(createdType, genericTypeName ?? typeName, introduced, context), arguments), context);
         }
 
         // A list built with an element an EXTENSION adds (`new List<string> { 1 }` over
@@ -328,7 +333,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         if (creation.Initializer is { } applied && TwinIsWritten(createdType)
             && applied.IsKind(SyntaxKind.ObjectInitializerExpression) && !ObjectInitializer.OnlyAssigns(applied))
         {
-            return ObjectInitializer.Apply(JsExpr.New(JsExpr.Identifier(genericTypeName ?? typeName), arguments), applied, context);
+            return ObjectInitializer.Apply(JsExpr.New(Constructed(createdType, genericTypeName ?? typeName, introduced, context), arguments), applied, context);
         }
 
         JsExpr? initializer = null;
@@ -393,8 +398,8 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
         if (assignInitializerAfterConstruction)
             return JsExpr.Call(JsExpr.Identifier("Object.assign"),
-                JsExpr.New(JsExpr.Identifier(genericTypeName ?? typeName), arguments), initializer!);
-        return JsExpr.New(JsExpr.Identifier(genericTypeName ?? typeName), arguments);
+                JsExpr.New(Constructed(createdType, genericTypeName ?? typeName, introduced, context), arguments), initializer!);
+        return JsExpr.New(Constructed(createdType, genericTypeName ?? typeName, introduced, context), arguments);
     }
 
     /// <summary>
@@ -810,6 +815,8 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         if (!TwinIsWritten(type)
             && Services.RuntimeProvidedTypeScanner.IsVocabularyNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty))
         {
+            // Each way out of this branch writes the name once (#830); the construction below names it itself.
+            context.WrittenTwins.Wrote(type, type.Name);
             var parts = new List<JsExpr>();
             if (creation.ArgumentList != null)
                 parts.AddRange(OrderedArguments(creation, context));
@@ -876,7 +883,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                     $"'{type.ToDisplayString()}' is built where its type argument '{argument.ToDisplayString()}' is a type " +
                     "parameter, which JavaScript erases, so what it receives could not be revived as that type. Build it " +
                     "where the type argument is a concrete type, as in a static member of the type that declares the topic.");
-            specs.Add(JsExpr.Opaque(HydrationSpec.Of(argument, context.UsedAppTypes, context.UsedRuntimeTypes) ?? "null"));
+            specs.Add(JsExpr.Opaque(HydrationSpec.Of(argument, context.UsedAppTypes, context.UsedRuntimeTypes, context.WrittenTwins.Wrote) ?? "null"));
         }
         return specs;
     }
@@ -900,10 +907,20 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
     /// <summary>The name a construction calls, its type's twin's: named by its owner where it is nested
     /// (#584), and imported from there, and the type's own name otherwise.</summary>
+    /// <summary>The name <c>new</c> writes, recorded as a write of the type it builds (#830), unless the
+    /// twin that named it recorded it already.</summary>
+    private static JsExpr Constructed(ITypeSymbol? created, string name, bool introduced, ConversionContext context)
+    {
+        if (!introduced) context.WrittenTwins.Wrote(created, name);
+        return JsExpr.Identifier(name);
+    }
+
     private static string TwinOf(ITypeSymbol type, ConversionContext context)
     {
         if (type is not INamedTypeSymbol named) return type.Name;
+        // A renamed twin is registered, which records the write; any other is recorded here (#830).
         if (named.RenamedTwin() is not null) named.RegisterIntroduced(context);
+        else context.WrittenTwins.Wrote(named);
         return named.TwinReference();
     }
 

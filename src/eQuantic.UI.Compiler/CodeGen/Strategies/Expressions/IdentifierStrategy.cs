@@ -60,8 +60,12 @@ public class IdentifierStrategy : IExpressionIrStrategy
             return JsExpr.Identifier(aliased.TwinReference());
         }
 
-        // If it's a type symbol, return as is (to allow EnumStrategy to work)
-        if (symbol is ITypeSymbol || symbol is INamedTypeSymbol) return JsExpr.Identifier(name);
+        // If it's a type symbol, return as is (to allow EnumStrategy to work), a write of the type (#830).
+        if (symbol is ITypeSymbol type)
+        {
+            context.WrittenTwins.Wrote(type, name);
+            return JsExpr.Identifier(name);
+        }
 
         if (context.SemanticHelper.IsSystemConsole(symbol)) return JsExpr.Identifier("console");
         if (context.SemanticModel == null && name == "Console") return JsExpr.Identifier("console");

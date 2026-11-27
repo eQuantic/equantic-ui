@@ -9,8 +9,10 @@ namespace eQuantic.UI.Compiler.Services;
 
 /// <summary>
 /// Every type declared in source that one declaration names, as the SYMBOLS say: each twin's name
-/// with the files that declare it. It is what tells a module's <c>./Status</c> apart: the app's own
-/// <c>Status</c>, or the one a referenced project declares.
+/// with the files that declare it. It answers whether a name can be a sibling module, and what a
+/// module's <c>./Status</c> means where a writer wrote <c>Status</c> and recorded no type: the app's own
+/// <c>Status</c>, the one a referenced project declares, or both. Where every use of the name is a write
+/// on record, the writes say which, and this is not asked (<see cref="CodeGen.WrittenTwins"/>, #830).
 /// <para>
 /// It reads the whole of what the code can name, never a list of the ways to name it: every symbol a
 /// name binds to with the type that declares it (a static member's owner, a constructor's type, the

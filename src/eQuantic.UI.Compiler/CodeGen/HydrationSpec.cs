@@ -29,15 +29,17 @@ public static class HydrationSpec
 {
     /// <summary>The JS spec literal for <paramref name="type"/>, or null when hydration is the
     /// identity. Record/struct names the spec references are added to <paramref name="referenced"/>
-    /// so the caller can import their modules.</summary>
-    public static string? Of(ITypeSymbol? type, ISet<string> referenced, ISet<string> runtime) =>
-        Of(type, new References(referenced, runtime), new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default));
+    /// so the caller can import their modules, and <paramref name="wrote"/> is told of each type of the
+    /// source the spec writes by name, once for each time it writes it, for a caller that writes the spec
+    /// into a module (#830).</summary>
+    public static string? Of(ITypeSymbol? type, ISet<string> referenced, ISet<string> runtime, Action<INamedTypeSymbol>? wrote = null) =>
+        Of(type, new References(referenced, runtime, wrote), new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default));
 
     /// <summary>Where the names a spec mentions come from: <c>InSource</c> are this compilation's
     /// own twins, sibling modules; <c>Runtime</c> are the vocabulary's, which only
     /// <c>@equantic/runtime</c> exports. A caller that imported a runtime twin from a sibling module
     /// emitted `import { Rect } from "./Rect"`, a module that exists nowhere.</summary>
-    private readonly record struct References(ISet<string> InSource, ISet<string> Runtime);
+    private readonly record struct References(ISet<string> InSource, ISet<string> Runtime, Action<INamedTypeSymbol>? Wrote);
 
     private static string? Of(ITypeSymbol? type, References referenced, HashSet<INamedTypeSymbol> visiting)
     {
@@ -121,6 +123,7 @@ public static class HydrationSpec
         if (IsEmittedValueType(named) && !named.IsHostOnly())
         {
             referenced.InSource.Add(named.TwinTypeName());
+            referenced.Wrote?.Invoke(named);
             // A CONSTRUCTED generic record shares its twin with the open declaration, whose
             // `$hydration` cannot know what T is: `Box<long>`'s value arrived as the text the wire
             // writes. Its own members, T substituted, describe it on that twin. A record that holds
@@ -345,11 +348,12 @@ public static class HydrationSpec
             .OfType<(string, ITypeSymbol)>();
 
     /// <summary>The member map for a record/struct twin — <c>{ id: 'long', price: Money }</c> with
-    /// the twin's camelCased member names — or null when no member needs hydration.</summary>
-    public static string? Members(INamedTypeSymbol type, ISet<string> referenced, ISet<string> runtime)
+    /// the twin's camelCased member names — or null when no member needs hydration. <paramref name="wrote"/>
+    /// is told of what it writes, as <see cref="Of(ITypeSymbol?, ISet{string}, ISet{string}, Action{INamedTypeSymbol}?)"/> tells it.</summary>
+    public static string? Members(INamedTypeSymbol type, ISet<string> referenced, ISet<string> runtime, Action<INamedTypeSymbol>? wrote = null)
     {
         var entries = DataMembers(type)
-            .Select(m => (m.Name, Spec: Of(m.Type, referenced, runtime)))
+            .Select(m => (m.Name, Spec: Of(m.Type, referenced, runtime, wrote)))
             .Where(m => m.Spec is not null)
             .Select(m => $"{m.Name.ToCamelCase()}: {m.Spec}")
             .ToList();

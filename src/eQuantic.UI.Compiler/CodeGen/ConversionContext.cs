@@ -182,6 +182,10 @@ public class ConversionContext
     /// per-module import set.</summary>
     public HashSet<string> UsedAppTypes { get; } = new();
 
+    /// <summary>Each type of the source whose twin a writer wrote into the module, once per write (#830):
+    /// what the module's <c>./Order</c> means, said by whoever wrote it.</summary>
+    internal WrittenTwins WrittenTwins { get; } = new();
+
     /// <summary>
     /// RUNTIME-PROVIDED names the conversion introduced into the output — same problem as
     /// <see cref="UsedAppTypes"/>, opposite destination. The declarative factory surface is the
@@ -312,6 +316,7 @@ public class ConversionContext
         SemanticHelper.ClearSynthetics();
         UsedHelpers.Clear();
         UsedAppTypes.Clear();
+        WrittenTwins.Clear();
         UsedRuntimeTypes.Clear();
         _cache.Clear();
         Temporaries.Reset();

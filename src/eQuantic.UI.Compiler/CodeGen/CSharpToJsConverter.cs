@@ -210,6 +210,9 @@ public class CSharpToJsConverter
     /// <summary>See <see cref="ConversionContext.UsedAppTypes"/> — output-introduced app-type names.</summary>
     public HashSet<string> UsedAppTypes => _context.UsedAppTypes;
 
+    /// <summary>See <see cref="ConversionContext.WrittenTwins"/>: each twin a writer wrote, by its symbol.</summary>
+    internal WrittenTwins WrittenTwins => _context.WrittenTwins;
+
     /// <summary>See <see cref="ConversionContext.RefusedTwins"/>: the twins a fence already refused in
     /// this module.</summary>
     internal IReadOnlySet<string> RefusedTwins => _context.RefusedTwins;

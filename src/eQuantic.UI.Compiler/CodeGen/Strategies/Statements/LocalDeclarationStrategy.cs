@@ -201,9 +201,14 @@ public class LocalDeclarationStrategy : IStatementStrategy
         // The written type mapped by its text, then each type of it eqc writes under another name named by
         // its twin and imported: `Cart.Item c = null;` declared `Item`, and `function f = null;` the word
         // `function`, neither of them a type the module has.
-        else ts = CodeGen.TypeScriptEmitter.NestedTwinsInside(
-            CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(declaration.Type.ValueText()), underlying,
-            (part, _) => part.IntroduceTwin(context));
+        else
+        {
+            // The text names each top-level type as written, a write of it (#830); a nested one's twin is
+            // introduced below, which records it.
+            var mapped = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(declaration.Type.ValueText());
+            context.WrittenTwins.Wrote(underlying, mapped);
+            ts = CodeGen.TypeScriptEmitter.NestedTwinsInside(mapped, underlying, (part, _) => part.IntroduceTwin(context));
+        }
 
         if (ts is "any" or "void") return null;
         if (!ts.EndsWith(" | null", StringComparison.Ordinal)) ts = CodeGen.TypeScriptEmitter.OrNull(ts);

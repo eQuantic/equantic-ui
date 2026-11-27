@@ -175,7 +175,7 @@ public class TypeScriptEmitter
         var entries = carried
             .Select(value => $"{value.Key}: {(value.Projection is { } projection
                 ? ProjectionSpec(value.Type, projection)
-                : HydrationSpec.Of(value.Type, referenced, _hydrationRuntimeReferences) ?? "'declared'")}")
+                : HydrationSpec.Of(value.Type, referenced, _hydrationRuntimeReferences, _converter.WrittenTwins.Wrote) ?? "'declared'")}")
             .ToList();
         if (entries.Count == 0) return;
         // A GETTER, never a field: the map can name a class (`_geometry: BarChartGeometry`), and a
@@ -219,7 +219,7 @@ public class TypeScriptEmitter
         {
             var spec = child.Children.Count > 0
                 ? Members(child)
-                : HydrationSpec.Of(child.Leaf, _hydrationReferences, _hydrationRuntimeReferences);
+                : HydrationSpec.Of(child.Leaf, _hydrationReferences, _hydrationRuntimeReferences, _converter.WrittenTwins.Wrote);
             if (spec is not null) entries.Add($"{segment.ToCamelCase()}: {spec}");
         }
         return entries.Count == 0 ? null : $"{{ members: {{ {string.Join(", ", entries)} }} }}";
@@ -474,6 +474,9 @@ public class TypeScriptEmitter
             baseClass = baseClass.Substring(0, baseClass.IndexOf('<'));
         }
         
+        // The base is a write of the type it names, recorded with the rest of the module's (#830).
+        if (component.ClassSyntax is { } derived && semanticModel?.GetDeclaredSymbol(derived) is INamedTypeSymbol { BaseType: { } baseType })
+            _converter.WrittenTwins.Wrote(baseType, baseClass);
         _builder.Class(component.Name, baseClass, c =>
             {
                 // WHO THIS IS at the seam with the server: the CLR full name, as a string the compiler
@@ -503,7 +506,7 @@ public class TypeScriptEmitter
                     && TypeInitializer.Orders(staticsOf, ModelFor);
                 _converter.SetCurrentClass(component.Name);
                 var initializedStatics = orderedStatics
-                    ? TypeInitializer.Collect(component.ClassSyntax!, ModelFor, type => DeclarationType(component, type.ValueText()),
+                    ? TypeInitializer.Collect(component.ClassSyntax!, ModelFor, type => Recorded(DeclarationType(component, type.ValueText()), type),
                         type => ValueTypeDefault(type.ValueText(), type) ?? "null", StaticValue)
                     : [];
                 var slots = initializedStatics.Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
@@ -515,7 +518,7 @@ public class TypeScriptEmitter
                         if (component.IsPrimitive && !field.IsStatic) continue;
                         // A static that initializes in order is its slot's, and holds no field.
                         if (field.IsStatic && slots.Contains(field.Slot)) continue;
-                        var tsType = DeclarationType(component, field.Type);
+                        var tsType = Recorded(DeclarationType(component, field.Type), field.TypeNode);
                         var tsDefault = field.DefaultValueNode is not { Parent: EqualsValueClauseSyntax given } ? null
                             : field.IsStatic && field.TypeNode is { } declared ? StaticValue(given, declared)
                             : Initializer(given.Value, field.Type);
@@ -892,7 +895,8 @@ public class TypeScriptEmitter
                         ? $", {{ timeoutMs: {seconds * 1000} }}"
                         : "";
                     var invoke = $"getServerActionsClient().invoke('{action.ActionId}', [{argsList}]{options})";
-                    var resultSpec = HydrationSpec.Of(ActionValueType(action.SyntaxNode), _hydrationReferences, _hydrationRuntimeReferences);
+                    var resultSpec = HydrationSpec.Of(ActionValueType(action.SyntaxNode), _hydrationReferences,
+                        _hydrationRuntimeReferences, _converter.WrittenTwins.Wrote);
                     if (resultSpec is not null) component.UsedHelpers.Add(Eq.Import);
 
                     c.Member(JsClassMember.Method("async ", action.MethodName.ToCamelCase(), "", paramsList, "", JsStatement.Block(new[]
@@ -1734,9 +1738,9 @@ public class TypeScriptEmitter
                         // A store that initializes in order is its slot, and the accessors read it.
                         if (prop.IsStatic && slots.Contains(slot)) { }
                         else if (prop.IsStatic && StaticInitial(component, prop) is { } initial)
-                            c.Field(slot, DeclarationType(component, prop.Type), initial, node, isStatic: true);
+                            c.Field(slot, Recorded(DeclarationType(component, prop.Type), (node as BasePropertyDeclarationSyntax)?.Type), initial, node, isStatic: true);
                         else
-                            c.Field(slot, DeclarationType(component, prop.Type), null, node, isStatic: prop.IsStatic, isDeclare: true);
+                            c.Field(slot, Recorded(DeclarationType(component, prop.Type), (node as BasePropertyDeclarationSyntax)?.Type), null, node, isStatic: prop.IsStatic, isDeclare: true);
                         if (!getterHasBody && getter != null)
                             c.Member(JsClassMember.Getter(stat, name, "", JsStatement.Return(JsExpr.ThisMember(slot))), getter);
                     }
@@ -1770,11 +1774,11 @@ public class TypeScriptEmitter
                 }
                 else if (prop.IsStatic)
                 {
-                    c.Field(name, DeclarationType(component, prop.Type), StaticInitial(component, prop), node, isStatic: true);
+                    c.Field(name, Recorded(DeclarationType(component, prop.Type), (node as BasePropertyDeclarationSyntax)?.Type), StaticInitial(component, prop), node, isStatic: true);
                 }
                 else
                 {
-                    c.Field(name, DeclarationType(component, prop.Type), null, node, isDeclare: true);
+                    c.Field(name, Recorded(DeclarationType(component, prop.Type), (node as BasePropertyDeclarationSyntax)?.Type), null, node, isDeclare: true);
                 }
             }
         }
@@ -2493,7 +2497,9 @@ public class TypeScriptEmitter
     /// (the compiler emits no module for one, so importing the name asks for a file that does not
     /// exist — `Cannot find name 'ICodeLanguage'`).
     /// </summary>
-    private string DeclaredType(TypeSyntax? type)
+    private string DeclaredType(TypeSyntax? type) => Recorded(DeclaredTypeOf(type), type);
+
+    private string DeclaredTypeOf(TypeSyntax? type)
     {
         if (type is null) return "any";
         // Ask about the type ITSELF. `IThing?` is a NullableTypeSyntax WRAPPER: Roslyn answers
@@ -2853,6 +2859,20 @@ public class TypeScriptEmitter
     /// one is a sibling module too, where a symbol of this module names it (#624). The compiler sets
     /// it for each module, and a build with no referenced project leaves it naming none.</summary>
     internal Services.ReferencedNames Referenced { get; set; } = Services.ReferencedNames.None;
+    /// <summary>Each twin the module's writers wrote, by its symbol (#830): what its sibling imports mean.</summary>
+    internal WrittenTwins WrittenTwins => _converter.WrittenTwins;
+
+    /// <summary>
+    /// <paramref name="ts"/>, the annotation of a declaration of <paramref name="declared"/>, recorded as a
+    /// write of each type of the source it names (#830). Nothing is written, and nothing recorded, where the
+    /// module is JavaScript.
+    /// </summary>
+    private string Recorded(string ts, TypeSyntax? declared)
+    {
+        if (TypeAnnotations && declared is not null && ModelFor(declared) is { } model)
+            _converter.WrittenTwins.Wrote(model.GetSymbolInfo(declared).Symbol as ITypeSymbol ?? model.GetTypeInfo(declared).Type, ts);
+        return ts;
+    }
 
     /// <summary>
     /// The net under every fence (#584): a twin this module would import that the build writes no
@@ -2970,7 +2990,11 @@ public class TypeScriptEmitter
         // as an empty class that answered "tokenize is not a function" — from very far away from the
         // declaration that lost it.
         var builder = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations, Layout = _converter.Layout };
-        builder.Class(name, BaseClassOf(cls), c =>
+        var baseOf = BaseClassOf(cls);
+        // The base is a write of the type it names (#830).
+        if (_semanticModel?.GetDeclaredSymbol(cls) is INamedTypeSymbol { BaseType: { } plainBase })
+            _converter.WrittenTwins.Wrote(plainBase, baseOf);
+        builder.Class(name, baseOf, c =>
             {
                 // An exception class of the app's says the .NET types it is, which the runtime's base
                 // reads off the class an exception is constructed as, for a typed catch (#611).
@@ -3154,7 +3178,8 @@ public class TypeScriptEmitter
                 : null;
             var isRest = syntaxParameters is { } paramList && index < paramList.Count
                 && Strategies.BoundArguments.IsRest(paramList[index], _converter.Compilation);
-            return Lowering.ParamWithDefault(name, DeclarationType(component, p.Type),
+            return Lowering.ParamWithDefault(name,
+                Recorded(DeclarationType(component, p.Type), syntaxParameters is { } typed && index < typed.Count ? typed[index].Type : null),
                 defaultValue is null ? null : _converter.ConvertExpression(defaultValue), isRest);
         }));
         // The name every call bound to it reaches: a method that hides one holds a name of its own (#563).

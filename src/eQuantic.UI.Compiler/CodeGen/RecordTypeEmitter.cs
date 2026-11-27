@@ -290,8 +290,25 @@ public class RecordTypeEmitter
     /// (<see cref="TypeDeclarationExtensions.TsTypeFor"/>): a parameter's and a member's were two
     /// rules, and the parameter's called every enum a string, a [Flags] one included, and named an
     /// exception by its C# name.</summary>
-    private string TsTypeOf(TypeSyntax? type) =>
-        type is null ? "any" : TypeDeclarationExtensions.TsTypeFor(type, ModelFor(type));
+    /// <summary>The type a member's declaration declares: a positional parameter's, a property's or a field's.</summary>
+    private ITypeSymbol? DeclaredTypeOf(SyntaxNode declaration) => ModelFor(declaration)?.GetDeclaredSymbol(declaration) switch
+    {
+        IParameterSymbol parameter => parameter.Type,
+        IPropertySymbol property => property.Type,
+        IFieldSymbol field => field.Type,
+        _ => null,
+    };
+
+    private string TsTypeOf(TypeSyntax? type)
+    {
+        if (type is null) return "any";
+        var model = ModelFor(type);
+        var ts = TypeDeclarationExtensions.TsTypeFor(type, model);
+        // An annotation is a write of each type of the source it names, where the module is TypeScript (#830).
+        if (_annotations && model is not null)
+            _converter.WrittenTwins.Wrote(model.GetSymbolInfo(type).Symbol as ITypeSymbol ?? model.GetTypeInfo(type).Type, ts);
+        return ts;
+    }
 
     /// <param name="type">The record/struct declaration to emit.</param>
     /// <param name="tsTypeDeclarations">Emit the TYPE-ONLY <c>declare</c> member declarations. They are
@@ -324,6 +341,9 @@ public class RecordTypeEmitter
         // TypeScript forbids to read a class's type parameters, every one of them open.
         var instanceType = name + generics;
         var staticType = classTypeParameters.Count > 0 ? $"{name}<{string.Join(", ", classTypeParameters.Select(_ => "any"))}>" : name;
+        // The base is a write of the type it names (#830).
+        if (baseName is not null && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol { BaseType: { } writtenBase })
+            _converter.WrittenTwins.Wrote(writtenBase, baseName);
         sb.Append($"class {name}{headerGenerics}{(baseName != null ? $" extends {baseName}" : "")} {{ ");
 
         // TYPE-ONLY member declarations: they restore checking on `record.x` without emitting any runtime
@@ -331,7 +351,11 @@ public class RecordTypeEmitter
         // parameter its base already has a property for is the base's, declared by the base module.
         if (tsTypeDeclarations)
             foreach (var m in members)
+            {
+                // A write of each type of the source the annotation names (#830).
+                _converter.WrittenTwins.Wrote(DeclaredTypeOf(m.Declaration), m.TsType);
                 sb.Append($"declare {m.Store}: {m.TsType}; ");
+            }
 
         // The C# constructors, as the one the twin has (TwinConstructor, #413): the same builder a plain
         // class's constructor comes from, so the two reach, chain and base alike.
@@ -518,7 +542,7 @@ public class RecordTypeEmitter
             // The twin's own TYPED BOUNDARY: which members hydrate off the wire, and as what —
             // `$eq.hydrate` rebuilds a payload object on this prototype and coerces by this map.
             if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol symbol
-                && HydrationSpec.Members(symbol, new HashSet<string>(), new HashSet<string>()) is { } hydration)
+                && HydrationSpec.Members(symbol, new HashSet<string>(), new HashSet<string>(), _converter.WrittenTwins.Wrote) is { } hydration)
                 // A getter, for the reason TypeScriptEmitter's map is one: a static initializer
                 // naming another class runs before an import cycle has defined it.
                 sb.Append($"static get $hydration() {{ return {hydration}; }} ");
