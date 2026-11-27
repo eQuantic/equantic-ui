@@ -88,6 +88,27 @@ public class AFlexibleInAHuggingLineTests
         row.Width.Should().BeLessThanOrEqualTo(264);
     }
 
+    /// <summary>An entry gives no more than it has: one that reaches nothing is frozen there and the rest of the overrun
+    /// is shared among the others, and an entry that refuses to shrink keeps its size, as a browser keeps a
+    /// <c>flex-shrink: 0</c> item's, so two of them overrun the line between them (found by the review). Each entry is
+    /// offered the 186dp the button and three gaps leave.</summary>
+    [Theory]
+    [InlineData(new[] { 1, 1, 10 }, 186)]
+    [InlineData(new[] { 0, 1, 1 }, 186)]
+    [InlineData(new[] { 0, 0, 1 }, 2 * 186)]
+    public void EntriesOfUnequalShrink_GiveBackNoMoreThanTheyHave(int[] shrinks, float together)
+    {
+        var tree = Measure(() => Cell(
+            [.. shrinks.Select(shrink => new Flexible(new TextEntry("x", null) { Placeholder = "Entry" }, 1, shrink: shrink)), Fixed(48)]));
+
+        var entries = All(tree).Where(node => node.Source is Flexible).Select(node => node.Bounds.Width).ToList();
+        entries.Should().OnlyContain(width => width >= 0, "an entry shrinks to nothing at most");
+        for (var k = 0; k < shrinks.Length; k++)
+            if (shrinks[k] == 0)
+                entries[k].Should().BeApproximately(186, 0.5f, "an entry that refuses to shrink keeps the size it was offered");
+        entries.Sum().Should().BeApproximately(together, 0.5f);
+    }
+
     [Fact]
     public void AShortLabel_KeepsItsOwnWidth()
     {
