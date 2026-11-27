@@ -207,6 +207,36 @@ public class LiveRegionAnnouncementTests
     }
 
     /// <summary>
+    /// What another test, or another window, posts to the thread that draws is not this host's (#1239). An editor's
+    /// fold answer posted from its timer's thread told every live host its tree had changed, so a region back to what
+    /// it said read as owing a frame, now and then, in a suite where an editor's timer outlived its own test.
+    /// </summary>
+    [Fact]
+    public void WorkPostedFromAnotherThread_ChangesNothingARegionOwes()
+    {
+        var root = new Mutable("A1");
+        var host = Host(root);
+        Frame(host, 0);
+        root.Text = "B3, 1";
+        Frame(host, 100).Should().ContainSingle();
+        root.Text = "C3, 2";
+        Frame(host, 400);
+        root.Text = "D3, 3";
+        Frame(host, 700).Should().BeEmpty("inside the window");
+
+        // As an editor's fold answer arrives from a timer's thread, between this frame and the next.
+        var worker = new Thread(() => PhotonDispatcher.Shared.Post(() => { }));
+        worker.Start();
+        worker.Join();
+
+        host.NeedsRender.Should().BeFalse("nothing of this host's tree changed");
+        host.IsFrameDue(1100).Should().BeTrue("the owed announcement is still scheduled for the window's end");
+        Frame(host, 1100).Single().Text.Should().Be("D3, 3", "the frame that ran the work says what was owed");
+        host.NeedsRender.Should().BeFalse();
+        host.IsFrameDue(5000).Should().BeFalse("nothing is owed any more");
+    }
+
+    /// <summary>
     /// DRAINED, not read. A bridge asks after each frame; asking twice must not say it twice, or
     /// the sixty-times-a-second failure arrives from the polling end instead of the diffing end.
     /// </summary>

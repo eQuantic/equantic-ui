@@ -46,6 +46,7 @@ public class AllowedValueAnalyzerTests
     [InlineData("Icon(Icons.Search, 22)", "22")]
     [InlineData("Icon(Icons.Search, size: 18f)", "18")]
     [InlineData("new Icon(Icons.Search, 22.5f)", "22.5")]
+    [InlineData("Icon(Icons.Search, (float?)22)", "22")]
     public async Task AnIconOfASizeOffTheScale_IsABuildError(string construction, string written)
     {
         var diagnostics = await AnalyzeAsync(Page(construction));
@@ -55,7 +56,8 @@ public class AllowedValueAnalyzerTests
         error.Severity.Should().Be(DiagnosticSeverity.Error);
         var message = error.GetMessage();
         message.Should().StartWith(written + " is not a value 'size' of ");
-        message.Should().Contain("it takes 16, 20, 24 or 32", "the message names what the parameter takes");
+        message.Should().Contain("it takes null, 16, 20, 24 or 32",
+            "the message names what the parameter takes, null for the size the box around the icon states included");
         message.Should().Contain("Vector", "and where a glyph of another size goes, from the mark's own words");
     }
 
@@ -65,6 +67,7 @@ public class AllowedValueAnalyzerTests
     [InlineData("Icon(Icons.Search, (float)32d)")]
     [InlineData("Icon(Icons.Search, IconSize.Lg)")]
     [InlineData("Icon(Icons.Search)")]
+    [InlineData("Icon(Icons.Search, size: null)")]
     [InlineData("new Icon(Icons.Search, runtimeSize)")]
     public async Task AnIconOnTheScale_OrOfASizeOnlyTheRunKnows_IsLeftAlone(string construction)
     {
@@ -118,5 +121,28 @@ public class AllowedValueAnalyzerTests
 
         diagnostics.Select(diagnostic => diagnostic.GetMessage())
             .Should().Equal("3 is not a value 'zoom' of new Marked(…) allows: it takes 1 or 2.");
+    }
+
+    [Fact]
+    public async Task ANull_HandedToANullableParameterWhoseValuesLeaveItOut_IsABuildError()
+    {
+        // Unlike 22 on its way to a float?, a null literal converted to Nullable<int> is a constant C# folds itself,
+        // written cast or not: a mark that leaves null out refuses it, and one that lists it takes it.
+        var diagnostics = await AnalyzeAsync("""
+            using System.ComponentModel.DataAnnotations;
+
+            public static class Probe
+            {
+                public static int? Take([AllowedValues(1, 2)] int? count) => count;
+                public static int? Maybe([AllowedValues(null, 1, 2)] int? count) => count;
+                public static int? None() => Take(null);
+                public static int? Cast() => Take((int?)null);
+                public static int? Listed() => Maybe(null);
+            }
+            """);
+
+        diagnostics.Select(diagnostic => diagnostic.GetMessage()).Should().Equal(
+            "null is not a value 'count' of Take(…) allows: it takes 1 or 2.",
+            "null is not a value 'count' of Take(…) allows: it takes 1 or 2.");
     }
 }

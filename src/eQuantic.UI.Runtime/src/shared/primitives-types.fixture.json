@@ -93,6 +93,7 @@
   "Column",
   "ComponentContext",
   "ComponentElement",
+  "ContentStyle",
   "ContextRequest",
   "ContextTarget",
   "ControlsTheme",

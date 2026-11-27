@@ -134,6 +134,11 @@ public class ComponentDefinition
     /// types ride in <see cref="ValueTypeSyntax"/>'s parameter list.</summary>
     public bool IsUnionType { get; set; }
 
+    /// <summary>An interface whose twin can be written (<see cref="CodeGen.InterfaceTwin"/>), emitted as a module holding
+    /// <c>export interface</c> that a type parameter's constraint can name (#1878); its declaration rides in
+    /// <see cref="ValueTypeSyntax"/>.</summary>
+    public bool IsInterfaceTwin { get; set; }
+
     /// <summary>
     /// The record/struct declaration syntax, when <see cref="IsRecordType"/> is true.
     /// </summary>

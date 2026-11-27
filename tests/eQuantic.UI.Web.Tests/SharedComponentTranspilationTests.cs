@@ -176,261 +176,6 @@ public class SharedComponentTranspilationTests
     /// never left of a comma as it is, where TypeScript refuses a value it judges free of effects (TS2695,
     /// Copilot's second review of #1157). Never executed: what it proves is the type-check.
     /// </summary>
-    /// <summary>
-    /// The shapes the element engine is written in that eqc's twin failed the runtime's <c>tsc</c> on
-    /// (#1303 to #1307): a downcast reaching a member of the derived type, abstract members of every
-    /// accessibility called through the base, a constructor chained to one with an argument the first
-    /// supplies, a lambda stored in a static field, and a field's collection initializer beside a base
-    /// constructor call. And initializers of hand-written vocabulary twins setting a member their config
-    /// lacked (#1823): a box style's foreground, a node's bookmark, cross alignment and grid span on a config
-    /// written in place, a spacer's fixed length, and members the constructor takes as parameters too (an image's
-    /// label, a text's role, a group's child, a safe area's edges, a gradient's direction). Written to
-    /// <c>__fixtures__</c>, where the runtime's <c>tsc</c> reads every line. And a plain generic class, a generic
-    /// record and a generic struct, whose class declared no type parameters while its members named them (#1845).
-    /// </summary>
-    private const string EmissionShapesSource = """
-        using System;
-        using System.Collections.Generic;
-        using eQuantic.UI.Primitives;
-
-        namespace eQuantic.UI.Web.Tests.Fixtures;
-
-        public abstract class EmittedShape { }
-
-        public sealed class EmittedSquare(int side) : EmittedShape
-        {
-            public int Side { get; } = side;
-        }
-
-        public abstract class EmittedFramed : EmittedShape
-        {
-            public EmittedShape? Child { get; init; }
-        }
-
-        public sealed class EmittedCard : EmittedFramed { }
-
-        public abstract class EmittedFlex : EmittedShape
-        {
-            public List<EmittedShape> Children { get; } = new();
-        }
-
-        public sealed class EmittedRow : EmittedFlex { }
-
-        public static class EmittedShapes
-        {
-            public static int SideOf(EmittedShape shape) => ((EmittedSquare)shape).Side;
-
-            // A member the cast's type inherits, a property and a list (#1396).
-            public static EmittedShape? Inside(EmittedShape shape) => ((EmittedCard)shape).Child;
-
-            public static int Count(EmittedShape shape) => ((EmittedRow)shape).Children.Count;
-
-            // A member declared on a base the cast's type sits under, read through a cast to that base.
-            public static EmittedShape? Framed(EmittedShape shape) => ((EmittedFramed)shape).Child;
-
-            // A node of the vocabulary over a base the server keeps: Pressable's Child is SingleChildNode's, and
-            // Row's Children is FlexNode's, each read off the runtime's twin (#1396).
-            public static VisualNode Pressed(VisualNode node) => ((Pressable)node).Child;
-
-            public static int InARow(VisualNode node) => ((Row)node).Children.Count;
-        }
-
-        public abstract class EmittedStep
-        {
-            public int Run() => Draw() + Measure() + Layout() + Paint();
-            public abstract int Draw();
-            internal abstract int Measure();
-            private protected abstract int Layout();
-            protected abstract int Paint();
-            public abstract System.Threading.Tasks.Task<int> LoadAsync(int from, int count = 10);
-            public abstract System.Threading.Tasks.Task SaveAsync(params int[] values);
-            public abstract T Pick<T>(T first, T second);
-        }
-
-        public sealed class EmittedRunner
-        {
-            private readonly Func<int, int> _step;
-            public EmittedRunner(Func<int, int> step) : this(step, live: true) { }
-            private EmittedRunner(Func<int, int> step, bool live) { _step = step; Live = live; }
-            public bool Live { get; }
-            public int Run(int value) => _step(value);
-        }
-
-        // A for head that declares its variable wider than its initializer: `this`, walked up to null (#1483).
-        public sealed class EmittedChain
-        {
-            public EmittedChain? Parent { get; init; }
-
-            public int Depth()
-            {
-                var depth = 0;
-                for (EmittedChain? at = this; at != null; at = at.Parent) depth++;
-                return depth;
-            }
-        }
-
-        // A context annotated as the runtime's interface and constructed as its class, as the element engine builds
-        // one per position (#1475).
-        public sealed class EmittedContexts
-        {
-            private ComponentContext? _context;
-
-            public ComponentContext For(IAppTheme theme) => _context ??= new ComponentContext(theme);
-        }
-
-        public sealed class EmittedItem(int depth)
-        {
-            public int Depth { get; } = depth;
-        }
-
-        public static class EmittedItems
-        {
-            private static readonly Comparison<EmittedItem> ByDepth = static (a, b) => a.Depth.CompareTo(b.Depth);
-            public static void Order(List<EmittedItem> items) => items.Sort(ByDepth);
-        }
-
-        public class EmittedBase(string name)
-        {
-            public string Name { get; } = name;
-        }
-
-        public sealed class EmittedBag : EmittedBase
-        {
-            private List<string?> _items = new();
-            public EmittedBag(string name) : base(name) { }
-            public int Count => _items.Count;
-        }
-
-        public static class EmittedConfigs
-        {
-            public static BoxStyle Inked() => new BoxStyle { Foreground = new ColorToken(Color.Black) };
-
-            public static VisualNode Grouped(VisualNode child) =>
-                new Group(child) { Label = "Totals", Bookmark = "totals", AlignSelf = CrossAlign.Center, GridSpan = 2 };
-
-            public static Spacer Rigid() => new Spacer { FixedLength = 8 };
-
-            // Members the constructor takes as parameters too, which an initializer sets through the config.
-            public static Image Labelled() => new Image("a.png", 1, 2) { Label = "Chart" };
-
-            public static Text Titled() => new Text("Totals") { Role = TypeRole.Title, MaxLines = 2 };
-
-            public static Group Reparented(VisualNode first, VisualNode second) => new Group(first) { Child = second };
-
-            public static SafeArea Inset(VisualNode child) => new SafeArea(child) { Edges = 3 };
-
-            public static LinearGradient Downward() =>
-                new LinearGradient(new ColorToken(Color.Black), new ColorToken(Color.White)) { Direction = GradientDirection.ToBottom };
-        }
-
-        public sealed class EmittedFactory<T>
-        {
-            private readonly Func<T> _create;
-            private readonly Action<T> _initialize;
-            public EmittedFactory(Func<T> create, Action<T> initialize) { _create = create; _initialize = initialize; }
-            public T Build() { var made = _create(); _initialize(made); return made; }
-        }
-
-        public sealed record EmittedPair<TKey>(TKey Key, int Rank);
-
-        public struct EmittedSlot<TValue>
-        {
-            public TValue Value;
-            public EmittedSlot(TValue value) { Value = value; }
-        }
-
-        public abstract class EmittedShapeBase { public abstract int Area { get; } }
-
-        public sealed class EmittedMeasured<T> where T : EmittedShapeBase
-        {
-            private readonly T _shape;
-            public EmittedMeasured(T shape) { _shape = shape; }
-            public int Area() => _shape.Area;
-        }
-
-        public sealed record EmittedTagged<T>(T Shape, string Tag) where T : EmittedShapeBase
-        {
-            public int Area => Shape.Area;
-        }
-
-        public sealed class EmittedHandler<T> where T : EmittedShapeBase
-        {
-            private readonly Action<T> _use;
-            public EmittedHandler(Action<T> use) { _use = use; }
-            public void Give(EmittedShapeBase shape) => _use((T)shape);
-            public static EmittedShapeBase Unbox(object value) => (T)value;
-            public EmittedShapeBase Same(object value)
-            {
-                static TOut Cast<TOut>(object held) => (TOut)held;
-                return Cast<EmittedShapeBase>(value);
-            }
-        }
-
-        public sealed class EmittedMaybe<T> where T : EmittedShapeBase?
-        {
-            private readonly T _shape;
-            public EmittedMaybe(T shape) { _shape = shape; }
-            public int Area() => _shape?.Area ?? 0;
-        }
-
-        public sealed class EmittedOwner<T> where T : EmittedShapeBase
-        {
-            public EmittedShapeBase Keep(object value) => (T)value;
-
-            public sealed class Held
-            {
-                public EmittedShapeBase Unwrap(object value) => (T)value;
-            }
-        }
-
-        public sealed class EmittedPointer
-        {
-            public List<string> Members { get; } = new();
-        }
-
-        public sealed class EmittedArena
-        {
-            private readonly Dictionary<int, EmittedPointer> _arenas = new();
-            public int Count(int pointer)
-            {
-                if (!_arenas.TryGetValue(pointer, out var arena)) return 0;
-                var total = 0;
-                foreach (var member in arena.Members) total += member.Length;
-                return total;
-            }
-
-            public bool Find(int pointer, out EmittedPointer? found)
-            {
-                found = _arenas.TryGetValue(pointer, out var arena) ? arena : null;
-                return found != null;
-            }
-
-            public int Forget(int pointer)
-            {
-                if (Find(pointer, out var found)) found = null;
-                return found == null ? 0 : 1;
-            }
-
-            private readonly Dictionary<int, List<EmittedPointer>> _routes = new();
-            public int Routed(int pointer)
-            {
-                var total = 0;
-                if (_routes.TryGetValue(pointer, out var routed))
-                    foreach (var route in routed) total += route.Members.Count;
-                return total;
-            }
-
-            public int Drop(int pointer)
-            {
-                if (_arenas.TryGetValue(pointer, out EmittedPointer? seen)) seen = null;
-                return seen == null ? 0 : 1;
-            }
-
-            private EmittedPointer? _last;
-            public bool Remember(int pointer) => _arenas.TryGetValue(pointer, out _last);
-        }
-        """;
-
     private const string BoundReceiversSource = """
         using eQuantic.UI.Components;
         using eQuantic.UI.Primitives;
@@ -546,7 +291,7 @@ public class SharedComponentTranspilationTests
         var counterPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "SharedCounter.cs");
         var nestedPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "NestedReconciler.cs");
         var boundPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "BoundReceivers.cs");
-        var shapesPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "EmissionShapes.cs");
+        var shapes = ShapeSources(root);
         // The arena's members as an app writes them (#1563): real files, compiled into this suite for the C# side of
         // the arena's fixture, and transpiled here for the browser's.
         var gestureFixtures = GestureFixtureSources(root);
@@ -556,7 +301,7 @@ public class SharedComponentTranspilationTests
         trees.Add(CSharpSyntaxTree.ParseText(SharedCounterSource, path: counterPath));
         trees.Add(CSharpSyntaxTree.ParseText(NestedReconcilerSource, path: nestedPath));
         trees.Add(CSharpSyntaxTree.ParseText(BoundReceiversSource, path: boundPath));
-        trees.Add(CSharpSyntaxTree.ParseText(EmissionShapesSource, path: shapesPath));
+        trees.AddRange(shapes.Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path)));
         trees.AddRange(gestureFixtures.Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path)));
         // The shared sources build with <ImplicitUsings> — mirror the generated global usings, or
         // `Action?` fails to bind (CS0246) and the semantic paths silently degrade.
@@ -596,7 +341,7 @@ public class SharedComponentTranspilationTests
             .Append((counterPath, compiler.CompileSource(SharedCounterSource, counterPath)))
             .Append((nestedPath, compiler.CompileSource(NestedReconcilerSource, nestedPath)))
             .Append((boundPath, compiler.CompileSource(BoundReceiversSource, boundPath)))
-            .Append((shapesPath, compiler.CompileSource(EmissionShapesSource, shapesPath)))
+            .Concat(shapes.Select(path => (path, compiler.CompileFile(path))))
             .Concat(gestureFixtures.Select(path => (path, compiler.CompileFile(path))));
         foreach (var (path, results) in compilations)
         {
@@ -611,15 +356,19 @@ public class SharedComponentTranspilationTests
         return modules;
     }
 
-    /// <summary>The in-test proofs: they are transpiled and executed, but they are not library
-    /// surface and must not be embedded in the runtime a consumer ships.</summary>
-    private static readonly string[] Fixtures =
-    [
-        "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
-        "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
-        "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedShapeBase", "EmittedMeasured", "EmittedTagged", "EmittedHandler", "EmittedMaybe", "EmittedOwner", "EmittedOwner$Held", "EmittedPointer", "EmittedArena",
-        "ArenaProbe", "ArenaMember", "HoldThenDrag", "FactoryTypeChange", "FocusProbe", "FocusSearch",
-    ];
+    /// <summary>
+    /// The emission shapes (#1906): one file each under <c>Fixtures/Shapes</c>, read from the folder, so a pull request
+    /// adding one adds its own file and touches nothing another one does. They were one inline source and one list of
+    /// names every pull request appended to, and the merge queue met the conflict there three times. What they hold are
+    /// the shapes eqc's twins failed the runtime's <c>tsc</c> on: the element engine's (#1303 to #1307), the initializers
+    /// of hand-written vocabulary twins (#1823), the generic classes, records and structs (#1845) and those after them.
+    /// The project compiles none of them (its own assembly is a reference of the compilation here, and a shape in both
+    /// would bind twice); they are written to <c>__fixtures__</c>, where the runtime's <c>tsc</c> reads every line.
+    /// </summary>
+    private static string[] ShapeSources(string root) =>
+        Directory.GetFiles(Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "Shapes"), "*.cs")
+            .Order(StringComparer.Ordinal)
+            .ToArray();
 
     /// <summary>The arena's members as an app writes them (#1563): files of this suite's own, and the dashboard's own
     /// recognizer, read from the sample that ships it.</summary>
@@ -897,13 +646,18 @@ public class SharedComponentTranspilationTests
         // left the repository.
         var fixtureDir = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "__fixtures__");
         var embeddedDir = EmbeddedDir();
-        string Embedded(string typeScript) =>
-            BaseFromItsModule(typeScript.Replace("from \"@equantic/runtime\"", "from \"../runtime-exports\""),
-                modules.Keys.Except(Fixtures).ToHashSet());
         // EVERY module the shared library produces is runtime-provided — a hardcoded roster here
         // meant a new component transpiled fine, never reached runtime.js, and only failed in the
-        // browser with "does not provide an export named X". What the library declares IS the set.
-        var embeddedNames = modules.Keys.Except(Fixtures).ToHashSet();
+        // browser with "does not provide an export named X". What the library declares IS the set,
+        // read from the file each module came from: every other module is an in-test proof, kept out
+        // of the runtime a consumer ships (#1906), where a list of their names was kept by hand.
+        var library = SharedModelSources().Concat(SharedSources()).Select(Path.GetFullPath).ToHashSet(StringComparer.Ordinal);
+        var embeddedNames = transpiled
+            .Where(module => library.Contains(Path.GetFullPath(module.SourcePath)))
+            .Select(module => module.Result.ComponentName)
+            .ToHashSet();
+        string Embedded(string typeScript) =>
+            BaseFromItsModule(typeScript.Replace("from \"@equantic/runtime\"", "from \"../runtime-exports\""), embeddedNames);
         // And every library module's MAP beside it: the Server's build composes the bundle's map with
         // these, so a frame inside the SDK is named by its C# (#1108). A module with no mapping (a
         // record's, which eqc writes on one line) has none.
@@ -911,13 +665,20 @@ public class SharedComponentTranspilationTests
             .Where(module => embeddedNames.Contains(module.Result.ComponentName) && module.Result.SourceMap is not null)
             .ToDictionary(module => module.Result.ComponentName, module => module.Result.SourceMap!);
 
+        // An interface's twin is a type a constraint names (#1878): re-exported as a type, no value of it is reachable
+        // from the runtime's entry, and the bundle drops its module. Re-exported as a value, each twin's
+        // `export const` shipped in the served runtime.
+        var typeOnly = transpiled.Where(module => module.Result.IsInterfaceTwin)
+            .Select(module => module.Result.ComponentName).ToHashSet(StringComparer.Ordinal);
         // The BARREL: what the library exports is what the library CONTAINS. Hand-keeping the
         // roster in runtime-exports.ts had already fallen thirteen components behind — Table,
         // Select, Toast and friends transpiled, embedded, and could not be imported.
         var barrel = "// GENERATED by SharedComponentTranspilationTests — the shared library IS its\n"
             + "// directory, so this file is written from it rather than kept by hand.\n"
             + string.Concat(embeddedNames.OrderBy(name => name, StringComparer.Ordinal)
-                .Select(name => $"export {{ {name} }} from './{name}';\n"));
+                .Select(name => typeOnly.Contains(name)
+                    ? $"export type {{ {name} }} from './{name}';\n"
+                    : $"export {{ {name} }} from './{name}';\n"));
         var barrelPath = Path.Combine(embeddedDir, "index.ts");
 
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_TRANSPILED") == "1")

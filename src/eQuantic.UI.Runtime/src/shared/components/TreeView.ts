@@ -8,12 +8,12 @@ export class TreeView extends StatefulComponent {
     static dropInto: number = 1;
     static dropBefore: number = 2;
     static dropAfter: number = 3;
-    _open: any = $eq.collections.hashSet();
-    _loaded: any = $eq.collections.dictionary();
-    _loading: any = $eq.collections.hashSet();
-    _failed: any = $eq.collections.hashSet();
-    _started: any = $eq.collections.hashSet();
-    _stale: any = $eq.collections.hashSet();
+    _open: any = $eq.collections.hashSet<string>();
+    _loaded: any = $eq.collections.dictionary<string, any>();
+    _loading: any = $eq.collections.hashSet<string>();
+    _failed: any = $eq.collections.hashSet<string>();
+    _started: any = $eq.collections.hashSet<string>();
+    _stale: any = $eq.collections.hashSet<string>();
     _inTree: boolean = false;
     _rows: TreeViewRow[] = [];
     _activeKey: any = null;
@@ -31,8 +31,8 @@ export class TreeView extends StatefulComponent {
     _editSerial: number = 0;
     _editSeen: any = null;
     _reloadSeen: any = null;
-    _working: any = $eq.collections.hashSet();
-    _busy: any = $eq.collections.hashSet();
+    _working: any = $eq.collections.hashSet<string>();
+    _busy: any = $eq.collections.hashSet<string>();
     _focusVersion: number = 0;
     _menuKey: any = null;
     _menuAt: any = null;
@@ -263,7 +263,7 @@ export class TreeView extends StatefulComponent {
             this._revealing = path;
         }
         this.advanceReveal();
-        this._busy = $eq.collections.hashSet(false, this._working);
+        this._busy = $eq.collections.hashSet<string>(false, this._working);
         let busyKeys: any; 
         if ((busyKeys = this.busyKeys) != null) for (const key of $eq.collections.sequenceWalk(busyKeys)) $eq.collections.setAdd(this._busy, key);
         this.adoptRequests();

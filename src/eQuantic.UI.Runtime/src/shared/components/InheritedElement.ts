@@ -3,7 +3,7 @@ import { Element } from "./Element";
 
 export class InheritedElement extends Element {
     constructor(inherited: InheritedComponent) {
-        const $$_dependents: Set<ComponentElement> = $eq.collections.hashSet('item');
+        const $$_dependents: Set<ComponentElement> = $eq.collections.hashSet<ComponentElement>('item');
         super(inherited);
         this._child = null;
         this._dependents = $$_dependents;

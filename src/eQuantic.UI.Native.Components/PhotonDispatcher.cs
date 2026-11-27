@@ -29,17 +29,20 @@ public sealed class PhotonDispatcher : IUiDispatcher
     private ConcurrentQueue<Action> _queue = new();
     private int _uiThreadId;
 
-    // Hosts to wake when work arrives — a queue nobody wakes is a queue that runs whenever
-    // something else happens to need a frame. WEAK, because this is a process static: an event with
-    // a closure over `this` would pin every host the app ever built, for the life of the app.
-    private readonly List<WeakReference<PhotonHost>> _waking = [];
-
-    /// <summary>Wakes <paramref name="host"/> whenever work is posted, for as long as it lives —
-    /// the same weak contract <c>PhotonHotReload.Register</c> makes, and for the same reason.</summary>
-    public void WakeOnPost(PhotonHost host)
-    {
-        lock (_waking) _waking.Add(new WeakReference<PhotonHost>(host));
-    }
+    /// <summary>
+    /// Whether work is waiting for a frame. A queue nobody drains is a queue that runs whenever something
+    /// else happens to need a frame, a scanner's results appearing on the next mouse move, so every shell
+    /// asks this beside its own host's state, through <c>PhotonHost.WantsFrame</c>, and the next frame of
+    /// any host drains it.
+    /// <para>
+    /// It is the PROCESS's, never a host's (#1239). A post used to mark every live host as changed, so
+    /// an editor's fold answer, posted from a timer's thread, told every other window, and every test's
+    /// host in the same process, that its own tree had changed. A host's <c>NeedsRender</c> says what
+    /// its own tree asked for, and the frame the work's <c>SetState</c> needs is asked by the position it
+    /// marks, from its own host.
+    /// </para>
+    /// </summary>
+    public bool HasWork => !Volatile.Read(ref _queue).IsEmpty;
 
     /// <summary>
     /// Declares the CALLING thread the one that draws. The host says this from inside its own frame
@@ -54,27 +57,10 @@ public sealed class PhotonDispatcher : IUiDispatcher
     public bool IsOnUiThread =>
         _uiThreadId != 0 && Environment.CurrentManagedThreadId == _uiThreadId;
 
-    public void Post(Action work)
-    {
-        _queue.Enqueue(work);
-        Wake();
-    }
-
-    /// <summary>Asks every live host for a frame, forgetting the ones that are gone — the sweep is
-    /// nothing next to the frame it is asking for, and this is the only place a dead entry shows.
-    /// The frame builds what the work marks: it runs at the top of that frame, and what it changes
-    /// it says with a <c>SetState</c>, as on the web.</summary>
-    private void Wake()
-    {
-        lock (_waking)
-        {
-            for (var i = _waking.Count - 1; i >= 0; i--)
-            {
-                if (_waking[i].TryGetTarget(out var host)) host.Wake();
-                else _waking.RemoveAt(i);
-            }
-        }
-    }
+    /// <summary>Queues <paramref name="work"/> for the top of the next frame, which every shell asks for
+    /// while it waits (<see cref="HasWork"/>). The frame builds what the work marks: what it changes it says
+    /// with a <c>SetState</c>, as on the web.</summary>
+    public void Post(Action work) => _queue.Enqueue(work);
 
     /// <summary>
     /// Runs what was posted, on this thread. Drains only what was queued WHEN IT STARTED: work

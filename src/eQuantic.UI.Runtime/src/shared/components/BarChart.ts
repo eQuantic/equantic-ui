@@ -197,7 +197,7 @@ export class BarChart extends StatefulComponent {
         let ticks = BarChartLayout.ticks(this._series, this.visible(), $eq.collections.count(this._categories.categories), this._layout, this._values);
         let row = new Row(0, 'spaceBetween');
         for (let i = 0; i < ticks.count; i = i + 1 | 0) {
-            row.add(new Text(this._values.label(ticks.at(i)), 'caption', theme.textMuted, 1, 'start', false, true));
+            row.add(new Text(this._values.label(ticks.at(i)), 'caption', theme.textMuted, 1, null, false, true));
         }
         return row;
     }
@@ -264,7 +264,7 @@ export class BarChart extends StatefulComponent {
         card.add(new Text($eq.collections.item(this._categories.categories, bar.category), 'caption', theme.textMuted, 1));
         let line = new Row(8, 'start', 'center');
         line.add(new Box(new BoxStyle({ width: SizeValue.fixed(8), height: SizeValue.fixed(8), background: this.seriesColor(theme, bar.series), cornerRadius: new CornerRadii(2) })));
-        line.add(new Text(this._values.label(series.at(bar.category)), 'label', theme.textPrimary, 1, 'start', false, true));
+        line.add(new Text(this._values.label(series.at(bar.category)), 'label', theme.textPrimary, 1, null, false, true));
         line.add(new Text(series.name, 'caption', theme.textSecondary, 1));
         card.add(line);
         let box = new Box(new BoxStyle({ background: theme.surface, borderWidth: 1, borderColor: theme.border, cornerRadius: new CornerRadii(theme.shape('small')), padding: EdgeInsets.symmetric(8, 4) }), card);

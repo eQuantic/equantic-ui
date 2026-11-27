@@ -29,9 +29,11 @@ internal sealed partial class EmitVisitor
         // W4: REAL glyph when the platform service is present — one A8 raster per
         // (glyph, size, scale), drawn as a tinted Texture command. No service → the
         // documented 30% disc placeholder (tests, headless).
+        // At the size it was measured at: its own, else the one the boxes above it state (#1577).
+        var side = icon.SizeUnder(s.Content);
         if (s.Motion.IconRasterizer is { } icons
             && (s.Motion.IconCache ?? IconRasterCache.Shared)
-                .Get(icons, icon.Glyph, icon.Size, icon.Size, s.Motion.RenderScale) is { } raster)
+                .Get(icons, icon.Glyph, side, side, s.Motion.RenderScale) is { } raster)
         {
             var tint = s.Ink(icon.Color).Resolve(s.Mode, s.Contrast);
             s.Builder.Texture(s.Node.Bounds, tint, raster);
@@ -109,8 +111,9 @@ internal sealed partial class EmitVisitor
 
         void EmitShape(VectorShape shape, IconGlyphStyle style, VectorPaint paint)
         {
+            // The shape's own fill rule travels with its path, as the web's fill-rule does (#1210).
             var glyph = new IconGlyph("", shape.Path, style, drawing.Artwork.ViewBox,
-                shape.StrokeWidth);
+                shape.StrokeWidth, shape.EvenOdd);
             // The laid-out box, not the node's own numbers: a filling drawing learns its size there.
             if (cache.Get(drawingIcons, glyph, s.Node.Bounds.Width, s.Node.Bounds.Height,
                     s.Motion.RenderScale) is not { } raster) return;

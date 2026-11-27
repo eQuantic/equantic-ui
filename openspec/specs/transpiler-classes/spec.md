@@ -588,8 +588,14 @@ null SHALL each hold the type C# declares for it. A generic class, a plain one, 
 component, SHALL declare its type parameters in TypeScript and none in plain JavaScript, and a record's members
 SHALL name its own type by its closure. A type parameter constrained to a class that is not generic and has a twin
 SHALL be declared `T extends` that class, the class imported, a nullable one (`ShapeBase?`) by its class, in TypeScript
-only; any other constraint, an interface's included, since
-an interface has no twin, SHALL leave it unconstrained. A cast
+only. A type parameter constrained to an interface that has a twin SHALL be declared `T extends` that interface, the
+interface imported, in TypeScript only. Every in-source interface SHALL have a twin when its twin can be written: it
+declares no type parameter and stands in no generic type, each member is an
+instance property or method with no body, no member is static, an event or an indexer, it extends no
+interface, and the build does not keep it on the server. Its twin SHALL be a module holding `export interface` with each member
+under its twin's name and type, read-only where the property has no setter, and a value of the same name so a plain
+import resolves, as a union's alias module holds; plain JavaScript SHALL write the value alone. A value typed as the
+interface SHALL stay `any`. Any other constraint SHALL leave the parameter unconstrained. A cast
 to a type parameter SHALL assert it in TypeScript, `(value as T)`, checking nothing, as a downcast checks nothing,
 where TypeScript has the parameter in scope: a method's own, and a class's in an instance member of that class. A
 local function's own, a class's in a static member, which TypeScript forbids to read it, and a class's in a type nested
@@ -664,9 +670,23 @@ in it, which is a module of its own, SHALL write the value alone, as before.
 - **THEN** `Maybe`'s header is `Maybe<T extends ShapeBase>` and imports `ShapeBase`, `Held` writes the value alone, plain
   JavaScript imports no class only a constraint names, and `tsc` takes them
 
+#### Scenario: A type parameter constrained to an interface
+
+- **WHEN** `interface IShaped { int Area { get; } string Describe(string unit); }` and
+  `class Measured<T> where T : IShaped` reads `_shape.Area` and calls `_shape.Describe("cm")` on a `T`
+- **THEN** the build writes a module `IShaped` holding `export interface IShaped { readonly area: number;
+  describe(unit: string): string; }`, `Measured`'s header is `Measured<T extends IShaped>` with
+  `import { IShaped }`, and the runtime's `tsc` takes the reads; it refused them with TS2339
+
+#### Scenario: An interface whose twin cannot be written
+
+- **WHEN** a type parameter is constrained to a generic interface, to one with a static member, a default member, an
+  event or an indexer, or to one that extends another interface, an in-source one or the BCL's
+- **THEN** no module is written for it and the class header declares the parameter unconstrained, as before
+
 #### Scenario: A constraint with no twin
 
-- **WHEN** a type parameter is constrained to an interface, to `struct`, `class`, `new()` or `notnull`
+- **WHEN** a type parameter is constrained to `struct`, `class`, `new()` or `notnull`
 - **THEN** its class header declares it unconstrained, as before
 
 ### Requirement: A component's store a property guards with field starts as C# starts it
@@ -961,3 +981,28 @@ arguments are known only at run time, SHALL stay unmarked.
 
 - **WHEN** an app builds `new List<int>()`
 - **THEN** it crosses as before, a JavaScript array with no mark
+
+### Requirement: A static generic class keeps one set of statics per closed type
+
+A static generic class SHALL keep one set of statics per closed type, as C# does: each closed type SHALL hold its own
+fields and run its type initializer, its static constructor included, on its own first use. The runtime SHALL keep one
+object per closed type, made from the class the first time it is used, and the class's static members SHALL read their
+statics through the closed type they were reached through. Code outside the class SHALL reach the closed type it names.
+The twin SHALL declare no type parameters, since TypeScript refuses a static member that reads them, and SHALL pass the
+runtime's `tsc`. A static member reached through a type argument known only at run time SHALL be refused (EQ2018).
+
+#### Scenario: Two closed types hold their own statics
+
+- **WHEN** an app calls `Cache<int>.Keep(1)`, `Cache<int>.Keep(2)` and `Cache<string>.Keep("a")`
+- **THEN** `Cache<int>.Hits` is 2, `Cache<string>.Hits` is 1, and each closed type's static constructor ran once, as
+  .NET answers, with type annotations and without
+
+#### Scenario: The twin passes tsc
+
+- **WHEN** a static generic class's static members name its type parameter, and another class calls two of its closed types
+- **THEN** the class's module declares no type parameters, the other's imports it, and the runtime's `tsc` takes both
+
+#### Scenario: A type argument known only at run time
+
+- **WHEN** a generic method calls `Cache<U>.Keep(u)`
+- **THEN** the build refuses it with EQ2018, naming `Cache<U>`

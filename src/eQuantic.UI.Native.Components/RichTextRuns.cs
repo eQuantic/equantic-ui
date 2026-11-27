@@ -47,19 +47,21 @@ internal static class RichTextRuns
     /// How far a rich piece slides for its LINE's alignment. Asked by the draw, by the pressable
     /// REGION and by the stop, from one function on purpose: a link that moves on screen and not in
     /// the hit test is a link that stops working, and this repo has already shipped a canvas that
-    /// drew perfectly and answered no pointer.
+    /// drew perfectly and answered no pointer. <paramref name="align"/> is the alignment the paragraph
+    /// is drawn at, its own or the one the boxes above it state (<see cref="Text.Under"/>, #1577),
+    /// which each of the three resolves from the look its own walk carries.
     /// </summary>
-    internal static float Shift(LayoutNode node, Text text, TextFragment fragment)
+    internal static float Shift(LayoutNode node, TextAlignment align, TextFragment fragment)
     {
         var lines = node.Text?.Lines;
         return lines is not null && fragment.Line < lines.Count
-            ? text.Align.Offset(node.Bounds.Width, lines[fragment.Line].Width)
+            ? align.Offset(node.Bounds.Width, lines[fragment.Line].Width)
             : 0f;
     }
 
     /// <summary>One fragment's rectangle in the frame's own coordinates.</summary>
-    internal static Rect RectOf(LayoutNode node, Text text, TextFragment fragment) =>
-        new(node.Bounds.X + fragment.X + Shift(node, text, fragment),
+    internal static Rect RectOf(LayoutNode node, TextAlignment align, TextFragment fragment) =>
+        new(node.Bounds.X + fragment.X + Shift(node, align, fragment),
             node.Bounds.Y + fragment.Y,
             fragment.Width,
             node.Text?.LineHeight ?? node.Bounds.Height);
@@ -74,7 +76,7 @@ internal static class RichTextRuns
     /// answers the wrapped case, where one authored run arrives as one fragment per line.
     /// </para>
     /// </summary>
-    internal static IReadOnlyList<Link> LinksOf(LayoutNode node, Text text)
+    internal static IReadOnlyList<Link> LinksOf(LayoutNode node, TextAlignment align)
     {
         if (node.TextRuns is not { Count: > 0 } fragments) return [];
 
@@ -90,7 +92,7 @@ internal static class RichTextRuns
             var last = i;
             while (last + 1 < fragments.Count && fragments[last + 1].Destination == destination) last++;
 
-            var bounds = RectOf(node, text, fragments[i]);
+            var bounds = RectOf(node, align, fragments[i]);
             var words = fragments[i].Content;
             // Exactly sized: the run of adjacent fragments is already known, and an unwrapped link
             // — one fragment — is the common case a growing list charges two allocations for.
@@ -98,7 +100,7 @@ internal static class RichTextRuns
             rects[0] = bounds;
             for (var next = i + 1; next <= last; next++)
             {
-                var rect = RectOf(node, text, fragments[next]);
+                var rect = RectOf(node, align, fragments[next]);
                 rects[next - i] = rect;
                 words += fragments[next].Content;
                 // The FIRST line only — see the Bounds parameter for what unioning all of them costs.

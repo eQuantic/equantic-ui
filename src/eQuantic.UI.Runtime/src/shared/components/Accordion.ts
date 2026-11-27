@@ -3,7 +3,7 @@ import { $eq, AccordionItem, Box, BoxStyle, BuildContext, Column, Divider, EdgeI
 export class Accordion extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Accordion';
     _openSingle: number = -1;
-    _openMulti: any = $eq.collections.hashSet();
+    _openMulti: any = $eq.collections.hashSet<number>();
     _multiple: boolean = false;
     declare items: AccordionItem[];
 

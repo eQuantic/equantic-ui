@@ -56,7 +56,7 @@ export class MoneyInput extends StatefulComponent {
         let leads = (($0) => ($0 === 0 || $0 === 2))($eq.text.numberFormat(false).currencyPositivePattern);
         let typed: any; 
         let error = this.error ?? ((typed = this._typing) != null ? this.complaint(typed) : null);
-        return new TextInput(shown, this.onChanged == null ? null : $eq.delegates.bound(this, this.type), this.label, this.placeholder, this.helper, error, null, this.size, null, 'decimal', leads ? this.currency.symbol : null, leads ? null : this.currency.symbol, { disabled: this.disabled, onFocusChanged: $eq.delegates.bound(this, this.focus).bind(this) });
+        return new TextInput(shown, this.onChanged == null ? null : $eq.delegates.bound(this, this.type), this.label, this.placeholder, this.helper, error, null, this.size, null, 'decimal', leads ? this.currency.symbol : null, leads ? null : this.currency.symbol, null, { disabled: this.disabled, onFocusChanged: $eq.delegates.bound(this, this.focus).bind(this) });
     }
 
     adoptConfig(next: UiComponent) {

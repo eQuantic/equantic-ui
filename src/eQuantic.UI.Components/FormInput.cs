@@ -22,7 +22,7 @@ public sealed class FormInput : StatelessComponent
     public FormInput(FormController form, string name, string label = "",
         string? placeholder = null, string? helper = null, Icons? leading = null,
         SizeVariant size = SizeVariant.Large, TextEntryKind kind = TextEntryKind.Text,
-        string? prefix = null, string? suffix = null)
+        string? prefix = null, string? suffix = null, InputTheme? style = null)
     {
         Form = form;
         Name = name;
@@ -34,6 +34,7 @@ public sealed class FormInput : StatelessComponent
         Kind = kind;
         Prefix = prefix;
         Suffix = suffix;
+        Style = style;
     }
 
     public FormController Form { get; init; }
@@ -62,6 +63,9 @@ public sealed class FormInput : StatelessComponent
     /// <summary>Drawn after the field's text and announced with its name, as <see cref="TextInput.Suffix"/>.</summary>
     public string? Suffix { get; init; }
 
+    /// <summary>The field's own look, handed to the <see cref="TextInput"/> it draws.</summary>
+    public InputTheme? Style { get; init; }
+
     public bool Obscure { get; init; }
     public bool Autofocus { get; init; }
     public bool Disabled { get; init; }
@@ -75,7 +79,8 @@ public sealed class FormInput : StatelessComponent
         if (field is null) return new Box();
 
         return new TextInput(field.Value, value => Form.Set(Name, value), Label,
-            Placeholder, Helper, field.VisibleError, Leading, Size, kind: Kind, prefix: Prefix, suffix: Suffix)
+            Placeholder, Helper, field.VisibleError, Leading, Size, kind: Kind, prefix: Prefix, suffix: Suffix,
+            style: Style)
         {
             Obscure = Obscure,
             Autofocus = Autofocus,

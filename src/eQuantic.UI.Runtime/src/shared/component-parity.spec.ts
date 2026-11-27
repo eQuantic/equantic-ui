@@ -474,6 +474,7 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'number-input': still(new NumberInput(3, null, 'Lead time', 'days', 1, 30, null, 'Working days')),
     'radio-group': still(new RadioGroup(['a', 'b'], 0)),
     'empty-state': still(new EmptyState(new Icon(IconGlyph.fromIcons('search')), 'Nothing here', 'Try another term')),
+    'icon-even-odd': still(new Icon(new IconGlyph('ring', 'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20zM12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10z', 'fill', '0 0 24 24', 2, true))),
     'menu-closed': still(new Menu(new Button('Open'), [new MenuItem('One'), new MenuItem('Two')])),
     'context-menu-closed': still(
       new ContextMenu(new Text('row', 'bodyM', photonTheme.textPrimary), [

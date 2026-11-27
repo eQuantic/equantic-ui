@@ -57,12 +57,20 @@ public enum CultureSwitcherShape
 /// </summary>
 public sealed class CultureSwitcher : StatelessComponent
 {
-    public CultureSwitcher(IReadOnlyList<CultureOption> options)
+    public CultureSwitcher(IReadOnlyList<CultureOption> options, SegmentedTheme? style = null)
     {
         Options = options;
+        Style = style;
     }
 
     public IReadOnlyList<CultureOption> Options { get; init; }
+
+    /// <summary>
+    /// The look of the segments, handed to the <see cref="SegmentedControl"/> the switcher draws for a few
+    /// languages. The menu it draws beyond them is a <see cref="Menu"/> on a <see cref="Button"/>, which
+    /// the buttons' and menus' own styles dress, so it takes nothing from here.
+    /// </summary>
+    public SegmentedTheme? Style { get; init; }
 
     /// <summary>Control size — the switch usually lives in a toolbar beside the theme toggle.</summary>
     public SizeVariant Size { get; init; } = SizeVariant.Small;
@@ -110,7 +118,7 @@ public sealed class CultureSwitcher : StatelessComponent
         {
             var labels = new List<string>();
             foreach (var option in Options) labels.Add(option.Label);
-            return new SegmentedControl(labels, selected, index => Switch(controller, index))
+            return new SegmentedControl(labels, selected, index => Switch(controller, index), Style)
             {
                 Size = Size,
                 Stretch = false,

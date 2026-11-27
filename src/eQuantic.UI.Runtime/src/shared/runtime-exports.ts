@@ -111,6 +111,8 @@ export {
   VariantColors,
 } from './value-types';
 export { ComponentContext } from './photon-context';
+export { ContentStyle } from './content-style';
+
 export { DataPalette, DivergingScale, StatusScale } from './data-palette';
 export { SheetTheme } from './sheet-theme';
 export {

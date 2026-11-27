@@ -53,7 +53,7 @@ Console.WriteLine($"   Intermediate: {build.IntermediateDirectory}");
 Console.WriteLine($"   Output:       {options.OutputDirectory}");
 
 var hadErrors = build.CompileAndBundle();
-WriteTimings(processStarted, loadedAt, build);
+WriteTimings(processStarted, loadedAt, build, kept: false);
 
 // Non-zero exit fails the MSBuild step when transpilation hit unsupported constructs.
 return hadErrors ? 1 : 0;
@@ -83,11 +83,13 @@ static int Serve(AppBuildOptions options)
         var started = DateTimeOffset.UtcNow;
         var errors = new StringWriter();
         var build = new AppBuild(options, Console.Out, errors, bundler);
-        var compiled = (last is not null && build.LoadFrom(last)) || build.Load();
+        // Kept: the compilation the save before loaded, with the files this save changed replaced in it.
+        var kept = last is not null && build.LoadFrom(last);
+        var compiled = kept || build.Load();
         var loaded = DateTimeOffset.UtcNow;
         if (compiled) last = build;
         if (compiled) compiled = !build.CompileAndBundle();
-        WriteTimings(started, loaded, build);
+        WriteTimings(started, loaded, build, kept);
         var said = errors.ToString();
         Console.Error.Write(said);
         var answer = System.Text.Json.JsonSerializer.Serialize(new
@@ -106,7 +108,13 @@ static int Serve(AppBuildOptions options)
 // served one), when the compilation was loaded and when the build ended, in Unix milliseconds, and
 // how long bun took inside it. That is what tells eqc's time and bun's apart from what runs around
 // them and from the browser's after them. Nothing is written otherwise.
-static void WriteTimings(DateTimeOffset started, DateTimeOffset loaded, AppBuild build)
+//
+// And the WORK the compile did, which no machine's load moves (#1909): whether it kept the compilation
+// the compile before it loaded, the files it walked and how many of them it compiled, the TypeScript
+// modules it wrote, and the files and bytes bun wrote. A save of one screen keeps the compilation,
+// compiles that screen's file and writes that screen's module and bundle; a save that does more is a
+// regression whatever the clock says, so the measurement holds a save to these counts.
+static void WriteTimings(DateTimeOffset started, DateTimeOffset loaded, AppBuild build, bool kept)
 {
     if (Environment.GetEnvironmentVariable("EQC_TIMINGS") is not { Length: > 0 } timings) return;
     var line = System.Text.Json.JsonSerializer.Serialize(new
@@ -115,6 +123,12 @@ static void WriteTimings(DateTimeOffset started, DateTimeOffset loaded, AppBuild
         loaded = loaded.ToUnixTimeMilliseconds(),
         ended = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
         bunMs = (long)build.BundleElapsed.TotalMilliseconds,
+        kept,
+        walked = build.FilesWalked,
+        compiled = build.CompiledFiles.Count,
+        modules = build.ModulesWritten,
+        bundled = build.BundleWritten,
+        bundledBytes = build.BundleWrittenBytes,
     });
     try
     {

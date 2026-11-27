@@ -20,7 +20,8 @@ public sealed class TextInput : StatefulComponent
     public TextInput(string value, Action<string>? onChanged = null, string label = "",
         string? placeholder = null, string? helper = null, string? error = null,
         Icons? leading = null, SizeVariant size = SizeVariant.Large, VisualNode? trailing = null,
-        TextEntryKind kind = TextEntryKind.Text, string? prefix = null, string? suffix = null)
+        TextEntryKind kind = TextEntryKind.Text, string? prefix = null, string? suffix = null,
+        InputTheme? style = null)
     {
         if (size == SizeVariant.Small)
             throw new ArgumentOutOfRangeException(nameof(size),
@@ -37,6 +38,7 @@ public sealed class TextInput : StatefulComponent
         Kind = kind;
         Prefix = prefix;
         Suffix = suffix;
+        Style = style;
     }
 
     public string Value { get; private set; }
@@ -89,6 +91,11 @@ public sealed class TextInput : StatefulComponent
     /// currency's symbol where the culture writes it after the amount. Announced as
     /// <see cref="Prefix"/> is. Flutter's <c>InputDecoration.suffixText</c>.</summary>
     public string? Suffix { get; private set; }
+
+    /// <summary>This field's own look, laid over the theme's <see cref="IAppTheme.Input"/> slot with
+    /// <see cref="InputTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's.</summary>
+    public InputTheme? Style { get; private set; }
+
     /// <summary>Backed by a field, so <see cref="AdoptConfig"/> can carry it, as are the three settings
     /// after it: this instance is kept across the parent's rebuilds, and an <c>init</c> accessor
     /// cannot be written from there.</summary>
@@ -127,6 +134,7 @@ public sealed class TextInput : StatefulComponent
         Kind = fresh.Kind;
         Prefix = fresh.Prefix;
         Suffix = fresh.Suffix;
+        Style = fresh.Style;
         _disabled = fresh.Disabled;
         _autofocus = fresh.Autofocus;
         _obscure = fresh.Obscure;
@@ -136,8 +144,8 @@ public sealed class TextInput : StatefulComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        // The theme's Input slot, then its control ladder, then the component's own (§3.10).
-        var slot = theme.Input;
+        // The instance's style over the theme's Input slot, then its control ladder, then the component's own (§3.10).
+        var slot = InputTheme.Merge(theme.Input, Style);
         var height = ControlMetrics.Height(context, Size, slot?.Controls);
 
         var hasError = !string.IsNullOrEmpty(Error);

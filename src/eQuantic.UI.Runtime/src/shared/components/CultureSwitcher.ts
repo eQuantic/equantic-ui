@@ -3,17 +3,20 @@ import { $eq, $SizeVariantValue, Box, BuildContext, Button, CultureOption, Menu,
 export class CultureSwitcher extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CultureSwitcher';
     declare options: CultureOption[];
+    declare style: any;
     declare size: $SizeVariantValue;
     declare shape: string;
     declare icon: any;
     declare onChanged: ((string: string) => void) | null;
 
-    constructor(options?: any, props?: any) {
+    constructor(options?: any, style: any = null, props?: any) {
         super();
         if (options !== undefined) this.options = options;
+        if (style !== undefined) this.style = style;
         if (this.size === undefined) this.size = 'small';
         if (this.shape === undefined) this.shape = 'auto';
         this.options = options;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
@@ -32,7 +35,7 @@ export class CultureSwitcher extends StatelessComponent {
         if (this.shape !== 'menu' && (this.shape === 'segments' || $eq.collections.count(this.options) <= 3)) {
             let labels: string[] = [];
             for (const option of $eq.collections.sequenceWalk(this.options)) $eq.collections.listAdd(labels, option.label);
-            return new SegmentedControl(labels, selected, (index: number) => this.switch(controller, index), { size: this.size, stretch: false });
+            return new SegmentedControl(labels, selected, (index: number) => this.switch(controller, index), this.style, null, { size: this.size, stretch: false });
         }
         let items: MenuItem[] = [];
         for (const option of $eq.collections.sequenceWalk(this.options)) {

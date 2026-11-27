@@ -4,7 +4,7 @@ export class BoundReceivers extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Web.Tests.Fixtures.BoundReceivers';
     _items: number[] = [3, 1, 2];
     _pairs: any[] = [[1, 'a'], [1, 'a'], [2, 'b']];
-    _counts: any = $eq.collections.dictionary().set('a', 1);
+    _counts: any = $eq.collections.dictionary<string, number>().set('a', 1);
     _ticks: bigint[] = [4n, 6n];
     _prices: Decimal[] = [$eq.num.dec("1.5"), $eq.num.dec("2.25")];
     _seen: boolean = false;

@@ -19,6 +19,7 @@
 import { ContextRequest, Point } from '../shared/value-types';
 import { activeItemOf } from './active-item';
 import { joinGestureArena } from './arena-membership';
+import { clickGuards } from './click-guard';
 
 /** `ContextTarget.HoldMs`: how long a finger holds a target still to ask for its menu (cross-pinned with C#). */
 export const HOLD_MS = 500;
@@ -32,6 +33,8 @@ let installed = false;
 let keyboardAskedAt = -Infinity;
 /** The finger being watched for a hold, and the way to stop watching it. */
 let watching: { stop(): void } | null = null;
+/** The guard on the click a hold's release ends in: the controller's, so a reset lets it go (#1889). */
+const guards = clickGuards();
 
 export function installContextController(): void {
   if (installed || typeof document === 'undefined') return;
@@ -48,6 +51,7 @@ export function resetContextController(): void {
   keyboardAskedAt = -Infinity;
   watching?.stop();
   watching = null;
+  guards.release();
   document.removeEventListener('contextmenu', onContextMenu);
   document.removeEventListener('keydown', onKeyDown);
   document.removeEventListener('pointerdown', onPointerDown);
@@ -114,8 +118,7 @@ function onPointerDown(down: PointerEvent): void {
     membership?.accept();
     ask(target, pointIn(target, startX, startY));
     // The press the hold began is not a tap: the click its release ends in is the menu's.
-    host.addEventListener('click', swallow, { capture: true, once: true });
-    setTimeout(() => host.removeEventListener('click', swallow, { capture: true }), 600);
+    guards.arm(host, 600);
   }, HOLD_MS);
   const move = (ev: Event): void => {
     const pointer = ev as PointerEvent;
@@ -142,9 +145,4 @@ function onPointerDown(down: PointerEvent): void {
   host.addEventListener('pointermove', move);
   host.addEventListener('pointerup', end);
   host.addEventListener('pointercancel', end);
-}
-
-function swallow(ev: Event): void {
-  ev.stopPropagation();
-  ev.preventDefault();
 }

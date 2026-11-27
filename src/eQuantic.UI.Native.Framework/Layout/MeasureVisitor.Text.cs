@@ -16,8 +16,11 @@ internal sealed partial class MeasureVisitor
         // without the theme's code face while PhotonRealizer rasterized with it — wrapping, widths
         // and a caret column computed against one face and drawn in another.
         // A size that follows the window is measured at THIS window, as the emit pass paints it.
-        var style = text.Resolve(ctx.Theme).AtWindow(ctx.WindowWidth);
-        var maxLines = LineCap(text, constraints);
+        // Under the look the boxes above it state (#1577): a text that names no role, no line
+        // limit, is measured in theirs, exactly as the emit pass paints it.
+        var look = text.Under(_content);
+        var style = text.Resolve(ctx.Theme, _content).AtWindow(ctx.WindowWidth);
+        var maxLines = LineCap(look.MaxLines, constraints);
         if (text.Spans is { Count: > 0 } spans)
         {
             MeasureRuns(result, text, spans, style, maxW, maxLines, ctx);
@@ -40,7 +43,8 @@ internal sealed partial class MeasureVisitor
     }
 
     /// <summary>
-    /// How many lines this measurement may use — the text's own <see cref="Text.MaxLines"/>, or AT
+    /// How many lines this measurement may use — the text's line limit (its own, else its box's,
+    /// <see cref="Text.Under"/>), or AT
     /// LEAST ONE when the parent is cutting it to fit (spec A2: text yields an ellipsis before a
     /// sibling is pushed out).
     /// <para>
@@ -51,8 +55,8 @@ internal sealed partial class MeasureVisitor
     /// and one hand-built copy of it.
     /// </para>
     /// </summary>
-    private static int LineCap(Text text, LayoutConstraints constraints) =>
-        constraints.Truncating ? Math.Max(1, text.MaxLines) : text.MaxLines;
+    private static int LineCap(int maxLines, LayoutConstraints constraints) =>
+        constraints.Truncating ? Math.Max(1, maxLines) : maxLines;
 
     /// <summary>
     /// A RICH paragraph: the runs are laid out as one flowing line of text, breaking between WORDS

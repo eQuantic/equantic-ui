@@ -200,8 +200,8 @@ public class HostOnlyFrameworkTypeTests
     [InlineData("var eased = CurveEvaluator.Ease(Curve.Standard, 0.5f);")]
     [InlineData("Func<Curve, float, float> ease = CurveEvaluator.Ease;")]
     [InlineData("var face = ((IAppTheme)null!).Type(TypeRole.BodyM).WithThemeFace((IAppTheme)null!);")]
-    [InlineData("var style = new Text(\"hi\").Resolve((IAppTheme)null!);")]
-    [InlineData("Func<IAppTheme, TypeStyle> resolve = new Text(\"hi\").Resolve;")]
+    [InlineData("var style = new Text(\"hi\").Resolve((IAppTheme)null!, null);")]
+    [InlineData("Func<IAppTheme, ContentStyle?, TypeStyle> resolve = new Text(\"hi\").Resolve;")]
     public void AnExtensionOnAHostOnlyHome_IsNamingTheHome(string statement)
     {
         Diagnostics(statement).Should().Contain(d => d.Code == "EQ2010" && d.Message.Contains("HOST ONLY"));

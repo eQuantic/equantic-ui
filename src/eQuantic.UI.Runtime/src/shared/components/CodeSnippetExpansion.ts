@@ -7,9 +7,9 @@ export class CodeSnippetExpansion {
         this._step = null!;
         this._text = $eq.text.stringBuilder();
         this._places = [];
-        this._defaults = $eq.collections.dictionary();
-        this._defining = $eq.collections.dictionary();
-        this._unknown = $eq.collections.dictionary();
+        this._defaults = $eq.collections.dictionary<number, string>();
+        this._defining = $eq.collections.dictionary<number, CodeSnippetPart>();
+        this._unknown = $eq.collections.dictionary<string, number>();
         this._resolving = [];
         this._writing = [];
         this._enclosing = [];
@@ -119,7 +119,7 @@ export class CodeSnippetExpansion {
     }
 
     variableText(part: CodeSnippetPart) {
-        let nested: any;
+        let nested!: CodeSnippetPart[] | null;
         const $r = (() => {
             nested = null;
             let value = this._variable(part.text) ?? '';

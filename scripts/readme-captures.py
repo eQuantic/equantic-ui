@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """The README's pictures, made from the raw captures scripts/capture-readme.sh takes (#880).
 
+    readme-captures.py ready                       fail when this python3 cannot read a capture
     readme-captures.py check <picture> [...]      fail when a capture drew nothing
     readme-captures.py compose <raw dir> <out dir>  write the pictures the README shows
 
 A capture can be a picture of nothing: the first launch of an app after its install is slow, and a
 simulator photographed before the first frame gives a black screen with a status bar on top. Two of
 the first six iOS captures were that. So `check` counts the colours under the status bar and refuses
-a picture that has almost none, and `compose` checks every capture it reads.
+a picture that has almost none, and `compose` checks every capture it reads. A picture of nothing
+exits with NOTHING_DRAWN and every other refusal with 1, so scripts/capture-readme.sh waits out an app
+that has not drawn yet and stops at once for anything else, saying why.
 
 A still is scaled to twice the width the README draws it at. A phone's and a window's picture get
 round corners on a transparent ground, so they sit on GitHub's light page and its dark one alike.
@@ -16,7 +19,8 @@ Every picture is still. One that moved would start by itself and go on, and nuge
 README is every package's readme, gives an animated image no control to stop it: a tour of the
 dashboard's pages was a GIF here until that was read.
 
-Needs Pillow (`python3 -m pip install pillow`), and says so when it is not there.
+Needs Pillow (`python3 -m pip install pillow`), and says so when it is not there: `ready` asks only
+that, so scripts/capture-readme.sh asks it before it builds anything.
 """
 import os
 import sys
@@ -28,6 +32,9 @@ except ImportError:
 
 # A drawn screen holds hundreds of colours under its status bar. A black one holds one or two.
 FEWEST_COLOURS = 40
+
+# The exit of a picture of nothing, the one refusal taking the picture again can cure.
+NOTHING_DRAWN = 3
 
 STILLS = (
     ("web-dark-payments", "web-dashboard.png", 1200),
@@ -59,7 +66,8 @@ def checked(path):
     image = Image.open(path)
     drawn = colours_drawn(image)
     if drawn < FEWEST_COLOURS:
-        sys.exit(f"{path}: a picture of nothing ({drawn} colours under its status bar). Take it again")
+        print(f"{path}: a picture of nothing ({drawn} colours under its status bar). Take it again", file=sys.stderr)
+        sys.exit(NOTHING_DRAWN)
     return image.convert("RGB")
 
 
@@ -97,6 +105,8 @@ def compose(raw, out):
 
 
 def main(arguments):
+    if arguments == ["ready"]:
+        return
     if len(arguments) >= 2 and arguments[0] == "check":
         for path in arguments[1:]:
             checked(path)

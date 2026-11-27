@@ -1,4 +1,4 @@
-import { $eq, Anchored, Box, BoxStyle, BuildContext, Calendar, CornerRadii, DateOnly, DevelopmentNotices, EdgeInsets, Icon, IconGlyph, KeyChord, Pressable, SdkStrings, Shortcut, StatefulComponent, TextInput, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Anchored, Box, BoxStyle, BuildContext, Calendar, CalendarTheme, CornerRadii, DateOnly, DevelopmentNotices, EdgeInsets, Icon, IconGlyph, KeyChord, Pressable, SdkStrings, Shortcut, StatefulComponent, TextInput, UiComponent, VisualNode } from "../runtime-exports";
 
 export class DatePicker extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.DatePicker';
@@ -13,6 +13,8 @@ export class DatePicker extends StatefulComponent {
     declare min: any;
     declare max: any;
     declare label: string;
+    declare style: any;
+    declare calendarStyle: any;
 
     get disabled() {
         return this._disabled;
@@ -38,18 +40,22 @@ export class DatePicker extends StatefulComponent {
         this._composed = value;
     }
 
-    constructor(selected: any = null, onChanged: any = null, min: any = null, max: any = null, label: any = '', props?: any) {
+    constructor(selected: any = null, onChanged: any = null, min: any = null, max: any = null, label: any = '', style: any = null, calendarStyle: any = null, props?: any) {
         super();
         if (selected !== undefined) this.selected = selected;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (min !== undefined) this.min = min;
         if (max !== undefined) this.max = max;
         if (label !== undefined) this.label = label;
+        if (style !== undefined) this.style = style;
+        if (calendarStyle !== undefined) this.calendarStyle = calendarStyle;
         this.selected = selected;
         this.onChanged = onChanged;
         this.min = min;
         this.max = max;
         this.label = label;
+        this.style = style;
+        this.calendarStyle = calendarStyle;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
@@ -59,11 +65,11 @@ export class DatePicker extends StatefulComponent {
         let shown = this._typing ?? ((value = this.selected) != null ? DatePicker.format(value) : '');
         let typed: any; 
         let invalid = (($0) => (($0 != null && $0.length > 0) && (typed = $0, true)))(this._typing) && DatePicker.parse(typed) == null;
-        let slot = theme.calendar;
-        let panel = new Box(new BoxStyle({ background: slot?.panelFill ?? theme.surface, cornerRadius: new CornerRadii(slot?.panelRadius ?? theme.shape('medium')), borderWidth: slot?.panelBorderWidth ?? 1, borderColor: slot?.panelBorderColor ?? theme.border, elevation: slot?.panelElevation ?? 2, padding: EdgeInsets.all(slot?.panelPadding ?? 12) }), new Calendar(this.selected, $eq.delegates.bound(this, this.pick), this.min, this.max));
+        let slot = CalendarTheme.merge(theme.calendar, this.calendarStyle);
+        let panel = new Box(new BoxStyle({ background: slot?.panelFill ?? theme.surface, cornerRadius: new CornerRadii(slot?.panelRadius ?? theme.shape('medium')), borderWidth: slot?.panelBorderWidth ?? 1, borderColor: slot?.panelBorderColor ?? theme.border, elevation: slot?.panelElevation ?? 2, padding: EdgeInsets.all(slot?.panelPadding ?? 12) }), new Calendar(this.selected, $eq.delegates.bound(this, this.pick), this.min, this.max, this.calendarStyle));
         let opener: VisualNode = new Anchored(new Pressable(new Icon(IconGlyph.fromIcons('calendar'), slot?.openerIconSize ?? 20, slot?.openerColor ?? theme.textSecondary), $eq.delegates.bound(this, this.toggle), { label: SdkStrings.chooseDate, expanded: this._open }), panel, { open: this._open && !this.disabled, onDismiss: $eq.delegates.bound(this, this.close).bind(this), panelRole: 'dialog' });
         opener = new Shortcut(opener, KeyChord.escape, $eq.delegates.bound(this, this.close), { enabled: this._open && !this.disabled });
-        return new TextInput(shown, $eq.delegates.bound(this, this.type), this.label, SdkStrings.dateFormatHint, null, invalid ? SdkStrings.dateFormatHint : null, null, 'large', this.disabled ? null : opener, 'text', null, null, { disabled: this.disabled, labelHidden: this.labelHidden });
+        return new TextInput(shown, $eq.delegates.bound(this, this.type), this.label, SdkStrings.dateFormatHint, null, invalid ? SdkStrings.dateFormatHint : null, null, 'large', this.disabled ? null : opener, 'text', null, null, this.style, { disabled: this.disabled, labelHidden: this.labelHidden });
     }
 
     adoptConfig(next: UiComponent) {
@@ -79,6 +85,8 @@ export class DatePicker extends StatefulComponent {
         this.min = fresh.min;
         this.max = fresh.max;
         this.label = fresh.label;
+        this.style = fresh.style;
+        this.calendarStyle = fresh.calendarStyle;
         this._disabled = fresh.disabled;
         this._labelHidden = fresh.labelHidden;
         this._composed = fresh.composed;
