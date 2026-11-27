@@ -1,6 +1,0 @@
-#nullable enable
-eQuantic.UI.Compiler.CodeGen.TypeScriptEmitter.EmitInterfaceModule(Microsoft.CodeAnalysis.CSharp.Syntax.InterfaceDeclarationSyntax! face, Microsoft.CodeAnalysis.SemanticModel? semanticModel) -> string!
-eQuantic.UI.Compiler.Models.ComponentDefinition.IsInterfaceTwin.get -> bool
-eQuantic.UI.Compiler.Models.ComponentDefinition.IsInterfaceTwin.set -> void
-eQuantic.UI.Compiler.CompilationResult.IsInterfaceTwin.get -> bool
-eQuantic.UI.Compiler.CompilationResult.IsInterfaceTwin.set -> void

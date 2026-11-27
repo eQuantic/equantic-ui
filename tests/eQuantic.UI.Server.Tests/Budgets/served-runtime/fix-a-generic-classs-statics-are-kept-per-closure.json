@@ -1,4 +1,0 @@
-{
-  "deltaBytes": 106,
-  "bought": "A static generic class\u0027s statics per closed type (#1855): the runtime\u0027s statics, one object per closed type made from the class on first use, with its own type initializer state, measured over main at f79bec9da."
-}

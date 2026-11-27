@@ -179,6 +179,14 @@ eQuantic.UI.Server.IServerEventHandler.OnReleasedAsync(eQuantic.UI.Server.Server
 eQuantic.UI.Server.IServerEventHandler.OnSubscribedAsync(eQuantic.UI.Server.ServerTopicContext! topic) -> System.Threading.Tasks.ValueTask
 eQuantic.UI.Server.IServerEventPublisher
 eQuantic.UI.Server.IServerEventPublisher.PublishAsync<T>(eQuantic.UI.Primitives.ServerTopic<T>! topic, T payload, eQuantic.UI.Server.ServerEventPublishOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+eQuantic.UI.Server.IUploadStorage
+eQuantic.UI.Server.IUploadStorage.AppendAsync(string! id, long offset, System.IO.Stream! content, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<long>
+eQuantic.UI.Server.IUploadStorage.CreateAsync(eQuantic.UI.Server.StoredUpload! upload, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+eQuantic.UI.Server.IUploadStorage.DeleteAsync(string! id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+eQuantic.UI.Server.IUploadStorage.FindAsync(string! id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Server.StoredUpload?>
+eQuantic.UI.Server.IUploadStorage.LengthAsync(string! id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<long>
+eQuantic.UI.Server.IUploadStorage.ListAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<eQuantic.UI.Server.StoredUpload!>!
+eQuantic.UI.Server.IUploadStorage.OpenReadAsync(string! id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<System.IO.Stream!>
 eQuantic.UI.Server.Json.EqJson
 eQuantic.UI.Server.Metadata.IHandleMetadata
 eQuantic.UI.Server.Metadata.IHandleMetadata.ConfigureMetadata(eQuantic.UI.Server.Metadata.SeoBuilder! seo) -> void
@@ -358,6 +366,27 @@ eQuantic.UI.Server.SsrUiDispatcher
 eQuantic.UI.Server.SsrUiDispatcher.IsOnUiThread.get -> bool
 eQuantic.UI.Server.SsrUiDispatcher.Post(System.Action! work) -> void
 eQuantic.UI.Server.SsrUiDispatcher.SsrUiDispatcher() -> void
+eQuantic.UI.Server.StoredUpload
+eQuantic.UI.Server.StoredUpload.<Clone>$() -> eQuantic.UI.Server.StoredUpload!
+eQuantic.UI.Server.StoredUpload.Created.get -> System.DateTimeOffset
+eQuantic.UI.Server.StoredUpload.Created.init -> void
+eQuantic.UI.Server.StoredUpload.Deconstruct(out string! Id, out string! Owner, out string! Policy, out string! Name, out string! MimeType, out long Size, out System.DateTimeOffset Created, out System.DateTimeOffset Expires) -> void
+eQuantic.UI.Server.StoredUpload.Equals(eQuantic.UI.Server.StoredUpload? other) -> bool
+eQuantic.UI.Server.StoredUpload.Expires.get -> System.DateTimeOffset
+eQuantic.UI.Server.StoredUpload.Expires.init -> void
+eQuantic.UI.Server.StoredUpload.Id.get -> string!
+eQuantic.UI.Server.StoredUpload.Id.init -> void
+eQuantic.UI.Server.StoredUpload.MimeType.get -> string!
+eQuantic.UI.Server.StoredUpload.MimeType.init -> void
+eQuantic.UI.Server.StoredUpload.Name.get -> string!
+eQuantic.UI.Server.StoredUpload.Name.init -> void
+eQuantic.UI.Server.StoredUpload.Owner.get -> string!
+eQuantic.UI.Server.StoredUpload.Owner.init -> void
+eQuantic.UI.Server.StoredUpload.Policy.get -> string!
+eQuantic.UI.Server.StoredUpload.Policy.init -> void
+eQuantic.UI.Server.StoredUpload.Size.get -> long
+eQuantic.UI.Server.StoredUpload.Size.init -> void
+eQuantic.UI.Server.StoredUpload.StoredUpload(string! Id, string! Owner, string! Policy, string! Name, string! MimeType, long Size, System.DateTimeOffset Created, System.DateTimeOffset Expires) -> void
 eQuantic.UI.Server.TemplateContext
 eQuantic.UI.Server.TemplateContext.Conditions.get -> System.Collections.Generic.Dictionary<string!, bool>!
 eQuantic.UI.Server.TemplateContext.Disable(string! conditionName) -> eQuantic.UI.Server.TemplateContext!
@@ -415,6 +444,7 @@ eQuantic.UI.Server.UIOptions.WithoutThemeCookie() -> eQuantic.UI.Server.UIOption
 eQuantic.UI.Server.UploadsBuilder
 eQuantic.UI.Server.UploadsBuilder.Accept(eQuantic.UI.Primitives.UploadPolicy! policy) -> eQuantic.UI.Server.UploadsBuilder!
 eQuantic.UI.Server.UploadsBuilder.Configure(System.Action<eQuantic.UI.Server.UploadsOptions!>! configure) -> eQuantic.UI.Server.UploadsBuilder!
+eQuantic.UI.Server.UploadsBuilder.UseStorage<TStorage>() -> eQuantic.UI.Server.UploadsBuilder!
 eQuantic.UI.Server.UploadsOptions
 eQuantic.UI.Server.UploadsOptions.Expiry.get -> System.TimeSpan
 eQuantic.UI.Server.UploadsOptions.Expiry.set -> void
@@ -466,6 +496,9 @@ override eQuantic.UI.Server.ServerEventPublishOptions.ToString() -> string!
 override eQuantic.UI.Server.ServerTopicContext.Equals(object? obj) -> bool
 override eQuantic.UI.Server.ServerTopicContext.GetHashCode() -> int
 override eQuantic.UI.Server.ServerTopicContext.ToString() -> string!
+override eQuantic.UI.Server.StoredUpload.Equals(object? obj) -> bool
+override eQuantic.UI.Server.StoredUpload.GetHashCode() -> int
+override eQuantic.UI.Server.StoredUpload.ToString() -> string!
 static eQuantic.UI.Server.AlternateRequest.operator !=(eQuantic.UI.Server.AlternateRequest left, eQuantic.UI.Server.AlternateRequest right) -> bool
 static eQuantic.UI.Server.AlternateRequest.operator ==(eQuantic.UI.Server.AlternateRequest left, eQuantic.UI.Server.AlternateRequest right) -> bool
 static eQuantic.UI.Server.AlternateUrls.Absolute(Microsoft.AspNetCore.Http.HttpRequest! request, string! pathOrUrl) -> string!
@@ -508,6 +541,8 @@ static eQuantic.UI.Server.ServerEventPublishOptions.operator !=(eQuantic.UI.Serv
 static eQuantic.UI.Server.ServerEventPublishOptions.operator ==(eQuantic.UI.Server.ServerEventPublishOptions? left, eQuantic.UI.Server.ServerEventPublishOptions? right) -> bool
 static eQuantic.UI.Server.ServerTopicContext.operator !=(eQuantic.UI.Server.ServerTopicContext? left, eQuantic.UI.Server.ServerTopicContext? right) -> bool
 static eQuantic.UI.Server.ServerTopicContext.operator ==(eQuantic.UI.Server.ServerTopicContext? left, eQuantic.UI.Server.ServerTopicContext? right) -> bool
+static eQuantic.UI.Server.StoredUpload.operator !=(eQuantic.UI.Server.StoredUpload? left, eQuantic.UI.Server.StoredUpload? right) -> bool
+static eQuantic.UI.Server.StoredUpload.operator ==(eQuantic.UI.Server.StoredUpload? left, eQuantic.UI.Server.StoredUpload? right) -> bool
 static eQuantic.UI.Server.TemplateVariablesExtensions.Set(this System.Collections.Generic.Dictionary<string!, string!>! variables, string! key, string! value) -> System.Collections.Generic.Dictionary<string!, string!>!
 static eQuantic.UI.Server.TemplateVariablesExtensions.SetIf(this System.Collections.Generic.Dictionary<string!, string!>! variables, bool condition, string! key, string! value) -> System.Collections.Generic.Dictionary<string!, string!>!
 static eQuantic.UI.Server.TemplateVariablesExtensions.SetOrEmpty(this System.Collections.Generic.Dictionary<string!, string!>! variables, string! key, string? value) -> System.Collections.Generic.Dictionary<string!, string!>!

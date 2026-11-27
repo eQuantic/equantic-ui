@@ -158,10 +158,10 @@
 [EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher
 [EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.BindToCurrentThread() -> void
 [EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.Drain() -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.HasWork.get -> bool
 [EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.IsOnUiThread.get -> bool
 [EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.PhotonDispatcher() -> void
 [EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.Post(System.Action! work) -> void
-[EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.WakeOnPost(eQuantic.UI.Native.Components.PhotonHost! host) -> void
 [EQX0001]eQuantic.UI.Native.Components.PhotonFrameTicker
 [EQX0001]eQuantic.UI.Native.Components.PhotonFrameTicker.Fire(float timeMs) -> void
 [EQX0001]eQuantic.UI.Native.Components.PhotonFrameTicker.HasSubscribers.get -> bool
@@ -184,7 +184,7 @@
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.Clipboard.set -> void
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.CodeTarget.get -> eQuantic.UI.Primitives.CodeSurface?
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.CommitText(string! text) -> bool
-[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ContextRequest(float x, float y, eQuantic.UI.Primitives.PointerKind kind = eQuantic.UI.Primitives.PointerKind.Mouse, eQuantic.UI.Primitives.PointerButtons buttons = eQuantic.UI.Primitives.PointerButtons.Secondary, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ContextRequest(float x, float y, eQuantic.UI.Primitives.PointerKind kind = eQuantic.UI.Primitives.PointerKind.Mouse, eQuantic.UI.Primitives.PointerButtons buttons = eQuantic.UI.Primitives.PointerButtons.Secondary, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None, double? timeMs = null) -> bool
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.Contrast.get -> eQuantic.UI.Primitives.ContrastLevel
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.Contrast.set -> void
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.CursorAt(float x, float y) -> eQuantic.UI.Native.Components.CursorShape
@@ -227,11 +227,11 @@
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.NavigationRequested.set -> void
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.NeedsRender.get -> bool
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.PhotonHost(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode mode, float width, float height, eQuantic.UI.Native.Framework.ITextMeasurer? measurer = null, float typeScale = 1, eQuantic.UI.Primitives.ComponentBoundary? boundary = null) -> void
-[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PointerCancel(eQuantic.UI.Primitives.PointerKind kind = eQuantic.UI.Primitives.PointerKind.Mouse) -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PointerCancel(eQuantic.UI.Primitives.PointerKind kind = eQuantic.UI.Primitives.PointerKind.Mouse, double? timeMs = null) -> void
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.PointerLeave() -> void
-[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PointerMove(float x, float y, eQuantic.UI.Primitives.PointerKind kind = eQuantic.UI.Primitives.PointerKind.Mouse, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None) -> void
-[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PressDown(float x, float y, int clickCount = 1, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None, eQuantic.UI.Primitives.PointerKind kind = eQuantic.UI.Primitives.PointerKind.Mouse) -> bool
-[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PressUp(float x, float y, eQuantic.UI.Primitives.PointerKind kind = eQuantic.UI.Primitives.PointerKind.Mouse) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PointerMove(float x, float y, eQuantic.UI.Primitives.PointerKind kind = eQuantic.UI.Primitives.PointerKind.Mouse, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None, double? timeMs = null) -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PressDown(float x, float y, int clickCount = 1, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None, eQuantic.UI.Primitives.PointerKind kind = eQuantic.UI.Primitives.PointerKind.Mouse, double? timeMs = null) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.PressUp(float x, float y, eQuantic.UI.Primitives.PointerKind kind = eQuantic.UI.Primitives.PointerKind.Mouse, double? timeMs = null) -> bool
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.Pressed.get -> eQuantic.UI.Primitives.Pressable?
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.RecycleFrames.get -> bool
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.RecycleFrames.init -> void
@@ -243,7 +243,7 @@
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.Resize(float width, float height) -> void
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.SafeAreaInsets.get -> eQuantic.UI.Primitives.EdgeInsets
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.SafeAreaInsets.set -> void
-[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ScrollBy(float x, float y, float across, float down, bool stepped = true, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None) -> bool
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.ScrollBy(float x, float y, float across, float down, bool stepped = true, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None, double? timeMs = null) -> bool
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.ScrollOffsetOf(eQuantic.UI.Primitives.Element! at) -> float
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.Selection.get -> (int Start, int End)
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.SelectionRange.get -> (int Start, int Length)
@@ -263,6 +263,7 @@
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.UpdateEditingValue(eQuantic.UI.Native.Components.TextEditingValue value) -> bool
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.ViewInsets.get -> eQuantic.UI.Primitives.EdgeInsets
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.ViewInsets.set -> void
+[EQX0001]eQuantic.UI.Native.Components.PhotonHost.WantsFrame(float nowMs) -> bool
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.Width.get -> float
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.WindowControlsInsets.get -> eQuantic.UI.Primitives.EdgeInsets
 [EQX0001]eQuantic.UI.Native.Components.PhotonHost.WindowControlsInsets.set -> void
