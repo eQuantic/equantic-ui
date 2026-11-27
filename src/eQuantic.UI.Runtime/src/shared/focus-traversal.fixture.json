@@ -1,0 +1,498 @@
+{
+  "about": "The focus manager's cases (#1897), run by FocusTraversalFixtureTests against the C# FocusManager, which Photon runs, and by focus-traversal.spec.ts against its transpiled twin, which the browser runs, with FocusProbe (a class written as an app writes around a focus node) as the one that adds and removes handlers on both sides. A case names its nodes (plain, or a scope with its edge, may not take the focus, skips traversal, or carries handlers of its own that replace the plain 'name.changed' one), the frame it attaches (stops as [position, ...the nodes it stands under, outermost first], the modal scope and where it is, the nodes that ask for autofocus) and its steps. A step is one of: attach (a new frame), tab or shiftTab (the walk, and the landing a realizer makes: the answer is reported with Focused, and a move that leaves the page reports nothing focused), focused (the target moved the focus, a position or null), request, unfocus, next and previous (a node asks: RequestAsked is heard as 'asked'), apply (TakeRequest, landed the same way), add and remove (a handler of a node's Changed), knob (a node's CanRequestFocus or SkipTraversal). A step says what the manager answered (move: 'to X', 'leaves', 'clear' for a move to no stop, 'none' for no move; returns: what NextFocus or PreviousFocus answered), what was heard while it ran, in order (a node's 'name.changed' and 'name.onFocusChange true|false', 'asked'), and the position holding the focus, the nodes that have it and the one that owns it, which carry over from the step before when a step does not say them: every step asserts all of them.",
+  "cases": [
+    {
+      "name": "Tab enters at the first stop, walks the frame's order and, on Photon, wraps at the root",
+      "nodes": { },
+      "frame": { "stops": [["A"], ["B"], ["C"]] },
+      "steps": [
+        { "tab": true, "move": "to A", "focus": "A" },
+        { "tab": true, "move": "to B", "focus": "B" },
+        { "tab": true, "move": "to C", "focus": "C" },
+        { "tab": true, "move": "to A", "focus": "A" }
+      ]
+    },
+    {
+      "name": "Shift+Tab enters at the last stop and wraps back",
+      "nodes": { },
+      "frame": { "stops": [["A"], ["B"], ["C"]] },
+      "steps": [
+        { "shiftTab": true, "move": "to C", "focus": "C" },
+        { "shiftTab": true, "move": "to B", "focus": "B" },
+        { "shiftTab": true, "move": "to A", "focus": "A" },
+        { "shiftTab": true, "move": "to C", "focus": "C" }
+      ]
+    },
+    {
+      "name": "on the web the root's edge leaves the page, going on and going back",
+      "view": "leaves",
+      "nodes": { },
+      "frame": { "stops": [["A"], ["B"], ["C"]] },
+      "steps": [
+        { "tab": true, "move": "to A", "focus": "A" },
+        { "tab": true, "move": "to B", "focus": "B" },
+        { "tab": true, "move": "to C", "focus": "C" },
+        { "tab": true, "move": "leaves", "focus": null },
+        { "tab": true, "move": "to A", "focus": "A" },
+        { "shiftTab": true, "move": "leaves", "focus": null },
+        { "shiftTab": true, "move": "to C", "focus": "C" }
+      ]
+    },
+    {
+      "name": "a closed-loop scope wraps inside itself, and the stops around it are not reached",
+      "nodes": { "s": { "scope": true } },
+      "frame": { "stops": [["A"], ["B", "s"], ["C", "s"], ["D"]] },
+      "steps": [
+        { "focused": "B", "heard": ["s.changed", "s.onFocusChange true"], "focus": "B", "hasFocus": ["s"] },
+        { "tab": true, "move": "to C", "focus": "C" },
+        { "tab": true, "move": "to B", "focus": "B" },
+        { "shiftTab": true, "move": "to C", "focus": "C" },
+        { "focused": "A", "heard": ["s.changed", "s.onFocusChange false"], "focus": "A", "hasFocus": [] },
+        { "tab": true, "move": "to B", "heard": ["s.changed", "s.onFocusChange true"], "focus": "B", "hasFocus": ["s"] }
+      ]
+    },
+    {
+      "name": "a parent-scope edge goes on in the enclosing scope, after the scope and not at the start",
+      "nodes": { "s": { "scope": true, "edge": "parentScope" } },
+      "frame": { "stops": [["A"], ["B", "s"], ["C", "s"], ["D"]] },
+      "steps": [
+        { "focused": "C", "heard": ["s.changed", "s.onFocusChange true"], "focus": "C", "hasFocus": ["s"] },
+        { "tab": true, "move": "to D", "heard": ["s.changed", "s.onFocusChange false"], "focus": "D", "hasFocus": [] },
+        { "focused": "B", "heard": ["s.changed", "s.onFocusChange true"], "focus": "B", "hasFocus": ["s"] },
+        { "shiftTab": true, "move": "to A", "heard": ["s.changed", "s.onFocusChange false"], "focus": "A", "hasFocus": [] },
+        { "tab": true, "move": "to B", "heard": ["s.changed", "s.onFocusChange true"], "focus": "B", "hasFocus": ["s"] }
+      ]
+    },
+    {
+      "name": "a stop edge keeps the focus where it is, going on and going back",
+      "nodes": { "s": { "scope": true, "edge": "stop" } },
+      "frame": { "stops": [["A"], ["B", "s"], ["C", "s"], ["D"]] },
+      "steps": [
+        { "focused": "C", "heard": ["s.changed", "s.onFocusChange true"], "focus": "C", "hasFocus": ["s"] },
+        { "tab": true, "move": "to C" },
+        { "focused": "B", "focus": "B" },
+        { "shiftTab": true, "move": "to B" },
+        { "tab": true, "move": "to C", "focus": "C" },
+        { "tab": true, "move": "to C" }
+      ]
+    },
+    {
+      "name": "parent-scope edges in nested scopes go past each scope's place, and a closed loop around them wraps",
+      "nodes": { "s1": { "scope": true }, "s2": { "scope": true, "edge": "parentScope" } },
+      "frame": { "stops": [["A"], ["B", "s1"], ["C", "s1", "s2"], ["D", "s1", "s2"], ["E", "s1"], ["F"]] },
+      "steps": [
+        { "focused": "D", "heard": ["s1.changed", "s1.onFocusChange true", "s2.changed", "s2.onFocusChange true"], "focus": "D", "hasFocus": ["s1", "s2"] },
+        { "tab": true, "move": "to E", "heard": ["s2.changed", "s2.onFocusChange false"], "focus": "E", "hasFocus": ["s1"] },
+        { "tab": true, "move": "to B", "focus": "B" },
+        { "focused": "C", "heard": ["s2.changed", "s2.onFocusChange true"], "focus": "C", "hasFocus": ["s1", "s2"] },
+        { "shiftTab": true, "move": "to B", "heard": ["s2.changed", "s2.onFocusChange false"], "focus": "B", "hasFocus": ["s1"] },
+        { "shiftTab": true, "move": "to E", "focus": "E" },
+        { "focused": "D", "heard": ["s2.changed", "s2.onFocusChange true"], "focus": "D", "hasFocus": ["s1", "s2"] },
+        { "tab": true, "move": "to E", "heard": ["s2.changed", "s2.onFocusChange false"], "focus": "E", "hasFocus": ["s1"] }
+      ]
+    },
+    {
+      "name": "a parent-scope edge reaches the stop edge of the scope around it",
+      "nodes": { "s1": { "scope": true, "edge": "stop" }, "s2": { "scope": true, "edge": "parentScope" } },
+      "frame": { "stops": [["A"], ["B", "s1"], ["C", "s1", "s2"], ["D"]] },
+      "steps": [
+        { "focused": "C", "heard": ["s1.changed", "s1.onFocusChange true", "s2.changed", "s2.onFocusChange true"], "focus": "C", "hasFocus": ["s1", "s2"] },
+        { "tab": true, "move": "to C" },
+        { "shiftTab": true, "move": "to B", "heard": ["s2.changed", "s2.onFocusChange false"], "focus": "B", "hasFocus": ["s1"] }
+      ]
+    },
+    {
+      "name": "a parent-scope edge with nothing around the scope wraps at the root on Photon",
+      "nodes": { "s": { "scope": true, "edge": "parentScope" } },
+      "frame": { "stops": [["B", "s"], ["C", "s"]] },
+      "steps": [
+        { "focused": "C", "heard": ["s.changed", "s.onFocusChange true"], "focus": "C", "hasFocus": ["s"] },
+        { "tab": true, "move": "to B", "focus": "B" },
+        { "shiftTab": true, "move": "to C", "focus": "C" }
+      ]
+    },
+    {
+      "name": "a parent-scope edge with nothing around the scope leaves the page on the web",
+      "view": "leaves",
+      "nodes": { "s": { "scope": true, "edge": "parentScope" } },
+      "frame": { "stops": [["B", "s"], ["C", "s"]] },
+      "steps": [
+        { "focused": "C", "heard": ["s.changed", "s.onFocusChange true"], "focus": "C", "hasFocus": ["s"] },
+        { "tab": true, "move": "leaves", "heard": ["s.changed", "s.onFocusChange false"], "focus": null, "hasFocus": [] }
+      ]
+    },
+    {
+      "name": "a node that skips traversal is not reached by Tab and still takes a request",
+      "nodes": { "a": { }, "b": { "skipTraversal": true }, "c": { } },
+      "frame": { "stops": [["A", "a"], ["B", "b"], ["C", "c"]] },
+      "steps": [
+        { "tab": true, "move": "to A", "heard": ["a.changed", "a.onFocusChange true"], "focus": "A", "hasFocus": ["a"], "primary": "a" },
+        { "tab": true, "move": "to C", "heard": ["a.changed", "a.onFocusChange false", "c.changed", "c.onFocusChange true"], "focus": "C", "hasFocus": ["c"], "primary": "c" },
+        { "request": "b", "heard": ["asked"] },
+        { "apply": true, "move": "to B", "heard": ["c.changed", "c.onFocusChange false", "b.changed", "b.onFocusChange true"], "focus": "B", "hasFocus": ["b"], "primary": "b" },
+        { "tab": true, "move": "to C", "heard": ["b.changed", "b.onFocusChange false", "c.changed", "c.onFocusChange true"], "focus": "C", "hasFocus": ["c"], "primary": "c" },
+        { "focused": "B", "heard": ["c.changed", "c.onFocusChange false", "b.changed", "b.onFocusChange true"], "focus": "B", "hasFocus": ["b"], "primary": "b" },
+        { "shiftTab": true, "move": "to A", "heard": ["b.changed", "b.onFocusChange false", "a.changed", "a.onFocusChange true"], "focus": "A", "hasFocus": ["a"], "primary": "a" }
+      ]
+    },
+    {
+      "name": "a node that may not take the focus is not reached by Tab and a request moves nothing",
+      "nodes": { "a": { }, "b": { "canRequestFocus": false }, "c": { } },
+      "frame": { "stops": [["A", "a"], ["B", "b"], ["C", "c"]] },
+      "steps": [
+        { "tab": true, "move": "to A", "heard": ["a.changed", "a.onFocusChange true"], "focus": "A", "hasFocus": ["a"], "primary": "a" },
+        { "tab": true, "move": "to C", "heard": ["a.changed", "a.onFocusChange false", "c.changed", "c.onFocusChange true"], "focus": "C", "hasFocus": ["c"], "primary": "c" },
+        { "request": "b", "heard": ["asked"] },
+        { "apply": true, "move": "none" },
+        { "knob": "b", "canRequestFocus": true },
+        { "request": "b", "heard": ["asked"] },
+        { "apply": true, "move": "to B", "heard": ["c.changed", "c.onFocusChange false", "b.changed", "b.onFocusChange true"], "focus": "B", "hasFocus": ["b"], "primary": "b" }
+      ]
+    },
+    {
+      "name": "a Focus around two stops is a group: it has the focus and owns it while either holds it",
+      "nodes": { "g": { } },
+      "frame": { "stops": [["X", "g"], ["Y", "g"], ["Z"]] },
+      "steps": [
+        { "focused": "Y", "heard": ["g.changed", "g.onFocusChange true"], "focus": "Y", "hasFocus": ["g"], "primary": "g" },
+        { "tab": true, "move": "to Z", "heard": ["g.changed", "g.onFocusChange false"], "focus": "Z", "hasFocus": [], "primary": null },
+        { "request": "g", "heard": ["asked"] },
+        { "apply": true, "move": "to X", "heard": ["g.changed", "g.onFocusChange true"], "focus": "X", "hasFocus": ["g"], "primary": "g" },
+        { "tab": true, "move": "to Y", "focus": "Y" },
+        { "shiftTab": true, "move": "to X", "focus": "X" }
+      ]
+    },
+    {
+      "name": "a Focus around a Focus has the focus without owning it",
+      "nodes": { "o": { }, "i": { } },
+      "frame": { "stops": [["X", "o", "i"]] },
+      "steps": [
+        { "focused": "X", "heard": ["o.changed", "o.onFocusChange true", "i.changed", "i.onFocusChange true"], "focus": "X", "hasFocus": ["o", "i"], "primary": "i" },
+        { "focused": null, "heard": ["o.changed", "o.onFocusChange false", "i.changed", "i.onFocusChange false"], "focus": null, "hasFocus": [], "primary": null }
+      ]
+    },
+    {
+      "name": "the nodes a move loses and gains are told outermost first, the ones that lose before the ones that gain",
+      "nodes": { "o1": { }, "i1": { }, "o2": { }, "i2": { }, "o": { }, "a": { }, "b": { } },
+      "frame": { "stops": [["A", "o1", "i1"], ["B", "o2", "i2"], ["C", "o", "a"], ["D", "o", "b"]] },
+      "steps": [
+        { "focused": "A", "heard": ["o1.changed", "o1.onFocusChange true", "i1.changed", "i1.onFocusChange true"], "focus": "A", "hasFocus": ["o1", "i1"], "primary": "i1" },
+        { "tab": true, "move": "to B", "heard": ["o1.changed", "o1.onFocusChange false", "o2.changed", "o2.onFocusChange true", "i1.changed", "i1.onFocusChange false", "i2.changed", "i2.onFocusChange true"], "focus": "B", "hasFocus": ["o2", "i2"], "primary": "i2" },
+        { "tab": true, "move": "to C", "heard": ["o2.changed", "o2.onFocusChange false", "o.changed", "o.onFocusChange true", "i2.changed", "i2.onFocusChange false", "a.changed", "a.onFocusChange true"], "focus": "C", "hasFocus": ["o", "a"], "primary": "a" },
+        { "tab": true, "move": "to D", "heard": ["a.changed", "a.onFocusChange false", "b.changed", "b.onFocusChange true"], "focus": "D", "hasFocus": ["o", "b"], "primary": "b" }
+      ]
+    },
+    {
+      "name": "a report that moves the focus inside one node tells nobody",
+      "nodes": { "g": { } },
+      "frame": { "stops": [["X", "g"], ["Y", "g"]] },
+      "steps": [
+        { "focused": "X", "heard": ["g.changed", "g.onFocusChange true"], "focus": "X", "hasFocus": ["g"], "primary": "g" },
+        { "focused": "Y", "focus": "Y" },
+        { "focused": "Y" },
+        { "focused": null, "heard": ["g.changed", "g.onFocusChange false"], "focus": null, "hasFocus": [], "primary": null }
+      ]
+    },
+    {
+      "name": "a scope gives the focus back to the child that had it",
+      "nodes": { "s": { "scope": true }, "b": { }, "c": { } },
+      "frame": { "stops": [["A"], ["B", "s", "b"], ["C", "s", "c"], ["D"]] },
+      "steps": [
+        { "focused": "C", "heard": ["s.changed", "s.onFocusChange true", "c.changed", "c.onFocusChange true"], "focus": "C", "hasFocus": ["s", "c"], "primary": "c" },
+        { "focused": "D", "heard": ["s.changed", "s.onFocusChange false", "c.changed", "c.onFocusChange false"], "focus": "D", "hasFocus": [], "primary": null },
+        { "request": "s", "heard": ["asked"] },
+        { "apply": true, "move": "to C", "heard": ["s.changed", "s.onFocusChange true", "c.changed", "c.onFocusChange true"], "focus": "C", "hasFocus": ["s", "c"], "primary": "c" }
+      ]
+    },
+    {
+      "name": "a scope no one visited takes the focus on its first traversable stop",
+      "nodes": { "s": { "scope": true }, "b": { "skipTraversal": true }, "c": { } },
+      "frame": { "stops": [["A"], ["B", "s", "b"], ["C", "s", "c"]] },
+      "steps": [
+        { "request": "s", "heard": ["asked"] },
+        { "apply": true, "move": "to C", "heard": ["s.changed", "s.onFocusChange true", "c.changed", "c.onFocusChange true"], "focus": "C", "hasFocus": ["s", "c"], "primary": "c" }
+      ]
+    },
+    {
+      "name": "of two requests before a write the later wins, and the first never had the focus",
+      "nodes": { "a": { }, "b": { } },
+      "frame": { "stops": [["A", "a"], ["B", "b"]] },
+      "steps": [
+        { "request": "a", "heard": ["asked"] },
+        { "request": "b", "heard": ["asked"] },
+        { "apply": true, "move": "to B", "heard": ["b.changed", "b.onFocusChange true"], "focus": "B", "hasFocus": ["b"], "primary": "b" },
+        { "apply": true, "move": "none" }
+      ]
+    },
+    {
+      "name": "a request for a node that already has the focus moves nothing",
+      "nodes": { "a": { } },
+      "frame": { "stops": [["A", "a"]] },
+      "steps": [
+        { "focused": "A", "heard": ["a.changed", "a.onFocusChange true"], "focus": "A", "hasFocus": ["a"], "primary": "a" },
+        { "request": "a", "heard": ["asked"] },
+        { "apply": true, "move": "none" }
+      ]
+    },
+    {
+      "name": "Unfocus gives the focus up after the write, and a node without it asks nothing",
+      "nodes": { "a": { }, "b": { } },
+      "frame": { "stops": [["A", "a"], ["B", "b"]] },
+      "steps": [
+        { "focused": "A", "heard": ["a.changed", "a.onFocusChange true"], "focus": "A", "hasFocus": ["a"], "primary": "a" },
+        { "unfocus": "b" },
+        { "apply": true, "move": "none" },
+        { "unfocus": "a", "heard": ["asked"] },
+        { "apply": true, "move": "clear", "heard": ["a.changed", "a.onFocusChange false"], "focus": null, "hasFocus": [], "primary": null }
+      ]
+    },
+    {
+      "name": "a request made before the first build is honoured when the first build shows the node",
+      "nodes": { "a": { }, "b": { } },
+      "steps": [
+        { "request": "b" },
+        { "apply": true, "move": "none" },
+        { "request": "b" },
+        { "attach": { "stops": [["A", "a"], ["B", "b"]] } },
+        { "apply": true, "move": "to B", "heard": ["b.changed", "b.onFocusChange true"], "focus": "B", "hasFocus": ["b"], "primary": "b" }
+      ]
+    },
+    {
+      "name": "a request for a node a frame does not show waits for the frame that does, the later of two standing",
+      "nodes": { "a": { }, "b": { }, "c": { } },
+      "frame": { "stops": [["A", "a"]] },
+      "steps": [
+        { "request": "b" },
+        { "request": "c" },
+        { "apply": true, "move": "none" },
+        { "attach": { "stops": [["A", "a"], ["B", "b"], ["C", "c"]] } },
+        { "apply": true, "move": "to C", "heard": ["c.changed", "c.onFocusChange true"], "focus": "C", "hasFocus": ["c"], "primary": "c" }
+      ]
+    },
+    {
+      "name": "a field closed by the write that asks for the tree's focus loses it first, and the tree takes it after",
+      "nodes": { "f": { }, "t": { } },
+      "frame": { "stops": [["F", "f"], ["T", "t"]] },
+      "steps": [
+        { "focused": "F", "heard": ["f.changed", "f.onFocusChange true"], "focus": "F", "hasFocus": ["f"], "primary": "f" },
+        { "request": "t", "heard": ["asked"] },
+        { "attach": { "stops": [["T", "t"]] }, "heard": ["f.changed", "f.onFocusChange false"], "focus": null, "hasFocus": [], "primary": null },
+        { "apply": true, "move": "to T", "heard": ["t.changed", "t.onFocusChange true"], "focus": "T", "hasFocus": ["t"], "primary": "t" }
+      ]
+    },
+    {
+      "name": "a stop that leaves while it has the focus leaves nothing focused, and the scopes around it are told",
+      "nodes": { "s": { "scope": true }, "b": { } },
+      "frame": { "stops": [["A"], ["B", "s", "b"]] },
+      "steps": [
+        { "focused": "B", "heard": ["s.changed", "s.onFocusChange true", "b.changed", "b.onFocusChange true"], "focus": "B", "hasFocus": ["s", "b"], "primary": "b" },
+        { "attach": { "stops": [["A"]] }, "heard": ["s.changed", "s.onFocusChange false", "b.changed", "b.onFocusChange false"], "focus": null, "hasFocus": [], "primary": null },
+        { "tab": true, "move": "to A", "focus": "A" }
+      ]
+    },
+    {
+      "name": "a stop whose nodes change under the focus tells the nodes it lost and gained",
+      "nodes": { "a": { }, "b": { } },
+      "frame": { "stops": [["A", "a"]] },
+      "steps": [
+        { "focused": "A", "heard": ["a.changed", "a.onFocusChange true"], "focus": "A", "hasFocus": ["a"], "primary": "a" },
+        { "attach": { "stops": [["A", "b"]] }, "heard": ["a.changed", "a.onFocusChange false", "b.changed", "b.onFocusChange true"], "focus": "A", "hasFocus": ["b"], "primary": "b" }
+      ]
+    },
+    {
+      "name": "autofocus asks once, when the position first appears, and a Tab away is not undone by the next build",
+      "nodes": { "a": { }, "b": { } },
+      "frame": { "stops": [["A", "a"], ["B", "b"]], "autofocus": ["b"] },
+      "steps": [
+        { "apply": true, "move": "to B", "heard": ["b.changed", "b.onFocusChange true"], "focus": "B", "hasFocus": ["b"], "primary": "b" },
+        { "tab": true, "move": "to A", "heard": ["b.changed", "b.onFocusChange false", "a.changed", "a.onFocusChange true"], "focus": "A", "hasFocus": ["a"], "primary": "a" },
+        { "attach": { "stops": [["A", "a"], ["B", "b"]], "autofocus": ["b"] } },
+        { "apply": true, "move": "none" },
+        { "attach": { "stops": [["A", "a"]] } },
+        { "attach": { "stops": [["A", "a"], ["B", "b"]], "autofocus": ["b"] } },
+        { "apply": true, "move": "none" },
+        { "focused": null, "heard": ["a.changed", "a.onFocusChange false"], "focus": null, "hasFocus": [], "primary": null },
+        { "attach": { "stops": [["A", "a"]] } },
+        { "attach": { "stops": [["A", "a"], ["B", "b"]], "autofocus": ["b"] } },
+        { "apply": true, "move": "to B", "heard": ["b.changed", "b.onFocusChange true"], "focus": "B", "hasFocus": ["b"], "primary": "b" }
+      ]
+    },
+    {
+      "name": "autofocus does not take the focus from where it already is",
+      "nodes": { "b": { } },
+      "frame": { "stops": [["A"]] },
+      "steps": [
+        { "focused": "A", "focus": "A" },
+        { "attach": { "stops": [["A"], ["B", "b"]], "autofocus": ["b"] } },
+        { "apply": true, "move": "none" }
+      ]
+    },
+    {
+      "name": "autofocus inside a scope asks when the focus is outside the scope",
+      "nodes": { "s": { "scope": true }, "b": { } },
+      "frame": { "stops": [["A"]] },
+      "steps": [
+        { "focused": "A", "focus": "A" },
+        { "attach": { "stops": [["A"], ["B", "s", "b"]], "autofocus": ["b"] } },
+        { "apply": true, "move": "to B", "heard": ["s.changed", "s.onFocusChange true", "b.changed", "b.onFocusChange true"], "focus": "B", "hasFocus": ["s", "b"], "primary": "b" }
+      ]
+    },
+    {
+      "name": "autofocus inside a scope does not ask when the focus is already inside it",
+      "nodes": { "s": { "scope": true }, "b": { } },
+      "frame": { "stops": [["A", "s"]] },
+      "steps": [
+        { "focused": "A", "heard": ["s.changed", "s.onFocusChange true"], "focus": "A", "hasFocus": ["s"] },
+        { "attach": { "stops": [["A", "s"], ["B", "s", "b"]], "autofocus": ["b"] } },
+        { "apply": true, "move": "none" }
+      ]
+    },
+    {
+      "name": "a request is not undone by the autofocus of a frame that comes after it",
+      "nodes": { "a": { }, "b": { } },
+      "frame": { "stops": [["A", "a"]] },
+      "steps": [
+        { "request": "a", "heard": ["asked"] },
+        { "attach": { "stops": [["A", "a"], ["B", "b"]], "autofocus": ["b"] } },
+        { "apply": true, "move": "to A", "heard": ["a.changed", "a.onFocusChange true"], "focus": "A", "hasFocus": ["a"], "primary": "a" }
+      ]
+    },
+    {
+      "name": "a modal scope holds Tab: it enters from behind, wraps inside, and does not leave the page on the web",
+      "view": "leaves",
+      "nodes": { "a": { }, "d": { "scope": true }, "d1": { }, "d2": { }, "b": { } },
+      "frame": { "stops": [["A", "a"], ["D1", "d", "d1"], ["D2", "d", "d2"], ["B", "b"]], "modal": "d" },
+      "steps": [
+        { "focused": "A", "heard": ["a.changed", "a.onFocusChange true"], "focus": "A", "hasFocus": ["a"], "primary": "a" },
+        { "tab": true, "move": "to D1", "heard": ["a.changed", "a.onFocusChange false", "d.changed", "d.onFocusChange true", "d1.changed", "d1.onFocusChange true"], "focus": "D1", "hasFocus": ["d", "d1"], "primary": "d1" },
+        { "tab": true, "move": "to D2", "heard": ["d1.changed", "d1.onFocusChange false", "d2.changed", "d2.onFocusChange true"], "focus": "D2", "hasFocus": ["d", "d2"], "primary": "d2" },
+        { "tab": true, "move": "to D1", "heard": ["d2.changed", "d2.onFocusChange false", "d1.changed", "d1.onFocusChange true"], "focus": "D1", "hasFocus": ["d", "d1"], "primary": "d1" },
+        { "shiftTab": true, "move": "to D2", "heard": ["d1.changed", "d1.onFocusChange false", "d2.changed", "d2.onFocusChange true"], "focus": "D2", "hasFocus": ["d", "d2"], "primary": "d2" },
+        { "focused": "A", "heard": ["d.changed", "d.onFocusChange false", "a.changed", "a.onFocusChange true", "d2.changed", "d2.onFocusChange false"], "focus": "A", "hasFocus": ["a"], "primary": "a" },
+        { "shiftTab": true, "move": "to D2", "heard": ["a.changed", "a.onFocusChange false", "d.changed", "d.onFocusChange true", "d2.changed", "d2.onFocusChange true"], "focus": "D2", "hasFocus": ["d", "d2"], "primary": "d2" }
+      ]
+    },
+    {
+      "name": "a modal scope that says parent-scope is still the end of the walk",
+      "view": "leaves",
+      "nodes": { "d": { "scope": true, "edge": "parentScope" } },
+      "frame": { "stops": [["A"], ["D1", "d"], ["D2", "d"]], "modal": "d" },
+      "steps": [
+        { "focused": "D2", "heard": ["d.changed", "d.onFocusChange true"], "focus": "D2", "hasFocus": ["d"] },
+        { "tab": true, "move": "to D1", "focus": "D1" }
+      ]
+    },
+    {
+      "name": "a scope inside a modal scope that goes on in the parent goes on inside the modal one",
+      "view": "leaves",
+      "nodes": { "d": { "scope": true }, "s": { "scope": true, "edge": "parentScope" } },
+      "frame": { "stops": [["A"], ["D1", "d", "s"], ["D2", "d"]], "modal": "d" },
+      "steps": [
+        { "focused": "D1", "heard": ["d.changed", "d.onFocusChange true", "s.changed", "s.onFocusChange true"], "focus": "D1", "hasFocus": ["d", "s"] },
+        { "tab": true, "move": "to D2", "heard": ["s.changed", "s.onFocusChange false"], "focus": "D2", "hasFocus": ["d"] },
+        { "tab": true, "move": "to D1", "heard": ["s.changed", "s.onFocusChange true"], "focus": "D1", "hasFocus": ["d", "s"] },
+        { "shiftTab": true, "move": "to D2", "heard": ["s.changed", "s.onFocusChange false"], "focus": "D2", "hasFocus": ["d"] }
+      ]
+    },
+    {
+      "name": "a modal scope with no stop holds the keyboard at its own place",
+      "nodes": { "a": { }, "d": { "scope": true } },
+      "frame": { "stops": [["A", "a"]], "modal": "d", "modalAt": "layer" },
+      "steps": [
+        { "focused": "A", "heard": ["a.changed", "a.onFocusChange true"], "focus": "A", "hasFocus": ["a"], "primary": "a" },
+        { "tab": true, "move": "to layer", "heard": ["a.changed", "a.onFocusChange false", "d.changed", "d.onFocusChange true"], "focus": "layer", "hasFocus": ["d"], "primary": "d" },
+        { "tab": true, "move": "to layer" },
+        { "shiftTab": true, "move": "to layer" }
+      ]
+    },
+    {
+      "name": "a modal scope with no stop and no place of its own clears the focus",
+      "nodes": { "a": { }, "d": { "scope": true } },
+      "frame": { "stops": [["A", "a"]], "modal": "d" },
+      "steps": [
+        { "focused": "A", "heard": ["a.changed", "a.onFocusChange true"], "focus": "A", "hasFocus": ["a"], "primary": "a" },
+        { "tab": true, "move": "clear", "heard": ["a.changed", "a.onFocusChange false"], "focus": null, "hasFocus": [], "primary": null },
+        { "tab": true, "move": "clear" }
+      ]
+    },
+    {
+      "name": "a request for a node behind the modal scope moves nothing, and one inside it lands",
+      "nodes": { "a": { }, "d": { "scope": true }, "d1": { }, "d2": { } },
+      "frame": { "stops": [["A", "a"], ["D1", "d", "d1"], ["D2", "d", "d2"]], "modal": "d" },
+      "steps": [
+        { "focused": "D1", "heard": ["d.changed", "d.onFocusChange true", "d1.changed", "d1.onFocusChange true"], "focus": "D1", "hasFocus": ["d", "d1"], "primary": "d1" },
+        { "request": "a", "heard": ["asked"] },
+        { "apply": true, "move": "none" },
+        { "request": "d2", "heard": ["asked"] },
+        { "apply": true, "move": "to D2", "heard": ["d1.changed", "d1.onFocusChange false", "d2.changed", "d2.onFocusChange true"], "focus": "D2", "hasFocus": ["d", "d2"], "primary": "d2" },
+        { "request": "d", "heard": ["asked"] },
+        { "apply": true, "move": "none" }
+      ]
+    },
+    {
+      "name": "NextFocus and PreviousFocus move the focus as Tab does, after the write",
+      "nodes": { "a": { }, "b": { }, "c": { } },
+      "frame": { "stops": [["A", "a"], ["B", "b"], ["C", "c"]] },
+      "steps": [
+        { "focused": "A", "heard": ["a.changed", "a.onFocusChange true"], "focus": "A", "hasFocus": ["a"], "primary": "a" },
+        { "next": "a", "returns": true, "heard": ["asked"] },
+        { "apply": true, "move": "to B", "heard": ["a.changed", "a.onFocusChange false", "b.changed", "b.onFocusChange true"], "focus": "B", "hasFocus": ["b"], "primary": "b" },
+        { "previous": "b", "returns": true, "heard": ["asked"] },
+        { "apply": true, "move": "to A", "heard": ["b.changed", "b.onFocusChange false", "a.changed", "a.onFocusChange true"], "focus": "A", "hasFocus": ["a"], "primary": "a" },
+        { "previous": "a", "returns": true, "heard": ["asked"] },
+        { "apply": true, "move": "to C", "heard": ["a.changed", "a.onFocusChange false", "c.changed", "c.onFocusChange true"], "focus": "C", "hasFocus": ["c"], "primary": "c" }
+      ]
+    },
+    {
+      "name": "NextFocus from a node of a dialog stays inside the dialog",
+      "nodes": { "a": { }, "d": { "scope": true }, "d1": { }, "d2": { } },
+      "frame": { "stops": [["A", "a"], ["D1", "d", "d1"], ["D2", "d", "d2"]], "modal": "d" },
+      "steps": [
+        { "focused": "D2", "heard": ["d.changed", "d.onFocusChange true", "d2.changed", "d2.onFocusChange true"], "focus": "D2", "hasFocus": ["d", "d2"], "primary": "d2" },
+        { "next": "d2", "returns": true, "heard": ["asked"] },
+        { "apply": true, "move": "to D1", "heard": ["d2.changed", "d2.onFocusChange false", "d1.changed", "d1.onFocusChange true"], "focus": "D1", "hasFocus": ["d", "d1"], "primary": "d1" }
+      ]
+    },
+    {
+      "name": "NextFocus from the page's last control cannot leave the page, and says so",
+      "view": "leaves",
+      "nodes": { "b": { }, "c": { } },
+      "frame": { "stops": [["B", "b"], ["C", "c"]] },
+      "steps": [
+        { "focused": "C", "heard": ["c.changed", "c.onFocusChange true"], "focus": "C", "hasFocus": ["c"], "primary": "c" },
+        { "next": "c", "returns": false, "heard": ["asked"] },
+        { "apply": true, "move": "none" },
+        { "previous": "c", "returns": true, "heard": ["asked"] },
+        { "apply": true, "move": "to B", "heard": ["c.changed", "c.onFocusChange false", "b.changed", "b.onFocusChange true"], "focus": "B", "hasFocus": ["b"], "primary": "b" }
+      ]
+    },
+    {
+      "name": "NextFocus on a node no frame has shown answers false and asks nothing",
+      "nodes": { "a": { } },
+      "steps": [
+        { "next": "a", "returns": false },
+        { "previous": "a", "returns": false }
+      ]
+    },
+    {
+      "name": "a handler that removes the next one and adds another is heard as .NET hears it: from the next change",
+      "nodes": { "n": { "handlers": [{ "name": "H1", "removes": "H2", "adds": "H3" }, { "name": "H2" }] } },
+      "frame": { "stops": [["A", "n"]] },
+      "steps": [
+        { "focused": "A", "heard": ["H1", "H2", "n.onFocusChange true"], "focus": "A", "hasFocus": ["n"], "primary": "n" },
+        { "focused": null, "heard": ["H1", "H3", "n.onFocusChange false"], "focus": null, "hasFocus": [], "primary": null }
+      ]
+    },
+    {
+      "name": "a handler added twice is called twice, and one removal leaves one",
+      "nodes": { "n": { "handlers": [{ "name": "H" }] } },
+      "frame": { "stops": [["A", "n"]] },
+      "steps": [
+        { "add": "n", "handler": "H" },
+        { "focused": "A", "heard": ["H", "H", "n.onFocusChange true"], "focus": "A", "hasFocus": ["n"], "primary": "n" },
+        { "remove": "n", "handler": "H" },
+        { "focused": null, "heard": ["H", "n.onFocusChange false"], "focus": null, "hasFocus": [], "primary": null }
+      ]
+    }
+  ]
+}

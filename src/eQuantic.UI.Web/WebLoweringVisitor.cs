@@ -250,6 +250,12 @@ internal sealed partial class WebLoweringVisitor(
 
     public HtmlElement? Visit(RawGestureDetector detector, bool? horizontalAxis) => LowerRawGestureDetector(detector);
 
+    // The focus of a subtree lowers as its child, one step down, for now (#1897): the host element that marks it for
+    // the focus manager's driver is a later change of the same slice. TS twin: `lowerNodeKind`.
+    public HtmlElement? Visit(Focus focus, bool? horizontalAxis) => Lower(focus.Child, horizontalAxis, LoweringPath.Child);
+
+    public HtmlElement? Visit(FocusScope scope, bool? horizontalAxis) => Lower(scope.Child, horizontalAxis, LoweringPath.Child);
+
     public HtmlElement? Visit(Sortable sortable, bool? horizontalAxis) => LowerSortable(sortable, horizontalAxis);
 
     public HtmlElement? Visit(SortableItem item, bool? horizontalAxis) => LowerSortableItem(item, horizontalAxis);

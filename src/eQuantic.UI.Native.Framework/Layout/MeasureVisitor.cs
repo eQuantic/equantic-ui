@@ -229,6 +229,13 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(RawGestureDetector node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
+    // The focus of a subtree owns no box (#1897): the child's box is its box.
+    public LayoutNode Visit(Focus node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
+
+    public LayoutNode Visit(FocusScope node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
+
     // A simulated state changes only what is DRAWN, so it takes no space of its own.
     public LayoutNode Visit(Simulated node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);

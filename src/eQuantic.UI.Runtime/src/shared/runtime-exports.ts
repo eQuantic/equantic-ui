@@ -37,6 +37,8 @@ export {
   ContextTarget,
   Listener,
   RawGestureDetector,
+  Focus,
+  FocusScope,
   Sortable,
   SortableItem,
   Flexible,

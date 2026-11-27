@@ -1,0 +1,104 @@
+#nullable enable
+eQuantic.UI.Primitives.FocusAttachment
+eQuantic.UI.Primitives.FocusAttachment.Deconstruct(out eQuantic.UI.Primitives.FocusNode! Node, out System.Action<bool>? OnFocusChange, out bool Autofocus) -> void
+eQuantic.UI.Primitives.FocusAttachment.Equals(eQuantic.UI.Primitives.FocusAttachment other) -> bool
+eQuantic.UI.Primitives.FocusAttachment.FocusAttachment() -> void
+eQuantic.UI.Primitives.FocusAttachment.FocusAttachment(eQuantic.UI.Primitives.FocusNode! Node, System.Action<bool>? OnFocusChange, bool Autofocus) -> void
+override eQuantic.UI.Primitives.FocusAttachment.GetHashCode() -> int
+static eQuantic.UI.Primitives.FocusAttachment.operator !=(eQuantic.UI.Primitives.FocusAttachment left, eQuantic.UI.Primitives.FocusAttachment right) -> bool
+static eQuantic.UI.Primitives.FocusAttachment.operator ==(eQuantic.UI.Primitives.FocusAttachment left, eQuantic.UI.Primitives.FocusAttachment right) -> bool
+~override eQuantic.UI.Primitives.FocusAttachment.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.FocusAttachment.ToString() -> string
+eQuantic.UI.Primitives.FocusAttachment.Node.get -> eQuantic.UI.Primitives.FocusNode!
+eQuantic.UI.Primitives.FocusAttachment.Node.init -> void
+eQuantic.UI.Primitives.FocusAttachment.OnFocusChange.get -> System.Action<bool>?
+eQuantic.UI.Primitives.FocusAttachment.OnFocusChange.init -> void
+eQuantic.UI.Primitives.FocusAttachment.Autofocus.get -> bool
+eQuantic.UI.Primitives.FocusAttachment.Autofocus.init -> void
+eQuantic.UI.Primitives.FocusManager.Focused(object? position) -> void
+eQuantic.UI.Primitives.FocusManager.Traverse(bool forward) -> eQuantic.UI.Primitives.FocusMove
+eQuantic.UI.Primitives.FocusManager.TakeRequest() -> eQuantic.UI.Primitives.FocusMove?
+eQuantic.UI.Primitives.FocusManager
+eQuantic.UI.Primitives.FocusManager.FocusManager(bool leavesViewAtRoot) -> void
+eQuantic.UI.Primitives.FocusManager.RequestAsked -> System.Action?
+eQuantic.UI.Primitives.FocusManager.PrimaryFocus.get -> eQuantic.UI.Primitives.FocusNode?
+eQuantic.UI.Primitives.FocusManager.PrimaryPosition.get -> object?
+eQuantic.UI.Primitives.FocusManager.Attach(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.TraversalStop>! stops, eQuantic.UI.Primitives.FocusScopeNode? modal = null, object? modalPosition = null) -> void
+eQuantic.UI.Primitives.FocusMove
+eQuantic.UI.Primitives.FocusMove.Deconstruct(out object? To, out bool LeavesView) -> void
+eQuantic.UI.Primitives.FocusMove.Equals(eQuantic.UI.Primitives.FocusMove other) -> bool
+eQuantic.UI.Primitives.FocusMove.FocusMove() -> void
+eQuantic.UI.Primitives.FocusMove.FocusMove(object? To, bool LeavesView) -> void
+override eQuantic.UI.Primitives.FocusMove.GetHashCode() -> int
+static eQuantic.UI.Primitives.FocusMove.operator !=(eQuantic.UI.Primitives.FocusMove left, eQuantic.UI.Primitives.FocusMove right) -> bool
+static eQuantic.UI.Primitives.FocusMove.operator ==(eQuantic.UI.Primitives.FocusMove left, eQuantic.UI.Primitives.FocusMove right) -> bool
+~override eQuantic.UI.Primitives.FocusMove.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.FocusMove.ToString() -> string
+eQuantic.UI.Primitives.FocusMove.To.get -> object?
+eQuantic.UI.Primitives.FocusMove.To.init -> void
+eQuantic.UI.Primitives.FocusMove.LeavesView.get -> bool
+eQuantic.UI.Primitives.FocusMove.LeavesView.init -> void
+eQuantic.UI.Primitives.FocusNode
+eQuantic.UI.Primitives.FocusNode.FocusNode() -> void
+eQuantic.UI.Primitives.FocusNode.Changed -> System.Action?
+eQuantic.UI.Primitives.FocusNode.CanRequestFocus.get -> bool
+eQuantic.UI.Primitives.FocusNode.CanRequestFocus.set -> void
+eQuantic.UI.Primitives.FocusNode.SkipTraversal.get -> bool
+eQuantic.UI.Primitives.FocusNode.SkipTraversal.set -> void
+eQuantic.UI.Primitives.FocusNode.HasFocus.get -> bool
+eQuantic.UI.Primitives.FocusNode.HasPrimaryFocus.get -> bool
+eQuantic.UI.Primitives.FocusNode.RequestFocus() -> void
+eQuantic.UI.Primitives.FocusNode.Unfocus() -> void
+eQuantic.UI.Primitives.FocusNode.NextFocus() -> bool
+eQuantic.UI.Primitives.FocusNode.PreviousFocus() -> bool
+eQuantic.UI.Primitives.FocusScopeNode.FocusedChild.get -> eQuantic.UI.Primitives.FocusNode?
+eQuantic.UI.Primitives.FocusScopeNode.TraversalEdgeBehavior.get -> eQuantic.UI.Primitives.TraversalEdgeBehavior
+eQuantic.UI.Primitives.FocusScopeNode.TraversalEdgeBehavior.set -> void
+eQuantic.UI.Primitives.FocusScopeNode
+eQuantic.UI.Primitives.FocusScopeNode.FocusScopeNode() -> void
+eQuantic.UI.Primitives.TraversalEdgeBehavior
+eQuantic.UI.Primitives.TraversalEdgeBehavior.ClosedLoop = 0 -> eQuantic.UI.Primitives.TraversalEdgeBehavior
+eQuantic.UI.Primitives.TraversalEdgeBehavior.ParentScope = 1 -> eQuantic.UI.Primitives.TraversalEdgeBehavior
+eQuantic.UI.Primitives.TraversalEdgeBehavior.Stop = 2 -> eQuantic.UI.Primitives.TraversalEdgeBehavior
+eQuantic.UI.Primitives.TraversalStop
+eQuantic.UI.Primitives.TraversalStop.Deconstruct(out object! Position, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FocusAttachment>! Chain) -> void
+eQuantic.UI.Primitives.TraversalStop.Equals(eQuantic.UI.Primitives.TraversalStop other) -> bool
+eQuantic.UI.Primitives.TraversalStop.TraversalStop() -> void
+eQuantic.UI.Primitives.TraversalStop.TraversalStop(object! Position, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FocusAttachment>! Chain) -> void
+override eQuantic.UI.Primitives.TraversalStop.GetHashCode() -> int
+static eQuantic.UI.Primitives.TraversalStop.operator !=(eQuantic.UI.Primitives.TraversalStop left, eQuantic.UI.Primitives.TraversalStop right) -> bool
+static eQuantic.UI.Primitives.TraversalStop.operator ==(eQuantic.UI.Primitives.TraversalStop left, eQuantic.UI.Primitives.TraversalStop right) -> bool
+~override eQuantic.UI.Primitives.TraversalStop.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.TraversalStop.ToString() -> string
+eQuantic.UI.Primitives.TraversalStop.Position.get -> object!
+eQuantic.UI.Primitives.TraversalStop.Position.init -> void
+eQuantic.UI.Primitives.TraversalStop.Chain.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FocusAttachment>!
+eQuantic.UI.Primitives.TraversalStop.Chain.init -> void
+eQuantic.UI.Primitives.Focus
+override eQuantic.UI.Primitives.Focus.NodeKind.get -> string!
+eQuantic.UI.Primitives.Focus.Focus(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.FocusNode? focusNode = null, bool autofocus = false, System.Action<bool>? onFocusChange = null, bool? canRequestFocus = null, bool? skipTraversal = null) -> void
+eQuantic.UI.Primitives.Focus.FocusNode.get -> eQuantic.UI.Primitives.FocusNode?
+eQuantic.UI.Primitives.Focus.FocusNode.init -> void
+eQuantic.UI.Primitives.Focus.Autofocus.get -> bool
+eQuantic.UI.Primitives.Focus.Autofocus.init -> void
+eQuantic.UI.Primitives.Focus.OnFocusChange.get -> System.Action<bool>?
+eQuantic.UI.Primitives.Focus.OnFocusChange.init -> void
+eQuantic.UI.Primitives.Focus.CanRequestFocus.get -> bool?
+eQuantic.UI.Primitives.Focus.CanRequestFocus.init -> void
+eQuantic.UI.Primitives.Focus.SkipTraversal.get -> bool?
+eQuantic.UI.Primitives.Focus.SkipTraversal.init -> void
+override sealed eQuantic.UI.Primitives.Focus.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+eQuantic.UI.Primitives.FocusScope
+override eQuantic.UI.Primitives.FocusScope.NodeKind.get -> string!
+eQuantic.UI.Primitives.FocusScope.FocusScope(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.FocusScopeNode? node = null, bool autofocus = false, System.Action<bool>? onFocusChange = null, eQuantic.UI.Primitives.TraversalEdgeBehavior? traversalEdgeBehavior = null) -> void
+eQuantic.UI.Primitives.FocusScope.Node.get -> eQuantic.UI.Primitives.FocusScopeNode?
+eQuantic.UI.Primitives.FocusScope.Node.init -> void
+eQuantic.UI.Primitives.FocusScope.Autofocus.get -> bool
+eQuantic.UI.Primitives.FocusScope.Autofocus.init -> void
+eQuantic.UI.Primitives.FocusScope.OnFocusChange.get -> System.Action<bool>?
+eQuantic.UI.Primitives.FocusScope.OnFocusChange.init -> void
+eQuantic.UI.Primitives.FocusScope.TraversalEdgeBehavior.get -> eQuantic.UI.Primitives.TraversalEdgeBehavior?
+eQuantic.UI.Primitives.FocusScope.TraversalEdgeBehavior.init -> void
+override sealed eQuantic.UI.Primitives.FocusScope.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Focus! node, TState state) -> TResult
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.FocusScope! node, TState state) -> TResult

@@ -10,10 +10,12 @@
 
 import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { NodeKind } from './node-kinds.generated';
-import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue, TextDirectionValue, TextEntryKindValue } from './enums.generated';
+import type { HitTestBehaviorValue, TableCellRoleValue, TraversalEdgeBehaviorValue, TableRoleValue, TextDirectionValue, TextEntryKindValue } from './enums.generated';
 import type { HtmlNode } from '../core/types';
 import type { AppTheme, BoxConstraints, ContextRequest, PointerEvent } from './value-types';
 import type { GestureRecognizerFactory } from './components/GestureRecognizerFactory';
+import type { FocusNode } from './components/FocusNode';
+import type { FocusScopeNode } from './components/FocusScopeNode';
 import { iconPaths } from './icons.generated';
 import { exception } from '../utils/exceptions';
 import type {
@@ -1454,6 +1456,70 @@ export class RawGestureDetector extends VisualNode {
     super();
     this.child = child;
     this.gestures = gestures;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `Focus` (#1897): the focus of any subtree, held by a `FocusNode` the app keeps; the realizer keeps
+ * one at the position for a `Focus` given none. `canRequestFocus` and `skipTraversal` are written onto the node at every
+ * build when given.
+ */
+export class Focus extends VisualNode {
+  readonly nodeKind = 'focus';
+  child: VisualChild;
+  focusNode: FocusNode | null;
+  autofocus: boolean;
+  onFocusChange: ((hasFocus: boolean) => void) | null;
+  canRequestFocus: boolean | null;
+  skipTraversal: boolean | null;
+
+  constructor(
+    child: VisualChild,
+    focusNode: FocusNode | null = null,
+    autofocus = false,
+    onFocusChange: ((hasFocus: boolean) => void) | null = null,
+    canRequestFocus: boolean | null = null,
+    skipTraversal: boolean | null = null,
+    config?: EqConfig,
+  ) {
+    super();
+    this.child = child;
+    this.focusNode = focusNode;
+    this.autofocus = autofocus;
+    this.onFocusChange = onFocusChange;
+    this.canRequestFocus = canRequestFocus;
+    this.skipTraversal = skipTraversal;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `FocusScope` (#1897): a group of stops the focus walks inside, held by a `FocusScopeNode`;
+ * `traversalEdgeBehavior` is written onto the scope at every build when given.
+ */
+export class FocusScope extends VisualNode {
+  readonly nodeKind = 'focusScope';
+  child: VisualChild;
+  node: FocusScopeNode | null;
+  autofocus: boolean;
+  onFocusChange: ((hasFocus: boolean) => void) | null;
+  traversalEdgeBehavior: TraversalEdgeBehaviorValue | null;
+
+  constructor(
+    child: VisualChild,
+    node: FocusScopeNode | null = null,
+    autofocus = false,
+    onFocusChange: ((hasFocus: boolean) => void) | null = null,
+    traversalEdgeBehavior: TraversalEdgeBehaviorValue | null = null,
+    config?: EqConfig,
+  ) {
+    super();
+    this.child = child;
+    this.node = node;
+    this.autofocus = autofocus;
+    this.onFocusChange = onFocusChange;
+    this.traversalEdgeBehavior = traversalEdgeBehavior;
     if (config) Object.assign(this, config);
   }
 }

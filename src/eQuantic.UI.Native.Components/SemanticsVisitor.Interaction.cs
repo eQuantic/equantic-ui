@@ -332,6 +332,12 @@ internal sealed partial class SemanticsVisitor
     public bool Visit(RawGestureDetector node, LayoutNode laidOut) => Wraps;
 
     /// <inheritdoc cref="Wraps"/>
+    public bool Visit(Focus node, LayoutNode laidOut) => Wraps;
+
+    /// <inheritdoc cref="Wraps"/>
+    public bool Visit(FocusScope node, LayoutNode laidOut) => Wraps;
+
+    /// <inheritdoc cref="Wraps"/>
     public bool Visit(DropTarget node, LayoutNode laidOut) => Wraps;
     /// <summary>A named list is a labelled GROUP, read and then walked into, as the web's role=group says it
     /// (#1536); an unnamed one wraps its child and says nothing of its own. Once the keyboard's carry has

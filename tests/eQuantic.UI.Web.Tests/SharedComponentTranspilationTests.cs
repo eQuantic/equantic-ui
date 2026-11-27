@@ -52,6 +52,8 @@ public class SharedComponentTranspilationTests
             .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Sorting"), "*.cs"))
             // The gesture arena and the recognizer an app subclasses (#1563): the browser runs the arena Photon runs.
             .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Gestures"), "*.cs"))
+            // The focus object and the manager that walks it (#1897): the browser runs the traversal Photon runs.
+            .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Focus"), "*.cs"))
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToArray();
 
@@ -616,7 +618,7 @@ public class SharedComponentTranspilationTests
         "SharedCounter", "NestedChild", "NestedHost", "BoundReceivers",
         "EmittedShape", "EmittedSquare", "EmittedFramed", "EmittedCard", "EmittedFlex", "EmittedRow", "EmittedShapes", "EmittedStep", "EmittedRunner",
         "EmittedItem", "EmittedItems", "EmittedBase", "EmittedBag", "EmittedContexts", "EmittedChain", "EmittedConfigs", "EmittedFactory", "EmittedPair", "EmittedSlot", "EmittedShapeBase", "EmittedMeasured", "EmittedTagged", "EmittedHandler", "EmittedMaybe", "EmittedOwner", "EmittedOwner$Held", "EmittedPointer", "EmittedArena",
-        "ArenaProbe", "ArenaMember", "HoldThenDrag", "FactoryTypeChange",
+        "ArenaProbe", "ArenaMember", "HoldThenDrag", "FactoryTypeChange", "FocusProbe", "FocusSearch",
     ];
 
     /// <summary>The arena's members as an app writes them (#1563): files of this suite's own, and the dashboard's own
@@ -627,6 +629,9 @@ public class SharedComponentTranspilationTests
         Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "ArenaMember.cs"),
         Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "FactoryTypeChange.cs"),
         Path.Combine(root, "samples", "DefaultUIDashboard", "Gestures", "HoldThenDrag.cs"),
+        // What an app writes around a focus node (#1897), run by the focus fixture on both sides.
+        Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "FocusProbe.cs"),
+        Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "FocusSearch.cs"),
     ];
 
     /// <summary>The source this asks about, kept HERE rather than pointed at a production class.

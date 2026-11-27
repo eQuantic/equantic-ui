@@ -78,6 +78,10 @@ internal abstract partial class EmailWalk : IVisualNodeVisitor<Nothing, Nothing>
     /// <summary>Gestures of the app's own over a subtree are, in a message, the subtree (#1563): nothing in an
     /// email has a pointer to recognize.</summary>
     public Nothing Visit(RawGestureDetector node, Nothing state) => node.Child.Accept(this, state);
+    /// <summary>The focus of a subtree is, in a message, the subtree (#1897): nothing in an email takes the keyboard.</summary>
+    public Nothing Visit(Focus node, Nothing state) => node.Child.Accept(this, state);
+    /// <summary>A group the focus walks inside is, in a message, the group as it stands (#1897).</summary>
+    public Nothing Visit(FocusScope node, Nothing state) => node.Child.Accept(this, state);
     /// <summary>A list a pointer sorts is, in a message, the list as it stands (#1535): nothing in an email is
     /// dragged, and nothing in the list needs it to be read.</summary>
     public Nothing Visit(Sortable node, Nothing state) => node.Child.Accept(this, state);

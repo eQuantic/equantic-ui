@@ -309,6 +309,12 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     // which the host offers a pointer that goes down on it to its recognizers.
     public Nothing Visit(RawGestureDetector node, EmitState s) { Descend(s); return Nothing.Value; }
 
+    // The focus nodes draw nothing and register nothing of their own yet (#1897): the child is what is drawn. The paint
+    // walk gives them their stops, and the host the manager that walks them, in a later change of the same slice.
+    public Nothing Visit(Focus node, EmitState s) { Descend(s); return Nothing.Value; }
+
+    public Nothing Visit(FocusScope node, EmitState s) { Descend(s); return Nothing.Value; }
+
     // Each registers where it was drawn for the host to carry an item by, and a carried item is dimmed in
     // its place under the copy that follows the pointer (#1537).
     public Nothing Visit(Sortable node, EmitState s) { EmitSortable(node, s); return Nothing.Value; }

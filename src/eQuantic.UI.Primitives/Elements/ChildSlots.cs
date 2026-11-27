@@ -50,6 +50,8 @@ internal static class ChildSlots
         "contextTarget" => NodeSlots.One(((ContextTarget)node).Child),
         "listener" => NodeSlots.One(((Listener)node).Child),
         "rawGestureDetector" => NodeSlots.One(((RawGestureDetector)node).Child),
+        "focus" => NodeSlots.One(((Focus)node).Child),
+        "focusScope" => NodeSlots.One(((FocusScope)node).Child),
         "sortable" => NodeSlots.One(((Sortable)node).Child),
         "sortableItem" => NodeSlots.One(((SortableItem)node).Child),
         "flexible" => NodeSlots.One(((Flexible)node).Child),

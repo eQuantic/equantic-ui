@@ -450,6 +450,8 @@ internal sealed partial class WebLoweringVisitor
         ContextTarget target => CapsAt(target.Child),
         Listener listener => CapsAt(listener.Child),
         RawGestureDetector detector => CapsAt(detector.Child),
+        Focus focus => CapsAt(focus.Child),
+        FocusScope scope => CapsAt(scope.Child),
         Sortable sortable => CapsAt(sortable.Child),
         SortableItem item => CapsAt(item.Child),
         Adjustable adjustable => CapsAt(adjustable.Child),

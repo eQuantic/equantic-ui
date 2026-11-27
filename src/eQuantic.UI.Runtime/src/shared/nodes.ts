@@ -513,6 +513,15 @@ export interface RawGestureDetectorNode extends VisualNodeValue {
   behavior?: HitTestBehaviorValue;
 }
 
+/**
+ * Wire shape of the C# `Focus` and `FocusScope` (#1897), which only wrap a child as far as lowering is concerned: the
+ * focus object the app holds, and what the node asks of it, are read by the focus manager's driver.
+ */
+export interface FocusWrapperNode extends VisualNodeValue {
+  nodeKind: 'focus' | 'focusScope';
+  child: VisualNodeValue;
+}
+
 /** The value a C# `SortDrop` crosses as (value-types.ts `SortDrop`). */
 export interface SortDropValue {
   readonly item: string;

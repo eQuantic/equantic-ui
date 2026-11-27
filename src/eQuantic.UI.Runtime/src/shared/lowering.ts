@@ -122,6 +122,7 @@ import type {
   ContextTargetNode,
   ListenerNode,
   RawGestureDetectorNode,
+  FocusWrapperNode,
   SortableItemNode,
   SortDropValue,
   SortableNode,
@@ -878,6 +879,11 @@ function lowerNodeKind(
       return lowerListener(node as unknown as ListenerNode, context, path);
     case 'rawGestureDetector':
       return lowerRawGestureDetector(node as unknown as RawGestureDetectorNode, context, path);
+    // The focus of a subtree lowers as its child, one step down, for now (#1897, the C# `Visit(Focus)` twin): the host
+    // element that marks it for the focus manager's driver is a later change of the same slice.
+    case 'focus':
+    case 'focusScope':
+      return lowerNode((node as unknown as FocusWrapperNode).child, context, horizontalAxis, path + '/0');
     case 'sortable':
       return lowerSortable(node as unknown as SortableNode, context, horizontalAxis, path);
     case 'sortableItem':
@@ -4430,6 +4436,8 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'contextTarget':
     case 'listener':
     case 'rawGestureDetector':
+    case 'focus':
+    case 'focusScope':
     case 'sortable':
     case 'sortableItem':
     case 'adjustable':
@@ -4514,6 +4522,9 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as unknown as ListenerNode).child);
     case 'rawGestureDetector':
       return fills((node as unknown as RawGestureDetectorNode).child);
+    case 'focus':
+    case 'focusScope':
+      return fills((node as unknown as FocusWrapperNode).child);
     case 'sortable':
       return fills((node as unknown as SortableNode).child);
     case 'sortableItem':

@@ -933,6 +933,29 @@ public static class UI
         new RawGestureDetector(child, gestures) { Behavior = behavior };
 
     /// <summary>
+    /// <paramref name="child"/>, whose focus <paramref name="focusNode"/> holds (#1897): the node asks for the keyboard
+    /// on the child's first stop, tells when the child has it, and Tab reaches it in the tree's order. A child with no
+    /// control of its own becomes a stop itself. Given no node, the realizer keeps one at this position.
+    /// <paramref name="autofocus"/> asks for the keyboard once, when it first appears, unless it is already inside the
+    /// nearest <see cref="FocusScope"/>; <paramref name="onFocusChange"/> hears <see cref="FocusNode.HasFocus"/> when
+    /// it changes; <paramref name="canRequestFocus"/> and <paramref name="skipTraversal"/> are written onto the node
+    /// at every build when given.
+    /// </summary>
+    public static Focus Focus(VisualNode child, FocusNode? focusNode = null, bool autofocus = false,
+        Action<bool>? onFocusChange = null, bool? canRequestFocus = null, bool? skipTraversal = null) =>
+        new Focus(child, focusNode, autofocus, onFocusChange, canRequestFocus, skipTraversal);
+
+    /// <summary>
+    /// <paramref name="child"/>, a group of stops the focus walks inside, held by <paramref name="node"/> (#1897): Tab
+    /// goes through its traversable stops, and <paramref name="traversalEdgeBehavior"/> says what it does past the last
+    /// one: wrap (the default), stay, or go on in the scope around this one. Given no node, the realizer keeps one at
+    /// this position.
+    /// </summary>
+    public static FocusScope FocusScope(VisualNode child, FocusScopeNode? node = null, bool autofocus = false,
+        Action<bool>? onFocusChange = null, TraversalEdgeBehavior? traversalEdgeBehavior = null) =>
+        new FocusScope(child, node, autofocus, onFocusChange, traversalEdgeBehavior);
+
+    /// <summary>
     /// A menu of <paramref name="items"/> for what <paramref name="child"/> is, opened where a person asks for it
     /// (a secondary click, a long press, the menu key or Shift+F10), its choice handed to <paramref name="onSelect"/>.
     /// </summary>
