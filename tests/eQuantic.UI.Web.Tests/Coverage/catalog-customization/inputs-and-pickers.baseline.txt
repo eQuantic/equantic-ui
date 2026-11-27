@@ -34,6 +34,7 @@ OptionGroup.Options  text  kept: an option's name, as Select's; the option build
 SearchField.Placeholder  text  kept: a text field's placeholder is drawn by the field itself, as text
 SearchField.Query  text  kept: the field's value
 SegmentedControl.Segments  text  kept: a segment's name, its accessible name; the segment builder draws it (#1548)
+Select(label)  text  #1548: the field's label, a node, as TextInput's (#1838)
 Select(options)  text  kept: an option's name, its accessible name, typeahead key and the closed field's text; the option builder draws it (#1548)
 Select(placeholder)  text  #1548: what the closed select shows before a choice, a node (Flutter's hint)
 Stepper.Label  text  kept: what the stepper counts, its accessible name
