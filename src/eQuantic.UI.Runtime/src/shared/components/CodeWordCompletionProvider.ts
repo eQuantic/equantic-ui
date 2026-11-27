@@ -8,7 +8,7 @@ export class CodeWordCompletionProvider {
     static budget: number = 50000;
 
     async completeAsync(document: CodeDocument, position: CodePosition, _context: CodeCompletionContext, _cancellation: CancellationToken) {
-        let seen: Set<string> = $eq.collections.hashSet();
+        let seen: Set<string> = $eq.collections.hashSet<string>();
         let items: CodeCompletionItem[] = [];
         let left = CodeWordCompletionProvider.budget;
         for (let distance = 0; left > 0; distance = distance + 1 | 0) {

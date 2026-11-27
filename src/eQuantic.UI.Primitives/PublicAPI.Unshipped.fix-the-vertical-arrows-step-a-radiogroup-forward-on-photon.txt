@@ -1,3 +1,0 @@
-#nullable enable
-eQuantic.UI.Primitives.AdjustableKeys
-static eQuantic.UI.Primitives.AdjustableKeys.Step(string! key, eQuantic.UI.Primitives.AdjustableRole role, eQuantic.UI.Primitives.TextDirection direction) -> int?

@@ -22,8 +22,8 @@ export class EmittedScopes extends EmittedScopedBase {
             try {
                 $slots.pointers = null;
                 $slots.lists = null;
-                $slots.pointers = $eq.collections.dictionary();
-                $slots.lists = $eq.collections.dictionary();
+                $slots.pointers = $eq.collections.dictionary<number, EmittedPointer>();
+                $slots.lists = $eq.collections.dictionary<number, any>();
             } catch ($error) {
                 EmittedScopes.$slots = null;
                 throw EmittedScopes.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Web.Tests.Fixtures.EmittedScopes', $error);

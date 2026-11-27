@@ -364,6 +364,7 @@ internal sealed partial class WebLoweringVisitor
 
         var glyphPath = new RealizedElement("path");
         glyphPath.RawAttributes = new Dictionary<string, string> { ["d"] = glyph.Path };
+        if (glyph.EvenOdd) glyphPath.RawAttributes["fill-rule"] = "evenodd";
         svg.Children.Add(glyphPath);
         return svg;
     }

@@ -562,8 +562,14 @@ jobs:
         if: env.EQ_RUN != 'true'
         run: echo "This group cannot be affected by this change (see the changes job), so its projects do not run and this check reports success."
 
+      # Two commits deep: the served runtime's budget measures a change against the checkout's first parent, main
+      # in a pull request's merge ref and what the queue holds in its run, and builds that commit's bundle (#1922).
+      # A run asked for on a branch (`gh workflow run ci.yml --ref <branch>`) checks out the branch itself, which is
+      # measured from its fork from origin/main, so it fetches the whole history (found by the review).
       - uses: actions/checkout@v4
         if: env.EQ_RUN == 'true'
+        with:
+          fetch-depth: ${{ github.event_name == 'workflow_dispatch' && 0 || 2 }}
 
       - name: Setup .NET
         if: env.EQ_RUN == 'true'

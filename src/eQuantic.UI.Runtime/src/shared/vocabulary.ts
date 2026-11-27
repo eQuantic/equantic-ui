@@ -1549,7 +1549,7 @@ interface TransitionSpecConfig {
  */
 export const CuratedIcons = {
   resolve(glyph: string): IconGlyph {
-    return new IconGlyph(glyph, iconPaths[glyph] ?? '', 'fill', '0 0 24 24', 2, iconsMatchingTextDirection.has(glyph));
+    return new IconGlyph(glyph, iconPaths[glyph] ?? '', 'fill', '0 0 24 24', 2, false, iconsMatchingTextDirection.has(glyph));
   },
 };
 
@@ -2047,6 +2047,8 @@ export class IconGlyph {
   style: string;
   viewBox: string;
   strokeWidth: number;
+  /** The fill's rule: even-odd where true, nonzero otherwise, as SVG's `fill-rule` (#1210). */
+  evenOdd: boolean;
   /** C# `IconGlyph.MatchTextDirection` (Flutter's `IconData.matchTextDirection`): drawn mirrored where
    * its element reads right to left. */
   matchTextDirection: boolean;
@@ -2057,6 +2059,7 @@ export class IconGlyph {
     style = 'fill',
     viewBox = '0 0 24 24',
     strokeWidth = 2,
+    evenOdd = false,
     matchTextDirection = false,
     config?: EqConfig,
   ) {
@@ -2065,6 +2068,7 @@ export class IconGlyph {
     this.style = style;
     this.viewBox = viewBox;
     this.strokeWidth = strokeWidth;
+    this.evenOdd = evenOdd;
     this.matchTextDirection = matchTextDirection;
     if (config) Object.assign(this, config);
   }

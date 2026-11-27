@@ -14,6 +14,8 @@ export class DateTimePicker extends StatefulComponent {
     declare stepMinutes: number;
     declare dateLabel: string;
     declare timeLabel: string;
+    declare style: any;
+    declare calendarStyle: any;
 
     get disabled() {
         return this._disabled;
@@ -31,7 +33,7 @@ export class DateTimePicker extends StatefulComponent {
         this._labelHidden = value;
     }
 
-    constructor(selected: any = null, onChanged: any = null, min: any = null, max: any = null, stepMinutes: any = 30, dateLabel: any = '', timeLabel: any = '', props?: any) {
+    constructor(selected: any = null, onChanged: any = null, min: any = null, max: any = null, stepMinutes: any = 30, dateLabel: any = '', timeLabel: any = '', style: any = null, calendarStyle: any = null, props?: any) {
         super();
         if (selected !== undefined) this.selected = selected;
         if (onChanged !== undefined) this.onChanged = onChanged;
@@ -40,6 +42,8 @@ export class DateTimePicker extends StatefulComponent {
         if (stepMinutes !== undefined) this.stepMinutes = stepMinutes;
         if (dateLabel !== undefined) this.dateLabel = dateLabel;
         if (timeLabel !== undefined) this.timeLabel = timeLabel;
+        if (style !== undefined) this.style = style;
+        if (calendarStyle !== undefined) this.calendarStyle = calendarStyle;
         if (this.stepMinutes === undefined) this.stepMinutes = 0;
         this.selected = selected;
         this.onChanged = onChanged;
@@ -48,6 +52,8 @@ export class DateTimePicker extends StatefulComponent {
         this.stepMinutes = stepMinutes;
         this.dateLabel = dateLabel;
         this.timeLabel = timeLabel;
+        this.style = style;
+        this.calendarStyle = calendarStyle;
         let value: any; 
         this._date = (value = selected) != null ? $eq.time.dateOnly.fromDateTime(value) : null;
         let moment: any; 
@@ -58,8 +64,8 @@ export class DateTimePicker extends StatefulComponent {
     build(_context: BuildContext) {
         let row = new Row(12, 'start', 'center', false, null, null, { cross: 'start', width: SizeValue.fill });
         let lower: any; let upper: any; 
-        row.add(new Flexible(new DatePicker(this._date, $eq.delegates.bound(this, this.pickDate), (lower = this.min) != null ? $eq.time.dateOnly.fromDateTime(lower) : null, (upper = this.max) != null ? $eq.time.dateOnly.fromDateTime(upper) : null, this.dateLabel, { disabled: this.disabled, labelHidden: this.labelHidden, composed: true })));
-        row.add(new Flexible(new TimePicker(this._time, $eq.delegates.bound(this, this.pickTime), this.stepMinutes, null, null, this.timeLabel, { disabled: this.disabled, composed: true })));
+        row.add(new Flexible(new DatePicker(this._date, $eq.delegates.bound(this, this.pickDate), (lower = this.min) != null ? $eq.time.dateOnly.fromDateTime(lower) : null, (upper = this.max) != null ? $eq.time.dateOnly.fromDateTime(upper) : null, this.dateLabel, this.style, this.calendarStyle, { disabled: this.disabled, labelHidden: this.labelHidden, composed: true })));
+        row.add(new Flexible(new TimePicker(this._time, $eq.delegates.bound(this, this.pickTime), this.stepMinutes, null, null, this.timeLabel, this.style, { disabled: this.disabled, composed: true })));
         return row;
     }
 
@@ -77,6 +83,8 @@ export class DateTimePicker extends StatefulComponent {
         this.stepMinutes = fresh.stepMinutes;
         this.dateLabel = fresh.dateLabel;
         this.timeLabel = fresh.timeLabel;
+        this.style = fresh.style;
+        this.calendarStyle = fresh.calendarStyle;
         this._disabled = fresh.disabled;
         this._labelHidden = fresh.labelHidden;
         if (moved) {

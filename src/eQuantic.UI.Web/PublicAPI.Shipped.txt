@@ -441,8 +441,12 @@ eQuantic.UI.Web.HtmlStyle.BackgroundSize.get -> string?
 eQuantic.UI.Web.HtmlStyle.BackgroundSize.set -> void
 eQuantic.UI.Web.HtmlStyle.Border.get -> string?
 eQuantic.UI.Web.HtmlStyle.Border.set -> void
+eQuantic.UI.Web.HtmlStyle.BorderBlockWidth.get -> string?
+eQuantic.UI.Web.HtmlStyle.BorderBlockWidth.set -> void
 eQuantic.UI.Web.HtmlStyle.BorderColor.get -> string?
 eQuantic.UI.Web.HtmlStyle.BorderColor.set -> void
+eQuantic.UI.Web.HtmlStyle.BorderInlineWidth.get -> string?
+eQuantic.UI.Web.HtmlStyle.BorderInlineWidth.set -> void
 eQuantic.UI.Web.HtmlStyle.BorderRadius.get -> string?
 eQuantic.UI.Web.HtmlStyle.BorderRadius.set -> void
 eQuantic.UI.Web.HtmlStyle.BorderStyle.get -> string?
@@ -503,6 +507,10 @@ eQuantic.UI.Web.HtmlStyle.GridTemplateRows.set -> void
 eQuantic.UI.Web.HtmlStyle.Height.get -> string?
 eQuantic.UI.Web.HtmlStyle.Height.set -> void
 eQuantic.UI.Web.HtmlStyle.HtmlStyle() -> void
+eQuantic.UI.Web.HtmlStyle.InsetInlineEnd.get -> string?
+eQuantic.UI.Web.HtmlStyle.InsetInlineEnd.set -> void
+eQuantic.UI.Web.HtmlStyle.InsetInlineStart.get -> string?
+eQuantic.UI.Web.HtmlStyle.InsetInlineStart.set -> void
 eQuantic.UI.Web.HtmlStyle.Isolation.get -> string?
 eQuantic.UI.Web.HtmlStyle.Isolation.set -> void
 eQuantic.UI.Web.HtmlStyle.JustifyContent.get -> eQuantic.UI.Web.JustifyContent?
@@ -551,8 +559,12 @@ eQuantic.UI.Web.HtmlStyle.OverflowY.get -> string?
 eQuantic.UI.Web.HtmlStyle.OverflowY.set -> void
 eQuantic.UI.Web.HtmlStyle.Padding.get -> string?
 eQuantic.UI.Web.HtmlStyle.Padding.set -> void
+eQuantic.UI.Web.HtmlStyle.PaddingBlock.get -> string?
+eQuantic.UI.Web.HtmlStyle.PaddingBlock.set -> void
 eQuantic.UI.Web.HtmlStyle.PaddingBottom.get -> string?
 eQuantic.UI.Web.HtmlStyle.PaddingBottom.set -> void
+eQuantic.UI.Web.HtmlStyle.PaddingInline.get -> string?
+eQuantic.UI.Web.HtmlStyle.PaddingInline.set -> void
 eQuantic.UI.Web.HtmlStyle.PaddingLeft.get -> string?
 eQuantic.UI.Web.HtmlStyle.PaddingLeft.set -> void
 eQuantic.UI.Web.HtmlStyle.PaddingRight.get -> string?
@@ -830,7 +842,9 @@ static eQuantic.UI.Web.TokenCss.Hex(eQuantic.UI.Primitives.Color color) -> strin
 static eQuantic.UI.Web.TokenCss.LetterSpacing(eQuantic.UI.Primitives.TypeStyle style) -> string!
 static eQuantic.UI.Web.TokenCss.LineHeight(eQuantic.UI.Primitives.TypeStyle style) -> string!
 static eQuantic.UI.Web.TokenCss.Number(float value) -> string!
-static eQuantic.UI.Web.TokenCss.Padding(eQuantic.UI.Primitives.EdgeInsets insets) -> string!
+static eQuantic.UI.Web.TokenCss.Padding(eQuantic.UI.Primitives.EdgeInsets insets) -> string?
+static eQuantic.UI.Web.TokenCss.PaddingBlock(eQuantic.UI.Primitives.EdgeInsets insets) -> string?
+static eQuantic.UI.Web.TokenCss.PaddingInline(eQuantic.UI.Primitives.EdgeInsets insets) -> string?
 static eQuantic.UI.Web.TokenCss.Percent(float fraction) -> string!
 static eQuantic.UI.Web.TokenCss.Px(float dp) -> string!
 static eQuantic.UI.Web.TokenCss.Radius(eQuantic.UI.Primitives.CornerRadii radii) -> string!

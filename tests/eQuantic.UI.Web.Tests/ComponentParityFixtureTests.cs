@@ -226,6 +226,8 @@ public class ComponentParityFixtureTests
         ("number-input", new NumberInput(3, null, "Lead time", "days", 1, 30, helper: "Working days"), NoPresses),
         ("radio-group", new RadioGroup(["a", "b"], 0), NoPresses),
         ("empty-state", new EmptyState(new Icon(Icons.Search), "Nothing here", "Try another term"), NoPresses),
+        // A glyph that fills by the even-odd rule says so on its path, on both sides (#1210).
+        ("icon-even-odd", new Icon(new IconGlyph("ring", "M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20zM12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10z", EvenOdd: true)), NoPresses),
 
         // COMPOSITES: the components that build a tree rather than a control. They have the most
         // structure, so the most surface on which two lowerings can quietly disagree — and every

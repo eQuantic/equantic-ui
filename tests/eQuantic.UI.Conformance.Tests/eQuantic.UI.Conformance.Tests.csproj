@@ -54,6 +54,7 @@
     <Compile Include="..\Shared\TestReferences.cs" Link="Shared\TestReferences.cs" />
     <!-- How a test starts a program: one deadline over the exit and both streams (#971). -->
     <Compile Include="..\Shared\ChildProcess.cs" Link="Shared\ChildProcess.cs" />
+    <Compile Include="..\Shared\EmbeddedBun.cs" Link="Shared\EmbeddedBun.cs" />
     <!-- A solution written to disk and built as the SDK builds it, an app over the projects it
          references (#624). The compiler's tests read what such a build WROTE, and this suite runs it:
          one fixture, so the two cannot describe two different builds. -->

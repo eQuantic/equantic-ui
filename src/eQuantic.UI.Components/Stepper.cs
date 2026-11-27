@@ -12,14 +12,19 @@ namespace eQuantic.UI.Components;
 /// </summary>
 public sealed class Stepper : StatelessComponent
 {
-    public Stepper(int value, Action<int>? onChanged = null)
+    public Stepper(int value, Action<int>? onChanged = null, SegmentedTheme? style = null)
     {
         Value = value;
         OnChanged = onChanged;
+        Style = style;
     }
 
     public int Value { get; init; }
     public Action<int>? OnChanged { get; init; }
+
+    /// <summary>This control's own look, laid over the theme's <see cref="IAppTheme.Segmented"/> slot with
+    /// <see cref="SegmentedTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's.</summary>
+    public SegmentedTheme? Style { get; init; }
 
     public int Min { get; init; } = int.MinValue;
     public int Max { get; init; } = int.MaxValue;
@@ -44,8 +49,8 @@ public sealed class Stepper : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        // The theme's Segmented slot, then its control ladder, then the component's own (§3.10).
-        var slot = theme.Segmented;
+        // The instance's style over the theme's Segmented slot, then its control ladder, then the component's own (§3.10).
+        var slot = SegmentedTheme.Merge(theme.Segmented, Style);
         var ladder = slot?.Controls;
         var height = ControlMetrics.Height(context, Size, ladder);
         var iconSize = slot?.IconSize ?? IconSize.Dense;

@@ -3139,7 +3139,15 @@ function lowerGlyph(
     tag: 'svg',
     attributes,
     events: {},
-    children: [{ tag: 'path', attributes: { d: glyph.path }, events: {}, children: [] }],
+    children: [
+      {
+        tag: 'path',
+        // The fill's rule, as the C# twin writes it (#1210).
+        attributes: glyph.evenOdd ? { d: glyph.path, 'fill-rule': 'evenodd' } : { d: glyph.path },
+        events: {},
+        children: [],
+      },
+    ],
   };
 }
 

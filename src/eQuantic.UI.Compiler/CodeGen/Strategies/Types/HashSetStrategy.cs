@@ -153,13 +153,13 @@ public class HashSetStrategy : IExpressionIrStrategy
         if (source is null && elements is not null)
         {
             return equality is null
-                ? JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf), JsExpr.Array(elements))
-                : JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf), JsExpr.Array(elements), JsExpr.Literal(equality));
+                ? JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf + TsNamedType.TypeArguments(type, context)), JsExpr.Array(elements))
+                : JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf + TsNamedType.TypeArguments(type, context)), JsExpr.Array(elements), JsExpr.Literal(equality));
         }
 
         if (source is not null || equality is not null) arguments.Add(JsExpr.Literal(equality ?? "false"));
         if (source is not null) arguments.Add(source);
-        JsExpr set = JsExpr.Call(JsExpr.Identifier(Eq.HashSet), arguments);
+        JsExpr set = JsExpr.Call(JsExpr.Identifier(Eq.HashSet + TsNamedType.TypeArguments(type, context)), arguments);
         foreach (var element in elements ?? [])
             set = JsExpr.Call(JsExpr.Member(set, "add"), element);
         return set;

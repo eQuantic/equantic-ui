@@ -1180,6 +1180,8 @@ export interface IconGlyphValue {
   style?: string;
   viewBox?: string;
   strokeWidth?: number;
+  /** The fill's rule: even-odd where true, nonzero otherwise (#1210). */
+  evenOdd?: boolean;
   /** C# `IconGlyph.MatchTextDirection`: the glyph is drawn mirrored where its element reads right to left. */
   matchTextDirection?: boolean;
 }

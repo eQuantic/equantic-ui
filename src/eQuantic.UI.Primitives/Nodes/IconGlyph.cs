@@ -15,6 +15,12 @@ public enum IconGlyphStyle : byte
 /// (Lucide, Heroicons, …) are catalogs of these referencing ONLY Primitives, so one authored tree
 /// carries any pack glyph to both targets.
 /// <para>
+/// <paramref name="EvenOdd"/> is the fill's rule, SVG's <c>fill-rule</c>: even-odd paints a point
+/// inside an odd number of the path's outlines, so a ring drawn as two circles turned the same way has
+/// its hole, and nonzero (the default, as in SVG) fills it. Every target fills by it: the web writes
+/// <c>fill-rule="evenodd"</c>, and every Photon rasterizer fills by the same rule (#1210).
+/// </para>
+/// <para>
 /// <paramref name="MatchTextDirection"/> is Flutter's <c>IconData.matchTextDirection</c>: the glyph
 /// points ALONG the reading (a back chevron, a "next" arrow), so it is drawn mirrored wherever its
 /// element reads right to left. The web draws it through <c>--eq-inline</c>, so it follows the
@@ -29,6 +35,7 @@ public readonly record struct IconGlyph(
     IconGlyphStyle Style = IconGlyphStyle.Fill,
     string ViewBox = "0 0 24 24",
     float StrokeWidth = 2,
+    bool EvenOdd = false,
     bool MatchTextDirection = false)
 {
     /// <summary>

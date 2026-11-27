@@ -1,3 +1,0 @@
-#nullable enable
-static eQuantic.UI.Primitives.CultureCalendar.FirstDay.get -> System.DateOnly
-static eQuantic.UI.Primitives.CultureCalendar.LastDay.get -> System.DateOnly
