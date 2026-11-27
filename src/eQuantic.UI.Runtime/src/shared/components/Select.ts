@@ -1,4 +1,4 @@
-import { $eq, Anchored, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Group, Icon, IconGlyph, KeyChord, OptionGroup, Pressable, Row, Shortcut, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Anchored, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, EdgeInsets, Flexible, Group, Icon, IconGlyph, InputTheme, KeyChord, OptionGroup, Pressable, Row, Shortcut, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNode } from "../runtime-exports";
 
 export class Select extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Select';
@@ -11,6 +11,8 @@ export class Select extends StatefulComponent {
     declare selectedIndex: number;
     declare onChanged: ((int: number) => void) | null;
     declare placeholder: any;
+    declare style: any;
+    declare optionBuilder: ((value: number) => VisualNode) | null;
 
     get disabled() {
         return this._disabled;
@@ -20,26 +22,30 @@ export class Select extends StatefulComponent {
         this._disabled = value;
     }
 
-    constructor(options: any = null, selectedIndex: any = -1, onChanged: any = null, placeholder: any = null, groups: any = null, props?: any) {
+    constructor(options: any = null, selectedIndex: any = -1, onChanged: any = null, placeholder: any = null, groups: any = null, style: any = null, optionBuilder: any = null, props?: any) {
         super();
         if (options !== undefined) this.options = options;
         if (selectedIndex !== undefined) this.selectedIndex = selectedIndex;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (placeholder !== undefined) this.placeholder = placeholder;
         if (groups !== undefined) this.groups = groups;
+        if (style !== undefined) this.style = style;
+        if (optionBuilder !== undefined) this.optionBuilder = optionBuilder;
         if (this.selectedIndex === undefined) this.selectedIndex = 0;
         this.options = options ?? [];
         this.selectedIndex = selectedIndex;
         this.onChanged = onChanged;
         this.placeholder = placeholder;
         this.groups = groups ?? [];
+        this.style = style;
+        this.optionBuilder = optionBuilder;
         this._choices = Select.flatten(this.options, this.groups);
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let slot = theme.input;
+        let slot = InputTheme.merge(theme.input, this.style);
         let height = ControlMetrics.height(context, 'medium', (slot?.controls ?? null));
         let paddingX = slot?.pickerPaddingX ?? 12;
         let gap = slot?.pickerGap ?? 8;
@@ -84,6 +90,8 @@ export class Select extends StatefulComponent {
         this.onChanged = fresh.onChanged;
         this.placeholder = fresh.placeholder;
         this.groups = fresh.groups;
+        this.style = fresh.style;
+        this.optionBuilder = fresh.optionBuilder;
         this._choices = fresh._choices;
         this._highlight = Math.max(0, Math.min(this._highlight, $eq.collections.count(this._choices) - 1 | 0));
         this._disabled = fresh.disabled;
@@ -96,13 +104,14 @@ export class Select extends StatefulComponent {
     optionRow(theme: any, option: string, index: number, gap: number, paddingX: number, rowHeight: number) {
         let selected = index === this.selectedIndex;
         let row = new Row(gap, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
-        row.add(new Text(option, 'bodyM', selected ? theme.colors('primary').onSubtle : theme.textPrimary, 1));
+        let builder: any; 
+        if ((builder = this.optionBuilder) != null) row.add(builder(index)); else row.add(new Text(option, 'bodyM', selected ? theme.colors('primary').onSubtle : theme.textPrimary, 1));
         if (selected) {
             row.add(new Flexible(new Spacer()));
             row.add(new Icon(IconGlyph.fromIcons('check'), 16, theme.colors('primary').onSubtle));
         }
         let highlighted = this._open && index === this._highlight;
-        return new Pressable(new Box(new BoxStyle({ height: rowHeight, padding: EdgeInsets.symmetric(paddingX, 0), width: SizeValue.fill, background: selected ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.choose(index), { role: 'option', selected: selected });
+        return new Pressable(new Box(new BoxStyle({ height: rowHeight, padding: EdgeInsets.symmetric(paddingX, 0), width: SizeValue.fill, background: selected ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, foreground: selected ? theme.colors('primary').onSubtle : theme.textPrimary, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.choose(index), { role: 'option', selected: selected, label: this.optionBuilder == null ? null : option });
     }
 
     toggle() {

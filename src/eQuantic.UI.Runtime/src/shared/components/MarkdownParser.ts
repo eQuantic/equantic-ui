@@ -6,7 +6,7 @@ export class MarkdownParser {
         if (!source) return blocks;
         let lines = MarkdownParser.stripComments($eq.text.split($eq.text.replace(source, '\r\n', '\n', 'ordinal'), '\n'));
         let paragraph = '';
-        let usedIds: Set<string> = $eq.collections.hashSet();
+        let usedIds: Set<string> = $eq.collections.hashSet<string>();
         for (let i = 0; i < lines.length; i = i + 1 | 0) {
             let line = lines[i];
             let trimmed = $eq.text.trim(line);

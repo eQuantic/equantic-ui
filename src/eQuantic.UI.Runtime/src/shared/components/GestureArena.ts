@@ -2,7 +2,7 @@ import { $eq, $GestureDispositionValue, GestureArenaEntry, GestureArenaPointer }
 
 export class GestureArena {
     constructor() {
-        this._arenas = $eq.collections.dictionary();
+        this._arenas = $eq.collections.dictionary<number, GestureArenaPointer>();
     }
 
     _arenas!: any;

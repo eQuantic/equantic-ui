@@ -1,5 +1,0 @@
-#nullable enable
-eQuantic.UI.Compiler.Models.ServerActionInfo.TimeoutSeconds.get -> int?
-eQuantic.UI.Compiler.Models.ServerActionInfo.TimeoutSeconds.set -> void
-eQuantic.UI.Compiler.Models.ServerActionInfo.TimeoutArgument.get -> Microsoft.CodeAnalysis.CSharp.Syntax.AttributeArgumentSyntax?
-eQuantic.UI.Compiler.Models.ServerActionInfo.TimeoutArgument.set -> void

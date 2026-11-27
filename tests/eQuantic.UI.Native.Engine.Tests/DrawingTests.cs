@@ -164,6 +164,54 @@ public class DrawingTests
         commands.Count(command => command.Kind == DrawCommandKind.FillRRect).Should().Be(1);
     }
 
+    /// <summary>A ring of two circles turned the same way, on a 24 grid: its centre is inside both, its rim inside one.</summary>
+    private const string Ring = "M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20zM12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10z";
+
+    /// <summary>
+    /// The platform's rasterizer fills by the glyph's rule (#1210): at even-odd the ring has its hole, as the web's
+    /// <c>fill-rule="evenodd"</c> leaves it; at nonzero the hole is filled.
+    /// </summary>
+    [SkippableFact]
+    public void AnEvenOddRing_HasItsHole_OnThePlatformsRasterizer()
+    {
+        var evenOdd = PlatformRasterizer().Rasterize(new IconGlyph("", Ring, EvenOdd: true), 48, 48, 1f)!;
+        Ink(evenOdd, 24, 24).Should().BeFalse("the centre is inside both circles, an even count");
+        Ink(evenOdd, 24, 6).Should().BeTrue("the rim is inside the outer circle alone");
+
+        var nonzero = PlatformRasterizer().Rasterize(new IconGlyph("", Ring), 48, 48, 1f)!;
+        Ink(nonzero, 24, 24).Should().BeTrue("nonzero fills the same turn counted twice");
+    }
+
+    /// <summary>A rasterizer that keeps every glyph it was asked for, and draws nothing.</summary>
+    private sealed class Recorder : IIconRasterizer
+    {
+        public List<IconGlyph> Asked { get; } = [];
+
+        public TextRaster? Rasterize(IconGlyph glyph, float widthDp, float heightDp, float scale)
+        {
+            Asked.Add(glyph);
+            return new TextRaster(1, 1, [255]);
+        }
+    }
+
+    /// <summary>A drawing's shape takes its own fill rule to the rasterizer, as the web takes it to the path's
+    /// <c>fill-rule</c>; it used to reach every rasterizer as nonzero (#1210).</summary>
+    [Fact]
+    public void AShapesFillRule_ReachesTheRasterizer()
+    {
+        var drawing = new VectorDrawing(0, 0, 24, 24,
+            [new VectorShape(Ring, VectorPaint.Solid(Color.FromRgb(0x4F, 0x46, 0xE5)), EvenOdd: true),
+             new VectorShape(Ring, VectorPaint.Solid(Color.FromRgb(0xF5, 0x9E, 0x0B)))]);
+        var recorder = new Recorder();
+        var host = new PhotonHost(new Drawing(drawing, 48), PhotonTheme.Instance, ThemeMode.Light, 200, 200)
+        {
+            IconRasterizer = recorder,
+        };
+        host.RenderFrame(new DisplayListBuilder());
+
+        recorder.Asked.Select(glyph => glyph.EvenOdd).Should().Equal([true, false]);
+    }
+
     private static List<DrawCommand> Textures(DisplayListBuilder builder) =>
         [.. builder.Build().Commands.ToArray().Where(command => command.Kind == DrawCommandKind.Texture)];
 

@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using eQuantic.UI.Sdk.Tasks;
+using eQuantic.UI.Tests;
 
 namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 
@@ -119,21 +120,8 @@ public static class JsExecutor
         var root = RepoRoot.Find();
         if (root == null) return null;
 
-        // Mirror the SDK (Sdk.targets): pick the per-OS + per-architecture embedded-bun package —
-        // the native arm64 build on Apple Silicon / arm64 Linux·Windows, the x64-baseline elsewhere.
-        var arm64 = RuntimeInformation.OSArchitecture == Architecture.Arm64;
-        var packageId =
-            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? (arm64 ? "eQuantic.UI.Runtime.OsxArm64" : "eQuantic.UI.Runtime.Osx64")
-            : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? (arm64 ? "eQuantic.UI.Runtime.LinuxArm64" : "eQuantic.UI.Runtime.Linux64")
-            : RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? (arm64 ? "eQuantic.UI.Runtime.WinArm64" : "eQuantic.UI.Runtime.Win64")
-            : null;
-        if (packageId == null) return null;
-
-        var zipName =
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "bun.exe.zip"
-            : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "bun-linux.zip"
-            : "bun-darwin.zip";
-        var zipPath = Path.Combine(root, "src", packageId, "tools", "bun", zipName);
+        // The SDK's choice of package and zip for this machine, one rule with the Server's suite (EmbeddedBun).
+        if (EmbeddedBun.Archive(root) is not { } zipPath) return null;
         if (!File.Exists(zipPath)) return null;
 
         // Only the .zip is tracked in git. It is unpacked by the SDK's own owner, into the user's cache

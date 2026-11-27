@@ -70,12 +70,16 @@ of its own that the boot imports only when the server says it is on.
 The runtime is one bundle, so a feature added to it is paid by every page of every app, whether the app
 uses it or not. #1341's file saver is the plainest case: in proportion with what it delivered, and loaded
 by pages that never offer a file. That is the design, not a defect of any one pull request, and the
-budget is what makes each such cost a decision: past 1% of the record a change fails the test and has
-to record the budget again, saying what the bytes bought. Since #1489 it records a delta of its own,
+budget is what makes each such cost a decision. Since #1489 a change records a delta of its own,
 `Budgets/served-runtime/<branch>.json` with `deltaBytes` and `bought`, beside the base the last release
 folded, and the test holds the runtime to the base and every delta: two changes that each crossed the
-ceiling used to rewrite the one number and conflict on it, as the sections below show. A release
-folds the deltas into the base (`./scripts/fold-runtime-budget.sh`).
+ceiling used to rewrite the one number and conflict on it, as the sections below show. Since #1922 every
+change that grows the runtime records one, however small, and so does one that shrinks it, and what it records
+is the bytes it moved it by against the commit it is measured from, built there as BundleRuntime builds it: growth under the 1% margin
+passed unrecorded, and the first change past it was handed everyone's bytes, as the section since #1852
+shows. The 1% stays as the margin for measurement noise. A release folds the deltas into the base
+(`./scripts/fold-runtime-budget.sh`) and writes each as a row of this page, under its version, with the pull
+request that added it.
 
 ## Since the record of #1405
 
@@ -195,3 +199,59 @@ calendar, measured by the server from .NET's (`CalendarBridge`), so only a page 
 Qura culture pays for that calendar's months: 385 bytes gzipped of fa-IR's data and 516 of ar-SA's. The
 Persian calendar's arithmetic in .NET computes each year from the equinox; carried in the runtime, every
 page would pay for it.
+
+## Since the record of #1852
+
+`main` grew 3,907 bytes past the base and its deltas from #1852's record to f79bec9da without a change recording
+them: each merge stayed inside the ceiling of its day, floor(390,447 × 1.01) = 394,351 before #1884's delta and
+floor(395,786 × 1.01) = 399,743 after it, until #1913, whose own 106 bytes met the second (#1922). #1852's merge (187ac4540) measures 390,447, the base and its own delta exactly, so the
+rows start there, measured as this page's tables are, at every first-parent merge that touched a source of the bundle.
+The method reproduces `main` at f79bec9da byte for byte: 399,693. #1880 and #1901 changed no byte of it.
+
+| Pull request | Merge | Before | After | Gzip | Raw | What it delivered | In proportion |
+|---|---|---:|---:|---:|---:|---|---|
+| #1871 | b7490b4fb | 390,447 | 390,955 | +508 | +2,212 | a month grid stops at its calendar's range | yes |
+| #1879 | 5d6ec6a1c | 390,955 | 391,019 | +64 | +324 | a pager speaks the reader's language | yes |
+| #1891 | 4ddb84f60 | 391,019 | 391,611 | +592 | +1,808 | uploads hold many files at once and several instances of an app | yes |
+| #1888 | a53d40924 | 391,611 | 391,673 | +62 | +232 | a table pan's click guard leaves with its click or its table | yes |
+| #1895 | 2dda360cc | 391,673 | 393,360 | +1,687 | +7,177 | a component builds its child against the box its parent gives it | yes |
+| #1884 | 3187a51df | 393,360 | 398,769 | +5,409 | +21,893 | a gesture of the app's own is recognized, in one arena with the SDK's | yes |
+| #1896 | f9b004ca6 | 398,769 | 398,836 | +67 | -111 | a hold's, a drag's, a lost press's and a pan's click guards are one owned guard | yes |
+| #1902 | 90f1d61fa | 398,836 | 399,183 | +347 | +1,065 | content takes the look its component hands down, and a string is a node | yes |
+| #1908 | 96323817f | 399,183 | 399,202 | +19 | +91 | Photon fills an even-odd shape by its rule, as the web does | yes |
+| #1917 | 525c9bf3f | 399,202 | 399,693 | +491 | +2,571 | inputs and pickers take a style of their own, and builders for what they repeat | yes |
+| **all** | | **390,447** | **399,693** | **+9,246** | **+37,262** | | |
+
+#1884 grew 5,409 bytes and recorded 5,339, so 70 of its bytes are among the 3,907. The rest is the nine other merges'
+growth, and the 3,907 are recorded as an entry of their own, `Budgets/served-runtime/main-growth-to-f79bec9da.json`,
+rather than inside the delta of the change that met the ceiling, so each delta says what its own change bought.
+
+Two older facts the same measurement shows. #1852's record held growth that was not its own: its 4,530 bytes, measured
+against the base, took in the 3,685 that the merges before it had grown past the base, since its own merge grew the
+bundle by 845. And 0.2.0-preview.72 (a27703d6a), whose release folded the base of 385,917, already measured 388,072,
+2,155 bytes over it.
+
+## The record of #1913
+
+| Pull request | Merge | Before | After | Gzip | Raw | What it delivered | In proportion |
+|---|---|---:|---:|---:|---:|---|---|
+| #1913 | e4f1de44e | 399,693 | 399,799 | +106 | +301 | a static generic class keeps its statics per closed type | yes |
+
+#1913 is measured against `main` at f79bec9da, which stood 50 bytes under the ceiling of the base and its two
+deltas, floor(395,786 × 1.01) = 399,743. Its 106 bytes are `statics` in `utils/closures.ts`, the object it makes
+once per closed type of a static generic class, which keeps that type's statics and its type initializer apart
+from every other closed type's, as .NET does (#1855). They are the helper's least shape: a mark of the closed type
+on that object, which nothing reads, was dropped to reach them. It records its own 106 bytes as its delta. The 3,907
+bytes `main` had grown past the base and its deltas without crossing the ceiling are other pull requests' growth,
+recorded as the entry of their own above.
+
+## The deltas 0.2.0-preview.73 folded
+
+The base went from 385,917 to 399,799 bytes gzipped, every delta recorded since the last release folded into it by `scripts/fold-runtime-budget.sh`, each a change's own growth (#1922).
+
+| Delta | Pull request | Gzip | What it bought |
+|---|---|---:|---|
+| `feat-a-gesture-of-the-apps-own-is-recognized` | #1884 | +5,339 | An app's own gesture recognizers (#1563): the arena and its router written once in C# and run transpiled, the recognizer and its factories, RawGestureDetector's lowering, and the document's arena controller with the SDK's gestures as members |
+| `feat-text-runs-right-to-left-and-the-web-mirrors` | #1852 | +4,530 | Text direction on the web (#1568): TextDirection and Directionality in the vocabulary, the direction a component reads from its context, start and end written as logical CSS by the browser's lowering, and a culture switch that sets the document's dir. |
+| `fix-a-generic-classs-statics-are-kept-per-closure` | #1913 | +106 | A static generic class's statics per closed type (#1855): the runtime's statics, one object per closed type made from the class on first use, with its own type initializer state, measured over main at f79bec9da. |
+| `main-growth-to-f79bec9da` | #1923 | +3,907 | The growth main made past the base and its deltas without recording it, by first-parent merge from #1852's record (187ac4540) to f79bec9da, each measured as docs/SERVED-RUNTIME-GROWTH.md builds its tables: #1871 508, #1879 64, #1891 592, #1888 62, #1895 1,687, #1884 70 (of its 5,409, past the 5,339 it recorded), #1896 67, #1902 347, #1908 19, #1917 491. |

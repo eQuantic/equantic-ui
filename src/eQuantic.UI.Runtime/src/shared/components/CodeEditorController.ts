@@ -33,8 +33,8 @@ export class CodeEditorController {
         this.selectionChanged = null;
         this.pasted = null;
         this._desiredAdvance = -1;
-        this._cells = $eq.collections.dictionary();
-        this._advances = $eq.collections.dictionary();
+        this._cells = $eq.collections.dictionary<number, CodeLineCells>();
+        this._advances = $eq.collections.dictionary<number, CodeLineAdvances>();
         this._widths = null;
         this._widthsTabs = 0;
         this._widest = 0;
@@ -1675,7 +1675,7 @@ export class CodeEditorController {
         }
         let whole: any; 
         if (!(pieces == null) && (whole = this._wholeLineCopy) != null && normalized === whole) {
-            let piece: any = $eq.collections.dictionary(null, true);
+            let piece: any = $eq.collections.dictionary<CodeRange, string>(null, true);
             for (let i = 0; i < carets.length; i = i + 1 | 0) $eq.mapSet(piece, carets[i].selection, pieces[i]);
             return this.atEveryBlock(CodeEditorController.selectedLinesOf, false, (block) => {
                 let first = CodeEditorController.blockLines(block)[0];
@@ -1719,8 +1719,8 @@ export class CodeEditorController {
 
     insertCopies(snippet: CodeSnippet, at: (value: CodeRange) => CodeRange) {
         if (this.readOnly) return false;
-        let ranges: any = $eq.collections.dictionary(null, true);
-        let planned: any = $eq.collections.dictionary(null, true);
+        let ranges: any = $eq.collections.dictionary<CodeRange, CodeRange>(null, true);
+        let planned: any = $eq.collections.dictionary<CodeRange, CodeSnippetExpansion>(null, true);
         for (const caret of $eq.collections.listWalk(($o => ($o.$))(this.caretsInOrder()))) {
             let selection = caret.selection;
             let range = at(selection);
@@ -1755,7 +1755,7 @@ export class CodeEditorController {
     }
 
     static stopsOf(copies: CodeSnippetExpansion[], carets: CodeCaret[], primary: number) {
-        let byIndex: any = $eq.collections.dictionary();
+        let byIndex: any = $eq.collections.dictionary<number, CodeSnippetStop>();
         for (let k = 0; k < copies.length; k = k + 1 | 0) {
             let start = carets[k].selection.start;
             for (const place of $eq.collections.sequenceWalk(copies[k].places)) {
@@ -1839,7 +1839,7 @@ export class CodeEditorController {
         let needle = this._document.textIn(this._selection);
         let whole = this._occurrence === needle;
         let matches = this.occurrences(needle, whole);
-        let taken: Set<CodeRange> = $eq.collections.hashSet(true);
+        let taken: Set<CodeRange> = $eq.collections.hashSet<CodeRange>(true);
         for (const selection of $eq.collections.sequenceWalk(this.selections)) $eq.collections.setAdd(taken, new CodeRange(selection.start, selection.end));
         let next: CodeRange | null = null;
         for (const match of $eq.collections.listWalk(matches)) {

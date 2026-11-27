@@ -614,8 +614,8 @@ public static class UI
         };
 
     /// <summary>Discrete increment/decrement control.</summary>
-    public static Stepper Stepper(int value, Action<int>? onChanged = null) =>
-        new Stepper(value, onChanged);
+    public static Stepper Stepper(int value, Action<int>? onChanged = null, SegmentedTheme? style = null) =>
+        new Stepper(value, onChanged, style);
 
     /// <summary>An amount of money in a currency's minor units, typed in the culture's way.</summary>
     public static MoneyInput MoneyInput(long? amount, Action<long?>? onChanged, string label, Currency currency,
@@ -632,31 +632,38 @@ public static class UI
     /// <summary>A date, typed or picked from a calendar. <paramref name="labelHidden"/> draws no label, for a
     /// form that lays its own, and the label still names the field (#1780).</summary>
     public static DatePicker DatePicker(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
-        DateOnly? min = null, DateOnly? max = null, string label = "", bool labelHidden = false) =>
-        new DatePicker(selected, onChanged, min, max, label) { LabelHidden = labelHidden };
+        DateOnly? min = null, DateOnly? max = null, string label = "",
+        InputTheme? style = null, CalendarTheme? calendarStyle = null, bool labelHidden = false) =>
+        new DatePicker(selected, onChanged, min, max, label, style, calendarStyle) { LabelHidden = labelHidden };
 
     /// <summary>A time of day, picked from a list of slots.</summary>
     public static TimePicker TimePicker(TimeOnly? selected = null, Action<TimeOnly>? onChanged = null,
-        int stepMinutes = 30, TimeOnly? min = null, TimeOnly? max = null, string label = "") =>
-        new TimePicker(selected, onChanged, stepMinutes, min, max, label);
+        int stepMinutes = 30, TimeOnly? min = null, TimeOnly? max = null, string label = "",
+        InputTheme? style = null) =>
+        new TimePicker(selected, onChanged, stepMinutes, min, max, label, style);
 
     /// <summary>A moment — the date and the time, as one value. <paramref name="labelHidden"/> draws no label
     /// above the date, for a form that lays its own (#1780).</summary>
     public static DateTimePicker DateTimePicker(DateTime? selected = null, Action<DateTime>? onChanged = null,
         DateTime? min = null, DateTime? max = null, int stepMinutes = 30,
-        string dateLabel = "", string timeLabel = "", bool labelHidden = false) =>
-        new DateTimePicker(selected, onChanged, min, max, stepMinutes, dateLabel, timeLabel) { LabelHidden = labelHidden };
+        string dateLabel = "", string timeLabel = "", InputTheme? style = null,
+        CalendarTheme? calendarStyle = null, bool labelHidden = false) =>
+        new DateTimePicker(selected, onChanged, min, max, stepMinutes, dateLabel, timeLabel, style, calendarStyle)
+        {
+            LabelHidden = labelHidden,
+        };
 
     /// <summary>A month at a time — the grid a date is picked from.</summary>
     public static Calendar Calendar(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
-        DateOnly? min = null, DateOnly? max = null) =>
-        new Calendar(selected, onChanged, min, max);
+        DateOnly? min = null, DateOnly? max = null, CalendarTheme? style = null) =>
+        new Calendar(selected, onChanged, min, max, style);
 
     /// <summary>One choice out of a dropdown list: the ungrouped <paramref name="options"/> first, then
     /// each of <paramref name="groups"/> under its heading, one index across them all.</summary>
     public static Select Select(IReadOnlyList<string>? options = null, int selectedIndex = -1,
-        Action<int>? onChanged = null, string? placeholder = null, IReadOnlyList<OptionGroup>? groups = null) =>
-        new Select(options, selectedIndex, onChanged, placeholder, groups);
+        Action<int>? onChanged = null, string? placeholder = null, IReadOnlyList<OptionGroup>? groups = null,
+        InputTheme? style = null, Func<int, VisualNode>? optionBuilder = null) =>
+        new Select(options, selectedIndex, onChanged, placeholder, groups, style, optionBuilder);
 
     /// <summary>The full text field: label, helper, error, leading icon, and a trailing SLOT
     /// for whatever belongs at the end of the row — a picker's opener, a clear affordance.
@@ -666,16 +673,17 @@ public static class UI
         string? placeholder = null, string? helper = null, string? error = null,
         Icons? leading = null, SizeVariant size = SizeVariant.Large, VisualNode? trailing = null,
         TextEntryKind kind = TextEntryKind.Text, string? prefix = null, string? suffix = null,
-        bool labelHidden = false) =>
-        new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing, kind, prefix, suffix)
+        InputTheme? style = null, bool labelHidden = false) =>
+        new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing, kind, prefix, suffix,
+            style)
         {
             LabelHidden = labelHidden,
         };
 
     /// <summary>The search entry. Null placeholder = the SDK's localized default.</summary>
     public static SearchField SearchField(string query, Action<string>? onChanged = null,
-        string? placeholder = null, Action? onSubmit = null) =>
-        new SearchField(query, onChanged, placeholder, onSubmit);
+        string? placeholder = null, Action? onSubmit = null, InputTheme? style = null) =>
+        new SearchField(query, onChanged, placeholder, onSubmit, style);
 
     /// <summary>
     /// Linear progress; null value = INDETERMINATE, which is a state the role reports rather than a
@@ -700,8 +708,8 @@ public static class UI
 
     /// <summary>The language switch — swaps the app's culture through the host's own controller
     /// (re-render on web, repaint on native), no reload either way.</summary>
-    public static CultureSwitcher CultureSwitcher(IReadOnlyList<CultureOption> options) =>
-        new CultureSwitcher(options);
+    public static CultureSwitcher CultureSwitcher(IReadOnlyList<CultureOption> options, SegmentedTheme? style = null) =>
+        new CultureSwitcher(options, style);
 
     /// <summary>
     /// Icon-only button; the label is what assistive tech announces and is never optional — an
@@ -728,8 +736,9 @@ public static class UI
     /// row wants), false lets the control size to its content (what a tab strip above a panel
     /// wants).</summary>
     public static SegmentedControl SegmentedControl(IReadOnlyList<string> segments, int selectedIndex,
-        Action<int>? onChanged = null, bool stretch = true) =>
-        new SegmentedControl(segments, selectedIndex, onChanged) { Stretch = stretch };
+        Action<int>? onChanged = null, SegmentedTheme? style = null, Func<int, VisualNode>? segmentBuilder = null,
+        bool stretch = true) =>
+        new SegmentedControl(segments, selectedIndex, onChanged, style, segmentBuilder) { Stretch = stretch };
 
     /// <summary>Horizontal tab strip.</summary>
     public static Tabs Tabs(IReadOnlyList<string> labels, int selected, Action<int>? onSelect = null) =>
@@ -954,6 +963,6 @@ public static class UI
     /// <paramref name="onCompleted"/> once it arrived.
     /// </summary>
     public static FileUpload FileUpload(UploadPolicy policy, Action<UploadedFile> onCompleted, bool multiple = true,
-        string? label = null, string? hint = null) =>
-        new FileUpload(policy, onCompleted, multiple, label, hint);
+        string? label = null, string? hint = null, InputTheme? style = null) =>
+        new FileUpload(policy, onCompleted, multiple, label, hint, style);
 }

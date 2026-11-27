@@ -576,6 +576,20 @@ public sealed class AppBuild
     /// </summary>
     public IReadOnlyList<string> CompiledFiles { get; private set; } = [];
 
+    /// <summary>How many files the last compile walked, compiled or taken as the build before compiled
+    /// them: <see cref="CompiledFiles"/> of how many (#1909).</summary>
+    public int FilesWalked { get; private set; }
+
+    /// <summary>How many TypeScript modules the last compile wrote, leaving out the ones whose text was
+    /// already on disk (#1279). The edit-to-view measurement holds a save to it (#1909).</summary>
+    public int ModulesWritten { get; private set; }
+
+    /// <summary>How many files the last bundle wrote, and their bytes (<see cref="ModuleBundler.Written"/>).</summary>
+    public int BundleWritten { get; private set; }
+
+    /// <summary>The bytes of the files the last bundle wrote (#1909).</summary>
+    public long BundleWrittenBytes { get; private set; }
+
     /// <summary>
     /// Compiles every module, writes the string catalogs and bundles. True when it produced an error,
     /// so the process can exit non-zero and fail the build.
@@ -583,6 +597,10 @@ public sealed class AppBuild
     public bool CompileAndBundle()
     {
         BundleElapsed = TimeSpan.Zero;
+        // Counted afresh for every compile, so a second compile of the same build says its own work.
+        ModulesWritten = 0;
+        BundleWritten = 0;
+        BundleWrittenBytes = 0;
         var sourceDirs = _options.SourceDirectories;
         var outputDir = _options.OutputDirectory;
         var bunPath = _options.BunPath;
@@ -704,9 +722,10 @@ public sealed class AppBuild
                 // Written only when its text changed (#1279): a save that changes one screen writes that
                 // screen's module and leaves the others, and their times, as they were.
                 var hasMap = !string.IsNullOrEmpty(result.SourceMap);
-                OutputFile.Write(tsPath, hasMap
+                if (OutputFile.Write(tsPath, hasMap
                     ? result.TypeScript + $"\n//# sourceMappingURL={result.ComponentName}.ts.map"
-                    : result.TypeScript);
+                    : result.TypeScript))
+                    ModulesWritten++;
                 if (hasMap) OutputFile.Write(tsPath + ".map", result.SourceMap!);
 
                 // A PAGE is always an entry point, wherever its file sits: the server loads
@@ -769,6 +788,7 @@ public sealed class AppBuild
                 Write(module.Result, module.File, module.IsEntryCandidate, module.Identity, module.Describe);
 
             CompiledFiles = compiledFiles;
+            FilesWalked = units;
             if (_reusable.Count > 0)
                 _output.WriteLine($"   Compiled {compiledFiles.Count} of {units} file(s): the others read nothing the save changed");
 
@@ -827,6 +847,8 @@ public sealed class AppBuild
                     if (_bundler is null) bundler.Dispose();
                 }
                 BundleElapsed = bundling.Elapsed;
+                BundleWritten = bundler.Written;
+                BundleWrittenBytes = bundler.WrittenBytes;
                 if (bunError is not null)
                 {
                     _errors.WriteLine("❌ Bun compilation failed:");

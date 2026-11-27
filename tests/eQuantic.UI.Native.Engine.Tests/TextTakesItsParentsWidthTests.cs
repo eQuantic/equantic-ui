@@ -38,6 +38,14 @@ public class TextTakesItsParentsWidthTests
             .Single(c => c.Kind == DrawCommandKind.FillRRect).Shape.Rect;
     }
 
+    /// <summary>
+    /// Whether a painted bar's left edge is the centred position: within half a pixel of it, since a fill's edge
+    /// lands on the whole device pixel a browser rounds a box's edge to (#1344), and a centre of 130.5 paints at 131.
+    /// The layout keeps the exact centre; only the paint rounds.
+    /// </summary>
+    private static bool CentredOnThePixel(Rect bar, float across) =>
+        MathF.Abs(bar.X - (across - bar.Width) / 2) <= 0.5f + 0.01f;
+
     private static Text Centred(string content = "short") =>
         new(content, TypeRole.BodyM, align: TextAlignment.Center);
 
@@ -55,7 +63,7 @@ public class TextTakesItsParentsWidthTests
 
         TextNode(Layout(box)).Bounds.Width.Should().Be(300, "a block takes the width of a block parent");
         var bar = Bar(box);
-        bar.X.Should().BeApproximately((300 - bar.Width) / 2, 0.01f);
+        CentredOnThePixel(bar, 300).Should().BeTrue($"the bar starts at {bar.X}, its width {bar.Width} centred across 300");
     }
 
     [Fact]
@@ -66,7 +74,7 @@ public class TextTakesItsParentsWidthTests
 
         TextNode(Layout(column)).Bounds.Width.Should().Be(380, "a stretched flex item takes the line's cross size");
         var bar = Bar(column);
-        bar.X.Should().BeApproximately((380 - bar.Width) / 2, 0.01f);
+        CentredOnThePixel(bar, 380).Should().BeTrue($"the bar starts at {bar.X}, its width {bar.Width} centred across 380");
     }
 
     [Fact]
@@ -76,7 +84,7 @@ public class TextTakesItsParentsWidthTests
         column.Add(new Flexible(Centred()));
 
         var bar = Bar(column);
-        bar.X.Should().BeApproximately((380 - bar.Width) / 2, 0.01f,
+        CentredOnThePixel(bar, 380).Should().BeTrue(
             "the Flexible is stretched, and the Text inside it takes what it was given");
     }
 

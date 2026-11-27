@@ -30,6 +30,7 @@
   <ItemGroup>
     <!-- How a test starts a program: one deadline over the exit and both streams (#971). -->
     <Compile Include="..\Shared\ChildProcess.cs" Link="Shared\ChildProcess.cs" />
+    <Compile Include="..\Shared\EmbeddedBun.cs" Link="Shared\EmbeddedBun.cs" />
     <!-- Every place a node is reachable from a root, which ConsoleLayoutTests asks of the dashboard's
          layout: the instrument the web suite's own frame tests read with, not a second copy of it. -->
     <Compile Include="..\eQuantic.UI.Web.Tests\NodePlacements.cs" Link="Shared\NodePlacements.cs" />
@@ -46,6 +47,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
+    <!-- The bun the SDK unpacks (ProgramArchive), which the budget builds a change's base with (#1922). -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Sdk.Tasks\eQuantic.UI.Sdk.Tasks.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Gtm\eQuantic.UI.Gtm.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Charts.ApexCharts\eQuantic.UI.Charts.ApexCharts.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Material\eQuantic.UI.Material.csproj" />

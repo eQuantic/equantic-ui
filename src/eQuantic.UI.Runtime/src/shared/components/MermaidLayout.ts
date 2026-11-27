@@ -48,7 +48,7 @@ export class MermaidLayout {
 
     static solveFlowchart(graph: MermaidGraph) {
         let count = graph.nodes.length;
-        let index: any = $eq.collections.dictionary();
+        let index: any = $eq.collections.dictionary<string, number>();
         for (let i = 0; i < count; i = i + 1 | 0) $eq.mapSet(index, graph.nodes[i].id, i);
         let back = MermaidLayout.markBackEdges(graph, index, count);
         let rank = new Array(count).fill(0);
@@ -322,7 +322,7 @@ export class MermaidLayout {
 
     static solveSequence(graph: MermaidGraph) {
         let scene = new MermaidScene();
-        let centers: any = $eq.collections.dictionary();
+        let centers: any = $eq.collections.dictionary<string, number>();
         let at = MermaidLayout.margin;
         for (const participant of $eq.collections.listWalk(graph.nodes)) {
             let w = MermaidLayout.labelWidth(participant.label, 28, 80, 220);

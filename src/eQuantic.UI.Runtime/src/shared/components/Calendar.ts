@@ -1,4 +1,4 @@
-import { $eq, $NavigableMoveValue, Box, BoxStyle, BuildContext, CalendarNames, Column, CornerRadii, CultureCalendar, DateOnly, Flexible, Icon, IconButton, IconGlyph, Navigable, Pressable, Row, SdkStrings, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, $NavigableMoveValue, Box, BoxStyle, BuildContext, CalendarNames, CalendarTheme, Column, CornerRadii, CultureCalendar, DateOnly, Flexible, Icon, IconButton, IconGlyph, Navigable, Pressable, Row, SdkStrings, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNodeExtensions } from "../runtime-exports";
 
 export class Calendar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Calendar';
@@ -11,6 +11,7 @@ export class Calendar extends StatefulComponent {
     declare onChanged: ((dateOnly: DateOnly) => void) | null;
     declare min: any;
     declare max: any;
+    declare style: any;
 
     get label() {
         return this._label;
@@ -20,16 +21,18 @@ export class Calendar extends StatefulComponent {
         this._label = value;
     }
 
-    constructor(selected: any = null, onChanged: any = null, min: any = null, max: any = null, props?: any) {
+    constructor(selected: any = null, onChanged: any = null, min: any = null, max: any = null, style: any = null, props?: any) {
         super();
         if (selected !== undefined) this.selected = selected;
         if (onChanged !== undefined) this.onChanged = onChanged;
         if (min !== undefined) this.min = min;
         if (max !== undefined) this.max = max;
+        if (style !== undefined) this.style = style;
         this.selected = selected;
         this.onChanged = onChanged;
         this.min = min;
         this.max = max;
+        this.style = style;
         this._month = Calendar.firstOfMonth(selected ?? Calendar.today());
         if (props && typeof props === 'object') Object.assign(this, props);
     }
@@ -38,7 +41,7 @@ export class Calendar extends StatefulComponent {
         let theme = context.theme;
         let first = CalendarNames.firstDayOfWeek;
         let monthTitle = `${$eq.collections.item(CalendarNames.monthNames, CultureCalendar.monthOf(this._month) - 1 | 0)} ${$eq.text.format(CultureCalendar.yearOf(this._month), null, undefined, undefined, 'int32')}`;
-        let slot = theme.calendar;
+        let slot = CalendarTheme.merge(theme.calendar, this.style);
         let cellSize = slot?.cellSize ?? Calendar.cellSize;
         let header = new Row(slot?.headerGap ?? 4, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill });
         header.add(new Text(this.label ?? monthTitle, slot?.titleRole ?? 'titleSmall', slot?.titleColor ?? theme.textPrimary, 1));
@@ -54,7 +57,7 @@ export class Calendar extends StatefulComponent {
         let start = Calendar.gridStart(Calendar.firstOfMonth(this._month), first);
         for (let week = 0; week < 6; week = week + 1 | 0) {
             let weekRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill });
-            for (let column = 0; column < 7; column = column + 1 | 0) weekRow.add(this.cell((start + Math.imul(week, 7) | 0) + column | 0, context));
+            for (let column = 0; column < 7; column = column + 1 | 0) weekRow.add(this.cell((start + Math.imul(week, 7) | 0) + column | 0, context, slot));
             $eq.collections.listAdd(rows, weekRow);
         }
         let month = new Column(slot?.gap ?? 8);
@@ -72,6 +75,7 @@ export class Calendar extends StatefulComponent {
         this.onChanged = fresh.onChanged;
         this.min = fresh.min;
         this.max = fresh.max;
+        this.style = fresh.style;
         this._label = fresh.label;
         let chosen: any; 
         if (moved && (chosen = this.selected) != null) {
@@ -83,9 +87,8 @@ export class Calendar extends StatefulComponent {
         } }
     }
 
-    cell(number: number, context: BuildContext) {
+    cell(number: number, context: BuildContext, slot: any) {
         let theme = context.theme;
-        let slot = theme.calendar;
         let cellSize = slot?.cellSize ?? Calendar.cellSize;
         let size = SizeValue.fixed(cellSize);
         if (!Calendar.written(number)) return new Box(new BoxStyle({ width: size, height: size }));

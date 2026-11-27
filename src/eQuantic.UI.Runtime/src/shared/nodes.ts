@@ -1186,6 +1186,8 @@ export interface IconGlyphValue {
   style?: string;
   viewBox?: string;
   strokeWidth?: number;
+  /** The fill's rule: even-odd where true, nonzero otherwise (#1210). */
+  evenOdd?: boolean;
 }
 
 export interface IconNode extends VisualNodeValue {
