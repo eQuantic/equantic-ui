@@ -1,4 +1,0 @@
-#nullable enable
-[EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.HasWork.get -> bool
-[EQX0001]eQuantic.UI.Native.Components.PhotonHost.WantsFrame(float nowMs) -> bool
-*REMOVED*[EQX0001]eQuantic.UI.Native.Components.PhotonDispatcher.WakeOnPost(eQuantic.UI.Native.Components.PhotonHost! host) -> void

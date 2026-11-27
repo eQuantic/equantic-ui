@@ -1,8 +1,0 @@
-#nullable enable
-eQuantic.UI.Primitives.Directionality
-eQuantic.UI.Primitives.Directionality.Directionality(eQuantic.UI.Primitives.TextDirection direction, eQuantic.UI.Primitives.VisualNode! child) -> void
-eQuantic.UI.Primitives.Directionality.Direction.get -> eQuantic.UI.Primitives.TextDirection
-eQuantic.UI.Primitives.TextDirection
-eQuantic.UI.Primitives.TextDirection.LeftToRight = 0 -> eQuantic.UI.Primitives.TextDirection
-eQuantic.UI.Primitives.TextDirection.RightToLeft = 1 -> eQuantic.UI.Primitives.TextDirection
-eQuantic.UI.Primitives.ComponentContext.TextDirection.get -> eQuantic.UI.Primitives.TextDirection

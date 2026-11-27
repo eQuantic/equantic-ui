@@ -1,3 +1,0 @@
-#nullable enable
-eQuantic.UI.Primitives.ServerActionAttribute.TimeoutSeconds.get -> int
-eQuantic.UI.Primitives.ServerActionAttribute.TimeoutSeconds.set -> void

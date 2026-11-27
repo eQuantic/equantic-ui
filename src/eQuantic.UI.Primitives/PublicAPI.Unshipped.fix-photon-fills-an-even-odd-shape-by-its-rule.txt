@@ -1,7 +1,0 @@
-#nullable enable
-*REMOVED*eQuantic.UI.Primitives.IconGlyph.Deconstruct(out string! Name, out string! Path, out eQuantic.UI.Primitives.IconGlyphStyle Style, out string! ViewBox, out float StrokeWidth) -> void
-*REMOVED*eQuantic.UI.Primitives.IconGlyph.IconGlyph(string! Name, string! Path, eQuantic.UI.Primitives.IconGlyphStyle Style = eQuantic.UI.Primitives.IconGlyphStyle.Fill, string! ViewBox = "0 0 24 24", float StrokeWidth = 2) -> void
-eQuantic.UI.Primitives.IconGlyph.Deconstruct(out string! Name, out string! Path, out eQuantic.UI.Primitives.IconGlyphStyle Style, out string! ViewBox, out float StrokeWidth, out bool EvenOdd) -> void
-eQuantic.UI.Primitives.IconGlyph.EvenOdd.get -> bool
-eQuantic.UI.Primitives.IconGlyph.EvenOdd.init -> void
-eQuantic.UI.Primitives.IconGlyph.IconGlyph(string! Name, string! Path, eQuantic.UI.Primitives.IconGlyphStyle Style = eQuantic.UI.Primitives.IconGlyphStyle.Fill, string! ViewBox = "0 0 24 24", float StrokeWidth = 2, bool EvenOdd = false) -> void

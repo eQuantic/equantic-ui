@@ -1,2 +1,0 @@
-#nullable enable
-eQuantic.UI.Primitives.SemanticRole.EditableComboBox = 30 -> eQuantic.UI.Primitives.SemanticRole

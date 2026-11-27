@@ -244,3 +244,14 @@ from every other closed type's, as .NET does (#1855). They are the helper's leas
 on that object, which nothing reads, was dropped to reach them. It records its own 106 bytes as its delta. The 3,907
 bytes `main` had grown past the base and its deltas without crossing the ceiling are other pull requests' growth,
 recorded as the entry of their own above.
+
+## The deltas 0.2.0-preview.73 folded
+
+The base went from 385,917 to 399,799 bytes gzipped, every delta recorded since the last release folded into it by `scripts/fold-runtime-budget.sh`, each a change's own growth (#1922).
+
+| Delta | Pull request | Gzip | What it bought |
+|---|---|---:|---|
+| `feat-a-gesture-of-the-apps-own-is-recognized` | #1884 | +5,339 | An app's own gesture recognizers (#1563): the arena and its router written once in C# and run transpiled, the recognizer and its factories, RawGestureDetector's lowering, and the document's arena controller with the SDK's gestures as members |
+| `feat-text-runs-right-to-left-and-the-web-mirrors` | #1852 | +4,530 | Text direction on the web (#1568): TextDirection and Directionality in the vocabulary, the direction a component reads from its context, start and end written as logical CSS by the browser's lowering, and a culture switch that sets the document's dir. |
+| `fix-a-generic-classs-statics-are-kept-per-closure` | #1913 | +106 | A static generic class's statics per closed type (#1855): the runtime's statics, one object per closed type made from the class on first use, with its own type initializer state, measured over main at f79bec9da. |
+| `main-growth-to-f79bec9da` | #1923 | +3,907 | The growth main made past the base and its deltas without recording it, by first-parent merge from #1852's record (187ac4540) to f79bec9da, each measured as docs/SERVED-RUNTIME-GROWTH.md builds its tables: #1871 508, #1879 64, #1891 592, #1888 62, #1895 1,687, #1884 70 (of its 5,409, past the 5,339 it recorded), #1896 67, #1902 347, #1908 19, #1917 491. |
