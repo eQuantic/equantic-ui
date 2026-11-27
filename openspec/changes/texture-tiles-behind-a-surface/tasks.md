@@ -15,58 +15,58 @@
 
 ## 1. The vocabulary: a closed set, and a list
 
-- [ ] 1.1 `Pattern`: an abstract record, `private protected` constructor, members `Area` and `ClipTo` (`BoxArea`) and
+- [x] 1.1 `Pattern`: an abstract record, `private protected` constructor, members `Area` and `ClipTo` (`BoxArea`) and
   `Attachment` (`TileAttachment`), and
   `abstract TResult Accept<TState, TResult>(IPatternVisitor<TState, TResult> visitor, TState state)`.
   `IPatternVisitor<in TState, out TResult>` has `Visit(GridPattern, …)`, `Visit(DrawingPattern, …)` and
   `Visit(ImagePattern, …)`.
-- [ ] 1.2 `GridPattern`: `sealed record GridPattern(float Cell, ColorToken Color, float LineWidth = 1) : Pattern`.
-- [ ] 1.3 `ArtworkPattern`: an abstract record deriving from `Pattern`, `private protected` constructor taking the
+- [x] 1.2 `GridPattern`: `sealed record GridPattern(float Cell, ColorToken Color, float LineWidth = 1) : Pattern`.
+- [x] 1.3 `ArtworkPattern`: an abstract record deriving from `Pattern`, `private protected` constructor taking the
   width and the height (`TileLength`), with `Fit`, `HorizontalRepeat`, `VerticalRepeat`, `Anchor` and `Offset`, and
   `Size SizeIn(Size area, float aspect)`.
-- [ ] 1.4 `DrawingPattern(VectorDrawing artwork, TileLength width = default, TileLength height = default,
+- [x] 1.4 `DrawingPattern(VectorDrawing artwork, TileLength width = default, TileLength height = default,
   ColorToken? tint = null)` with `Opacity`. `ImagePattern(string source, TileLength width = default,
   TileLength height = default)` with `DarkSource`.
-- [ ] 1.5 `TileLength`: a readonly record struct, auto by default, dp through a conversion from `float` marked
+- [x] 1.5 `TileLength`: a readonly record struct, auto by default, dp through a conversion from `float` marked
   `[ConversionPassesThrough]` with its reason, and `TileLength.Fraction(float)`.
-- [ ] 1.6 `TileRepeat` (`Repeat = 0, Once = 1, Spaced = 2, Fitted = 3`), `BoxArea` (`Border = 0, Padding = 1,
+- [x] 1.6 `TileRepeat` (`Repeat = 0, Once = 1, Spaced = 2, Fitted = 3`), `BoxArea` (`Border = 0, Padding = 1,
   Content = 2`) and `TileAttachment` (`Box = 0, Window = 1`), one file each, added to `EnumValueAbiTests`.
-- [ ] 1.7 `BoxStyle.Patterns : IReadOnlyList<Pattern>?` replaces `Pattern`, with its doc saying the order and where
+- [x] 1.7 `BoxStyle.Patterns : IReadOnlyList<Pattern>?` replaces `Pattern`, with its doc saying the order and where
   the slots sit.
-- [ ] 1.8 Every refusal of design.md decision 4, each naming its member.
-- [ ] 1.9 `./scripts/public-api.sh update`, and read the diff: the `*REMOVED*` lines are `BoxStyle.Pattern` and the
+- [x] 1.8 Every refusal of design.md decision 4, each naming its member.
+- [x] 1.9 `./scripts/public-api.sh update`, and read the diff: the `*REMOVED*` lines are `BoxStyle.Pattern` and the
   record struct's members, and nothing else.
-- [ ] 1.10 `PatternVocabularyTests` (new), covering:
+- [x] 1.10 `PatternVocabularyTests` (new), covering:
   - every refusal;
   - `SizeIn` for dp, a fraction, both lengths given, and each fit;
   - the value equality of each kind;
   - `TileLength`'s conversion.
-- [ ] 1.11 Check: the solution builds up to the realizers, which fail to compile until they implement
+- [x] 1.11 Check: the solution builds up to the realizers, which fail to compile until they implement
   `IPatternVisitor`. That failure is the instrument working.
 
 ## 2. Shared drawing pieces, moved before they are reused
 
-- [ ] 2.1 The web: `DrawingElements.Shapes(artwork)` takes the shape attributes out of `LowerDrawing` and its twin
+- [x] 2.1 The web: `DrawingElements.Shapes(artwork)` takes the shape attributes out of `LowerDrawing` and its twin
   `lowerDrawing`. The component pins of every drawing stay byte-identical.
-- [ ] 2.2 Photon: `ArtworkPaint` takes `RunPaint` and `Frame` out of `EmitDrawing`. The `Drawing` goldens stay
+- [x] 2.2 Photon: `ArtworkPaint` takes `RunPaint` and `Frame` out of `EmitDrawing`. The `Drawing` goldens stay
   byte-identical.
-- [ ] 2.3 Check: the Web, Runtime and Native test projects are green with no pin regenerated.
+- [x] 2.3 Check: the Web, Runtime and Native test projects are green with no pin regenerated.
 
 ## 3. The web: the C# lowering
 
-- [ ] 3.1 `SvgMarkup` and `TileArtwork` (decision 9). `DataUrl`, with the explicit table, and the CSS string escaping
+- [x] 3.1 `SvgMarkup` and `TileArtwork` (decision 9). `DataUrl`, with the explicit table, and the CSS string escaping
   for a raster's source. `DataUrlEncodingTests` covers every code point from 0 to 127, `é`, `€`, and a source with a
   quote, a backslash and a line break.
-- [ ] 3.2 `PatternLayers : IPatternVisitor<…>` writes each kind's entries in the seven lists, replacing
+- [x] 3.2 `PatternLayers : IPatternVisitor<…>` writes each kind's entries in the seven lists, replacing
   `TokenCss.GridPattern` and `GridPatternSize`, which are deleted:
   - the grid: its two layers, with its origin, clip and attachment;
   - the vector tile: its data URL, its size (`auto` for an auto length), its repeat, its position (with `calc()` for
     an offset), its origin, clip and attachment;
   - the image tile: its `url()` and the same lists.
-- [ ] 3.3 `BackgroundLayers` becomes the one value of decision 6: the list written reversed after the gradient and the
+- [x] 3.3 `BackgroundLayers` becomes the one value of decision 6: the list written reversed after the gradient and the
   glow, each list padded and written only when needed. `HtmlStyle` gains `BackgroundRepeat`, `BackgroundOrigin` and
   `BackgroundAttachment`. `PaintsNothing` reads `Patterns is null or []`. The hover path writes the same lists.
-- [ ] 3.4 Extend `GradientShimmerRealizerTests`, case by case:
+- [x] 3.4 Extend `GradientShimmerRealizerTests`, case by case:
   - one default grid writes what it wrote before;
   - two patterns under a gradient and a glow keep the order and pad every list;
   - `Once` × `Spaced` writes `no-repeat space`;
@@ -75,12 +75,12 @@
   - `Area = Content` and `ClipTo = Padding` write `content-box` and `padding-box`;
   - a window attachment writes `fixed`;
   - an image tile writes `url("…")`.
-- [ ] 3.5 The toggles of decision 8:
+- [x] 3.5 The toggles of decision 8:
   - the variants as custom properties on the element, only when they differ;
   - the layer's `var()` chain;
   - `ThemeStylesheet` writing the four toggles from the selector list it shares with the `eq-themed-*` rules,
     extracted once.
-- [ ] 3.6 Extend `ThemeStylesheetTests`: the toggles for each declared mode, under `data-theme`, and in the contrast
+- [x] 3.6 Extend `ThemeStylesheetTests`: the toggles for each declared mode, under `data-theme`, and in the contrast
   query, under the same selectors as `eq-themed-dark`.
 - [ ] 3.7 Check, against the real thing: a page of `samples/DefaultUIDashboard` with a desk that has a vector tile, an
   image tile with a dark source, a tinted tile and a window-attached tile inside a scroller. Open it in a browser:
@@ -93,18 +93,18 @@
 
 ## 4. The web: the runtime's twin
 
-- [ ] 4.1 `vocabulary.ts`:
+- [x] 4.1 `vocabulary.ts`:
   - `Pattern`, `ArtworkPattern`, `GridPattern`, `DrawingPattern`, `ImagePattern` (with `patternKind`, and the C#
     refusals word for word) and `TileLength` (normalizing a raw number to dp);
   - the enum unions of the three enums, from `src/eQuantic.UI.Web.Build`'s generator, never written by hand;
   - `BoxStyle.patterns: Pattern[] | null`;
   - the exports in `runtime-exports.ts` and `index.ts`.
-- [ ] 4.2 `nodes.ts`: `PatternValue`, a union discriminated by `patternKind`.
-- [ ] 4.3 `lowering.ts`: `patternLayers` switches on `patternKind` and ends in an exhaustive `never` check. Port
+- [x] 4.2 `nodes.ts`: `PatternValue`, a union discriminated by `patternKind`.
+- [x] 4.3 `lowering.ts`: `patternLayers` switches on `patternKind` and ends in an exhaustive `never` check. Port
   `svgMarkup`, `tileArtwork`, the encoding table, the source escaping and the toggles' chain, and share the shapes'
   builder with `lowerDrawing`.
-- [ ] 4.4 `gradient-shimmer.spec.ts`: the twin of every case of 3.4.
-- [ ] 4.5 The C#-against-TypeScript pin:
+- [x] 4.4 `gradient-shimmer.spec.ts`: the twin of every case of 3.4.
+- [x] 4.5 The C#-against-TypeScript pin:
   - `DataUrlEncodingTests` writes a fixture of every code point's encoding, and a new vitest replays it through the
     twin's table;
   - `ComponentParityFixtureTests` and `component-parity.spec.ts` gain `box-patterns`: a grid, a three-shape vector

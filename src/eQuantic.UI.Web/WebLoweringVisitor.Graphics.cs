@@ -247,29 +247,12 @@ internal sealed partial class WebLoweringVisitor
             if (defs.Children.Count > 0) svg.Children.Add(defs);
         }
 
-        foreach (var shape in drawing.Artwork.Shapes)
+        var shapes = drawing.Artwork.Shapes;
+        var paths = DrawingElements.Shapes(drawing.Artwork);
+        for (var i = 0; i < paths.Count; i++)
         {
-            var path = new RealizedElement("path");
-            var attributes = new Dictionary<string, string> { ["d"] = shape.Path };
-            attributes["fill"] = WebRealizer.PaintCss(shape.Fill);
-            // `currentColor` has no alpha of its own, so an inherited paint drawn at a fraction
-            // says so beside it — a Solid one carries its alpha in the colour already.
-            if (shape.Fill.Kind == VectorPaintKind.Inherit && shape.Fill.Alpha < 1)
-                attributes["fill-opacity"] = TokenCss.Number(shape.Fill.Alpha);
-            if (shape.Stroke.Paints)
-            {
-                attributes["stroke"] = WebRealizer.PaintCss(shape.Stroke);
-                if (shape.Stroke.Kind == VectorPaintKind.Inherit && shape.Stroke.Alpha < 1)
-                    attributes["stroke-opacity"] = TokenCss.Number(shape.Stroke.Alpha);
-                attributes["stroke-width"] = TokenCss.Number(shape.StrokeWidth);
-                attributes["stroke-linecap"] = "round";
-                attributes["stroke-linejoin"] = "round";
-            }
-            if (shape.EvenOdd) attributes["fill-rule"] = "evenodd";
-            if (shape.Opacity < 1) attributes["opacity"] = TokenCss.Number(shape.Opacity);
-            path.RawAttributes = attributes;
-            if (shape.IsInput) MakeInput(path, shape);
-            svg.Children.Add(path);
+            if (shapes[i].IsInput) MakeInput(paths[i], shapes[i]);
+            svg.Children.Add(paths[i]);
         }
         return svg;
     }

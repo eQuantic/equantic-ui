@@ -26,6 +26,8 @@ export type AppIconUseValue = 'launcher' | 'small';
 export type BiometricResultValue =
   'succeeded' | 'failed' | 'cancelled' | 'fallbackRequested' | 'notEnrolled' | 'unavailable';
 
+export type BoxAreaValue = 'border' | 'padding' | 'content';
+
 export type CodeCommandValue =
   'none' | 'cursorLeft' | 'cursorLeftSelect' | 'cursorRight' | 'cursorRightSelect' | 'cursorUp'
   | 'cursorUpSelect' | 'cursorDown' | 'cursorDownSelect' | 'cursorWordLeft' | 'cursorWordLeftSelect'
@@ -213,6 +215,10 @@ export type TextEntryKindValue = 'text' | 'email' | 'phone' | 'url' | 'number' |
 
 export type ThemeModeValue = 'light' | 'dark';
 
+export type TileAttachmentValue = 'box' | 'window';
+
+export type TileRepeatValue = 'repeat' | 'once' | 'spaced' | 'fitted';
+
 export type TypeRoleValue =
   'display' | 'heading' | 'title' | 'bodyL' | 'bodyM' | 'label' | 'caption' | 'titleSmall'
   | 'labelSmall' | 'overline';
@@ -241,6 +247,7 @@ export type {
     AnchorPlacementValue as $AnchorPlacementValue,
     AppIconUseValue as $AppIconUseValue,
     BiometricResultValue as $BiometricResultValue,
+    BoxAreaValue as $BoxAreaValue,
     CodeCommandValue as $CodeCommandValue,
     CodeCompletionKindValue as $CodeCompletionKindValue,
     CodeCompletionTriggerValue as $CodeCompletionTriggerValue,
@@ -306,6 +313,8 @@ export type {
     TextDirectionValue as $TextDirectionValue,
     TextEntryKindValue as $TextEntryKindValue,
     ThemeModeValue as $ThemeModeValue,
+    TileAttachmentValue as $TileAttachmentValue,
+    TileRepeatValue as $TileRepeatValue,
     TypeRoleValue as $TypeRoleValue,
     UploadStateValue as $UploadStateValue,
     VariantValue as $VariantValue,

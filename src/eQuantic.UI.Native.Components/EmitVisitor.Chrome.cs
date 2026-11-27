@@ -121,7 +121,7 @@ internal sealed partial class EmitVisitor
 
         EmitChrome(s.Node.Bounds, fill, style.CornerRadius,
             borderColor, borderWidth, s.Theme, s.Mode, s.Contrast, s.Builder,
-            style.Gradient, style.Pattern, style.Glow, style.BorderSides, style.InsetHighlight);
+            style.Gradient, style.Patterns, style.Glow, style.BorderSides, style.InsetHighlight);
 
         // Focus double ring (spec §01): 2dp Surface gap + 2dp FocusRing OUTSIDE the control,
         // following the control's own radius — the first Box under the focused Pressable
@@ -179,7 +179,7 @@ internal sealed partial class EmitVisitor
 
     private static void EmitChrome(Rect bounds, ColorToken? background, CornerRadii radius,
         ColorToken borderColor, float borderWidth, IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder,
-        LinearGradient? gradient = null, GridPattern? pattern = null, RadialGradient? glow = null,
+        LinearGradient? gradient = null, IReadOnlyList<Pattern>? patterns = null, RadialGradient? glow = null,
         BorderSides sides = BorderSides.All, ColorToken? insetHighlight = null)
     {
         if (bounds.IsEmpty) return;
@@ -191,11 +191,18 @@ internal sealed partial class EmitVisitor
                 builder.FillRRect(new RRect(bounds, radius), Paint.Solid(color));
         }
 
-        // The grid draws over the solid and UNDER the gradient — the same layer order the web
-        // realizer's background-image list produces. Hairlines are ordinary fills bounded by the
-        // box: no engine primitive and no shader, which is what keeps this write-once today.
-        if (pattern is { } grid && grid.Cell > 0 && grid.LineWidth > 0)
-            EmitGridPattern(bounds, grid, mode, contrast, builder);
+        // The patterns draw over the solid and UNDER the glow and the gradient, in list order, the
+        // last on top — the reverse of the web realizer's background-image list, where the first is.
+        // Hairlines are ordinary fills bounded by the box: no engine primitive and no shader.
+        if (patterns is not null)
+            foreach (var layer in patterns)
+            {
+                if (layer is GridPattern grid && grid.Cell > 0 && grid.LineWidth > 0)
+                    EmitGridPattern(bounds, grid, mode, contrast, builder);
+                // A DrawingPattern and an ImagePattern draw nothing on Photon yet: #1942 places and
+                // clips every kind and draws the tiles, through a PatternPainter : IPatternVisitor
+                // that replaces this test.
+            }
 
         // The spotlight sits above the grid and below the linear gradient — the same stacking the
         // web realizer's layer list produces (there the FIRST entry is topmost; here the LAST drawn

@@ -90,7 +90,7 @@ public class GradientShimmerTests
             Width = 120,
             Height = 100,
             Background = Theme.Surface,
-            Pattern = new GridPattern(50, Theme.Border),
+            Patterns = [new GridPattern(50, Theme.Border)],
         })).Where(c => c.Kind == DrawCommandKind.FillRRect).ToList();
 
         // 1 background + 3 vertical rules (x = 0, 50, 100) + 2 horizontal rules (y = 0, 50).
@@ -116,7 +116,7 @@ public class GradientShimmerTests
         {
             Width = 120,
             Height = 100,
-            Pattern = new GridPattern(0, Theme.Border),
+            Patterns = [new GridPattern(0, Theme.Border)],
         })).Where(c => c.Kind == DrawCommandKind.FillRRect).ToList();
 
         commands.Should().BeEmpty();

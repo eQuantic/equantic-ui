@@ -86,6 +86,48 @@ public class ThemeStylesheetTests
         css.Should().Contain(":root[data-theme=\"light\"] .eq-themed-light { display: block; }");
     }
 
+    /// <summary>
+    /// The toggles a tile's variants read (#1937, design.md decision 8): one empty and one
+    /// guaranteed-invalid on each axis, flipped under exactly the selectors that choose the themed
+    /// image's dark artwork, so a tile and an Image follow one decision.
+    /// </summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData(ThemeMode.Light)]
+    [InlineData(ThemeMode.Dark)]
+    public void TheModeToggles_FlipUnderTheSelectorsThatChooseTheThemedImage(ThemeMode? mode)
+    {
+        var css = ThemeStylesheet.Generate(PhotonTheme.Instance, mode);
+
+        css.Should().Contain(":root { --eq-on-light: ; --eq-on-dark: initial; --eq-on-std: ; --eq-on-more: initial; }",
+            "light and standard until something says otherwise");
+        foreach (var line in css.Split('\n').Where(line => line.Contains(".eq-themed-dark { display: block; }")))
+            line.Should().Contain("{ --eq-on-light: initial; --eq-on-dark: ; }", "dark artwork and dark tiles are one decision");
+        foreach (var line in css.Split('\n').Where(line => line.Contains(".eq-themed-light { display: block; }")))
+            line.Should().Contain("{ --eq-on-light: ; --eq-on-dark: initial; }");
+
+        css.Should().Contain(":root[data-theme=\"dark\"] .eq-themed-dark { display: block; } :root[data-theme=\"dark\"] { --eq-on-light: initial; --eq-on-dark: ; }");
+        css.Should().Contain(":root[data-theme=\"light\"] .eq-themed-light { display: block; } :root[data-theme=\"light\"] .eq-themed-dark { display: none; } :root[data-theme=\"light\"] { --eq-on-light: ; --eq-on-dark: initial; }");
+        if (mode == ThemeMode.Dark)
+            css.Should().Contain(".eq-themed-dark { display: block; } :root { --eq-on-light: initial; --eq-on-dark: ; }");
+        if (mode is null)
+            css.Should().Contain("@media (prefers-color-scheme: dark) { .eq-themed-light { display: none; } .eq-themed-dark { display: block; } :root { --eq-on-light: initial; --eq-on-dark: ; } }");
+        else
+            css.Should().NotContain("prefers-color-scheme", "a declared mode leaves nothing for the OS to disagree with");
+    }
+
+    /// <summary>The contrast pair flips under the query the palette's More block is written under, and
+    /// only where the palette steps up: a theme with no More pair paints a tile's Standard leg too.</summary>
+    [Fact]
+    public void TheContrastToggles_FlipInsideThePalettesContrastBlock()
+    {
+        var css = ThemeStylesheet.Generate(PhotonTheme.Instance);
+        var start = css.IndexOf("@media (prefers-contrast: more) {", StringComparison.Ordinal);
+        var block = css[start..css.IndexOf("\n}", start, StringComparison.Ordinal)];
+        block.Should().Contain("--eq-on-std: initial;");
+        block.Should().Contain("--eq-on-more: ;");
+    }
+
     /// <summary>Unset stays "follow the OS" — the default every app built before this relied on.</summary>
     [Fact]
     public void WithoutADeclaredMode_TheOsDecides()

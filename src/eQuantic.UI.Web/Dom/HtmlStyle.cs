@@ -96,6 +96,16 @@ public class HtmlStyle
     public string? BackgroundSize { get; set; }
     public string? BackgroundPosition { get; set; }
 
+    /// <summary>`background-repeat`: how each layer's image repeats, per axis.</summary>
+    public string? BackgroundRepeat { get; set; }
+
+    /// <summary>`background-origin`: the box each layer's image is placed in.</summary>
+    public string? BackgroundOrigin { get; set; }
+
+    /// <summary>`background-attachment`: whether each layer scrolls with the element or stays fixed
+    /// against the viewport.</summary>
+    public string? BackgroundAttachment { get; set; }
+
     /// <summary>`background-clip` — `text` paints the background through the glyphs (gradient text).
     /// The `-webkit-` twin is emitted alongside it: Safari still requires the prefix.</summary>
     public string? BackgroundClip { get; set; }
@@ -312,8 +322,11 @@ public class HtmlStyle
         AddProperty(properties, "background-image", BackgroundImage);
         AddProperty(properties, "background-size", BackgroundSize);
         AddProperty(properties, "background-position", BackgroundPosition);
+        AddProperty(properties, "background-repeat", BackgroundRepeat);
+        AddProperty(properties, "background-origin", BackgroundOrigin);
         AddProperty(properties, "-webkit-background-clip", BackgroundClip);
         AddProperty(properties, "background-clip", BackgroundClip);
+        AddProperty(properties, "background-attachment", BackgroundAttachment);
         AddProperty(properties, "-webkit-text-fill-color", WebkitTextFillColor);
         AddProperty(properties, "filter", Filter);
 
