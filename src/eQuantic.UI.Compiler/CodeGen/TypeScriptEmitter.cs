@@ -64,16 +64,19 @@ public class TypeScriptEmitter
     /// <summary>A type parameter's constraint as its class header writes it (#1854): a class that is not generic and has a
     /// twin, as a downcast asks it (<see cref="Strategies.Expressions.CastExpressionStrategy.NamesATwin"/>), named as any
     /// reference to it is (<see cref="DeclaredType"/>), and null for any other one, which leaves the parameter
-    /// unconstrained. A class the server keeps has no twin to import. Plain JavaScript writes no type parameter, so it
+    /// unconstrained. A class the server keeps has no twin to import. An interface with a twin
+    /// (<see cref="InterfaceTwin"/>) is named the same way (#1878). Plain JavaScript writes no type parameter, so it
     /// names no constraint and imports none: the constraint's import would have been a module plain JavaScript loads for
     /// nothing.</summary>
     private string? ConstraintType(TypeSyntax type)
     {
         if (!TypeAnnotations) return null;
-        if (ModelFor(type)?.GetTypeInfo(type).Type is not INamedTypeSymbol { TypeKind: TypeKind.Class, IsGenericType: false } bound
-            || !Strategies.Expressions.CastExpressionStrategy.NamesATwin(bound))
-            return null;
-        var name = DeclaredType(type);
+        if (ModelFor(type)?.GetTypeInfo(type).Type is not INamedTypeSymbol bound) return null;
+        string name;
+        if (InterfaceTwin.NameOf(bound) is { } face) name = face;
+        else if (bound is { TypeKind: TypeKind.Class, IsGenericType: false } && Strategies.Expressions.CastExpressionStrategy.NamesATwin(bound))
+            name = DeclaredType(type);
+        else return null;
         // Imported as any other name the module writes: the scan of a class's references reads its members, never its
         // where clause, so a constraint only the header names reached no import.
         if (bound.IsRuntimeProvided()) _converter.UsedRuntimeTypes.Add(name);
@@ -1980,7 +1983,8 @@ public class TypeScriptEmitter
             if (ordered)
             {
                 _converter.UsedHelpers.Add(Eq.Import);
-                foreach (var member in TypeInitializer.Members(cls, name, initialized, _converter, Lowering, TypeAnnotations, _converter.Layout))
+                // A static generic class keeps its slots on the closed type its members were reached through (#1855).
+                foreach (var member in TypeInitializer.Members(cls, StaticsHome(cls, name), initialized, _converter, Lowering, TypeAnnotations, _converter.Layout))
                     c.Member(member, member.Origin?.Member);
             }
             foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
@@ -2059,7 +2063,30 @@ public class TypeScriptEmitter
             // A static constructor runs before the first instance and the first use of any static
             // member, a method included, and not only before the first read of a static.
             if (ordered && TypeInitializer.HasStaticConstructor(cls))
-                c.Rewrite(member => TypeInitializer.StartedIn(member, name, slots));
+                c.Rewrite(member => TypeInitializer.StartedIn(member, StaticsHome(cls, name), slots));
+    }
+
+    /// <summary>What a class's static members reach its statics through: the class, or <c>this</c> for a static
+    /// generic class, whose statics are the closed type's they were reached through (<see cref="ClosedStatics"/>).</summary>
+    private static string StaticsHome(ClassDeclarationSyntax cls, string name) =>
+        ClosedStatics.KeepsPerClosure(cls) ? ClosedStatics.Own : name;
+
+    /// <summary>
+    /// The type parameters of a static generic class, which its members name, each an alias of <c>any</c> after the
+    /// class (#1855): the class declares none, since TypeScript refuses a static member that reads them (TS2302),
+    /// and every member of a static class is static. One class serves every closed type, so no one type argument is
+    /// the right one. An alias only for a parameter the module names, as one it never reads is refused (TS6133); and
+    /// after the class, so the lines the class's source map records stay where they are.
+    /// </summary>
+    private string ErasedTypeParameters(ClassDeclarationSyntax cls, string emitted)
+    {
+        if (!TypeAnnotations || !ClosedStatics.KeepsPerClosure(cls)) return "";
+        var aliases = cls.TypeParameterList!.Parameters
+            .Select(parameter => parameter.Identifier.ValueText.ToJsIdentifier())
+            .Where(name => NamedIn(emitted, name))
+            .Select(name => $"type {name} = any;")
+            .ToList();
+        return aliases.Count == 0 ? "" : string.Join("\n", aliases) + "\n";
     }
 
     /// <summary>A static's initializer: its VALUE where C# folds it to a constant
@@ -2935,6 +2962,72 @@ public class TypeScriptEmitter
     public string EmitStaticHelperModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel) =>
         EmitClassModule(cls, semanticModel, asStatic: true);
 
+    /// <summary>
+    /// An interface's twin (#1878): a module holding <c>export interface</c>, each member under the name the twin of a class
+    /// implementing it gives it and with the type an annotation writes, <c>readonly</c> where the property has no setter,
+    /// so a type parameter's constraint can name it (<c>T extends IShaped</c>). Beside it a value of the same name, as a
+    /// union's alias module holds one, so a plain import resolves whether or not the bundler elides it, with
+    /// <c>isolatedModules</c> on; plain JavaScript writes the value alone. Its imports are what its text names, read as
+    /// the class module reads them. Which interface gets one is <see cref="InterfaceTwin.CanBeWritten(InterfaceDeclarationSyntax)"/>.
+    /// </summary>
+    public string EmitInterfaceModule(InterfaceDeclarationSyntax face, SemanticModel? semanticModel)
+    {
+        var name = face.TwinTypeName();
+        BeginModule(semanticModel, name);
+        if (!TypeAnnotations) return $"export const {name} = undefined;\n";
+
+        var body = new System.Text.StringBuilder($"export interface {name} {{\n");
+        foreach (var member in face.Members)
+        {
+            if (member is PropertyDeclarationSyntax property)
+            {
+                var settable = property.AccessorList!.Accessors.Any(accessor =>
+                    accessor.Keyword.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SetKeyword)
+                    || accessor.Keyword.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.InitKeyword));
+                body.Append($"    {(settable ? "" : "readonly ")}{property.Identifier.ValueText.ToCamelCase()}: {DeclaredType(property.Type)};\n");
+            }
+            else if (member is MethodDeclarationSyntax method)
+            {
+                var (head, returns) = MethodSignature(method);
+                body.Append($"    {head}: {returns};\n");
+            }
+        }
+        body.Append("}\n\n");
+        body.Append($"export const {name} = undefined;\n");
+        var emitted = body.ToString();
+
+        // What the members' types name, as the class module takes it: the runtime's types the scan and the conversion
+        // found, the value types .NET names, the vocabulary's enum unions, then the app's and its referenced projects'
+        // modules, each only where the text names it.
+        var runtimeProvided = new HashSet<string>(_converter.UsedRuntimeTypes, StringComparer.Ordinal);
+        var referencedEnums = new HashSet<string>(StringComparer.Ordinal);
+        if (semanticModel != null)
+            Services.RuntimeProvidedTypeScanner.Collect(face, semanticModel, asComponent: false, runtimeProvided, referencedEnums);
+        runtimeProvided.Add(Decimal);
+        runtimeProvided.UnionWith(RuntimeValueTypes);
+        SeedEnumUnions(emitted, semanticModel?.Compilation, runtimeProvided);
+        runtimeProvided.Remove(name);
+        runtimeProvided.RemoveWhere(referenced => !NamedIn(emitted, referenced));
+        var imports = new List<JsImport>();
+        if (runtimeProvided.Count > 0)
+            imports.Add(new JsImport(runtimeProvided.OrderBy(n => n, StringComparer.Ordinal).ToList(), "@equantic/runtime"));
+        foreach (var t in CollectComponentTypesFromNode(face, asComponent: false, new HashSet<string> { name })
+                     .Concat(_converter.UsedAppTypes).Distinct().OrderBy(x => x, StringComparer.Ordinal))
+        {
+            var ct = t.Trim().TrimEnd('?');
+            if (ct.Contains('<')) ct = ct.Split('<')[0];
+            if (ct.Contains('.')) ct = ct.Substring(ct.LastIndexOf('.') + 1);
+            if (string.IsNullOrEmpty(ct) || ct == name || runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)
+                || !NamedIn(emitted, ct))
+                continue;
+            if (_dependencyResolver?.IsModule(ct) == true
+                || _dependencyResolver is null && ModulesFor(semanticModel)?.IsModule(ct) == true
+                || Referenced.IsModule(ct))
+                imports.Add(new JsImport([ct], $"./{ct}"));
+        }
+        return JsModuleWriter.Write(new JsModule(imports, emitted));
+    }
+
     private string EmitClassModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel, bool asStatic)
     {
         // Its twin's name, its owners' and its own (#584): a nested class is a module of its own too.
@@ -2971,7 +3064,9 @@ public class TypeScriptEmitter
                     c.Member(JsClassMember.Method("", "toString", "", "", TypeAnnotations ? ": string" : "",
                         JsStatement.Block([JsStatement.Return(JsExpr.Literal(JsStringLiteral.Quote(fullName)))])), cls);
             },
-            typeParameters: cls.TwinTypeParameters(ConstraintType),
+            // A static class has no instance, and TypeScript refuses a static member that reads its class's type
+            // parameters (TS2302), so a static generic class declares none (#1855): ErasedTypeParameters below.
+            typeParameters: ClosedStatics.KeepsPerClosure(cls) ? [] : cls.TwinTypeParameters(ConstraintType),
             isAbstract: cls.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword));
         var emitted = builder.ToString();
         // This module used a LOCAL builder, so the mappings it recorded never reached
@@ -3045,6 +3140,12 @@ public class TypeScriptEmitter
         // A compat value type is not in an eQuantic namespace, so the scanner above never buckets
         // it — but a factory's `DateOnly? selected` annotates with the name all the same.
         foreach (var compat in RuntimeValueTypes) runtimeProvided.Add(compat);
+        // `$eq` is a candidate of every class module, as it is of a record's and a component's, and stays where the
+        // emitted text names it: the import follows from what the module writes, whoever wrote it. It came only from
+        // the strategies that registered it, and `Uri.EscapeDataString` wrote `$eq.uri.escapeData(…)` without doing
+        // so, which a static class whose one runtime call it was shipped with no import: the page threw
+        // "$eq is not defined" the first time the method ran, after hydration (#1882).
+        runtimeProvided.Add(Eq.Import);
         runtimeProvided.RemoveWhere(referenced => !NamedIn(emitted, referenced));
         core.UnionWith(runtimeProvided);
         if (core.Count > 0) imports.Add(new JsImport(core.ToList(), "@equantic/runtime"));
@@ -3075,7 +3176,8 @@ public class TypeScriptEmitter
                 imports.Add(new JsImport([ct], $"./{ct}"));
             else if (!Referenced.IsModule(ct)) ReportIfKeptOut(ct, cls);
         }
-        var module = new JsModule(imports, builder.ToString());
+        var erased = ErasedTypeParameters(cls, emitted);
+        var module = new JsModule(imports, erased.Length == 0 ? builder.ToString() : builder.ToString().TrimEnd('\n') + "\n\n" + erased);
         // The class's mappings were recorded against its own text; the imports stand above it.
         builder.ShiftMappings(JsModuleWriter.BodyLine(module));
         return JsModuleWriter.Write(module);
@@ -3188,6 +3290,14 @@ public class TypeScriptEmitter
     /// </summary>
     private JsClassMember AbstractMethod(MethodDeclarationSyntax method)
     {
+        var (head, returns) = MethodSignature(method);
+        return JsClassMember.Field("abstract ", head, $": {returns}");
+    }
+
+    /// <summary>A body-less method's TypeScript signature, as <see cref="AbstractMethod"/> declares it: its name, its
+    /// type parameters and its parameters, then its return. An interface twin's method is declared the same way (#1878).</summary>
+    private (string Head, string Returns) MethodSignature(MethodDeclarationSyntax method)
+    {
         var model = ModelFor(method);
         var outNames = OutParameters.Of(method.ParameterList).Where(OutParameters.IsOut)
             .Select(p => p.Identifier.ValueText).ToHashSet(StringComparer.Ordinal);
@@ -3201,7 +3311,7 @@ public class TypeScriptEmitter
             ? $"<{string.Join(", ", list.Parameters.Select(t => t.Identifier.ValueText.ToJsIdentifier()))}>"
             : "";
         var returns = outNames.Count > 0 ? "any" : AbstractReturn(method.ReturnType, model);
-        return JsClassMember.Field("abstract ", TwinMethodName.Of(method, model) + generics + $"({parameters})", $": {returns}");
+        return (TwinMethodName.Of(method, model) + generics + $"({parameters})", returns);
     }
 
     /// <summary>What an abstract method's caller receives: a task as the promise its override answers.</summary>
@@ -3415,7 +3525,7 @@ public class TypeScriptEmitter
         // A dictionary is the runtime's dictionary class, which no `Record` describes, so every
         // name for one degrades to `any` alike: the interfaces and the sorted ones reached
         // TypeScript verbatim, naming types that exist nowhere there.
-        else if (IsDictionaryName(tsType))
+        else if (IsDictionaryName(tsType) || IsRuntimeCollectionName(tsType))
         {
             tsType = "any";
         }
@@ -3453,6 +3563,17 @@ public class TypeScriptEmitter
 
     /// <summary>The set family — a JS Set.</summary>
     private static string? SetOf(string tsType) => Unwrap(tsType, ["HashSet<", "ISet<", "IReadOnlySet<"]);
+
+    /// <summary>
+    /// A collection the runtime holds as a class of its own that no module imports by its C# name: a queue,
+    /// a stack, a linked list and its node, a sorted set and a priority queue. A field of one is declared
+    /// <c>any</c>, as a dictionary's is: its C# name reached TypeScript verbatim, `_waiting!: Queue&lt;Shape&gt;`,
+    /// a name the module never imported (#1866), and the runtime's collection stack is exported under
+    /// another name, since the vocabulary's <c>Stack</c> owns it. A local of one keeps its element type
+    /// through its factory's type argument (<see cref="TsNamedType.TypeArguments"/>).
+    /// </summary>
+    internal static bool IsRuntimeCollectionName(string tsType) =>
+        Unwrap(tsType, ["Queue<", "Stack<", "LinkedList<", "LinkedListNode<", "SortedSet<", "PriorityQueue<"]) is not null;
 
     /// <summary>Every C# name for a dictionary: each is a runtime dictionary class on this side.</summary>
     internal static bool IsDictionaryName(string tsType) =>

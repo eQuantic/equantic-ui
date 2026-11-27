@@ -2,9 +2,9 @@ import { $eq, CellRef, SheetCellSnapshot, SheetSpans } from "../runtime-exports"
 
 export class SheetDocument {
     constructor(rows: number = 1000, cols: number = 26) {
-        this._cells = $eq.collections.dictionary();
-        this._rowHeights = $eq.collections.dictionary();
-        this._colWidths = $eq.collections.dictionary();
+        this._cells = $eq.collections.dictionary<bigint, string>();
+        this._rowHeights = $eq.collections.dictionary<number, number>();
+        this._colWidths = $eq.collections.dictionary<number, number>();
         this.rowSpans = null!;
         this.columnSpans = null!;
         this.sizeVersion = 0;

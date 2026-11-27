@@ -1,4 +1,4 @@
-import { $eq, Anchored, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, DevelopmentNotices, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, Pressable, Row, ScrollView, SdkStrings, Shortcut, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, TimeOnly, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Anchored, Box, BoxStyle, BuildContext, Column, ControlMetrics, CornerRadii, DevelopmentNotices, EdgeInsets, Flexible, Icon, IconGlyph, InputTheme, KeyChord, Pressable, Row, ScrollView, SdkStrings, Shortcut, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, TimeOnly, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TimePicker extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TimePicker';
@@ -14,6 +14,7 @@ export class TimePicker extends StatefulComponent {
     declare min: any;
     declare max: any;
     declare label: string;
+    declare style: any;
 
     get disabled() {
         return this._disabled;
@@ -31,7 +32,7 @@ export class TimePicker extends StatefulComponent {
         this._composed = value;
     }
 
-    constructor(selected: any = null, onChanged: any = null, stepMinutes: any = 30, min: any = null, max: any = null, label: any = '', props?: any) {
+    constructor(selected: any = null, onChanged: any = null, stepMinutes: any = 30, min: any = null, max: any = null, label: any = '', style: any = null, props?: any) {
         super();
         if (selected !== undefined) this.selected = selected;
         if (onChanged !== undefined) this.onChanged = onChanged;
@@ -39,6 +40,7 @@ export class TimePicker extends StatefulComponent {
         if (min !== undefined) this.min = min;
         if (max !== undefined) this.max = max;
         if (label !== undefined) this.label = label;
+        if (style !== undefined) this.style = style;
         if (this.stepMinutes === undefined) this.stepMinutes = 0;
         this.selected = selected;
         this.onChanged = onChanged;
@@ -46,12 +48,13 @@ export class TimePicker extends StatefulComponent {
         this.min = min;
         this.max = max;
         this.label = label;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let input = theme.input;
+        let input = InputTheme.merge(theme.input, this.style);
         let height = ControlMetrics.height(context, 'medium', (input?.controls ?? null));
         let paddingX = input?.pickerPaddingX ?? 12;
         let gap = input?.pickerGap ?? 8;
@@ -99,6 +102,7 @@ export class TimePicker extends StatefulComponent {
         this.min = fresh.min;
         this.max = fresh.max;
         this.label = fresh.label;
+        this.style = fresh.style;
         this._disabled = fresh.disabled;
         this._composed = fresh.composed;
     }

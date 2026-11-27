@@ -199,7 +199,16 @@ public sealed class DisplayListBuilder
         Clip = _clip,
     });
 
-    public void FillRRect(in RRect shape, in Paint paint) => _commands.Add(new DrawCommand
+    /// <summary>
+    /// A filled rounded rectangle, its EDGES on whole device pixels where the transform keeps it axis-aligned, as a
+    /// browser snaps a box's background (#1344). Two fills that share an edge on a fractional pixel each covered a
+    /// fraction of that pixel, so the one behind showed through the one in front as a hairline: a swipeable row's
+    /// red action under its closed surface, on an Android emulator at 2.625 device pixels a dp. On whole pixels each
+    /// covers the pixel or none of it. The corners keep their antialiasing, as a browser's do.
+    /// </summary>
+    public void FillRRect(in RRect shape, in Paint paint) => Fill(new RRect(OnDevicePixels(shape.Rect, _current), shape.Radii), paint);
+
+    private void Fill(in RRect shape, in Paint paint) => _commands.Add(new DrawCommand
     {
         Kind = DrawCommandKind.FillRRect,
         Shape = shape.Normalized(),
@@ -208,13 +217,59 @@ public sealed class DisplayListBuilder
         Clip = _clip,
     });
 
+    /// <summary>
+    /// <paramref name="rect"/> with each edge moved to the nearest whole device pixel under <paramref name="transform"/>,
+    /// back in local space; unchanged where the transform turns or skews it, which no pixel grid lines up with. A fill
+    /// thinner than a pixel keeps one, so a hairline never vanishes.
+    /// </summary>
+    private static Rect OnDevicePixels(Rect rect, in Matrix2D transform)
+    {
+        if (!AxisAligned(transform)) return rect;
+        var (left, right) = Snap(rect.Left * transform.M11 + transform.M31, rect.Right * transform.M11 + transform.M31);
+        var (top, bottom) = Snap(rect.Top * transform.M22 + transform.M32, rect.Bottom * transform.M22 + transform.M32);
+        return Rect.FromLTRB((left - transform.M31) / transform.M11, (top - transform.M32) / transform.M22,
+            (right - transform.M31) / transform.M11, (bottom - transform.M32) / transform.M22);
+    }
+
+    /// <summary>
+    /// <paramref name="rect"/> in DEVICE space under the current transform, its edges on whole device pixels where the
+    /// transform keeps it axis-aligned: a clip's and a frosted region's, so each lands where the fill it bounds does
+    /// (#1344). A clip that ended on a fractional pixel took the same fraction off every layer under it, the one in
+    /// front and the one behind alike, so a swipeable row's red action still showed through its closed surface after
+    /// the fills were snapped, as a browser snaps an overflow clip too.
+    /// </summary>
+    private Rect DeviceRect(Rect rect)
+    {
+        var device = _current.TransformBounds(rect);
+        if (!AxisAligned(_current)) return device;
+        var (left, right) = Snap(device.Left, device.Right);
+        var (top, bottom) = Snap(device.Top, device.Bottom);
+        return Rect.FromLTRB(left, top, right, bottom);
+    }
+
+    /// <summary>Whether <paramref name="transform"/> keeps a rect's edges on the device's axes: no turn, no skew,
+    /// no mirror. Only then does a whole device pixel mean anything for them.</summary>
+    private static bool AxisAligned(in Matrix2D transform) =>
+        transform.M12 == 0 && transform.M21 == 0 && transform.M11 > 0 && transform.M22 > 0;
+
+    /// <summary>A span's two ends on whole device pixels. Half a pixel goes up, as a browser rounds it, never to the
+    /// even neighbour, and a span thinner than a pixel keeps one.</summary>
+    private static (float From, float To) Snap(float from, float to)
+    {
+        var snappedFrom = MathF.Floor(from + 0.5f);
+        var snappedTo = MathF.Floor(to + 0.5f);
+        if (to > from && snappedTo <= snappedFrom) snappedTo = snappedFrom + 1;
+        return (snappedFrom, snappedTo);
+    }
+
     /// <summary>A filled circle — sugar over <see cref="FillRRect"/> at full radius, here because
     /// the F0 consumer's hub reached for an annular sector with rIn 0 and sweep 2π to draw one.</summary>
     public void FillCircle(Point center, float radius, in Paint paint)
     {
         if (radius <= 0) return;
         var rect = new Rect(center.X - radius, center.Y - radius, radius * 2, radius * 2);
-        FillRRect(new RRect(rect, new CornerRadii(radius)), paint);
+        // A disc is drawn where it is: snapping its box would make it an ellipse a pixel out of round.
+        Fill(new RRect(rect, new CornerRadii(radius)), paint);
     }
 
     /// <summary>
@@ -294,7 +349,7 @@ public sealed class DisplayListBuilder
         var scale = _current.AverageScale();
         if (radius * scale <= 0) return;
         var normalized = shape.Normalized();
-        var deviceRect = _current.TransformBounds(normalized.Rect);
+        var deviceRect = DeviceRect(normalized.Rect);
         var radii = new CornerRadii(
             normalized.Radii.TopLeft * scale, normalized.Radii.TopRight * scale,
             normalized.Radii.BottomRight * scale, normalized.Radii.BottomLeft * scale);
@@ -435,7 +490,7 @@ public sealed class DisplayListBuilder
     {
         _clipStack.Push(_clip);
         var normalized = shape.Normalized();
-        var deviceRect = _current.TransformBounds(normalized.Rect);
+        var deviceRect = DeviceRect(normalized.Rect);
         var scale = _current.AverageScale();
         var radii = new CornerRadii(
             normalized.Radii.TopLeft * scale, normalized.Radii.TopRight * scale,

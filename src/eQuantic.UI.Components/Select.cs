@@ -37,13 +37,16 @@ public sealed class Select : StatefulComponent
     private IReadOnlyList<string> _choices;
 
     public Select(IReadOnlyList<string>? options = null, int selectedIndex = -1,
-        Action<int>? onChanged = null, string? placeholder = null, IReadOnlyList<OptionGroup>? groups = null)
+        Action<int>? onChanged = null, string? placeholder = null, IReadOnlyList<OptionGroup>? groups = null,
+        InputTheme? style = null, Func<int, VisualNode>? optionBuilder = null)
     {
         Options = options ?? [];
         SelectedIndex = selectedIndex;
         OnChanged = onChanged;
         Placeholder = placeholder;
         Groups = groups ?? [];
+        Style = style;
+        OptionBuilder = optionBuilder;
         _choices = Flatten(Options, Groups);
     }
 
@@ -54,6 +57,18 @@ public sealed class Select : StatefulComponent
     public int SelectedIndex { get; private set; }
     public Action<int>? OnChanged { get; private set; }
     public string? Placeholder { get; private set; }
+
+    /// <summary>This select's own look, laid over the theme's <see cref="IAppTheme.Input"/> slot with
+    /// <see cref="InputTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's.</summary>
+    public InputTheme? Style { get; private set; }
+
+    /// <summary>
+    /// Draws an option's CONTENT, by the index <see cref="SelectedIndex"/> and <see cref="OnChanged"/> count
+    /// (the ungrouped options, then each group's in order). The select keeps the row's chrome (the
+    /// selected fill and check, the hover and the keyboard's highlight), and the option's text stays its
+    /// accessible name and what the closed field shows. Null draws the text.
+    /// </summary>
+    public Func<int, VisualNode>? OptionBuilder { get; private set; }
     /// <summary>Backed by a field, so <see cref="AdoptConfig"/> can carry it: this instance is kept
     /// across the parent's rebuilds, and an <c>init</c> accessor cannot be written from there.</summary>
     public bool Disabled { get => _disabled; init => _disabled = value; }
@@ -67,6 +82,8 @@ public sealed class Select : StatefulComponent
         OnChanged = fresh.OnChanged;
         Placeholder = fresh.Placeholder;
         Groups = fresh.Groups;
+        Style = fresh.Style;
+        OptionBuilder = fresh.OptionBuilder;
         _choices = fresh._choices;
         // The list can shrink under an open panel: the keyboard stays on an option that exists.
         _highlight = Math.Max(0, Math.Min(_highlight, _choices.Count - 1));
@@ -76,10 +93,10 @@ public sealed class Select : StatefulComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        // The theme's Input slot, then its control ladder, then the component's own (§3.10): the field
+        // The instance's style over the theme's Input slot, then its control ladder, then the component's own (§3.10): the field
         // and each row of its panel share the padding and the gap, and a row is the field's height
         // unless the slot names its own.
-        var slot = theme.Input;
+        var slot = InputTheme.Merge(theme.Input, Style);
         var height = ControlMetrics.Height(context, SizeVariant.Medium, slot?.Controls);
         var paddingX = slot?.PickerPaddingX ?? Space.S3;
         var gap = slot?.PickerGap ?? Space.S2;
@@ -180,8 +197,12 @@ public sealed class Select : StatefulComponent
         var selected = index == SelectedIndex;
 
         var row = new Row(gap: gap) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
-        row.Add(new Text(option, TypeRole.BodyM,
-            selected ? theme.Colors(Variant.Primary).OnSubtle : theme.TextPrimary, maxLines: 1));
+        // The developer's content, when they drew it; the option's text otherwise.
+        if (OptionBuilder is { } builder)
+            row.Add(builder(index));
+        else
+            row.Add(new Text(option, TypeRole.BodyM,
+                selected ? theme.Colors(Variant.Primary).OnSubtle : theme.TextPrimary, maxLines: 1));
         if (selected)
         {
             row.Add(new Flexible(new Spacer()));
@@ -198,6 +219,8 @@ public sealed class Select : StatefulComponent
             // whichever hand is steering.
             Background = selected ? theme.Colors(Variant.Primary).Subtle
                 : highlighted ? theme.SurfaceSubtle : null,
+            // The colour the option's text takes, handed to a builder's content that names none.
+            Foreground = selected ? theme.Colors(Variant.Primary).OnSubtle : theme.TextPrimary,
             Hover = selected ? null : new StyleDiff { Background = theme.SurfaceSubtle },
         }, row), () => Choose(index))
         {
@@ -205,6 +228,8 @@ public sealed class Select : StatefulComponent
             // the answer.
             Role = PressableRole.Option,
             Selected = selected,
+            // The content the developer drew carries no text to name the option by, so the name is said.
+            Label = OptionBuilder is null ? null : option,
         };
     }
 

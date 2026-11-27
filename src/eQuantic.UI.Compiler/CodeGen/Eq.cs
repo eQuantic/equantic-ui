@@ -400,6 +400,11 @@ public static class Eq
     /// one twin class serves every type argument, and <c>Box&lt;int&gt;</c> equalled <c>Box&lt;double&gt;</c> (#651).</summary>
     public const string Closing = "$eq.closing";
 
+    /// <summary>The statics of a static generic class for one closed type (<c>Cache&lt;int&gt;</c>), an object
+    /// made from the class once per closure, which its static members keep their state on: C# keeps one set
+    /// of statics per closed type, and the twin, one class for every type argument, shared them (#1855).</summary>
+    public const string Statics = "$eq.statics";
+
     /// <summary>A copy of a generic record or struct, marked as the value it copies was: a struct's
     /// <c>$clone</c> and a record's <c>with</c> build it without the constructor, and an unmarked copy
     /// of a boxed <c>Pair&lt;double&gt;</c> equalled a <c>Pair&lt;int&gt;</c> (#751).</summary>

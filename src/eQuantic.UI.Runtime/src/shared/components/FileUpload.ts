@@ -1,4 +1,4 @@
-import { $eq, $UploadStateValue, Box, BoxStyle, BuildContext, Button, Column, CornerRadii, DropTarget, EdgeInsets, Flexible, LiveRegion, PickedFile, ProgressBar, Row, SdkStrings, SizeValue, StatefulComponent, Text, UiComponent, Upload, UploadedFile, UploadPolicy } from "../runtime-exports";
+import { $eq, $UploadStateValue, Box, BoxStyle, BuildContext, Button, Column, CornerRadii, DropTarget, EdgeInsets, Flexible, InputTheme, LiveRegion, PickedFile, ProgressBar, Row, SdkStrings, SizeValue, StatefulComponent, Text, UiComponent, Upload, UploadedFile, UploadPolicy } from "../runtime-exports";
 
 export class FileUpload extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.FileUpload';
@@ -14,20 +14,23 @@ export class FileUpload extends StatefulComponent {
     declare multiple: boolean;
     declare label: any;
     declare hint: any;
+    declare style: any;
 
-    constructor(policy?: any, onCompleted?: any, multiple: any = true, label: any = null, hint: any = null, props?: any) {
+    constructor(policy?: any, onCompleted?: any, multiple: any = true, label: any = null, hint: any = null, style: any = null, props?: any) {
         super();
         if (policy !== undefined) this.policy = policy;
         if (onCompleted !== undefined) this.onCompleted = onCompleted;
         if (multiple !== undefined) this.multiple = multiple;
         if (label !== undefined) this.label = label;
         if (hint !== undefined) this.hint = hint;
+        if (style !== undefined) this.style = style;
         if (this.multiple === undefined) this.multiple = false;
         this.policy = policy;
         this.onCompleted = onCompleted;
         this.multiple = multiple;
         this.label = label;
         this.hint = hint;
+        this.style = style;
         this._config = this;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
@@ -37,12 +40,13 @@ export class FileUpload extends StatefulComponent {
         let config = this._config;
         let picker = context.getService('IFilePicker');
         let uploads = context.getService('IUploads');
+        let slot = InputTheme.merge(theme.input, config.style);
         let enabled = this._live && (picker != null && picker.isAvailable === true) && (uploads != null && uploads.isAvailable === true);
         let invitation = new Column(8, 'start', 'center');
         invitation.add(new Text(config.label ?? (config.multiple ? SdkStrings.uploadDropHere : SdkStrings.uploadDropOneHere), 'label', theme.textPrimary, 2, 'center'));
         invitation.add(new Text(config.hint ?? FileUpload.accepted(config.policy), 'caption', theme.textSecondary, 2, 'center'));
         invitation.add(new Button(config.multiple ? SdkStrings.uploadChooseFiles : SdkStrings.uploadChooseFile, 'secondary', 'small', () => this.choose(picker, uploads), null, { disabled: !enabled }));
-        let area = new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.all(24), background: this._over && enabled ? theme.colors('primary').subtle : theme.surfaceSubtle, borderWidth: this._over && enabled ? 2 : 1, borderColor: this._over && enabled ? theme.colors('primary').base : theme.borderStrong, cornerRadius: new CornerRadii(theme.shape('large')), opacity: enabled ? null : Math.fround(0.6) }), invitation);
+        let area = new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.all(24), background: this._over && enabled ? theme.colors('primary').subtle : slot?.fill ?? theme.surfaceSubtle, borderWidth: this._over && enabled ? 2 : slot?.borderWidth ?? 1, borderColor: this._over && enabled ? theme.colors('primary').base : slot?.borderColor ?? theme.borderStrong, cornerRadius: new CornerRadii(slot?.radius ?? theme.shape('large')), opacity: enabled ? null : Math.fround(0.6) }), invitation);
         let column = new Column(12, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         column.add(new DropTarget(area, (files) => this.send(uploads, files), { onDragOverChanged: (over: boolean) => this.setState(() => this._over = over), enabled: enabled }));
         for (const upload of $eq.collections.listWalk(this._uploads)) column.add(this.rowOf(upload, theme));

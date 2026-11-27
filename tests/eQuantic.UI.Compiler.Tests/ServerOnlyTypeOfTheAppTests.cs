@@ -351,6 +351,8 @@ public sealed class ServerOnlyTypeOfTheAppTests
             data.Add("a field", "    private Ledger? _ledger;", "_ledger is null ? \"none\" : \"some\"", inALibrary);
             data.Add("a parameter", "    private static string Of(Ledger? ledger) => ledger is null ? \"none\" : \"some\";", "Of(null)", inALibrary);
             data.Add("a list and its default", "    private readonly List<Ledger> _all = new();", "_all.FirstOrDefault() is null ? \"none\" : \"some\"", inALibrary);
+            // A runtime collection's factory carries its type arguments (#1866), and a kept-out one is `any` there.
+            data.Add("a queue and a dictionary of it", "    private readonly Queue<Ledger> _waiting = new();\n    private readonly Dictionary<string, Ledger> _byName = new();", "(_waiting.Count + _byName.Count).ToString()", inALibrary);
             data.Add("a Server Action's dictionary parameter", "    [ServerAction]\n    public Task<int> Save(Dictionary<string, Ledger> map) => Task.FromResult(map.Count);", "\"plain\"", inALibrary);
             data.Add("a cast", "    private static object Cast(object o) => (Ledger)o;", "Cast(\"o\").ToString() ?? \"\"", inALibrary);
             data.Add("a nameof", "", "nameof(Ledger) + nameof(Ledger.Total)", inALibrary);

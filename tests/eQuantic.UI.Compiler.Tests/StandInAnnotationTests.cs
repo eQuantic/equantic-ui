@@ -104,7 +104,9 @@ public class StandInAnnotationTests
         {
             // A record's toString prints its members by their C# names, which is text and no type.
             var code = Regex.Replace(twin, @"toString\(\) \{ return `[^`]*`; \}", "");
+            // A module names its own type, as an interface's twin does (#1878), and nothing else its module lacks.
             Regex.Matches(code, @"(?<![\w$.'])(Exception|IThing|Measure|Shade|DayOfWeek|Action)(?![\w$'])")
+                .Where(match => match.Value != name)
                 .Select(match => code.Substring(Math.Max(0, match.Index - 30), Math.Min(60, code.Length - Math.Max(0, match.Index - 30))))
                 .Should().BeEmpty($"{name} names only what its module has");
         }

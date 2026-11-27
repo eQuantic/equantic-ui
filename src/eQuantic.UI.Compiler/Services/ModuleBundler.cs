@@ -34,6 +34,13 @@ public sealed class ModuleBundler : IDisposable
     private Process? _worker;
     private Task? _drainErrors;
 
+    /// <summary>How many files the last bundle wrote, modules, chunks and maps, leaving out the ones bun
+    /// produced as they already were. The edit-to-view measurement holds a save to it (#1909).</summary>
+    public int Written { get; private set; }
+
+    /// <summary>The bytes of the files the last bundle wrote (#1909).</summary>
+    public long WrittenBytes { get; private set; }
+
     /// <summary>A bundler that runs <paramref name="bunPath"/> in <paramref name="workingDirectory"/>.</summary>
     /// <remarks>bun names each module by its path from the folder it runs in, and mixes those names into
     /// the hash a shared chunk is named by. So that folder is named here and never inherited: a bundle is
@@ -72,6 +79,9 @@ public sealed class ModuleBundler : IDisposable
             },
         };
 
+        // Counted afresh for every bundle, a failed one included, so a save never reports the one before it.
+        Written = 0;
+        WrittenBytes = 0;
         JsonObject answer;
         try
         {
@@ -100,7 +110,13 @@ public sealed class ModuleBundler : IDisposable
         {
             var path = Path.GetFullPath(output!["path"]!.GetValue<string>());
             produced.Add(path);
-            if (path.EndsWith(".map", StringComparison.Ordinal) && output["written"]!.GetValue<bool>()) written.Add(path);
+            var wrote = output["written"]!.GetValue<bool>();
+            if (wrote)
+            {
+                Written++;
+                WrittenBytes += File.Exists(path) ? new FileInfo(path).Length : 0;
+            }
+            if (path.EndsWith(".map", StringComparison.Ordinal) && wrote) written.Add(path);
         }
         foreach (var file in Outputs(outputDir))
             if (!produced.Contains(Path.GetFullPath(file))) File.Delete(file);

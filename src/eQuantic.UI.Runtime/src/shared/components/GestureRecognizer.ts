@@ -4,7 +4,7 @@ export abstract class GestureRecognizer {
     static $interfaces = ['eQuantic.UI.Primitives.IGestureArenaMember'];
 
     constructor() {
-        this._entries = $eq.collections.dictionary();
+        this._entries = $eq.collections.dictionary<number, GestureArenaEntry>();
         this._tracked = [];
         this._router = null;
         this._primary = null;

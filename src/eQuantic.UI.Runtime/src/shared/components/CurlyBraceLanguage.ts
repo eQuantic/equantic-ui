@@ -61,7 +61,7 @@ export abstract class CurlyBraceLanguage {
             let $slots: any = CurlyBraceLanguage.$slots = {};
             try {
                 $slots.punctuation = null;
-                $slots.punctuation = $eq.collections.hashSetOf(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']);
+                $slots.punctuation = $eq.collections.hashSetOf<string>(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']);
             } catch ($error) {
                 CurlyBraceLanguage.$slots = null;
                 throw CurlyBraceLanguage.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.CurlyBraceLanguage', $error);

@@ -61,6 +61,37 @@ public class HotReloadTests
         two.NeedsRender.Should().BeTrue("every window of the app, not just the one in front");
     }
 
+    /// <summary>
+    /// What failed <see cref="AnAppliedEditWakesEveryLiveHost"/> once under a load near 300 (#1200): work an earlier test
+    /// left running, posted to the thread that draws after its test ended, told every live host its tree had changed
+    /// (#1239). A post is the process's now and marks no host's tree, so a still host asks for no frame whatever is
+    /// posted around it, while the frame the work needs is still wanted until it runs.
+    /// </summary>
+    [Fact]
+    public void AStillHost_AsksForNoFrame_WhileLateWorkIsPostedAroundIt()
+    {
+        var one = new PhotonHost(new Counter(), PhotonTheme.Instance, ThemeMode.Light, 400, 300);
+        var two = new PhotonHost(new Counter(), PhotonTheme.Instance, ThemeMode.Light, 400, 300);
+        one.RenderFrame(new DisplayListBuilder());
+        two.RenderFrame(new DisplayListBuilder());
+
+        // As an earlier test's async work finishing late, on a thread of its own.
+        var ran = false;
+        var late = new Thread(() => PhotonDispatcher.Shared.Post(() => ran = true));
+        late.Start();
+        late.Join();
+
+        one.NeedsRender.Should().BeFalse("a still tree presents nothing, whatever another thread posted");
+        two.NeedsRender.Should().BeFalse("nor does the other window's");
+        one.WantsFrame(16).Should().BeTrue("the posted work still gets the frame it runs in");
+
+        one.RenderFrame(new DisplayListBuilder(), 16);
+        // Whether the queue is empty after the frame is the process's to say, and late work of another test could
+        // fill it again: the case reads its own work instead.
+        ran.Should().BeTrue("the frame ran the posted work at its top");
+        two.NeedsRender.Should().BeFalse("and the other window's tree never changed");
+    }
+
     [Fact]
     public void TheContentCachesAreDroppedOnce_OnTheRenderThread()
     {
