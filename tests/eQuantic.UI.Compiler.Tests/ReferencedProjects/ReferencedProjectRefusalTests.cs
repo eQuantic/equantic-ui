@@ -151,6 +151,8 @@ public sealed class ReferencedProjectRefusalTests
         {
             public const string Kind = "order";
 
+            public enum Status { Open, Paid }
+
             public decimal Total { get; set; }
 
             public static Order Stored(string id) => new() { Total = decimal.Parse(File.ReadAllText(id + ".txt")) };
@@ -251,15 +253,17 @@ public sealed class ReferencedProjectRefusalTests
 
     /// <summary>
     /// Syntax that names a type and writes no reference to it: a cast of a null, a <c>default</c>, a
-    /// delegate's type. Nothing could answer for each of these as an owner answered for a name above, and
-    /// each reached the Domain's <c>Order</c> beside the app's, where the build read its file and refused
-    /// what it does (#830). The modules share one flat namespace, so the page's <c>./Order</c> is the
-    /// app's own: the declaration its own project holds is the one the import means.
+    /// delegate's type, a constant in the old <c>is</c> form, a member of an enum nested in the class. Each
+    /// reached the Domain's <c>Order</c> beside the app's, where the build read its file and refused what it
+    /// does (#830): the page's <c>./Order</c> was mapped back to every <c>Order</c> its syntax names. It means
+    /// the <c>Order</c> its writers wrote, the app's record, which they record by its symbol.
     /// </summary>
     [Theory]
     [InlineData("a cast", "var source = (Domain.Order?)null; return source is null ? \"\" : \"x\";")]
     [InlineData("a default", "var source = default(Domain.Order); return source is null ? \"\" : \"x\";")]
     [InlineData("a delegate over it", "System.Func<Domain.Order?, string> read = order => order is null ? \"\" : \"x\"; return read(null);")]
+    [InlineData("a constant in the old is form", "object kind = \"order\"; return kind is Domain.Order.Kind ? \"k\" : \"\";")]
+    [InlineData("a member of an enum nested in it", "var status = Domain.Order.Status.Paid; return status.ToString();")]
     public void SyntaxThatWritesNoReference_ToALibraryTypeOfTheAppsName_ReachesNothing(string what, string probe)
     {
         using var solution = new Solution()
@@ -291,6 +295,57 @@ public sealed class ReferencedProjectRefusalTests
         var built = solution.Build();
 
         built.Failed.Should().BeFalse($"{what} writes no reference to the Domain's Order:\n{built.Errors}");
+        built.Errors.Should().BeEmpty();
+        built.Module("Order").Should().Contain("total").And.NotContain("stored");
+        built.Modules.Should().BeEquivalentTo(["Home", "Order"]);
+    }
+
+    /// <summary>The app's Order with a static of its own, which a page reads off the type.</summary>
+    private const string AppOrderWithAnEmpty =
+        "namespace App.Model;\n\npublic sealed record Order(decimal Total)\n{\n    public static readonly Order Empty = new(0m);\n}\n";
+
+    /// <summary>
+    /// The app's <c>Order</c> written every other way a page writes a type, each beside a cast of a null to the
+    /// Domain's (#830): a parameter's annotation, a property's, a static read off the type and a Server Action's
+    /// answer, whose spec the stub writes. Each writer records the app's record, so the import means it alone.
+    /// </summary>
+    [Theory]
+    [InlineData("a parameter", "private static string Show(Order order) => order.Total.ToString();", "Show(new Order(1m))")]
+    [InlineData("a property", "public Order Current { get; set; } = new(0m);", "Current.Total.ToString()")]
+    [InlineData("a static read", "", "Order.Empty.Total.ToString()")]
+    [InlineData("a Server Action's answer", "[ServerAction]\n    public Task<Order> Load() => Task.FromResult(new Order(1m));", "\"x\"")]
+    public void TheAppsOwnTypeWrittenAnyWay_BesideACastToTheLibrarysOfItsName_ReachesTheAppsAlone(string what, string member, string use)
+    {
+        using var solution = new Solution()
+            .Library("Domain", files: [("Order.cs", DomainOrder)])
+            .App("App", references: ["Domain"], globalUsings: SharedLibrary.Factories, files:
+            [
+                ("Model/Order.cs", AppOrderWithAnEmpty),
+                ("Screens/Home.cs",
+                    $$"""
+                    using eQuantic.UI.Primitives;
+                    using App.Model;
+
+                    namespace App.Screens;
+
+                    public sealed class Home : StatefulComponent
+                    {
+                        {{member}}
+
+                        private static string Probe()
+                        {
+                            var source = (Domain.Order?)null;
+                            return source is null ? "" : "x";
+                        }
+
+                        public override VisualNode Build(ComponentContext context) =>
+                            Text({{use}} + Probe(), TypeRole.BodyM, context.Theme.TextPrimary, maxLines: 1);
+                    }
+                    """),
+            ]);
+        var built = solution.Build();
+
+        built.Failed.Should().BeFalse($"{what} writes the app's Order and the cast writes nothing:\n{built.Errors}");
         built.Errors.Should().BeEmpty();
         built.Module("Order").Should().Contain("total").And.NotContain("stored");
         built.Modules.Should().BeEquivalentTo(["Home", "Order"]);
