@@ -655,8 +655,8 @@ public static class UI
     /// each of <paramref name="groups"/> under its heading, one index across them all.</summary>
     public static Select Select(IReadOnlyList<string>? options = null, int selectedIndex = -1,
         Action<int>? onChanged = null, string? placeholder = null, IReadOnlyList<OptionGroup>? groups = null,
-        InputTheme? style = null, Func<int, VisualNode>? optionBuilder = null) =>
-        new Select(options, selectedIndex, onChanged, placeholder, groups, style, optionBuilder);
+        InputTheme? style = null, Func<int, VisualNode>? optionBuilder = null, string label = "") =>
+        new Select(options, selectedIndex, onChanged, placeholder, groups, style, optionBuilder, label);
 
     /// <summary>The full text field: label, helper, error, leading icon, and a trailing SLOT
     /// for whatever belongs at the end of the row — a picker's opener, a clear affordance.
