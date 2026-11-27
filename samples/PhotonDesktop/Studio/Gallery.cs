@@ -27,6 +27,7 @@ public enum GallerySection
     Overlays = 12,
     Device = 13,
     Culture = 14,
+    Layout = 15,
 }
 
 /// <summary>
@@ -62,6 +63,7 @@ public static partial class Gallery
         GallerySection.Charts => "Charts",
         GallerySection.Board => "Board",
         GallerySection.Culture => "Language",
+        GallerySection.Layout => "Custom layout",
         _ => "Device",
     };
 
@@ -75,6 +77,7 @@ public static partial class Gallery
             or GallerySection.Board => "Data display",
         GallerySection.Navigation => "Navigation",
         GallerySection.Feedback or GallerySection.Overlays => "Feedback",
+        GallerySection.Layout => "Layout",
         _ => "Device",   // Language belongs here too: what the MACHINE says, taken as a service.
     };
 
@@ -116,6 +119,8 @@ public static partial class Gallery
             "Cards a pointer or the keyboard moves inside a column and across columns — one C# for every target.",
         GallerySection.Culture =>
             "Two cultures in one window: resx strings and .NET formats, switched without a reload.",
+        GallerySection.Layout =>
+            "Children laid out by a delegate written in C#: a masonry grid and a radial menu, the web's own layout too.",
         _ => "What the DEVICE can do, taken through a constructor like any other dependency.",
     };
 
@@ -135,6 +140,7 @@ public static partial class Gallery
         GallerySection.Charts => Icons.Table,
         GallerySection.Board => Icons.Table,
         GallerySection.Culture => Icons.Mail,
+        GallerySection.Layout => Icons.Table,
         _ => Icons.Person,
     };
 
@@ -155,6 +161,7 @@ public static partial class Gallery
         GallerySection.Charts => 1,
         GallerySection.Board => 2,
         GallerySection.Culture => 2,
+        GallerySection.Layout => 2,
         _ => 6,
     };
 
@@ -176,6 +183,7 @@ public static partial class Gallery
         GallerySection.Charts => Charts(theme),
         GallerySection.Board => Board(theme, state, mutate),
         GallerySection.Culture => Culture(theme, state),
+        GallerySection.Layout => CustomLayouts(theme),
         _ => Device(theme, state, mutate),
     };
 

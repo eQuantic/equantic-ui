@@ -83,6 +83,9 @@ export {
   Pinned,
   AdaptiveNode,
   LayoutBuilder,
+  LayoutId,
+  CustomMultiChildLayout,
+  CustomSingleChildLayout,
   Vector,
   Canvas,
   CanvasPointer,
@@ -242,3 +245,6 @@ export { registerDeviceCapabilities } from './devices/register';
 // The process's dispatcher, null where there is one thread: a twin that asks for it runs at once.
 export { UiDispatcher } from './devices/ui-dispatcher';
 export type { PickedImage } from './devices/photo-library';
+
+// The bases an app's custom layout delegate extends (#1556).
+export { MultiChildLayoutDelegate, SingleChildLayoutDelegate } from './layout-delegates';

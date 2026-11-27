@@ -388,6 +388,9 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
 
     /// <summary>The builder's child, which the layout built and measured: the node draws nothing of its own.</summary>
     public Nothing Visit(LayoutBuilder node, EmitState s) { Descend(s); return Nothing.Value; }
+    public Nothing Visit(CustomMultiChildLayout node, EmitState s) { Descend(s); return Nothing.Value; }
+    public Nothing Visit(CustomSingleChildLayout node, EmitState s) { Descend(s); return Nothing.Value; }
+    public Nothing Visit(LayoutId node, EmitState s) { Descend(s); return Nothing.Value; }
 
     /// <summary>Resolved into geometry: a weight the flex pass already spent.</summary>
     public Nothing Visit(Flexible node, EmitState s) { Descend(s); return Nothing.Value; }

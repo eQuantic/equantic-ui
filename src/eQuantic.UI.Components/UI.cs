@@ -449,6 +449,19 @@ public static class UI
     public static LayoutBuilder LayoutBuilder(Func<BoxConstraints, VisualNode> builder) =>
         new LayoutBuilder(builder);
 
+    /// <summary>Children laid out by <paramref name="layoutDelegate"/>, a delegate the app writes in C#: each child is
+    /// a <see cref="LayoutId"/>, measured with the constraints the delegate chooses and placed where it says.</summary>
+    public static CustomMultiChildLayout CustomMultiChildLayout(MultiChildLayoutDelegate layoutDelegate,
+        IReadOnlyList<LayoutId>? children = null) =>
+        new CustomMultiChildLayout(layoutDelegate, children);
+
+    /// <summary>The id <paramref name="id"/> a custom layout's delegate knows <paramref name="child"/> by.</summary>
+    public static LayoutId LayoutId(object id, VisualNode child) => new LayoutId(id, child);
+
+    /// <summary>One child sized and placed by <paramref name="layoutDelegate"/>, a delegate the app writes in C#.</summary>
+    public static CustomSingleChildLayout CustomSingleChildLayout(SingleChildLayoutDelegate layoutDelegate, VisualNode child) =>
+        new CustomSingleChildLayout(layoutDelegate, child);
+
     /// <summary>A LIVE camera surface. Explicitly sized like <see cref="Image"/>, and for the same
     /// reason: layout cannot infer an extent from a source that has not answered yet. A null
     /// <paramref name="session"/> draws the placeholder, so "not started yet" needs no branch.</summary>

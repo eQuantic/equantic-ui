@@ -1,3 +1,4 @@
+import type { MultiChildLayoutDelegate, SingleChildLayoutDelegate } from './layout-delegates';
 import type { BoxConstraints, ContextRequest, FontFamily, Point, PointerEvent, Rect, Size } from './value-types';
 import type { PickedFile } from './picked-file';
 /**
@@ -214,6 +215,32 @@ export interface LayoutBuilderValue {
   nodeKind: 'layoutBuilder';
   key?: string | null;
   builder: (constraints: BoxConstraints) => VisualNodeValue;
+}
+
+/** Wire shape of the C# `LayoutId` (#1556): the id a custom layout's delegate knows a child by. */
+export interface LayoutIdValue {
+  nodeKind: 'layoutId';
+  key?: string | null;
+  id: unknown;
+  child: VisualNodeValue;
+}
+
+/** Wire shape of the C# `CustomMultiChildLayout` (#1556): children laid out by the app's delegate. */
+export interface CustomMultiChildLayoutValue {
+  nodeKind: 'customMultiChildLayout';
+  key?: string | null;
+  delegate: MultiChildLayoutDelegate;
+  children?: LayoutIdValue[] | null;
+}
+
+/** Wire shape of the C# `CustomSingleChildLayout` (#1556): one child, laid out as a layout of one. */
+export interface CustomSingleChildLayoutValue {
+  nodeKind: 'customSingleChildLayout';
+  key?: string | null;
+  delegate: SingleChildLayoutDelegate;
+  child: VisualNodeValue;
+  multiChildDelegate: MultiChildLayoutDelegate;
+  laidOutChild: LayoutIdValue;
 }
 
 /** Wire shape of the C# `KeyChord`: a DOM `KeyboardEvent.key` name plus [Flags] KeyModifiers

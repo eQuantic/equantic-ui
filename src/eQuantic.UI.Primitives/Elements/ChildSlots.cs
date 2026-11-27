@@ -67,6 +67,10 @@ internal static class ChildSlots
         // The child is what the builder answers for the room the node has, which only the realizer knows,
         // in its layout pass or right after it: the slot is built when the realizer shows it.
         "layoutBuilder" => NodeSlots.WithDeferred(NodeSlots.One(null), 0),
+        // The children are built in the build phase, as a stack's are: only their places wait for the layout.
+        "customMultiChildLayout" => NodeSlots.Listed(((CustomMultiChildLayout)node).Children),
+        "customSingleChildLayout" => NodeSlots.One(((CustomSingleChildLayout)node).LaidOutChild),
+        "layoutId" => NodeSlots.One(((LayoutId)node).Child),
         "link" => NodeSlots.One(((Link)node).Child),
         "loopMotion" => NodeSlots.One(((LoopMotion)node).Child),
         "navigable" => NodeSlots.Listed(((Navigable)node).Rows),

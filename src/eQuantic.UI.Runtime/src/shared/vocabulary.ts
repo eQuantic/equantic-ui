@@ -32,6 +32,7 @@ import { CanvasPointer } from './canvas-pointer';
 import type { PickedFile } from './picked-file';
 export { CanvasPointer };
 import { floatText } from './css-values';
+import { SingleChildLayout, type MultiChildLayoutDelegate, type SingleChildLayoutDelegate } from './layout-delegates';
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext, registerDirectionalityNode, registerThemeNode } from './photon-context';
 import {
@@ -585,6 +586,62 @@ export class LayoutBuilder extends VisualNode {
     config?: EqConfig,
   ) {
     super();
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `LayoutId` (#1556): the id a custom layout's delegate knows a child by, compared by value.
+ */
+export class LayoutId extends VisualNode {
+  readonly nodeKind = 'layoutId';
+
+  constructor(
+    readonly id: unknown,
+    public child: VisualChild,
+    config?: EqConfig,
+  ) {
+    super();
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `CustomMultiChildLayout` (#1556): children laid out by a delegate the app writes in C#. The
+ * box fills on both axes as a builder's does; the browser runs the delegate after the pass and places each child.
+ */
+export class CustomMultiChildLayout extends VisualNode {
+  readonly nodeKind = 'customMultiChildLayout';
+  readonly children: LayoutId[];
+
+  constructor(
+    readonly delegate: MultiChildLayoutDelegate,
+    children: LayoutId[] | null = null,
+    config?: EqConfig,
+  ) {
+    super();
+    this.children = children ?? [];
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `CustomSingleChildLayout` (#1556): one child sized and placed by the app's delegate, laid out
+ * as a custom layout of one through `multiChildDelegate`, over `laidOutChild`.
+ */
+export class CustomSingleChildLayout extends VisualNode {
+  readonly nodeKind = 'customSingleChildLayout';
+  readonly multiChildDelegate: MultiChildLayoutDelegate;
+  readonly laidOutChild: LayoutId;
+
+  constructor(
+    readonly delegate: SingleChildLayoutDelegate,
+    readonly child: VisualChild,
+    config?: EqConfig,
+  ) {
+    super();
+    this.multiChildDelegate = new SingleChildLayout(delegate);
+    this.laidOutChild = new LayoutId(SingleChildLayout.childId, child);
     if (config) Object.assign(this, config);
   }
 }

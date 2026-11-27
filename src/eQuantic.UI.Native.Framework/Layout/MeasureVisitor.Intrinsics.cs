@@ -47,6 +47,9 @@ internal sealed partial class MeasureVisitor
         // child's would keep it as wide as the child it built for a wider room, and the builder would
         // never be told the narrower room it is in, which is the one thing it exists to hear.
         LayoutBuilder => 0,
+        // A custom layout's floor is nothing, as a builder's: its room is a filling box's, and a floor at what
+        // its delegate answered would keep it from ever being told a narrower room.
+        CustomMultiChildLayout or CustomSingleChildLayout => 0,
         Spinner spinner => spinner.Size,
         CameraPreview camera => camera.Width,
         Spacer spacer => spacer.FixedLength,
@@ -173,6 +176,7 @@ internal sealed partial class MeasureVisitor
             FlexNode { Height.Kind: SizeKind.Fill, Width.Kind: not SizeKind.Fixed } flex =>
                 (flex.Padding.Vertical, flex.Padding.Vertical),
             LayoutBuilder => (0, 0),
+            CustomMultiChildLayout or CustomSingleChildLayout => (0, 0),
             ScrollView { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => (0, 0),
             TableViewport { Height.Kind: not (SizeKind.Fixed or SizeKind.WindowMinus) } => (0, 0),
             _ => null,
@@ -274,6 +278,8 @@ internal sealed partial class MeasureVisitor
         Canvas canvas => (horizontal ? canvas.Width : canvas.Height).Kind,
         // A builder's box fills on both axes, whatever it built inside it.
         LayoutBuilder => SizeKind.Fill,
+        // A custom layout takes its room as a builder does.
+        CustomMultiChildLayout or CustomSingleChildLayout => SizeKind.Fill,
         WebFrame frame => (horizontal ? frame.Width : frame.Height).Kind,
         Image or Icon or Vector or Spinner or CameraPreview => SizeKind.Fixed,
         // A drawing's width is dp or a fill of what its parent offers; its height always follows

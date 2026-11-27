@@ -32,6 +32,7 @@ import { scheduleTableViewportCommit } from './table-viewports';
 import { scheduleInViewCommit } from './in-view';
 import { scheduleCanvasCommit } from './canvas-surface';
 import { scheduleLayoutBuilderCommit } from './layout-builders';
+import { scheduleCustomLayoutCommit } from './custom-layouts';
 import { scheduleAnchorOffset } from './sticky-offset';
 import { scheduleScrolledSync } from './scrolled-pinned';
 import { setPassInvalidator } from './pass-invalidator';
@@ -206,6 +207,8 @@ export function exitPass(shortcutsDeclaredBy?: ShortcutDeclarer): void {
   // A layout builder's box is measured once the pass is WRITTEN, and a new room builds the component
   // that holds the builder (layout-builders.ts).
   scheduleLayoutBuilderCommit();
+  // A custom layout's children are placed once the pass is WRITTEN, by the app's delegate (custom-layouts.ts).
+  scheduleCustomLayoutCommit();
   // Republished per pass, and DEFERRED for the same reason the in-view commit above is: the chrome
   // is not in the document until the render manager writes this pass's tree, so measuring here
   // would find nothing on a client-only render. Costs a write only when the number moved.

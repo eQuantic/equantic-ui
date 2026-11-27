@@ -25,6 +25,8 @@ export { num, tokenValue };
 import { DomCanvasPainter } from './canvas-painter';
 import { declareCanvas } from './canvas-surface';
 import { declareLayoutBuilder } from './layout-builders';
+import { declareCustomLayout } from './custom-layouts';
+import type { MultiChildLayoutDelegate } from './layout-delegates';
 import { installDraggableController } from '../dom/draggable';
 import { installSortableController } from '../dom/sortable';
 import { dropHandlers, installDropGuard } from '../dom/file-drop';
@@ -81,6 +83,9 @@ import type {
   ColorTokenValue,
   CanvasNodeValue,
   LayoutBuilderValue,
+  CustomMultiChildLayoutValue,
+  CustomSingleChildLayoutValue,
+  LayoutIdValue,
   DrawingNode,
   VectorGradientValue,
   VectorPaintValue,
@@ -837,6 +842,18 @@ function lowerNodeKind(
     // C# twin (#1555): the builder's box, empty until the browser has measured the room it is given.
     case 'layoutBuilder':
       return lowerLayoutBuilder(node as unknown as LayoutBuilderValue, context, path);
+    // C# twin (#1556): the children in wrappers at the box's origin, placed after the pass by the app's delegate.
+    case 'customMultiChildLayout': {
+      const layout = node as unknown as CustomMultiChildLayoutValue;
+      return lowerCustomLayout(layout, layout.delegate, layout.children ?? [], context, path);
+    }
+    case 'customSingleChildLayout': {
+      const layout = node as unknown as CustomSingleChildLayoutValue;
+      return lowerCustomLayout(layout, layout.multiChildDelegate, [layout.laidOutChild], context, path);
+    }
+    // Outside a custom layout an id says nothing, and the node is its child's.
+    case 'layoutId':
+      return lowerNode((node as unknown as LayoutIdValue).child, context, horizontalAxis, path + '/0');
     // C# twin: artwork stays VECTOR in the DOM — one <path> per shape, the paint the file chose.
     case 'drawing':
       return lowerDrawing(node as unknown as DrawingNode);
@@ -3798,7 +3815,54 @@ function lowerLayoutBuilder(node: LayoutBuilderValue, context: LoweringContext, 
   return box;
 }
 
-function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNode {
+/**
+ * A custom layout (#1556; C# twin `LowerCustomLayout`): the box that fills on both axes, positioned and hidden until
+ * the pass's commit places its children, each in a wrapper at the origin that passes the pointer through, with the
+ * box its bounds are set on inside it. The box is marked for the commit (custom-layouts.ts); the server writes no
+ * mark, and the client's adds it, as a builder's.
+ */
+function lowerCustomLayout(
+  node: object,
+  delegate: MultiChildLayoutDelegate,
+  children: LayoutIdValue[],
+  context: LoweringContext,
+  path: string,
+): HtmlNode {
+  const { id } = declareCustomLayout(
+    positionOf(frameOf(context), node),
+    delegate,
+    children.map((child) => child.id),
+  );
+  const box = lowerBox({ nodeKind: 'box', style: BUILDER_BOX_STYLE, child: null }, context, path, {
+    position: 'relative',
+    visibility: 'hidden',
+  });
+  children.forEach((child, i) => {
+    const at = `${path}/${i}`;
+    const content = lowerBox({ nodeKind: 'box', style: {} as BoxStyleValue, child: child.child }, context, at, {
+      'pointer-events': 'auto',
+    });
+    box.children.push(
+      element(
+        'div',
+        {
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          display: 'flex',
+          'flex-direction': 'column',
+          'align-items': 'flex-start',
+          'pointer-events': 'none',
+        },
+        [content],
+      ),
+    );
+  });
+  box.attributes['data-eq-custom-layout'] = id;
+  return box;
+}
+
+function lowerBox(box: BoxNode, context: LoweringContext, path: string, extra?: StyleEntries): HtmlNode {
   const style = box.style ?? ({} as BoxStyleValue);
   // A CAP with no decided height bounds the child (the C# twin, CapsItsChild): as a flex column, a
   // child that may shrink takes the capped height and scrolls. As a block, a scroller's
@@ -3908,6 +3972,8 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
   if (focus && simulatedState & SIMULATED_FOCUSED) applyDiff(entries, focus, style);
   if (pressed && simulatedState & SIMULATED_PRESSED) applyDiff(entries, pressed, style);
 
+  // What a caller places the box with beside its look: a custom layout's room and its children's boxes (#1556).
+  if (extra) Object.assign(entries, extra);
   const result = element('div', entries);
 
   // Inside an enabled control the hover is the control's (C# twin, #614).
@@ -4502,8 +4568,11 @@ function capsAt(node: unknown): SizeValueValue | undefined {
 /** Whether a node requests Fill per axis — wrappers must stretch for the 100% chain to reach it. */
 function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
   switch (node.nodeKind) {
-    // A builder's box fills on both axes, whatever it built inside it (C# twin).
+    // A builder's box fills on both axes, whatever it built inside it (C# twin), and a custom layout takes its
+    // room as a builder does.
     case 'layoutBuilder':
+    case 'customMultiChildLayout':
+    case 'customSingleChildLayout':
       return { width: true, height: true };
     case 'box': {
       const style = (node as BoxNode).style ?? ({} as BoxStyleValue);

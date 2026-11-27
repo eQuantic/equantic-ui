@@ -235,6 +235,19 @@ internal sealed partial class WebLoweringVisitor(
     /// <summary>A builder's box with nothing built in it: a box that fills on both axes.</summary>
     private static readonly Box UnbuiltBuilder = new(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill });
 
+    /// <summary>
+    /// A custom layout's box, with every child the server can write already in it: each in a wrapper at the box's
+    /// origin, and the box hidden until the browser runs the delegate and places them (#1556). The browser's first
+    /// lowering writes the same markup, so hydration adopts the children and their server data.
+    /// </summary>
+    public HtmlElement? Visit(CustomMultiChildLayout layout, bool? horizontalAxis) => LowerCustomLayout(layout.Children);
+
+    /// <inheritdoc cref="Visit(CustomMultiChildLayout, bool?)"/>
+    public HtmlElement? Visit(CustomSingleChildLayout layout, bool? horizontalAxis) => LowerCustomLayout([layout.LaidOutChild]);
+
+    /// <summary>Outside a custom layout an id says nothing, and the node is its child's.</summary>
+    public HtmlElement? Visit(LayoutId id, bool? horizontalAxis) => Lower(id.Child, horizontalAxis, LoweringPath.Child);
+
     public HtmlElement? Visit(Spinner spinner, bool? horizontalAxis) => LowerSpinner(spinner);
 
     public HtmlElement? Visit(Primitives.Image image, bool? horizontalAxis) => LowerImage(image);
@@ -390,6 +403,8 @@ internal sealed partial class WebLoweringVisitor(
         Drawing drawing => (drawing.Width.Kind == SizeKind.Fill, false),
         // A builder's box fills on both axes, whatever it built inside it.
         LayoutBuilder => (true, true),
+        // A custom layout takes its room as a builder does.
+        CustomMultiChildLayout or CustomSingleChildLayout => (true, true),
         // Every wrapper the vocabulary calls layout-transparent, by its one rule rather than a list.
         // A wrapper missing from a list does not fail — it answers (false, false), which reads as
         // "the child does not fill" and is indistinguishable from the truth until a child actually

@@ -110,6 +110,16 @@ public interface IVisualNodeVisitor<in TState, out TResult>
     /// pass or right after it, and shows what it answers in the node's one slot.</summary>
     TResult Visit(LayoutBuilder node, TState state);
 
+    /// <summary>Children laid out by the app's delegate: the realizer runs it, in its layout pass or right after
+    /// it, and places each child where the delegate says.</summary>
+    TResult Visit(CustomMultiChildLayout node, TState state);
+
+    /// <summary>One child sized and placed by the app's delegate, laid out as a custom layout of one.</summary>
+    TResult Visit(CustomSingleChildLayout node, TState state);
+
+    /// <summary>A child known to a custom layout's delegate by an id; it lays out as its child.</summary>
+    TResult Visit(LayoutId node, TState state);
+
     TResult Visit(Link node, TState state);
 
     TResult Visit(LoopMotion node, TState state);

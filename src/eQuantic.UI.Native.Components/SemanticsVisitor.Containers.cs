@@ -69,6 +69,9 @@ internal sealed partial class SemanticsVisitor
 
     /// <inheritdoc cref="PureLayout"/>
     public bool Visit(LayoutBuilder node, LayoutNode laidOut) => PureLayout;
+    public bool Visit(CustomMultiChildLayout node, LayoutNode laidOut) => PureLayout;
+    public bool Visit(CustomSingleChildLayout node, LayoutNode laidOut) => PureLayout;
+    public bool Visit(LayoutId node, LayoutNode laidOut) => PureLayout;
 
     /// <inheritdoc cref="PureLayout"/>
     public bool Visit(Grid node, LayoutNode laidOut) => PureLayout;

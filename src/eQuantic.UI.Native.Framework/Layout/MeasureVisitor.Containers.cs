@@ -625,6 +625,8 @@ internal sealed partial class MeasureVisitor
         Drawing drawing => (drawing.Width.Kind == SizeKind.Fill, false),
         // A builder's box fills on both axes, whatever it built inside it.
         LayoutBuilder => (true, true),
+        // A custom layout takes its room as a builder does.
+        CustomMultiChildLayout or CustomSingleChildLayout => (true, true),
         SingleChildNode wrapper when wrapper.IsLayoutTransparent() => FillsOf(wrapper.Child),
         _ => (false, false),
     };

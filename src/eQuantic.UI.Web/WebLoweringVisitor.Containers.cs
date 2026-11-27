@@ -838,6 +838,50 @@ internal sealed partial class WebLoweringVisitor
         && box.Style.BorderWidth == 0
         && box.Style.Elevation == 0;
 
+    /// <summary>
+    /// A custom layout (#1556): the room is a box that fills, as a builder's is, positioned so its children's
+    /// wrappers are placed against it, and hidden until they are. Each child stands in a wrapper at the origin that
+    /// passes the pointer through, and inside it the box its bounds are set on. The browser sets each wrapper to the
+    /// room the delegate gives the child, reads the box, and moves the wrapper to the child's offset.
+    /// </summary>
+    private HtmlElement LowerCustomLayout(IReadOnlyList<LayoutId> children)
+    {
+        var element = LowerBox(UnbuiltBuilder);
+        element.Style.Position = Position.Relative;
+        element.Style.Visibility = "hidden";
+        for (var i = 0; i < children.Count; i++)
+        {
+            var child = children[i];
+            if (At(LoweringPath.Item(i), () => LowerLaidOutChild(child)) is { } wrapper) element.Children.Add(wrapper);
+        }
+        return element;
+    }
+
+    /// <summary>
+    /// One child of a custom layout: a wrapper at the origin, a flex column that starts its child at its corner, as
+    /// the room Photon measures a child's box in, and the child's box inside it, which takes the pointer.
+    /// </summary>
+    private HtmlElement? LowerLaidOutChild(LayoutId child)
+    {
+        var box = LowerBox(new Box(default, child.Child));
+        box.Style.PointerEvents = "auto";
+        var wrapper = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Position = Position.Absolute,
+                Top = "0",
+                Left = "0",
+                Display = Display.Flex,
+                FlexDirection = FlexDirection.Column,
+                AlignItems = AlignItem.FlexStart,
+                PointerEvents = "none",
+            },
+        };
+        wrapper.Children.Add(box);
+        return wrapper;
+    }
+
     private HtmlElement LowerBox(Box box)
     {
         var style = box.Style;

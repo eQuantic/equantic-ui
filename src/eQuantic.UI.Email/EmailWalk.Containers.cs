@@ -28,6 +28,9 @@ internal abstract partial class EmailWalk
     public Nothing Visit(Grid node, Nothing state) => Refuse(node);
 
     public Nothing Visit(LayoutBuilder node, Nothing state) => Refuse(node);
+    public Nothing Visit(CustomMultiChildLayout node, Nothing state) => Refuse(node);
+    public Nothing Visit(CustomSingleChildLayout node, Nothing state) => Refuse(node);
+    public Nothing Visit(LayoutId node, Nothing state) => Refuse(node);
 
     public Nothing Visit(Overlay node, Nothing state) => Refuse(node);
 

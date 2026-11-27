@@ -128,6 +128,9 @@ export {
   GridTrack,
   AdaptiveNode,
   LayoutBuilder,
+  LayoutId,
+  CustomMultiChildLayout,
+  CustomSingleChildLayout,
   Anchored,
   StyleDiff,
   ShadowSpec,
@@ -424,3 +427,6 @@ export { WebPhotoLibrary } from './shared/devices/photo-library';
 export { WebFilePicker } from './shared/devices/file-picker';
 export { WebBiometrics } from './shared/devices/biometrics';
 export type { PickedImage } from './shared/devices/photo-library';
+
+// The bases an app's custom layout delegate extends (#1556).
+export { MultiChildLayoutDelegate, SingleChildLayoutDelegate } from './shared/layout-delegates';
