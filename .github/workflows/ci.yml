@@ -585,13 +585,16 @@ jobs:
           scope: ${{ github.job }}
 
       # The version-mark guard compares each release's tree with the one before it, so it needs the
-      # release tags and none of the history between them: depth one is enough. Without them it
-      # would answer "unreleased" for everything and pass having checked nothing. The release tags
-      # only, not every branch as well, which the guard never reads (#999).
+      # release tags and none of the history between them. Without them it would answer "unreleased"
+      # for everything and pass having checked nothing. The release tags only, not every branch as
+      # well, which the guard never reads (#999). Two deep, as the checkout: on a shallow clone a fetch
+      # sets each tip's history to its depth, and a release commit is its own tag's tip, so a fetch one
+      # deep cut it to a root and the served runtime's budget lost the parent it measures from (#1930,
+      # held by ReleaseCheckoutTests).
       - name: Fetch the release tags (for the version-mark guard)
         if: env.EQ_RUN == 'true'
         shell: bash
-        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
+        run: git fetch --force --no-tags --depth=2 origin '+refs/tags/v*:refs/tags/v*'
 
       - name: Check out the wiki (for the docs guards)
         if: env.EQ_RUN == 'true'
@@ -712,7 +715,7 @@ jobs:
       # rather than pass having read nothing. The same two steps as `test` above, for the same reasons.
       - name: Fetch the release tags (for the version-mark guard)
         shell: bash
-        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
+        run: git fetch --force --no-tags --depth=2 origin '+refs/tags/v*:refs/tags/v*'
 
       - name: Check out the wiki (for the docs guards)
         shell: bash
