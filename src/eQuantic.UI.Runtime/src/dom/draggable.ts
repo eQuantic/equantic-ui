@@ -18,9 +18,16 @@
  * `translate` resolves in the surface's parent's space, so that is where the finger is read
  * (`gestureSpace`): along the track as it is drawn under a turned ancestor, and in the surface's own
  * pixels under a scaled one, as Photon reads it (#1195, #1204).
+ *
+ * A horizontal surface is measured toward the END of the direction where it sits (#1569): at pointerdown
+ * it reads whether its surface reads right to left, and then the finger's travel and the painted
+ * `translate` are both multiplied by -1, after `gestureSpace` has settled the screen. Min, Max, the
+ * rest and the offset it reports are all in that logical space, so a component that wrote them for
+ * "toward the end" works in both directions with no test of its own.
  */
 import { gestureSpace } from './gesture-space';
 import { followPointer, pointerDownDelegate, SLOP } from './pointer-gesture';
+import { readsRightToLeft } from './reading-direction';
 
 const delegate = pointerDownDelegate(onPointerDown);
 
@@ -74,8 +81,13 @@ function onPointerDown(down: Event): void {
   const startY = pointer.clientY;
   const slop = space.onScreen(horizontal, SLOP);
 
+  // Which way "toward the end" points on the screen, read where the gesture starts and held to its
+  // release, as the space is. A vertical surface has no end to the side: it is always 1.
+  const sign = horizontal && readsRightToLeft(surface) ? -1 : 1;
+
   // How far the finger has carried the surface along its own axis, in the space its offset is in.
-  const travelled = (ev: PointerEvent): number => space.along(horizontal, ev.clientX - startX, ev.clientY - startY);
+  const travelled = (ev: PointerEvent): number =>
+    sign * space.along(horizontal, ev.clientX - startX, ev.clientY - startY);
 
   // Where the gesture now IS, measured from the rest it started at.
   const travelOf = (ev: PointerEvent): number => {
@@ -95,8 +107,8 @@ function onPointerDown(down: Event): void {
       if (follows) {
         const px = normalized ? offset * extent : offset;
         // Through setProperty: the property is newer than the CSSOM's named accessors, and the
-        // generic one writes it on every engine.
-        surface.style.setProperty('translate', horizontal ? `${px}px` : `0 ${px}px`);
+        // generic one writes it on every engine. The offset is toward the end, the paint is physical.
+        surface.style.setProperty('translate', horizontal ? `${sign * px}px` : `0 ${px}px`);
       }
       if (moves) surface.dispatchEvent(new CustomEvent('eq-drag-moved', { detail: offset }));
     },

@@ -166,9 +166,13 @@ internal sealed partial class WebLoweringVisitor
         // READING ORDER (down is next).
         var role = adjustable.Role;
         var onAdjust = adjustable.OnAdjust;
+        // The horizontal arrows are next and previous in the direction the element reads in, which the
+        // browser's handler reads from the nearest [dir] at the key and this one names from where it was
+        // lowered (_direction). ArrowUp and ArrowDown do not depend on it.
+        var reads = _direction;
         element.OnKeyDown = key =>
         {
-            if (AdjustableKeys.Step(key.Key, role) is { } step) onAdjust(step);
+            if (AdjustableKeys.Step(key.Key, role, reads) is { } step) onAdjust(step);
         };
         if (Lower(adjustable.Child, null, LoweringPath.Child) is { } child) element.Children.Add(child);
         return element;
@@ -324,10 +328,12 @@ internal sealed partial class WebLoweringVisitor
         // Text search rides the same handler: a printable character with no modifier but Shift, never
         // Space (the TS twin reads the same rule, and Photon's TextInput the characters themselves).
         var onTextSearch = navigable.OnTextSearch;
+        // The direction this grid reads in: the table says which move an ArrowLeft is (NavigableKeys).
+        var reads = _direction;
         if (navigable.OnMove is { } onMove)
             element.OnKeyDown = key =>
             {
-                if (NavigableKeys.Move(key.Key, key.ShiftKey) is { } move) onMove(move);
+                if (NavigableKeys.Move(key.Key, key.ShiftKey, reads) is { } move) onMove(move);
                 else if (onTextSearch is not null && IsTextSearch(key)) onTextSearch(key.Key);
             };
         // Ids are scoped to THIS grid: two calendars on one page would otherwise both call their
@@ -893,7 +899,10 @@ internal sealed partial class WebLoweringVisitor
                 var offset = draggable.Normalized
                     ? $"{TokenCss.Number(draggable.RestOffset * 100)}%"
                     : TokenCss.Px(draggable.RestOffset);
-                child.Style.Translate = draggable.Axis == DragAxis.Horizontal ? offset : $"0 {offset}";
+                // Horizontal travel is toward the END (Draggable.Axis), so a horizontal rest is written
+                // through --eq-inline and mirrors under rtl; the controller negates the finger's travel
+                // by the same direction. A vertical rest is physical, as it always was.
+                child.Style.Translate = draggable.Axis == DragAxis.Horizontal ? TokenCss.TowardEnd(offset) : $"0 {offset}";
             }
             // Declared at zero too: a release hands the position back to this markup, and the
             // surface glides to its rest from wherever the finger left it. JOINED to the box's own

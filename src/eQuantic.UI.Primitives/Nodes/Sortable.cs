@@ -56,7 +56,12 @@ public sealed class Sortable : SingleChildNode
     /// group of its own: the list sorts only what it holds.</summary>
     public string Group { get; init; } = "";
 
-    /// <summary>The direction the items run in, which decides where a pointer lands between two of them.</summary>
+    /// <summary>
+    /// The direction the items run in, which decides where a pointer lands between two of them. A
+    /// horizontal list runs in the reading order of where it sits, so on the web its items are placed from the
+    /// reading start (the right edge under right to left), and the keyboard carry's ArrowLeft and ArrowRight
+    /// are the previous and next place by that direction.
+    /// </summary>
     public DragAxis Axis { get; init; }
 
     /// <summary>Whether an item may also land INTO another (the middle half of the other's box), which
@@ -65,7 +70,8 @@ public sealed class Sortable : SingleChildNode
 
     /// <summary>
     /// How far across the <see cref="Axis"/> one depth of the items is indented, in logical pixels: a tree's
-    /// indentation per level (#1594). Above 0 the list's items have depths (<see cref="SortableItem.Depth"/>): an item
+    /// indentation per level (#1594). Across a vertical list is toward the END, so a carry toward the reading
+    /// end is deeper in both directions. Above 0 the list's items have depths (<see cref="SortableItem.Depth"/>): an item
     /// carries the deeper items right after it, its subtree, and a place between two items says in
     /// <see cref="SortDrop.Depth"/> the depth the item takes there, which a pointer picks by its travel across the axis
     /// and the keyboard by its cross arrows (<see cref="SortPlacement.Depths"/>). 0, the default, the list has none.

@@ -325,6 +325,12 @@ internal sealed partial class WebLoweringVisitor
                 Width = TokenCss.Px(width),
                 Height = TokenCss.Px(height),
                 Color = color is { } tint ? TokenCss.Value(tint) : null,
+                // A glyph that points along the reading turns where its element reads right to left.
+                // The sign is --eq-inline, inherited from the nearest [dir], so it also stays put
+                // inside a dir="ltr" surface and follows a culture switch with no new build. The
+                // individual `scale` property, which composes with any `transform` the glyph's
+                // author or parent writes (the reason a draggable's offset rides `translate`, #511).
+                Scale = glyph.MatchTextDirection ? "var(--eq-inline, 1) 1" : null,
             },
         };
         svg.RawAttributes = new Dictionary<string, string>

@@ -358,6 +358,45 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         { axis: 'horizontal', min: -80, max: 0, restOffset: -80 },
       ),
     ),
+    // What only the SDK draws or hears follows the direction (C# twin, #1569): a glyph that matches the
+    // direction turns through the sign the nearest [dir] sets, and a horizontal rest is written toward the end.
+    'icon-matching-glyph-rtl': still(new Directionality('rightToLeft', new Icon(IconGlyph.fromIcons('chevronLeft')))),
+    'icon-pack-glyph-rtl': still(
+      new Directionality(
+        'rightToLeft',
+        new Icon(new IconGlyph('arrowLeft', 'M19 12H5m7-7-7 7 7 7', 'stroke')),
+      ),
+    ),
+    'draggable-rest-px-rtl': still(
+      new Directionality(
+        'rightToLeft',
+        new Draggable(
+          new Box(new BoxStyle({ width: 40, height: 40, background: photonTheme.surface })),
+          () => {},
+          { axis: 'horizontal', min: -96, max: 0, restOffset: -96 },
+        ),
+      ),
+    ),
+    'draggable-rest-normalized-rtl': still(
+      new Directionality(
+        'rightToLeft',
+        new Draggable(
+          new Box(new BoxStyle({ width: 40, height: 40, background: photonTheme.surface })),
+          () => {},
+          { axis: 'horizontal', min: 0, max: 1, restOffset: 0.25, normalized: true },
+        ),
+      ),
+    ),
+    'draggable-rest-vertical-rtl': still(
+      new Directionality(
+        'rightToLeft',
+        new Draggable(
+          new Box(new BoxStyle({ width: 40, height: 40, background: photonTheme.surface })),
+          () => {},
+          { axis: 'vertical', min: 0, max: 100, restOffset: 40 },
+        ),
+      ),
+    ),
     'drop-target': still(new DropTarget(new Box(new BoxStyle({ width: SizeValue.fill, height: 40 })), () => {})),
     'drop-target-disabled': still(
       new DropTarget(new Box(new BoxStyle({ height: 40 })), () => {}, { enabled: false }),
