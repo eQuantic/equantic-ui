@@ -1,0 +1,4 @@
+{
+  "deltaBytes": 354,
+  "bought": "An anchored panel stays inside the viewport on the web (#1933): the runtime measures the panel CSS placed after each pass, on reach and on resize, and moves it by its translate, 8dp from the edge."
+}
