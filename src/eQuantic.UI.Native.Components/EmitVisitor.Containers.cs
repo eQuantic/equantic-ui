@@ -178,7 +178,8 @@ internal sealed partial class EmitVisitor
         // closed menu leaves the tree.
         s.Overlays.Add(new QueuedLayer(new Overlay(layer) { Modal = anchored.PanelRole == AnchorPanelRole.Dialog },
             s.Node.Element as NodeElement, s.Press.InScrolledHeader, s.Content,
-            comboField is null ? null : new ComboAnnouncement(PositionOf(s.Node), comboField, s.Node, anchored.ActiveIndex)));
+            comboField is null ? null : new ComboAnnouncement(PositionOf(s.Node), comboField, s.Node, anchored.ActiveIndex),
+            KeptInside: panel));
     }
 
 

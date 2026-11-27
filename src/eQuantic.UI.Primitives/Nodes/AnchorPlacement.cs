@@ -1,7 +1,8 @@
 namespace eQuantic.UI.Primitives;
 
-/// <summary>Where an <see cref="Anchored"/> panel attaches relative to its anchor (wave 3 v1: the
-/// four corner placements; centered variants and viewport flip/clamp are the positioning fence).</summary>
+/// <summary>Where an <see cref="Anchored"/> panel attaches relative to its anchor: the four corner placements and the
+/// two centred ones. A panel a placement would put past the viewport's start or end edge is moved back inside
+/// (<see cref="Anchored.ViewportInset"/>, #1933); a vertical flip is the positioning fence.</summary>
 public enum AnchorPlacement : byte
 {
     BottomStart = 0,
