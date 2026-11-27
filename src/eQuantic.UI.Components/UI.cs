@@ -613,14 +613,14 @@ public static class UI
     /// <summary>An amount of money in a currency's minor units, typed in the culture's way.</summary>
     public static MoneyInput MoneyInput(long? amount, Action<long?>? onChanged, string label, Currency currency,
         long? min = null, long? max = null, string? placeholder = null, string? helper = null,
-        string? error = null, SizeVariant size = SizeVariant.Large) =>
-        new MoneyInput(amount, onChanged, label, currency, min, max, placeholder, helper, error, size);
+        string? error = null, SizeVariant size = SizeVariant.Large, InputTheme? style = null) =>
+        new MoneyInput(amount, onChanged, label, currency, min, max, placeholder, helper, error, size, style);
 
     /// <summary>A whole number with its unit beside it, typed in the culture's way.</summary>
     public static NumberInput NumberInput(int? value, Action<int?>? onChanged, string label, string unit = "",
         int? min = null, int? max = null, string? placeholder = null, string? helper = null,
-        string? error = null, SizeVariant size = SizeVariant.Large) =>
-        new NumberInput(value, onChanged, label, unit, min, max, placeholder, helper, error, size);
+        string? error = null, SizeVariant size = SizeVariant.Large, InputTheme? style = null) =>
+        new NumberInput(value, onChanged, label, unit, min, max, placeholder, helper, error, size, style);
 
     /// <summary>A date, typed or picked from a calendar. <paramref name="labelHidden"/> draws no label, for a
     /// form that lays its own, and the label still names the field (#1780).</summary>
@@ -654,9 +654,9 @@ public static class UI
     /// <summary>One choice out of a dropdown list: the ungrouped <paramref name="options"/> first, then
     /// each of <paramref name="groups"/> under its heading, one index across them all.</summary>
     public static Select Select(IReadOnlyList<string>? options = null, int selectedIndex = -1,
-        Action<int>? onChanged = null, string? placeholder = null, IReadOnlyList<OptionGroup>? groups = null,
+        Action<int>? onChanged = null, VisualNode? hint = null, IReadOnlyList<OptionGroup>? groups = null,
         InputTheme? style = null, Func<int, VisualNode>? optionBuilder = null) =>
-        new Select(options, selectedIndex, onChanged, placeholder, groups, style, optionBuilder);
+        new Select(options, selectedIndex, onChanged, hint, groups, style, optionBuilder);
 
     /// <summary>The full text field: label, helper, error, leading icon, and a trailing SLOT
     /// for whatever belongs at the end of the row — a picker's opener, a clear affordance.
@@ -956,6 +956,6 @@ public static class UI
     /// <paramref name="onCompleted"/> once it arrived.
     /// </summary>
     public static FileUpload FileUpload(UploadPolicy policy, Action<UploadedFile> onCompleted, bool multiple = true,
-        string? label = null, string? hint = null, InputTheme? style = null) =>
-        new FileUpload(policy, onCompleted, multiple, label, hint, style);
+        VisualNode? title = null, VisualNode? hint = null, InputTheme? style = null) =>
+        new FileUpload(policy, onCompleted, multiple, title, hint, style);
 }

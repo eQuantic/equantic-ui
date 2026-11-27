@@ -177,6 +177,9 @@ public static class SdkStrings
     /// <summary>A time picker's accessible name when the app supplies none.</summary>
     public static string ChooseTime => SdkResources.ChooseTime;
 
+    /// <summary>What a select's closed field shows before a choice, when the app hands no hint.</summary>
+    public static string SelectHint => SdkResources.SelectHint;
+
     // MoneyInput and NumberInput: what the field wants, when what was typed is not it.
 
     /// <summary>What a money field says of text that is no amount, with one written as the field writes it.</summary>

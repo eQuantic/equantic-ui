@@ -141,6 +141,9 @@
   <data name="ChooseTime" xml:space="preserve">
     <value>Escolha uma hora</value>
   </data>
+  <data name="SelectHint" xml:space="preserve">
+    <value>Selecione…</value>
+  </data>
   <data name="DateFormatLetters" xml:space="preserve">
     <value>DMA</value>
   </data>

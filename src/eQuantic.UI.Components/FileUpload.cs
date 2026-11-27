@@ -46,18 +46,18 @@ public sealed class FileUpload : StatefulComponent
     /// The picker offers its formats, and the area refuses what it does not accept.</param>
     /// <param name="onCompleted">Receives each file once it arrived whole.</param>
     /// <param name="multiple">Whether a person may send several files at once.</param>
-    /// <param name="label">The area's invitation, in place of the SDK's own.</param>
+    /// <param name="title">The area's invitation, in place of the SDK's own: a string, or a node of the app's own.</param>
     /// <param name="hint">What the area says it accepts, in place of the formats and largest size the
     /// policy states.</param>
     /// <param name="style">The area's own look: its border, fill and radius, laid over the theme's
     /// <see cref="IAppTheme.Input"/> slot with <see cref="InputTheme.Merge"/>.</param>
     public FileUpload(UploadPolicy policy, Action<UploadedFile> onCompleted, bool multiple = true,
-        string? label = null, string? hint = null, InputTheme? style = null)
+        VisualNode? title = null, VisualNode? hint = null, InputTheme? style = null)
     {
         Policy = policy;
         OnCompleted = onCompleted;
         Multiple = multiple;
-        Label = label;
+        Title = title;
         Hint = hint;
         Style = style;
         _config = this;
@@ -72,11 +72,13 @@ public sealed class FileUpload : StatefulComponent
     /// <summary>Whether a person may send several files at once.</summary>
     public bool Multiple { get; init; }
 
-    /// <summary>The area's invitation; null for the SDK's own.</summary>
-    public string? Label { get; init; }
+    /// <summary>The area's invitation, drawn in the label role and the primary colour, centred on two lines at
+    /// most, when it names none of its own; null for the SDK's own words.</summary>
+    public VisualNode? Title { get; init; }
 
-    /// <summary>What the area says it accepts; null for the policy's formats and largest size.</summary>
-    public string? Hint { get; init; }
+    /// <summary>What the area says it accepts, drawn in the caption role and the secondary colour when it names
+    /// none; null for the policy's formats and largest size.</summary>
+    public VisualNode? Hint { get; init; }
 
     /// <summary>The area's own look, laid over the theme's <see cref="IAppTheme.Input"/> slot; null is the theme's.</summary>
     public InputTheme? Style { get; init; }
@@ -113,10 +115,10 @@ public sealed class FileUpload : StatefulComponent
         var enabled = _live && picker is { IsAvailable: true } && uploads is { IsAvailable: true };
 
         var invitation = new Column(gap: Space.S2, cross: CrossAlign.Center);
-        invitation.Add(new Text(config.Label ?? (config.Multiple ? SdkStrings.UploadDropHere : SdkStrings.UploadDropOneHere),
-            TypeRole.Label, theme.TextPrimary, maxLines: 2, align: TextAlignment.Center));
-        invitation.Add(new Text(config.Hint ?? Accepted(config.Policy), TypeRole.Caption, theme.TextSecondary,
-            maxLines: 2, align: TextAlignment.Center));
+        // The invitation and the hint, each in the look its box hands content that names none.
+        invitation.Add(Part(config.Title ?? new Text(config.Multiple ? SdkStrings.UploadDropHere : SdkStrings.UploadDropOneHere),
+            TypeRole.Label, theme.TextPrimary));
+        invitation.Add(Part(config.Hint ?? new Text(Accepted(config.Policy)), TypeRole.Caption, theme.TextSecondary));
         invitation.Add(new Button(config.Multiple ? SdkStrings.UploadChooseFiles : SdkStrings.UploadChooseFile,
             Variant.Secondary, SizeVariant.Small, () => _ = Choose(picker, uploads))
         {
@@ -145,6 +147,15 @@ public sealed class FileUpload : StatefulComponent
         column.Add(new LiveRegion(new Text(_announcement, TypeRole.Caption, theme.TextSecondary, maxLines: 3)));
         return column;
     }
+
+    /// <summary>A part of the invitation: its content in the role and colour it is drawn in when it names neither,
+    /// centred on two lines at most.</summary>
+    private static Box Part(VisualNode content, TypeRole role, ColorToken color) =>
+        new(new BoxStyle
+        {
+            Foreground = color,
+            Content = new ContentStyle { Role = role, MaxLines = 2, Align = TextAlignment.Center },
+        }, content);
 
     /// <summary>One file: its name and state, its progress, and what can be done with it now.</summary>
     private VisualNode RowOf(Upload upload, IAppTheme theme)

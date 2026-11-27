@@ -32,7 +32,7 @@ public sealed class MoneyInput : StatefulComponent
 
     public MoneyInput(long? amount, Action<long?>? onChanged, string label, Currency currency,
         long? min = null, long? max = null, string? placeholder = null, string? helper = null,
-        string? error = null, SizeVariant size = SizeVariant.Large)
+        string? error = null, SizeVariant size = SizeVariant.Large, InputTheme? style = null)
     {
         // A field of text, which has no small size (spec B9): refused here, where TextInput would refuse it at
         // the first build, inside the page's error boundary.
@@ -49,6 +49,7 @@ public sealed class MoneyInput : StatefulComponent
         Helper = helper;
         Error = error;
         Size = size;
+        Style = style;
     }
 
     /// <summary>The amount in the currency's minor units, or null for none.</summary>
@@ -73,6 +74,10 @@ public sealed class MoneyInput : StatefulComponent
     public string? Error { get; private set; }
 
     public SizeVariant Size { get; private set; }
+
+    /// <summary>The field's own look, handed to the <see cref="TextInput"/> it draws, which lays it over the
+    /// theme's <see cref="IAppTheme.Input"/> slot.</summary>
+    public InputTheme? Style { get; private set; }
 
     /// <summary>Backed by a field, so <see cref="AdoptConfig"/> can carry it: this instance is kept across the
     /// parent's rebuilds, and an <c>init</c> accessor cannot be written from there.</summary>
@@ -100,6 +105,7 @@ public sealed class MoneyInput : StatefulComponent
         Helper = fresh.Helper;
         Error = fresh.Error;
         Size = fresh.Size;
+        Style = fresh.Style;
         _disabled = fresh.Disabled;
     }
 
@@ -113,7 +119,7 @@ public sealed class MoneyInput : StatefulComponent
         var error = Error ?? (_typing is { } typed ? Complaint(typed) : null);
         return new TextInput(shown, OnChanged is null ? null : Type, Label, Placeholder, Helper, error,
             size: Size, kind: TextEntryKind.Decimal,
-            prefix: leads ? Currency.Symbol : null, suffix: leads ? null : Currency.Symbol)
+            prefix: leads ? Currency.Symbol : null, suffix: leads ? null : Currency.Symbol, style: Style)
         {
             Disabled = Disabled,
             OnFocusChanged = Focus,

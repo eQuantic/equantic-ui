@@ -27,6 +27,8 @@ public class InputStyleAdoptConfigTests
     public static TheoryData<Case> Cases => new()
     {
         new Case("TextInput", c => new TextInput("ana", _ => { }, style: Field(c))),
+        new Case("NumberInput", c => new NumberInput(4, _ => { }, "Lead time", "days", style: Field(c))),
+        new Case("MoneyInput", c => new MoneyInput(1250, _ => { }, "Price", new Currency("USD", "$", 2), style: Field(c))),
         new Case("Select", c => new Select(["A"], 0, _ => { }, style: Field(c))),
         new Case("TimePicker", c => new TimePicker(null, _ => { }, style: Field(c))),
         new Case("DatePicker", c => new DatePicker(null, _ => { }, style: Field(c))),

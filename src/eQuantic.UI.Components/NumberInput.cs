@@ -22,7 +22,7 @@ public sealed class NumberInput : StatefulComponent
 
     public NumberInput(int? value, Action<int?>? onChanged, string label, string unit = "",
         int? min = null, int? max = null, string? placeholder = null, string? helper = null,
-        string? error = null, SizeVariant size = SizeVariant.Large)
+        string? error = null, SizeVariant size = SizeVariant.Large, InputTheme? style = null)
     {
         // A field of text, which has no small size (spec B9): refused here, where TextInput would refuse it at
         // the first build, inside the page's error boundary.
@@ -39,6 +39,7 @@ public sealed class NumberInput : StatefulComponent
         Helper = helper;
         Error = error;
         Size = size;
+        Style = style;
     }
 
     public int? Value { get; private set; }
@@ -62,6 +63,10 @@ public sealed class NumberInput : StatefulComponent
 
     public SizeVariant Size { get; private set; }
 
+    /// <summary>The field's own look, handed to the <see cref="TextInput"/> it draws, which lays it over the
+    /// theme's <see cref="IAppTheme.Input"/> slot.</summary>
+    public InputTheme? Style { get; private set; }
+
     /// <summary>Backed by a field, so <see cref="AdoptConfig"/> can carry it.</summary>
     public bool Disabled { get => _disabled; init => _disabled = value; }
     private bool _disabled;
@@ -84,6 +89,7 @@ public sealed class NumberInput : StatefulComponent
         Helper = fresh.Helper;
         Error = fresh.Error;
         Size = fresh.Size;
+        Style = fresh.Style;
         _disabled = fresh.Disabled;
     }
 
@@ -93,7 +99,7 @@ public sealed class NumberInput : StatefulComponent
         // The app's error first: it knows what the field is for.
         var error = Error ?? (_typing is { } typed ? Complaint(typed) : null);
         return new TextInput(shown, OnChanged is null ? null : Type, Label, Placeholder, Helper, error,
-            size: Size, kind: TextEntryKind.Number, suffix: Unit.Length > 0 ? Unit : null)
+            size: Size, kind: TextEntryKind.Number, suffix: Unit.Length > 0 ? Unit : null, style: Style)
         {
             Disabled = Disabled,
             OnFocusChanged = Focus,

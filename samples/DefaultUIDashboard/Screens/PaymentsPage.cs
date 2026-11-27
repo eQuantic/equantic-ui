@@ -680,7 +680,7 @@ public sealed class PaymentsPage : StatefulComponent
         var column = new Column(gap: Space.S4) { Width = SizeValue.Fill };
         column.Add(new Text("Payout settings", TypeRole.Label, theme.TextPrimary, maxLines: 1));
         column.Add(new Select(["Checking ··· 4821", "Savings ··· 1190"], _account,
-            i => SetState(() => _account = i), placeholder: "Destination account"));
+            i => SetState(() => _account = i), hint: "Destination account"));
         column.Add(scheduleAndMinimum);
         column.Add(receipts);
         if (_payoutNotice is { } saved) column.Add(new Banner(Variant.Success, saved));

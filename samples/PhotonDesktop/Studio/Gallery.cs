@@ -320,7 +320,7 @@ public static partial class Gallery
 
         grid.Add(Labelled(theme,
             new Select(["Checking ··· 4821", "Savings ··· 1190", "Card ··· 7702"], state.Account,
-                i => mutate(() => state.Account = i), placeholder: "Choose an account"),
+                i => mutate(() => state.Account = i), hint: "Choose an account"),
             "Select · opens the picker, matched to the field's width"));
 
         grid.Add(Labelled(theme,

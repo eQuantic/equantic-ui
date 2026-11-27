@@ -37,13 +37,13 @@ public sealed class Select : StatefulComponent
     private IReadOnlyList<string> _choices;
 
     public Select(IReadOnlyList<string>? options = null, int selectedIndex = -1,
-        Action<int>? onChanged = null, string? placeholder = null, IReadOnlyList<OptionGroup>? groups = null,
+        Action<int>? onChanged = null, VisualNode? hint = null, IReadOnlyList<OptionGroup>? groups = null,
         InputTheme? style = null, Func<int, VisualNode>? optionBuilder = null)
     {
         Options = options ?? [];
         SelectedIndex = selectedIndex;
         OnChanged = onChanged;
-        Placeholder = placeholder;
+        Hint = hint;
         Groups = groups ?? [];
         Style = style;
         OptionBuilder = optionBuilder;
@@ -56,7 +56,13 @@ public sealed class Select : StatefulComponent
     public IReadOnlyList<OptionGroup> Groups { get; private set; }
     public int SelectedIndex { get; private set; }
     public Action<int>? OnChanged { get; private set; }
-    public string? Placeholder { get; private set; }
+
+    /// <summary>
+    /// What the closed field shows before a choice, drawn in the field's role and muted colour when it names
+    /// neither: <c>"Choose a country"</c>, or a row with an icon. Flutter's <c>DropdownButton.hint</c>. Null
+    /// shows the SDK's own word, in the app's culture.
+    /// </summary>
+    public VisualNode? Hint { get; private set; }
 
     /// <summary>This select's own look, laid over the theme's <see cref="IAppTheme.Input"/> slot with
     /// <see cref="InputTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's.</summary>
@@ -80,7 +86,7 @@ public sealed class Select : StatefulComponent
         Options = fresh.Options;
         SelectedIndex = fresh.SelectedIndex;
         OnChanged = fresh.OnChanged;
-        Placeholder = fresh.Placeholder;
+        Hint = fresh.Hint;
         Groups = fresh.Groups;
         Style = fresh.Style;
         OptionBuilder = fresh.OptionBuilder;
@@ -107,8 +113,8 @@ public sealed class Select : StatefulComponent
         var hasValue = SelectedIndex >= 0 && SelectedIndex < choices.Count;
 
         var fieldRow = new Row(gap: gap) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
-        fieldRow.Add(new Text(hasValue ? choices[SelectedIndex] : Placeholder ?? "Select…",
-            TypeRole.BodyM, hasValue ? theme.TextPrimary : theme.TextMuted, maxLines: 1));
+        // The chosen option's text, or the hint: either takes the look the field states below when it names none.
+        fieldRow.Add(hasValue ? new Text(choices[SelectedIndex]) : Hint ?? new Text(SdkStrings.SelectHint));
         fieldRow.Add(new Flexible(new Spacer()));
         fieldRow.Add(new Icon(Icons.ChevronDown, IconSize.Sm, theme.TextSecondary));
 
@@ -123,6 +129,10 @@ public sealed class Select : StatefulComponent
             BorderColor = slot?.BorderColor ?? theme.BorderStrong,
             Opacity = Disabled ? theme.DisabledOpacity : null,
             Hover = Disabled ? null : new StyleDiff { BorderColor = theme.Colors(Variant.Primary).Base },
+            // The look the field hands what it shows: the choice in the primary colour, the hint in the muted
+            // one, both in the field's role on one line.
+            Foreground = hasValue ? theme.TextPrimary : theme.TextMuted,
+            Content = new ContentStyle { Role = TypeRole.BodyM, MaxLines = 1 },
         }, fieldRow);
 
         // One index across the groups: a row is numbered in reading order wherever it stands.
