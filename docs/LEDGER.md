@@ -6045,6 +6045,525 @@ record of a release, the wiki's Upgrading page is the distillate.
   minutes where its six shards took about 17. `ScriptReferencesTests` holds the resolver to one read per
   assembly, and fails with scripting's own, which read `System.Security.Claims` three times for three
   scripts ([#1816](https://github.com/eQuantic/equantic-ui/issues/1816)).
+- **2026-11-16 · A component that builds itself is contained in a host too**: a component whose `Build` returns
+  itself, or a box around itself, took the server's process down with a stack overflow when a `MarkupHost` drew it,
+  and froze the browser's tab in a loop, where the lowering with no host contained it. The engine had contained the
+  chain at the boundary's bound; the lowering found a component by its instance alone and met the outermost position
+  of the chain at every step. Both lowerings now find a component inside the position whose build they lower, as
+  Photon's layout already walks positions, so the chain draws the boundary's surface once and its siblings are drawn
+  ([#1544](https://github.com/eQuantic/equantic-ui/issues/1544)). Proposed and archived through OpenSpec
+  (`openspec/specs/element-tree`).
+- **2026-11-17 · Content takes the look its component hands down, and a string is a node**: a box
+  could hand its text and icons a colour (`Foreground`) and nothing else, so a component that took
+  its content as a node could not say the label is a `Label`, one line, or the icon 16 dp, and a
+  bare string was no node. `BoxStyle.Content`, a `ContentStyle` (role, type, line limit, alignment,
+  icon size, merged member by member), is what a `Text` and an `Icon` take when they name none; their
+  role, line limit, alignment and size are optional and fall back to `BodyL`, no limit, start and
+  24, so existing trees draw as before. A `string` converts implicitly to a node, so
+  `Column(children: ["Title"])` works. A reader reads `text.Under(content)` and
+  `icon.SizeUnder(content)`, and Email refuses a line limit a box states
+  ([#1577](https://github.com/eQuantic/equantic-ui/issues/1577)). Proposed and archived through
+  OpenSpec (`openspec/specs/content-defaults`).
+- **2026-11-22 · 0.2.0-preview.72 released** from `a27703d6a`. It ships arithmetic that answers as .NET
+  does (an int and a long wrap in the default context, #1807, and a sum, `Abs` and `CopySign` throw
+  where .NET throws, #1808), `Uri`'s escaping (#1805), factories for every referenced project (#1803),
+  and a closed dialog that gives the focus back on the web and on Photon, or to the control in its
+  opener's place (#1811), with Photon's modal Tab walk (#1066) and a dialog's Escape (#1181). The
+  release folded five API files, thirteen ledger entries and one runtime delta, for a base of 385,917
+  bytes, and its one contract break, `ClaimsEscape` on two interfaces, is on the Upgrading page. Before
+  the tag, main's Conformance job died twice with every test green: its host reached 22 GB of native
+  memory on a 16 GB runner, and #1816 brought it to 2.8 GB. The tag's first run failed a hot reload
+  test that cancelled its page before the stream wrote its frame (#1818), and the rerun of its failed
+  jobs published 54 packages at 17:21Z. An app restores at 0.2.0-preview.72 from nuget.org
+  ([#1814](https://github.com/eQuantic/equantic-ui/issues/1814),
+  *[v0.2.0-preview.72](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.72)*).
+- **2026-11-22 · A hot reload test waits for the frame the stream writes**: the Windows runner of
+  the `v0.2.0-preview.72` tag's run failed `ARebuild_ThatEndsBeforeTheEditLands_WaitsForIt`, the page
+  having heard only the `server` frame, and the publish waited on a rerun of the failed jobs. The test
+  cancelled its page as soon as `Rebuild` returned, while the `rebuilt` frame is written after it by
+  the stream's own loop. It and `AnEventOfAPathAlreadyGone_DoesNotDateTheSaveAfterItsEdit`, which had
+  the same race, now wait for the frame with `UntilAsync` before they cancel, as the class's other
+  single-save tests do; the two that wait two seconds for a second announcement that must not come stay
+  as they are ([#1818](https://github.com/eQuantic/equantic-ui/issues/1818)).
+- **2026-11-22 · The mobile shells call the platform APIs current from their floor, and CA1422 fails their
+  build again**: eleven calls to APIs that a newer iOS or Android deprecates had been printing CA1422 under
+  an exemption both shells' csproj carried. iOS registers for the mode and contrast traits from 17; Android
+  writes the fused, high-accuracy request the deprecated `Criteria` calls stood for from 12, builds its
+  accessibility nodes and events with the API 30 constructors, and asks biometrics for the weak class it
+  always meant. Measured against main on the Android 16 emulator (location registrations, TalkBack's words
+  for every node, the biometric query and prompt) and the iOS 27 simulator (mode and contrast re-render),
+  with the same answers on both sides. A mixed check stays uncheckable on Android, because TalkBack 16 reads
+  a checkable partial node as "not checked"
+  ([#1592](https://github.com/eQuantic/equantic-ui/issues/1592)). Proposed and archived through OpenSpec
+  (`openspec/specs/native-platform-apis`, `device-location`, `device-biometrics`).
+- **2026-11-23 · A camera preview gets its stream in the render that shows it**: the browser attached the camera
+  streams at the end of a pass, before the render manager wrote the pass's tree, so a preview a render showed played
+  nothing until a later pass came. What the end of a pass does against the written document now runs at one moment,
+  the microtask after the write, the focus traps and the camera streams alike
+  ([#1830](https://github.com/eQuantic/equantic-ui/issues/1830)). Proposed and archived through OpenSpec
+  (`openspec/specs/device-camera`).
+- **2026-11-23 · A hand-written twin's config takes every member its C# class lets an initializer set**: a
+  transpiled initializer reaches a hand-written twin as its trailing config, and nothing compared that config with
+  the C# class, so a member it lacked was a TS2353 the runtime's `tsc` raised only once a component first set it.
+  `BoxStyleConfig` lacked `foreground` until a slice of #1606 met it. `VocabularyConfigShapeTests` now reads every
+  config the mirror's twins take, named or written in place, against its C# class both ways, with a baseline that
+  may only shrink; on main it found 183 members apart, 53 of them members a constructor also takes, which eqc
+  writes into the config when an initializer sets them (`new Image(src, 1, 2) { Label = "x" }`). The configs gain
+  `foreground`, a `VisualNodeConfig` and a `SingleChildNodeConfig` the node configs extend or intersect, and every
+  member their constructors take, all type-only. What eqc writes for eight such initializers joins the runtime's
+  fixtures, which its `tsc` checks
+  ([#1823](https://github.com/eQuantic/equantic-ui/issues/1823)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-classes`).
+- **2026-11-23 · A decimal keeps its digits on the way to an integer, and Math over it answers**: two Bugs under #1587
+  ([#1766](https://github.com/eQuantic/equantic-ui/issues/1766), [#1767](https://github.com/eQuantic/equantic-ui/issues/1767)).
+  A decimal cast to an integer went through its double before it was cut, so a long past 2^53 lost its last digits
+  and `(int)0.99999999999999999m` was 1; it is now cut toward zero from the decimal's own digits and checked against
+  the type's range in .NET's words, for every integer type and a char, and `decimal.ToInt32` and its siblings with it.
+  `Math.Abs`, `Max`, `Min`, `Sign` and `Clamp` over a decimal went to JavaScript's `Math`, which read the runtime's
+  Decimal as NaN; the numeric table's decimal row answers them with the scale .NET keeps, `decimal`'s statics reach
+  it, `Clamp` refuses a minimum above its maximum, and a `Math` member over a decimal with no row fails the build.
+  Measured on both sides by `DecimalMathConformanceTests`. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
+- **2026-11-23 · A component's dependency leaves no slot before its initializer**: a component whose
+  constructor takes a dependency, built with an object initializer, lost the initializer in the browser, and an
+  argument it omitted after the dependency arrived as `null`. `new Quark(_clock) { Size = 5 }` was
+  `new Quark(null, 'calm', { size: 5 })`. The call drops the dependency's argument, as the twin's signature drops
+  the parameter, but the defaults before the config were counted over the C# parameters, the dependency included.
+  One rule, `LeavesOut`, now says which parameters the twin keeps, and both the drop and the defaults read it
+  ([#1827](https://github.com/eQuantic/equantic-ui/issues/1827)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-classes`).
+- **2026-11-23 · A dialog opened from a menu item gives the focus back to the menu's trigger**: a row's menu
+  offering Delete closed and opened its confirm in one pass, and Cancel gave the focus back to nothing. Two causes.
+  A menu's item took the focus on its press and left with its menu, so the confirm recorded no opener; the items now
+  leave the keyboard on the trigger, as the menu pattern keeps it there. And the browser reconciled its focus traps
+  before the render manager wrote the pass's tree, so a dialog a render opened took no focus and recorded no opener
+  until a later pass came, which also hit #1811's case; the traps now read the DOM the pass wrote
+  ([#1812](https://github.com/eQuantic/equantic-ui/issues/1812)). Proposed and archived through OpenSpec
+  (`openspec/specs/modal-focus`).
+- **2026-11-23 · A plain generic class, a record and a struct declare their type parameters**: only the component
+  path wrote a class's type parameters, so `GestureRecognizerFactoryWithHandlers<T>` named `T` in its members and
+  declared it nowhere, and the runtime's `tsc` refused it in the library (#1563). A generic record and struct had the
+  same gap, and a record's members named its own type without its closure. One list, `TwinTypeParameters`, is now read
+  by every kind of class, and a record names its own type by its closure. The class writer writes the list only in
+  TypeScript, so a generic component compiled to plain JavaScript, which was `class Listing<TItem> {`, parses
+  ([#1845](https://github.com/eQuantic/equantic-ui/issues/1845)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-classes`).
+- **2026-11-23 · A host with no eqc says hot reload is off**: a server whose project is not built with eQuantic.UI.Sdk,
+  as a host serving the pages of a library it references is, says once that hot reload is off for it and asks MSBuild
+  no more, where its log opened with MSBuild's MSB4057 and "Build failed" and every save asked again and sent the page
+  an error ([#1757](https://github.com/eQuantic/equantic-ui/issues/1757)). Proposed and archived through OpenSpec
+  (`openspec/specs/hot-reload`).
+- **2026-11-23 · A modal layer in a hidden adaptive arm lets go of the keyboard**: the web mounts every arm of an
+  adaptive node and shows one, so a drawer left open in the compact arm kept its trap when the window widened, and
+  held the keyboard in a layer nobody could see. The browser's focus trap controller now asks the gates around a
+  layer when the Tab or the focus arrives, as the shortcut dispatcher asks them around a binding, and the topmost
+  layer on screen owns the keyboard ([#1185](https://github.com/eQuantic/equantic-ui/issues/1185)). Proposed and
+  archived through OpenSpec (`openspec/specs/modal-focus`).
+- **2026-11-23 · A month grid counts in its culture's calendar**: a Bug under #1587
+  ([#1617](https://github.com/eQuantic/equantic-ui/issues/1617)). `Calendar`, and the `DatePicker` that opens it,
+  laid out a Gregorian month and titled it with the culture's own calendar's month names, so January 2024 was
+  `دی 2024` in fa-IR, `محرم 2024` in ar-SA and `มกราคม 2024` in th-TH, whose calendar counts 2567. The vocabulary
+  gains `CultureCalendar`, beside `CalendarNames`: a day's year, month and day in the format culture's calendar,
+  its month's first day, and moves by months and years cut to the target month's last day, read from
+  `DateTimeFormatInfo.Calendar` in .NET and from the calendar the culture's data carries in the browser (#1191).
+  The grid counts its month, title, cells, announcements and moves through it, so in fa-IR January 17th 2024
+  opens `دی 1402`, from December 22nd to January 20th. `CalendarNames`' `Intl` fallback names the Gregorian
+  months, as a culture whose data did not travel counts them. Measured on both sides by
+  `CultureCalendarTwinTests` in four cultures. Proposed and archived through OpenSpec (`openspec/specs/month-grid`).
+- **2026-11-23 · A named argument beside an initializer keeps both**: a vocabulary record built with a named argument
+  and an object initializer, `new TextRun(code, Mono: true) { StyleOverride = … }`, passes the initializer in the
+  twin's config slot, where the defaults before it were counted from the arguments the syntax wrote, one went in
+  twice, and the initializer landed in a slot nothing reads, so the run drew in the sentence's size once the page
+  hydrated ([#1756](https://github.com/eQuantic/equantic-ui/issues/1756)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-classes`).
+- **2026-11-23 · A text field a listbox hangs from is an editable combobox on Photon, and the option the
+  keyboard is on is announced from it**: the code editor's go-to field read as a plain text field on Photon,
+  where the web's text control is the combobox with the list's active option on it (#1083). It reaches the
+  tree as the new `SemanticRole.EditableComboBox`, `AXComboBox` and `android.widget.EditText` (Core-AAM's
+  pair), named by its label, valued by its text, saying whether its list is open. The row `ActiveIndex`
+  counts to is announced politely from the field as it changes, and again when the list opens or the
+  keyboard comes back to it; the anchored node keeps what it said, because the field's position keeps its
+  text. The testing reader hears the web's input as the same role, so the semantics parity fixture compares
+  the field open and closed. AppKit reads back "combo box". On Android the option is not heard yet: TalkBack
+  reads a change only from a live region's node
+  ([#1088](https://github.com/eQuantic/equantic-ui/issues/1088)). Proposed and archived through OpenSpec
+  (`openspec/specs/native-accessibility`).
+- **2026-11-23 · A type test against a type parameter is refused with EQ2016**: `x is T`, `x as T`, a type pattern
+  `T t` and a `catch (T e)` were answered as `x != null`, true for any value, so a factory of one recognizer said it
+  made every one. The browser carries no type arguments at run time: a closed construction is marked with them as
+  text, and "is a `T`" takes a subclass, which no text answers. The test is now a build error that names the
+  parameter and says what to write instead, documented here and on the wiki in every language
+  ([#1846](https://github.com/eQuantic/equantic-ui/issues/1846)); whether generic code carries its type arguments is
+  #755's question. Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`).
+- **2026-11-23 · An HtmlElement subclass runs its constructor as C# does**: a class over `HtmlElement` that took
+  constructor parameters reached the browser without what its constructor does. `new Chip("a", 5).Says()` read
+  `a|5` in .NET and `|` in the browser. The primitive path's parser kept a constructor reader of its own that stored
+  no constructor's syntax, so no body ran, no parameter kept its default, every parameter landed on a member named
+  after it, and a primary constructor was not read at all. It now reads constructors through the component path's
+  `ParseConstructors`, and writes them through the writers the component branch uses. An expression-bodied
+  `Render()` and a field's initializer, measured beside it, stay with their own issues, #1540 and #1541
+  ([#1837](https://github.com/eQuantic/equantic-ui/issues/1837)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-classes`).
+- **2026-11-23 · An ISO date that does not exist is refused in .NET's words**: a Bug under #1587
+  ([#1616](https://github.com/eQuantic/equantic-ui/issues/1616)). .NET reads the ISO form through to the end and checks
+  the date and the clock together, so `2024-02-30T10:00` is refused as a clock that does not exist is, naming the
+  culture's calendar; the browser checked the date before it saw the `T` and said the text was not recognized. The
+  reader now carries year-first numbers that name no date to the ISO clock and refuses them there, and keeps the plain
+  refusal for a malformed clock and for a day that does not exist outside the ISO form. A `T` before a clock is the
+  ISO form's only after three numbers with the year first, so `2024-02T10:00`, which the browser read as a date, is
+  refused as .NET refuses it, and a `T` a letter follows names an unknown word. An offset past fourteen hours
+  is checked last, after the date and the clock, as .NET checks it. Measured on both sides by
+  `IsoRefusalConformanceTests` in four cultures. Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-11-23 · Photon names a combobox by its label**: Photon named a `Select`'s combobox by the option it showed,
+  or by its placeholder, where the web names it by its label and reads the option as its value, so a reader heard
+  the choice where the field's name belongs. Photon now reads it as the web does, and the eight entries of the
+  semantics parity baseline that waited on this are gone ([#1328](https://github.com/eQuantic/equantic-ui/issues/1328)).
+  Proposed and archived through OpenSpec (`openspec/specs/native-accessibility`).
+- **2026-11-23 · Text runs right to left, and the web mirrors**: `TextDirection` and `Directionality` join the
+  vocabulary, and a component reads its direction from the nearest `Directionality` or, with none, from the UI
+  culture, on every target. The server writes the page's `dir` beside its `lang`, the culture data carries the
+  direction, and a culture switch in the browser sets it again, with .NET as the one source. The web writes every
+  start and end as logical CSS in both producers, so padding, positions, alignment and a shift toward the end mirror
+  with that one attribute; tables, sheets, code and diagrams read left to right. The dashboard sample gains Arabic,
+  and the Flutter parity row reads SAME for the web; Photon reads the direction and lays out left to right until
+  after 1.0 ([#1568](https://github.com/eQuantic/equantic-ui/issues/1568)). Proposed and archived through OpenSpec
+  (`openspec/specs/text-direction`).
+- **2026-11-23 · The owner's pull requests are approved by a workflow, and a contributor's still wait for the
+  owner**: since 2026-11-21 the `main` ruleset requires one approving review, so that a contributor's pull request
+  waits for the owner, and every session works as the owner's account, which GitHub never lets approve its own pull
+  request: the merge queue refused them all. `.github/workflows/approve-owner-pull-requests.yml` approves on
+  `pull_request_target`, as `main` holds it and running nothing of the pull request, only when the author and the
+  event's actor are the owner's account. The working agreement says who approves what
+  ([#1847](https://github.com/eQuantic/equantic-ui/issues/1847)). Proposed and archived through OpenSpec
+  (`openspec/specs/working-agreement`).
+- **2026-11-23 · VoiceOver walks into a Photon window on the Mac, and hears where the keyboard is**: VoiceOver
+  stopped at the title bar, and the application's focused element was the window. Measured from outside with
+  the AX API on the PhotonDesktop sample, every read of the tree built new elements and released the ones
+  before (an element held across a second read answered `kAXErrorInvalidUIElement`), each element named a
+  parent the window did not list, and nothing answered the focused element. The macOS bridge now keeps one
+  element per node for as long as the node lives, told what the node says now; the content view is the
+  `AXGroup` the window lists; and its focused element is the element of the node with the keyboard, with
+  `NSAccessibilityFocusedUIElementChangedNotification` posted when the keyboard moves, which an observer
+  hears ([#1111](https://github.com/eQuantic/equantic-ui/issues/1111)). Proposed and archived through
+  OpenSpec (`openspec/specs/native-accessibility`).
+- **2026-11-24 · A calendar's month is a grid with column headers on Photon, as on the web**: a `Calendar` and
+  the `DatePicker` that opens one were a grid named by the month on the web, its weekday captions column headers,
+  and a group of plain text on Photon, so a reader there lost the grid's rows and columns and the header that says
+  which weekday a day falls on. Photon's semantics walk reads a `Navigable` as the tree or grid it says it is, and
+  a grid's header row as column headers named by their words. The 32 semantics parity entries that waited on it
+  are gone; four about the order Photon reads an anchored panel in moved to #1868
+  ([#1330](https://github.com/eQuantic/equantic-ui/issues/1330)). Proposed and archived through OpenSpec
+  (`openspec/specs/native-accessibility`).
+- **2026-11-24 · A number's Clamp refuses a minimum above its maximum**: a Bug under #1587
+  ([#1824](https://github.com/eQuantic/equantic-ui/issues/1824)). `Math.Clamp` over a number other than a decimal
+  answered the maximum where .NET refuses a minimum above it (`Math.Clamp(2.0, 3.0, 1.0)` was 1), and the
+  `Math.min(Math.max(…))` it was written as turned a NaN bound into NaN and dropped a negative zero's sign. Every
+  number's `Clamp` and `ClampNative` now go to the runtime's `clamp` and `clampLong`, which refuse with .NET's
+  `ArgumentException`, the values written in the culture as their type writes them, and compare in .NET's order.
+  Measured on both sides by `NumberClampConformanceTests`. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
+- **2026-11-24 · A runtime library's generic carries its type arguments**: a Bug under #1587
+  ([#1863](https://github.com/eQuantic/equantic-ui/issues/1863)), found by #1563. eqc marked a closed
+  construction with its type arguments only when the source declared its generic type, and an app reads the
+  framework from metadata, so `new GestureRecognizerFactoryWithHandlers<HoldThenDrag>(…)` crossed unmarked and
+  the browser took factories over different types for one runtime type. A generic the runtime library twins is
+  marked as one the source declares is; the BCL's collections and constructions whose type arguments are known
+  only at run time (#755) stay as they were. `RuntimeGenericClosureTests` reads a library from its image.
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`).
+- **2026-11-24 · A conformance case's deadline counts its work, not the clock**: a Bug under #1587
+  ([#1850](https://github.com/eQuantic/equantic-ui/issues/1850)). The Persian walk of
+  `CultureCalendarConformanceTests` failed once in a whole Conformance run at a load over 100 and passed alone:
+  `JsExecutor.Run` gave Bun 20 seconds on the clock, and at a load of 160 over 14 cores a process gets about a
+  ninth of a core, so a walk of three seconds ran past it. `ChildProcess.Run` takes a deadline on work, the
+  process's own processor time, beside the clock's, and the conformance runner hands its timeout as work: a
+  translation that loops for ever is still killed, and a case a loaded machine slows is not. The walk, its
+  Bun paused for 25 seconds, passes with it and fails at 20 seconds without it.
+- **2026-11-24 · A date is read wherever .NET reads it**: three Bugs under #1587
+  ([#1841](https://github.com/eQuantic/equantic-ui/issues/1841),
+  [#1842](https://github.com/eQuantic/equantic-ui/issues/1842),
+  [#1843](https://github.com/eQuantic/equantic-ui/issues/1843)), found reviewing #1616. The browser read the ISO
+  form only where a text began, and now reads it after a designator, a clock or a zone, its clock in place of
+  theirs, as .NET does (`PM 2024-01-15T10:00` is 10:00); a zone may lead the text. A day's name is read once
+  anywhere between the parts and asked of the date last, after a clock that does not exist (`2024-01-15 10:00
+  Monday` reads), where the browser read one only beside the date. A numeric date with two numbers of three
+  digits or more, two years to .NET's lexer, is refused (`1/001/2024`). Measured on both sides by
+  `DateOrderConformanceTests` in six cultures. Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-11-24 · A gesture of the app's own is recognized in C#, and competes for the pointer with the SDK's
+  own in one arena**: an app subclasses `GestureRecognizer`, Flutter's protocol and names (it hears the
+  pointers it allows, asks for one with `Resolve`, counts a deadline), and a `RawGestureDetector` hosts it
+  through a `GestureRecognizerFactoryWithHandlers<T>`, keeping it across rebuilds and making a new one when the
+  factory changes type. The arena and its router are written once in the vocabulary, run by Photon and run
+  transpiled in the browser, and one fixture holds both to the same answers; the press, the drags, the sort,
+  the context hold and the pans join it as members, keeping their own arming, so a screen with no detector
+  behaves as before. On Photon the arena is Flutter's whole, a scroll view's pan included. In the browser the
+  scroll is a member that wins by panning: measured in Chromium with real touch input, a hold of 600 ms kept
+  every `touchmove` cancelable and the list still, and a swipe at once fired `pointercancel` at 16 px. Each
+  pointer event now carries its time, `PointerEvent.TimeMs`. The dashboard's `/gestures` screen and its own
+  `HoldThenDrag` show it on both targets ([#1563](https://github.com/eQuantic/equantic-ui/issues/1563)).
+  Proposed and archived through OpenSpec (`openspec/specs/gesture-recognizers`).
+- **2026-11-24 · A month grid stops at its calendar's range**: a Bug under #1587
+  ([#1849](https://github.com/eQuantic/equantic-ui/issues/1849)). ar-SA's Um Al Qura calendar writes from April
+  30th 1900 to November 16th 2077, and the grid's chevron past its last month, and its keyboard's page and
+  section moves, asked a month the calendar refuses, so the press failed on both sides; at the Gregorian
+  calendar's own edges, the years 1 and 9999, the grid failed to build. `CultureCalendar` gains `FirstDay` and
+  `LastDay`, the grid stops there and counts its cells by day number, and the browser's calendars refuse a move
+  past their range in .NET's words: Um Al Qura's and the Persian calendar's year range and the Persian
+  calendar's last month, and a Gregorian or Thai date a `DateTime` cannot hold. Measured on both sides by
+  `CultureCalendarTwinTests`; `CalendarTests` drives the grid at each edge. Proposed and archived through
+  OpenSpec (`openspec/specs/month-grid`).
+- **2026-11-24 · A Server Action states how long the browser waits for it**: the browser abandoned every
+  action at 30 seconds, since eqc wrote each stub as `invoke('<id>', [args])` though the runtime has always
+  taken a `timeoutMs`, and a real site's action that took 99.6 s left its page waiting for good while the
+  server finished the work. `[ServerAction(TimeoutSeconds = 120)]` is read as a constant and handed to the
+  stub as `{ timeoutMs: 120000 }`; none, or 0, keeps the 30 seconds and the stub's shape, and a value below 0
+  or above 600 is refused at its line (EQ2017). Proved in `samples/DefaultUIDashboard`, where an action made
+  to take 35 s and marked 60 answered in a browser
+  ([#1881](https://github.com/eQuantic/equantic-ui/issues/1881)). Proposed and archived through OpenSpec
+  (`openspec/specs/server-actions`).
+- **2026-11-24 · A table pan's click guard leaves with its click or its table, and the runtime suite's teardown flake
+  is gone**: a pan on a table viewport armed a capturing click guard on the window and removed it 400 ms later on a
+  bare timer nothing cancelled. A spec torn down within those 400 ms had the timer fire against a window that had lost
+  its methods (`target.removeEventListener is not a function`), failing runs in which every file had passed; in an app
+  the guard outlived an unmounted table. The guard is the table's now: it goes, timer and listener, with the click it
+  stops, and at once when the table stops being watched, which every table is now, observed or not, and the runtime's
+  spec setup lets go of the tables each file leaves ([#1876](https://github.com/eQuantic/equantic-ui/issues/1876)).
+  Proposed and archived through OpenSpec (`openspec/specs/table-viewport`).
+- **2026-11-24 · A type parameter keeps its constraint and its casts in TypeScript**: since #1845 a generic class
+  declared its type parameters by their names alone, so a member read on a `T` constrained to a class was refused by the
+  runtime's `tsc`, and so was a call fed `(T)value`, written as the value alone. A type parameter constrained to a class
+  that has a twin is now declared `T extends` that class, the class imported, and a cast to a type parameter is asserted
+  `(value as T)`, in TypeScript only, wherever TypeScript has the parameter in scope (not in a generic local function's
+  arrow, nor in a static member). A class the server keeps, an interface and the other constraints leave the
+  parameter unconstrained, and no module's JavaScript changes
+  ([#1854](https://github.com/eQuantic/equantic-ui/issues/1854), [#1860](https://github.com/eQuantic/equantic-ui/issues/1860)).
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`).
+- **2026-11-24 · A wiki branch merged and deleted while a merge group checks the wiki out is read from master**: a
+  merge group's run reads the wiki's master with the wiki branch of every pull request already on main whose branch
+  still waits, and the step after a pull request lands merges that branch into master and deletes it whenever the pull
+  request lands. `queue_checkout` listed the wiki's heads once and fetched each branch afterwards, so a branch deleted in
+  between failed its fetch, was reported as a branch that does not merge, and the queue dropped #1835. A branch whose
+  fetch fails is now looked up again: when it is gone, master is fetched again and merged, since it holds that branch's
+  pages, and only a branch the wiki still lists fails. The checkout's self-test stands a `git` in for the race
+  ([#1862](https://github.com/eQuantic/equantic-ui/issues/1862)). Proposed and archived through OpenSpec
+  (`openspec/specs/working-agreement`).
+- **2026-11-24 · An anchored panel is read right after its anchor on Photon, and a dialog panel's stop is the
+  panel**: Photon's semantics walk read every overlay layer after the page, so an open menu, select, combobox list
+  or calendar came after whatever followed its anchor, and a dialog panel's stop was the whole layer, with the
+  scrim's dismiss button inside it. The walk now reads each anchored node's layer in place, after the anchor, as the
+  web lowers the panel and as Flutter attaches an `OverlayPortal`'s child to the portal, and a dialog panel's stop
+  is the panel, after the dismiss button. The four semantics parity entries of the open date picker are gone
+  ([#1868](https://github.com/eQuantic/equantic-ui/issues/1868)). Proposed and archived through OpenSpec
+  (`openspec/specs/native-accessibility`).
+- **2026-11-24 · An out var keeps its type, and an internal enum gets its union**: two of the runtime `tsc` errors
+  #1563 met. eqc declared an `out var` as `any`, so a list read through one walked `unknown` elements; it now declares
+  an `out var` of a named type, or a list of one, by its type in TypeScript, and writes a miss's null as `null!`
+  ([#1858](https://github.com/eQuantic/equantic-ui/issues/1858)). The generator of enum unions wrote them for public
+  enums only, while a twin imports the union of whatever enum it names; it now writes every top-level one, internal
+  ones included ([#1859](https://github.com/eQuantic/equantic-ui/issues/1859)). No module's JavaScript changed.
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-expression-variables`, `transpiler-classes`).
+- **2026-11-24 · A pager speaks the reader's language**: a Bug under #1587
+  ([#1874](https://github.com/eQuantic/equantic-ui/issues/1874)). `Pagination` wrote "Previous", "Next" and each
+  page's accessible name ("Page 3") in English in every culture. They come from `SdkStrings` now
+  (`PreviousPage`, `NextPage`, `PageNumbered`), in every culture the SDK ships, as every other label of the SDK
+  does. `PaginationTests` reads them in four cultures. Proposed and archived through OpenSpec
+  (`openspec/specs/sdk-strings`).
+- **2026-11-24 · The vertical arrows step a radio group and a tab strip forward on Photon, as on the web**: Photon's
+  host mapped ArrowUp to +1 for every `Adjustable`, so a vertical `RadioGroup` or `Tabs` strip stepped backwards,
+  where the web steps a tab list's and a radio group's vertical arrows in reading order. Both targets read one table
+  now, `AdjustableKeys`, beside `NavigableKeys`: left and right step back and forward, a slider's up raises its
+  value, a tab list's and a radio group's down is the next item. Right to left keeps the web's rule, which is
+  WAI-ARIA's ([#1873](https://github.com/eQuantic/equantic-ui/issues/1873)). Proposed and archived through OpenSpec
+  (`openspec/specs/adjustable-keyboard`).
+- **2026-11-25 · Uploads hold many files at once and several instances of an app**: a site's back office
+  lost 15 of 17 photographs a person picked on a phone. Twelve died at their creation: `FileUpload` started
+  every file at once, the server allows five unfinished uploads per person, and the browser read the 429
+  as a refusal. Three more were finished on one instance and refused by the instance their Server Action
+  reached, since the store kept the uploads in one instance's folder and memory. A page now sends three
+  files at a time, its first creation alone so a visitor's browser is named once (three sent together each
+  named a visitor of its own, and two were refused at their first part), and waits out a 429 that carries
+  `Retry-After`, which the server sets on the unfinished limit alone
+  ([#1885](https://github.com/eQuantic/equantic-ui/issues/1885)). Where the uploads are kept became the
+  app's choice: `IUploadStorage`, with `StoredUpload` as its record and `UseStorage<T>()` on `UseUploads`,
+  over which the tus engine, the binding of a Server Action, the limits and the expiry all read; the
+  folder stays the default, for one instance, and the server hands a storage only the ids it gives
+  ([#1886](https://github.com/eQuantic/equantic-ui/issues/1886)). Proposed and archived through OpenSpec
+  (`openspec/specs/file-uploads`).
+- **2026-11-26 · A box's inset highlight is drawn on Photon, the padding box's top row as on the web**:
+  `BoxStyle.InsetHighlight` documented both targets, and only the web drew it (an `inset 0 1px 0` box-shadow entry).
+  No native project read the member, so a box that set it had its highlight in the browser and none on Photon. Photon
+  now fills one dp row along the top of the box's padding box, past the border, clipped to its rounded corners, over
+  the background layers and under the border. A test pins the web's shadow entry and Photon's pixels on the same boxes
+  ([#1036](https://github.com/eQuantic/equantic-ui/issues/1036)). Proposed and archived through OpenSpec
+  (`openspec/specs/box-paint`).
+- **2026-11-26 · A collection's field and local keep their types in TypeScript**: a field of a queue was declared by a
+  `Queue<T>` its module never imported, and a local built with `new` lost its element type, so the runtime's `tsc`
+  refused a twin holding either. A field of every runtime collection class is now declared `any`, as a dictionary's was,
+  and the factories carry the type arguments of the type they build (`$eq.collections.queue<Shape>()`), for `new` and
+  for a collection expression, in a module written with type annotations, a type kept on the server as `any`
+  ([#1866](https://github.com/eQuantic/equantic-ui/issues/1866)). No module's JavaScript changed. Proposed and archived through OpenSpec (`openspec/specs/runtime-collections`).
+- **2026-11-26 · A component builds its child against the box its parent gives it**: the vocabulary
+  gains `BoxConstraints`, the room a box may take (Flutter's value by name and shape), and
+  `LayoutBuilder`, a node whose child is what its builder answers for the constraints its own box has;
+  `eQuantic.UI.Components` gains `ConstrainedBox`, which applies constraints an author holds. Until now
+  the window's size class was all the vocabulary answered, so a card three columns wide in a wide window
+  was as narrow as a phone and nothing could say so. On Photon the builder runs in the layout pass and
+  again only when the room or the node changes; on the web the server writes the box empty and the
+  browser builds the child after hydration, so nothing under a builder gets server data and a decision
+  that must render on the server stays with `AdaptiveNode`. Email refuses a `LayoutBuilder`. Everything
+  is added and nothing breaks, so there is no Upgrading entry
+  ([#1555](https://github.com/eQuantic/equantic-ui/issues/1555)). Proposed and archived through
+  OpenSpec (`openspec/specs/layout`).
+- **2026-11-26 · One rule says whether a class is a component, asked of the model**: eqc answered it in three places,
+  and only the parser's asked the semantic model (`IsUiComponent`). A construction site, deciding which arguments a
+  component's constructor leaves out for its dependencies, and the field-naming rule each walked the bases for the
+  names `StatelessComponent`, `StatefulComponent` and `UiComponent` in any namespace, where CLAUDE.md allows a name
+  heuristic only where the model cannot be asked. Both ask `IsUiComponent` now and their walks are gone. No module
+  moves: the pins, the constructor-injection tests and a regeneration that writes no file prove it
+  ([#1839](https://github.com/eQuantic/equantic-ui/issues/1839)).
+- **2026-11-26 · A static generic class keeps its statics per closed type**: the twin was one class for every type
+  argument, so `Cache<int>` and `Cache<string>` shared their statics and the second's static constructor never ran, and
+  TypeScript refused its static members for reading the class's type parameter. The runtime now keeps one object per
+  closed type (`$eq.statics(Cache, 'int')`), the class's static members read their statics through it, other code reaches
+  the closed type it names, and the twin declares no type parameters. A type argument known only at run time is refused
+  (EQ2018) ([#1855](https://github.com/eQuantic/equantic-ui/issues/1855)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-classes`).
+- **2026-11-26 · A hold's, a drag's, a lost press's and a pan's click guards are one owned guard, and leave with their
+  click or their owner**: a finger's hold that opened a menu, an armed drag and a press that lost its gesture arena
+  each stopped the click their release ended in with a capturing guard that a bare timer removed (600 ms, 50 ms, and
+  50 ms from the arena's end, after the arena had left the map its reset walks), the shape #1876 found in the table
+  viewport's pan. One owned click guard (`dom/click-guard.ts`) now serves all four. It goes, timer and listener, with
+  the click it stops, at once when its owner lets go (the context controller, a gesture controller's delegate, the
+  arena's controller, a table), and otherwise after its time, so no timer of it fires after a spec's page is torn down
+  ([#1889](https://github.com/eQuantic/equantic-ui/issues/1889)). Proposed and archived through OpenSpec
+  (`openspec/specs/gestures`, `openspec/specs/context-requests`, `openspec/specs/gesture-recognizers`).
+- **2026-11-26 · A class module imports the runtime's helpers where it writes them**: since #1805 eqc wrote
+  `Uri.EscapeDataString(x)` as `$eq.uri.escapeData(x)` without registering the `$eq` import, and a class module took that
+  import only from the strategies that registered it. A static class whose one runtime call was the escape shipped a
+  module with no import: a real site's order pages loaded, then threw "$eq is not defined" once they hydrated. A class
+  module now imports `$eq` wherever its emitted text names it, as a record's and a component's already did
+  ([#1882](https://github.com/eQuantic/equantic-ui/issues/1882)). Proposed and archived through OpenSpec
+  (`openspec/specs/module-imports`).
+- **2026-11-26 · A save's edit to view is held by the work it does, and a loaded runner no longer fails it**: the
+  web's edit-to-view held the warm median of three saves to 1.5s, and on loaded macOS runners the median moved with
+  the load, 1509 and 1898ms on runs whose fastest saves were 1471 and 1074ms, dropping pull requests that never
+  touched hot reload from the merge queue. eqc now writes the work each compile did into `EQC_TIMINGS` (whether it
+  kept the compilation, the files it walked and compiled, the modules it wrote, the files and bytes bun wrote), and
+  the measurement holds a save to the most any warm save did, which no load moves: a save of one screen compiles 1
+  of 159 files, and one that recompiled them all fails at 159. The time is read on the fastest warm save, and a
+  `dotnet watch` that exits before the app answers is started once more, its exit named with its output, its code
+  and the load ([#1909](https://github.com/eQuantic/equantic-ui/issues/1909)). Proposed and archived through OpenSpec
+  (`openspec/specs/hot-reload`).
+- **2026-11-26 · A spreadsheet's alarms are held by the work they time, and a busy runner no longer fails them**: the
+  spreadsheet's three perf alarms read the mean of forty timed steps or keys, and a busy macOS runner measured a
+  scroll step at 21.6 ms against the 12 ms alarm, taking a pull request that touched no sheet out of the queue. As
+  the table's were (#1397), each is now held by the work counted (the cells a step builds, and the layout nodes its
+  frame walks, the same ones as the frame before it for a scroll step, a screenful for a key), beside the same
+  loose time alarm read on the fastest run. Under a CPU load on every core the scroll step's mean was 13.2 ms and its
+  fastest 3.9 ms. A step that rebuilt the window every time cost 4.4 ms at its fastest and fails the cell check
+  ([#1915](https://github.com/eQuantic/equantic-ui/issues/1915)).
+- **2026-11-26 · A still host asks for no frame while late work is posted around it, and the hot reload test says so
+  every time**: `HotReloadTests.AnAppliedEditWakesEveryLiveHost` failed once under a load near 300, reading a still
+  host's `NeedsRender` true before any edit was applied. A probe over the whole engine suite (#1239) named what could
+  set it: work an earlier test left running, posted to the thread that draws after its test ended, which marked every
+  live host's tree, and #1892 made a post the process's. A test now posts from another thread between a still host's
+  frame and the assertion, and fails as the run did when a post marks every host again
+  ([#1200](https://github.com/eQuantic/equantic-ui/issues/1200)).
+- **2026-11-26 · A table's scroll step is held by the work it does, and a busy runner no longer fails it**: the
+  table's perf alarm read the mean of forty timed steps on a shared runner, and a busy macOS runner averaged 22.9 ms
+  against the 12 ms alarm on a pull request that touched no table. The guard is now the work a step does, counted,
+  which no runner's load can move: the cells it builds, and the layout nodes its frame walks, the same ones as the
+  frame before it. A step that rebuilt the window every time cost 1.4 ms, far under the alarm, and fails the count. The
+  time alarm stays, loose, read on the fastest step, for the work per node and outside the tree that the counts cannot
+  see ([#1397](https://github.com/eQuantic/equantic-ui/issues/1397)).
+- **2026-11-26 · A type parameter constrained to an interface reads its members in TypeScript**: since #1854 a constraint
+  to a class with a twin was written `T extends` that class, but an interface has no twin, so a type parameter
+  constrained to one, the most common constrained generic in C#, stayed unconstrained and the runtime's `tsc` refused a
+  member read on it. Every in-source interface whose twin can be written now gets one, a module holding
+  `export interface` with each member's twin name and type beside a value of its name, and a constraint to it is written
+  `T extends` it, imported. A generic interface, one with a static, default, event or indexer member, one extending
+  another and one the server keeps get none and leave the constraint unconstrained. A value typed as an interface stays
+  `any`, and the runtime library gains the twins of seven of its own interfaces, which its barrel re-exports as types,
+  so the served runtime carries none of them
+  ([#1878](https://github.com/eQuantic/equantic-ui/issues/1878)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-classes`).
+- **2026-11-26 · A fill's edges land on whole device pixels on Photon, so a layer behind no longer shows through a
+  shared edge**: two layers sharing an edge on a fractional device pixel each covered the same fraction of it, and
+  the one behind survived as a hairline, a red line under a closed swipeable row on an Android emulator at 2.625
+  device pixels a dp. A browser snaps a background's edges, and the web drew no line. `FillRRect` now snaps an
+  axis-aligned fill's edges to whole device pixels, half up, leaving turned fills, discs and corners as they were, and
+  `PushClip` snaps a clip the same way: the row draws both layers under its box's clip, and on the emulator the fill
+  snap alone left the line, which the clip snap took away. 76
+  goldens moved by their edge pixels only, each audited before it was regenerated
+  ([#1344](https://github.com/eQuantic/equantic-ui/issues/1344)). Proposed and archived through OpenSpec
+  (`openspec/specs/box-paint`).
+- **2026-11-26 · An `out var` keeps its type in every scope that declares one**: since #1858 an `out var` of a named
+  type was declared by its type in TypeScript only by the statements that put it in the enclosing block, and a loop's
+  condition, a `using`, a `catch` filter, a switch's sections and guards, a switch expression's arms, an initializer and
+  a constructor's base call still declared it `any`, so a list walked through it was refused by the runtime's `tsc`.
+  Each scope now types it from the expression that declares it, and a loop's head starts it as `undefined!`, since a
+  definite assignment is no part of that grammar. A `using` with no declaration holds its resource under one fixed
+  name, where a fresh `Guid` wrote another module on every compile
+  ([#1865](https://github.com/eQuantic/equantic-ui/issues/1865)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-expression-variables`).
+- **2026-11-26 · Each upload type has a file of its own, and main passes the one-type-per-file guard again**:
+  #1891 added `UploadPlace` at the end of `UploadStore.cs` and `UploadsStorageChoice` at the end of
+  `UploadsBuilder.cs`, two second top-level types the one-type-per-file baseline does not list, so
+  `OneTypePerFileTests` failed on main and every merge group built on it. Each type moved, unchanged, to a
+  file named for it; the baseline is untouched, since a new file never earns an entry
+  ([#1893](https://github.com/eQuantic/equantic-ui/issues/1893)). No behaviour changes.
+- **2026-11-26 · Every change that grows the served runtime records its delta, however small**: growth under the
+  budget's 1% margin passed unrecorded, so the first change past it was handed everyone's bytes, as #1913 was. A change
+  is now measured against the commit it is measured from, whose runtime the budget test builds as the Server does, and
+  a change that grows or shrinks it by any byte fails until it records what it moved. The record is that growth, the 1% stays as
+  the margin for noise, and a release's fold writes every delta as a row of `docs/SERVED-RUNTIME-GROWTH.md` with the
+  pull request that added it ([#1922](https://github.com/eQuantic/equantic-ui/issues/1922)). Proposed and archived
+  through OpenSpec (`openspec/specs/working-agreement`).
+- **2026-11-26 · Inputs and pickers take a style of their own, and builders for what they repeat**: the inputs
+  and pickers of the catalog had no `style`, so an app that wanted a field's radius or a calendar's cell size
+  rebuilt the component (#1608, the first half of #1548, under the catalog customization of #1580, after the
+  buttons' #1606 and the lists). Twelve components now take `style:`, mirrored by the `UI` factory and laid over the
+  theme's slot with the record's `Merge`, so a member the instance sets wins and a null one stays the theme's:
+  `InputTheme` for `TextInput`, `FormInput`, `SearchField`, `Select`, `FileUpload`, `TimePicker`, `DatePicker` and
+  `DateTimePicker`; `SegmentedTheme` for `SegmentedControl`, `Stepper` and `CultureSwitcher`; `CalendarTheme` for
+  `Calendar`. `DatePicker` and `DateTimePicker` also take `calendarStyle:` for the panel they open.
+  `FormInput` hands its style to the `TextInput` it draws, `DateTimePicker` hands `style` to its date and time
+  fields and `calendarStyle` to the date field's calendar, and `CultureSwitcher` hands its style to its segments.
+  `Select` takes `optionBuilder` and `SegmentedControl` takes `segmentBuilder`, each a `Func<int, VisualNode>`
+  (a `Select`'s index is flat across its groups): what it answers is drawn inside the part's chrome and the
+  option's or segment's text stays its accessible name. Nothing is removed in behaviour; the constructors and
+  factories widened and the old shapes went, as the preview rule says
+  ([#1608](https://github.com/eQuantic/equantic-ui/issues/1608)). Proposed and archived through OpenSpec
+  (`openspec/specs/catalog-customization`).
+- **2026-11-26 · main's unrecorded served-runtime growth is recorded by who grew it**: `main` had grown 3,907 bytes
+  gzipped past the base and its deltas, from #1852's record to f79bec9da, without a change recording them, and
+  #1913, whose own growth is 106 bytes, met the ceiling. Measured at every first-parent merge as
+  `docs/SERVED-RUNTIME-GROWTH.md` builds its tables, the 3,907 are an entry of their own,
+  `main-growth-to-f79bec9da.json`, each merge's bytes in its row, rather than inside the delta of the change that met
+  the ceiling ([#1922](https://github.com/eQuantic/equantic-ui/issues/1922)).
+- **2026-11-26 · Photon fills an even-odd shape by its rule, as the web does**: `VectorShape.EvenOdd` reached the
+  web as `fill-rule="evenodd"` and no Photon rasterizer, so a ring or a lake inside a region was drawn full on Photon
+  and open on the web, and an even-odd input shape was painted over a hole it could not be pressed in (#674).
+  `IconGlyph` now carries the rule, and CoreGraphics, Direct2D, Android and the portable rasterizer fill by it, a
+  stroke staying a union. A drawing's shape hands its rule to its glyph, and an icon's path carries `fill-rule` on the
+  web from C# and from the runtime alike. `IconGlyph`'s constructor and `Deconstruct` take a sixth member, `EvenOdd`
+  ([#1210](https://github.com/eQuantic/equantic-ui/issues/1210)). Proposed and archived through OpenSpec
+  (`openspec/specs/vector-shapes`).
+- **2026-11-26 · Work posted to the thread that draws is the process's, and marks no host's tree**: a live region's
+  test read `NeedsRender` true where the region owed nothing, now and then. A probe on the host's outside wakes, over
+  the whole engine suite, named why. Every post to Photon's UI dispatcher marked every live host as changed, and an
+  editor's fold answer posted from its timer's thread (about 3,000 posts in a run) or a tree view's load (about 390)
+  told whichever test was running that its own tree had changed. In an app, the same post told every other window so,
+  and a host that read itself changed scheduled nothing for a live region it owed. A post now queues and marks no
+  host. The shells ask `PhotonHost.WantsFrame`: the host's own state, its own schedule, or work waiting for the thread
+  that draws. `PhotonDispatcher.WakeOnPost` is gone ([#1239](https://github.com/eQuantic/equantic-ui/issues/1239)).
+  Proposed and archived through OpenSpec (`openspec/specs/native-ui-dispatcher`).
+- **2026-11-26 · The emission shapes are one file each, read from their folder**: the shapes eqc's twins once failed the
+  runtime's `tsc` on were one inline source in `SharedComponentTranspilationTests` and one list of the modules' names
+  that kept them out of the runtime, and every pull request adding a shape appended to both, so the merge queue met the
+  conflict there three times. Each shape is now a file of its own under `tests/eQuantic.UI.Web.Tests/Fixtures/Shapes`,
+  read from the folder, and a module is an in-test proof when it comes from no library source, so a new shape is its own
+  new file. The committed modules and the runtime's `tsc` are unchanged byte for byte
+  ([#1906](https://github.com/eQuantic/equantic-ui/issues/1906)).
 
 ## Retired documents
 

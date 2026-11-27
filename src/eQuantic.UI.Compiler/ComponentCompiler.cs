@@ -406,7 +406,8 @@ public class ComponentCompiler
         foreach (var component in list)
         {
             var result = Compile(component);
-            result.IsComponent = !component.IsRecordType && !component.IsPlainClass && !component.IsStaticHelper && !component.IsUnionType;
+            result.IsComponent = !component.IsRecordType && !component.IsPlainClass && !component.IsStaticHelper && !component.IsUnionType
+                && !component.IsInterfaceTwin;
             if (duplicated.TryGetValue(TwinNameOf(component), out var namesakes))
             {
                 result.Success = false;
@@ -626,7 +627,8 @@ public class ComponentCompiler
         if (model.GetDeclaredSymbol(declaration) is INamedTypeSymbol self)
             declarations.AddRange(DefaultInterfaceMembers.Of(self, model.Compilation)
                 .Select(inherited => inherited.Declaration).OfType<SyntaxNode>());
-        var asComponent = !component.IsRecordType && !component.IsPlainClass && !component.IsStaticHelper && !component.IsUnionType;
+        var asComponent = !component.IsRecordType && !component.IsPlainClass && !component.IsStaticHelper && !component.IsUnionType
+                && !component.IsInterfaceTwin;
         return NamedSourceTypes.Of(declarations,
             node => ReferenceEquals(node.SyntaxTree, model.SyntaxTree) ? model : model.Compilation.ModelOf(node.SyntaxTree),
             asComponent, _services);
@@ -765,6 +767,18 @@ public class ComponentCompiler
                 CollectResourceUses(recordConverter.ResourceUses, result);
                 result.Success = true;
                 CollectDiagnostics(result, component.SourcePath, recordConverter.Diagnostics);
+                return result;
+            }
+
+            // An interface's twin (#1878): `export interface`, which a type parameter's constraint names.
+            if (component.IsInterfaceTwin &&
+                component.ValueTypeSyntax is Microsoft.CodeAnalysis.CSharp.Syntax.InterfaceDeclarationSyntax face)
+            {
+                var im = component.SyntaxTree != null ? _semanticModelProvider.GetSemanticModel(component.SyntaxTree) : null;
+                result.TypeScript = _tsEmitter.EmitInterfaceModule(face, im);
+                result.IsInterfaceTwin = true;
+                result.Success = true;
+                CollectDiagnostics(result, component.SourcePath, _tsEmitter.GetLastDiagnostics());
                 return result;
             }
 
@@ -998,6 +1012,10 @@ public class CompilationResult
     /// <summary>Each twin the module's writers wrote, by its symbol (#830), from the converter that wrote it: a
     /// record's own, or the emitter's for every other module.</summary>
     internal CodeGen.WrittenTwins? Written { get; set; }
+
+    /// <summary>An interface's twin (#1878), whose only use is a constraint's type: a barrel re-exports it with
+    /// <c>export type</c>, so no value of it is reachable from the runtime's entry and the bundle carries none of it.</summary>
+    public bool IsInterfaceTwin { get; set; }
     public string TypeScript { get; set; } = string.Empty;
     public string JavaScript { get; set; } = string.Empty;
     public string? SourceMap { get; set; }

@@ -63,8 +63,9 @@ public class FirstReleasesTests
     }
 
     /// <summary>
-    /// CI checks out one commit and fetches each tag at depth one, so every release there is a root
-    /// with no history behind it. The answer reads only the releases' trees, so it is the same.
+    /// A release fetched at depth one is a root with no history behind it, the least a checkout can
+    /// hold (CI fetches each tag two deep, so a release commit keeps its parent, #1930). The answer
+    /// reads only the releases' trees, so it is the same.
     /// </summary>
     [Fact]
     public void ACheckoutOfEachReleaseAtDepthOne_AnswersAsTheFullHistoryDoes()
