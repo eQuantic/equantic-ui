@@ -31,8 +31,8 @@ public class AnAnchoredPanelStaysInTheViewportTests
         return host;
     }
 
-    /// <summary>The open panel: the last child of the last layer, where the anchored node places it.</summary>
-    private static Rect Panel(PhotonHost host) => host.LastFrame!.OverlayRoots[^1].Children[^1].Bounds;
+    /// <summary>The open panel: the child of the node that places it, the last child of the last layer.</summary>
+    private static Rect Panel(PhotonHost host) => host.LastFrame!.OverlayRoots[^1].Children[^1].Children[0].Bounds;
 
     [Theory]
     [InlineData(390)]

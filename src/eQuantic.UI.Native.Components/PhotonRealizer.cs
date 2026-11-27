@@ -461,8 +461,8 @@ public static class PhotonRealizer
                 context, rootElement: layerElement, around: queued.Content);
             // An anchored panel past the viewport's start or end edge comes back inside, its inset from the edge, as
             // the web's runtime moves it (#1933): its width is known only now.
-            if (queued.KeepsPanelInside && overlayLayout.Children.Count > 0)
-                KeepInside(overlayLayout.Children[^1], viewportWidth);
+            if (queued.KeptInside is { } kept && LaidOut(overlayLayout, kept) is { } laidPanel)
+                KeepInside(laidPanel, viewportWidth);
             overlayRoots.Add(overlayLayout);
             realizedLayers.Add(queued.Layer);
             layerLooks.Add(queued.Content);
@@ -523,6 +523,15 @@ public static class PhotonRealizer
     /// Moves a laid-out anchored panel back inside the viewport's width, <see cref="Anchored.ViewportInset"/> from
     /// its start and end edges; one wider than the room between them starts at the start edge's inset (#1933).
     /// </summary>
+    /// <summary>The laid-out node of <paramref name="source"/> in <paramref name="node"/>'s tree, or null.</summary>
+    private static LayoutNode? LaidOut(LayoutNode node, VisualNode source)
+    {
+        if (ReferenceEquals(node.Source, source)) return node;
+        foreach (var child in node.Children)
+            if (LaidOut(child, source) is { } found) return found;
+        return null;
+    }
+
     internal static void KeepInside(LayoutNode panel, float viewportWidth)
     {
         var inset = Anchored.ViewportInset;

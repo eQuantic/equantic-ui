@@ -179,7 +179,7 @@ internal sealed partial class EmitVisitor
         s.Overlays.Add(new QueuedLayer(new Overlay(layer) { Modal = anchored.PanelRole == AnchorPanelRole.Dialog },
             s.Node.Element as NodeElement, s.Press.InScrolledHeader, s.Content,
             comboField is null ? null : new ComboAnnouncement(PositionOf(s.Node), comboField, s.Node, anchored.ActiveIndex),
-            KeepsPanelInside: true));
+            KeptInside: panel));
     }
 
 
