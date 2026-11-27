@@ -19,17 +19,31 @@ public enum ChipKind : byte
 /// </summary>
 public sealed class Chip : StatelessComponent
 {
-    public Chip(string label, ChipKind kind = ChipKind.Filter, bool selected = false,
-        Action? onPressed = null, Action? onRemove = null)
+    public Chip(VisualNode child, ChipKind kind = ChipKind.Filter, bool selected = false,
+        Action? onPressed = null, Action? onRemove = null, VisualNode? avatar = null)
     {
-        Label = label;
+        Child = child;
+        Avatar = avatar;
         Kind = kind;
         Selected = selected;
         OnPressed = onPressed;
         OnRemove = onRemove;
     }
 
-    public string Label { get; init; }
+    /// <summary>
+    /// What the chip shows: its words, or a node of the developer's own (#1607). A <c>string</c> converts to a
+    /// node, and a <see cref="Text"/> that names nothing is drawn in the chip's label style, on one line, in its
+    /// text colour. A pressable chip is named by the words inside it, on both targets.
+    /// </summary>
+    public VisualNode Child { get; init; }
+
+    /// <summary>
+    /// Drawn before <see cref="Child"/>, at the chip's icon size and in its text colour: a person's picture, an
+    /// icon (Flutter's <c>Chip.avatar</c>). A selected filter chip draws its check in this place, so the chip keeps
+    /// its width when it toggles.
+    /// </summary>
+    public VisualNode? Avatar { get; init; }
+
     public ChipKind Kind { get; init; }
     public bool Selected { get; init; }
     public Action? OnPressed { get; init; }
@@ -63,18 +77,29 @@ public sealed class Chip : StatelessComponent
             _ => theme.TextPrimary,
         };
 
-        var label = new Text(Label, TypeRole.Caption, textColor, maxLines: 1)
+        // The chip's label look, which the box states for whatever the child and the avatar are (#1607): a
+        // string or a bare Text is drawn as the label always was, an Icon at the size the check takes.
+        var iconSize = slot?.IconSize ?? IconSize.Sm;
+        var look = new ContentStyle
         {
-            StyleOverride = new TypeStyle(slot?.LabelSize ?? 13, slot?.LabelLineHeight ?? 16,
+            Role = TypeRole.Caption,
+            Type = new TypeStyle(slot?.LabelSize ?? 13, slot?.LabelLineHeight ?? 16,
                 slot?.LabelWeight ?? FontWeight.SemiBold, slot?.LabelTracking ?? 0, 1.3f),
+            MaxLines = 1,
+            IconSize = iconSize,
         };
 
         var content = new Row(gap: slot?.Gap ?? 6) { Main = MainAlign.Center, Height = SizeValue.Fill };
         if (Kind == ChipKind.Filter && Selected)
         {
-            content.Add(new Icon(Icons.Check, slot?.IconSize ?? IconSize.Sm, textColor));
+            // The check takes the avatar's place, as Flutter's FilterChip draws it.
+            content.Add(new Icon(Icons.Check, iconSize, textColor));
         }
-        content.Add(label);
+        else if (Avatar is { } avatar)
+        {
+            content.Add(avatar);
+        }
+        content.Add(Child);
         if (Kind == ChipKind.Input && OnRemove != null)
         {
             // B8's frame draws the ✕ a tier below the label, TextMuted, so the name reads first.
@@ -111,6 +136,8 @@ public sealed class Chip : StatelessComponent
                 ? Selected ? slot?.SelectedBorderWidth ?? 1f : slot?.OutlineWidth ?? 1f
                 : 0f,
             BorderColor = Selected ? primary.Base : slot?.OutlineColor ?? theme.BorderStrong,
+            Foreground = textColor,
+            Content = look,
             Hover = hoverFill is null ? null : new StyleDiff { Background = hoverFill },
             Pressed = pressedFill is null ? null : new StyleDiff { Background = pressedFill },
         }, content);
@@ -119,7 +146,8 @@ public sealed class Chip : StatelessComponent
         return Kind == ChipKind.Filter && OnPressed != null
             ? new Pressable(box, OnPressed)
             {
-                Label = Label,
+                // No Label: the chip is named by the words of its child, as both targets name a control that
+                // states none (#1607).
                 // B8: a filter chip is a TOGGLE button — "Income, filter, selected". A filter chip
                 // always carries selection (that is what makes it a filter), so false is the honest
                 // answer for an unselected one rather than silence.

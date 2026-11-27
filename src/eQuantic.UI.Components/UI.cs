@@ -531,9 +531,9 @@ public static class UI
     // ---- Shared component library ------------------------------------------------------------
 
     /// <summary>The design-system Button (spec A12) without <c>new</c>.</summary>
-    public static Button Button(string label, Variant variant = Variant.Primary,
+    public static Button Button(VisualNode child, Variant variant = Variant.Primary,
         SizeVariant size = SizeVariant.Medium, Action? onPressed = null) =>
-        new Button(label, variant, size, onPressed);
+        new Button(child, variant, size, onPressed);
 
     /// <summary>The GDPR/LGPD consent card — drawn while the visitor's answer is unknown, gone after
     /// it; <paramref name="policyHref"/> adds the privacy-policy link the card should never lack.</summary>
@@ -545,9 +545,9 @@ public static class UI
         new Card(child, kind);
 
     /// <summary>Compact tag/filter control.</summary>
-    public static Chip Chip(string label, ChipKind kind = ChipKind.Filter, bool selected = false,
-        Action? onPressed = null, Action? onRemove = null) =>
-        new Chip(label, kind, selected, onPressed, onRemove);
+    public static Chip Chip(VisualNode child, ChipKind kind = ChipKind.Filter, bool selected = false,
+        Action? onPressed = null, Action? onRemove = null, VisualNode? avatar = null) =>
+        new Chip(child, kind, selected, onPressed, onRemove, avatar);
 
     /// <summary>Count badge (spec A11).</summary>
     public static Badge Badge(int count = 0, int max = 99, Variant variant = Variant.Destructive) =>
@@ -573,12 +573,11 @@ public static class UI
     public static Banner Banner(Variant status, string title, string? body = null) =>
         new Banner(status, title, body);
 
-    /// <summary>Binary check control.</summary>
-    /// <summary>A check, with the tail a form row needs: the accessible name it announces, and the
+    /// <summary>A check, with the tail a form row needs: the title beside the box, which names it, and the
     /// disabled bit a batch operation turns on across a whole list.</summary>
-    public static Checkbox Checkbox(bool @checked, Action? onChanged = null, string? label = null,
+    public static Checkbox Checkbox(bool @checked, Action? onChanged = null, VisualNode? title = null,
         bool disabled = false) =>
-        new Checkbox(@checked, onChanged, label) { Disabled = disabled };
+        new Checkbox(@checked, onChanged, title) { Disabled = disabled };
 
     /// <summary>Binary toggle. <paramref name="label"/> is what assistive tech announces — a list of
     /// switches with no names is a list of identical controls — and <paramref name="disabled"/> is

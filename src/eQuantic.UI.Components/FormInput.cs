@@ -108,18 +108,20 @@ public sealed class FormInput : StatelessComponent
 /// </summary>
 public sealed class FormSubmit : StatelessComponent
 {
-    public FormSubmit(FormController form, string label, Func<Task> onSubmit,
+    public FormSubmit(FormController form, VisualNode child, Func<Task> onSubmit,
         Variant variant = Variant.Primary, SizeVariant size = SizeVariant.Medium)
     {
         Form = form;
-        Label = label;
+        Child = child;
         OnSubmit = onSubmit;
         Variant = variant;
         Size = size;
     }
 
     public FormController Form { get; init; }
-    public string Label { get; init; }
+
+    /// <summary>What the submit button shows, handed to the <see cref="Button"/> it draws (#1607).</summary>
+    public VisualNode Child { get; init; }
     public Func<Task> OnSubmit { get; init; }
     public Variant Variant { get; init; }
     public SizeVariant Size { get; init; }
@@ -128,7 +130,7 @@ public sealed class FormSubmit : StatelessComponent
     public bool Wide { get; init; }
 
     public override VisualNode Build(ComponentContext context) =>
-        new Button(Label, Variant, Size)
+        new Button(Child, Variant, Size)
         {
             Loading = Form.Submitting,
             Expand = Wide,

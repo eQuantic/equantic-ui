@@ -4,8 +4,8 @@ namespace eQuantic.UI.Components;
 
 /// <summary>
 /// The design system's Button (spec A12) — authored ONCE against the abstract vocabulary: a
-/// <see cref="Pressable"/> wrapping a token-styled <see cref="Box"/> with a centered label
-/// <see cref="Row"/>. Realizes as DOM+CSS on web and Photon pixels on native from this single
+/// <see cref="Pressable"/> wrapping a token-styled <see cref="Box"/> with a centered
+/// <see cref="Row"/> around its <see cref="Child"/>. Realizes as DOM+CSS on web and Photon pixels on native from this single
 /// definition. Renders in 2–3 draws exactly as the spec budgets.
 ///
 /// v1 (pre-interaction-system): the PRESSED/FOCUSED visuals are framework interaction states — they
@@ -15,16 +15,21 @@ namespace eQuantic.UI.Components;
 /// </summary>
 public sealed class Button : StatelessComponent
 {
-    public Button(string label, Variant variant = Variant.Primary, SizeVariant size = SizeVariant.Medium,
+    public Button(VisualNode child, Variant variant = Variant.Primary, SizeVariant size = SizeVariant.Medium,
         Action? onPressed = null)
     {
-        Label = label;
+        Child = child;
         Variant = variant;
         Size = size;
         OnPressed = onPressed;
     }
 
-    public string Label { get; init; }
+    /// <summary>
+    /// What the button shows: its words, or a node of the developer's own (#1607). A <c>string</c> converts to a
+    /// node, and a <see cref="Text"/> that names nothing is drawn in the button's label style, on one line, in the
+    /// variant's colour. The button is named by the words inside it, on both targets.
+    /// </summary>
+    public VisualNode Child { get; init; }
     public Variant Variant { get; init; }
     public SizeVariant Size { get; init; }
     public Action? OnPressed { get; init; }
@@ -88,11 +93,16 @@ public sealed class Button : StatelessComponent
             borderColor = borderColor.WithOpacity(opacity);
         }
 
-        // Label style comes from the spec's size table (13/15/16/17 · 600) — a system override, not a
-        // free-form size (spec A8). Single line, ellipsis — never two lines (spec A12).
-        var label = new Text(Label, TypeRole.Label, textColor, maxLines: 1)
+        // The label's look comes from the spec's size table (13/15/16/17 · 600) — a system override, not
+        // a free-form size (spec A8). Single line, ellipsis — never two lines (spec A12). The container
+        // states it, with the colour, for whatever the child is (#1607): a string or a bare Text is drawn
+        // as the label always was, and an Icon in it at the size the leading icon takes.
+        var look = new ContentStyle
         {
-            StyleOverride = TypeStyle.OfSize(labelSize, slot?.LabelWeight ?? FontWeight.SemiBold, slot?.LabelTracking ?? 0.1f),
+            Role = TypeRole.Label,
+            Type = TypeStyle.OfSize(labelSize, slot?.LabelWeight ?? FontWeight.SemiBold, slot?.LabelTracking ?? 0.1f),
+            MaxLines = 1,
+            IconSize = iconSize,
         };
 
         var content = new Row(gap: gap)
@@ -103,7 +113,7 @@ public sealed class Button : StatelessComponent
         };
         if (Loading) content.Add(new Spinner(iconSize, textColor));
         else if (Leading is { } leading) content.Add(new Icon(leading, size: iconSize, color: textColor));
-        content.Add(label);
+        content.Add(Child);
 
         // Pressed (§01/A12): filled variants swap Base→Pressed on the same rrect; Outline/Ghost gain
         // a SurfaceSubtle fill while pressed. (Link's pressed TEXT swap joins with rich text.)
@@ -134,6 +144,8 @@ public sealed class Button : StatelessComponent
             CornerRadius = new CornerRadii(radius),
             BorderWidth = borderWidth,
             BorderColor = borderColor,
+            Foreground = textColor,
+            Content = look,
             Hover = inert || hoverFill is null ? null : new StyleDiff { Background = hoverFill },
             Pressed = inert || pressedFill is null ? null : new StyleDiff { Background = pressedFill },
         }, content);
@@ -141,7 +153,8 @@ public sealed class Button : StatelessComponent
         return new Pressable(container, inert ? null : OnPressed)
         {
             Disabled = inert,
-            Label = Label,
+            // No Label: the button is named by the words of its child, as both targets name a control
+            // that states none, so a child of the developer's own still names it (#1607).
             InitialFocus = InitialFocus,
         };
     }

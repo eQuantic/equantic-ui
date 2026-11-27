@@ -5,23 +5,29 @@ namespace eQuantic.UI.Components;
 /// <summary>
 /// The design system's Checkbox (spec B11), CONTROLLED: the owner holds the value and passes
 /// <see cref="Checked"/> + <see cref="OnChanged"/>. Box 22×22 · Radius.Xs — unchecked: 2dp
-/// BorderStrong; checked: Primary fill + 16dp check glyph. The WHOLE row (box + 15/400 label,
+/// BorderStrong; checked: Primary fill + 16dp check glyph. The WHOLE row (box + 15/400 title,
 /// gap 12) is the target, hit ≥ 48 via the Pressable contract. Tristate is real: a "select all"
 /// that is only partly true shows the DASH, never a tick. v1 fence: the scale-pop motion joins
 /// later; Error tints the border Destructive.
 /// </summary>
 public sealed class Checkbox : StatelessComponent
 {
-    public Checkbox(bool @checked, Action? onChanged = null, string? label = null)
+    public Checkbox(bool @checked, Action? onChanged = null, VisualNode? title = null)
     {
         Checked = @checked;
         OnChanged = onChanged;
-        Label = label;
+        Title = title;
     }
 
     public bool Checked { get; init; }
     public Action? OnChanged { get; init; }
-    public string? Label { get; init; }
+    /// <summary>
+    /// What is drawn beside the box: its words, or a node of the developer's own (#1607), Flutter's
+    /// <c>CheckboxListTile.title</c>. A <c>string</c> converts to a node, and a <see cref="Text"/> that names
+    /// nothing is drawn in <see cref="TypeRole.BodyM"/> on up to two lines, muted while disabled. The checkbox is
+    /// named by the words inside it, on both targets.
+    /// </summary>
+    public VisualNode? Title { get; init; }
     public bool Disabled { get; init; }
 
     /// <summary>Validation state (e.g. required terms) — Destructive border while unchecked.</summary>
@@ -62,19 +68,28 @@ public sealed class Checkbox : StatelessComponent
 
         var row = new Row(gap: slot?.LabelGap ?? Space.S3) { Cross = CrossAlign.Center };
         row.Add(box);
-        if (Label is { } label)
-            row.Add(new Text(label, TypeRole.BodyM, Disabled ? theme.TextMuted : theme.TextPrimary, maxLines: 2));
+        if (Title is { } title) row.Add(title);
+
+        // The title's look, stated around the row for whatever the title is (#1607): a string or a bare Text
+        // is drawn as the label always was. The row stays the title's parent, so a long title still shrinks
+        // and wraps inside it.
+        var look = new Box(new BoxStyle
+        {
+            Foreground = Disabled ? theme.TextMuted : theme.TextPrimary,
+            Content = new ContentStyle { Role = TypeRole.BodyM, MaxLines = 2 },
+        }, row);
 
         // The STATE goes in aria-checked, never in the name. A label-less checkbox announcing
         // "Checked" twice over was noise, and a name that CHANGED with the state read as a
         // different control to assistive tech every time it toggled.
-        return new Pressable(row, Disabled ? null : OnChanged)
+        return new Pressable(look, Disabled ? null : OnChanged)
         {
             Disabled = Disabled,
             Role = PressableRole.Checkbox,
             Selected = Checked,
             Mixed = Indeterminate,
-            Label = Label,
+            // No Label: the checkbox is named by the words of its title, as both targets name a control that
+            // states none (#1607).
         };
     }
 }
