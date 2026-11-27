@@ -54,6 +54,11 @@ describe('an anchored panel keeps inside the viewport (#1933)', () => {
     expect(panel.style.translate).toBe('-258px 0');
     keepInside(panel);
     expect(panel.style.translate).toBe('-258px 0');
+    // Measured from the moved box instead, a viewport wide enough to hold the panel where its placement put it would
+    // leave the old move standing.
+    viewport(1280);
+    keepInside(panel);
+    expect(panel.style.translate).toBe('');
   });
 
   it('moves the open panels once a pass is written, and leaves a hover-revealed one to the moment it is reached', () => {

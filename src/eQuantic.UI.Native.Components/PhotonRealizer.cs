@@ -519,10 +519,6 @@ public static class PhotonRealizer
         };
     }
 
-    /// <summary>
-    /// Moves a laid-out anchored panel back inside the viewport's width, <see cref="Anchored.ViewportInset"/> from
-    /// its start and end edges; one wider than the room between them starts at the start edge's inset (#1933).
-    /// </summary>
     /// <summary>The laid-out node of <paramref name="source"/> in <paramref name="node"/>'s tree, or null.</summary>
     private static LayoutNode? LaidOut(LayoutNode node, VisualNode source)
     {
@@ -532,6 +528,10 @@ public static class PhotonRealizer
         return null;
     }
 
+    /// <summary>
+    /// Moves a laid-out anchored panel back inside the viewport's width, <see cref="Anchored.ViewportInset"/> from
+    /// its start and end edges; one wider than the room between them starts at the start edge's inset (#1933).
+    /// </summary>
     internal static void KeepInside(LayoutNode panel, float viewportWidth)
     {
         var inset = Anchored.ViewportInset;
