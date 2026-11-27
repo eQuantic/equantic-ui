@@ -1,6 +1,6 @@
 ## 0. Measure before building (#1937, #1939)
 
-- [ ] 0.1 In Chromium, WebKit and Gecko, at device pixel ratios of 1 and 2.625 (devtools emulation), over a
+- [x] 0.1 In Chromium, WebKit and Gecko, at device pixel ratios of 1 and 2.625 (devtools emulation), over a
   1600 × 1000 box, measure and record:
   - whether a 330 px SVG tile's size and phase snap to whole device pixels, and where the tenth tile's left edge lands;
   - `round` on one axis with `auto` on the other: is the other axis scaled (Backgrounds 3 §3.9)?
@@ -8,7 +8,7 @@
 
   Write the answers into design.md's open question 1. Photon's snapping (task 5.6) and its transform rule (task 5.7)
   follow them.
-- [ ] 0.2 Measure the space toggles of design.md decision 8 in the three engines: an empty custom property, `initial`
+- [x] 0.2 Measure the space toggles of design.md decision 8 in the three engines: an empty custom property, `initial`
   as guaranteed-invalid, and a `var()` chain choosing among four URLs while `data-theme` and the emulated
   `prefers-contrast` change. If one engine fails, decision 8 falls back to a class per mode, and tasks 3.6 and 3.7
   change with it.
@@ -139,7 +139,8 @@
 - [ ] 5.5 `tiled_rgba_fragment` in `Sdf.slang`, with the slots of decision 12. `RhiPipelineKind.TiledRgba`,
   appended, and registered by the Metal and the Vulkan devices. Regenerate with `./scripts/generate-shaders.sh` and
   commit `Sdf.metal`, `Sdf.spv` and `Sdf.metallib`, never edited by hand.
-- [ ] 5.6 The snapping of decision 11, adjusted to what task 0.1 measured.
+- [ ] 5.6 The exact geometry of decision 11: a fractional period and phase, never snapped, sampled with linear
+  filtering and repeat addressing. `TilingTests` holds the tenth tile of 330 dp at 2.625 at 7796.25 device px.
 - [ ] 5.7 `EmitState.UnderTransform`, set when the emitter descends through a box with a `Transform` or a motion that
   transforms. Under it, a window attachment paints as a box attachment.
 - [ ] 5.8 `TileCompositor`: a vector through the host's `IIconRasterizer` and `ArtworkPaint`; a raster through

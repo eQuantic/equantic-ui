@@ -198,7 +198,7 @@ the declared mode, else the system's, a live `data-theme` over both, and `prefer
 
 ### Requirement: Photon draws each tile layer as one repeating draw, crisp at the device's scale
 
-Photon SHALL composite each tile once into an RGBA texture whose size is the tile's size in whole device pixels:
+Photon SHALL composite each tile once into an RGBA texture whose size is the tile's size in device pixels, rounded up:
 
 - from a vector, its shapes' solid and two-stop gradient paints resolved as a `Drawing` resolves them;
 - from a raster, the decoded image resampled.
@@ -206,8 +206,9 @@ Photon SHALL composite each tile once into an RGBA texture whose size is the til
 The texture SHALL be cached by what was composited, its device size and the resolved tint.
 
 Photon SHALL draw each tile layer with one `TiledTexture` command over its clip area, whatever the number of tiles. The
-command SHALL sample with repeat addressing, so every device pixel takes exactly one texel of one tile. The period and
-the phase SHALL land on whole device pixels while the box's transform keeps it axis-aligned. A change of the device's
+command SHALL sample with linear filtering and repeat addressing, so every device pixel samples exactly one position of
+one period. The period and the phase SHALL be the exact ones, never rounded to a device pixel, as Chromium draws a
+background tile. A change of the device's
 scale SHALL composite the tile again. A host with no rasterizer SHALL draw no vector tile.
 
 #### Scenario: A full-window desk
@@ -219,6 +220,11 @@ scale SHALL composite the tile again. A host with no rasterizer SHALL draw no ve
 
 - **WHEN** an opaque single-colour square tile repeats over a box at 2.625 device pixels a dp on the Reference backend
 - **THEN** every pixel inside the box is the tile's colour
+
+#### Scenario: No drift from the exact geometry
+
+- **WHEN** a 330 dp tile repeats from the box's origin at 2.625 device pixels a dp
+- **THEN** the tenth tile starts at 7796.25 device pixels, not at 7794
 
 #### Scenario: The cache
 

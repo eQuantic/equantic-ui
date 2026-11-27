@@ -231,11 +231,11 @@ with one default grid writes exactly what it writes today, and the component pin
 - **Under a transform, on both targets:** CSS Transforms 1 §6 says a fixed background on an element affected by a
   transform paints as `scroll`. Photon matches it: `EmitState` gains `UnderTransform`, set when the emitter descends
   through a box with a `Transform` or a motion that transforms. Under it, a window attachment paints as `Box`. A
-  scroll's translation is not a transform here, as in a browser. **A claim from the specification, measured by
-  task 0.1.**
-- **Where the web falls short:** iOS and iPadOS Safari paint `fixed` as `scroll`, so there the tile moves with the
-  box. **Documented WebKit behaviour, not measured here.** Task 4.9 measures it in the iOS simulator's Safari, and the
-  wiki says it.
+  scroll's translation is not a transform here, as in a browser. **Measured by task 0.1:** under `rotate(10deg)`,
+  Chromium, Gecko and WebKit all paint `fixed` exactly as `scroll`.
+- **Where the web falls short:** iOS Safari honours neither reading. **Measured by task 0.1** (iPhone 17 simulator,
+  iOS 27.0): the tile is anchored to the DOCUMENT. Its phase starts at the document's origin, and it moves with the
+  page as a scroll moves the box. Task 4.7 checks the iPad simulator too, and the wiki says it.
 
   The owner decided that the web keeps WebKit's behaviour there, documented. The workaround the web has, a
   `position: fixed` child under a `clip-path: inset(0)` box, is rejected.
@@ -318,19 +318,31 @@ class with a rule per mode. It needed a rule per layer index once the box took a
   source shared with an `Image` node decodes once. A host with no loader draws no image tile, as a host with no
   rasterizer draws no vector tile.
 
-### 11. Photon's snapping
+### 11. Photon's geometry: exact, never snapped
 
-While the box's transform is a scale and a translation:
+**Measured by task 0.1, the engines disagree:**
 
-- **The period:** the period in device pixels is round(tile × s), where s is the render scale times the transform's
-  scale, and the period in local units is that ÷ s.
-- **The phase:** the origin is moved to the nearest whole device pixel.
-- **The texture:** composited at exactly the period's device size.
+| Engine | Period | Phase |
+|---|---|---|
+| Chromium | fractional, the CSS length to 1/64 px | fractional, to 1/64 px |
+| Gecko | exact and fractional | rounded to the nearest device pixel |
+| WebKit (iOS) | rounded to whole device pixels | rounded to whole device pixels |
 
-So texels map one to one, crisp and uniform. Measured: at 2.625, 330 dp is 866.25 px and becomes 866, and 253.2444 dp
-is 664.77 px and becomes 665. Five tiles drift at most 1.25 px from the unsnapped grid. Whether the browser snaps the
-same way is open question 1 (task 0.1). Under a rotation or a skew, nothing is snapped and the sampling is nearest:
-the images' fence (EmitVisitor.Media.cs:260).
+At 2.625 a 330 dp tile repeats every 866.25 device pixels in Chromium and Gecko. A period rounded to 866 would drift
+2.25 px from them by the tenth tile. So Photon follows the geometry the specification writes, which Chromium follows
+and Gecko's period follows:
+
+- **The period** is tile × s, fractional, where s is the render scale times the transform's scale. It is never
+  rounded, so a tile lands where layout puts it however many tiles away.
+- **The phase** is the exact origin of decision 3, never moved to a pixel.
+- **The texture** is composited at the period's device size rounded up, and the shader samples it at
+  u = fract((p − origin) / period) with linear filtering and repeat addressing. Every device pixel samples exactly
+  one position of the period, and the seam is the texture's own wrap, so there is no gap and no overlap at any scale.
+  The tile is resampled by less than a texel per period, which is what Chromium does too.
+
+Against WebKit, which rounds both, a tile lands within the accumulated rounding WebKit adds: 0.9 px at the tenth
+33.7 px tile at scale 3. That difference is WebKit's, documented beside the iOS attachment. Under a rotation or a skew
+the same sampling applies.
 
 ### 12. Photon's one repeating draw per tile layer
 
@@ -428,10 +440,18 @@ No sample or package in the tree sets a pattern.
 
 ## Open Questions
 
-1. **Does the browser snap a background tile's size and phase to device pixels?** And does each engine follow the
-   §3.9 `round` rule for the other axis and the Transforms §6 rule for fixed? Task 0.1 measures all three. Photon
-   follows what is measured.
-2. **Do space toggles resolve in Chromium, WebKit and Gecko?** Task 0.2.
+1. **Answered by task 0.1:**
+   - **Snapping:** Chromium snaps neither the period nor the phase, Gecko snaps only the phase, and WebKit snaps
+     both. Photon follows the exact geometry (decision 11).
+   - **`round` with `auto`:** all three engines follow §3.9 and scale the other axis to keep the aspect.
+   - **`fixed` under a transform:** all three paint it as `scroll`, as Transforms §6 says.
+   - **iOS Safari:** a fixed background is anchored to the document (decision 7).
+
+   Measured on 2026-11-27 with Chrome 157 and Firefox 159 (Playwright 1.65.1, scales 1 and 2.625) and with Mobile
+   Safari on iOS 27.0 (scale 3).
+2. **Answered by task 0.2:** the space toggles resolve in Chromium, Gecko and WebKit, in the computed style and in
+   the painted pixel, for all four combinations of mode and contrast. An empty custom property is accepted
+   everywhere, and `initial` acts as guaranteed-invalid through the chain. Decision 8 needs no fallback.
 3. **The 64 MiB budget** is a judgment, not a measurement. The engineer measures the desk sample's resident size in
    the iOS simulator.
 4. **The size of the change:** about 34 points as one PR, by the owner's decision:
