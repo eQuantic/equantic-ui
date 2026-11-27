@@ -1,0 +1,7 @@
+# The sibling imports whose type a build still decides by the names the declaration's symbols name, since a
+# writer wrote the twin's name and recorded no symbol (#830), over the shared library, the emission shapes and
+# the fixtures, one "Module: Name" a line. It only shrinks: a new writer records its writes (WrittenTwins.Wrote)
+# instead of a line here, and EQ_UPDATE_IMPORTS_ON_THE_WALK=1 only takes lines out (ImportsOnTheWalkTests).
+EmittedFlex: EmittedShape
+EmittedFramed: EmittedShape
+EmittedScopes: EmittedPointer
