@@ -388,6 +388,15 @@ internal sealed partial class MeasureVisitor
         // the whole leftover until its last frame, and dropped it there at once.
         var shared = flexTotal is > 0 and < 1 ? leftover * flexTotal : leftover;
 
+        // What the line has left for its flexibles once its rigid items and gaps are laid, on an axis
+        // with no leftover to share: the room a max-content probe is offered. Offered the line's whole
+        // room, a flexible whose content takes what it is offered (a text entry) took it all and pushed
+        // the items beside it out of the line: the Studio's search field, a Flexible entry between an icon
+        // and its clear button in a hugging column, ran 88dp into the next grid column, where the web,
+        // whose Flexible is `min-width: 0`, shrinks it into the line (#1256).
+        var room = float.IsPositiveInfinity(mainAvail) ? float.PositiveInfinity : MathF.Max(0, mainAvail - rigidSum - gapTotal);
+        List<int>? probed = null;
+
         for (var i = 0; i < children.Count; i++)
         {
             if (!Deferred(i) && flexWeights[i] == 0) continue;
@@ -400,14 +409,15 @@ internal sealed partial class MeasureVisitor
             if (!mainBounded && Deferred(i) && children[i] is Flexible unbounded)
             {
                 var (usW, usH) = CrossStretch(unbounded);
-                var intrinsic = MeasureChild(unbounded.Child, horizontal ? mainAvail : crossAvail,
-                    horizontal ? crossAvail : mainAvail, children.At(i)?.ChildAt(0),
+                var intrinsic = MeasureChild(unbounded.Child, horizontal ? room : crossAvail,
+                    horizontal ? crossAvail : room, children.At(i)?.ChildAt(0),
                     stretchW: usW, stretchH: usH);
                 mains[i] = horizontal ? intrinsic.Bounds.Width : intrinsic.Bounds.Height;
                 rigidSum += mains[i];
                 var grown = ctx.Node(unbounded, intrinsic.Bounds);
                 grown.Adopt(intrinsic);
                 laid[i] = grown;
+                (probed ??= []).Add(i);
                 continue;
             }
 
@@ -427,6 +437,32 @@ internal sealed partial class MeasureVisitor
             {
                 mains[i] = share;
                 laid[i] = ctx.Node(children[i]); // flexible Spacer: pure space
+            }
+        }
+
+        // Flexibles that each fit the free room but not together give back what they overrun, each by its shrink
+        // weight times its size, as a browser shrinks flex items from their content size (Flexbox §9.7).
+        if (probed is { Count: > 1 } && !float.IsPositiveInfinity(room))
+        {
+            var taken = 0f;
+            var weightSum = 0f;
+            foreach (var i in probed)
+            {
+                taken += mains[i];
+                weightSum += ((Flexible)children[i]).Shrink * mains[i];
+            }
+            if (taken > room + 0.01f && weightSum > 0)
+            {
+                var overrun = taken - room;
+                foreach (var i in probed)
+                {
+                    var flexible = (Flexible)children[i];
+                    var given = overrun * (flexible.Shrink * mains[i] / weightSum);
+                    if (given <= 0) continue;
+                    rigidSum -= given;
+                    mains[i] -= given;
+                    laid[i] = Slot(flexible, i, mains[i]);
+                }
             }
         }
 
