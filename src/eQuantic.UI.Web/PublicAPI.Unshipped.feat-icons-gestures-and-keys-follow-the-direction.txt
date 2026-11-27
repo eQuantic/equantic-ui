@@ -1,0 +1,3 @@
+#nullable enable
+eQuantic.UI.Web.HtmlStyle.Scale.get -> string?
+eQuantic.UI.Web.HtmlStyle.Scale.set -> void

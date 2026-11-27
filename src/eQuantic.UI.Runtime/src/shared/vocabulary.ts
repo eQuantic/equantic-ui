@@ -14,7 +14,7 @@ import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue, TextDire
 import type { HtmlNode } from '../core/types';
 import type { AppTheme, BoxConstraints, ContextRequest, PointerEvent } from './value-types';
 import type { GestureRecognizerFactory } from './components/GestureRecognizerFactory';
-import { iconPaths } from './icons.generated';
+import { iconPaths, iconsMatchingTextDirection } from './icons.generated';
 import { exception } from '../utils/exceptions';
 import type {
   BoxStyleValue,
@@ -1549,7 +1549,7 @@ interface TransitionSpecConfig {
  */
 export const CuratedIcons = {
   resolve(glyph: string): IconGlyph {
-    return new IconGlyph(glyph, iconPaths[glyph] ?? '');
+    return new IconGlyph(glyph, iconPaths[glyph] ?? '', 'fill', '0 0 24 24', 2, false, iconsMatchingTextDirection.has(glyph));
   },
 };
 
@@ -2049,6 +2049,9 @@ export class IconGlyph {
   strokeWidth: number;
   /** The fill's rule: even-odd where true, nonzero otherwise, as SVG's `fill-rule` (#1210). */
   evenOdd: boolean;
+  /** C# `IconGlyph.MatchTextDirection` (Flutter's `IconData.matchTextDirection`): drawn mirrored where
+   * its element reads right to left. */
+  matchTextDirection: boolean;
 
   constructor(
     name: string,
@@ -2057,6 +2060,7 @@ export class IconGlyph {
     viewBox = '0 0 24 24',
     strokeWidth = 2,
     evenOdd = false,
+    matchTextDirection = false,
     config?: EqConfig,
   ) {
     this.name = name;
@@ -2065,6 +2069,7 @@ export class IconGlyph {
     this.viewBox = viewBox;
     this.strokeWidth = strokeWidth;
     this.evenOdd = evenOdd;
+    this.matchTextDirection = matchTextDirection;
     if (config) Object.assign(this, config);
   }
 

@@ -225,6 +225,14 @@ public class HtmlStyle
     /// moves keeps its own transform and its hover's (#511).
     /// </summary>
     public string? Translate { get; set; }
+
+    /// <summary>
+    /// The individual <c>scale</c> property, which CSS applies TOGETHER with <see cref="Transform"/>
+    /// rather than in its place, as <see cref="Translate"/> does. A glyph that matches the text
+    /// direction is turned by it (<c>scale: var(--eq-inline, 1) 1</c>), so a transform an author or a
+    /// parent writes on the same element still applies.
+    /// </summary>
+    public string? Scale { get; set; }
     public string? Animation { get; set; }
     public string? AnimationDelay { get; set; }
     public string? WhiteSpace { get; set; }
@@ -356,6 +364,7 @@ public class HtmlStyle
         AddProperty(properties, "transform", Transform);
         AddProperty(properties, "transform-origin", TransformOrigin);
         AddProperty(properties, "translate", Translate);
+        AddProperty(properties, "scale", Scale);
         AddProperty(properties, "animation", Animation);
         AddProperty(properties, "animation-delay", AnimationDelay);
         AddProperty(properties, "white-space", WhiteSpace);

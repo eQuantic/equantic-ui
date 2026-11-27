@@ -14,6 +14,7 @@ namespace eQuantic.UI.Primitives;
 /// </summary>
 public sealed record ScrollRequest(int Version)
 {
-    /// <summary>The offset to go to, in dp from the content's start.</summary>
+    /// <summary>The offset to go to, in dp from the content's start: the reading start on a horizontal
+    /// axis, the same distance <see cref="ScrollView.OnScrolled"/> reports.</summary>
     public float Offset { get; init; }
 }
