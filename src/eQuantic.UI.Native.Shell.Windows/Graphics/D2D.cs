@@ -18,6 +18,8 @@ internal static unsafe partial class D2D
     public const uint FormatB8G8R8A8Unorm = 87;
     public const uint AlphaModePremultiplied = 1;
     public const uint TextAntialiasModeGrayscale = 2;
+    /// <summary>D2D1_FILL_MODE_ALTERNATE: SVG's even-odd.</summary>
+    public const uint FillModeAlternate = 0;
     public const uint FillModeWinding = 1;
     public const uint FigureBeginFilled = 0;
     public const uint FigureEndOpen = 0;

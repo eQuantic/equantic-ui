@@ -116,10 +116,17 @@ budget_fixture() {
   repo="$work/$1"
   rm -rf "$repo"
   budgets="$repo/tests/eQuantic.UI.Server.Tests/Budgets"
-  mkdir -p "$budgets/served-runtime"
+  mkdir -p "$budgets/served-runtime" "$repo/docs"
+  printf '<Project>\n  <PropertyGroup>\n    <Version>9.9.9-preview.1</Version>\n  </PropertyGroup>\n</Project>\n' > "$repo/Directory.Build.props"
+  printf '# What each pull request added to the served runtime\n' > "$repo/docs/SERVED-RUNTIME-GROWTH.md"
   printf '{\n  "gzipBytes": 1000,\n  "measuredWith": "gzip, CompressionLevel.SmallestSize"\n}\n' > "$budgets/served-runtime.json"
-  printf '{ "deltaBytes": 30, "bought": "a component" }\n' > "$budgets/served-runtime/feat-a-grows.json"
+  # Each delta added by a squash of its own, so the fold can name the pull request that added it.
+  git -C "$repo" init -q && git -C "$repo" config user.email probe@example.invalid && git -C "$repo" config user.name probe
+  git -C "$repo" add -A && git -C "$repo" commit -q -m "the base"
+  printf '{ "deltaBytes": 30, "bought": "a component | with a pipe" }\n' > "$budgets/served-runtime/feat-a-grows.json"
+  git -C "$repo" add -A && git -C "$repo" commit -q -m "feat: a component (#101)"
   printf '{ "deltaBytes": -10, "bought": "a smaller lowering" }\n' > "$budgets/served-runtime/fix-b-shrinks.json"
+  git -C "$repo" add -A && git -C "$repo" commit -q -m "fix: a smaller lowering (#102)"
 }
 
 budget_fixture folds
@@ -130,12 +137,19 @@ grep -q '"measuredWith": "gzip, CompressionLevel.SmallestSize"' "$budgets/served
   || fail "the fold lost how the base is measured"
 ls "$budgets"/served-runtime/*.json >/dev/null 2>&1 && fail "a delta is still there after the fold"
 grep -q 'a component' "$repo/out" || fail "the fold did not print what each delta bought"
+# Every delta is a row of the growth page, under the release's version, with the pull request that added it (#1922).
+page="$repo/docs/SERVED-RUNTIME-GROWTH.md"
+grep -q '^## The deltas 9.9.9-preview.1 folded$' "$page" || fail "the fold wrote no section of the release's deltas"
+grep -qF '| `feat-a-grows` | #101 | +30 | a component \| with a pipe |' "$page" || fail "the growth delta's row is not $(grep feat-a-grows "$page")"
+grep -qF '| `fix-b-shrinks` | #102 | -10 | a smaller lowering |' "$page" || fail "the shrink's row is not $(grep fix-b-shrinks "$page")"
+[ "$(grep -c '^| `' "$page")" -eq 2 ] || fail "the page holds $(grep -c '^| `' "$page") delta rows, not one per delta"
 
 budget_fixture refuses
 printf '{ "deltaBytes": 5 }\n' > "$budgets/served-runtime/feat-c-says-nothing.json"
 "$root/scripts/fold-runtime-budget.sh" "$repo" > "$repo/out" 2>&1 && fail "the fold took a delta that says nothing it bought"
 grep -q '"gzipBytes": 1000,' "$budgets/served-runtime.json" || fail "a refused fold wrote the base anyway"
 [ -f "$budgets/served-runtime/feat-a-grows.json" ] || fail "a refused fold removed a delta"
+grep -q '^## The deltas' "$repo/docs/SERVED-RUNTIME-GROWTH.md" && fail "a refused fold wrote the growth page anyway"
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures check(s) failed." >&2

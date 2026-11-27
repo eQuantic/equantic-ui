@@ -3859,6 +3859,29 @@
       ]
     }
   ],
+  "icon-even-odd": [
+    {
+      "tag": "svg",
+      "attrs": {
+        "aria-hidden": "true",
+        "class": "eq-10z2v8p eq-16x7aca eq-rwnvja",
+        "fill": "currentColor",
+        "viewBox": "0 0 24 24"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "path",
+          "attrs": {
+            "d": "M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20zM12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10z",
+            "fill-rule": "evenodd"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
   "menu-closed": [
     {
       "tag": "div",

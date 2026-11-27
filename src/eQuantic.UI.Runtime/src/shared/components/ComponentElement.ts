@@ -37,7 +37,7 @@ export class ComponentElement extends Element {
         if (found == null) return null;
         if (!this.isActive) return found.inherited;
         found.addDependent(this);
-        $eq.collections.setAdd(this._dependencies ?? (this._dependencies = $eq.collections.hashSet('item')), found);
+        $eq.collections.setAdd(this._dependencies ?? (this._dependencies = $eq.collections.hashSet<InheritedElement>('item')), found);
         return found.inherited;
     }
 

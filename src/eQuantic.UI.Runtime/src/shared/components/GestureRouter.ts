@@ -2,9 +2,9 @@ import { $eq, GestureArena, GestureArenaEntry, GestureDeadline, GestureRecognize
 
 export class GestureRouter {
     constructor() {
-        this._routes = $eq.collections.dictionary();
-        this._kept = $eq.collections.dictionary(null, 'own');
-        this._makers = $eq.collections.dictionary(null, 'own');
+        this._routes = $eq.collections.dictionary<number, any>();
+        this._kept = $eq.collections.dictionary<any, any>(null, 'own');
+        this._makers = $eq.collections.dictionary<any, any>(null, 'own');
         this._deadlines = [];
         this.arena = new GestureArena();
     }

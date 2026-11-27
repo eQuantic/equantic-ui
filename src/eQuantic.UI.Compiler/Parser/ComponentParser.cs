@@ -139,6 +139,21 @@ public class ComponentParser
             });
         }
 
+        // Interfaces whose twin can be written (#1878): a module holding `export interface`, which a type parameter's
+        // constraint names (`T extends IShaped`). A nested one is named by its owner, as every nested type is (#584).
+        foreach (var face in root.DescendantNodes().OfType<InterfaceDeclarationSyntax>().Where(InterfaceTwin.CanBeWritten))
+        {
+            results.Add(new ComponentDefinition
+            {
+                Name = face.TwinTypeName(),
+                SourcePath = sourcePath,
+                SyntaxTree = tree,
+                Namespace = ns ?? "",
+                IsInterfaceTwin = true,
+                ValueTypeSyntax = face,
+            });
+        }
+
         // Discover static utility classes (`static class Format { … }`) used from components — emitted as
         // their own module of static members so `Format.Foo()` resolves at runtime. A NESTED one is a
         // module of its own too, named by its owner (`Section$Copy`, #584), so two sections' `Copy`

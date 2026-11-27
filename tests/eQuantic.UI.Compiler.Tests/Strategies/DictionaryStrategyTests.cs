@@ -169,7 +169,7 @@ public class DictionaryStrategyTests
         var ts = TestHelper.ConvertClass("""
             public int Count<T>(T a, T b) { var d = new Dictionary<T, int>(); d[a] = 1; d[b] = 2; return d.Count; }
             """, "Keys");
-        ts.Should().Contain("$eq.collections.dictionary(null, 'gen')");
+        ts.Should().Contain("$eq.collections.dictionary<any, number>(null, 'gen')");
     }
 
     [Theory]
@@ -203,8 +203,9 @@ public class DictionaryStrategyTests
             public Dictionary<string, int> E { get; set; } = new();
             public int Total(IReadOnlyDictionary<string, int> map, SortedList<string, int> sorted) => map.Count + sorted.Count;
             """, "Holder");
+        // As an annotation: the factories carry their type arguments (`sortedDictionary<string, number>`, #1866).
         foreach (var name in new[] { "IDictionary<", "IReadOnlyDictionary<", "SortedDictionary<", "SortedList<", "Dictionary<", "Record<" })
-            ts.Should().NotContain(name);
+            ts.Should().NotContain(": " + name);
         ts.Should().Contain("map: any").And.Contain("sorted: any");
     }
 

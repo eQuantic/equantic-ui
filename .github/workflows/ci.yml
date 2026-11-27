@@ -261,6 +261,12 @@ jobs:
       - name: Each change's API and budget fold whole at a release
         run: ./scripts/check-release-folds.sh
 
+      # The README's phone pictures are taken on a developer's Mac and never here, so this is where the
+      # script's refusals are proven: a picture that cannot be taken says why at once (#1198). Run
+      # against stubs of the simulator, the checker and the build, beside the other script checks.
+      - name: A README capture that cannot be taken says why
+        run: ./scripts/check-capture-readme.sh
+
   # The runtime's TypeScript, proven once: the command a developer runs, through the embedded bun
   # (bun.lock as pinned, tsc, vitest). It hands nothing on. The bundle an app runs is written by
   # the Server's own build, in every job that builds it, and a library build of the same sources
@@ -562,8 +568,14 @@ jobs:
         if: env.EQ_RUN != 'true'
         run: echo "This group cannot be affected by this change (see the changes job), so its projects do not run and this check reports success."
 
+      # Two commits deep: the served runtime's budget measures a change against the checkout's first parent, main
+      # in a pull request's merge ref and what the queue holds in its run, and builds that commit's bundle (#1922).
+      # A run asked for on a branch (`gh workflow run ci.yml --ref <branch>`) checks out the branch itself, which is
+      # measured from its fork from origin/main, so it fetches the whole history (found by the review).
       - uses: actions/checkout@v4
         if: env.EQ_RUN == 'true'
+        with:
+          fetch-depth: ${{ github.event_name == 'workflow_dispatch' && 0 || 2 }}
 
       - name: Setup .NET
         if: env.EQ_RUN == 'true'
@@ -579,13 +591,16 @@ jobs:
           scope: ${{ github.job }}
 
       # The version-mark guard compares each release's tree with the one before it, so it needs the
-      # release tags and none of the history between them: depth one is enough. Without them it
-      # would answer "unreleased" for everything and pass having checked nothing. The release tags
-      # only, not every branch as well, which the guard never reads (#999).
+      # release tags and none of the history between them. Without them it would answer "unreleased"
+      # for everything and pass having checked nothing. The release tags only, not every branch as
+      # well, which the guard never reads (#999). Two deep, as the checkout: on a shallow clone a fetch
+      # sets each tip's history to its depth, and a release commit is its own tag's tip, so a fetch one
+      # deep cut it to a root and the served runtime's budget lost the parent it measures from (#1930,
+      # held by ReleaseCheckoutTests).
       - name: Fetch the release tags (for the version-mark guard)
         if: env.EQ_RUN == 'true'
         shell: bash
-        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
+        run: git fetch --force --no-tags --depth=2 origin '+refs/tags/v*:refs/tags/v*'
 
       - name: Check out the wiki (for the docs guards)
         if: env.EQ_RUN == 'true'
@@ -706,7 +721,7 @@ jobs:
       # rather than pass having read nothing. The same two steps as `test` above, for the same reasons.
       - name: Fetch the release tags (for the version-mark guard)
         shell: bash
-        run: git fetch --force --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
+        run: git fetch --force --no-tags --depth=2 origin '+refs/tags/v*:refs/tags/v*'
 
       - name: Check out the wiki (for the docs guards)
         shell: bash

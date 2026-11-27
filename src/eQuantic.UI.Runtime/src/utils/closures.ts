@@ -43,3 +43,23 @@ export const sameMark = (mine: string | undefined, theirs: string | undefined): 
 /** Whether two values of one generic record or struct are of one closed type, by {@link sameMark}. */
 export const sameClosure = (value: object, other: object): boolean =>
   sameMark(closures.get(value), closures.get(other));
+
+/** Each static generic class's statics, by the type arguments of the closed type they are (#1855). */
+const closedStatics = new WeakMap<object, Map<string, object>>();
+
+/**
+ * The statics of the static generic class `type` for the closed type `typeArguments` names (#1855). C# keeps one set
+ * of statics per closed type: `Cache<int>.Last` and `Cache<string>.Last` are two fields, and each closed type runs its
+ * type initializer on its own first use. The twin is one class for every type argument, so each closed type is an
+ * object made from the class, once, and the class's static members, reached on it, keep their state on it: a static's
+ * getter and setter, the type initializer's slots and a static method read `this`. A static the class holds as a
+ * constant is read through to the class until the closed type writes its own.
+ */
+export const statics = <C extends object>(type: C, typeArguments: string): C => {
+  let closed = closedStatics.get(type);
+  if (!closed) closedStatics.set(type, (closed = new Map()));
+  let held = closed.get(typeArguments) as C | undefined;
+  // Its own type initializer's state: read through to the class, every closed type would share one.
+  if (!held) closed.set(typeArguments, (held = Object.assign(Object.create(type) as C, { $slots: null, $failure: null })));
+  return held;
+};
