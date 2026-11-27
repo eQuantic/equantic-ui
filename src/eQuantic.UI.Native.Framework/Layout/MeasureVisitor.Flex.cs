@@ -440,11 +440,13 @@ internal sealed partial class MeasureVisitor
             }
         }
 
-        // Flexibles that each fit the free room but not together give back what they overrun, each by its shrink
+        // Flexibles that overrun the room together give back what they overrun, each by its shrink
         // weight times its size, as a browser shrinks flex items from their content size (Flexbox §9.7).
         // An item gives no more than it has: one that reaches nothing is frozen there and the rest of the overrun is
         // shared again among the others, so a heavier weight never takes an item below nothing (found by the review).
-        if (probed is { Count: > 1 } && !float.IsPositiveInfinity(room))
+        // One alone gives back too: its content may be wider than the room it was offered, a fixed child or a nested row
+        // of rigid items, and a browser shrinks a lone flex item to its line as it shrinks two (found by the review).
+        if (probed is { Count: > 0 } && !float.IsPositiveInfinity(room))
         {
             var taken = 0f;
             foreach (var i in probed) taken += mains[i];

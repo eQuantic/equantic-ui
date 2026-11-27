@@ -109,6 +109,16 @@ public class AFlexibleInAHuggingLineTests
         entries.Sum().Should().BeApproximately(together, 0.5f);
     }
 
+    /// <summary>A lone flexible whose content is wider than the room its line leaves gives back the rest too, as a browser
+    /// shrinks a lone flex item (found by the review).</summary>
+    [Fact]
+    public void ALoneFlexibleWiderThanItsRoom_GivesBackTheRest()
+    {
+        var tree = Measure(() => Cell(Fixed(20), new Flexible(Fixed(400), 1), Fixed(48)));
+
+        All(tree).First(node => node.Source is Flexible).Bounds.Width.Should().BeApproximately(264 - 20 - 48 - 2 * 10, 0.5f);
+    }
+
     [Fact]
     public void AShortLabel_KeepsItsOwnWidth()
     {
