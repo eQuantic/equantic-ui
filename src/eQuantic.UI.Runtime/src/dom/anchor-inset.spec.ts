@@ -67,4 +67,14 @@ describe('an anchored panel keeps inside the viewport (#1933)', () => {
     tip.parentElement!.dispatchEvent(new Event('pointerover', { bubbles: true }));
     expect(tip.style.translate).toBe('-258px 0');
   });
+
+  it('moves an open panel inside a hover-revealed one, whose own host says it is open', () => {
+    viewport(390);
+    const tip = panelAt(10, 200);
+    tip.parentElement!.classList.add('eq-hoverreveal');
+    const nested = panelAt(306, 334);
+    tip.appendChild(nested.parentElement!);
+    commitAnchoredPanels();
+    expect(nested.style.translate).toBe('-258px 0');
+  });
 });

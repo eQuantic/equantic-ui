@@ -76,4 +76,25 @@ public class AnAnchoredPanelStaysInTheViewportTests
 
         Panel(host).X.Should().Be(expectedStart, "hung from a 40dp anchor at the start, the panel's end placement put it past the start edge");
     }
+
+    /// <summary>The end edge: a panel hung <c>BottomStart</c> from an anchor at the end of the line comes back to end
+    /// at the inset (found by the review: no case reached the end edge).</summary>
+    [Fact]
+    public void AnAnchoredPanelPastTheEndEdge_ComesBackInside()
+    {
+        const float viewport = 360;
+        var row = new Row { Width = SizeValue.Fill };
+        row.Add(new Flexible(new Text("Field", TypeRole.BodyM), 1));
+        row.Add(new Anchored(new Box(new BoxStyle { Width = 40, Height = 40 }), new Box(new BoxStyle { Width = 300, Height = 120 }))
+        {
+            Open = true,
+            Placement = AnchorPlacement.BottomStart,
+        });
+        var host = new PhotonHost(new Box(new BoxStyle { Width = SizeValue.Fill, Padding = EdgeInsets.All(16) }, row),
+            Theme, ThemeMode.Light, viewport, 600);
+        host.RenderFrame(new DisplayListBuilder());
+        host.RenderFrame(new DisplayListBuilder(), 16);
+
+        Panel(host).Right.Should().Be(viewport - Anchored.ViewportInset, "hung from the anchor's start at 304, it ran to 604");
+    }
 }

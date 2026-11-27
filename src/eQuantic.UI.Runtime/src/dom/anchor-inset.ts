@@ -39,10 +39,12 @@ export function keepInside(panel: HTMLElement): void {
   if (Math.abs(shift) > 0.5) panel.style.translate = `${shift}px 0`;
 }
 
-/** The panels the page holds open: every anchored panel but a hover-revealed one, which moves when it is reached. */
+/** The panels the page holds open: every anchored panel but a hover-revealed one, which moves when it is reached. A
+ * panel's own host says which it is, never an ancestor: a menu opened inside a tooltip's panel is open all the same
+ * (found by the review). */
 function keepOpenPanelsInside(): void {
   for (const panel of document.querySelectorAll<HTMLElement>(PANEL))
-    if (!panel.parentElement?.closest(HOVER_HOST)) keepInside(panel);
+    if (!panel.parentElement?.matches(HOVER_HOST)) keepInside(panel);
 }
 
 function keepReachedPanelInside(event: Event): void {
