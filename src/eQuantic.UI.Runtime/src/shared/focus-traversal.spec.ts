@@ -14,6 +14,8 @@ import { FocusAttachment } from './components/FocusAttachment';
 import { TraversalStop } from './components/TraversalStop';
 import type { FocusMove } from './components/FocusMove';
 import { FocusProbe } from './__fixtures__/FocusProbe';
+import { FocusSearch } from './__fixtures__/FocusSearch';
+import type { Column, Focus, FocusScope } from './vocabulary';
 import type { $TraversalEdgeBehaviorValue } from './enums.generated';
 
 interface HandlerSpec {
@@ -212,4 +214,68 @@ describe('the focus traversal, run by its transpiled twin', () => {
       });
     });
   }
+});
+
+const nextFrame = () =>
+  new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+describe('a component written as an app writes one around the focus (FocusSearch, eqc output)', () => {
+  // The C# an app writes (a FocusNode held in a field, a lambda added to Changed, RequestFocus from a handler,
+  // Focus and FocusScope in its build) is the code that runs here: AFocusNodeOfTheAppsOwnTests builds the same shape
+  // as an app is built and finds eqc refuses nothing of it.
+  it('builds its Focus and FocusScope around the nodes it holds, the knobs as written', () => {
+    const search = new FocusSearch();
+    const column = search.build(undefined as never) as unknown as Column;
+    const [focus, scope] = column.children as unknown as [Focus, FocusScope];
+    expect(focus.nodeKind).toBe('focus');
+    expect(focus.focusNode).toBeInstanceOf(FocusNode);
+    expect(focus.autofocus).toBe(true);
+    expect(scope.nodeKind).toBe('focusScope');
+    expect(scope.node).toBeInstanceOf(FocusScopeNode);
+    expect(scope.traversalEdgeBehavior).toBe('parentScope');
+  });
+
+  it('hears its node through the lambda added to Changed, and asks the scope for the keyboard from a handler', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const search = new FocusSearch();
+    search.mount(container);
+    expect(container.textContent).toContain('idle');
+
+    const column = search.build(undefined as never) as unknown as Column;
+    const [focus, scope] = column.children as unknown as [Focus, FocusScope];
+    const field = focus.focusNode!;
+    const results = scope.node!;
+    const manager = new FocusManager(false);
+    const button = new Spot('button');
+    const first = new Spot('result');
+    const heard: boolean[] = [];
+    const frame = () =>
+      manager.attach(
+        [
+          new TraversalStop(button, [new FocusAttachment(field, null, false)]),
+          new TraversalStop(first, [new FocusAttachment(results, (hasFocus: boolean) => heard.push(hasFocus), false)]),
+        ],
+        null,
+        null,
+      );
+    frame();
+
+    manager.focused(button);
+    await nextFrame();
+    expect(field.hasFocus).toBe(true);
+    expect(container.textContent).toContain('field');
+
+    search.openResults();
+    frame();
+    const move = manager.takeRequest();
+    expect(move?.to).toBe(first);
+    manager.focused(move!.to);
+    await nextFrame();
+    expect(results.hasFocus).toBe(true);
+    expect(heard).toEqual([true]);
+    expect(field.hasFocus).toBe(false);
+    expect(container.textContent).toContain('idle');
+    container.remove();
+  });
 });
