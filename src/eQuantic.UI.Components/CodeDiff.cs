@@ -428,12 +428,15 @@ public sealed class CodeDiff : StatefulComponent
         shortcuts = new Shortcut(shortcuts, new KeyChord("F5", KeyModifiers.Alt | KeyModifiers.Shift), () => StepTo(false)) { FocusScoped = true };
 
         var capped = bounded && MaxHeight > 0;
-        return new Box(new BoxStyle
+        // Code reads left to right in every language, and the gutters, the two sides and their horizontal
+        // scrolls stand where the grid measured them, from the left: the one code view #1568 left unfenced
+        // (#1569). The surfaces' own hosts already say so; the rows and scrolls around them did not.
+        return new Directionality(TextDirection.LeftToRight, new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Height = Height,
             MaxHeight = capped ? SizeValue.Fixed(MaxHeight) : SizeValue.Hug,
-        }, shortcuts);
+        }, shortcuts));
     }
 
     /// <summary>

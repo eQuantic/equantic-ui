@@ -94,16 +94,31 @@ export const StyleChannels = {
 export class ColorToken {
   readonly light: ColorValue;
   readonly dark: ColorValue;
+  /**
+   * The legs at `ContrastLevel.More` (C# `MoreLight` and `MoreDark`), present only where one differs
+   * from its Standard leg, as the C# token keeps them: a token with no More pair is the same value as
+   * one stated with More equal to Standard. A tile reads them to write its contrast variants (#1937).
+   */
+  readonly moreLight?: ColorValue;
+  readonly moreDark?: ColorValue;
 
-  constructor(light: ColorValue, dark: ColorValue = light) {
+  constructor(light: ColorValue, dark: ColorValue = light, moreLight?: ColorValue, moreDark?: ColorValue) {
     this.light = light;
     this.dark = dark;
+    if (moreLight && !sameColor(moreLight, light)) this.moreLight = moreLight;
+    if (moreDark && !sameColor(moreDark, dark)) this.moreDark = moreDark;
+  }
+
+  /** C# twin: this token with its legs at `ContrastLevel.More`. */
+  withMore(light: ColorValue, dark: ColorValue): ColorToken {
+    return new ColorToken(this.light, this.dark, light, dark);
   }
 
   /** Both modes with alpha scaled — the C# token-level disabled 38% group, byte-rounded like `Color.WithOpacity`. */
   withOpacity(opacity: number): ColorToken {
     const scale = (c: ColorValue): ColorValue => ({ ...c, a: dotnetRound(c.a * opacity) });
-    return new ColorToken(scale(this.light), scale(this.dark));
+    return new ColorToken(scale(this.light), scale(this.dark),
+      scale(this.moreLight ?? this.light), scale(this.moreDark ?? this.dark));
   }
 
   /** Per-leg channel midpoint — the §10 hover derivation, byte-exact with C# `ColorToken.MidpointWith`. */
@@ -111,8 +126,14 @@ export class ColorToken {
     return new ColorToken(
       Color.midpointWith(this.light, other.light),
       Color.midpointWith(this.dark, other.dark),
+      Color.midpointWith(this.moreLight ?? this.light, other.moreLight ?? other.light),
+      Color.midpointWith(this.moreDark ?? this.dark, other.moreDark ?? other.dark),
     );
   }
+}
+
+function sameColor(a: ColorValue, b: ColorValue): boolean {
+  return a.r === b.r && a.g === b.g && a.b === b.b && a.a === b.a;
 }
 
 export class SizeValue {

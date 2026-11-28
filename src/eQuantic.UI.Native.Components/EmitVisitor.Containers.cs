@@ -178,7 +178,8 @@ internal sealed partial class EmitVisitor
         // closed menu leaves the tree.
         s.Overlays.Add(new QueuedLayer(new Overlay(layer) { Modal = anchored.PanelRole == AnchorPanelRole.Dialog },
             s.Node.Element as NodeElement, s.Press.InScrolledHeader, s.Content,
-            comboField is null ? null : new ComboAnnouncement(PositionOf(s.Node), comboField, s.Node, anchored.ActiveIndex)));
+            comboField is null ? null : new ComboAnnouncement(PositionOf(s.Node), comboField, s.Node, anchored.ActiveIndex),
+            KeptInside: panel));
     }
 
 
@@ -191,14 +192,16 @@ internal sealed partial class EmitVisitor
         if (s.Motion.Reduced && loop.HideAtRest) return;
         var offset = ResolveLoopOffset(loop, s.Node.Bounds.Width, s.Motion);
         var input = s.Input;
+        var moved = s.UnderTransform;
         if (offset != 0)
         {
             var matrix = Matrix2D.Translation(offset, 0);
             s.Builder.PushTransform(matrix);
             input = input.Under(matrix);
+            moved = true;
         }
         foreach (var child in s.Node)
-            Emit(s with { Node = child, Input = input });
+            Emit(s with { Node = child, Input = input, UnderTransform = moved });
         if (offset != 0) s.Builder.Pop();
     }
 
@@ -217,15 +220,17 @@ internal sealed partial class EmitVisitor
             ? (1f - s.Node.Presence) * Presence.SlideDistance
             : 0f;
         var input = s.Input;
+        var moved = s.UnderTransform;
         if (rise != 0)
         {
             var matrix = Matrix2D.Translation(0, rise);
             s.Builder.PushTransform(matrix);
             input = input.Under(matrix);
+            moved = true;
         }
         if (entering) s.Builder.PushLayer(s.Node.Presence);
         foreach (var child in s.Node)
-            Emit(s with { Node = child, Input = input });
+            Emit(s with { Node = child, Input = input, UnderTransform = moved });
         if (entering) s.Builder.PopLayer();
         if (rise != 0) s.Builder.Pop();
         if (s.Motion.Presences is { } presences && s.Node.Element is { } at)

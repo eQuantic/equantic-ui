@@ -153,22 +153,29 @@ describe('grid semantics (C# GridSemanticsTests cross-pin)', () => {
     ]);
   });
 
-  it('maps every key exactly as the C# half does', () => {
+  it('maps every key exactly as the C# half does, in both directions', () => {
     // The SSR realizer has its own table (NavigableKeys.cs) because the abstract layer names moves
     // and not keys. A key one half claims and the other ignores is a calendar whose arrows work
-    // until hydration, or only after it — and nothing else in either suite would notice.
+    // until hydration, or only after it — and nothing else in either suite would notice. The table is
+    // per direction: the horizontal arrows are next and previous ALONG THE READING, and the browser
+    // reads the direction from the nearest [dir] where the composite sits, at the key (#1569).
     const moves: string[] = [];
     const host = render(month((move) => moves.push(move)));
     const keydown = host.events?.keydown as unknown as (event: KeyboardEvent) => void;
+    const tables = keyTable as Record<'leftToRight' | 'rightToLeft', Record<string, string | null>>;
 
-    for (const [spelling, expected] of Object.entries(keyTable as Record<string, string | null>)) {
-      const shiftKey = spelling.startsWith('shift+');
-      const key = shiftKey ? spelling.slice('shift+'.length) : spelling;
-      moves.length = 0;
-      keydown({ key, shiftKey, preventDefault: () => {} } as unknown as KeyboardEvent);
-      expect(moves, `${spelling} must map the same on both halves`).toEqual(
-        expected === null ? [] : [expected],
-      );
+    for (const [direction, table] of Object.entries(tables)) {
+      const where = document.createElement('div');
+      where.setAttribute('dir', direction === 'rightToLeft' ? 'rtl' : 'ltr');
+      for (const [spelling, expected] of Object.entries(table)) {
+        const shiftKey = spelling.startsWith('shift+');
+        const key = shiftKey ? spelling.slice('shift+'.length) : spelling;
+        moves.length = 0;
+        keydown({ key, shiftKey, currentTarget: where, preventDefault: () => {} } as unknown as KeyboardEvent);
+        expect(moves, `${spelling} must map the same on both halves, ${direction}`).toEqual(
+          expected === null ? [] : [expected],
+        );
+      }
     }
   });
 

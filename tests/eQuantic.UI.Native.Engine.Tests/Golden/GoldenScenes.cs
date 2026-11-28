@@ -237,6 +237,32 @@ public static class GoldenScenes
             b.PopClip();
         },
 
+        // #1937 — a tile layer: one Rgba8 tile repeated over its area in ONE command, at a fractional
+        // period and phase under a scale, filtered linearly in premultiplied light (the translucent
+        // texel lends its neighbour no colour), wrapping across the seam, inside a rounded clip, at an
+        // opacity; and a second layer spaced across and once down, whose gaps show the page.
+        ["tiled-texture"] = b =>
+        {
+            var tile = TiledTile();
+            b.PushTransform(Matrix2D.Scale(1.3f, 1.3f));
+            b.PushClip(new RRect(new Rect(6, 6, 108, 62), new CornerRadii(12)));
+            b.TiledTexture(new Rect(6, 6, 108, 62), tile,
+                new Tiling(new Point(10.4f, 7.7f), new Size(13.7f, 11.3f), new Size(13.7f, 11.3f), true, true), 0.85f);
+            b.PopClip();
+            b.Pop();
+            b.TiledTexture(new Rect(8, 96, 144, 18), tile,
+                new Tiling(new Point(8, 99), new Size(23.5f, 12), new Size(15, 12), true, false), 1f);
+        },
+
+        // The same sampling under a rotation: the tiles turn with the transform, and stay seamless.
+        ["tiled-texture-rotated"] = b =>
+        {
+            b.PushTransform(Matrix2D.Translation(-80, -60) * Matrix2D.Rotation(0.35f) * Matrix2D.Translation(80, 60));
+            b.TiledTexture(new Rect(20, 15, 120, 90), TiledTile(),
+                new Tiling(new Point(20, 15), new Size(17.25f, 13.5f), new Size(17.25f, 13.5f), true, true), 1f);
+            b.Pop();
+        },
+
         ["shadow-rrect"] = b =>
         {
             var card = new RRect(new Rect(30, 20, 100, 70), new CornerRadii(14));
@@ -288,6 +314,14 @@ public static class GoldenScenes
                 Paint.Linear(new Point(30, 0), new Point(86, 0), Accent, Mint));
         },
     };
+
+    /// <summary>A 4 × 3 tile: four opaque colours, a translucent one, and a transparent texel.</summary>
+    private static TextureData TiledTile() => TextureData.Rgba(4, 3,
+    [
+        232, 99, 154, 255,   99, 102, 241, 255,   255, 255, 255, 255,   16, 185, 129, 255,
+        250, 204, 21, 255,   0, 0, 0, 0,          99, 102, 241, 128,    232, 99, 154, 255,
+        16, 185, 129, 255,   255, 255, 255, 255,  250, 204, 21, 255,    30, 41, 59, 255,
+    ]);
 
     public static TheoryData<string> Names
     {

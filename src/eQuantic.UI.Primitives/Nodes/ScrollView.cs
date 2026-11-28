@@ -22,7 +22,9 @@ public sealed class ScrollView : SingleChildNode
     public SizeValue Height { get; init; }
 
     /// <summary>Where the view starts, in dp (≥ 0, toward the content end): read when it is first drawn,
-    /// and never again. A component that moves its view later asks with <see cref="Request"/>.</summary>
+    /// and never again. A component that moves its view later asks with <see cref="Request"/>. On a
+    /// horizontal axis it counts from the reading START, so 0 is the right edge of a view that reads right
+    /// to left on the web, as Flutter's <c>ScrollPosition.pixels</c> does.</summary>
     public float Offset { get; init; }
 
     /// <summary>
@@ -37,7 +39,8 @@ public sealed class ScrollView : SingleChildNode
     /// that has to know: a list that only builds the rows you can see, a header that shrinks, a
     /// "back to top" that appears past a fold. Without it the offset lives in the host and no
     /// component can ask, which is the difference between a list that scrolls and a list that
-    /// can be long.
+    /// can be long. A horizontal view reports its distance from the reading start, which grows toward
+    /// the end in both directions.
     /// </summary>
     public Action<float>? OnScrolled { get; init; }
 

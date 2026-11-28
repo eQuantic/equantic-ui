@@ -1175,3 +1175,417 @@ struct pixelOutput_5
     return _S41;
 }
 
+
+#line 342
+float tileTexel_0(float offset_0, float period_0, float extent_0, float repeats_0, float size_0)
+{
+
+#line 342
+    bool _S42;
+
+    if(!(period_0 > 0.0f))
+    {
+
+#line 344
+        _S42 = true;
+
+#line 344
+    }
+    else
+    {
+
+#line 344
+        _S42 = !(extent_0 > 0.0f);
+
+#line 344
+    }
+
+#line 344
+    if(_S42)
+    {
+
+#line 344
+        _S42 = true;
+
+#line 344
+    }
+    else
+    {
+
+#line 344
+        _S42 = size_0 <= 0.0f;
+
+#line 344
+    }
+
+#line 344
+    if(_S42)
+    {
+
+#line 344
+        return -1.0f;
+    }
+
+#line 345
+    float cell_0 = floor(offset_0 / period_0);
+    float within_0 = offset_0 - cell_0 * period_0;
+
+#line 346
+    float cell_1;
+
+#line 346
+    float within_1;
+
+
+    if(within_0 < 0.0f)
+    {
+
+#line 349
+        float within_2 = within_0 + period_0;
+
+#line 349
+        cell_1 = cell_0 - 1.0f;
+
+#line 349
+        within_1 = within_2;
+
+#line 349
+    }
+    else
+    {
+
+#line 350
+        if(within_0 >= period_0)
+        {
+
+#line 350
+            float within_3 = within_0 - period_0;
+
+#line 350
+            cell_1 = cell_0 + 1.0f;
+
+#line 350
+            within_1 = within_3;
+
+#line 350
+        }
+        else
+        {
+
+#line 350
+            cell_1 = cell_0;
+
+#line 350
+            within_1 = within_0;
+
+#line 350
+        }
+
+#line 349
+    }
+
+    if(repeats_0 < 0.5f)
+    {
+
+#line 351
+        _S42 = cell_1 != 0.0f;
+
+#line 351
+    }
+    else
+    {
+
+#line 351
+        _S42 = false;
+
+#line 351
+    }
+
+#line 351
+    if(_S42)
+    {
+
+#line 351
+        return -1.0f;
+    }
+
+#line 352
+    if(within_1 >= extent_0)
+    {
+
+#line 352
+        _S42 = extent_0 < period_0;
+
+#line 352
+    }
+    else
+    {
+
+#line 352
+        _S42 = false;
+
+#line 352
+    }
+
+#line 352
+    if(_S42)
+    {
+
+#line 352
+        return -1.0f;
+    }
+
+#line 353
+    return min(within_1 / extent_0, 1.0f) * size_0;
+}
+
+
+int tileIndex_0(int index_0, int size_1, float wraps_0)
+{
+
+#line 357
+    int _S43;
+
+    if(wraps_0 > 0.5f)
+    {
+
+#line 359
+        int _S44 = index_0 % size_1;
+
+#line 359
+        int _S45 = (_S44 + size_1) % size_1;
+
+#line 359
+        _S43 = _S45;
+
+#line 359
+    }
+    else
+    {
+
+#line 359
+        _S43 = clamp(index_0, int(0), size_1 - int(1));
+
+#line 359
+    }
+
+#line 359
+    return _S43;
+}
+
+
+float4 tileTexelPremultiplied_0(int x_0, int y_0, KernelContext_0 thread* kernelContext_7)
+{
+    int3 _S46 = int3(x_0, y_0, int(0));
+
+#line 365
+    float4 texel_2 = ((kernelContext_7->colorTexture_0).read(vec<uint,2>(((_S46)).xy), uint(((_S46)).z)));
+    float _S47 = texel_2.w;
+
+#line 366
+    return float4(texel_2.xyz * float3(_S47) , _S47);
+}
+
+
+#line 366
+struct pixelOutput_6
+{
+    float4 output_7 [[color(0)]];
+};
+
+
+#line 377
+[[fragment]] pixelOutput_6 tiled_rgba_fragment(float4 position_6 [[position]], DrawUniforms_0 constant* u_8 [[buffer(0)]], texture2d<float, access::sample> coverageTexture_8 [[texture(0)]], texture2d<float, access::sample> colorTexture_8 [[texture(1)]], sampler textureSampler_8 [[sampler(0)]])
+{
+
+#line 377
+    thread KernelContext_0 kernelContext_8;
+
+#line 377
+    (&kernelContext_8)->u_0 = u_8;
+
+#line 377
+    (&kernelContext_8)->coverageTexture_0 = coverageTexture_8;
+
+#line 377
+    (&kernelContext_8)->colorTexture_0 = colorTexture_8;
+
+#line 377
+    (&kernelContext_8)->textureSampler_0 = textureSampler_8;
+
+    float2 pixel_4 = position_6.xy;
+
+    float _S48 = pixel_4.x;
+
+#line 381
+    float _S49 = pixel_4.y;
+
+#line 381
+    float _S50 = _S48 * u_8->inv0_0.x + _S49 * u_8->inv0_0.y + u_8->inv0_0.z;
+    float _S51 = _S48 * u_8->inv1_0.x + _S49 * u_8->inv1_0.y + u_8->inv1_0.z;
+
+
+
+    float2 inside_0 = (float2(_S50, _S51) - (u_8->rect_0.xy - u_8->rect_0.zw)) / (u_8->rect_0.zw * float2(2.0f) );
+    float _S52 = inside_0.x;
+
+#line 387
+    bool _S53;
+
+#line 387
+    if(_S52 < 0.0f)
+    {
+
+#line 387
+        _S53 = true;
+
+#line 387
+    }
+    else
+    {
+
+#line 387
+        _S53 = _S52 >= 1.0f;
+
+#line 387
+    }
+
+#line 387
+    if(_S53)
+    {
+
+#line 387
+        _S53 = true;
+
+#line 387
+    }
+    else
+    {
+
+#line 387
+        _S53 = (inside_0.y) < 0.0f;
+
+#line 387
+    }
+
+#line 387
+    if(_S53)
+    {
+
+#line 387
+        _S53 = true;
+
+#line 387
+    }
+    else
+    {
+
+#line 387
+        _S53 = (inside_0.y) >= 1.0f;
+
+#line 387
+    }
+
+#line 387
+    if(_S53)
+    {
+
+#line 387
+        discard_fragment();
+
+#line 387
+    }
+
+    float x_1 = tileTexel_0(_S50 - (&kernelContext_8)->u_0->radii_0.x, (&kernelContext_8)->u_0->radii_0.z, (&kernelContext_8)->u_0->colorA_0.x, (&kernelContext_8)->u_0->colorB_0.x, (&kernelContext_8)->u_0->gradient_0.x);
+    if(x_1 < 0.0f)
+    {
+
+#line 390
+        discard_fragment();
+
+#line 390
+    }
+    float y_1 = tileTexel_0(_S51 - (&kernelContext_8)->u_0->radii_0.y, (&kernelContext_8)->u_0->radii_0.w, (&kernelContext_8)->u_0->colorA_0.y, (&kernelContext_8)->u_0->colorB_0.y, (&kernelContext_8)->u_0->gradient_0.y);
+    if(y_1 < 0.0f)
+    {
+
+#line 392
+        discard_fragment();
+
+#line 392
+    }
+
+    int width_0 = int((&kernelContext_8)->u_0->gradient_0.x);
+    int height_0 = int((&kernelContext_8)->u_0->gradient_0.y);
+    float fx_0 = x_1 - 0.5f;
+    float fy_0 = y_1 - 0.5f;
+    float x0_0 = floor(fx_0);
+    float y0_0 = floor(fy_0);
+    float ax_0 = fx_0 - x0_0;
+    float ay_0 = fy_0 - y0_0;
+    int _S54 = int(x0_0);
+
+#line 402
+    int left_0 = tileIndex_0(_S54, width_0, (&kernelContext_8)->u_0->colorB_0.z);
+    int right_0 = tileIndex_0(_S54 + int(1), width_0, (&kernelContext_8)->u_0->colorB_0.z);
+    int _S55 = int(y0_0);
+
+#line 404
+    int top_0 = tileIndex_0(_S55, height_0, (&kernelContext_8)->u_0->colorB_0.w);
+    int bottom_0 = tileIndex_0(_S55 + int(1), height_0, (&kernelContext_8)->u_0->colorB_0.w);
+
+#line 405
+    float4 _S56 = tileTexelPremultiplied_0(left_0, top_0, &kernelContext_8);
+
+#line 405
+    float4 _S57 = tileTexelPremultiplied_0(right_0, top_0, &kernelContext_8);
+    float4 _S58 = float4(ax_0) ;
+
+#line 406
+    float4 above_0 = mix(_S56, _S57, _S58);
+
+#line 406
+    float4 _S59 = tileTexelPremultiplied_0(left_0, bottom_0, &kernelContext_8);
+
+#line 406
+    float4 _S60 = tileTexelPremultiplied_0(right_0, bottom_0, &kernelContext_8);
+
+    float4 filtered_0 = mix(above_0, mix(_S59, _S60, _S58), float4(ay_0) );
+
+    float coverage_6 = (&kernelContext_8)->u_0->colorA_0.w;
+
+#line 410
+    float coverage_7;
+    if(((&kernelContext_8)->u_0->flags_0.z) > 0.5f)
+    {
+
+#line 411
+        coverage_7 = coverage_6 * clamp(0.5f - sdRoundedRect_0(pixel_4 - (&kernelContext_8)->u_0->clipRect_0.xy, (&kernelContext_8)->u_0->clipRect_0.zw, (&kernelContext_8)->u_0->clipRadii_0), 0.0f, 1.0f);
+
+#line 411
+    }
+    else
+    {
+
+#line 411
+        coverage_7 = coverage_6;
+
+#line 411
+    }
+
+#line 417
+    float4 result_0 = filtered_0 * float4(coverage_7) ;
+    if((result_0.w) <= 0.0f)
+    {
+
+#line 418
+        discard_fragment();
+
+#line 418
+    }
+
+#line 418
+    pixelOutput_6 _S61 = { result_0 };
+    return _S61;
+}
+

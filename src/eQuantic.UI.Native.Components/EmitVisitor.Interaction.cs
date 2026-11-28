@@ -190,7 +190,7 @@ internal sealed partial class EmitVisitor
                 : Matrix2D.Translation(0, dragOffset));
         }
         foreach (var child in s.Node)
-            Emit(s with { Node = child });
+            Emit(s with { Node = child, UnderTransform = s.UnderTransform || dragOffset != 0 });
         if (dragOffset != 0) s.Builder.Pop();
     }
 

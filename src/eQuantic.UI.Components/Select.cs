@@ -22,6 +22,12 @@ namespace eQuantic.UI.Components;
 /// <c>optgroup</c>s; the arrows walk the same one list and never stop on a heading. A group whose
 /// label is empty draws no heading and wraps no group: a group with no name is noise to a reader.
 /// </para>
+/// <para>
+/// NAME: <see cref="Label"/> is drawn above the field, as a <see cref="TextInput"/>'s is, and names the field for
+/// every reader: the combobox is announced by it, with the choice it shows as its value. A combobox is never named
+/// from its content, so a select with no label had no name on any target (#1838). A form that draws its own label
+/// beside the field sets <see cref="LabelHidden"/>, and the select still names itself by the same words.
+/// </para>
 /// v1 fences: typeahead, multi-select, disabled options.
 /// </summary>
 public sealed class Select : StatefulComponent
@@ -38,9 +44,10 @@ public sealed class Select : StatefulComponent
 
     public Select(IReadOnlyList<string>? options = null, int selectedIndex = -1,
         Action<int>? onChanged = null, VisualNode? hint = null, IReadOnlyList<OptionGroup>? groups = null,
-        InputTheme? style = null, Func<int, VisualNode>? optionBuilder = null)
+        InputTheme? style = null, Func<int, VisualNode>? optionBuilder = null, string label = "")
     {
         Options = options ?? [];
+        Label = label;
         SelectedIndex = selectedIndex;
         OnChanged = onChanged;
         Hint = hint;
@@ -63,6 +70,17 @@ public sealed class Select : StatefulComponent
     /// shows the SDK's own word, in the app's culture.
     /// </summary>
     public VisualNode? Hint { get; private set; }
+
+    /// <summary>The field's name: drawn above it, and what every reader announces the combobox by (#1838).</summary>
+    public string Label { get; private set; }
+
+    /// <summary>
+    /// Whether the label is left out of the drawing, for a form that lays its labels out itself: it still names the
+    /// field for assistive technology, as <see cref="TextInput.LabelHidden"/> does. Backed by a field, so
+    /// <see cref="AdoptConfig"/> can carry it.
+    /// </summary>
+    public bool LabelHidden { get => _labelHidden; init => _labelHidden = value; }
+    private bool _labelHidden;
 
     /// <summary>This select's own look, laid over the theme's <see cref="IAppTheme.Input"/> slot with
     /// <see cref="InputTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's.</summary>
@@ -87,6 +105,8 @@ public sealed class Select : StatefulComponent
         SelectedIndex = fresh.SelectedIndex;
         OnChanged = fresh.OnChanged;
         Hint = fresh.Hint;
+        Label = fresh.Label;
+        _labelHidden = fresh.LabelHidden;
         Groups = fresh.Groups;
         Style = fresh.Style;
         OptionBuilder = fresh.OptionBuilder;
@@ -171,7 +191,13 @@ public sealed class Select : StatefulComponent
 
         // A disabled field is still the combobox, one that says it is disabled: a plain box there was
         // static text to every reader on Photon, its role and its state gone.
-        var trigger = new Pressable(field, Disabled ? null : Toggle) { Disabled = Disabled, Expanded = _open && !Disabled };
+        var trigger = new Pressable(field, Disabled ? null : Toggle)
+        {
+            Disabled = Disabled,
+            Expanded = _open && !Disabled,
+            // The combobox's name, and none without a label: what the field shows is its value, never its name.
+            Label = Label.Length > 0 ? Label : null,
+        };
 
         VisualNode select = new Anchored(trigger, panel)
         {
@@ -185,6 +211,16 @@ public sealed class Select : StatefulComponent
             // No option, no active one: an empty listbox names nothing.
             ActiveIndex = _open && _choices.Count > 0 ? _highlight : -1,
         };
+
+        // The label above the field, as a TextInput draws its own, and only when the form has not drawn one itself.
+        // It is excluded from the reading: the field already carries the words as its name.
+        if (Label.Length > 0 && !LabelHidden)
+        {
+            var labelled = new Column(gap: slot?.LabelGap ?? 6) { Width = SizeValue.Fill };
+            labelled.Add(new Text(Label, slot?.LabelRole ?? TypeRole.Label, theme.TextSecondary) { ExcludeFromSemantics = true });
+            labelled.Add(select);
+            select = labelled;
+        }
 
         // The keyboard, exactly while the panel is up. Nested Shortcuts share one child root — the
         // realizers LIST the chords on it — and one that is not enabled binds nothing, so a closed

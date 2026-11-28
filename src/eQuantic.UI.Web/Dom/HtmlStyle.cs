@@ -96,6 +96,16 @@ public class HtmlStyle
     public string? BackgroundSize { get; set; }
     public string? BackgroundPosition { get; set; }
 
+    /// <summary>`background-repeat`: how each layer's image repeats, per axis.</summary>
+    public string? BackgroundRepeat { get; set; }
+
+    /// <summary>`background-origin`: the box each layer's image is placed in.</summary>
+    public string? BackgroundOrigin { get; set; }
+
+    /// <summary>`background-attachment`: whether each layer scrolls with the element or stays fixed
+    /// against the viewport.</summary>
+    public string? BackgroundAttachment { get; set; }
+
     /// <summary>`background-clip` — `text` paints the background through the glyphs (gradient text).
     /// The `-webkit-` twin is emitted alongside it: Safari still requires the prefix.</summary>
     public string? BackgroundClip { get; set; }
@@ -225,6 +235,14 @@ public class HtmlStyle
     /// moves keeps its own transform and its hover's (#511).
     /// </summary>
     public string? Translate { get; set; }
+
+    /// <summary>
+    /// The individual <c>scale</c> property, which CSS applies TOGETHER with <see cref="Transform"/>
+    /// rather than in its place, as <see cref="Translate"/> does. A glyph that matches the text
+    /// direction is turned by it (<c>scale: var(--eq-inline, 1) 1</c>), so a transform an author or a
+    /// parent writes on the same element still applies.
+    /// </summary>
+    public string? Scale { get; set; }
     public string? Animation { get; set; }
     public string? AnimationDelay { get; set; }
     public string? WhiteSpace { get; set; }
@@ -304,8 +322,11 @@ public class HtmlStyle
         AddProperty(properties, "background-image", BackgroundImage);
         AddProperty(properties, "background-size", BackgroundSize);
         AddProperty(properties, "background-position", BackgroundPosition);
+        AddProperty(properties, "background-repeat", BackgroundRepeat);
+        AddProperty(properties, "background-origin", BackgroundOrigin);
         AddProperty(properties, "-webkit-background-clip", BackgroundClip);
         AddProperty(properties, "background-clip", BackgroundClip);
+        AddProperty(properties, "background-attachment", BackgroundAttachment);
         AddProperty(properties, "-webkit-text-fill-color", WebkitTextFillColor);
         AddProperty(properties, "filter", Filter);
 
@@ -356,6 +377,7 @@ public class HtmlStyle
         AddProperty(properties, "transform", Transform);
         AddProperty(properties, "transform-origin", TransformOrigin);
         AddProperty(properties, "translate", Translate);
+        AddProperty(properties, "scale", Scale);
         AddProperty(properties, "animation", Animation);
         AddProperty(properties, "animation-delay", AnimationDelay);
         AddProperty(properties, "white-space", WhiteSpace);

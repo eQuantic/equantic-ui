@@ -37,8 +37,12 @@ import {
   Drawing,
   DropTarget,
   Flexible,
+  DrawingPattern,
   GridPattern,
   GridTrack,
+  ImagePattern,
+  RadialGradient,
+  TileLength,
   Icon,
   IconGlyph,
   Image,
@@ -65,7 +69,7 @@ import {
   VectorPaint,
   VectorShape,
 } from './vocabulary';
-import { EdgeInsets, Point, SizeValue, SortAnnouncements, StyleChannels, TableRange, Transform2D } from './value-types';
+import { Color, ColorToken, EdgeInsets, Point, SizeValue, SortAnnouncements, StyleChannels, TableRange, Transform2D } from './value-types';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
 import { ContextMenu } from './components/ContextMenu';
@@ -280,7 +284,7 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         shadow: new ShadowSpec(0, 24, 0, photonTheme.focusRing),
         shadows: [new ShadowSpec(2, 4, 0, photonTheme.border), new ShadowSpec(0, 0, 0, photonTheme.border)],
         insetHighlight: photonTheme.surfaceSubtle,
-        pattern: new GridPattern(16, photonTheme.border),
+        patterns: [new GridPattern(16, photonTheme.border)],
         transform: Transform2D.rotate(2),
         hover: new StyleDiff({
           elevation: 3,
@@ -291,6 +295,70 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
           opacity: 0.9,
         }),
         focus: new StyleDiff({ elevation: 0, transform: Transform2D.scale(1) }),
+      }),
+    );
+  // The C# TileArt of the pattern cases: a solid shape, an inherited one at 55% and a two-stop run.
+  const tileArt = new VectorDrawing(0, 0, 24, 16, [
+    new VectorShape('M0 0H12V8H0Z', VectorPaint.solid(Color.fromRgb(0xc8, 0x79, 0x6b))),
+    new VectorShape('M12 0H24V8H12Z', new VectorPaint('inherit', { r: 0, g: 0, b: 0, a: Math.round(255 * 0.55) })),
+    new VectorShape(
+      'M0 8H24V16H0Z',
+      VectorPaint.gradients('linearGradient', {
+        x1: 0,
+        y1: 0,
+        x2: 1,
+        y2: 0,
+        radius: 0,
+        userSpace: false,
+        stops: [
+          { offset: 0, color: Color.fromRgb(255, 0, 0) },
+          { offset: 1, color: Color.fromRgb(0, 0, 255) },
+        ],
+      }),
+    ),
+  ]);
+  // The C# BoxPatterns and BoxPatternThemed (#1937).
+  const boxPatterns = () =>
+    new Box(
+      new BoxStyle({
+        width: 320,
+        height: 200,
+        borderWidth: 2,
+        borderColor: photonTheme.border,
+        gradient: new LinearGradient(photonTheme.scrim, new ColorToken(Color.transparent)),
+        glow: new RadialGradient(photonTheme.colors('info').base, new ColorToken(Color.transparent), 0.5, 0.5, 200, 120),
+        patterns: [
+          new GridPattern(24, photonTheme.border, 2, { area: 'border', clipTo: 'padding', attachment: 'window' }),
+          new DrawingPattern(tileArt, TileLength.fraction(0.25), 40, new ColorToken(Color.fromRgb(0x33, 0x44, 0x55)), {
+            horizontalRepeat: 'once',
+            verticalRepeat: 'spaced',
+            anchor: new Point(0.5, 1),
+            offset: new Point(12, -8),
+            area: 'content',
+            clipTo: 'padding',
+            attachment: 'window',
+            opacity: 0.5,
+          }),
+          new ImagePattern('img/a"b.png', undefined, undefined, {
+            fit: 'cover',
+            horizontalRepeat: 'fitted',
+            anchor: new Point(1, 0),
+            area: 'border',
+            clipTo: 'content',
+          }),
+        ],
+      }),
+    );
+  const boxPatternThemed = () =>
+    new Box(
+      new BoxStyle({
+        width: 320,
+        height: 200,
+        patterns: [
+          new DrawingPattern(tileArt, 48),
+          new DrawingPattern(tileArt, 48, undefined, photonTheme.textMuted),
+          new ImagePattern('img/linen.png', 120, undefined, { darkSource: 'img/linen-dark.png' }),
+        ],
       }),
     );
   return {
@@ -332,6 +400,8 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'box-hover-lift': still(hoverLift()),
     // SimulatedState.Hovered | SimulatedState.Focused
     'box-hover-lift-simulated': still(new Simulated(1 | 4, hoverLift())),
+    'box-patterns': still(boxPatterns()),
+    'box-pattern-themed': still(boxPatternThemed()),
     'control-states': still(controlStates()),
     // SimulatedState.Pressed | SimulatedState.Focused
     'control-states-simulated': still(new Simulated(2 | 4, controlStates())),
@@ -356,6 +426,45 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         ),
         () => {},
         { axis: 'horizontal', min: -80, max: 0, restOffset: -80 },
+      ),
+    ),
+    // What only the SDK draws or hears follows the direction (C# twin, #1569): a glyph that matches the
+    // direction turns through the sign the nearest [dir] sets, and a horizontal rest is written toward the end.
+    'icon-matching-glyph-rtl': still(new Directionality('rightToLeft', new Icon(IconGlyph.fromIcons('chevronLeft')))),
+    'icon-pack-glyph-rtl': still(
+      new Directionality(
+        'rightToLeft',
+        new Icon(new IconGlyph('arrowLeft', 'M19 12H5m7-7-7 7 7 7', 'stroke')),
+      ),
+    ),
+    'draggable-rest-px-rtl': still(
+      new Directionality(
+        'rightToLeft',
+        new Draggable(
+          new Box(new BoxStyle({ width: 40, height: 40, background: photonTheme.surface })),
+          () => {},
+          { axis: 'horizontal', min: -96, max: 0, restOffset: -96 },
+        ),
+      ),
+    ),
+    'draggable-rest-normalized-rtl': still(
+      new Directionality(
+        'rightToLeft',
+        new Draggable(
+          new Box(new BoxStyle({ width: 40, height: 40, background: photonTheme.surface })),
+          () => {},
+          { axis: 'horizontal', min: 0, max: 1, restOffset: 0.25, normalized: true },
+        ),
+      ),
+    ),
+    'draggable-rest-vertical-rtl': still(
+      new Directionality(
+        'rightToLeft',
+        new Draggable(
+          new Box(new BoxStyle({ width: 40, height: 40, background: photonTheme.surface })),
+          () => {},
+          { axis: 'vertical', min: 0, max: 100, restOffset: 40 },
+        ),
       ),
     ),
     'drop-target': still(new DropTarget(new Box(new BoxStyle({ width: SizeValue.fill, height: 40 })), () => {})),

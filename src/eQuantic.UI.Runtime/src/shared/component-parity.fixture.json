@@ -636,6 +636,27 @@
       "children": []
     }
   ],
+  "box-patterns": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-12xdszx eq-18po5w1 eq-194h6n7 eq-1eb13m5 eq-1fvxg9f eq-1lwjf54 eq-1q8mime eq-1sr5yxo eq-1tpn74 eq-1ua9za6 eq-1uxs8ty eq-bo3n4y eq-g7fowl eq-p3fd80"
+      },
+      "events": [],
+      "children": []
+    }
+  ],
+  "box-pattern-themed": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-17zsi8h eq-1eb13m5 eq-1ua9za6 eq-1uxs8ty eq-8i1cvr eq-bo3n4y eq-g7fowl",
+        "style": "--eq-p2-l: var(--eq-on-light) url(\u0022img/linen.png\u0022); --eq-p2-d: var(--eq-on-dark) url(\u0022img/linen-dark.png\u0022); --eq-p1-ls: var(--eq-on-light) var(--eq-on-std) url(\u0022data:image/svg\u002Bxml,%3Csvg xmlns=\u0027http://www.w3.org/2000/svg\u0027 viewBox=\u00270 0 24 16\u0027 width=\u002724\u0027 height=\u002716\u0027 preserveAspectRatio=\u0027none\u0027 fill=\u0027none\u0027 color=\u0027%235f6b7a\u0027%3E%3Cdefs%3E%3ClinearGradient id=\u0027eq-g-1trais2\u0027 x1=\u00270\u0027 y1=\u00270\u0027 x2=\u00271\u0027 y2=\u00270\u0027%3E%3Cstop offset=\u00270\u0027 stop-color=\u0027%23ff0000\u0027/%3E%3Cstop offset=\u00271\u0027 stop-color=\u0027%230000ff\u0027/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d=\u0027M0 0H12V8H0Z\u0027 fill=\u0027%23c8796b\u0027/%3E%3Cpath d=\u0027M12 0H24V8H12Z\u0027 fill=\u0027currentColor\u0027 fill-opacity=\u00270.549\u0027/%3E%3Cpath d=\u0027M0 8H24V16H0Z\u0027 fill=\u0027url(%23eq-g-1trais2)\u0027/%3E%3C/svg%3E\u0022); --eq-p1-lm: var(--eq-on-light) var(--eq-on-more) url(\u0022data:image/svg\u002Bxml,%3Csvg xmlns=\u0027http://www.w3.org/2000/svg\u0027 viewBox=\u00270 0 24 16\u0027 width=\u002724\u0027 height=\u002716\u0027 preserveAspectRatio=\u0027none\u0027 fill=\u0027none\u0027 color=\u0027%23475261\u0027%3E%3Cdefs%3E%3ClinearGradient id=\u0027eq-g-1trais2\u0027 x1=\u00270\u0027 y1=\u00270\u0027 x2=\u00271\u0027 y2=\u00270\u0027%3E%3Cstop offset=\u00270\u0027 stop-color=\u0027%23ff0000\u0027/%3E%3Cstop offset=\u00271\u0027 stop-color=\u0027%230000ff\u0027/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d=\u0027M0 0H12V8H0Z\u0027 fill=\u0027%23c8796b\u0027/%3E%3Cpath d=\u0027M12 0H24V8H12Z\u0027 fill=\u0027currentColor\u0027 fill-opacity=\u00270.549\u0027/%3E%3Cpath d=\u0027M0 8H24V16H0Z\u0027 fill=\u0027url(%23eq-g-1trais2)\u0027/%3E%3C/svg%3E\u0022); --eq-p1-ds: var(--eq-on-dark) var(--eq-on-std) url(\u0022data:image/svg\u002Bxml,%3Csvg xmlns=\u0027http://www.w3.org/2000/svg\u0027 viewBox=\u00270 0 24 16\u0027 width=\u002724\u0027 height=\u002716\u0027 preserveAspectRatio=\u0027none\u0027 fill=\u0027none\u0027 color=\u0027%23acb7c5\u0027%3E%3Cdefs%3E%3ClinearGradient id=\u0027eq-g-1trais2\u0027 x1=\u00270\u0027 y1=\u00270\u0027 x2=\u00271\u0027 y2=\u00270\u0027%3E%3Cstop offset=\u00270\u0027 stop-color=\u0027%23ff0000\u0027/%3E%3Cstop offset=\u00271\u0027 stop-color=\u0027%230000ff\u0027/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d=\u0027M0 0H12V8H0Z\u0027 fill=\u0027%23c8796b\u0027/%3E%3Cpath d=\u0027M12 0H24V8H12Z\u0027 fill=\u0027currentColor\u0027 fill-opacity=\u00270.549\u0027/%3E%3Cpath d=\u0027M0 8H24V16H0Z\u0027 fill=\u0027url(%23eq-g-1trais2)\u0027/%3E%3C/svg%3E\u0022); --eq-p1-dm: var(--eq-on-dark) var(--eq-on-more) url(\u0022data:image/svg\u002Bxml,%3Csvg xmlns=\u0027http://www.w3.org/2000/svg\u0027 viewBox=\u00270 0 24 16\u0027 width=\u002724\u0027 height=\u002716\u0027 preserveAspectRatio=\u0027none\u0027 fill=\u0027none\u0027 color=\u0027%23c5d1df\u0027%3E%3Cdefs%3E%3ClinearGradient id=\u0027eq-g-1trais2\u0027 x1=\u00270\u0027 y1=\u00270\u0027 x2=\u00271\u0027 y2=\u00270\u0027%3E%3Cstop offset=\u00270\u0027 stop-color=\u0027%23ff0000\u0027/%3E%3Cstop offset=\u00271\u0027 stop-color=\u0027%230000ff\u0027/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d=\u0027M0 0H12V8H0Z\u0027 fill=\u0027%23c8796b\u0027/%3E%3Cpath d=\u0027M12 0H24V8H12Z\u0027 fill=\u0027currentColor\u0027 fill-opacity=\u00270.549\u0027/%3E%3Cpath d=\u0027M0 8H24V16H0Z\u0027 fill=\u0027url(%23eq-g-1trais2)\u0027/%3E%3C/svg%3E\u0022); --eq-p0-l: var(--eq-on-light) url(\u0022data:image/svg\u002Bxml,%3Csvg xmlns=\u0027http://www.w3.org/2000/svg\u0027 viewBox=\u00270 0 24 16\u0027 width=\u002724\u0027 height=\u002716\u0027 preserveAspectRatio=\u0027none\u0027 fill=\u0027none\u0027 color=\u0027%23171b21\u0027%3E%3Cdefs%3E%3ClinearGradient id=\u0027eq-g-1trais2\u0027 x1=\u00270\u0027 y1=\u00270\u0027 x2=\u00271\u0027 y2=\u00270\u0027%3E%3Cstop offset=\u00270\u0027 stop-color=\u0027%23ff0000\u0027/%3E%3Cstop offset=\u00271\u0027 stop-color=\u0027%230000ff\u0027/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d=\u0027M0 0H12V8H0Z\u0027 fill=\u0027%23c8796b\u0027/%3E%3Cpath d=\u0027M12 0H24V8H12Z\u0027 fill=\u0027currentColor\u0027 fill-opacity=\u00270.549\u0027/%3E%3Cpath d=\u0027M0 8H24V16H0Z\u0027 fill=\u0027url(%23eq-g-1trais2)\u0027/%3E%3C/svg%3E\u0022); --eq-p0-d: var(--eq-on-dark) url(\u0022data:image/svg\u002Bxml,%3Csvg xmlns=\u0027http://www.w3.org/2000/svg\u0027 viewBox=\u00270 0 24 16\u0027 width=\u002724\u0027 height=\u002716\u0027 preserveAspectRatio=\u0027none\u0027 fill=\u0027none\u0027 color=\u0027%23f2f4f7\u0027%3E%3Cdefs%3E%3ClinearGradient id=\u0027eq-g-1trais2\u0027 x1=\u00270\u0027 y1=\u00270\u0027 x2=\u00271\u0027 y2=\u00270\u0027%3E%3Cstop offset=\u00270\u0027 stop-color=\u0027%23ff0000\u0027/%3E%3Cstop offset=\u00271\u0027 stop-color=\u0027%230000ff\u0027/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d=\u0027M0 0H12V8H0Z\u0027 fill=\u0027%23c8796b\u0027/%3E%3Cpath d=\u0027M12 0H24V8H12Z\u0027 fill=\u0027currentColor\u0027 fill-opacity=\u00270.549\u0027/%3E%3Cpath d=\u0027M0 8H24V16H0Z\u0027 fill=\u0027url(%23eq-g-1trais2)\u0027/%3E%3C/svg%3E\u0022)"
+      },
+      "events": [],
+      "children": []
+    }
+  ],
   "control-states": [
     {
       "tag": "button",
@@ -745,11 +766,113 @@
     {
       "tag": "div",
       "attrs": {
-        "class": "eq-13sfa1s eq-1eb13m5 eq-1sxrvu1 eq-1xrfuoj eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-t1kanp eq-wy95di",
+        "class": "eq-1eb13m5 eq-1sxrvu1 eq-1t9cznj eq-1xrfuoj eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-t1kanp eq-wy95di",
         "data-eq-drag": "x",
         "data-eq-drag-max": "0",
         "data-eq-drag-min": "-80",
         "data-eq-drag-rest": "-80"
+      },
+      "events": [
+        "eq-drag-released"
+      ],
+      "children": []
+    }
+  ],
+  "icon-matching-glyph-rtl": [
+    {
+      "tag": "svg",
+      "attrs": {
+        "aria-hidden": "true",
+        "class": "eq-10z2v8p eq-16x7aca eq-bbkmfx eq-rwnvja",
+        "dir": "rtl",
+        "fill": "currentColor",
+        "viewBox": "0 0 24 24"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "path",
+          "attrs": {
+            "d": "M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "icon-pack-glyph-rtl": [
+    {
+      "tag": "svg",
+      "attrs": {
+        "aria-hidden": "true",
+        "class": "eq-10z2v8p eq-16x7aca eq-rwnvja",
+        "dir": "rtl",
+        "fill": "none",
+        "stroke": "currentColor",
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round",
+        "stroke-width": "2",
+        "viewBox": "0 0 24 24"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "path",
+          "attrs": {
+            "d": "M19 12H5m7-7-7 7 7 7"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "draggable-rest-px-rtl": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1afasck eq-1eb13m5 eq-1xrfuoj eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-rkckue",
+        "data-eq-drag": "x",
+        "data-eq-drag-max": "0",
+        "data-eq-drag-min": "-96",
+        "data-eq-drag-rest": "-96",
+        "dir": "rtl"
+      },
+      "events": [
+        "eq-drag-released"
+      ],
+      "children": []
+    }
+  ],
+  "draggable-rest-normalized-rtl": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1afasck eq-1eb13m5 eq-1xrfuoj eq-4us27q eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl",
+        "data-eq-drag": "x",
+        "data-eq-drag-max": "1",
+        "data-eq-drag-min": "0",
+        "data-eq-drag-normalized": "1",
+        "data-eq-drag-rest": "0.25",
+        "dir": "rtl"
+      },
+      "events": [
+        "eq-drag-released"
+      ],
+      "children": []
+    }
+  ],
+  "draggable-rest-vertical-rtl": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1afasck eq-1eb13m5 eq-1xrfuoj eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-q8dm6h",
+        "data-eq-drag": "y",
+        "data-eq-drag-max": "100",
+        "data-eq-drag-min": "0",
+        "data-eq-drag-rest": "40",
+        "dir": "rtl"
       },
       "events": [
         "eq-drag-released"
@@ -42003,7 +42126,7 @@
                               "tag": "svg",
                               "attrs": {
                                 "aria-hidden": "true",
-                                "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz",
+                                "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz eq-bbkmfx",
                                 "fill": "currentColor",
                                 "viewBox": "0 0 24 24"
                               },
@@ -42053,7 +42176,7 @@
                               "tag": "svg",
                               "attrs": {
                                 "aria-hidden": "true",
-                                "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz",
+                                "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz eq-bbkmfx",
                                 "fill": "currentColor",
                                 "viewBox": "0 0 24 24"
                               },
@@ -44184,7 +44307,7 @@
                               "tag": "svg",
                               "attrs": {
                                 "aria-hidden": "true",
-                                "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz",
+                                "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz eq-bbkmfx",
                                 "fill": "currentColor",
                                 "viewBox": "0 0 24 24"
                               },
@@ -44234,7 +44357,7 @@
                               "tag": "svg",
                               "attrs": {
                                 "aria-hidden": "true",
-                                "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz",
+                                "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz eq-bbkmfx",
                                 "fill": "currentColor",
                                 "viewBox": "0 0 24 24"
                               },
@@ -48898,7 +49021,7 @@
                               "tag": "svg",
                               "attrs": {
                                 "aria-hidden": "true",
-                                "class": "eq-115fhry eq-16x7aca eq-96qelu eq-i95eb9",
+                                "class": "eq-115fhry eq-16x7aca eq-96qelu eq-bbkmfx eq-i95eb9",
                                 "fill": "currentColor",
                                 "viewBox": "0 0 24 24"
                               },
@@ -50052,7 +50175,7 @@
                           "tag": "svg",
                           "attrs": {
                             "aria-hidden": "true",
-                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz",
+                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz eq-bbkmfx",
                             "fill": "currentColor",
                             "viewBox": "0 0 24 24"
                           },
@@ -50102,7 +50225,7 @@
                           "tag": "svg",
                           "attrs": {
                             "aria-hidden": "true",
-                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz",
+                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz eq-bbkmfx",
                             "fill": "currentColor",
                             "viewBox": "0 0 24 24"
                           },
@@ -52235,7 +52358,7 @@
                           "tag": "svg",
                           "attrs": {
                             "aria-hidden": "true",
-                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz",
+                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz eq-bbkmfx",
                             "fill": "currentColor",
                             "viewBox": "0 0 24 24"
                           },
@@ -52285,7 +52408,7 @@
                           "tag": "svg",
                           "attrs": {
                             "aria-hidden": "true",
-                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz",
+                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz eq-bbkmfx",
                             "fill": "currentColor",
                             "viewBox": "0 0 24 24"
                           },
@@ -54098,7 +54221,7 @@
                           "tag": "svg",
                           "attrs": {
                             "aria-hidden": "true",
-                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz",
+                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz eq-bbkmfx",
                             "fill": "currentColor",
                             "viewBox": "0 0 24 24"
                           },
@@ -54148,7 +54271,7 @@
                           "tag": "svg",
                           "attrs": {
                             "aria-hidden": "true",
-                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz",
+                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz eq-bbkmfx",
                             "fill": "currentColor",
                             "viewBox": "0 0 24 24"
                           },
@@ -56279,7 +56402,7 @@
                           "tag": "svg",
                           "attrs": {
                             "aria-hidden": "true",
-                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz",
+                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz eq-bbkmfx",
                             "fill": "currentColor",
                             "viewBox": "0 0 24 24"
                           },
@@ -56329,7 +56452,7 @@
                           "tag": "svg",
                           "attrs": {
                             "aria-hidden": "true",
-                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz",
+                            "class": "eq-115fhry eq-16x7aca eq-19vml7g eq-1or4gpz eq-bbkmfx",
                             "fill": "currentColor",
                             "viewBox": "0 0 24 24"
                           },

@@ -119,6 +119,23 @@ The `/files` screen resizes its tree by the gap beside it, a `Listener` over an 
 3. **A press elsewhere moves nothing**: a press that went down on the screen's description and is dragged
    across the gap was never the gap's.
 
+### `direction.spec.ts`
+
+The `/i18n` screen's last section (#1569) holds a calendar, a switch, a swipeable row, tabs, a horizontal
+strip and a folded code block, with no test of the direction anywhere in its source. Served with
+`?culture=ar`, the page reads right to left:
+
+1. **The calendar's chevrons turn and trade places**: each glyph computes `scale: -1 1` from `--eq-inline`,
+   and "Previous month" stands to the right of "Next month".
+2. **A switch dragged leftwards turns on**, and **a swipeable row swiped rightwards opens**: both drags
+   measure toward the end of the line, which is on the left.
+3. **ArrowLeft chooses the next tab** and ArrowRight the previous one.
+4. **A horizontal strip reports its offset from its start**: Chromium's `scrollLeft` of -120 reads as 120.
+5. **The code keeps reading left to right**: its host says `dir="ltr"`, and no glyph inside it turns.
+
+Served with `?culture=en`, the same screen reads as it always did: nothing turns, a rightward drag turns the
+switch on, ArrowRight is the next tab, and a `scrollLeft` of 120 reads as 120.
+
 `E2E_PORT` runs the server on another port, beside another checkout's.
 
 ## Estrutura

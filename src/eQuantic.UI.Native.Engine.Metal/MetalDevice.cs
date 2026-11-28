@@ -25,7 +25,8 @@ public sealed class MetalDevice : IRhiDevice
 
     private static readonly RhiPipelineKind[] RegistryKinds =
         [RhiPipelineKind.Sdf, RhiPipelineKind.TexturedA8, RhiPipelineKind.TexturedRgba,
-         RhiPipelineKind.LayerComposite, RhiPipelineKind.BlurDown, RhiPipelineKind.BlurUp];
+         RhiPipelineKind.LayerComposite, RhiPipelineKind.BlurDown, RhiPipelineKind.BlurUp,
+         RhiPipelineKind.TiledRgba];
 
     /// <summary>The FIXED registry's target formats (D5): offscreen RGBA8 + the CAMetalLayer's BGRA8.</summary>
     private static readonly ulong[] RegistryFormats = [PixelFormatRgba8UnormSrgb, PixelFormatBgra8UnormSrgb];
@@ -39,6 +40,7 @@ public sealed class MetalDevice : IRhiDevice
     private readonly IntPtr _layerCompositeFn;
     private readonly IntPtr _blurDownFn;
     private readonly IntPtr _blurUpFn;
+    private readonly IntPtr _tiledRgbaFn;
     private readonly IntPtr _nearestSampler;
     private readonly IntPtr _linearSampler;
     private readonly IntPtr _binaryArchive;
@@ -100,6 +102,7 @@ public sealed class MetalDevice : IRhiDevice
         _layerCompositeFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("layer_composite"));
         _blurDownFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("blur_down"));
         _blurUpFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("blur_up"));
+        _tiledRgbaFn = ObjC.Send(library, Sel("newFunctionWithName:"), ObjC.NSString("tiled_rgba_fragment"));
 
         // D6b: the two fixed sampler states. Clamp-to-edge matches the CPU twin's uv clamp.
         _nearestSampler = CreateSampler(linear: false);
@@ -189,7 +192,8 @@ public sealed class MetalDevice : IRhiDevice
             "extend the registry created at device init; pipelines are never created at draw time.");
     }
 
-    // Kind mapping: Sdf → sdf_fragment, TexturedA8 → textured_fragment, TexturedRgba → textured_rgba_fragment.
+    // Kind mapping: Sdf → sdf_fragment, TexturedA8 → textured_fragment, TexturedRgba → textured_rgba_fragment,
+    // TiledRgba → tiled_rgba_fragment.
     private void CreatePipelineState(ulong pixelFormat, RhiPipelineKind kind)
     {
         var descriptor = ObjC.Send(ObjC.Send(ObjC.objc_getClass("MTLRenderPipelineDescriptor"), Sel("alloc")), Sel("init"));
@@ -201,6 +205,7 @@ public sealed class MetalDevice : IRhiDevice
             RhiPipelineKind.LayerComposite => _layerCompositeFn,
             RhiPipelineKind.BlurDown => _blurDownFn,
             RhiPipelineKind.BlurUp => _blurUpFn,
+            RhiPipelineKind.TiledRgba => _tiledRgbaFn,
             _ => _fragmentFn,
         });
 

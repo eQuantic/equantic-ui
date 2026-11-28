@@ -130,6 +130,11 @@ public static class ThemeStylesheet
         // Which way the inline axis runs (#1568): 1 left to right, -1 right to left. A positioned
         // child's shift across multiplies by it (TokenCss.Shift), so it moves toward the end in both.
         css.AppendLine("  --eq-inline: 1;");
+        // The contrast toggles a tile's variants read (#1937), standard until the query below says more.
+        // Here and not beside the mode toggles: the More block that flips them ties with this :root, so
+        // only a declaration BEFORE it lets it win, and one written after it beat it on every page.
+        css.AppendLine("  --eq-on-std: ;");
+        css.AppendLine("  --eq-on-more: initial;");
         css.AppendLine("}");
         // Set again wherever a direction is said, the page's <html dir> and a Directionality's host, and
         // inherited from there: after :root, which these tie with, so the nearest `dir` wins.
@@ -146,6 +151,10 @@ public static class ThemeStylesheet
             css.AppendLine("  :root {");
             foreach (var (name, token) in stepped)
                 css.AppendLine($"    --eq-color-{name}: {TokenCss.ValueAt(token, ContrastLevel.More)};");
+            // The contrast toggles a tile's variants read (#1937), switched by the query the palette
+            // switches by: a theme that never states a More pair paints its Standard one, and so does a tile.
+            css.AppendLine("    --eq-on-std: initial;");
+            css.AppendLine("    --eq-on-more: ;");
             css.AppendLine("  }");
             css.AppendLine("}");
         }
@@ -358,17 +367,23 @@ public static class ThemeStylesheet
         // A declared mode therefore decides outright, with no media query to disagree with it. The
         // data-theme rules below stay in every case: the browser's controller stamps it on a
         // toggle, and a live choice outranks a build-time default.
+        //
+        // A TILE that differs by mode follows the same decision through the mode TOGGLES (#1937): a
+        // data URL is a document of its own and reads no variable of the page, so a box carries each
+        // variant as a custom property that is valid only while its toggle is empty, and a toggle is
+        // empty under exactly the selectors that show `.eq-themed-dark` or `.eq-themed-light`. Both
+        // families are written from ONE list of those selectors (ModeDecisions), so the image pair and
+        // the tiles cannot follow two decisions.
         css.AppendLine(".eq-themed-dark { display: none; }");
-        css.AppendLine(mode switch
+        css.AppendLine(":root { --eq-on-light: ; --eq-on-dark: initial; }");
+        foreach (var (media, attribute, dark) in ModeDecisions(mode))
         {
-            ThemeMode.Light => ".eq-themed-light { display: block; }",
-            ThemeMode.Dark => ".eq-themed-light { display: none; } .eq-themed-dark { display: block; }",
-            _ => "@media (prefers-color-scheme: dark) { .eq-themed-light { display: none; } .eq-themed-dark { display: block; } }",
-        });
-        css.AppendLine(":root[data-theme=\"dark\"] .eq-themed-light { display: none; }");
-        css.AppendLine(":root[data-theme=\"dark\"] .eq-themed-dark { display: block; }");
-        css.AppendLine(":root[data-theme=\"light\"] .eq-themed-light { display: block; }");
-        css.AppendLine(":root[data-theme=\"light\"] .eq-themed-dark { display: none; }");
+            var scope = attribute.Length == 0 ? "" : $":root{attribute} ";
+            var rules = $"{scope}.eq-themed-light {{ display: {(dark ? "none" : "block")}; }} "
+                + $"{scope}.eq-themed-dark {{ display: {(dark ? "block" : "none")}; }} "
+                + $":root{attribute} {{ --eq-on-light: {(dark ? "initial" : "")}; --eq-on-dark: {(dark ? "" : "initial")}; }}";
+            css.AppendLine(media is null ? rules : $"@media ({media}) {{ {rules} }}");
+        }
 
         // Enter motion (spec §06 — Presence): a mount-playing animation on the subtree's own root
         // element (no wrapper — the class rides the lowered child, so flex/stack layout is
@@ -467,6 +482,21 @@ public static class ThemeStylesheet
         css.AppendLine("@media (prefers-reduced-motion: reduce) { .eq-loop { animation: none; } .eq-loop-rest-hidden { visibility: hidden; } }");
 
         return css.ToString();
+    }
+
+    /// <summary>
+    /// Every place the page decides its mode, in the order the stylesheet writes them, each one later
+    /// outranking the one before: the declared mode (or, with none, the system's under its media
+    /// query), then a live <c>data-theme</c> the browser's controller stamps on <c>:root</c>, which
+    /// beats both. <c>Attribute</c> is what the <c>:root</c> selector carries; <c>Dark</c> whether the
+    /// decision is dark. The one list the themed image pair and the tiles' toggles are written from.
+    /// </summary>
+    private static IEnumerable<(string? Media, string Attribute, bool Dark)> ModeDecisions(ThemeMode? mode)
+    {
+        if (mode is { } declared) yield return (null, "", declared == ThemeMode.Dark);
+        else yield return ("prefers-color-scheme: dark", "", true);
+        yield return (null, "[data-theme=\"dark\"]", true);
+        yield return (null, "[data-theme=\"light\"]", false);
     }
 
     private static void AppendColor(StringBuilder css, List<(string Name, ColorToken Token)> colors, string name, ColorToken token)

@@ -46,6 +46,38 @@ internal sealed partial class WebLoweringVisitor(
     /// be an AdaptiveNode, whose arms are that container's to place (see <see cref="Place"/>).</summary>
     private Func<VisualNode, HtmlElement?>? _placing;
 
+    /// <summary>
+    /// The direction the element being lowered reads in, as the browser will read it from the nearest
+    /// <c>dir</c> above it: the UI culture's at the root (what <c>&lt;html dir&gt;</c> is written from), the
+    /// <see cref="Directionality"/>'s under one, and left to right under a host that writes
+    /// <c>dir="ltr"</c> on itself. It is the three sources the markup is written from, tracked while they
+    /// are written, so a handler the server DECLARES (an arrow key) names the direction the browser's
+    /// own handler reads at the key (<see cref="ReadAs"/>).
+    /// <para>
+    /// A field of the visitor and not of a component's context: one visitor lowers the whole tree, a
+    /// component's build is lowered inside the call that expanded it, and a partial render lowers from
+    /// the root again, so it survives a component boundary the way <see cref="_inControl"/> does.
+    /// </para>
+    /// </summary>
+    private TextDirection _direction = context.TextDirection;
+
+    /// <summary>
+    /// Lowers what follows as read in <paramref name="direction"/>, until the scope is disposed and the
+    /// outer direction is back (the same save-and-restore <see cref="_simulated"/> has).
+    /// </summary>
+    private ReadingScope ReadAs(TextDirection direction)
+    {
+        var outer = _direction;
+        _direction = direction;
+        return new ReadingScope(this, outer);
+    }
+
+    /// <summary>Puts <see cref="_direction"/> back to what it was when <see cref="ReadAs"/> was called.</summary>
+    private readonly struct ReadingScope(WebLoweringVisitor visitor, TextDirection outer) : IDisposable
+    {
+        public void Dispose() => visitor._direction = outer;
+    }
+
     /// <summary>True while a DISABLED control's subtree is lowered: its boxes write no focus and no
     /// press, pictured or real, so neither a picture nor a control around it reaches them (#508).</summary>
     private bool _inDisabledControl;
@@ -307,6 +339,7 @@ internal sealed partial class WebLoweringVisitor(
     /// </summary>
     public HtmlElement? Visit(InheritedComponent inherited, bool? horizontalAxis)
     {
+        using var reading = ReadAs(inherited is Directionality own ? own.Direction : _direction);
         var child = Lower(inherited.Child, horizontalAxis, LoweringPath.Child);
         if (inherited is Directionality directionality && child is { Dir: null })
             child.Dir = directionality.Direction == TextDirection.RightToLeft ? "rtl" : "ltr";

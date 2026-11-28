@@ -19,7 +19,10 @@ public sealed class Adjustable : SingleChildNode
     }
 
 
-    /// <summary>+1 for the increasing arrow, −1 for the decreasing one. The CONTROL owns what a
+    /// <summary>+1 for the increasing arrow, −1 for the decreasing one. The horizontal arrows are
+    /// the NEXT and the PREVIOUS along the reading, so on the web ArrowRight is +1 where the element reads
+    /// left to right and −1 where it reads right to left (Photon lays out left to right for 1.0 and binds
+    /// ArrowRight to +1); ArrowUp and ArrowDown keep their meaning. The CONTROL owns what a
     /// step is worth — the keyboard only says which way; whether the ends WRAP is the control's
     /// call too (a radio group wraps like the native one, a slider clamps).</summary>
     public Action<int> OnAdjust { get; init; }

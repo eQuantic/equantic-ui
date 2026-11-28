@@ -343,7 +343,12 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("  ],");
     }
 
-    private static string Token(ColorToken token) => $"t({Color(token.Light)}, {Color(token.Dark)})";
+    // A token that steps up at ContrastLevel.More carries its More legs too, as the C# token does: a
+    // tile's contrast variants read them (#1937), where every other colour reaches More through its
+    // theme variable.
+    private static string Token(ColorToken token) => token.DiffersAtMore
+        ? $"t({Color(token.Light)}, {Color(token.Dark)}).withMore({Color(token.MoreLight)}, {Color(token.MoreDark)})"
+        : $"t({Color(token.Light)}, {Color(token.Dark)})";
 
     private static string Color(Color color) => $"c({color.R}, {color.G}, {color.B}, {color.A})";
 

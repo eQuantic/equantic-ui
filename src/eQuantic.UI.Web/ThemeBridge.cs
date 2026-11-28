@@ -17,7 +17,7 @@ public static class ThemeBridge
 {
     /// <summary>The theme as a single-line JSON object: surfaces, disabledOpacity, per-variant color
     /// groups, the type scale, elevations 0–5, the shape scale, the data palette and the code palette — colors as <c>[[r,g,b,a],[r,g,b,a]]</c>
-    /// light/dark tuples, keys camelCased to match the enum-lowered names the client looks up.</summary>
+    /// light/dark tuples (with the two More legs after them where a token steps up at More), keys camelCased to match the enum-lowered names the client looks up.</summary>
     public static string SerializeJson(IAppTheme theme) => Serialized.GetValue(theme, Write);
 
     /// <summary>
@@ -285,12 +285,22 @@ public static class ThemeBridge
         sb.Append(']');
     }
 
+    /// <summary>A token as its light and dark legs, and its More legs after them when it steps up at
+    /// <see cref="ContrastLevel.More"/>: the twin's tile writes its contrast variants from them (#1937),
+    /// where every other colour reaches More through its theme variable.</summary>
     private static void Token(StringBuilder sb, ColorToken token)
     {
         sb.Append('[');
         Color(sb, token.Light);
         sb.Append(',');
         Color(sb, token.Dark);
+        if (token.DiffersAtMore)
+        {
+            sb.Append(',');
+            Color(sb, token.MoreLight);
+            sb.Append(',');
+            Color(sb, token.MoreDark);
+        }
         sb.Append(']');
     }
 
