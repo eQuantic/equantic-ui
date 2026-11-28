@@ -496,8 +496,13 @@ public sealed class DisplayListBuilder
         // A replayed layer opens and closes as a pushed one does, so Build refuses a replay that leaves
         // one open: the renderer composites a layer from the target its whole scope drew into (#1952).
         if (command.Kind == DrawCommandKind.BeginLayer) _openLayers++;
-        else if (command.Kind == DrawCommandKind.EndLayer && --_openLayers < 0)
-            throw new InvalidOperationException("Replay of an EndLayer with no layer open: the replayed commands are not a whole scope.");
+        else if (command.Kind == DrawCommandKind.EndLayer)
+        {
+            // Checked before the count moves, so a refused replay leaves the builder as it was.
+            if (_openLayers == 0)
+                throw new InvalidOperationException("Replay of an EndLayer with no layer open: the replayed commands are not a whole scope.");
+            _openLayers--;
+        }
         if (offset.IsIdentity)
         {
             _commands.Add(command);

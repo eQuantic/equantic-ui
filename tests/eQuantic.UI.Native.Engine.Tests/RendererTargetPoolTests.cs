@@ -74,7 +74,7 @@ public class RendererTargetPoolTests
         }
 
         public void Draw(in DrawUniforms uniforms) { }
-        public void Submit(bool waitUntilCompleted) => device.Log.Add($"submit {name}");
+        public void Submit(bool waitUntilCompleted) => device.Log.Add($"submit {name} wait={waitUntilCompleted}");
     }
 
     /// <summary>A window's frame: its own pass, logged where the device logs its passes.</summary>
@@ -175,9 +175,11 @@ public class RendererTargetPoolTests
 
         var window = device.Log.IndexOf("begin window");
         window.Should().BeGreaterThan(0);
-        device.Log.Take(window).Count(entry => entry.StartsWith("submit ")).Should().Be(4,
-            "four layers, each submitted before the window's pass opens");
-        device.Log.Skip(window).Should().Equal("begin window", "submit window");
+        var layers = device.Log.Take(window).Where(entry => entry.StartsWith("submit ")).ToList();
+        layers.Should().HaveCount(4, "four layers, each submitted before the window's pass opens");
+        foreach (var submit in layers)
+            submit.Should().EndWith(" wait=True", "a layer is finished before the window's pass reads it");
+        device.Log.Skip(window).Should().Equal("begin window", "submit window wait=False");
     }
 
     [Theory]
@@ -235,6 +237,19 @@ public class RendererTargetPoolTests
 
         builder.Invoking(b => b.Build()).Should().Throw<InvalidOperationException>(
             "a replayed scope that never ends has no target the renderer could composite");
+    }
+
+    [Fact]
+    public void AReplayedEndLayerWithNoLayerOpen_IsRefused_AndLeavesTheBuilderAsItWas()
+    {
+        var builder = new DisplayListBuilder();
+        var end = new DrawCommand { Kind = DrawCommandKind.EndLayer };
+
+        builder.Invoking(b => b.Replay(end, Matrix2D.Identity)).Should().Throw<InvalidOperationException>();
+        builder.PushLayer(0.5f);
+
+        builder.Invoking(b => b.Build()).Should().Throw<InvalidOperationException>(
+            "the refused replay moved no count, so the layer pushed after it is still open");
     }
 
     [Fact]
