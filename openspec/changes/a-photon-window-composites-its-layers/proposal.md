@@ -31,8 +31,9 @@ Vulkan, as they already did offscreen.
   - **On Vulkan**, `VulkanSwapchain.Present` draws it into the acquired image, waiting on the acquire semaphore and
     signalling the present's (`SwapchainFrame`).
 - **The fallback is deleted.** The encoder composites a layer from its target, and a scope without one fails rather
-  than drawing each child at the group's alpha. `DisplayListBuilder.PopLayer` refuses a pop with no layer open, so a
-  builder never makes such a scope.
+  than drawing each child at the group's alpha. `DisplayListBuilder.PopLayer` refuses a pop with no layer open, and
+  `Replay`, which a departing subtree and a sorted item draw through, counts the layers it replays, so `Build` refuses
+  a list with such a scope before a frame meets it.
 - **Every pass before the last is finished before the last begins.** Each is submitted and waited for: the Vulkan
   device's submit waits for its queue to go idle, so the window's pass reads a finished layer, and the uniform ring every
   pass writes from its start is free again. The order is measured on the device, not assumed.

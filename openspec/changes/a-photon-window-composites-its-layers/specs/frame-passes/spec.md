@@ -39,10 +39,16 @@ window's pass reads its layers finished.
 
 ### Requirement: A layer scope that ends before it begins is refused
 
-The display-list builder SHALL refuse a `PopLayer` with no layer open. The encoder SHALL fail on a layer scope that has
-no target rather than draw its children at the group's alpha.
+The display-list builder SHALL refuse a `PopLayer` with no layer open, and SHALL count the layers a `Replay` opens and
+closes, so that `Build` refuses a replay that leaves one open. The encoder SHALL fail on a layer scope that has no target
+rather than draw its children at the group's alpha.
 
 #### Scenario: A pop with no layer open
 
 - **WHEN** `PopLayer` is called on a builder with no layer open
 - **THEN** it throws `InvalidOperationException`
+
+#### Scenario: A replay that leaves a layer open
+
+- **WHEN** a layer's recorded commands are replayed into a builder without their `EndLayer`
+- **THEN** `Build` throws `InvalidOperationException`

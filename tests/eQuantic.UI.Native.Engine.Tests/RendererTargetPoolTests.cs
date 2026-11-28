@@ -222,6 +222,22 @@ public class RendererTargetPoolTests
     }
 
     [Fact]
+    public void AReplayThatLeavesALayerOpen_IsRefusedByBuild()
+    {
+        var recorded = new DisplayListBuilder();
+        recorded.PushLayer(0.5f);
+        recorded.FillRect(new Rect(0, 0, 10, 10), Paint.Solid(Color.Black));
+        recorded.PopLayer();
+        var slice = recorded.CommandsFrom(0)[..^1];   // the layer's commands without its EndLayer
+
+        var builder = new DisplayListBuilder();
+        foreach (var command in slice) builder.Replay(command, Matrix2D.Identity);
+
+        builder.Invoking(b => b.Build()).Should().Throw<InvalidOperationException>(
+            "a replayed scope that never ends has no target the renderer could composite");
+    }
+
+    [Fact]
     public void APopWithNoLayerOpen_IsRefused()
     {
         var builder = new DisplayListBuilder();
