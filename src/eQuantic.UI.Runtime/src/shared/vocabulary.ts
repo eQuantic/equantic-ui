@@ -1894,11 +1894,26 @@ export class ExcludeSemantics extends VisualNode {
 }
 
 /**
- * Mirror of the C# `TitlePart` node (#1916): the part that names the dialog around it. It draws nothing and adds no
- * geometry.
+ * Mirror of the C# `LabelPart` node (#1916): the part that names its nearest nameable, a dialog, a group, a region or
+ * a field. It draws nothing and adds no geometry.
  */
-export class TitlePart extends VisualNode {
-  readonly nodeKind = 'titlePart';
+export class LabelPart extends VisualNode {
+  readonly nodeKind = 'labelPart';
+  child: VisualNode;
+
+  constructor(child: VisualNode, config?: EqConfig) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `DescriptionPart` node (#1916): the part that describes its nearest nameable, read after its name
+ * and state. It draws nothing and adds no geometry.
+ */
+export class DescriptionPart extends VisualNode {
+  readonly nodeKind = 'descriptionPart';
   child: VisualNode;
 
   constructor(child: VisualNode, config?: EqConfig) {

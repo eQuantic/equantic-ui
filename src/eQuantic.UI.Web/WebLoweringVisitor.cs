@@ -148,11 +148,11 @@ internal sealed partial class WebLoweringVisitor(
             case Overlay:
                 _naming.Boundary(mark);
                 break;
-            case TextEntry:
-                _naming.Control(mark, TextControlIn(lowered) ?? lowered);
+            case TextEntry entry:
+                _naming.Control(mark, TextControlIn(lowered) ?? lowered, named: entry.Label is { Length: > 0 });
                 break;
-            case Pressable { Role: PressableRole.Checkbox or PressableRole.Radio or PressableRole.Switch }:
-                _naming.Control(mark, lowered);
+            case Pressable { Role: PressableRole.Checkbox or PressableRole.Radio or PressableRole.Switch } pressable:
+                _naming.Control(mark, lowered, named: pressable.Label is { Length: > 0 });
                 break;
             default:
                 _naming.Other(mark, node.NodeKind);

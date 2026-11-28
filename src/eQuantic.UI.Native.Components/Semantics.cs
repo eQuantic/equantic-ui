@@ -32,7 +32,8 @@ public static class SemanticsTree
         foreach (var layer in frame.OverlayRoots)
             if (layer.Element?.Parent is NodeElement { Configuration: Anchored } holder)
                 panels[holder] = layer;
-        var visitor = new SemanticsVisitor(nodes, panels);
+        // Which nameable each part names or describes, settled over the whole frame before a stop is announced (#1916).
+        var visitor = new SemanticsVisitor(nodes, panels, NamedByParts.Of(frame, panels));
         Walk(frame.Root, visitor);
         for (var i = 0; i < frame.OverlayRoots.Count; i++)
         {

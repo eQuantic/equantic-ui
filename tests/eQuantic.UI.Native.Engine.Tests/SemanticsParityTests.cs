@@ -45,7 +45,7 @@ public class SemanticsParityTests(ITestOutputHelper output)
 
     /// <summary>What one stop says, in the vocabulary's words, on either target.</summary>
     private readonly record struct Said(SemanticRole Role, string Name, string? Value, bool Disabled,
-        SemanticCheck? Checked, bool? Selected, bool? Expanded, bool Current, int HeadingLevel)
+        SemanticCheck? Checked, bool? Selected, bool? Expanded, bool Current, int HeadingLevel, string? Description)
     {
         public override string ToString() => $"{Role} \"{Name}\"";
     }
@@ -191,22 +191,47 @@ public class SemanticsParityTests(ITestOutputHelper output)
         // A dialog named by the part that titles it (#1916): a part that is a composite, a part beside a label and
         // one that says nothing beside it, two parts, a part inside a layer that is no dialog, and a dialog panel.
         yield return new("case layer titled by a composite part", () => ComponentCatalog.Page(Layer(null, Lines(
-            new TitlePart(Line(new Text("Rename", TypeRole.Title), new Text("file", TypeRole.Title))),
+            new LabelPart(Line(new Text("Rename", TypeRole.Title), new Text("file", TypeRole.Title))),
             new Text("The name is shared.", TypeRole.BodyM)))));
         yield return new("case layer titled beside a label", () => ComponentCatalog.Page(Layer("Settings",
-            new TitlePart(new Text("Rename file", TypeRole.Title)))));
+            new LabelPart(new Text("Rename file", TypeRole.Title)))));
         yield return new("case layer titled by a part that says nothing", () => ComponentCatalog.Page(Layer("Settings",
-            new TitlePart(new Text("Rename file", TypeRole.Title) { ExcludeFromSemantics = true }))));
+            new LabelPart(new Text("Rename file", TypeRole.Title) { ExcludeFromSemantics = true }))));
         yield return new("case layer titled by two parts", () => ComponentCatalog.Page(Layer(null, Lines(
-            new TitlePart(new Text("Step 2", TypeRole.Label)), new TitlePart(new Text("Payment", TypeRole.Title))))));
+            new LabelPart(new Text("Step 2", TypeRole.Label)), new LabelPart(new Text("Payment", TypeRole.Title))))));
         yield return new("case part inside a layer that is no dialog", () => ComponentCatalog.Page(Layer("Editor",
-            new Overlay(new TitlePart(new Text("Saved", TypeRole.BodyM))) { Modal = false })));
+            new Overlay(new LabelPart(new Text("Saved", TypeRole.BodyM))) { Modal = false })));
         yield return new("case dialog panel titled by its part", () => new Anchored(new Button("Pick"),
-            Lines(new TitlePart(new Text("Pick a day", TypeRole.Title)), new Text("July", TypeRole.BodyM)))
+            Lines(new LabelPart(new Text("Pick a day", TypeRole.Title)), new Text("July", TypeRole.BodyM)))
         {
             Open = true,
             PanelRole = AnchorPanelRole.Dialog,
         });
+
+        // The other nameables (#1916): a field named by the label beside it and described by the line under it, after
+        // the description it carries; a group, a checkbox and a dialog named and described by their parts; and a
+        // dialog's title over a field named by its own label, which the field keeps.
+        yield return new("case field named by its label part", () => Lines(
+            new LabelPart(new Text("Email", TypeRole.Label)), new TextEntry("", _ => { })));
+        yield return new("case field described by its parts", () => Lines(
+            new LabelPart(new Text("Email", TypeRole.Label)),
+            new TextEntry("", _ => { }) { Description = "Required" },
+            new DescriptionPart(new Text("We never share it.", TypeRole.Caption))));
+        yield return new("case group named by its part", () => new Group(Lines(
+            new LabelPart(new Text("Shipping", TypeRole.Title)), new Text("Two days", TypeRole.BodyM))));
+        yield return new("case checkbox named by the part beside it", () => Line(
+            new Pressable(new Box(new BoxStyle { Width = 22, Height = 22 }), () => { })
+            {
+                Role = PressableRole.Checkbox,
+                Selected = true,
+            },
+            new LabelPart(new Text("I accept the terms", TypeRole.BodyM))));
+        yield return new("case dialog named and described by its parts", () => ComponentCatalog.Page(Layer(null, Lines(
+            new LabelPart(new Text("Delete file?", TypeRole.Title)),
+            new DescriptionPart(new Text("It cannot be undone.", TypeRole.BodyM))))));
+        yield return new("case dialog titled over a field that names itself", () => ComponentCatalog.Page(Layer(null,
+            Lines(new LabelPart(new Text("Rename file", TypeRole.Title)),
+                new TextEntry("notes.txt", _ => { }) { Label = "Name" }))));
     }
 
     /// <summary>A row of what a case reads, in order.</summary>
@@ -312,6 +337,7 @@ public class SemanticsParityTests(ITestOutputHelper output)
             Field("expanded", w.Value.Expanded, p.Value.Expanded);
             Field("current", w.Value.Current, p.Value.Current);
             Field("heading level", w.Value.HeadingLevel, p.Value.HeadingLevel);
+            Field("description", w.Value.Description, p.Value.Description);
 
             void Field<T>(string field, T onTheWeb, T onPhoton)
             {
@@ -398,7 +424,7 @@ public class SemanticsParityTests(ITestOutputHelper output)
 
         return tester.Semantics
             .Select(stop => new Said(stop.Role, stop.Name, NullIfEmpty(stop.Value), stop.Disabled, stop.Checked, stop.Selected,
-                stop.Expanded, stop.Current, stop.HeadingLevel))
+                stop.Expanded, stop.Current, stop.HeadingLevel, stop.Description))
             .ToList();
     }
 
@@ -420,7 +446,7 @@ public class SemanticsParityTests(ITestOutputHelper output)
 
             return host.Semantics()
                 .Select(stop => new Said(WebSpelling.GetValueOrDefault(stop.Role, stop.Role), stop.Label, NullIfEmpty(stop.Value), stop.Disabled, stop.Checked, stop.Selected,
-                    stop.Expanded, stop.Current, stop.HeadingLevel))
+                    stop.Expanded, stop.Current, stop.HeadingLevel, NullIfEmpty(stop.Description)))
                 .ToList();
         }
         finally

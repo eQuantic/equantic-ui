@@ -59,6 +59,7 @@ import {
   boundaryLowered,
   containerLowered,
   controlLowered,
+  inPartsWalk,
   otherLowered,
   partLowered,
   type PartsMark,
@@ -362,7 +363,7 @@ export function lowerVisualNode(node: VisualNodeValue, context: LoweringContext)
   // opened, and standing alone — a Core page's bridge to a write-once subtree reaches here with no
   // root render of its own — it opens one, so the components below are named from `#0` on every
   // render rather than counting on from the last.
-  return runLoweringWalk(() => {
+  return runLoweringWalk(() => inPartsWalk(() => {
     // A web component handed in as the root renders itself (the mixing seam): there is no tree of
     // the vocabulary to build, and the engine holds none of it, as in C#.
     // Which tree of the walk this is, counted as the server counts its trees: after the walk's
@@ -382,7 +383,7 @@ export function lowerVisualNode(node: VisualNodeValue, context: LoweringContext)
         children: [],
       }
     );
-  });
+  }));
 }
 
 
@@ -409,7 +410,8 @@ export function relowerBuilt(node: VisualNodeValue, context: LoweringContext): R
     root.owner.drewOnly([]);
     return null;
   };
-  return runLoweringWalk(() => {
+  // The components lowered again alone keep the ids of their parts whose nameable they do not hold (#1916).
+  return runLoweringWalk(() => inPartsWalk(() => {
     const tree = nextTree();
     treeOfOwner.set(root.owner, tree);
     const { result: built, positions } = collectBuilds(() => buildTree(root.owner, node, context));
@@ -433,7 +435,7 @@ export function relowerBuilt(node: VisualNodeValue, context: LoweringContext): R
     if (root.owner.waitsForALayer) return drewNothing();
     root.owner.drewOnly(topmost.map((record) => record.position));
     return { patches, declaredBy: (binding) => declarerAmong(topmost, binding.within) };
-  });
+  }, true));
 }
 
 /** Whether `record` stands below `above`. */
@@ -687,11 +689,12 @@ function settleParts(node: VisualNodeValue, lowered: HtmlNode, mark: PartsMark, 
       return;
     }
     case 'textEntry':
-      controlLowered(mark, textControlOf(lowered) ?? lowered);
+      controlLowered(mark, textControlOf(lowered) ?? lowered, !!(node as TextEntryNode).label);
       return;
     case 'pressable': {
-      const role = (node as PressableNode).role;
-      if (role === 'checkbox' || role === 'radio' || role === 'switch') controlLowered(mark, lowered);
+      const pressable = node as PressableNode;
+      const role = pressable.role;
+      if (role === 'checkbox' || role === 'radio' || role === 'switch') controlLowered(mark, lowered, !!pressable.label);
       else otherLowered(mark, node.nodeKind);
       return;
     }
@@ -5257,15 +5260,14 @@ function lowerPart(node: LabelPartNode | DescriptionPartNode, context: LoweringC
 
 /**
  * THE ONE HOST of the seven wrappers that put an element between a parent and its child to carry semantics
- * (C# twin: SemanticsHost): progress, adjustable, liveRegion, group, mergeSemantics, excludeSemantics and
- * titlePart. It
- * is the web's stand-in for Flutter's `Semantics` proxy box, which takes exactly its child's size, and it
+ * (C# twin: SemanticsHost): progress, adjustable, liveRegion, group, mergeSemantics, excludeSemantics,
+ * labelPart and descriptionPart. It is the web's stand-in for Flutter's `Semantics` proxy box, which takes exactly its child's size, and it
  * writes the rule once: the box a reader outlines is the box it names, so the host takes the child's width
  * contract (`fit-content`, or `100%` when the child fills), the child's cap as `max-width` and `100%` height
  * when the child fills down. A wrapper that took the width and dropped the rest is the half-contract that
  * made the Link diverge (#239, #241, held by role-host-bounds.spec.ts).
  *
- * What differs is the role's `attributes` (none for the three that bear no role), the accessible `label`,
+ * What differs is the role's `attributes` (none for the four that bear no role), the accessible `label`,
  * written right after them when it is not empty, and whether the host `takesPointer` (`pointer-events:
  * auto`, the adjustable's). The child is not lowered here. The style's keys are written in the
  * order the adjustable's host always had (width, max-width, pointer-events, height), so the order

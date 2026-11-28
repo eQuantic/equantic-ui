@@ -400,11 +400,18 @@ public static class UI
         new ExcludeSemantics(child) { Excluding = excluding };
 
     /// <summary>
-    /// The part that names the dialog around it, on every target: what <paramref name="child"/> says is the name a
-    /// reader hears on arriving at the nearest dialog, over its label. Wrap a dialog's title in it, whatever the title
-    /// draws. It is no stop of its own, draws nothing and adds no geometry.
+    /// The part that names its nearest nameable, on every target: what <paramref name="child"/> says is the name a
+    /// reader hears for the dialog, the group, the region or the field around it, over any label it carries. Wrap a
+    /// title or a field's label in it, whatever it draws. It is no stop of its own, draws nothing and adds no geometry.
     /// </summary>
-    public static TitlePart TitlePart(VisualNode child) => new TitlePart(child);
+    public static LabelPart LabelPart(VisualNode child) => new LabelPart(child);
+
+    /// <summary>
+    /// The part that describes its nearest nameable, on every target: what <paramref name="child"/> says is read after
+    /// the nameable's name and state, as a field's helper or error, or a dialog's message. It is no stop of its own,
+    /// draws nothing and adds no geometry.
+    /// </summary>
+    public static DescriptionPart DescriptionPart(VisualNode child) => new DescriptionPart(child);
 
     /// <summary>
     /// Arrow-key adjustment semantics: one Tab stop, arrows call back with ±1.

@@ -1003,9 +1003,15 @@ export interface ExcludeSemanticsNode extends VisualNodeValue {
   excluding?: boolean;
 }
 
-/** The part that names the dialog around it (C# twin: TitlePart, #1916). */
-export interface TitlePartNode extends VisualNodeValue {
-  nodeKind: 'titlePart';
+/** The part that names its nearest nameable (C# twin: LabelPart, #1916). */
+export interface LabelPartNode extends VisualNodeValue {
+  nodeKind: 'labelPart';
+  child: VisualNodeValue;
+}
+
+/** The part that describes its nearest nameable (C# twin: DescriptionPart, #1916). */
+export interface DescriptionPartNode extends VisualNodeValue {
+  nodeKind: 'descriptionPart';
   child: VisualNodeValue;
 }
 

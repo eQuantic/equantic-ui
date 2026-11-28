@@ -48,7 +48,9 @@ import {
   MergeSemantics,
   ExcludeSemantics,
   Overlay,
-  TitlePart,
+  LabelPart,
+  DescriptionPart,
+  Group,
   Pinned,
   Positioned,
   Pressable,
@@ -61,6 +63,7 @@ import {
   StyleDiff,
   TableViewCell,
   Text,
+  TextEntry,
   TextRun,
   TransitionSpec,
   VectorDrawing,
@@ -621,13 +624,37 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
       new Overlay(
         column(
           8,
-          new TitlePart(new Text('Rename file', 'title', photonTheme.textPrimary)),
+          new LabelPart(new Text('Rename file', 'title', photonTheme.textPrimary)),
           new Text('The name is shared.', 'bodyM', photonTheme.textPrimary),
         ),
         { label: 'Settings' },
       ),
     ),
-    'part-outside-every-layer': still(new TitlePart(new Text('Orders', 'bodyM', photonTheme.textPrimary))),
+    'part-outside-every-layer': still(new LabelPart(new Text('Orders', 'bodyM', photonTheme.textPrimary))),
+    'field-named-and-described-by-its-parts': still(
+      column(
+        8,
+        new LabelPart(new Text('Email', 'label', photonTheme.textPrimary)),
+        new TextEntry('', () => {}, { description: 'Required' }),
+        new DescriptionPart(new Text('We never share it.', 'caption', photonTheme.textPrimary)),
+      ),
+    ),
+    'group-named-by-its-part': still(
+      new Group(
+        column(
+          8,
+          new LabelPart(new Text('Shipping', 'title', photonTheme.textPrimary)),
+          new Text('Two days', 'bodyM', photonTheme.textPrimary),
+        ),
+      ),
+    ),
+    'checkbox-named-by-the-part-beside-it': still(
+      line(
+        false,
+        new Pressable(new Box(new BoxStyle({ width: 22, height: 22 })), () => {}, { role: 'checkbox', selected: true }),
+        new LabelPart(new Text('I accept', 'bodyM', photonTheme.textPrimary)),
+      ),
+    ),
     'sortable-column': still(
       new Sortable(
         column(

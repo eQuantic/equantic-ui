@@ -34,7 +34,8 @@ internal sealed partial class SemanticsVisitor
         foreach (var part in layer)
         {
             if (node.PanelRole == AnchorPanelRole.Dialog && part.Source is Positioned)
-                AnnounceGroup(new(SemanticRole.Dialog, IdOf(part), part.Bounds, "", null, false));
+                AnnounceGroup(new(SemanticRole.Dialog, IdOf(part), part.Bounds, NameOf(part, null) ?? "", null, false,
+                    Description: DescriptionOf(part)));
             SemanticsTree.Walk(part, this);
         }
         return Consumed;

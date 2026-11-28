@@ -38,9 +38,22 @@ namespace eQuantic.UI.Native.Components;
 /// </para>
 /// </summary>
 internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes,
-    IReadOnlyDictionary<Element, LayoutNode>? panels = null)
+    IReadOnlyDictionary<Element, LayoutNode>? panels = null, NamedByParts? named = null)
     : IVisualNodeVisitor<LayoutNode, bool>
 {
+    /// <summary>The words the frame's <see cref="LabelPart"/>s and <see cref="DescriptionPart"/>s name and describe each
+    /// nameable by (#1916). Null for a walk over one subtree, a live region's, which names nothing anew.</summary>
+    private readonly NamedByParts? _named = named;
+
+    /// <summary>The name of <paramref name="nameable"/>: what its label parts say, over <paramref name="own"/>, and
+    /// <paramref name="own"/> when they say nothing, the browser's order for <c>aria-labelledby</c> and
+    /// <c>aria-label</c>.</summary>
+    private string? NameOf(LayoutNode nameable, string? own) => _named?.LabelOf(nameable) ?? own;
+
+    /// <summary>What the description parts that reach <paramref name="nameable"/> say, after <paramref name="own"/>,
+    /// the nameable's own description, as the web lists the parts after the ids the element already lists.</summary>
+    private string? DescriptionOf(LayoutNode nameable, string? own = null) =>
+        _named?.DescriptionOf(nameable) is { } parts ? own is { Length: > 0 } ? $"{own} {parts}" : parts : own;
     /// <summary>The frame's semantic nodes, in reading order — fixed for the pass, so it lives here
     /// rather than travelling down with each visit.</summary>
     private readonly List<SemanticNode> _nodes = nodes;
@@ -174,37 +187,17 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes,
     /// menu's, a listbox's and a tooltip's are no dialog to anyone.
     /// </para>
     /// <para>
-    /// Its NAME is what the layer's <see cref="TitlePart"/>s say, joined in reading order, over its
+    /// Its NAME is what the <see cref="LabelPart"/>s that reach the layer say, joined in reading order, over its
     /// <see cref="Overlay.Label"/>, and the label when the parts say nothing: the web names the same layer by the parts'
-    /// ids in <c>aria-labelledby</c>, which the browser takes over <c>aria-label</c> only when it gathers some text.
+    /// ids in <c>aria-labelledby</c>, which the browser takes over <c>aria-label</c> only when it gathers some text. Its
+    /// <see cref="DescriptionPart"/>s describe it, as <c>aria-describedby</c> does (#1916).
     /// </para>
     /// </summary>
     internal void AnnounceOverlay(Overlay overlay, LayoutNode root)
     {
         if (overlay is not { Modal: true, Open: true }) return;
-        var titled = TitleOf(root);
         AnnounceGroup(new(overlay.Alert ? SemanticRole.AlertDialog : SemanticRole.Dialog,
-            IdOf(root), root.Bounds, titled.Length > 0 ? titled : overlay.Label ?? "", null, false));
-    }
-
-    /// <summary>
-    /// What the <see cref="TitlePart"/>s under a layer's root say, joined in tree order. A layer opened inside this one is
-    /// laid out apart, under a root of its own, so its parts are never found here.
-    /// </summary>
-    private static string TitleOf(LayoutNode root)
-    {
-        var parts = new List<string>();
-        Find(root, parts);
-        return string.Join(" ", parts);
-
-        static void Find(LayoutNode node, List<string> parts)
-        {
-            if (node.Source is TitlePart)
-            {
-                if (TextWithin(node) is { Length: > 0 } words) parts.Add(words);
-                return;
-            }
-            foreach (var child in node) Find(child, parts);
-        }
+            IdOf(root), root.Bounds, NameOf(root, overlay.Label) ?? "", null, false,
+            Description: DescriptionOf(root)));
     }
 }

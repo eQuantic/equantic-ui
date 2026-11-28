@@ -84,12 +84,16 @@ internal sealed partial class SemanticsVisitor
             // aria-selected only then: a tree with no selection announces none.
             : node.Role == PressableRole.TreeItem ? node.Selected
             : null;
+        // A checkbox, a radio or a switch is a nameable control: the parts that reach it name and describe it over its
+        // label and its content (#1916).
+        var nameable = node.Role is PressableRole.Checkbox or PressableRole.Radio or PressableRole.Switch;
         return Announce(new(role, IdOf(laidOut), laidOut.Bounds,
-            node.Label ?? TextWithin(laidOut), null, node.Disabled, check,
+            (nameable ? NameOf(laidOut, node.Label) : node.Label) ?? TextWithin(laidOut), null, node.Disabled, check,
             node.Expanded,
             node.Role == PressableRole.Destination && node.Selected == true,
             selected,
-            TreePlace: node.Role == PressableRole.TreeItem ? node.TreePlace : null));
+            TreePlace: node.Role == PressableRole.TreeItem ? node.TreePlace : null,
+            Description: nameable ? DescriptionOf(laidOut) : null));
     }
 
     /// <summary>
@@ -306,12 +310,13 @@ internal sealed partial class SemanticsVisitor
     /// </summary>
     public bool Visit(LiveRegion node, LayoutNode laidOut) =>
         AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds,
-            node.Label, null, false, Live: node.Urgency));
+            NameOf(laidOut, node.Label) ?? "", null, false, Live: node.Urgency, Description: DescriptionOf(laidOut)));
 
     /// <summary>A labelled group: one stop named by its label, then what it holds, as the web's
     /// <c>role="group"</c> is read.</summary>
     public bool Visit(Group node, LayoutNode laidOut) =>
-        AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, node.Label, null, false));
+        AnnounceGroup(new(SemanticRole.Group, IdOf(laidOut), laidOut.Bounds, NameOf(laidOut, node.Label) ?? "", null, false,
+            Description: DescriptionOf(laidOut)));
 
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(DragDismiss node, LayoutNode laidOut) => Wraps;
@@ -368,7 +373,7 @@ internal sealed partial class SemanticsVisitor
 
     /// <summary>Every Text string under a node, joined — the derived accessible name of a control
     /// whose author gave it no explicit Label.</summary>
-    private static string TextWithin(LayoutNode node)
+    internal static string TextWithin(LayoutNode node)
     {
         var parts = new List<string>();
         Gather(node, parts);

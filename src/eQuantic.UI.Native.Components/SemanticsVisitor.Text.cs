@@ -53,9 +53,12 @@ internal sealed partial class SemanticsVisitor
     public bool Visit(TextEntry node, LayoutNode laidOut)
     {
         var listbox = ListboxFieldOf(laidOut);
+        // A text entry is a nameable control: the parts that reach it name it over its label, and describe it after its
+        // own description (#1916).
         return Announce(new(listbox is null ? SemanticRole.TextField : SemanticRole.EditableComboBox,
-            IdOf(laidOut), laidOut.Bounds, node.Label ?? node.Placeholder ?? "", FieldText.Of(laidOut.Element, node),
-            node.Disabled, Expanded: listbox?.Open));
+            IdOf(laidOut), laidOut.Bounds, NameOf(laidOut, node.Label) ?? node.Placeholder ?? "",
+            FieldText.Of(laidOut.Element, node), node.Disabled, Expanded: listbox?.Open,
+            Description: DescriptionOf(laidOut, node.Description)));
     }
 
     /// <summary>The <see cref="Anchored"/> whose listbox this text entry is the field of, or null: the nearest

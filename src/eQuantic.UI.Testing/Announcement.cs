@@ -40,6 +40,10 @@ public sealed record Announcement
     /// <summary>The level in the outline, 1 to 6, for a heading; 0 for anything else.</summary>
     public int HeadingLevel { get; init; }
 
+    /// <summary>What a reader hears after the name and the states: what the stop is described by, whitespace
+    /// collapsed, a field's helper or error, a dialog's message; null when nothing describes it (#1916).</summary>
+    public string? Description { get; init; }
+
     /// <summary>Where a tree item stands, its level and its position among its siblings of how many,
     /// all from one; null for anything else, and for an item that does not say.</summary>
     public TreePlace? TreePlace { get; init; }
@@ -59,6 +63,7 @@ public sealed record Announcement
         if (Expanded is { } expanded) states.Add(expanded ? "expanded" : "collapsed");
         if (Current) states.Add("current");
         if (states.Count > 0) text.Append(" (").Append(string.Join(", ", states)).Append(')');
+        if (Description is not null) text.Append($", \"{Description}\"");
         return text.ToString();
     }
 }

@@ -1,0 +1,3 @@
+#nullable enable
+eQuantic.UI.Testing.Announcement.Description.get -> string?
+eQuantic.UI.Testing.Announcement.Description.init -> void

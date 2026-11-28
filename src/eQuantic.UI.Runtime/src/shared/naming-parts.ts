@@ -34,10 +34,27 @@ export interface PartsMark {
 let pending: Pending[] = [];
 let controls: Candidate[] = [];
 
-/** A walk starts with nothing waiting, whatever an earlier walk that failed left behind. */
-export function resetParts(): void {
+/**
+ * Runs one lowering walk with lists of its own, and puts back the lists of any walk it was started inside, so a walk
+ * that fails leaves nothing behind for the next one.
+ *
+ * A walk that lowers components AGAIN ALONE (`relowerBuilt`) passes `alone`: a part whose nameable lies outside what it
+ * lowered reaches nothing inside it, and still takes its id, because the nameable, lowered before, already lists that
+ * id, the same one, since a part's id is scoped by its path. A dialog whose title is a component of the app's own keeps
+ * its name when the title draws again.
+ */
+export function inPartsWalk<T>(walk: () => T, alone = false): T {
+  const outer = { pending, controls };
   pending = [];
   controls = [];
+  try {
+    const result = walk();
+    if (alone) for (const part of pending) part.host.attributes['id'] = part.id;
+    return result;
+  } finally {
+    pending = outer.pending;
+    controls = outer.controls;
+  }
 }
 
 /** The lists' ends, before a node's subtree is lowered. */
@@ -57,9 +74,13 @@ export function containerLowered(at: PartsMark, target: HtmlNode): void {
   controls.length = at.controls;
 }
 
-/** A nameable control: a part inside it reaches it, and it is then a candidate, claimed when one inside reached it. */
-export function controlLowered(at: PartsMark, target: HtmlNode): void {
-  const claimed = pending.length > at.parts;
+/**
+ * A nameable control: a part inside it reaches it, and it is then a candidate, claimed when one inside reached it or
+ * when it carries a label of its own (`named`): a field that names itself is no field a dialog's title could be meant
+ * for.
+ */
+export function controlLowered(at: PartsMark, target: HtmlNode, named: boolean): void {
+  const claimed = named || pending.length > at.parts;
   reach(at, target);
   controls.length = at.controls;
   controls.push({ target, claimed });

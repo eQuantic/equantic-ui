@@ -341,6 +341,25 @@ public class WikiClaimsCompile
         ]);
     }
 
+    /// <summary>Components, "A part names or describes what it stands beside" (preview.74, #1916): a dialog named
+    /// by a title of its own, described by its message, and a field named and described by the lines beside it.</summary>
+    private sealed class NamingPartsPage : Primitives.StatefulComponent
+    {
+        private string _email = "";
+
+        private void SetEmail(string value) => SetState(() => _email = value);
+
+        public override VisualNode Build(ComponentContext context) => Column(children:
+        [
+            Overlay(Column(children:
+            [
+                LabelPart(Row(children: [Icon(Icons.Warning), "Delete file?"])),
+                DescriptionPart("It cannot be undone."),
+            ])),
+            Column(children: [LabelPart("Email"), TextEntry(_email, SetEmail), DescriptionPart("We never share it.")]),
+        ]);
+    }
+
     /// <summary>Components, "ContextTarget and ContextMenu: a menu asked for anywhere" (preview.69, #1531): a
     /// file's card with its menu, and the blocks it is made of for a panel of another look.</summary>
     private sealed class FileMenuPage : Primitives.StatefulComponent

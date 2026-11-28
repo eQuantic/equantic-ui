@@ -308,9 +308,25 @@ public class ComponentParityFixtureTests
         // layer's aria-labelledby beside its label, written alike by both producers. A part outside every layer
         // takes no id.
         ("layer-titled-by-its-part", new Overlay(Stack(8,
-            new TitlePart(new Text("Rename file", TypeRole.Title, Theme.TextPrimary)),
+            new LabelPart(new Text("Rename file", TypeRole.Title, Theme.TextPrimary)),
             new Text("The name is shared.", TypeRole.BodyM, Theme.TextPrimary))) { Label = "Settings" }, NoPresses),
-        ("part-outside-every-layer", new TitlePart(new Text("Orders", TypeRole.BodyM, Theme.TextPrimary)), NoPresses),
+        ("part-outside-every-layer", new LabelPart(new Text("Orders", TypeRole.BodyM, Theme.TextPrimary)), NoPresses),
+        // The other nameables (#1916): a field named by the label beside it and described after its own description, a
+        // group named by its part, and a checkbox named by the part beside it.
+        ("field-named-and-described-by-its-parts", Stack(8,
+            new LabelPart(new Text("Email", TypeRole.Label, Theme.TextPrimary)),
+            new TextEntry("", _ => { }) { Description = "Required" },
+            new DescriptionPart(new Text("We never share it.", TypeRole.Caption, Theme.TextPrimary))), NoPresses),
+        ("group-named-by-its-part", new Group(Stack(8,
+            new LabelPart(new Text("Shipping", TypeRole.Title, Theme.TextPrimary)),
+            new Text("Two days", TypeRole.BodyM, Theme.TextPrimary))), NoPresses),
+        ("checkbox-named-by-the-part-beside-it", Line(false,
+            new Pressable(new Box(new BoxStyle { Width = 22, Height = 22 }), () => { })
+            {
+                Role = PressableRole.Checkbox,
+                Selected = true,
+            },
+            new LabelPart(new Text("I accept", TypeRole.BodyM, Theme.TextPrimary))), NoPresses),
         // A LIST A POINTER SORTS (#1535): no element of its own, its column marked, and the reports the
         // browser's controller dispatches declared by the server. Its words (#1564) are attributes both sides
         // write, escaped alike.

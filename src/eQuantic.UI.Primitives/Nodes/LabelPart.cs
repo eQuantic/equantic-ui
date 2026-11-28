@@ -15,7 +15,8 @@ namespace eQuantic.UI.Primitives;
 ///
 /// <para>
 /// WHICH ONE IT REACHES. Walking up from the part, the first ancestor that is a nameable, or that holds a nameable
-/// control outside the part that no nearer part already reached. So a field's label beside its entry names the entry, a
+/// control outside the part that no nearer part already reached and that carries no label of its own: a field that
+/// names itself is no field a dialog's title could be meant for. So a field's label beside its entry names the entry, a
 /// dialog's title names the dialog even when a field inside it is named by its own label, and a checkbox's label inside
 /// it names the checkbox. Every <see cref="Overlay"/> and every anchored panel is a scope of its own: a part inside a
 /// layer that is no dialog names nothing. An ancestor holding TWO such controls is refused rather than guessed, and the

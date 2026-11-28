@@ -56,10 +56,11 @@ internal sealed class NamingParts
     }
 
     /// <summary>A nameable control: a part inside it reaches it, and it is then a candidate for the parts outside, claimed
-    /// already when one inside reached it.</summary>
-    internal void Control(Mark at, HtmlElement target)
+    /// already when one inside reached it or when it carries a label of its own (<paramref name="named"/>): a field
+    /// that names itself is no field a dialog's title could be meant for.</summary>
+    internal void Control(Mark at, HtmlElement target, bool named)
     {
-        var claimed = _pending.Count > at.Parts;
+        var claimed = named || _pending.Count > at.Parts;
         Reach(at, target);
         _controls.RemoveRange(at.Controls, _controls.Count - at.Controls);
         _controls.Add(new Candidate(target) { Claimed = claimed });

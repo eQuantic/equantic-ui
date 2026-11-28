@@ -74,7 +74,8 @@ public class LayoutTransparencyTests
         new Group(c),
         new MergeSemantics(c),
         new ExcludeSemantics(c),
-        new TitlePart(c),
+        new LabelPart(c),
+        new DescriptionPart(c),
         new LoopMotion(c, LoopEffect.SlideX, 0, 1, 100),
         new Overlay(c),
         new Pinned(c),
@@ -218,7 +219,8 @@ public class LayoutTransparencyTests
     /// the node, so removing its `Constraints.Inline()` left 63 tests green. A comment naming its
     /// own guard is worth nothing until the guard is asked. <see cref="Group"/> is the sixth, added
     /// with the node, <see cref="MergeSemantics"/> and <see cref="ExcludeSemantics"/> the seventh and the
-    /// eighth, added with theirs, and <see cref="TitlePart"/> the ninth (#1916).
+    /// eighth, added with theirs, and <see cref="LabelPart"/> and <see cref="DescriptionPart"/> the ninth and the tenth
+    /// (#1916).
     /// </para>
     /// </summary>
     [Fact]
@@ -241,7 +243,8 @@ public class LayoutTransparencyTests
             new Group(HuggingRow()) { Label = "Shipping" },
             new MergeSemantics(HuggingRow()),
             new ExcludeSemantics(HuggingRow()),
-            new TitlePart(HuggingRow()),
+            new LabelPart(HuggingRow()),
+            new DescriptionPart(HuggingRow()),
         ];
 
         var crossed = new List<string>();

@@ -221,7 +221,20 @@ internal sealed class AnnouncedTree
         Current = Attribute(node, "aria-current") is { } current && current != "false",
         HeadingLevel = headingLevel,
         TreePlace = role == SemanticRole.TreeItem ? TreePlaceOf(node) : null,
+        Description = DescriptionOf(node),
     };
+
+    /// <summary>
+    /// What the elements <paramref name="node"/>'s <c>aria-describedby</c> lists say, in its order, whitespace
+    /// collapsed, or null when it lists none or they say nothing: the accessible-description rule reads a reference
+    /// even when it is hidden, as a field's description twin is (#1916).
+    /// </summary>
+    private string? DescriptionOf(HtmlNode node) =>
+        Attribute(node, "aria-describedby") is { } ids
+        && Collapse(string.Join(" ", ids.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(id => _byId.TryGetValue(id, out var described) ? AlternativeOf(described) : ""))) is { Length: > 0 } said
+            ? said
+            : null;
 
     /// <summary>Where a tree item stands, from the three attributes the realizer writes together, or
     /// null when it writes none of them.</summary>
