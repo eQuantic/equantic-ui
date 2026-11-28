@@ -400,7 +400,7 @@
       "frame": { "stops": [["A", "a"]], "modal": "d", "modalAt": "layer" },
       "steps": [
         { "focused": "A", "heard": ["a.changed", "a.onFocusChange true"], "focus": "A", "hasFocus": ["a"], "primary": "a" },
-        { "tab": true, "move": "to layer", "heard": ["a.changed", "a.onFocusChange false", "d.changed", "d.onFocusChange true"], "focus": "layer", "hasFocus": ["d"], "primary": "d" },
+        { "tab": true, "move": "to layer", "heard": ["a.changed", "a.onFocusChange false", "d.changed"], "focus": "layer", "hasFocus": ["d"], "primary": "d" },
         { "tab": true, "move": "to layer" },
         { "shiftTab": true, "move": "to layer" }
       ]

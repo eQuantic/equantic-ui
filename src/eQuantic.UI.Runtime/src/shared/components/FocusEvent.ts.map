@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "FocusEvent.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Primitives/Focus/FocusEvent.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAKA;QASI;QAEA;QAEA;QATI;QACA;QACA;;;IAGJ;IAEA;IAEA;;IAbJ"
+}

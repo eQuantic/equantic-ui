@@ -106,6 +106,8 @@ export type DragAxisValue = 'vertical' | 'horizontal';
 
 export type FileSaveOutcomeValue = 'cancelled' | 'offered' | 'saved';
 
+export type FocusRequestKindValue = 'focus' | 'unfocus' | 'next' | 'previous';
+
 export type FontWeightValue =
   'thin' | 'extraLight' | 'light' | 'regular' | 'medium' | 'semiBold' | 'bold' | 'extraBold'
   | 'black';
@@ -213,6 +215,8 @@ export type TextEntryKindValue = 'text' | 'email' | 'phone' | 'url' | 'number' |
 
 export type ThemeModeValue = 'light' | 'dark';
 
+export type TraversalEdgeBehaviorValue = 'closedLoop' | 'parentScope' | 'stop';
+
 export type TypeRoleValue =
   'display' | 'heading' | 'title' | 'bodyL' | 'bodyM' | 'label' | 'caption' | 'titleSmall'
   | 'labelSmall' | 'overline';
@@ -263,6 +267,7 @@ export type {
     DeviceCapabilityValue as $DeviceCapabilityValue,
     DragAxisValue as $DragAxisValue,
     FileSaveOutcomeValue as $FileSaveOutcomeValue,
+    FocusRequestKindValue as $FocusRequestKindValue,
     FontWeightValue as $FontWeightValue,
     GestureArenaPhaseValue as $GestureArenaPhaseValue,
     GestureDispositionValue as $GestureDispositionValue,
@@ -306,6 +311,7 @@ export type {
     TextDirectionValue as $TextDirectionValue,
     TextEntryKindValue as $TextEntryKindValue,
     ThemeModeValue as $ThemeModeValue,
+    TraversalEdgeBehaviorValue as $TraversalEdgeBehaviorValue,
     TypeRoleValue as $TypeRoleValue,
     UploadStateValue as $UploadStateValue,
     VariantValue as $VariantValue,

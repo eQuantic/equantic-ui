@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "FocusScopeNode.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Primitives/Focus/FocusScopeNode.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAQA;QAQI;;QAJA;QAIA;;;IAJA;IAIA;;IARJ"
+}

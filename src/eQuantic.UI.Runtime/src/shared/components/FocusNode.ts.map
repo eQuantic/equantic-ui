@@ -1,0 +1,10 @@
+{
+    "version" : 3,
+    "file" : "FocusNode.ts",
+    "sourceRoot" : "../../../../",
+    "sources" : [
+        "eQuantic.UI.Primitives/Focus/FocusNode.cs"
+    ],
+    "names" : [],
+    "mappings" : ";;;IAmBA;QAQyB;QAIrB;QAIA;QAGA;QAGA;QA8BA;QAGA;QAGA;QAGA;QAGA;QAGA;QAGA;;;IA9DqB;IAIrB;IAIA;IAGA;IAGA;IA8BA;IAGA;IAGA;IAGA;IAGA;IAGA;IAGA;IAnEmB;;IA2BnB;QAA8B;;;IAI9B;QAEI,mBAAc;;;IAQlB;QAA2B;QAAA;;;IAK3B;QAA+B;QAAA;;;IAwB/B;QAAgC;;;IAGhC;QAEI;QACA;;;IAGJ;QAEI;QACA;QAAA,sCAA4B,qDACvB;;;IAtFb"
+}

@@ -294,7 +294,7 @@ public class SharedComponentTranspilationTests
         var shapes = ShapeSources(root);
         // The arena's members as an app writes them (#1563): real files, compiled into this suite for the C# side of
         // the arena's fixture, and transpiled here for the browser's.
-        var gestureFixtures = GestureFixtureSources(root);
+        var appWritten = AppWrittenFixtureSources(root);
         var trees = sourcePaths
             .Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path))
             .ToList();
@@ -302,7 +302,7 @@ public class SharedComponentTranspilationTests
         trees.Add(CSharpSyntaxTree.ParseText(NestedReconcilerSource, path: nestedPath));
         trees.Add(CSharpSyntaxTree.ParseText(BoundReceiversSource, path: boundPath));
         trees.AddRange(shapes.Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path)));
-        trees.AddRange(gestureFixtures.Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path)));
+        trees.AddRange(appWritten.Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path)));
         // The shared sources build with <ImplicitUsings> — mirror the generated global usings, or
         // `Action?` fails to bind (CS0246) and the semantic paths silently degrade.
         trees.Add(SdkImplicitUsings.Tree());
@@ -342,7 +342,7 @@ public class SharedComponentTranspilationTests
             .Append((nestedPath, compiler.CompileSource(NestedReconcilerSource, nestedPath)))
             .Append((boundPath, compiler.CompileSource(BoundReceiversSource, boundPath)))
             .Concat(shapes.Select(path => (path, compiler.CompileFile(path))))
-            .Concat(gestureFixtures.Select(path => (path, compiler.CompileFile(path))));
+            .Concat(appWritten.Select(path => (path, compiler.CompileFile(path))));
         foreach (var (path, results) in compilations)
         {
             foreach (var result in results)
@@ -370,9 +370,9 @@ public class SharedComponentTranspilationTests
             .Order(StringComparer.Ordinal)
             .ToArray();
 
-    /// <summary>The arena's members as an app writes them (#1563): files of this suite's own, and the dashboard's own
-    /// recognizer, read from the sample that ships it.</summary>
-    private static string[] GestureFixtureSources(string root) =>
+    /// <summary>What an app writes, as files: the arena's members (#1563) and the code around a focus node (#1897), of
+    /// this suite's own, and the dashboard's own recognizer, read from the sample that ships it.</summary>
+    private static string[] AppWrittenFixtureSources(string root) =>
     [
         Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "ArenaProbe.cs"),
         Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "ArenaMember.cs"),
