@@ -107,7 +107,7 @@ internal static class FactoryArguments
         if (type == typeof(UploadPolicy)) { value = new UploadPolicy("x", [], 1); return true; }
         // A mask is a closed set whose kinds hold what a gradient needs: one stop, fully opaque, is the plainest
         // one every kind accepts (#1938).
-        if (type == typeof(Mask)) { value = new LinearMask(90, [new MaskStop(0, 1)]); return true; }
+        if (type == typeof(OpacityGradient)) { value = new LinearOpacityGradient(90, [new OpacityStop(0, 1)]); return true; }
         if (type.IsAbstract || type.IsInterface) return false;
 
         foreach (var ctor in type.GetConstructors().OrderBy(c => c.GetParameters().Length))
@@ -192,11 +192,11 @@ internal static class FactoryArguments
         }
 
         // A mask is told apart by being another kind: a linear one becomes a radial one, and the reverse.
-        if (type == typeof(Mask))
+        if (type == typeof(OpacityGradient))
         {
-            value = from is LinearMask
-                ? new RadialMask(new Point(0.5f, 0.5f), default, [new MaskStop(0, 1)])
-                : new LinearMask(90, [new MaskStop(0, 1)]);
+            value = from is LinearOpacityGradient
+                ? new RadialOpacityGradient(new Point(0.5f, 0.5f), default, [new OpacityStop(0, 1)])
+                : new LinearOpacityGradient(90, [new OpacityStop(0, 1)]);
             return true;
         }
 

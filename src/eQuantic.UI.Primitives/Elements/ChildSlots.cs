@@ -69,7 +69,7 @@ internal static class ChildSlots
         "layoutBuilder" => NodeSlots.WithDeferred(NodeSlots.One(null), 0),
         "link" => NodeSlots.One(((Link)node).Child),
         "loopMotion" => NodeSlots.One(((LoopMotion)node).Child),
-        "masked" => NodeSlots.One(((Masked)node).Child),
+        "opacityMask" => NodeSlots.One(((OpacityMask)node).Child),
         "navigable" => NodeSlots.Listed(((Navigable)node).Rows),
         // An overlay takes no place in the flow; its child is laid out in the realizer's overlay pass,
         // and not at all while it is closed with motion, so it is built when its layer is shown.

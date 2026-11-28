@@ -1,54 +1,54 @@
 #nullable enable
-eQuantic.UI.Primitives.IMaskVisitor<TState, TResult>
-eQuantic.UI.Primitives.IMaskVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.LinearMask! mask, TState state) -> TResult
-eQuantic.UI.Primitives.IMaskVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.RadialMask! mask, TState state) -> TResult
-eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Masked! node, TState state) -> TResult
-eQuantic.UI.Primitives.LinearMask.LinearMask(float angle, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.MaskStop>! stops) -> void
-eQuantic.UI.Primitives.LinearMask.Angle.get -> float
-eQuantic.UI.Primitives.LinearMask.Axis(eQuantic.UI.Primitives.Size box) -> (eQuantic.UI.Primitives.Point Start, eQuantic.UI.Primitives.Point End)
-eQuantic.UI.Primitives.LinearMask
-eQuantic.UI.Primitives.LinearMask.Equals(eQuantic.UI.Primitives.LinearMask? other) -> bool
-override eQuantic.UI.Primitives.LinearMask.<Clone>$() -> eQuantic.UI.Primitives.LinearMask!
-override eQuantic.UI.Primitives.LinearMask.Equals(object? obj) -> bool
-override eQuantic.UI.Primitives.LinearMask.GetHashCode() -> int
-override eQuantic.UI.Primitives.LinearMask.ToString() -> string!
-override sealed eQuantic.UI.Primitives.LinearMask.Equals(eQuantic.UI.Primitives.Mask? other) -> bool
-static eQuantic.UI.Primitives.LinearMask.operator !=(eQuantic.UI.Primitives.LinearMask? left, eQuantic.UI.Primitives.LinearMask? right) -> bool
-static eQuantic.UI.Primitives.LinearMask.operator ==(eQuantic.UI.Primitives.LinearMask? left, eQuantic.UI.Primitives.LinearMask? right) -> bool
-abstract eQuantic.UI.Primitives.Mask.<Clone>$() -> eQuantic.UI.Primitives.Mask!
-eQuantic.UI.Primitives.Mask
-eQuantic.UI.Primitives.Mask.Mask(eQuantic.UI.Primitives.Mask! original) -> void
-override eQuantic.UI.Primitives.Mask.Equals(object? obj) -> bool
-override eQuantic.UI.Primitives.Mask.ToString() -> string!
-static eQuantic.UI.Primitives.Mask.operator !=(eQuantic.UI.Primitives.Mask? left, eQuantic.UI.Primitives.Mask? right) -> bool
-static eQuantic.UI.Primitives.Mask.operator ==(eQuantic.UI.Primitives.Mask? left, eQuantic.UI.Primitives.Mask? right) -> bool
-virtual eQuantic.UI.Primitives.Mask.EqualityContract.get -> System.Type!
-virtual eQuantic.UI.Primitives.Mask.PrintMembers(System.Text.StringBuilder! builder) -> bool
-eQuantic.UI.Primitives.Mask.Stops.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.MaskStop>!
-eQuantic.UI.Primitives.Mask.Resolved.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.MaskStop>!
-eQuantic.UI.Primitives.Mask.OpacityAt(float t) -> float
-eQuantic.UI.Primitives.Mask.Accept<TState, TResult>(eQuantic.UI.Primitives.IMaskVisitor<TState, TResult>! visitor, TState state) -> TResult
-virtual eQuantic.UI.Primitives.Mask.Equals(eQuantic.UI.Primitives.Mask? other) -> bool
-override eQuantic.UI.Primitives.Mask.GetHashCode() -> int
-eQuantic.UI.Primitives.MaskStop
-eQuantic.UI.Primitives.MaskStop.Deconstruct(out float Offset, out float Opacity) -> void
-eQuantic.UI.Primitives.MaskStop.Equals(eQuantic.UI.Primitives.MaskStop other) -> bool
-eQuantic.UI.Primitives.MaskStop.MaskStop() -> void
-eQuantic.UI.Primitives.MaskStop.MaskStop(float Offset, float Opacity) -> void
-override eQuantic.UI.Primitives.MaskStop.GetHashCode() -> int
-static eQuantic.UI.Primitives.MaskStop.operator !=(eQuantic.UI.Primitives.MaskStop left, eQuantic.UI.Primitives.MaskStop right) -> bool
-static eQuantic.UI.Primitives.MaskStop.operator ==(eQuantic.UI.Primitives.MaskStop left, eQuantic.UI.Primitives.MaskStop right) -> bool
-~override eQuantic.UI.Primitives.MaskStop.Equals(object obj) -> bool
-~override eQuantic.UI.Primitives.MaskStop.ToString() -> string
-eQuantic.UI.Primitives.MaskStop.Offset.get -> float
-eQuantic.UI.Primitives.MaskStop.Offset.init -> void
-eQuantic.UI.Primitives.MaskStop.Opacity.get -> float
-eQuantic.UI.Primitives.MaskStop.Opacity.init -> void
-eQuantic.UI.Primitives.Masked
-override eQuantic.UI.Primitives.Masked.NodeKind.get -> string!
-eQuantic.UI.Primitives.Masked.Masked(eQuantic.UI.Primitives.Mask! mask, eQuantic.UI.Primitives.VisualNode! child) -> void
-eQuantic.UI.Primitives.Masked.Mask.get -> eQuantic.UI.Primitives.Mask!
-override sealed eQuantic.UI.Primitives.Masked.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+eQuantic.UI.Primitives.IOpacityGradientVisitor<TState, TResult>
+eQuantic.UI.Primitives.IOpacityGradientVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.LinearOpacityGradient! gradient, TState state) -> TResult
+eQuantic.UI.Primitives.IOpacityGradientVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.RadialOpacityGradient! gradient, TState state) -> TResult
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.OpacityMask! node, TState state) -> TResult
+eQuantic.UI.Primitives.LinearOpacityGradient.LinearOpacityGradient(float angle, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.OpacityStop>! stops) -> void
+eQuantic.UI.Primitives.LinearOpacityGradient.Angle.get -> float
+eQuantic.UI.Primitives.LinearOpacityGradient.Axis(eQuantic.UI.Primitives.Size box) -> (eQuantic.UI.Primitives.Point Start, eQuantic.UI.Primitives.Point End)
+eQuantic.UI.Primitives.LinearOpacityGradient
+eQuantic.UI.Primitives.LinearOpacityGradient.Equals(eQuantic.UI.Primitives.LinearOpacityGradient? other) -> bool
+override eQuantic.UI.Primitives.LinearOpacityGradient.<Clone>$() -> eQuantic.UI.Primitives.LinearOpacityGradient!
+override eQuantic.UI.Primitives.LinearOpacityGradient.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.LinearOpacityGradient.GetHashCode() -> int
+override eQuantic.UI.Primitives.LinearOpacityGradient.ToString() -> string!
+override sealed eQuantic.UI.Primitives.LinearOpacityGradient.Equals(eQuantic.UI.Primitives.OpacityGradient? other) -> bool
+static eQuantic.UI.Primitives.LinearOpacityGradient.operator !=(eQuantic.UI.Primitives.LinearOpacityGradient? left, eQuantic.UI.Primitives.LinearOpacityGradient? right) -> bool
+static eQuantic.UI.Primitives.LinearOpacityGradient.operator ==(eQuantic.UI.Primitives.LinearOpacityGradient? left, eQuantic.UI.Primitives.LinearOpacityGradient? right) -> bool
+abstract eQuantic.UI.Primitives.OpacityGradient.<Clone>$() -> eQuantic.UI.Primitives.OpacityGradient!
+eQuantic.UI.Primitives.OpacityGradient
+eQuantic.UI.Primitives.OpacityGradient.OpacityGradient(eQuantic.UI.Primitives.OpacityGradient! original) -> void
+override eQuantic.UI.Primitives.OpacityGradient.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.OpacityGradient.ToString() -> string!
+static eQuantic.UI.Primitives.OpacityGradient.operator !=(eQuantic.UI.Primitives.OpacityGradient? left, eQuantic.UI.Primitives.OpacityGradient? right) -> bool
+static eQuantic.UI.Primitives.OpacityGradient.operator ==(eQuantic.UI.Primitives.OpacityGradient? left, eQuantic.UI.Primitives.OpacityGradient? right) -> bool
+virtual eQuantic.UI.Primitives.OpacityGradient.EqualityContract.get -> System.Type!
+virtual eQuantic.UI.Primitives.OpacityGradient.PrintMembers(System.Text.StringBuilder! builder) -> bool
+eQuantic.UI.Primitives.OpacityGradient.Stops.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.OpacityStop>!
+eQuantic.UI.Primitives.OpacityGradient.Resolved.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.OpacityStop>!
+eQuantic.UI.Primitives.OpacityGradient.OpacityAt(float t) -> float
+eQuantic.UI.Primitives.OpacityGradient.Accept<TState, TResult>(eQuantic.UI.Primitives.IOpacityGradientVisitor<TState, TResult>! visitor, TState state) -> TResult
+virtual eQuantic.UI.Primitives.OpacityGradient.Equals(eQuantic.UI.Primitives.OpacityGradient? other) -> bool
+override eQuantic.UI.Primitives.OpacityGradient.GetHashCode() -> int
+eQuantic.UI.Primitives.OpacityStop
+eQuantic.UI.Primitives.OpacityStop.Deconstruct(out float Offset, out float Opacity) -> void
+eQuantic.UI.Primitives.OpacityStop.Equals(eQuantic.UI.Primitives.OpacityStop other) -> bool
+eQuantic.UI.Primitives.OpacityStop.OpacityStop() -> void
+eQuantic.UI.Primitives.OpacityStop.OpacityStop(float Offset, float Opacity) -> void
+override eQuantic.UI.Primitives.OpacityStop.GetHashCode() -> int
+static eQuantic.UI.Primitives.OpacityStop.operator !=(eQuantic.UI.Primitives.OpacityStop left, eQuantic.UI.Primitives.OpacityStop right) -> bool
+static eQuantic.UI.Primitives.OpacityStop.operator ==(eQuantic.UI.Primitives.OpacityStop left, eQuantic.UI.Primitives.OpacityStop right) -> bool
+~override eQuantic.UI.Primitives.OpacityStop.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.OpacityStop.ToString() -> string
+eQuantic.UI.Primitives.OpacityStop.Offset.get -> float
+eQuantic.UI.Primitives.OpacityStop.Offset.init -> void
+eQuantic.UI.Primitives.OpacityStop.Opacity.get -> float
+eQuantic.UI.Primitives.OpacityStop.Opacity.init -> void
+eQuantic.UI.Primitives.OpacityMask
+override eQuantic.UI.Primitives.OpacityMask.NodeKind.get -> string!
+eQuantic.UI.Primitives.OpacityMask.OpacityMask(eQuantic.UI.Primitives.OpacityGradient! gradient, eQuantic.UI.Primitives.VisualNode! child) -> void
+eQuantic.UI.Primitives.OpacityMask.Gradient.get -> eQuantic.UI.Primitives.OpacityGradient!
+override sealed eQuantic.UI.Primitives.OpacityMask.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 eQuantic.UI.Primitives.RadialExtent
 eQuantic.UI.Primitives.RadialExtent.Equals(eQuantic.UI.Primitives.RadialExtent other) -> bool
 eQuantic.UI.Primitives.RadialExtent.RadialExtent() -> void
@@ -73,16 +73,16 @@ eQuantic.UI.Primitives.RadialExtentKind.FarthestSide = 2 -> eQuantic.UI.Primitiv
 eQuantic.UI.Primitives.RadialExtentKind.ClosestCorner = 3 -> eQuantic.UI.Primitives.RadialExtentKind
 eQuantic.UI.Primitives.RadialExtentKind.Fraction = 4 -> eQuantic.UI.Primitives.RadialExtentKind
 eQuantic.UI.Primitives.RadialExtentKind.Dp = 5 -> eQuantic.UI.Primitives.RadialExtentKind
-eQuantic.UI.Primitives.RadialMask.RadialMask(eQuantic.UI.Primitives.Point center, eQuantic.UI.Primitives.RadialExtent extent, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.MaskStop>! stops) -> void
-eQuantic.UI.Primitives.RadialMask.Center.get -> eQuantic.UI.Primitives.Point
-eQuantic.UI.Primitives.RadialMask.Extent.get -> eQuantic.UI.Primitives.RadialExtent
-eQuantic.UI.Primitives.RadialMask.Radii(eQuantic.UI.Primitives.Size box) -> eQuantic.UI.Primitives.Size
-eQuantic.UI.Primitives.RadialMask
-eQuantic.UI.Primitives.RadialMask.Equals(eQuantic.UI.Primitives.RadialMask? other) -> bool
-override eQuantic.UI.Primitives.RadialMask.<Clone>$() -> eQuantic.UI.Primitives.RadialMask!
-override eQuantic.UI.Primitives.RadialMask.Equals(object? obj) -> bool
-override eQuantic.UI.Primitives.RadialMask.GetHashCode() -> int
-override eQuantic.UI.Primitives.RadialMask.ToString() -> string!
-override sealed eQuantic.UI.Primitives.RadialMask.Equals(eQuantic.UI.Primitives.Mask? other) -> bool
-static eQuantic.UI.Primitives.RadialMask.operator !=(eQuantic.UI.Primitives.RadialMask? left, eQuantic.UI.Primitives.RadialMask? right) -> bool
-static eQuantic.UI.Primitives.RadialMask.operator ==(eQuantic.UI.Primitives.RadialMask? left, eQuantic.UI.Primitives.RadialMask? right) -> bool
+eQuantic.UI.Primitives.RadialOpacityGradient.RadialOpacityGradient(eQuantic.UI.Primitives.Point center, eQuantic.UI.Primitives.RadialExtent extent, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.OpacityStop>! stops) -> void
+eQuantic.UI.Primitives.RadialOpacityGradient.Center.get -> eQuantic.UI.Primitives.Point
+eQuantic.UI.Primitives.RadialOpacityGradient.Extent.get -> eQuantic.UI.Primitives.RadialExtent
+eQuantic.UI.Primitives.RadialOpacityGradient.Radii(eQuantic.UI.Primitives.Size box) -> eQuantic.UI.Primitives.Size
+eQuantic.UI.Primitives.RadialOpacityGradient
+eQuantic.UI.Primitives.RadialOpacityGradient.Equals(eQuantic.UI.Primitives.RadialOpacityGradient? other) -> bool
+override eQuantic.UI.Primitives.RadialOpacityGradient.<Clone>$() -> eQuantic.UI.Primitives.RadialOpacityGradient!
+override eQuantic.UI.Primitives.RadialOpacityGradient.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.RadialOpacityGradient.GetHashCode() -> int
+override eQuantic.UI.Primitives.RadialOpacityGradient.ToString() -> string!
+override sealed eQuantic.UI.Primitives.RadialOpacityGradient.Equals(eQuantic.UI.Primitives.OpacityGradient? other) -> bool
+static eQuantic.UI.Primitives.RadialOpacityGradient.operator !=(eQuantic.UI.Primitives.RadialOpacityGradient? left, eQuantic.UI.Primitives.RadialOpacityGradient? right) -> bool
+static eQuantic.UI.Primitives.RadialOpacityGradient.operator ==(eQuantic.UI.Primitives.RadialOpacityGradient? left, eQuantic.UI.Primitives.RadialOpacityGradient? right) -> bool

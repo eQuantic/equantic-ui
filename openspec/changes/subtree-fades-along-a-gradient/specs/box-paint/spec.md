@@ -2,14 +2,14 @@
 
 ### Requirement: A subtree fades along a mask from a closed set that every realizer draws
 
-`Masked(Mask mask, VisualNode child)` SHALL composite its child as one group and multiply it, at every point, by the
-mask's opacity there. `Mask`'s kinds SHALL be `LinearMask` and `RadialMask` and no other: a type outside the
-vocabulary's assembly SHALL NOT be able to derive from `Mask`, and every realizer SHALL draw a mask through
-`IMaskVisitor<TState, TResult>`, so adding a kind is a build error in every realizer that does not draw it, and a type
+`OpacityMask(OpacityGradient gradient, VisualNode child)` SHALL composite its child as one group and multiply it, at every point, by the
+mask's opacity there. `OpacityGradient`'s kinds SHALL be `LinearOpacityGradient` and `RadialOpacityGradient` and no other: a type outside the
+vocabulary's assembly SHALL NOT be able to derive from `OpacityGradient`, and every realizer SHALL draw a mask through
+`IOpacityGradientVisitor<TState, TResult>`, so adding a kind is a build error in every realizer that does not draw it, and a type
 error in the runtime's twin.
 
-The gradient's box SHALL be the node's bounds. A `LinearMask`'s angle SHALL be in degrees clockwise from "toward the
-top", its gradient line through the box's centre with length |W·sin θ| + |H·cos θ|. A `RadialMask`'s centre SHALL be
+The gradient's box SHALL be the node's bounds. A `LinearOpacityGradient`'s angle SHALL be in degrees clockwise from "toward the
+top", its gradient line through the box's centre with length |W·sin θ| + |H·cos θ|. A `RadialOpacityGradient`'s centre SHALL be
 fractions of the box, and its ellipse SHALL be sized by its `RadialExtent`: fractions of the box per axis, dp, or the
 closest side, the farthest side, the closest corner or the farthest corner, as CSS Images 3 sizes an ellipse.
 
@@ -21,7 +21,7 @@ the resolved list, and the web SHALL write it rather than the stops as given.
 
 #### Scenario: Cura's hero field
 
-- **WHEN** a white 400 × 300 box over black is wrapped in `Masked(new RadialMask(new(0.7f, 0.35f),
+- **WHEN** a white 400 × 300 box over black is wrapped in `OpacityMask(new RadialOpacityGradient(new(0.7f, 0.35f),
   RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]), box)`
 - **THEN** at every pixel centre the opacity is within 1/255 of the analytic value on Photon's Reference backend, and
   within 0.5/255 in Chrome 157 and Firefox 159, where the web writes `radial-gradient(70% 70% at 70% 35%,
@@ -29,13 +29,13 @@ the resolved list, and the web SHALL write it rather than the stops as given.
 
 #### Scenario: Closest side on a wide box
 
-- **WHEN** a 400 × 240 box is masked by `RadialMask(new(0.5f, 0.5f), RadialExtent.ClosestSide, [new(0, 1), new(1, 0)])`
+- **WHEN** a 400 × 240 box is masked by `RadialOpacityGradient(new(0.5f, 0.5f), RadialExtent.ClosestSide, [new(0, 1), new(1, 0)])`
 - **THEN** the ellipse's radii are 200 and 120 on both targets, and the web writes
   `radial-gradient(closest-side at 50% 50%, …)`
 
 #### Scenario: A linear mask at 135 degrees
 
-- **WHEN** a 400 × 240 box is masked by `LinearMask(135, [new(0, 1), new(1, 0)])`
+- **WHEN** a 400 × 240 box is masked by `LinearOpacityGradient(135, [new(0, 1), new(1, 0)])`
 - **THEN** the gradient line is 452.548 dp long, the top-left corner is opaque and the bottom-right transparent, on
   both targets, and the web writes `linear-gradient(135deg, rgb(0 0 0 / 1) 0%, rgb(0 0 0 / 0) 100%)`
 
@@ -64,7 +64,7 @@ the resolved list, and the web SHALL write it rather than the stops as given.
 
 ### Requirement: A mask changes neither layout nor where the subtree takes the pointer
 
-A `Masked` node SHALL be layout-transparent: its parent SHALL size, floor and shrink it as it would its child. A mask
+A `OpacityMask` node SHALL be layout-transparent: its parent SHALL size, floor and shrink it as it would its child. A mask
 SHALL NOT change any hit test: a point where the mask's opacity is zero SHALL take the press, the hover and the pointer
 it took without the mask, on both targets. What the child draws outside the node's bounds SHALL be cut, on both
 targets.
@@ -82,7 +82,7 @@ targets.
 
 #### Scenario: A fill child
 
-- **WHEN** a `Masked` holds a box whose width is `Fill` inside a row
+- **WHEN** an `OpacityMask` holds a box whose width is `Fill` inside a row
 - **THEN** the wrapper element fills the row on the web, as the box would alone, and Photon lays out the same width
 
 ### Requirement: Photon composites a masked subtree once, crisp at any scale and under any transform
@@ -102,7 +102,7 @@ offscreen (#1952).
 
 #### Scenario: A hard stop on the GPU
 
-- **WHEN** the `masked-layer` golden's hard-stop mask is drawn on Metal and on Vulkan
+- **WHEN** the `opacity-mask-layer` golden's hard-stop mask is drawn on Metal and on Vulkan
 - **THEN** each pixel centre is fully opaque or fully transparent, as on the Reference backend
 
 #### Scenario: The stop texture is cached
@@ -119,7 +119,7 @@ offscreen (#1952).
 ### Requirement: Cura's azulejo is held by one golden both targets are compared with
 
 The azulejo SHALL be written in C# with the vocabulary alone: a `DrawingPattern` over a 58 × 58 `VectorDrawing` of two
-2 dp bands, a centre circle of radius 5.1265 and four corner circles of radius 26.658, under a `Masked`. One image per
+2 dp bands, a centre circle of radius 5.1265 and four corner circles of radius 26.658, under an `OpacityMask`. One image per
 scene, written by Photon's Reference backend, SHALL be the golden: Photon SHALL match it within 2/255 per channel,
 and the web, served and drawn by Chrome in CI, SHALL match it within the tolerances the design records. Cura's dark
 slabs SHALL be held by each target's own golden and listed as fenced from the comparison, naming #1953, until the two

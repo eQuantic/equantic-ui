@@ -162,4 +162,74 @@ public class StackRealizerTests
         anchor.Render().Attributes["style"].Should().Be(
             "position: absolute; top: 0; inset-inline-end: -28px; z-index: 1; scroll-margin-top: var(--eq-anchor-offset, 0px)");
     }
+
+    // -- A decoration past its surface (#1938, the layout spec's "A decoration past its surface") ----------------
+
+    private static OpacityMask Field(float size) => new(
+        new RadialOpacityGradient(new Point(0.5f, 0.5f), RadialExtent.ClosestSide, [new(0, 1), new(1, 0)]),
+        new Primitives.Box(new BoxStyle { Width = size, Height = size }));
+
+    /// <summary>
+    /// A slab's corner field: the stack's FIRST child, a Positioned at negative offsets, lowers to an anchor whose
+    /// z-index is BELOW the later child's, so it paints behind the content and above the surface's background, and the
+    /// surface's Clip writes <c>overflow: hidden</c> beside its radius, which cuts what the anchor leaves past the
+    /// surface at the rounded corner. CROSS-PINNED by <c>stack.spec.ts</c>, which asserts the same literals.
+    /// </summary>
+    [Fact]
+    public void AFieldAsTheFirstChild_PaintsBehindTheContent_InsideASurfaceThatClips()
+    {
+        var content = new Primitives.Box(new BoxStyle { Padding = EdgeInsets.All(16) }, new Primitives.Text("slab", TypeRole.BodyM));
+        var stack = new Stack();
+        stack.Add(new Positioned(Field(240), top: -60, end: -60));
+        stack.Add(content);
+        var surface = new Primitives.Box(
+            new BoxStyle { Background = PhotonTheme.Instance.Surface, CornerRadius = new CornerRadii(20), Clip = true }, stack);
+
+        var rendered = Render(surface);
+
+        Style(rendered).Should().Contain("overflow: hidden").And.Contain("border-radius: 20px");
+        var cells = rendered.Children.Should().ContainSingle().Which.Children;
+        cells.Should().HaveCount(2);
+        Style(cells[0]).Should().Be("position: absolute; top: -60px; inset-inline-end: -60px; z-index: 1");
+        Style(cells[1]).Should().Contain("z-index: 2", "the content is drawn after the field, so above it");
+    }
+
+    [Fact]
+    public void ASurfaceThatDoesNotClip_WritesNoOverflow()
+    {
+        var stack = new Stack();
+        stack.Add(new Positioned(Field(240), top: -60, end: -60));
+        var surface = new Primitives.Box(new BoxStyle { CornerRadius = new CornerRadii(20) }, stack);
+
+        Style(Render(surface)).Should().NotContain("overflow");
+    }
+
+    /// <summary>
+    /// The hero's field of design decision 10: past the stack's top by 64 dp and its end by 80, spanning the rest.
+    /// <c>StartFraction = 0.08, Start = 80</c> and <c>BottomFraction = 0.04, Bottom = 64</c> write the edges
+    /// <c>calc(8% + 80px)</c> and <c>calc(4% + 64px)</c>, which leave 100% - (8% + 80px) + 80px = 92% of the stack's
+    /// width and 100% - (-64px) - (4% + 64px) = 96% of its height.
+    /// </summary>
+    [Fact]
+    public void TheHerosField_WritesTheEdgesThatGive92And96Percent()
+    {
+        var stack = new Stack { Width = SizeValue.Fill };
+        stack.Add(new Positioned(
+            new OpacityMask(new RadialOpacityGradient(new Point(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]),
+                new Primitives.Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill })),
+            top: -64, end: -80, bottom: 64, start: 80)
+        { StartFraction = 0.08f, BottomFraction = 0.04f });
+        stack.Add(new Primitives.Text("profile", TypeRole.BodyM));
+
+        var cells = Render(stack).Children;
+
+        Style(cells[0]).Should().Be(
+            "position: absolute; top: -64px; bottom: calc(4% + 64px); inset-inline-start: calc(8% + 80px); "
+            + "inset-inline-end: -80px; z-index: 1");
+        // The wrapper the mask makes fills the anchor, so the field is the 92% by 96% the edges leave.
+        Style(cells[0].Children.Should().ContainSingle().Which).Should().Contain("width: 100%").And.Contain("height: 100%");
+        Style(cells[1]).Should().Contain("z-index: 2");
+    }
+
+    private static string Style(HtmlNode node) => node.Attributes.GetValueOrDefault("style") ?? "";
 }

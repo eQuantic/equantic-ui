@@ -1,7 +1,7 @@
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// How large a <see cref="RadialMask"/>'s ellipse is (#1938): a fraction of the box on each axis, dp on
+/// How large a <see cref="RadialOpacityGradient"/>'s ellipse is (#1938): a fraction of the box on each axis, dp on
 /// each axis, or one of the four sizes CSS Images 3 names, measured from the ellipse's centre. The
 /// default is <see cref="FarthestCorner"/>, CSS's.
 /// <para>

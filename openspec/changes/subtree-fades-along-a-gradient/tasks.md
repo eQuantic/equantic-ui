@@ -11,13 +11,13 @@ blocks #1938: task 5.6 waits on it. The measurements behind every number below a
 - [x] 1.2 Measure CSS's stop rules in the same engines: no stop (refused), one stop (a solid opacity), out-of-order
   offsets (moved up), repeated offsets (a step), offsets outside 0..1 (kept), eight stops. Within 0.95/255 of the rules
   of decision 4.
-- [x] 1.3 `Mask`: an abstract record, `private protected` constructor, `Stops : IReadOnlyList<MaskStop>` as written,
-  `Resolved : IReadOnlyList<MaskStop>` after the fix-up, `float OpacityAt(float t)` over `Resolved`, and
-  `abstract TResult Accept<TState, TResult>(IMaskVisitor<TState, TResult> visitor, TState state)`.
-  `IMaskVisitor<in TState, out TResult>` has `Visit(LinearMask, …)` and `Visit(RadialMask, …)`. One file each.
-- [x] 1.4 `LinearMask(float angle, IReadOnlyList<MaskStop> stops)` with `Axis(Size box)`, and `RadialMask(Point center,
-  RadialExtent extent, IReadOnlyList<MaskStop> stops)` with `Radii(Size box)`, sealed records, the formulas of decision
-  4. `MaskStop(float Offset, float Opacity)`, a readonly record struct.
+- [x] 1.3 `OpacityGradient`: an abstract record, `private protected` constructor, `Stops : IReadOnlyList<OpacityStop>` as written,
+  `Resolved : IReadOnlyList<OpacityStop>` after the fix-up, `float OpacityAt(float t)` over `Resolved`, and
+  `abstract TResult Accept<TState, TResult>(IOpacityGradientVisitor<TState, TResult> visitor, TState state)`.
+  `IOpacityGradientVisitor<in TState, out TResult>` has `Visit(LinearOpacityGradient, …)` and `Visit(RadialOpacityGradient, …)`. One file each.
+- [x] 1.4 `LinearOpacityGradient(float angle, IReadOnlyList<OpacityStop> stops)` with `Axis(Size box)`, and `RadialOpacityGradient(Point center,
+  RadialExtent extent, IReadOnlyList<OpacityStop> stops)` with `Radii(Size box)`, sealed records, the formulas of decision
+  4. `OpacityStop(float Offset, float Opacity)`, a readonly record struct.
 - [x] 1.5 `RadialExtent`: a readonly record struct of `RadialExtentKind` and two values, with `Fraction(x, y)`,
   `Dp(x, y)`, `ClosestSide`, `FarthestSide`, `ClosestCorner` and `FarthestCorner` (the default). `RadialExtentKind`
   (`FarthestCorner = 0, ClosestSide = 1, FarthestSide = 2, ClosestCorner = 3, Fraction = 4, Dp = 5`) joins
@@ -26,36 +26,36 @@ blocks #1938: task 5.6 waits on it. The measurements behind every number below a
   finite, or an opacity outside 0..1 (`stops`); a centre that is not finite (`center`); a `Fraction` or `Dp` value that
   is not positive (`x`, `y`). Nothing else is refused: an out-of-order, a repeated or an out-of-range offset is CSS's,
   and resolved as CSS resolves it.
-- [x] 1.7 `Masked(Mask mask, VisualNode child) : SingleChildNode`, `NodeKind => "masked"`, layout-transparent by
-  `LayoutTransparency`'s default. `IVisualNodeVisitor` gains `Visit(Masked, …)`. The factory `Masked(Mask mask,
+- [x] 1.7 `OpacityMask(OpacityGradient gradient, VisualNode child) : SingleChildNode`, `NodeKind => "opacityMask"`, layout-transparent by
+  `LayoutTransparency`'s default. `IVisualNodeVisitor` gains `Visit(OpacityMask, …)`. The factory `OpacityMask(OpacityGradient gradient,
   VisualNode child)` in `eQuantic.UI.Components`' `UI`.
 - [x] 1.8 `./scripts/public-api.sh update`, and read the diff: additions only, in Primitives and Components.
-- [x] 1.9 `MaskVocabularyTests` (new), each expected number the browsers' from 1.1 and 1.2: every refusal; `Axis` at
+- [x] 1.9 `OpacityGradientVocabularyTests` (new), each expected number the browsers' from 1.1 and 1.2: every refusal; `Axis` at
   0°, 90°, 135° and 200° on a 400 × 240 box against L = |W sin θ| + |H cos θ|; `Radii` for each extent on a centred and
   an off-centre point, and the degenerate `ClosestSide` on an edge; `Resolved` and `OpacityAt` for every row of
   decision 4's stop table; the value equality of each kind. Each case fails with the fix-up removed, or with it
   applied as "sort the stops" (the plausible wrong one).
 - [x] 1.10 Check: the vocabulary builds, and the node visitors (Web, Email, Photon's emit, semantics and measure, and the
-  twin's `tsc`) fail until they have `Visit(Masked, …)`, which is the instrument working.
+  twin's `tsc`) fail until they have `Visit(OpacityMask, …)`, which is the instrument working.
 
 ## 2. The web and the runtime twin: `mask-image`, written alike by SSR and the twin
 
 - [x] 2.1 Measure in Chrome and Firefox: a mask cuts what overflows its element, its box is a rectangle whatever the
   radius, an ancestor's rounded `overflow: hidden` clips it, and a point it hides still hit-tests.
-- [ ] 2.2 `MaskCss : IMaskVisitor<…, string>` writes decision 5's table from `Mask.Resolved`, through `TokenCss`'s
+- [ ] 2.2 `OpacityGradientCss : IOpacityGradientVisitor<…, string>` writes decision 5's table from `OpacityGradient.Resolved`, through `TokenCss`'s
   formatter, a single stop written at 0% and 100%.
 - [ ] 2.3 `HtmlStyle.MaskImage` and its `mask-image` entry in the CSS writer.
-- [ ] 2.4 `LowerMasked`: one wrapper `div` carrying `mask-image`, the child inside, joining `Fills`, `CapsAt` and every
+- [ ] 2.4 `LowerOpacityMask`: one wrapper `div` carrying `mask-image`, the child inside, joining `Fills`, `CapsAt` and every
   list the layout spec's "Every layout-transparent wrapper passes its child's fill through" names. `PaintsNothing`
   and the `Stack`'s positioned-child resolution see through it.
-- [ ] 2.5 The twin: `Masked`, `Mask` (with `resolved`), `LinearMask`, `RadialMask`, `MaskStop`, `RadialExtent` and
-  `RadialExtentKind` in `vocabulary.ts`, with `maskKind` and the exports (`runtime-exports.ts`, `index.ts`);
-  `lowerMasked` and `maskCss` in `lowering.ts`, ending in an exhaustive `never` check; the same wrapper lists.
-- [ ] 2.6 `MaskedRealizerTests` (new): each row of decision 5's table, the resolved and the single-stop rows included; a
-  fill child makes the wrapper fill; a `Positioned(Masked(Box))` in a `Stack` still spans. CROSS-PINNED by
-  `masked.spec.ts` on the twin. `ComponentParityFixtureTests` and `component-parity.spec.ts` gain a masked node of each
+- [ ] 2.5 The twin: `OpacityMask`, `OpacityGradient` (with `resolved`), `LinearOpacityGradient`, `RadialOpacityGradient`, `OpacityStop`, `RadialExtent` and
+  `RadialExtentKind` in `vocabulary.ts`, with `gradientKind` and the exports (`runtime-exports.ts`, `index.ts`);
+  `lowerOpacityMask` and `opacityGradientCss` in `lowering.ts`, ending in an exhaustive `never` check; the same wrapper lists.
+- [ ] 2.6 `OpacityMaskRealizerTests` (new): each row of decision 5's table, the resolved and the single-stop rows included; a
+  fill child makes the wrapper fill; a `Positioned(OpacityMask(Box))` in a `Stack` still spans. CROSS-PINNED by
+  `opacity-mask.spec.ts` on the twin. `ComponentParityFixtureTests` and `component-parity.spec.ts` gain a masked node of each
   kind.
-- [ ] 2.7 The email realizer lowers a `Masked` as its child, and its fence list says why (a mail client has no mask).
+- [ ] 2.7 The email realizer lowers an `OpacityMask` as its child, and its fence list says why (a mail client has no mask).
 - [ ] 2.8 Check, against the real thing: a page with every mask of 1.9 in Chrome, Firefox and iOS Safari, served and
   reached by a link, with no hydration warning, and `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime` green.
 
@@ -64,32 +64,32 @@ blocks #1938: task 5.6 waits on it. The measurements behind every number below a
 - [ ] 3.1 `TextureFormat.R32Float = 2`, appended, and `TextureData.Floats(int width, int height, ReadOnlySpan<float>
   values)`. Metal's and Vulkan's `CreateTexture` choose the format and the bytes per row from a table keyed by
   `TextureFormat` (`MTLPixelFormatR32Float`, `VK_FORMAT_R32_SFLOAT`), replacing their `rgba` boolean.
-- [ ] 3.2 `LayerMask` (Engine): the geometry, `ParameterAt(Point local)` (unclamped) and `OpacityAt` over a stop
-  texture's floats, the normative math. `DisplayListBuilder.PushMaskLayer(Rect local, Paint geometry, TextureData
+- [ ] 3.2 `LayerOpacityMask` (Engine): the geometry, `ParameterAt(Point local)` (unclamped) and `OpacityAt` over a stop
+  texture's floats, the normative math. `DisplayListBuilder.PushOpacityMaskLayer(Rect local, Paint geometry, TextureData
   stops)`: a `BeginLayer` carrying the mask in the slots of decision 6 and the stop texture in the frame's table, closed
   by `PopLayer`. A plain `PushLayer` is unchanged.
-- [ ] 3.3 `MaskStopCache` (Components), per host beside `PatternTileCache`, through `MotionScope`: the stop texture of
+- [ ] 3.3 `OpacityStopCache` (Components), per host beside `PatternTileCache`, through `MotionScope`: the stop texture of
   a mask's `Resolved`, keyed by `StopsKey` (every float's bits, the hash computed once), behind a
-  `ConditionalWeakTable<Mask, TextureData>`, least recently used out past 256 entries.
-- [ ] 3.4 The Reference backend: the `EndLayer` of a masked scope composites through `LayerMask.OpacityAt`, 0 outside
+  `ConditionalWeakTable<OpacityGradient, TextureData>`, least recently used out past 256 entries.
+- [ ] 3.4 The Reference backend: the `EndLayer` of a masked scope composites through `LayerOpacityMask.OpacityAt`, 0 outside
   the local rect, times the alpha and the clip.
-- [ ] 3.5 `masked_layer_composite` in `Sdf.slang`, transliterating 3.4 with the uniform reuse of decision 6 and the
-  stops read by `Load` from the coverage slot. `RhiPipelineKind.MaskedLayerComposite` appended; the Metal and Vulkan
+- [ ] 3.5 `opacity_mask_composite` in `Sdf.slang`, transliterating 3.4 with the uniform reuse of decision 6 and the
+  stops read by `Load` from the coverage slot. `RhiPipelineKind.OpacityMaskComposite` appended; the Metal and Vulkan
   devices register it; `./scripts/generate-shaders.sh` regenerates `.metal`, `.spv` and `.metallib`, never edited by
   hand.
 - [ ] 3.6 `RhiRenderer.EncodeRange` composites a masked layer, rendered by phase one, through the new pipeline.
-- [ ] 3.7 `EmitVisitor.Visit(Masked, …)`: `PushMaskLayer` with the node's bounds, the geometry of 1.4 at its laid-out
+- [ ] 3.7 `EmitVisitor.Visit(OpacityMask, …)`: `PushOpacityMaskLayer` with the node's bounds, the geometry of 1.4 at its laid-out
   size and the cache's stop texture, then the child, then `PopLayer`, settling the input targets past the layer as the
   opacity path does (EmitVisitor.cs:110-121). `SemanticsVisitor` and `MeasureVisitor` pass through.
-- [ ] 3.8 `MaskStopCache` tests: one texture for two masks with equal resolved stops, two for stops that differ in one
+- [ ] 3.8 `OpacityStopCache` tests: one texture for two masks with equal resolved stops, two for stops that differ in one
   float's last bit, none uploaded again across a hundred unchanged frames.
-- [ ] 3.9 `MaskedLayerTests` (Reference): a white box under each mask of 1.9, every stop case included, on a
-  transparent ground, its alpha within 1/255 of `Mask.OpacityAt` at every pixel centre, and a hard stop exact; the
+- [ ] 3.9 `OpacityMaskLayerTests` (Reference): a white box under each mask of 1.9, every stop case included, on a
+  transparent ground, its alpha within 1/255 of `OpacityGradient.OpacityAt` at every pixel centre, and a hard stop exact; the
   same under a 30° rotation and at 2.625 device pixels a dp; inside a rounded clip; nested in a group opacity of 0.5
   and around one; a child that overflows the node cut at its bounds. Each fails with the mask removed, and with the
-  mask evaluated in device space instead of local (the plausible wrong one). `MaskedHitTestTests`: a `Pressable` under
+  mask evaluated in device space instead of local (the plausible wrong one). `OpacityMaskHitTestTests`: a `Pressable` under
   the mask's zero, driven through `PhotonHost` across a frame, takes the press.
-- [ ] 3.10 Check: a golden `masked-layer` in `GoldenScenes`, every stop case on one surface, held on Metal by
+- [ ] 3.10 Check: a golden `opacity-mask-layer` in `GoldenScenes`, every stop case on one surface, held on Metal by
   `MetalParityTests` and on Vulkan by `VulkanParityTests` (on the Windows runner) within `GpuParity`'s tolerance.
 
 ## 4. The overhang: a decoration past its surface, pinned on both targets

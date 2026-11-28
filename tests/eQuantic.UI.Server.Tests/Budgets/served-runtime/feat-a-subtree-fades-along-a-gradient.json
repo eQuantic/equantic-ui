@@ -1,4 +1,4 @@
 {
-  "deltaBytes": 771,
-  "bought": "the twin of the mask vocabulary, Masked with Mask, LinearMask, RadialMask, MaskStop and RadialExtent, which an app names to fade a subtree along a gradient (#1938); the lowering that draws it follows in the same change"
+  "deltaBytes": 1150,
+  "bought": "the twin of the opacity mask: OpacityMask with OpacityGradient, LinearOpacityGradient, RadialOpacityGradient, OpacityStop and RadialExtent, which an app names to fade a subtree along a gradient (#1938), and the lowering that writes its mask-image"
 }

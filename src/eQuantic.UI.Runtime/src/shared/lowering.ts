@@ -48,7 +48,7 @@ import { ElementFrame, type ComponentPosition } from './element-frame';
 import type { BuildOwner, Element as Position } from './runtime-exports';
 import { liveOwner as makeLiveOwner, structuralOwner as makeStructuralOwner } from './element-engine';
 import { adaptiveWindowWidth, documentHoldsEveryArm, noteThreshold } from './adaptive-window';
-import type { VisualNode } from './vocabulary';
+import type { LinearOpacityGradient, RadialExtent, RadialOpacityGradient, VisualNode } from './vocabulary';
 import {
   ambientLoweringContext,
   directionSetBy,
@@ -135,7 +135,7 @@ import type {
   InheritedNode,
   InViewNode,
   SimulatedNode,
-  MaskedNode,
+  OpacityMaskNode,
   ScrollViewNode,
   SizeValueValue,
   StackNode,
@@ -900,9 +900,8 @@ function lowerNodeKind(
       return lowerSortableItem(node as unknown as SortableItemNode, context, horizontalAxis, path);
     case 'simulated':
       return lowerSimulated(node as unknown as SimulatedNode, context, horizontalAxis, path);
-    // #1958: replaced by the mask's lowering. Until then the child is lowered as it is, unmasked.
-    case 'masked':
-      return lowerNode((node as unknown as MaskedNode).child, context, horizontalAxis, path + '/0');
+    case 'opacityMask':
+      return lowerOpacityMask(node as unknown as OpacityMaskNode, context, path);
     case 'inFlow':
       return lowerInFlow(node as unknown as InFlowNode, context, horizontalAxis, path);
     // An inherited component holds a value for its subtree and draws nothing of its own: every pass
@@ -2168,6 +2167,72 @@ function shift(x: number, y: number): string | undefined {
  * `--eq-inline` is 1 under `ltr` and -1 under `rtl`, so the same string follows a direction that changes. */
 function towardEnd(length: string): string {
   return `calc(var(--eq-inline, 1) * ${length})`;
+}
+
+/**
+ * A subtree faded along a gradient (#1938, the C# `LowerOpacityMask` twin): ONE wrapper `div` carrying `mask-image`, the
+ * child inside it, standing in for the child's layout with its 100% and its cap as a hoverable's host does. It
+ * writes the mask's RESOLVED stops (`opacityGradientCss`).
+ */
+function lowerOpacityMask(node: OpacityMaskNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : undefined,
+    'max-width': sizeValue(capsAt(node.child)),
+    height: fill.height ? '100%' : undefined,
+    'mask-image': opacityGradientCss(node.gradient as LinearOpacityGradient | RadialOpacityGradient),
+  });
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
+/**
+ * What a mask writes as the gradient `mask-image` takes (the C# `OpacityGradientCss` twin): its resolved stops as opacities of
+ * black, a single stop written twice at 0% and 100%, every number through `num`, which writes what the server's
+ * `TokenCss.Number` writes. The switch ends in an exhaustive check, so a kind added to the set stops compiling here
+ * until it is written, as the C# visitor stops building.
+ */
+function opacityGradientCss(gradient: LinearOpacityGradient | RadialOpacityGradient): string {
+  const resolved = gradient.resolved;
+  const stop = (opacity: number, position: string): string => `rgb(0 0 0 / ${num(opacity)}) ${position}`;
+  const stops =
+    resolved.length === 1
+      ? `${stop(resolved[0].opacity, '0%')}, ${stop(resolved[0].opacity, '100%')}`
+      : resolved.map((s) => stop(s.opacity, gradientPercent(s.offset))).join(', ');
+  switch (gradient.gradientKind) {
+    case 'linear':
+      return `linear-gradient(${num(gradient.angle)}deg, ${stops})`;
+    case 'radial':
+      return `radial-gradient(${gradientExtent(gradient.extent)} at ${gradientPercent(gradient.center.x)} ${gradientPercent(gradient.center.y)}, ${stops})`;
+    default:
+      return assertNever(gradient, 'gradient kind');
+  }
+}
+
+/** A fraction as a CSS percentage to four decimals, the float product the C# writes (`OpacityGradientCss.Percent`). */
+function gradientPercent(fraction: number): string {
+  return `${num(Math.fround(fraction) * 100)}%`;
+}
+
+/** The ellipse's size, as CSS names it (the C# `OpacityGradientCss.Extent`). */
+function gradientExtent(extent: RadialExtent): string {
+  switch (extent.kind) {
+    case 'fraction':
+      return `${gradientPercent(extent.x)} ${gradientPercent(extent.y)}`;
+    case 'dp':
+      return `${px(extent.x)} ${px(extent.y)}`;
+    case 'closestSide':
+      return 'closest-side';
+    case 'farthestSide':
+      return 'farthest-side';
+    case 'closestCorner':
+      return 'closest-corner';
+    case 'farthestCorner':
+      return 'farthest-corner';
+    default:
+      return assertNever(extent.kind, 'radial extent kind');
+  }
 }
 
 /** Spec §06 mirror: the generated eq-slide-x keyframes animate the wrapper; endpoints ride custom
@@ -4603,7 +4668,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     // The three `fills` walks and this did not. Walking one and not the other is the half-contract
     // recorded above: the host takes the child's 100% and drops its maximum.
     case 'simulated':
-    case 'masked':
+    case 'opacityMask':
     case 'inFlow':
     case 'inherited':
     case 'inView':
@@ -4680,8 +4745,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as unknown as SortableItemNode).child);
     case 'simulated':
       return fills((node as SimulatedNode).child);
-    case 'masked':
-      return fills((node as unknown as MaskedNode).child);
+    case 'opacityMask':
+      return fills((node as unknown as OpacityMaskNode).child);
     case 'inFlow':
       return fills((node as InFlowNode).child);
     case 'inherited':

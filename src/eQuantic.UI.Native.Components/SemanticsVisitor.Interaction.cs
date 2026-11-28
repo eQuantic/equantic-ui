@@ -369,7 +369,7 @@ internal sealed partial class SemanticsVisitor
     /// <summary>A mask changes how the child is composited and what it hides of itself, never what a person
     /// who cannot see it meets (#1938): a point the mask hides still takes its press, and the walk carries on
     /// through it.</summary>
-    public bool Visit(Masked node, LayoutNode laidOut) => Wraps;
+    public bool Visit(OpacityMask node, LayoutNode laidOut) => Wraps;
 
     /// <summary>Every Text string under a node, joined — the derived accessible name of a control
     /// whose author gave it no explicit Label.</summary>

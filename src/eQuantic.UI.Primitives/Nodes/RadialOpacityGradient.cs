@@ -6,9 +6,9 @@ namespace eQuantic.UI.Primitives;
 /// fraction of the box on each axis, the rule <see cref="ArtworkPattern.Anchor"/> and <see cref="Image.FocalPoint"/>
 /// follow, and the ellipse is sized by a <see cref="RadialExtent"/>.
 /// </summary>
-public sealed record RadialMask : Mask
+public sealed record RadialOpacityGradient : OpacityGradient
 {
-    public RadialMask(Point center, RadialExtent extent, IReadOnlyList<MaskStop> stops)
+    public RadialOpacityGradient(Point center, RadialExtent extent, IReadOnlyList<OpacityStop> stops)
         : base(stops)
     {
         if (!float.IsFinite(center.X) || !float.IsFinite(center.Y))
@@ -47,6 +47,6 @@ public sealed record RadialMask : Mask
         };
     }
 
-    private protected override TResult Dispatch<TState, TResult>(IMaskVisitor<TState, TResult> visitor, TState state) =>
+    private protected override TResult Dispatch<TState, TResult>(IOpacityGradientVisitor<TState, TResult> visitor, TState state) =>
         visitor.Visit(this, state);
 }

@@ -11,22 +11,22 @@ namespace eQuantic.UI.Web.Tests;
 /// resolves them, and the value equality of each kind. Each expected number is the browsers': Chrome 157 and
 /// Firefox 159 drew the same masks within 0.5/255 of it (tasks 1.1 and 1.2 of subtree-fades-along-a-gradient).
 /// </summary>
-public class MaskVocabularyTests
+public class OpacityGradientVocabularyTests
 {
     private static readonly Size Wide = new(400, 240);
 
-    private static readonly MaskStop[] Ramp = [new(0, 1), new(1, 0)];
+    private static readonly OpacityStop[] Ramp = [new(0, 1), new(1, 0)];
 
     private const float Tolerance = 1e-4f;
 
     // -- The refusals, each naming its parameter -------------------------------------------------------
 
     [Fact]
-    public void ANoStopMask_IsRefused_NamingStops()
+    public void ANoStopOpacityGradient_IsRefused_NamingStops()
     {
-        var linear = () => new LinearMask(90, []);
+        var linear = () => new LinearOpacityGradient(90, []);
         linear.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("stops");
-        var radial = () => new RadialMask(new Point(0.5f, 0.5f), RadialExtent.ClosestSide, []);
+        var radial = () => new RadialOpacityGradient(new Point(0.5f, 0.5f), RadialExtent.ClosestSide, []);
         radial.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("stops");
     }
 
@@ -36,9 +36,9 @@ public class MaskVocabularyTests
     [InlineData(float.NegativeInfinity)]
     public void AnOffsetThatIsNotFinite_IsRefused_NamingStops(float offset)
     {
-        var linear = () => new LinearMask(90, [new(0, 1), new(offset, 0)]);
+        var linear = () => new LinearOpacityGradient(90, [new(0, 1), new(offset, 0)]);
         linear.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("stops");
-        var radial = () => new RadialMask(new Point(0.5f, 0.5f), default, [new(offset, 1)]);
+        var radial = () => new RadialOpacityGradient(new Point(0.5f, 0.5f), default, [new(offset, 1)]);
         radial.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("stops");
     }
 
@@ -49,16 +49,16 @@ public class MaskVocabularyTests
     [InlineData(float.PositiveInfinity)]
     public void AnOpacityOutsideZeroToOne_IsRefused_NamingStops(float opacity)
     {
-        var linear = () => new LinearMask(90, [new(0, 1), new(1, opacity)]);
+        var linear = () => new LinearOpacityGradient(90, [new(0, 1), new(1, opacity)]);
         linear.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("stops");
-        var radial = () => new RadialMask(new Point(0.5f, 0.5f), default, [new(0, opacity)]);
+        var radial = () => new RadialOpacityGradient(new Point(0.5f, 0.5f), default, [new(0, opacity)]);
         radial.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("stops");
     }
 
     [Fact]
-    public void AMaskWithNoListAtAll_IsRefused_NamingStops()
+    public void AOpacityGradientWithNoListAtAll_IsRefused_NamingStops()
     {
-        var linear = () => new LinearMask(90, null!);
+        var linear = () => new LinearOpacityGradient(90, null!);
         linear.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("stops");
     }
 
@@ -69,7 +69,7 @@ public class MaskVocabularyTests
     [InlineData(0.5f, float.NegativeInfinity)]
     public void ACentreThatIsNotFinite_IsRefused_NamingCenter(float x, float y)
     {
-        var refuse = () => new RadialMask(new Point(x, y), RadialExtent.ClosestSide, Ramp);
+        var refuse = () => new RadialOpacityGradient(new Point(x, y), RadialExtent.ClosestSide, Ramp);
         refuse.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("center");
     }
 
@@ -95,7 +95,7 @@ public class MaskVocabularyTests
     [InlineData(float.PositiveInfinity)]
     public void AnAngleThatIsNotFinite_IsRefused_NamingAngle(float angle)
     {
-        var refuse = () => new LinearMask(angle, Ramp);
+        var refuse = () => new LinearOpacityGradient(angle, Ramp);
         refuse.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("angle");
     }
 
@@ -104,25 +104,25 @@ public class MaskVocabularyTests
     [Fact]
     public void WhatCssAccepts_IsNotRefused()
     {
-        var outOfOrder = () => new LinearMask(90, [new(0.6f, 1), new(0.3f, 0)]);
+        var outOfOrder = () => new LinearOpacityGradient(90, [new(0.6f, 1), new(0.3f, 0)]);
         outOfOrder.Should().NotThrow();
-        var repeated = () => new LinearMask(90, [new(0.5f, 1), new(0.5f, 0)]);
+        var repeated = () => new LinearOpacityGradient(90, [new(0.5f, 1), new(0.5f, 0)]);
         repeated.Should().NotThrow();
-        var outside = () => new LinearMask(90, [new(-0.5f, 1), new(1.5f, 0)]);
+        var outside = () => new LinearOpacityGradient(90, [new(-0.5f, 1), new(1.5f, 0)]);
         outside.Should().NotThrow();
-        var single = () => new LinearMask(90, [new(0.3f, 0.5f)]);
+        var single = () => new LinearOpacityGradient(90, [new(0.3f, 0.5f)]);
         single.Should().NotThrow();
-        var huge = () => new RadialMask(new Point(-1, 2), RadialExtent.Fraction(3, 3), Ramp);
+        var huge = () => new RadialOpacityGradient(new Point(-1, 2), RadialExtent.Fraction(3, 3), Ramp);
         huge.Should().NotThrow();
-        new LinearMask(-45, Ramp).Angle.Should().Be(-45);
-        new LinearMask(720, Ramp).Angle.Should().Be(720);
+        new LinearOpacityGradient(-45, Ramp).Angle.Should().Be(-45);
+        new LinearOpacityGradient(720, Ramp).Angle.Should().Be(720);
     }
 
     [Fact]
-    public void AMaskedNode_NeedsItsMask()
+    public void AOpacityMaskNode_NeedsItsOpacityGradient()
     {
-        var refuse = () => new Masked(null!, new Spacer());
-        refuse.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("mask");
+        var refuse = () => new OpacityMask(null!, new Spacer());
+        refuse.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("gradient");
     }
 
     // -- The gradient's line ------------------------------------------------------------------------------
@@ -134,10 +134,10 @@ public class MaskVocabularyTests
     [InlineData(135f, 40f, -40f, 360f, 280f)]
     [InlineData(200f, 261.9628f, -50.2414f, 138.0372f, 290.2414f)]
     [InlineData(-90f, 400f, 120f, 0f, 120f)]
-    public void TheAxisOfALinearMask_RunsThroughTheCentreAtItsAngle(
+    public void TheAxisOfALinearOpacityGradient_RunsThroughTheCentreAtItsAngle(
         float angle, float startX, float startY, float endX, float endY)
     {
-        var (start, end) = new LinearMask(angle, Ramp).Axis(Wide);
+        var (start, end) = new LinearOpacityGradient(angle, Ramp).Axis(Wide);
         start.X.Should().BeApproximately(startX, 1e-2f);
         start.Y.Should().BeApproximately(startY, 1e-2f);
         end.X.Should().BeApproximately(endX, 1e-2f);
@@ -149,9 +149,9 @@ public class MaskVocabularyTests
     [InlineData(90f, 400f)]
     [InlineData(135f, 452.548f)]
     [InlineData(200f, 362.334f)]
-    public void TheAxisOfALinearMask_IsAsLongAsItsEndsTouchingTheCornersMakesIt(float angle, float length)
+    public void TheAxisOfALinearOpacityGradient_IsAsLongAsItsEndsTouchingTheCornersMakesIt(float angle, float length)
     {
-        var (start, end) = new LinearMask(angle, Ramp).Axis(Wide);
+        var (start, end) = new LinearOpacityGradient(angle, Ramp).Axis(Wide);
         Math.Sqrt(Math.Pow(end.X - start.X, 2) + Math.Pow(end.Y - start.Y, 2)).Should().BeApproximately(length, 1e-2);
     }
 
@@ -166,7 +166,7 @@ public class MaskVocabularyTests
     [InlineData(300f)]
     public void TheCornersOfTheBox_SpanTheAxisExactly(float angle)
     {
-        var (start, end) = new LinearMask(angle, Ramp).Axis(Wide);
+        var (start, end) = new LinearOpacityGradient(angle, Ramp).Axis(Wide);
         var line = new Point(end.X - start.X, end.Y - start.Y);
         var squared = line.Dot(line);
         var corners = new[] { new Point(0, 0), new Point(400, 0), new Point(0, 240), new Point(400, 240) };
@@ -178,7 +178,7 @@ public class MaskVocabularyTests
     [Fact]
     public void At135Degrees_TheTopLeftCornerIsTheStartAndTheBottomRightTheEnd()
     {
-        var (start, end) = new LinearMask(135, Ramp).Axis(Wide);
+        var (start, end) = new LinearOpacityGradient(135, Ramp).Axis(Wide);
         var line = new Point(end.X - start.X, end.Y - start.Y);
         float At(Point p) => new Point(p.X - start.X, p.Y - start.Y).Dot(line) / line.Dot(line);
         At(new Point(0, 0)).Should().BeApproximately(0, Tolerance);
@@ -187,7 +187,7 @@ public class MaskVocabularyTests
 
     // -- The ellipse's radii ------------------------------------------------------------------------------
 
-    private static RadialMask Radial(float x, float y, RadialExtent extent) => new(new Point(x, y), extent, Ramp);
+    private static RadialOpacityGradient Radial(float x, float y, RadialExtent extent) => new(new Point(x, y), extent, Ramp);
 
     private static readonly float Root2 = MathF.Sqrt(2);
 
@@ -221,7 +221,7 @@ public class MaskVocabularyTests
     [Fact]
     public void TheHerosFraction_IsSeventyPercentOfEachSide()
     {
-        var hero = new RadialMask(new Point(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]);
+        var hero = new RadialOpacityGradient(new Point(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]);
         var radii = hero.Radii(new Size(400, 300));
         radii.Width.Should().BeApproximately(280, Tolerance);
         radii.Height.Should().BeApproximately(210, Tolerance);
@@ -253,10 +253,10 @@ public class MaskVocabularyTests
 
     // -- The stops, as CSS resolves them -------------------------------------------------------------------
 
-    private static LinearMask Linear(params MaskStop[] stops) => new(90, stops);
+    private static LinearOpacityGradient Linear(params OpacityStop[] stops) => new(90, stops);
 
     /// <summary>The stop table of design.md decision 4, each row what Chrome 157 and Firefox 159 drew.</summary>
-    public static TheoryData<string, MaskStop[], MaskStop[], (float T, float Opacity)[]> StopRows() => new()
+    public static TheoryData<string, OpacityStop[], OpacityStop[], (float T, float Opacity)[]> StopRows() => new()
     {
         {
             "an offset below an earlier one moves up to it: a hard step",
@@ -318,28 +318,28 @@ public class MaskVocabularyTests
 
     [Theory]
     [MemberData(nameof(StopRows))]
-    public void TheStops_ResolveAsCssResolvesThem(string row, MaskStop[] stops, MaskStop[] resolved,
+    public void TheStops_ResolveAsCssResolvesThem(string row, OpacityStop[] stops, OpacityStop[] resolved,
         (float T, float Opacity)[] samples)
     {
-        var mask = Linear(stops);
+        var gradient = Linear(stops);
 
-        mask.Stops.Should().Equal(stops, "the stops stay as they were written: {0}", row);
-        mask.Resolved.Should().Equal(resolved, "the fix-up moves an offset up and sorts nothing: {0}", row);
+        gradient.Stops.Should().Equal(stops, "the stops stay as they were written: {0}", row);
+        gradient.Resolved.Should().Equal(resolved, "the fix-up moves an offset up and sorts nothing: {0}", row);
         foreach (var (t, opacity) in samples)
-            mask.OpacityAt(t).Should().BeApproximately(opacity, 1e-3f, "{0}, at {1}", row, t);
+            gradient.OpacityAt(t).Should().BeApproximately(opacity, 1e-3f, "{0}, at {1}", row, t);
     }
 
     /// <summary>The same rows in a radial mask: both kinds share one fix-up and one answer.</summary>
     [Theory]
     [MemberData(nameof(StopRows))]
-    public void ARadialMask_ResolvesItsStopsAsALinearOneDoes(string row, MaskStop[] stops, MaskStop[] resolved,
+    public void ARadialOpacityGradient_ResolvesItsStopsAsALinearOneDoes(string row, OpacityStop[] stops, OpacityStop[] resolved,
         (float T, float Opacity)[] samples)
     {
-        var mask = new RadialMask(new Point(0.5f, 0.5f), default, stops);
+        var gradient = new RadialOpacityGradient(new Point(0.5f, 0.5f), default, stops);
 
-        mask.Resolved.Should().Equal(resolved, row);
+        gradient.Resolved.Should().Equal(resolved, row);
         foreach (var (t, opacity) in samples)
-            mask.OpacityAt(t).Should().BeApproximately(opacity, 1e-3f, "{0}, at {1}", row, t);
+            gradient.OpacityAt(t).Should().BeApproximately(opacity, 1e-3f, "{0}, at {1}", row, t);
     }
 
     /// <summary>A plausible wrong fix-up is to SORT the stops. Sorted, an out-of-order stop would ramp where CSS
@@ -347,12 +347,12 @@ public class MaskVocabularyTests
     [Fact]
     public void AnOutOfOrderStop_IsMovedUp_NeverSorted()
     {
-        var mask = Linear(new(0.6f, 1), new(0.3f, 0));
+        var gradient = Linear(new(0.6f, 1), new(0.3f, 0));
 
-        mask.Resolved[0].Offset.Should().Be(0.6f);
-        mask.Resolved[1].Offset.Should().Be(0.6f);
-        mask.OpacityAt(0.3f).Should().Be(1, "before the step the first stop's opacity holds");
-        mask.OpacityAt(0.45f).Should().Be(1);
+        gradient.Resolved[0].Offset.Should().Be(0.6f);
+        gradient.Resolved[1].Offset.Should().Be(0.6f);
+        gradient.OpacityAt(0.3f).Should().Be(1, "before the step the first stop's opacity holds");
+        gradient.OpacityAt(0.45f).Should().Be(1);
     }
 
     [Fact]
@@ -362,53 +362,53 @@ public class MaskVocabularyTests
     }
 
     [Fact]
-    public void TheListGivenToAMask_IsCopied()
+    public void TheListGivenToAOpacityGradient_IsCopied()
     {
-        var stops = new List<MaskStop> { new(0, 1), new(1, 0) };
-        var mask = Linear([.. stops]);
-        var viaList = new LinearMask(90, stops);
+        var stops = new List<OpacityStop> { new(0, 1), new(1, 0) };
+        var gradient = Linear([.. stops]);
+        var viaList = new LinearOpacityGradient(90, stops);
 
         stops.Add(new(2, 1));
         stops[0] = new(0.5f, 0.5f);
 
-        viaList.Stops.Should().Equal(new MaskStop(0, 1), new MaskStop(1, 0));
-        viaList.Resolved.Should().Equal(new MaskStop(0, 1), new MaskStop(1, 0));
-        mask.Stops.Should().HaveCount(2);
+        viaList.Stops.Should().Equal(new OpacityStop(0, 1), new OpacityStop(1, 0));
+        viaList.Resolved.Should().Equal(new OpacityStop(0, 1), new OpacityStop(1, 0));
+        gradient.Stops.Should().HaveCount(2);
     }
 
     // -- Value equality ---------------------------------------------------------------------------------------
 
     [Fact]
-    public void ALinearMask_IsEqualByItsAngleAndItsStops()
+    public void ALinearOpacityGradient_IsEqualByItsAngleAndItsStops()
     {
-        var one = new LinearMask(135, [new(0, 1), new(1, 0)]);
+        var one = new LinearOpacityGradient(135, [new(0, 1), new(1, 0)]);
 
-        one.Should().Be(new LinearMask(135, [new(0, 1), new(1, 0)]), "a list compares by what it holds");
-        one.GetHashCode().Should().Be(new LinearMask(135, [new(0, 1), new(1, 0)]).GetHashCode());
-        one.Should().NotBe(new LinearMask(136, [new(0, 1), new(1, 0)]));
-        one.Should().NotBe(new LinearMask(135, [new(0, 1), new(1, 0.5f)]));
-        one.Should().NotBe(new LinearMask(135, [new(0, 1)]));
-        one.Should().NotBe(new LinearMask(135, [new(1, 0), new(0, 1)]), "stops are ordered");
+        one.Should().Be(new LinearOpacityGradient(135, [new(0, 1), new(1, 0)]), "a list compares by what it holds");
+        one.GetHashCode().Should().Be(new LinearOpacityGradient(135, [new(0, 1), new(1, 0)]).GetHashCode());
+        one.Should().NotBe(new LinearOpacityGradient(136, [new(0, 1), new(1, 0)]));
+        one.Should().NotBe(new LinearOpacityGradient(135, [new(0, 1), new(1, 0.5f)]));
+        one.Should().NotBe(new LinearOpacityGradient(135, [new(0, 1)]));
+        one.Should().NotBe(new LinearOpacityGradient(135, [new(1, 0), new(0, 1)]), "stops are ordered");
     }
 
     [Fact]
-    public void ARadialMask_IsEqualByItsCentreItsExtentAndItsStops()
+    public void ARadialOpacityGradient_IsEqualByItsCentreItsExtentAndItsStops()
     {
-        var one = new RadialMask(new Point(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]);
+        var one = new RadialOpacityGradient(new Point(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]);
 
-        one.Should().Be(new RadialMask(new Point(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]));
+        one.Should().Be(new RadialOpacityGradient(new Point(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]));
         one.GetHashCode().Should().Be(
-            new RadialMask(new Point(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]).GetHashCode());
-        one.Should().NotBe(new RadialMask(new Point(0.7f, 0.4f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]));
-        one.Should().NotBe(new RadialMask(new Point(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.6f), [new(0.35f, 1), new(0.76f, 0)]));
-        one.Should().NotBe(new RadialMask(new Point(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.8f, 0)]));
+            new RadialOpacityGradient(new Point(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]).GetHashCode());
+        one.Should().NotBe(new RadialOpacityGradient(new Point(0.7f, 0.4f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]));
+        one.Should().NotBe(new RadialOpacityGradient(new Point(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.6f), [new(0.35f, 1), new(0.76f, 0)]));
+        one.Should().NotBe(new RadialOpacityGradient(new Point(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.8f, 0)]));
     }
 
     [Fact]
     public void TwoKindsWithTheSameStops_AreNotEqual()
     {
-        Mask linear = new LinearMask(90, Ramp);
-        Mask radial = new RadialMask(new Point(0.5f, 0.5f), default, Ramp);
+        OpacityGradient linear = new LinearOpacityGradient(90, Ramp);
+        OpacityGradient radial = new RadialOpacityGradient(new Point(0.5f, 0.5f), default, Ramp);
 
         linear.Should().NotBe(radial);
     }
@@ -420,8 +420,8 @@ public class MaskVocabularyTests
         RadialExtent.Fraction(0.7f, 0.4f).Should().NotBe(RadialExtent.Fraction(0.7f, 0.5f));
         RadialExtent.Fraction(1, 2).Should().NotBe(RadialExtent.Dp(1, 2), "half a box is not half a dp");
         RadialExtent.ClosestSide.Should().NotBe(RadialExtent.FarthestSide);
-        new MaskStop(0.5f, 0.5f).Should().Be(new MaskStop(0.5f, 0.5f));
-        new MaskStop(0.5f, 0.5f).Should().NotBe(new MaskStop(0.5f, 0.6f));
+        new OpacityStop(0.5f, 0.5f).Should().Be(new OpacityStop(0.5f, 0.5f));
+        new OpacityStop(0.5f, 0.5f).Should().NotBe(new OpacityStop(0.5f, 0.6f));
     }
 
     [Fact]
@@ -438,27 +438,27 @@ public class MaskVocabularyTests
     // -- The node ------------------------------------------------------------------------------------------------
 
     [Fact]
-    public void AMaskedNode_HoldsItsMaskAndItsChild_AndIsLayoutTransparent()
+    public void AOpacityMaskNode_HoldsItsOpacityGradientAndItsChild_AndIsLayoutTransparent()
     {
         var child = new Spacer();
-        var mask = new LinearMask(90, Ramp);
-        var node = new Masked(mask, child);
+        var gradient = new LinearOpacityGradient(90, Ramp);
+        var node = new OpacityMask(gradient, child);
 
-        node.Mask.Should().BeSameAs(mask);
+        node.Gradient.Should().BeSameAs(gradient);
         node.Child.Should().BeSameAs(child);
-        node.NodeKind.Should().Be("masked");
-        node.IsLayoutTransparent().Should().BeTrue("a mask adds no geometry: its parent sizes it as it sizes its child");
+        node.NodeKind.Should().Be("opacityMask");
+        node.IsLayoutTransparent().Should().BeTrue("a gradient adds no geometry: its parent sizes it as it sizes its child");
     }
 
     [Fact]
     public void TheFactory_BuildsTheNode()
     {
         var child = new Spacer();
-        var mask = new LinearMask(90, Ramp);
+        var gradient = new LinearOpacityGradient(90, Ramp);
 
-        var node = eQuantic.UI.Components.UI.Masked(mask, child);
+        var node = eQuantic.UI.Components.UI.OpacityMask(gradient, child);
 
-        node.Mask.Should().BeSameAs(mask);
+        node.Gradient.Should().BeSameAs(gradient);
         node.Child.Should().BeSameAs(child);
     }
 
@@ -474,15 +474,15 @@ public class MaskVocabularyTests
     {
         const string source = """
             using eQuantic.UI.Primitives;
-            public sealed record Outside : Mask
+            public sealed record Outside : OpacityGradient
             {
                 public Outside(Outside original) : base(original) { }
-                public Outside() : base(new MaskStop[] { new(0, 1) }) { }
+                public Outside() : base(new OpacityStop[] { new(0, 1) }) { }
             }
             """;
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
-            .Append(typeof(Mask).Assembly.Location)
+            .Append(typeof(OpacityGradient).Assembly.Location)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Select(path => TestReferences.Of(path));
         var compilation = CSharpCompilation.Create("Outside", [CSharpSyntaxTree.ParseText(source)], references,
@@ -500,15 +500,15 @@ public class MaskVocabularyTests
     public void Accept_HandsEachKindToItsOwnVisit()
     {
         var names = new KindNames();
-        new LinearMask(90, Ramp).Accept(names, 0).Should().Be("linear");
-        new RadialMask(new Point(0.5f, 0.5f), default, Ramp).Accept(names, 0).Should().Be("radial");
-        ((Mask)new LinearMask(90, Ramp)).Accept(names, 0).Should().Be("linear");
-        ((Mask)new RadialMask(new Point(0.5f, 0.5f), default, Ramp)).Accept(names, 0).Should().Be("radial");
+        new LinearOpacityGradient(90, Ramp).Accept(names, 0).Should().Be("linear");
+        new RadialOpacityGradient(new Point(0.5f, 0.5f), default, Ramp).Accept(names, 0).Should().Be("radial");
+        ((OpacityGradient)new LinearOpacityGradient(90, Ramp)).Accept(names, 0).Should().Be("linear");
+        ((OpacityGradient)new RadialOpacityGradient(new Point(0.5f, 0.5f), default, Ramp)).Accept(names, 0).Should().Be("radial");
     }
 
-    private sealed class KindNames : IMaskVisitor<int, string>
+    private sealed class KindNames : IOpacityGradientVisitor<int, string>
     {
-        public string Visit(LinearMask mask, int state) => "linear";
-        public string Visit(RadialMask mask, int state) => "radial";
+        public string Visit(LinearOpacityGradient gradient, int state) => "linear";
+        public string Visit(RadialOpacityGradient gradient, int state) => "radial";
     }
 }

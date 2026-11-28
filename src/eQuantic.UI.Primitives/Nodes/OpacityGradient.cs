@@ -1,32 +1,32 @@
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// The opacity a <see cref="Masked"/> subtree keeps at every point (#1938): a gradient of opacities
+/// The opacity a <see cref="OpacityMask"/> subtree keeps at every point (#1938): a gradient of opacities
 /// over the node's bounds, Flutter's <c>ShaderMask</c> with <c>BlendMode.dstIn</c> and the CSS
 /// <c>mask-image</c> of a gradient.
 /// <para>
-/// A CLOSED set: <see cref="LinearMask"/> and <see cref="RadialMask"/>, and nothing else. A realizer
-/// draws them through <see cref="IMaskVisitor{TState, TResult}"/>, so a kind added here is a build
+/// A CLOSED set: <see cref="LinearOpacityGradient"/> and <see cref="RadialOpacityGradient"/>, and nothing else. A realizer
+/// draws them through <see cref="IOpacityGradientVisitor{TState, TResult}"/>, so a kind added here is a build
 /// error in every realizer that does not draw it. The set is closed by the <c>private protected</c>
 /// members below, which no type outside this assembly can reach.
 /// </para>
 /// <para>
-/// ONE OR MORE <see cref="MaskStop"/>s, any number, resolved as CSS Images 4 resolves color stops
+/// ONE OR MORE <see cref="OpacityStop"/>s, any number, resolved as CSS Images 4 resolves color stops
 /// (measured in Chrome and Firefox): <see cref="Resolved"/> is the list every target draws.
 /// </para>
 /// </summary>
-public abstract record Mask
+public abstract record OpacityGradient
 {
-    private readonly MaskStop[] _stops;
-    private readonly MaskStop[] _resolved;
+    private readonly OpacityStop[] _stops;
+    private readonly OpacityStop[] _resolved;
 
-    private protected Mask(IReadOnlyList<MaskStop> stops)
+    private protected OpacityGradient(IReadOnlyList<OpacityStop> stops)
     {
         ArgumentNullException.ThrowIfNull(stops);
         _stops = [.. stops];
         if (_stops.Length == 0)
             throw new ArgumentOutOfRangeException(nameof(stops), stops,
-                "A mask needs at least one stop: with none there is no opacity to give any point.");
+                "A gradient needs at least one stop: with none there is no opacity to give any point.");
         foreach (var stop in _stops)
         {
             if (!float.IsFinite(stop.Offset))
@@ -40,14 +40,14 @@ public abstract record Mask
     }
 
     /// <summary>The stops as they were written, in order.</summary>
-    public IReadOnlyList<MaskStop> Stops => _stops;
+    public IReadOnlyList<OpacityStop> Stops => _stops;
 
     /// <summary>
     /// The stops after CSS's fix-up, the one list both targets draw: a stop whose offset is below an earlier
     /// one's moves up to the largest earlier offset, so offsets never decrease. Repeated offsets stay (two stops
     /// at one offset are a hard step), and an offset outside 0..1 stays.
     /// </summary>
-    public IReadOnlyList<MaskStop> Resolved => _resolved;
+    public IReadOnlyList<OpacityStop> Resolved => _resolved;
 
     /// <summary>
     /// The opacity at a position <paramref name="t"/> along the ray, over <see cref="Resolved"/>: piecewise
@@ -74,16 +74,16 @@ public abstract record Mask
     }
 
     /// <summary>Hands this mask to the visitor's method for its kind.</summary>
-    public TResult Accept<TState, TResult>(IMaskVisitor<TState, TResult> visitor, TState state) =>
+    public TResult Accept<TState, TResult>(IOpacityGradientVisitor<TState, TResult> visitor, TState state) =>
         Dispatch(visitor, state);
 
     /// <summary>The kind's own call of <see cref="Accept"/>: private protected, so a kind can only be declared
     /// in this assembly.</summary>
-    private protected abstract TResult Dispatch<TState, TResult>(IMaskVisitor<TState, TResult> visitor, TState state);
+    private protected abstract TResult Dispatch<TState, TResult>(IOpacityGradientVisitor<TState, TResult> visitor, TState state);
 
     /// <summary>Two masks of one kind are equal when their stops are, in order: a list compares by what it holds,
     /// where a record's own equality would compare the reference.</summary>
-    public virtual bool Equals(Mask? other) =>
+    public virtual bool Equals(OpacityGradient? other) =>
         other is not null && EqualityContract == other.EqualityContract && _stops.AsSpan().SequenceEqual(other._stops);
 
     public override int GetHashCode()
@@ -94,9 +94,9 @@ public abstract record Mask
         return hash.ToHashCode();
     }
 
-    private static MaskStop[] Fixup(MaskStop[] stops)
+    private static OpacityStop[] Fixup(OpacityStop[] stops)
     {
-        var resolved = new MaskStop[stops.Length];
+        var resolved = new OpacityStop[stops.Length];
         var floor = float.NegativeInfinity;
         for (var i = 0; i < stops.Length; i++)
         {

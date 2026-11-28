@@ -138,6 +138,29 @@ public class ComponentParityFixtureTests
         ("listener-translucent", new Listener(new Box(new BoxStyle { Height = 40 })) { Behavior = HitTestBehavior.Translucent }, NoPresses),
         // Gestures of the app's own (#1563): the same transparent div, its child's box being its box, on both producers.
         ("raw-gesture-detector", new RawGestureDetector(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), []), NoPresses),
+        // A subtree faded along a gradient (#1938): the one wrapper with its mask-image, for each kind and each
+        // size of an ellipse, a single stop (written twice), stops CSS moves up (written resolved), a hard step,
+        // and a Fill child whose 100% and cap the wrapper carries. The strings are written by the server's OpacityGradientCss
+        // and the twin's opacityGradientCss, and the atomic class names pin them to each other.
+        ("opacity-mask-linear", new OpacityMask(new LinearOpacityGradient(135, [new(0, 1), new(1, 0)]),
+            new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 })), NoPresses),
+        ("opacity-mask-radial-hero", new OpacityMask(
+            new RadialOpacityGradient(new(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]),
+            new Box(new BoxStyle { Width = SizeValue.Fill, MaxWidth = 320, Height = SizeValue.Fill })), NoPresses),
+        ("opacity-mask-closest-side", new OpacityMask(new RadialOpacityGradient(new(0.5f, 0.5f), RadialExtent.ClosestSide, [new(0, 1), new(1, 0)]),
+            new Box(new BoxStyle { Width = 120, Height = 80 })), NoPresses),
+        ("opacity-mask-farthest-side", new OpacityMask(new RadialOpacityGradient(new(0.2f, 0.9f), RadialExtent.FarthestSide, [new(0, 1), new(1, 0)]),
+            new Box(new BoxStyle { Width = 120, Height = 80 })), NoPresses),
+        ("opacity-mask-closest-corner", new OpacityMask(new RadialOpacityGradient(new(0.25f, 0.5f), RadialExtent.ClosestCorner, [new(0, 1), new(1, 0)]),
+            new Box(new BoxStyle { Width = 120, Height = 80 })), NoPresses),
+        ("opacity-mask-farthest-corner", new OpacityMask(new RadialOpacityGradient(new(0.5f, 0.5f), default, [new(0.055f, 1), new(0.325f, 0.2f)]),
+            new Box(new BoxStyle { Width = 120, Height = 80 })), NoPresses),
+        ("opacity-mask-dp-single-stop", new OpacityMask(new RadialOpacityGradient(new(0.5f, 0.5f), RadialExtent.Dp(120, 80.5f), [new(0.3f, 0.5f)]),
+            new Box(new BoxStyle { Width = 120, Height = 80 })), NoPresses),
+        ("opacity-mask-resolved-stops", new OpacityMask(new LinearOpacityGradient(90, [new(0.6f, 1), new(0.3f, 0)]),
+            new Box(new BoxStyle { Width = 120, Height = 80 })), NoPresses),
+        ("opacity-mask-hard-step", new OpacityMask(new LinearOpacityGradient(200.5f, [new(0, 1), new(0.5f, 0.75f), new(0.5f, 0.25f), new(1, 0)]),
+            new Box(new BoxStyle { Width = 120, Height = 80 })), NoPresses),
         ("anchored-at", new Anchored(new Box(new BoxStyle { Width = 200, Height = 40 }), new Box(new BoxStyle { Width = 120, Height = 80 }))
         {
             At = new Point(120, 30),

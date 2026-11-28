@@ -243,6 +243,13 @@ public class HtmlStyle
     /// parent writes on the same element still applies.
     /// </summary>
     public string? Scale { get; set; }
+
+    /// <summary>
+    /// The CSS <c>mask-image</c>: the gradient whose alpha multiplies the element and what it holds (#1938). The
+    /// unprefixed property alone, which iOS Safari 26.5 and 27.0 draw as the prefixed one is (measured), and which
+    /// cuts what overflows the element's border box and changes no hit test.
+    /// </summary>
+    public string? MaskImage { get; set; }
     public string? Animation { get; set; }
     public string? AnimationDelay { get; set; }
     public string? WhiteSpace { get; set; }
@@ -357,6 +364,7 @@ public class HtmlStyle
         AddProperty(properties, "-webkit-box-orient", WebkitBoxOrient);
         AddProperty(properties, "-webkit-line-clamp", WebkitLineClamp);
         AddProperty(properties, "opacity", Opacity);
+        AddProperty(properties, "mask-image", MaskImage);
         AddProperty(properties, "visibility", Visibility);
         AddProperty(properties, "pointer-events", PointerEvents);
         AddProperty(properties, "isolation", Isolation);

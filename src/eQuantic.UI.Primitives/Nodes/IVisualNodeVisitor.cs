@@ -128,7 +128,7 @@ public interface IVisualNodeVisitor<in TState, out TResult>
 
     /// <summary>A subtree that fades along a gradient of opacities (#1938): composited as one group, multiplied at
     /// every point by its mask. Layout-transparent, and it changes no hit test.</summary>
-    TResult Visit(Masked node, TState state);
+    TResult Visit(OpacityMask node, TState state);
 
     TResult Visit(ExcludeSemantics node, TState state);
 

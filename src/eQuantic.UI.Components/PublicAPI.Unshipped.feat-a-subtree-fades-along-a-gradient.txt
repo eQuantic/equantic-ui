@@ -1,2 +1,2 @@
 #nullable enable
-static eQuantic.UI.Components.UI.Masked(eQuantic.UI.Primitives.Mask! mask, eQuantic.UI.Primitives.VisualNode! child) -> eQuantic.UI.Primitives.Masked!
+static eQuantic.UI.Components.UI.OpacityMask(eQuantic.UI.Primitives.OpacityGradient! gradient, eQuantic.UI.Primitives.VisualNode! child) -> eQuantic.UI.Primitives.OpacityMask!

@@ -275,7 +275,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     // A mask changes only what is DRAWN, so it takes no space of its own (#1938).
-    public LayoutNode Visit(Masked node, MeasureState s) =>
+    public LayoutNode Visit(OpacityMask node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.At);
 
     // Reports presence; it neither takes space nor draws.

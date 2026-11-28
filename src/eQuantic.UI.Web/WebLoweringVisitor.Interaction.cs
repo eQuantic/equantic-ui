@@ -410,6 +410,36 @@ internal sealed partial class WebLoweringVisitor
     internal string NavigableCellId(string scope, int row, int item) =>
         $"eq-cell-{scope}-{row}-{item}";
     /// <summary>
+    /// A subtree faded along a gradient (#1938): ONE wrapper <c>div</c> carrying <c>mask-image</c>, the child inside
+    /// it. The browser composites the wrapper's subtree as a group and multiplies it by the mask's alpha, cuts what
+    /// overflows the wrapper's border box, and hit-tests as it would without the mask, which is what Photon does.
+    /// A mask makes the wrapper a stacking context, as <c>opacity</c> below 1 does, so inside a Stack the cell's own
+    /// z-index is what orders it.
+    /// <para>
+    /// The wrapper stands in for its child in the parent's layout, so it carries the whole width contract: the
+    /// 100% of a Fill child and its cap, as a Hoverable does (TS twin: <c>lowerOpacityMask</c>). It writes the mask's
+    /// RESOLVED stops (<see cref="OpacityGradientCss"/>).
+    /// </para>
+    /// </summary>
+    private HtmlElement LowerOpacityMask(OpacityMask opacityMask)
+    {
+        var fills = Fills(opacityMask.Child);
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = fills.Width ? "100%" : null,
+                MaxWidth = Size(CapsAt(opacityMask.Child)),
+                Height = fills.Height ? "100%" : null,
+                MaskImage = opacityMask.Gradient.Accept(OpacityGradientCss.Instance, Nothing.Value),
+            },
+        };
+        if (Lower(opacityMask.Child, horizontalAxis: null, LoweringPath.Child) is { } child)
+            element.Children.Add(child);
+        return element;
+    }
+
+    /// <summary>
     /// Spec §06 loop motion: a layout-transparent div carrying the GENERATED keyframe animation —
     /// the effect maps to a keyframe name, endpoints ride custom properties at the style tail
     /// (fractions of the element's own width — CSS translateX(%) has the same base as the native
@@ -471,7 +501,7 @@ internal sealed partial class WebLoweringVisitor
         // half-contract this file already records twice: the host takes the child's 100% and drops
         // its maximum, so a role-bearing one announces a box wider than the bar it names.
         Simulated simulated => CapsAt(simulated.Child),
-        Masked masked => CapsAt(masked.Child),
+        OpacityMask opacityMask => CapsAt(opacityMask.Child),
         InFlow inFlow => CapsAt(inFlow.Child),
         InView inView => CapsAt(inView.Child),
         // A value for a subtree draws nothing of its own, as the TypeScript `capsAt` walks it.

@@ -52,11 +52,11 @@ neighbours (decision 9), and #1955 and #1956 the box gradient's findings (decisi
 **Non-Goals (fenced, each with its reason):**
 
 - **A mask from an image or a drawing** (SwiftUI's `.mask { view }`, CSS's `mask-image: url()`). No demand, and
-  Photon would composite two layers. `Mask` is a closed set, so it enters as a kind.
+  Photon would composite two layers. `OpacityGradient` is a closed set, so it enters as a kind.
 - **Blend modes other than `dstIn`** (Flutter's `ShaderMask.blendMode`). A fade is `dstIn`; the others are colour
   effects, #1041's ground.
 - **The live window's layer phase and the layer pool:** #1952's, which this change waits on.
-- **A stop without an offset** (CSS spreads them evenly). Every `MaskStop` states its offset, so nothing is inferred.
+- **A stop without an offset** (CSS spreads them evenly). Every `OpacityStop` states its offset, so nothing is inferred.
 - **Circles sized by a keyword** (CSS's `circle closest-side`). An ellipse covers the demand, and a circle in dp is
   `RadialExtent.Dp(r, r)`. `RadialExtentKind` is append-only, so a circle kind can join.
 - **Repeating gradients** (`repeating-radial-gradient`): no demand.
@@ -96,22 +96,25 @@ The case for the node:
 
 The case for a member, and why it loses: `BoxStyle.Opacity` is a member, and the box is Cura's surface. But opacity is
 a member because a box's opacity glides with its `Transition` (EmitVisitor.cs:85-93), and a mask has no glide in this
-change. A box that fades is `Masked(mask, Box(...))`, one line.
+change. A box that fades is `OpacityMask(mask, Box(...))`, one line.
 
 **Both** is refused: two ways to write one thing, and the reader would have to learn which composites first.
 
 ### 3. The names
 
-The vocabulary speaks no target's language (principle 5). `mask-image` is the web's; "mask" is not: Flutter
-(`ShaderMask`), Core Animation (`CALayer.mask`), SwiftUI (`.mask`), Android (`PorterDuff` masks in its docs), Figma and
-every compositor say it. "Shader" is the GPU's word for how Flutter implements it, and our gradient is not a shader.
+The vocabulary speaks no target's language (principle 5). `mask-image` is the web's, and it stays where the DOM is
+transcribed on purpose (`HtmlStyle.MaskImage`). The node takes WPF's word, `OpacityMask`: the element property that
+multiplies an element's alpha by a brush's alpha, which is exactly this node, and the word names what it does to the
+subtree (its opacity) rather than how a target implements it. "Mask" alone is kept free for the input mask of a coming
+`MaskedInput`, the meaning .NET's `MaskedTextBox` gives it, and "Shader" is the GPU's word for how Flutter implements the
+same thing, which our gradient is not.
 
 | Name | What | Why |
 |---|---|---|
-| `Masked` | the node | the participle the vocabulary uses for a wrapper that gives its child one property (`Positioned`, `Anchored`, `Pinned`, `Simulated`) |
-| `Mask` | the closed set | what the node takes |
-| `LinearMask`, `RadialMask` | its kinds | the gradient's two shapes, named as Flutter names its gradients |
-| `MaskStop` | `(Offset, Opacity)` | an opacity at a fraction of the ray |
+| `OpacityMask` | the node | WPF's name for the property, written as the vocabulary writes a wrapper that gives its child one property (`Positioned`, `Anchored`, `Pinned`, `Simulated`) |
+| `OpacityGradient` | the closed set | what the node takes: a gradient whose values are opacities |
+| `LinearOpacityGradient`, `RadialOpacityGradient` | its kinds | the gradient's two shapes, named as Flutter names its gradients |
+| `OpacityStop` | `(Offset, Opacity)` | an opacity at a fraction of the ray |
 | `RadialExtent`, `RadialExtentKind` | the ellipse's size | CSS's "ending shape" size, in neutral words; reusable by #1041's gradient kind |
 
 `Fade` was the issue's verb, and is refused as the node's name: `PresenceMotion.Fade` (Nodes/PresenceMotion.cs:7)
@@ -123,11 +126,11 @@ The gradient's box is the node's bounds (the child's, since the node is layout-t
 the record (principle 11), and Photon calls it; the web writes CSS and lets the browser compute it, so the twin ports
 none of it.
 
-- **`LinearMask(float angle, …)`**: the angle in degrees, clockwise from "toward the top" (CSS Images 3 §3.1, and
+- **`LinearOpacityGradient(float angle, …)`**: the angle in degrees, clockwise from "toward the top" (CSS Images 3 §3.1, and
   every design tool's angle). With d = (sin θ, −cos θ) and the box W × H, the gradient line runs through the centre
   with length L = |W·sin θ| + |H·cos θ|, so its ends touch the corners; t = ((p − c)·d) ÷ L + 0.5. `Axis(Size box)`
   returns the two ends, which is what `Paint.Linear` takes.
-- **`RadialMask(Point center, RadialExtent extent, …)`**: the centre as fractions (cx·W, cy·H), the rule
+- **`RadialOpacityGradient(Point center, RadialExtent extent, …)`**: the centre as fractions (cx·W, cy·H), the rule
   `Pattern.Anchor` and `Image.FocalPoint` follow. t = √(((x − cx)/rx)² + ((y − cy)/ry)²). `Radii(Size box)`:
 
   | Extent | rx, ry |
@@ -142,7 +145,7 @@ none of it.
   A zero radius on an axis (a centre on an edge with `ClosestSide`) gives CSS's degenerate ellipse: opacity is the last
   stop's everywhere but the centre line. `Radii` returns it, and the composite treats t as +∞ off that line.
 - **The stops, as CSS has them** (CSS Images 4 §3.5.3, measured below). A mask takes **one or more** stops, any
-  number. `Mask.Resolved` is the list after the fix-up, the one list both targets consume:
+  number. `OpacityGradient.Resolved` is the list after the fix-up, the one list both targets consume:
   - a stop whose offset is below an earlier stop's offset moves up to the largest earlier one;
   - repeated offsets stay, and two stops at one offset are a hard step;
   - offsets outside 0..1 stay, and the opacity is interpolated between them as on any other offset;
@@ -184,23 +187,23 @@ differ from CSS's on a box that is not square: #1955.)
 
 ### 5. The web: a wrapper with `mask-image`
 
-`LowerMasked` writes one `div` with `mask-image` and the child inside it, the shape `LowerLoopMotion` has
+`LowerOpacityMask` writes one `div` with `mask-image` and the child inside it, the shape `LowerLoopMotion` has
 (WebLoweringVisitor.Interaction.cs:419-437). The wrapper stands in for its child's layout as every wrapper does: it
 joins `Fills`, `CapsAt` and the lists the layout spec's "Every layout-transparent wrapper passes its child's fill
 through" names, in C# and in the twin.
 
-`MaskCss : IMaskVisitor<…, string>` writes, through `TokenCss`'s four-decimal formatter:
+`OpacityGradientCss : IOpacityGradientVisitor<…, string>` writes, through `TokenCss`'s four-decimal formatter:
 
-| Mask | CSS |
+| OpacityGradient | CSS |
 |---|---|
-| `LinearMask(135, [(0, 1), (1, 0)])` | `linear-gradient(135deg, rgb(0 0 0 / 1) 0%, rgb(0 0 0 / 0) 100%)` |
-| `LinearMask(90, [(0.6, 1), (0.3, 0)])` | `linear-gradient(90deg, rgb(0 0 0 / 1) 60%, rgb(0 0 0 / 0) 60%)`: the resolved stops |
-| `LinearMask(90, [(0.3, 0.5)])` | `linear-gradient(90deg, rgb(0 0 0 / 0.5) 0%, rgb(0 0 0 / 0.5) 100%)`: one stop written twice |
-| `RadialMask((0.7, 0.35), Fraction(0.7, 0.7), [(0.35, 1), (0.76, 0)])` | `radial-gradient(70% 70% at 70% 35%, rgb(0 0 0 / 1) 35%, rgb(0 0 0 / 0) 76%)` |
-| `RadialMask((0.5, 0.5), ClosestSide, …)` | `radial-gradient(closest-side at 50% 50%, …)` |
-| `RadialMask(…, Dp(120, 80), …)` | `radial-gradient(120px 80px at …, …)` |
+| `LinearOpacityGradient(135, [(0, 1), (1, 0)])` | `linear-gradient(135deg, rgb(0 0 0 / 1) 0%, rgb(0 0 0 / 0) 100%)` |
+| `LinearOpacityGradient(90, [(0.6, 1), (0.3, 0)])` | `linear-gradient(90deg, rgb(0 0 0 / 1) 60%, rgb(0 0 0 / 0) 60%)`: the resolved stops |
+| `LinearOpacityGradient(90, [(0.3, 0.5)])` | `linear-gradient(90deg, rgb(0 0 0 / 0.5) 0%, rgb(0 0 0 / 0.5) 100%)`: one stop written twice |
+| `RadialOpacityGradient((0.7, 0.35), Fraction(0.7, 0.7), [(0.35, 1), (0.76, 0)])` | `radial-gradient(70% 70% at 70% 35%, rgb(0 0 0 / 1) 35%, rgb(0 0 0 / 0) 76%)` |
+| `RadialOpacityGradient((0.5, 0.5), ClosestSide, …)` | `radial-gradient(closest-side at 50% 50%, …)` |
+| `RadialOpacityGradient(…, Dp(120, 80), …)` | `radial-gradient(120px 80px at …, …)` |
 
-The web writes `Mask.Resolved`, never the stops as given, so the browser's fix-up has nothing left to do and the
+The web writes `OpacityGradient.Resolved`, never the stops as given, so the browser's fix-up has nothing left to do and the
 two targets cannot follow two readings of one list. A single stop is written as the same stop at 0% and 100%: Chrome
 157 and Firefox 159 accept a one-stop gradient (CSS Images 4), and the doubled form is valid in every engine, Safari's
 older ones included. The shape keyword is omitted: two lengths, and every size keyword alone, mean an ellipse. **Measured** with
@@ -246,11 +249,11 @@ builder's balance check, the Reference backend's stack) then works unchanged, ne
     `TextureFormat`, replacing the `rgba` boolean both have today (MetalDevice.cs:139-146, VulkanDevice.cs:197-198).
   - It binds to the coverage slot, which the shader declares `Texture2D<float>` (Sdf.slang:26): a one-channel float
     texture is what that declaration reads.
-- **The cache, `MaskStopCache`**, per host beside `PatternTileCache` and threaded through `MotionScope` as it is
+- **The cache, `OpacityStopCache`**, per host beside `PatternTileCache` and threaded through `MotionScope` as it is
   (MotionScope.cs:40):
   - **The key:** the resolved stops' value, a `StopsKey` holding the floats' bits with a hash computed once (the
     fingerprint) and an equality that compares every float, so two masks that hash alike never share a texture. A
-    `ConditionalWeakTable<Mask, TextureData>` in front of it answers a mask instance seen before without hashing.
+    `ConditionalWeakTable<OpacityGradient, TextureData>` in front of it answers a mask instance seen before without hashing.
   - **Eviction:** least recently used, past 256 entries. An entry is 8·N bytes.
   - **Per frame:** nothing while the masks are unchanged. The renderer keeps an uploaded texture while frames draw it
     (Rhi.cs:741-768, `RetainFrames`), and the cache hands it the same instance, so a steady page uploads nothing. A
@@ -259,15 +262,15 @@ builder's balance check, the Reference backend's stack) then works unchanged, ne
     the rect are discarded before the loop.
 - **The Reference backend (normative):** `BeginLayer` pushes a fresh surface as today; `EndLayer` of a masked scope
   composites each pixel as `layer × OpacityAt(t(local)) × alpha × clip`, with local = the inverse transform of the
-  pixel centre, t from `LayerMask.ParameterAt` (unclamped), the opacity from the stop texture's floats with the rules of
+  pixel centre, t from `LayerOpacityMask.ParameterAt` (unclamped), the opacity from the stop texture's floats with the rules of
   decision 4, and 0 outside `Shape.Rect`. `Paint`'s own parameter cannot serve: it is private and clamped to 0..1
   (`GradientPositionAt`, Paint.cs:98), and a stop may sit past 1. A degenerate radius gives t = +∞.
-- **The shader:** a new entry `masked_layer_composite` in `Sdf.slang`, transliterating the Reference. Uniform reuse,
+- **The shader:** a new entry `opacity_mask_composite` in `Sdf.slang`, transliterating the Reference. Uniform reuse,
   no new slot: `inv0`/`inv1` the node's inverse transform (device → local; `layer_composite` uses identity there),
   `rect` the local rect, `gradient` the paint's four floats, `flags.y` 1 linear or 2 radial, `flags.w` the stop count,
   `flags.z` and `clipRect`/`clipRadii` the clip, `colorA.a` the alpha. The layer target is loaded by device pixel
   (`colorTexture.Load(int3(pixel, 0))`, since it is full size), the stops by `coverageTexture.Load(int3(i, row, 0))`.
-  `RhiPipelineKind.MaskedLayerComposite` is appended, the Metal and Vulkan devices register it, and
+  `RhiPipelineKind.OpacityMaskComposite` is appended, the Metal and Vulkan devices register it, and
   `scripts/generate-shaders.sh` regenerates `.metal`, `.spv` and `.metallib`.
 - **Why a data texture and not a ramp:** the browsers draw a hard stop with no antialiasing (measured: 0 difference),
   and a filtered 256-texel ramp would soften it by 1/256 of the ray (0.8 px on a 200 px ray). Read texel by texel, the
@@ -354,7 +357,7 @@ the slab's colour over white circles at their opacities (centre 0.10 / 0.08 / 0.
 Stack(width: SizeValue.Fill, children:
 [
     new Positioned(
-        Masked(new RadialMask(new(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]),
+        OpacityMask(new RadialOpacityGradient(new(0.7f, 0.35f), RadialExtent.Fraction(0.7f, 0.7f), [new(0.35f, 1), new(0.76f, 0)]),
             Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill, CornerRadius = new(28),
                 Background = Azulejo.HeroField, Patterns = [new DrawingPattern(Azulejo.HeroTile, 58)] })),
         top: -64, end: -80, bottom: 64, start: 80) { StartFraction = 0.08f, BottomFraction = 0.04f },
@@ -364,7 +367,7 @@ Stack(width: SizeValue.Fill, children:
 // A slab: the surface clips, the stack fills it, the field sits in the corner, the content keeps its padding.
 Box(new BoxStyle { Background = Bark, CornerRadius = new(20), Clip = true }, Stack(children:
 [
-    new Positioned(Masked(new RadialMask(new(0.5f, 0.5f), RadialExtent.ClosestSide, [new(0, 1), new(1, 0)]),
+    new Positioned(OpacityMask(new RadialOpacityGradient(new(0.5f, 0.5f), RadialExtent.ClosestSide, [new(0, 1), new(1, 0)]),
         Box(new BoxStyle { Width = 240, Height = 240, Patterns = [new DrawingPattern(Azulejo.BarkTile, 58)] })),
         top: -60, end: -60),
     Box(new BoxStyle { Padding = … }, content),
@@ -432,7 +435,7 @@ component pins of their CSS), and the cross-target script lists them as fenced, 
 
 ### 13. #1041 is not blocked
 
-`Mask` is its own closed set and touches neither `Pattern`, `LinearGradient` nor `RadialGradient`. When #1041 gives the
+`OpacityGradient` is its own closed set and touches neither `Pattern`, `LinearGradient` nor `RadialGradient`. When #1041 gives the
 box's gradient kind stops and an extent, `RadialExtent` and the geometry of decision 4 are there to take; the opacity
 stops stay the mask's, because a material's stops are colours.
 
@@ -442,7 +445,7 @@ stops stay the mask's, because a material's stops are colours.
   four, and eight measured costs nothing visible. A binary search over the offsets is the remedy if a profile ever
   shows one.
 - **[A new texture format on two GPUs]** `R32Float` is new to both backends. → It is created only for stops, read only
-  by `Load`, and held by the Metal and Vulkan parity suites through the `masked-layer` golden.
+  by `Load`, and held by the Metal and Vulkan parity suites through the `opacity-mask-layer` golden.
 - **[Full-size layers]** A mask over a small node still renders a surface-sized layer. → #1952's pool removes the
   allocation; a bounded layer (a sub-target at the node's device bounds) is a later optimization that needs a device
   offset in every draw, and is not needed for correctness.

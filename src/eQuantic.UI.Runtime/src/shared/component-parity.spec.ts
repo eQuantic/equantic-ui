@@ -41,14 +41,19 @@ import {
   GridPattern,
   GridTrack,
   ImagePattern,
+  RadialExtent,
   RadialGradient,
+  RadialOpacityGradient,
   TileLength,
   Icon,
   IconGlyph,
   Image,
   InView,
   LinearGradient,
+  LinearOpacityGradient,
   Link,
+  OpacityMask,
+  OpacityStop,
   MergeSemantics,
   ExcludeSemantics,
   Pinned,
@@ -479,6 +484,58 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'listener-opaque': still(new Listener(new Box(new BoxStyle({ height: 40 })), { behavior: 'opaque' })),
     'listener-translucent': still(new Listener(new Box(new BoxStyle({ height: 40 })), { behavior: 'translucent' })),
     'raw-gesture-detector': still(new RawGestureDetector(new Box(new BoxStyle({ width: SizeValue.fill, height: 40 })), [])),
+    // A subtree faded along a gradient (#1938): the C# cases of the same names, written by `opacityGradientCss`.
+    'opacity-mask-linear': still(
+      new OpacityMask(new LinearOpacityGradient(135, [new OpacityStop(0, 1), new OpacityStop(1, 0)]), new Box(new BoxStyle({ width: SizeValue.fill, height: 40 }))),
+    ),
+    'opacity-mask-radial-hero': still(
+      new OpacityMask(
+        new RadialOpacityGradient(new Point(0.7, 0.35), RadialExtent.fraction(0.7, 0.7), [new OpacityStop(0.35, 1), new OpacityStop(0.76, 0)]),
+        new Box(new BoxStyle({ width: SizeValue.fill, maxWidth: 320, height: SizeValue.fill })),
+      ),
+    ),
+    'opacity-mask-closest-side': still(
+      new OpacityMask(
+        new RadialOpacityGradient(new Point(0.5, 0.5), RadialExtent.closestSide, [new OpacityStop(0, 1), new OpacityStop(1, 0)]),
+        new Box(new BoxStyle({ width: 120, height: 80 })),
+      ),
+    ),
+    'opacity-mask-farthest-side': still(
+      new OpacityMask(
+        new RadialOpacityGradient(new Point(0.2, 0.9), RadialExtent.farthestSide, [new OpacityStop(0, 1), new OpacityStop(1, 0)]),
+        new Box(new BoxStyle({ width: 120, height: 80 })),
+      ),
+    ),
+    'opacity-mask-closest-corner': still(
+      new OpacityMask(
+        new RadialOpacityGradient(new Point(0.25, 0.5), RadialExtent.closestCorner, [new OpacityStop(0, 1), new OpacityStop(1, 0)]),
+        new Box(new BoxStyle({ width: 120, height: 80 })),
+      ),
+    ),
+    'opacity-mask-farthest-corner': still(
+      new OpacityMask(
+        new RadialOpacityGradient(new Point(0.5, 0.5), new RadialExtent(), [new OpacityStop(0.055, 1), new OpacityStop(0.325, 0.2)]),
+        new Box(new BoxStyle({ width: 120, height: 80 })),
+      ),
+    ),
+    'opacity-mask-dp-single-stop': still(
+      new OpacityMask(
+        new RadialOpacityGradient(new Point(0.5, 0.5), RadialExtent.dp(120, 80.5), [new OpacityStop(0.3, 0.5)]),
+        new Box(new BoxStyle({ width: 120, height: 80 })),
+      ),
+    ),
+    'opacity-mask-resolved-stops': still(
+      new OpacityMask(
+        new LinearOpacityGradient(90, [new OpacityStop(0.6, 1), new OpacityStop(0.3, 0)]),
+        new Box(new BoxStyle({ width: 120, height: 80 })),
+      ),
+    ),
+    'opacity-mask-hard-step': still(
+      new OpacityMask(
+        new LinearOpacityGradient(200.5, [new OpacityStop(0, 1), new OpacityStop(0.5, 0.75), new OpacityStop(0.5, 0.25), new OpacityStop(1, 0)]),
+        new Box(new BoxStyle({ width: 120, height: 80 })),
+      ),
+    ),
     'anchored-at': still(
       new Anchored(new Box(new BoxStyle({ width: 200, height: 40 })), new Box(new BoxStyle({ width: 120, height: 80 })), {
         at: new Point(120, 30),

@@ -1,0 +1,3 @@
+#nullable enable
+eQuantic.UI.Web.HtmlStyle.MaskImage.get -> string?
+eQuantic.UI.Web.HtmlStyle.MaskImage.set -> void

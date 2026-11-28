@@ -1812,10 +1812,10 @@ export class ImagePattern extends ArtworkPattern {
 }
 
 /**
- * Mirror of the C# `MaskStop` (#1938): the opacity a masked subtree keeps at a fraction of the gradient's
- * ray. The C# default, (0, 0), is what a bare `new MaskStop()` is.
+ * Mirror of the C# `OpacityStop` (#1938): the opacity a masked subtree keeps at a fraction of the gradient's
+ * ray. The C# default, (0, 0), is what a bare `new OpacityStop()` is.
  */
-export class MaskStop {
+export class OpacityStop {
   constructor(
     readonly offset = 0,
     readonly opacity = 0,
@@ -1883,27 +1883,27 @@ export class RadialExtent {
 }
 
 /**
- * Mirror of the C# `Mask` (#1938): the opacity a masked subtree keeps at every point, a gradient of opacities.
- * A CLOSED set — a linear and a radial kind — told apart by `maskKind`, on which the lowering switches with an
+ * Mirror of the C# `OpacityGradient` (#1938): the opacity a masked subtree keeps at every point, a gradient of opacities.
+ * A CLOSED set — a linear and a radial kind — told apart by `gradientKind`, on which the lowering switches with an
  * exhaustive check, so a kind added here fails the type check until it is drawn, as the C# visitor fails the
  * build. The C# refusals of the stops run in the constructor, word for word, and `resolved` is the list after
  * CSS's fix-up that both targets draw: a stop whose offset is below an earlier one's moves up to the largest
  * earlier offset, and nothing is sorted.
  */
-export abstract class Mask {
-  abstract readonly maskKind: 'linear' | 'radial';
+export abstract class OpacityGradient {
+  abstract readonly gradientKind: 'linear' | 'radial';
   /** The stops as they were written. */
-  readonly stops: MaskStop[];
+  readonly stops: OpacityStop[];
   /** The stops after the fix-up: the one list the web writes and Photon composites with. */
-  readonly resolved: MaskStop[];
+  readonly resolved: OpacityStop[];
 
-  protected constructor(stops: MaskStop[]) {
+  protected constructor(stops: OpacityStop[]) {
     if (stops == null) {
       throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'stops')");
     }
     if (stops.length === 0) {
       throw exception('System.ArgumentOutOfRangeException',
-        "A mask needs at least one stop: with none there is no opacity to give any point. (Parameter 'stops')");
+        "A gradient needs at least one stop: with none there is no opacity to give any point. (Parameter 'stops')");
     }
     for (const stop of stops) {
       if (!Number.isFinite(stop.offset)) {
@@ -1919,17 +1919,17 @@ export abstract class Mask {
     let floor = Number.NEGATIVE_INFINITY;
     this.resolved = this.stops.map((stop) => {
       floor = Math.max(floor, stop.offset);
-      return new MaskStop(floor, stop.opacity);
+      return new OpacityStop(floor, stop.opacity);
     });
   }
 }
 
-/** Mirror of the C# `LinearMask` (#1938): opacity along a straight line, the angle in degrees clockwise from "toward the top". */
-export class LinearMask extends Mask {
-  readonly maskKind = 'linear' as const;
+/** Mirror of the C# `LinearOpacityGradient` (#1938): opacity along a straight line, the angle in degrees clockwise from "toward the top". */
+export class LinearOpacityGradient extends OpacityGradient {
+  readonly gradientKind = 'linear' as const;
   readonly angle: number;
 
-  constructor(angle: number, stops: MaskStop[], config?: EqConfig) {
+  constructor(angle: number, stops: OpacityStop[], config?: EqConfig) {
     super(stops);
     if (!Number.isFinite(angle)) {
       throw exception('System.ArgumentOutOfRangeException',
@@ -1940,13 +1940,13 @@ export class LinearMask extends Mask {
   }
 }
 
-/** Mirror of the C# `RadialMask` (#1938): opacity outward from a centre (fractions of the box) along an ellipse. */
-export class RadialMask extends Mask {
-  readonly maskKind = 'radial' as const;
+/** Mirror of the C# `RadialOpacityGradient` (#1938): opacity outward from a centre (fractions of the box) along an ellipse. */
+export class RadialOpacityGradient extends OpacityGradient {
+  readonly gradientKind = 'radial' as const;
   readonly center: Point;
   readonly extent: RadialExtent;
 
-  constructor(center: Point, extent: RadialExtent, stops: MaskStop[], config?: EqConfig) {
+  constructor(center: Point, extent: RadialExtent, stops: OpacityStop[], config?: EqConfig) {
     super(stops);
     if (!Number.isFinite(center.x) || !Number.isFinite(center.y)) {
       throw exception('System.ArgumentOutOfRangeException',
@@ -1959,20 +1959,20 @@ export class RadialMask extends Mask {
 }
 
 /**
- * Mirror of the C# `Masked` (#1938): fades its subtree along a gradient of opacities, composited as one group.
+ * Mirror of the C# `OpacityMask` (#1938): fades its subtree along a gradient of opacities, composited as one group.
  * Layout-transparent, and it changes no hit test.
  */
-export class Masked extends VisualNode {
-  readonly nodeKind = 'masked';
-  readonly mask: Mask;
+export class OpacityMask extends VisualNode {
+  readonly nodeKind = 'opacityMask';
+  readonly gradient: OpacityGradient;
   child: VisualChild;
 
-  constructor(mask: Mask, child: VisualChild, config?: EqConfig) {
+  constructor(gradient: OpacityGradient, child: VisualChild, config?: EqConfig) {
     super();
-    if (mask == null) {
-      throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'mask')");
+    if (gradient == null) {
+      throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'gradient')");
     }
-    this.mask = mask;
+    this.gradient = gradient;
     this.child = child;
     if (config) Object.assign(this, config);
   }
@@ -2971,10 +2971,10 @@ hashesByValue(
   DrawingPattern,
   ImagePattern,
   TileLength,
-  MaskStop,
+  OpacityStop,
   RadialExtent,
-  LinearMask,
-  RadialMask,
+  LinearOpacityGradient,
+  RadialOpacityGradient,
   RangeValue,
   IconGlyph,
   VectorStop,

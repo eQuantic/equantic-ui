@@ -5,7 +5,12 @@ import {
   BoxStyle,
   Column,
   Drawing,
+  OpacityMask,
   Positioned,
+  RadialExtent,
+  RadialOpacityGradient,
+  OpacityStop,
+  Text,
   Pressable,
   ScrollView,
   Stack,
@@ -14,7 +19,7 @@ import {
   VectorShape,
   VisualNode,
 } from './vocabulary';
-import { SizeValue } from './value-types';
+import { CornerRadii, EdgeInsets, Point, SizeValue } from './value-types';
 import { StatelessComponent } from '../core/component';
 
 describe('Stack (spec A3) client lowering', () => {
@@ -175,5 +180,67 @@ describe('Stack (spec A3) client lowering', () => {
     const node = stack.render();
     expect(node.children[0].attributes['id']).toBe('corner');
     expect(node.children[1].children[0].attributes['id']).toBe('layer');
+  });
+
+  describe('a decoration past its surface (#1938)', () => {
+    const field = (size: number) =>
+      new OpacityMask(
+        new RadialOpacityGradient(new Point(0.5, 0.5), RadialExtent.closestSide, [new OpacityStop(0, 1), new OpacityStop(1, 0)]),
+        new Box(new BoxStyle({ width: size, height: size })),
+      );
+
+    it("paints a first child behind the content, inside a surface that clips (the C# StackRealizerTests twin)", () => {
+      const stack = new Stack();
+      stack.add(new Positioned(field(240), -60, -60));
+      stack.add(new Box(new BoxStyle({ padding: EdgeInsets.all(16) }), new Text('slab')));
+      const surface = new Box(new BoxStyle({ cornerRadius: new CornerRadii(20), clip: true }), stack);
+
+      const rendered = surface.render();
+
+      expect(effectiveStyle(rendered)).toContain('overflow: hidden');
+      expect(effectiveStyle(rendered)).toContain('border-radius: 20px');
+      const cells = rendered.children[0].children;
+      expect(cells).toHaveLength(2);
+      // The SAME literal StackRealizerTests pins on the C# side (hydration parity).
+      expect(effectiveStyle(cells[0])).toBe('inset-inline-end: -60px; position: absolute; top: -60px; z-index: 1');
+      expect(effectiveStyle(cells[1])).toContain('z-index: 2');
+    });
+
+    it('writes no overflow for a surface that does not clip', () => {
+      const stack = new Stack();
+      stack.add(new Positioned(field(240), -60, -60));
+      const surface = new Box(new BoxStyle({ cornerRadius: new CornerRadii(20) }), stack);
+
+      expect(effectiveStyle(surface.render())).not.toContain('overflow');
+    });
+
+    it("writes the edges that give the hero's field 92% by 96% of its stack", () => {
+      const stack = new Stack('topStart', { width: SizeValue.fill });
+      stack.add(
+        new Positioned(
+          new OpacityMask(
+            new RadialOpacityGradient(new Point(0.7, 0.35), RadialExtent.fraction(0.7, 0.7), [new OpacityStop(0.35, 1), new OpacityStop(0.76, 0)]),
+            new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill })),
+          ),
+          -64,
+          -80,
+          64,
+          80,
+          { startFraction: 0.08, bottomFraction: 0.04 },
+        ),
+      );
+      stack.add(new Text('profile'));
+
+      const cells = stack.render().children;
+
+      // 100% - (8% + 80px) + 80px = 92% across, and 100% + 64px - (4% + 64px) = 96% down. The SAME literal the C#
+      // StackRealizerTests pins (hydration parity).
+      expect(effectiveStyle(cells[0])).toBe(
+        'bottom: calc(4% + 64px); inset-inline-end: -80px; inset-inline-start: calc(8% + 80px); position: absolute; top: -64px; z-index: 1',
+      );
+      expect(effectiveStyle(cells[0].children[0])).toContain('width: 100%');
+      expect(effectiveStyle(cells[0].children[0])).toContain('height: 100%');
+      expect(effectiveStyle(cells[1])).toContain('z-index: 2');
+    });
   });
 });

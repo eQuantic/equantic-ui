@@ -55,7 +55,7 @@ function declaredArity(Klass: { toString(): string }): number {
 }
 
 /** Abstract bases are never constructed by transpiled code — only their concrete subclasses are. */
-const abstractBases = new Set(['VisualNode', 'FlexNode', 'TableSpans', 'Pattern', 'ArtworkPattern', 'Mask']);
+const abstractBases = new Set(['VisualNode', 'FlexNode', 'TableSpans', 'Pattern', 'ArtworkPattern', 'OpacityGradient']);
 
 /**
  * The positional arguments of a twin whose constructor refuses what the C# one refuses before any
@@ -67,9 +67,9 @@ const requiredArguments: Record<string, unknown[]> = {
   DrawingPattern: [new vocabulary.VectorDrawing(0, 0, 1, 1, []), 1, undefined, null],
   ImagePattern: ['img/tile.png', 1, undefined],
   // A mask refuses no stops and a node no mask, before any initializer runs (#1938).
-  LinearMask: [90, [new vocabulary.MaskStop(0, 1)]],
-  RadialMask: [new Point(0.5, 0.5), new vocabulary.RadialExtent(), [new vocabulary.MaskStop(0, 1)]],
-  Masked: [new vocabulary.LinearMask(90, [new vocabulary.MaskStop(0, 1)]), undefined],
+  LinearOpacityGradient: [90, [new vocabulary.OpacityStop(0, 1)]],
+  RadialOpacityGradient: [new Point(0.5, 0.5), new vocabulary.RadialExtent(), [new vocabulary.OpacityStop(0, 1)]],
+  OpacityMask: [new vocabulary.LinearOpacityGradient(90, [new vocabulary.OpacityStop(0, 1)]), undefined],
 };
 
 const classes = (Object.entries(vocabulary) as [string, unknown][])

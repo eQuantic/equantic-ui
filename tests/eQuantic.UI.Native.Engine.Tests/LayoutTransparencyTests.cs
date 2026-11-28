@@ -75,7 +75,7 @@ public class LayoutTransparencyTests
         new MergeSemantics(c),
         new ExcludeSemantics(c),
         new LoopMotion(c, LoopEffect.SlideX, 0, 1, 100),
-        new Masked(new LinearMask(90, [new(0, 1), new(1, 0)]), c),
+        new OpacityMask(new LinearOpacityGradient(90, [new(0, 1), new(1, 0)]), c),
         new Overlay(c),
         new Pinned(c),
         new Positioned(c, top: 0),
