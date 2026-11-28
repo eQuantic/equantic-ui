@@ -166,6 +166,37 @@ public class AGradientRunsAsTheBrowserDrawsItTests
     }
 
     /// <summary>
+    /// A text's gradient is a CSS gradient on the web too (<c>background-clip: text</c>), so its paint takes the
+    /// same line across the text's box and the same premultiplied mix. The text's box is not square, so a
+    /// corner-to-corner line would put the top-right corner far from the middle.
+    /// </summary>
+    [Fact]
+    public void AText_TakesTheSameLineAndTheSameMix()
+    {
+        var text = new Text("A gradient headline")
+        {
+            Gradient = new LinearGradient(Black, new ColorToken(Color.Transparent), GradientDirection.ToBottomRight),
+        };
+        var host = new PhotonHost(text, PhotonTheme.Instance, ThemeMode.Light, 480, 120)
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+            SmoothScroll = false,
+        };
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder);
+        var glyphs = builder.Build().Commands.ToArray().Single(c => c.Kind == DrawCommandKind.Texture);
+
+        var paint = glyphs.Paint;
+        paint.Interpolation.Should().Be(GradientInterpolation.Premultiplied);
+        var box = glyphs.Shape.Rect;
+        box.Width.Should().NotBe(box.Height, "a square box would not tell the two lines apart");
+        var axis = paint.GradientEnd - paint.GradientStart;
+        var topRight = new Point(box.Right, box.Y) - paint.GradientStart;
+        (topRight.Dot(axis) / axis.Dot(axis)).Should().BeApproximately(0.5f, 1e-4f,
+            "the middle of the line passes through the top-right corner, as CSS's magic corners put it");
+    }
+
+    /// <summary>
     /// The realizer's own gradient command for the box, drawn alone on a surface of nothing, so what reads
     /// back is the paint's colour and alpha and no blend with anything under it.
     /// </summary>

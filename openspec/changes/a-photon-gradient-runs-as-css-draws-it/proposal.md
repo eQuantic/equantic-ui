@@ -18,7 +18,7 @@ into a canvas through an SVG image and read back:
   straight mix.
 
 The comparison over nothing is deliberate. Over white the two targets differ for any translucent fill, a gradient or
-not, because Photon blends in linear light and the browser in sRGB. That difference is outside this change.
+not, because Photon blends in linear light and the browser in sRGB. That difference is #1953's, outside this change.
 
 ## What Changes
 
@@ -59,9 +59,11 @@ rather than carrying a default one call site would have to override.
 - `AGradientRunsAsTheBrowserDrawsItTests` holds every measured value, on the Reference backend, Metal and Vulkan:
   - the wide box, the tall box and `to bottom left`;
   - the fade into transparent and the half-transparent stop beside an opaque one;
-  - an artwork's straight run.
+  - an artwork's straight run;
+  - a text's gradient, its line and its mix.
 
   On main every box case fails on all three targets. Mixing the artwork premultiplied too fails the artwork's case.
-  Fixing the CPU and keeping main's shaders fails the GPU targets.
+  Fixing the CPU and keeping main's shaders fails the GPU targets. The text's case fails with the corner-to-corner
+  line and with the straight mix.
 - `GradientShimmerTests` pins the new line on a 120 by 40 box. The skeleton's shimmer goldens change: its glint fades
   into transparent without the grey band the straight mix drew, as the web's CSS draws it.

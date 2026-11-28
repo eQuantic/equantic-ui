@@ -23,6 +23,11 @@ through the other two corners. A text's gradient SHALL take the same line across
 - **WHEN** a 400 by 240 box's gradient runs from black to white toward the bottom left
 - **THEN** Photon reads 127 at the top-left corner, 128 at the bottom-right one and 95 at (100, 0), within 2
 
+#### Scenario: A text's gradient toward the bottom right
+
+- **WHEN** a text whose box is wider than it is tall takes a gradient toward the bottom right
+- **THEN** its paint's line puts the box's top-right corner at the line's middle, and the paint mixes premultiplied
+
 ### Requirement: A gradient's stops mix as the web draws them
 
 A box's gradient, its glow and a text's gradient SHALL mix their stops premultiplied in sRGB on Photon, as a CSS
