@@ -380,6 +380,8 @@ describe('gradient + shimmer lowering (C# GradientShimmerRealizerTests cross-pin
   it('refuses what the C# vocabulary refuses, naming the member', () => {
     expect(() => new DrawingPattern(square, 330, undefined, null, { fit: 'cover' })).toThrow("(Parameter 'Fit')");
     expect(() => new DrawingPattern(square, 330, undefined, null, { anchor: new Point(1.5, 0) })).toThrow("(Parameter 'Anchor')");
+    expect(() => new DrawingPattern(square, 330, undefined, null, { offset: new Point(Number.NaN, 0) })).toThrow("(Parameter 'Offset')");
+    expect(() => new DrawingPattern(square, 330, undefined, null, { offset: new Point(0, Infinity) })).toThrow("(Parameter 'Offset')");
     expect(() => new DrawingPattern(square, 330, undefined, null, { opacity: 1.5 })).toThrow("(Parameter 'Opacity')");
     expect(() => new ImagePattern('', 120)).toThrow("(Parameter 'source')");
     expect(() => new ImagePattern('a.png', 120, undefined, { darkSource: '' })).toThrow("(Parameter 'DarkSource')");

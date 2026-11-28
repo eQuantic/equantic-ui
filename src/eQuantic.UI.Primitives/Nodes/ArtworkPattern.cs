@@ -67,7 +67,19 @@ public abstract record ArtworkPattern : Pattern
     }
 
     /// <summary>A shift of the anchored tile, in dp, added after <see cref="Anchor"/> placed it.</summary>
-    public Point Offset { get; init; }
+    public Point Offset
+    {
+        get;
+        init
+        {
+            // A position the web writes as `calc(… + NaNpx)` voids the box's whole background-position list, every
+            // other layer's included, and Photon would carry it into its tiling (#1937).
+            if (!float.IsFinite(value.X) || !float.IsFinite(value.Y))
+                throw new ArgumentOutOfRangeException(nameof(Offset), value,
+                    "A tile's offset is a finite distance in dp on each axis.");
+            field = value;
+        }
+    }
 
     /// <summary>Whether the tile is sized at all: by a length or by a fit.</summary>
     internal bool IsSized => Fit is not null || !Width.IsAuto || !Height.IsAuto;

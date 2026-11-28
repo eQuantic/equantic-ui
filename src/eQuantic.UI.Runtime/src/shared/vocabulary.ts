@@ -1752,6 +1752,10 @@ export abstract class ArtworkPattern extends Pattern {
       throw exception('System.ArgumentOutOfRangeException',
         "A tile's anchor is a fraction of the area it is placed in on each axis, from 0 to 1. (Parameter 'Anchor')");
     }
+    if (!Number.isFinite(this.offset.x) || !Number.isFinite(this.offset.y)) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A tile's offset is a finite distance in dp on each axis. (Parameter 'Offset')");
+    }
   }
 }
 

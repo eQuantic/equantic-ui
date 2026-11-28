@@ -70,6 +70,17 @@ public class PatternVocabularyTests
     }
 
     [Theory]
+    [InlineData(float.NaN, 0f)]
+    [InlineData(0f, float.PositiveInfinity)]
+    [InlineData(float.NegativeInfinity, 0f)]
+    public void ANonFiniteOffset_IsRefused_NamingOffset(float x, float y)
+    {
+        var refuse = () => new DrawingPattern(Art, 330) { Offset = new Point(x, y) };
+        refuse.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("Offset");
+        new DrawingPattern(Art, 330) { Offset = new Point(-12.5f, 40) }.Offset.Should().Be(new Point(-12.5f, 40));
+    }
+
+    [Theory]
     [InlineData(1.5f, 0f)]
     [InlineData(0f, -0.1f)]
     [InlineData(float.NaN, 0f)]
