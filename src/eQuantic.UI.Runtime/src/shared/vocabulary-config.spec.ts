@@ -15,6 +15,7 @@
 
 import { describe, expect, it } from 'vitest';
 import * as vocabulary from './vocabulary';
+import { Point } from './value-types';
 
 /** Enough arguments to reach the config slot: the declared arity, then the probe. */
 function construct(Klass: new (...args: unknown[]) => unknown, arity: number, probe: object) {
@@ -54,7 +55,7 @@ function declaredArity(Klass: { toString(): string }): number {
 }
 
 /** Abstract bases are never constructed by transpiled code — only their concrete subclasses are. */
-const abstractBases = new Set(['VisualNode', 'FlexNode', 'TableSpans', 'Pattern', 'ArtworkPattern']);
+const abstractBases = new Set(['VisualNode', 'FlexNode', 'TableSpans', 'Pattern', 'ArtworkPattern', 'Mask']);
 
 /**
  * The positional arguments of a twin whose constructor refuses what the C# one refuses before any
@@ -65,6 +66,10 @@ const requiredArguments: Record<string, unknown[]> = {
   GridPattern: [24, undefined, 1],
   DrawingPattern: [new vocabulary.VectorDrawing(0, 0, 1, 1, []), 1, undefined, null],
   ImagePattern: ['img/tile.png', 1, undefined],
+  // A mask refuses no stops and a node no mask, before any initializer runs (#1938).
+  LinearMask: [90, [new vocabulary.MaskStop(0, 1)]],
+  RadialMask: [new Point(0.5, 0.5), new vocabulary.RadialExtent(), [new vocabulary.MaskStop(0, 1)]],
+  Masked: [new vocabulary.LinearMask(90, [new vocabulary.MaskStop(0, 1)]), undefined],
 };
 
 const classes = (Object.entries(vocabulary) as [string, unknown][])

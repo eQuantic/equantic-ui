@@ -11,31 +11,31 @@ blocks #1938: task 5.6 waits on it. The measurements behind every number below a
 - [x] 1.2 Measure CSS's stop rules in the same engines: no stop (refused), one stop (a solid opacity), out-of-order
   offsets (moved up), repeated offsets (a step), offsets outside 0..1 (kept), eight stops. Within 0.95/255 of the rules
   of decision 4.
-- [ ] 1.3 `Mask`: an abstract record, `private protected` constructor, `Stops : IReadOnlyList<MaskStop>` as written,
+- [x] 1.3 `Mask`: an abstract record, `private protected` constructor, `Stops : IReadOnlyList<MaskStop>` as written,
   `Resolved : IReadOnlyList<MaskStop>` after the fix-up, `float OpacityAt(float t)` over `Resolved`, and
   `abstract TResult Accept<TState, TResult>(IMaskVisitor<TState, TResult> visitor, TState state)`.
   `IMaskVisitor<in TState, out TResult>` has `Visit(LinearMask, …)` and `Visit(RadialMask, …)`. One file each.
-- [ ] 1.4 `LinearMask(float angle, IReadOnlyList<MaskStop> stops)` with `Axis(Size box)`, and `RadialMask(Point center,
+- [x] 1.4 `LinearMask(float angle, IReadOnlyList<MaskStop> stops)` with `Axis(Size box)`, and `RadialMask(Point center,
   RadialExtent extent, IReadOnlyList<MaskStop> stops)` with `Radii(Size box)`, sealed records, the formulas of decision
   4. `MaskStop(float Offset, float Opacity)`, a readonly record struct.
-- [ ] 1.5 `RadialExtent`: a readonly record struct of `RadialExtentKind` and two values, with `Fraction(x, y)`,
+- [x] 1.5 `RadialExtent`: a readonly record struct of `RadialExtentKind` and two values, with `Fraction(x, y)`,
   `Dp(x, y)`, `ClosestSide`, `FarthestSide`, `ClosestCorner` and `FarthestCorner` (the default). `RadialExtentKind`
   (`FarthestCorner = 0, ClosestSide = 1, FarthestSide = 2, ClosestCorner = 3, Fraction = 4, Dp = 5`) joins
   `EnumValueAbiTests`.
-- [ ] 1.6 The refusals, each an `ArgumentOutOfRangeException` naming its parameter: no stop, an offset that is not
+- [x] 1.6 The refusals, each an `ArgumentOutOfRangeException` naming its parameter: no stop, an offset that is not
   finite, or an opacity outside 0..1 (`stops`); a centre that is not finite (`center`); a `Fraction` or `Dp` value that
   is not positive (`x`, `y`). Nothing else is refused: an out-of-order, a repeated or an out-of-range offset is CSS's,
   and resolved as CSS resolves it.
-- [ ] 1.7 `Masked(Mask mask, VisualNode child) : SingleChildNode`, `NodeKind => "masked"`, layout-transparent by
+- [x] 1.7 `Masked(Mask mask, VisualNode child) : SingleChildNode`, `NodeKind => "masked"`, layout-transparent by
   `LayoutTransparency`'s default. `IVisualNodeVisitor` gains `Visit(Masked, …)`. The factory `Masked(Mask mask,
   VisualNode child)` in `eQuantic.UI.Components`' `UI`.
-- [ ] 1.8 `./scripts/public-api.sh update`, and read the diff: additions only, in Primitives and Components.
-- [ ] 1.9 `MaskVocabularyTests` (new), each expected number the browsers' from 1.1 and 1.2: every refusal; `Axis` at
+- [x] 1.8 `./scripts/public-api.sh update`, and read the diff: additions only, in Primitives and Components.
+- [x] 1.9 `MaskVocabularyTests` (new), each expected number the browsers' from 1.1 and 1.2: every refusal; `Axis` at
   0°, 90°, 135° and 200° on a 400 × 240 box against L = |W sin θ| + |H cos θ|; `Radii` for each extent on a centred and
   an off-centre point, and the degenerate `ClosestSide` on an edge; `Resolved` and `OpacityAt` for every row of
   decision 4's stop table; the value equality of each kind. Each case fails with the fix-up removed, or with it
   applied as "sort the stops" (the plausible wrong one).
-- [ ] 1.10 Check: the vocabulary builds, and the node visitors (Web, Email, Photon's emit, semantics and measure, and the
+- [x] 1.10 Check: the vocabulary builds, and the node visitors (Web, Email, Photon's emit, semantics and measure, and the
   twin's `tsc`) fail until they have `Visit(Masked, …)`, which is the instrument working.
 
 ## 2. The web and the runtime twin: `mask-image`, written alike by SSR and the twin

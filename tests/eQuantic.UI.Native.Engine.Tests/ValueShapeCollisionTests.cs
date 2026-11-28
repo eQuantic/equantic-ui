@@ -63,10 +63,14 @@ public class ValueShapeCollisionTests
             + "points, four insets, premultiplied linear RGBA, and a box's origin and extent. "
             + "Nothing here composes with anything else here."),
         ["Single,Single"] = (
-            ["FrameTick", "Point", "Size"],
-            "a position, an extent, and a clock reading (seconds and delta). Point and Size are "
-            + "deliberately NOT one type: adding two sizes is meaningless and adding two points is "
-            + "not, which is the distinction dart:ui draws with Offset and Size and we draw here."),
+            ["FrameTick", "MaskStop", "Point", "Size"],
+            "a position, an extent, a clock reading (seconds and delta), and a mask's stop (#1938). Point "
+            + "and Size are deliberately NOT one type: adding two sizes is meaningless and adding two points "
+            + "is not, which is the distinction dart:ui draws with Offset and Size and we draw here. "
+            + "MaskStop JOINED this group asked its own reason rather than let in on theirs: it is an "
+            + "opacity (0 to 1) at an offset along a gradient's ray, a pair that is ordered along its "
+            + "list and read nowhere but a Mask, where a position's and an extent's components are "
+            + "unrelated lengths. It is never added to, converted to or passed as any of them."),
         ["Int32,Int32,Int32"] = (
             ["CodeDiffFold", "TreePlace"],
             "three ints, two unrelated meanings: a folded run of a diff's lines (where it starts on each "

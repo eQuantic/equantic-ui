@@ -167,6 +167,9 @@ export type PressableRoleValue =
   'button' | 'radio' | 'checkbox' | 'switch' | 'tab' | 'menuItem' | 'option' | 'destination'
   | 'gridCell' | 'treeItem';
 
+export type RadialExtentKindValue =
+  'farthestCorner' | 'closestSide' | 'farthestSide' | 'closestCorner' | 'fraction' | 'dp';
+
 export type ScrollAxisValue = 'vertical' | 'horizontal' | 'both';
 
 export type SemanticCheckValue = 'off' | 'on' | 'mixed';
@@ -293,6 +296,7 @@ export type {
     PointerPhaseValue as $PointerPhaseValue,
     PresenceMotionValue as $PresenceMotionValue,
     PressableRoleValue as $PressableRoleValue,
+    RadialExtentKindValue as $RadialExtentKindValue,
     ScrollAxisValue as $ScrollAxisValue,
     SemanticCheckValue as $SemanticCheckValue,
     SemanticRoleValue as $SemanticRoleValue,

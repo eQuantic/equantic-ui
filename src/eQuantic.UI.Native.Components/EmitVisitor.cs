@@ -322,6 +322,8 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     // ---- nodes that descend themselves, because HOW they descend is the point -----------------
 
     public Nothing Visit(Simulated node, EmitState s) { EmitSimulated(node, s); return Nothing.Value; }
+    // #1959: replaced by the masked layer. Until then the child is drawn as it is, unmasked.
+    public Nothing Visit(Masked node, EmitState s) { Descend(s); return Nothing.Value; }
     public Nothing Visit(Primitives.InView node, EmitState s) { EmitInView(node, s); return Nothing.Value; }
     public Nothing Visit(Adjustable node, EmitState s) { EmitAdjustable(node, s); return Nothing.Value; }
     // A Progress paints nothing of its own and takes no focus — it is a name and a number over

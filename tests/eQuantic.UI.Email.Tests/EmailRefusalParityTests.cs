@@ -38,10 +38,11 @@ public class EmailRefusalParityTests
     /// as the child each holds (nothing in an email is dragged, asked for its menu, pointed at or recognized, #1535,
     /// #1531, #1562, #1563, and what a reader makes of a message is its mail client's, #1567), a Theme, which draws
     /// its child in the theme it holds, and a Directionality, which reaches a message as its child as every value for
-    /// a subtree does (#1568). Everything else in the vocabulary is refused.</summary>
+    /// a subtree does (#1568), and a Masked, which reaches it as the child it fades, since a mail client has no mask
+    /// to composite it with (#1938). Everything else in the vocabulary is refused.</summary>
     private static readonly string[] Carried =
         ["Column", "Row", "Text", "Box", "Image", "Link", "UiComponent", "Group", "Sortable", "SortableItem", "ContextTarget",
-            "Listener", "RawGestureDetector", "MergeSemantics", "ExcludeSemantics", "Theme", "Directionality"];
+            "Listener", "RawGestureDetector", "MergeSemantics", "ExcludeSemantics", "Theme", "Directionality", "Masked"];
 
     /// <summary>
     /// The vocabulary, asked of the assembly. An instance with no constructor run is enough and is

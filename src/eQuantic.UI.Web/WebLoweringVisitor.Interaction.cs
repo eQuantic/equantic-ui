@@ -471,6 +471,7 @@ internal sealed partial class WebLoweringVisitor
         // half-contract this file already records twice: the host takes the child's 100% and drops
         // its maximum, so a role-bearing one announces a box wider than the bar it names.
         Simulated simulated => CapsAt(simulated.Child),
+        Masked masked => CapsAt(masked.Child),
         InFlow inFlow => CapsAt(inFlow.Child),
         InView inView => CapsAt(inView.Child),
         // A value for a subtree draws nothing of its own, as the TypeScript `capsAt` walks it.

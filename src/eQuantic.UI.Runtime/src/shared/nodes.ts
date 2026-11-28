@@ -1,5 +1,6 @@
 import type { BoxConstraints, ContextRequest, FontFamily, Point, PointerEvent, Rect, Size } from './value-types';
 import type { PickedFile } from './picked-file';
+import type { Mask } from './vocabulary';
 /**
  * The SHARED abstract vocabulary on the client (docs/SHARED-COMPONENTS-PLAN.md) — the JS shapes of
  * `eQuantic.UI.Primitives` nodes as the transpiler emits them (camelCase properties, enums as
@@ -650,6 +651,16 @@ export interface HoverableNode extends VisualNodeValue {
 export interface SimulatedNode extends VisualNodeValue {
   nodeKind: 'simulated';
   state: number;
+  child: VisualNodeValue;
+}
+
+/**
+ * Wire shape of the C# `Masked` (#1938) — fades its subtree along a gradient of opacities, composited as one group.
+ * Layout-transparent, and it changes no hit test.
+ */
+export interface MaskedNode extends VisualNodeValue {
+  nodeKind: 'masked';
+  mask: Mask;
   child: VisualNodeValue;
 }
 

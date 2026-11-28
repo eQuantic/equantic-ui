@@ -135,6 +135,7 @@ import type {
   InheritedNode,
   InViewNode,
   SimulatedNode,
+  MaskedNode,
   ScrollViewNode,
   SizeValueValue,
   StackNode,
@@ -899,6 +900,9 @@ function lowerNodeKind(
       return lowerSortableItem(node as unknown as SortableItemNode, context, horizontalAxis, path);
     case 'simulated':
       return lowerSimulated(node as unknown as SimulatedNode, context, horizontalAxis, path);
+    // #1958: replaced by the mask's lowering. Until then the child is lowered as it is, unmasked.
+    case 'masked':
+      return lowerNode((node as unknown as MaskedNode).child, context, horizontalAxis, path + '/0');
     case 'inFlow':
       return lowerInFlow(node as unknown as InFlowNode, context, horizontalAxis, path);
     // An inherited component holds a value for its subtree and draws nothing of its own: every pass
@@ -4599,6 +4603,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     // The three `fills` walks and this did not. Walking one and not the other is the half-contract
     // recorded above: the host takes the child's 100% and drops its maximum.
     case 'simulated':
+    case 'masked':
     case 'inFlow':
     case 'inherited':
     case 'inView':
@@ -4675,6 +4680,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as unknown as SortableItemNode).child);
     case 'simulated':
       return fills((node as SimulatedNode).child);
+    case 'masked':
+      return fills((node as unknown as MaskedNode).child);
     case 'inFlow':
       return fills((node as InFlowNode).child);
     case 'inherited':

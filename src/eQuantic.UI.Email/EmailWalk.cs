@@ -72,6 +72,9 @@ internal abstract partial class EmailWalk : IVisualNodeVisitor<Nothing, Nothing>
     /// <summary>What a person asks the menu of reaches a message as the child it holds: a message has no menu
     /// to ask for, and the content is the same without one (#1531).</summary>
     public Nothing Visit(ContextTarget node, Nothing state) => node.Child.Accept(this, state);
+    /// <summary>A subtree that fades along a mask reaches a message as the child it holds, whole: a mail client
+    /// has no mask to composite it with, and the content is the same without the fade (#1938).</summary>
+    public Nothing Visit(Masked node, Nothing state) => node.Child.Accept(this, state);
     /// <summary>A pointer heard over a subtree is, in a message, the subtree (#1562): nothing in an email has a
     /// pointer to hear.</summary>
     public Nothing Visit(Listener node, Nothing state) => node.Child.Accept(this, state);

@@ -62,6 +62,12 @@ public static class UI
     public static Simulated Simulated(SimulatedState state, VisualNode child) =>
         new Simulated(state, child);
 
+    /// <summary>Fades its subtree along a gradient of opacities (#1938): the child is composited as one group and
+    /// multiplied, at every point, by what the mask keeps there. <c>Masked(new LinearMask(180, [new(0.6f, 1),
+    /// new(1, 0)]), Text(…))</c> fades a text out toward its bottom. It changes neither layout nor where the
+    /// subtree takes the pointer.</summary>
+    public static Masked Masked(Mask mask, VisualNode child) => new Masked(mask, child);
+
     /// <summary>Horizontal flex without <c>new</c> — <c>Row(gap: Space.S2, children: [ … ])</c>.</summary>
     public static Row Row(float gap = 0, MainAlign main = MainAlign.Start,
         CrossAlign cross = CrossAlign.Center, bool wrap = false, float? runGap = null,

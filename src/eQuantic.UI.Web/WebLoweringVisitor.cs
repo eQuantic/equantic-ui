@@ -349,6 +349,10 @@ internal sealed partial class WebLoweringVisitor(
     public HtmlElement? Visit(Simulated simulated, bool? horizontalAxis) =>
         LowerSimulated(simulated, horizontalAxis);
 
+    // #1958: replaced by the mask's lowering. Until then the child is lowered as it is, unmasked.
+    public HtmlElement? Visit(Masked masked, bool? horizontalAxis) =>
+        Lower(masked.Child, horizontalAxis, LoweringPath.Child);
+
     // ---- the seam ----------------------------------------------------------------------------------
 
     /// <summary>

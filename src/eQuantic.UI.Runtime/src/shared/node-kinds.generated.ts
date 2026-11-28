@@ -12,7 +12,7 @@ export type NodeKind =
   'adaptive' | 'adjustable' | 'anchored' | 'box' | 'cameraPreview' | 'canvas' | 'codeSurface'
   | 'column' | 'contextTarget' | 'dragDismiss' | 'draggable' | 'drawing' | 'dropTarget'
   | 'excludeSemantics' | 'flexible' | 'grid' | 'group' | 'hoverable' | 'icon' | 'image' | 'inFlow'
-  | 'inView' | 'layoutBuilder' | 'link' | 'listener' | 'liveRegion' | 'loopMotion'
+  | 'inView' | 'layoutBuilder' | 'link' | 'listener' | 'liveRegion' | 'loopMotion' | 'masked'
   | 'mergeSemantics' | 'navigable' | 'overlay' | 'pinned' | 'positioned' | 'presence' | 'pressable'
   | 'progress' | 'rawGestureDetector' | 'row' | 'safeArea' | 'scrollView' | 'sheetSurface'
   | 'shortcut' | 'simulated' | 'sortable' | 'sortableItem' | 'spacer' | 'spinner' | 'stack'

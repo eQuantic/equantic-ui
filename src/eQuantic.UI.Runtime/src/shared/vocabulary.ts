@@ -14,6 +14,7 @@ import type {
   BoxAreaValue,
   HitTestBehaviorValue,
   ImageFitValue,
+  RadialExtentKindValue,
   TableCellRoleValue,
   TableRoleValue,
   TextDirectionValue,
@@ -1810,6 +1811,173 @@ export class ImagePattern extends ArtworkPattern {
   }
 }
 
+/**
+ * Mirror of the C# `MaskStop` (#1938): the opacity a masked subtree keeps at a fraction of the gradient's
+ * ray. The C# default, (0, 0), is what a bare `new MaskStop()` is.
+ */
+export class MaskStop {
+  constructor(
+    readonly offset = 0,
+    readonly opacity = 0,
+    config?: EqConfig,
+  ) {
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `RadialExtent` (#1938): how large a radial mask's ellipse is — a fraction of the box on each
+ * axis, dp on each axis, or one of the four sizes CSS Images 3 names. The default is the farthest corner, as the
+ * C# `default(RadialExtent)` is, and a bare `new RadialExtent()` is it.
+ */
+export class RadialExtent {
+  readonly kind: RadialExtentKindValue = 'farthestCorner';
+  readonly x: number = 0;
+  readonly y: number = 0;
+
+  constructor(config?: EqConfig) {
+    if (config) Object.assign(this, config);
+  }
+
+  private static of(kind: RadialExtentKindValue, x: number, y: number): RadialExtent {
+    return new RadialExtent({ kind, x, y });
+  }
+
+  private static positive(radius: number, parameter: string): number {
+    if (!(radius > 0 && Number.isFinite(radius))) {
+      throw exception('System.ArgumentOutOfRangeException',
+        `An ellipse's radius is a finite number above 0: a radius of nothing has no ellipse to fade along. (Parameter '${parameter}')`);
+    }
+    return Math.fround(radius);
+  }
+
+  /** The ellipse that reaches the side closest to the centre on each axis. */
+  static get closestSide(): RadialExtent {
+    return RadialExtent.of('closestSide', 0, 0);
+  }
+
+  /** The ellipse that reaches the side farthest from the centre on each axis. */
+  static get farthestSide(): RadialExtent {
+    return RadialExtent.of('farthestSide', 0, 0);
+  }
+
+  /** The ellipse that reaches the closest corner, in the proportions of the closest side. */
+  static get closestCorner(): RadialExtent {
+    return RadialExtent.of('closestCorner', 0, 0);
+  }
+
+  /** The ellipse that reaches the farthest corner, in the proportions of the farthest side: the default. */
+  static get farthestCorner(): RadialExtent {
+    return RadialExtent.of('farthestCorner', 0, 0);
+  }
+
+  /** Radii that are fractions of the box's width and height, refused unless each is a finite number above 0. */
+  static fraction(x: number, y: number): RadialExtent {
+    return RadialExtent.of('fraction', RadialExtent.positive(x, 'x'), RadialExtent.positive(y, 'y'));
+  }
+
+  /** Radii in dp on each axis, refused unless each is a finite number above 0. */
+  static dp(x: number, y: number): RadialExtent {
+    return RadialExtent.of('dp', RadialExtent.positive(x, 'x'), RadialExtent.positive(y, 'y'));
+  }
+}
+
+/**
+ * Mirror of the C# `Mask` (#1938): the opacity a masked subtree keeps at every point, a gradient of opacities.
+ * A CLOSED set — a linear and a radial kind — told apart by `maskKind`, on which the lowering switches with an
+ * exhaustive check, so a kind added here fails the type check until it is drawn, as the C# visitor fails the
+ * build. The C# refusals of the stops run in the constructor, word for word, and `resolved` is the list after
+ * CSS's fix-up that both targets draw: a stop whose offset is below an earlier one's moves up to the largest
+ * earlier offset, and nothing is sorted.
+ */
+export abstract class Mask {
+  abstract readonly maskKind: 'linear' | 'radial';
+  /** The stops as they were written. */
+  readonly stops: MaskStop[];
+  /** The stops after the fix-up: the one list the web writes and Photon composites with. */
+  readonly resolved: MaskStop[];
+
+  protected constructor(stops: MaskStop[]) {
+    if (stops == null) {
+      throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'stops')");
+    }
+    if (stops.length === 0) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A mask needs at least one stop: with none there is no opacity to give any point. (Parameter 'stops')");
+    }
+    for (const stop of stops) {
+      if (!Number.isFinite(stop.offset)) {
+        throw exception('System.ArgumentOutOfRangeException',
+          "A mask's stop sits at a finite offset along its gradient's ray. (Parameter 'stops')");
+      }
+      if (!(stop.opacity >= 0 && stop.opacity <= 1)) {
+        throw exception('System.ArgumentOutOfRangeException',
+          "A mask's stop keeps an opacity from 0 (nothing shows) to 1 (all of it shows). (Parameter 'stops')");
+      }
+    }
+    this.stops = [...stops];
+    let floor = Number.NEGATIVE_INFINITY;
+    this.resolved = this.stops.map((stop) => {
+      floor = Math.max(floor, stop.offset);
+      return new MaskStop(floor, stop.opacity);
+    });
+  }
+}
+
+/** Mirror of the C# `LinearMask` (#1938): opacity along a straight line, the angle in degrees clockwise from "toward the top". */
+export class LinearMask extends Mask {
+  readonly maskKind = 'linear' as const;
+  readonly angle: number;
+
+  constructor(angle: number, stops: MaskStop[], config?: EqConfig) {
+    super(stops);
+    if (!Number.isFinite(angle)) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A linear mask's angle is a finite number of degrees, clockwise from toward the top. (Parameter 'angle')");
+    }
+    this.angle = angle;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/** Mirror of the C# `RadialMask` (#1938): opacity outward from a centre (fractions of the box) along an ellipse. */
+export class RadialMask extends Mask {
+  readonly maskKind = 'radial' as const;
+  readonly center: Point;
+  readonly extent: RadialExtent;
+
+  constructor(center: Point, extent: RadialExtent, stops: MaskStop[], config?: EqConfig) {
+    super(stops);
+    if (!Number.isFinite(center.x) || !Number.isFinite(center.y)) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A radial mask's centre is a finite fraction of the box on each axis: (0.5, 0.5) is its middle. (Parameter 'center')");
+    }
+    this.center = center;
+    this.extent = extent;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `Masked` (#1938): fades its subtree along a gradient of opacities, composited as one group.
+ * Layout-transparent, and it changes no hit test.
+ */
+export class Masked extends VisualNode {
+  readonly nodeKind = 'masked';
+  readonly mask: Mask;
+  child: VisualChild;
+
+  constructor(mask: Mask, child: VisualChild, config?: EqConfig) {
+    super();
+    if (mask == null) {
+      throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'mask')");
+    }
+    this.mask = mask;
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
 interface LoopMotionConfig extends SingleChildNodeConfig {
   /** Also constructor parameters: an initializer that sets one reaches the config (#1823). */
   effect?: string;
@@ -2803,6 +2971,10 @@ hashesByValue(
   DrawingPattern,
   ImagePattern,
   TileLength,
+  MaskStop,
+  RadialExtent,
+  LinearMask,
+  RadialMask,
   RangeValue,
   IconGlyph,
   VectorStop,
