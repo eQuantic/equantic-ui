@@ -18,8 +18,8 @@ reads its room, `LayoutBuilder` (#1555), builds a child for it but cannot measur
   - **`Layout(constraints)`** is the one step both run in, and a delegate that sizes itself from its children
     (a masonry grid's height) overrides it instead: it lays the children out and answers the size. Flutter's
     delegate cannot do this, which is why its masonry grids are a package's render object.
-  - `HasChild(id)` says whether a child with that id is there, and `ShouldRelayout(old)` says whether a new
-    delegate lays out otherwise than the one it replaces.
+  - each child is laid out exactly once, as Flutter asks; `HasChild(id)` says whether a child with that id is
+    there, and `ShouldRelayout(old)` says whether a new delegate lays out otherwise than the one it replaces.
 - **`CustomSingleChildLayout(delegate, child)`**, with a **`SingleChildLayoutDelegate`**: `GetSize`,
   `GetConstraintsForChild` and `GetPositionForChild`, as Flutter's.
 - **Both targets run the app's delegate.** Photon runs it in its layout pass, where Flutter does. The browser

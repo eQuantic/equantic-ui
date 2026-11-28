@@ -53,8 +53,9 @@ constraints: a hugging child is its own size inside them, a child that fills tak
 tight constraint is the child's exact size. That is the `Box` rule both targets already agree on (box parity,
 `ConstrainedBox` in #1555), so the children inherit it rather than a new sizing rule. Photon measures the child
 with the `LayoutConstraints` the bounds project to; the browser sets the bounds on the child's wrapper and reads
-its box. A child laid out twice in one layout, a duplicated id or an unknown one is refused, as Flutter asserts;
-a child the delegate never lays out is not drawn and takes no room.
+its box. A child laid out twice in one layout, a duplicated id, an unknown one and a child the delegate did not lay out
+are refused, as Flutter asserts: each child is laid out exactly once, and `HasChild` is how a delegate handles a
+child that is not always there.
 
 ### 5. Photon runs the delegate in its layout pass
 

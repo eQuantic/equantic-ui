@@ -1,7 +1,7 @@
 ## 1. The vocabulary
 
 - [ ] 1.1 `CustomMultiChildLayout`, `LayoutId`, `MultiChildLayoutDelegate` (`GetSize`, `PerformLayout`, `Layout`, `LayoutChild`, `PositionChild`, `HasChild`, `ShouldRelayout`), `CustomSingleChildLayout` and `SingleChildLayoutDelegate` in `Primitives`, with their visitor methods, node kinds and factories
-- [ ] 1.2 The refusals: a child laid out twice, an unknown or duplicated id, an infinite size on an unbounded axis, each with a message naming the delegate
+- [ ] 1.2 The refusals: a child laid out twice, an unknown or duplicated id, a child left out, an infinite size on an unbounded axis, each with a message naming the delegate
 
 ## 2. Photon
 

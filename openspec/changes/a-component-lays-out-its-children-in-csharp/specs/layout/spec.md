@@ -33,17 +33,22 @@ infinite size on an unbounded axis SHALL be refused with a message naming it.
 - **WHEN** a custom layout stands in a 320-wide column that sizes its height from its children
 - **THEN** the delegate is told a maximum width of 320 and an unbounded maximum height, on both targets
 
-### Requirement: Each child is laid out once, by an id it carries
+### Requirement: Each child is laid out exactly once, by an id it carries
 
-A child SHALL be laid out at most once per layout; a second `LayoutChild` for the same id, an id no child carries,
-and two children with one id SHALL be refused. A child the delegate does not lay out SHALL take no room and SHALL
-not be drawn. `HasChild(id)` SHALL answer whether a child carries that id. Ids SHALL be compared by `Equals` on
-Photon and by value in the browser.
+Each child SHALL be laid out exactly once per layout, as Flutter asks: a second `LayoutChild` for the same id, an id
+no child carries, two children with one id and a child the delegate did not lay out SHALL be refused, each with a
+message naming the delegate. `HasChild(id)` SHALL answer whether a child carries that id, so a delegate lays out a
+child that is not always there. Ids SHALL be compared by `Equals` on Photon and by value in the browser.
 
 #### Scenario: A missing optional child
 
 - **WHEN** a delegate lays out its badge only when `HasChild("badge")`, and the node has no badge
 - **THEN** the layout runs without it on both targets
+
+#### Scenario: A child left out
+
+- **WHEN** a delegate lays out two of a node's three children
+- **THEN** the layout is refused with a message naming the delegate and the third child's id
 
 ### Requirement: A single child is laid out with its own delegate
 
