@@ -70,6 +70,16 @@ public class NavigationBuildersTests
         return list.Commands.ToArray().Count(c => c.Paint.Color == color);
     }
 
+    /// <summary>How many icons the layout holds: the destinations' glyphs, the breadcrumb's separators.</summary>
+    private static int IconsIn(VisualNode node)
+    {
+        var result = PhotonRealizer.Realize(node, 400, 600, Theme, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder());
+        return Count(result.Root);
+
+        static int Count(eQuantic.UI.Native.Framework.LayoutNode layout) =>
+            (layout.Source is Icon ? 1 : 0) + layout.Children.Sum(Count);
+    }
+
     private static List<SemanticNode> Of(PhotonHost host, SemanticRole role) =>
         host.Semantics().Where(node => node.Role == role).ToList();
 
@@ -144,9 +154,8 @@ public class NavigationBuildersTests
         var pill = Theme.Colors(Variant.Primary).Subtle;
         Count(plainFrame, pill).Should().BeGreaterThan(0);
         Count(frame, pill).Should().Be(Count(plainFrame, pill), "the selected destination keeps its pill's fill");
-        var glyph = Theme.Colors(Variant.Primary).OnSubtle;
-        Count(plainFrame, glyph).Should().BeGreaterThan(0);
-        Count(frame, glyph).Should().Be(Count(plainFrame, glyph), "and its glyph, in the tint");
+        IconsIn(Bar(kind, build: false)).Should().Be(3, "each destination draws its glyph");
+        IconsIn(Bar(kind)).Should().Be(3, "and a builder leaves them");
 
         host.Activate(destinations[1].Id).Should().BeTrue();
         chosen.Should().Equal(1);
@@ -192,17 +201,20 @@ public class NavigationBuildersTests
         Paints(frame, 2).Should().BeTrue();
         Of(host, SemanticRole.Link).Select(node => node.Label).Should()
             .Equal(["Home", "Payments"], "an ancestor is a link named by its crumb's text, and the current crumb is none");
-        Count(plainFrame, Theme.BorderStrong).Should().BeGreaterThan(0);
-        Count(frame, Theme.BorderStrong).Should().Be(Count(plainFrame, Theme.BorderStrong), "the separators stay between the crumbs");
+        IconsIn(Crumbs(build: false)).Should().Be(2, "a separator stands between two crumbs");
+        IconsIn(Crumbs()).Should().Be(2, "and a builder leaves them");
     }
 
     [Fact]
     public void ABuiltCrumbsText_TakesTheCrumbsColour_TheCurrentOneIncluded()
     {
         var (_, frame) = Render(Crumbs(builder: index => new Text(Path[index].Label)));
+        var (_, plain) = Render(Crumbs(build: false));
 
         Inks(frame, Theme.TextSecondary).Should().BeTrue("an ancestor's colour");
         Inks(frame, Theme.TextPrimary).Should().BeTrue("and the current crumb's");
+        BarHeights(frame, Theme.TextSecondary).Should().Equal(BarHeights(plain, Theme.TextSecondary), "set in the crumb's own type");
+        BarHeights(frame, Theme.TextPrimary).Should().Equal(BarHeights(plain, Theme.TextPrimary));
     }
 
     [Fact]

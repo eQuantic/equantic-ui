@@ -98,8 +98,8 @@ public class NavigationTakesItsOwnStyleRealizerTests
         var plain = Lowered(new NavigationRail(Destinations, 0), theme);
 
         styled.Should().Contain("width:88px", "the rail is still the theme's width");
-        plain.Should().Contain("width:88px").And.Contain("border-inline-end", "the theme's rail has its trailing edge");
-        styled.Should().NotContain("border-inline-end", "this rail draws none");
+        plain.Should().Contain("width:88px").And.Contain("border-inline-width", "the theme's rail has its trailing edge");
+        styled.Should().NotContain("border-inline-width", "this rail draws none");
     }
 
     /// <summary>No style, no builder: the family writes what it wrote, so the pins stay.</summary>

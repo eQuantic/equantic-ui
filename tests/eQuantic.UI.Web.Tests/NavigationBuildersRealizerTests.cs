@@ -59,9 +59,25 @@ public class NavigationBuildersRealizerTests
         }
     }
 
-    /// <summary>The colour, the size, the weight and the line height the text is drawn in.</summary>
-    private static string[] LookOf(ComponentTester tester, string text) =>
-        ["color", "font-size", "font-weight", "line-height"].Select(property => RuleOf(tester, text, property) ?? "(none)").ToArray();
+    /// <summary>What the text is drawn in: the colour it takes (its own or the nearest above) and every other
+    /// declaration its own classes write, the type role's and the line limit's among them.</summary>
+    private static string[] LookOf(ComponentTester tester, string text)
+    {
+        var declarations = Regex.Matches(tester.Css, @"\.(eq-[a-z0-9]+)\{([^}]*)\}")
+            .GroupBy(m => m.Groups[1].Value).ToDictionary(g => g.Key, g => g.First().Groups[2].Value);
+        var own = new List<string>();
+        var owner = Owner(tester.Root, text)!;
+        foreach (var name in (owner.Attributes.GetValueOrDefault("class") ?? "").Split(' '))
+            if (declarations.TryGetValue(name, out var declaration) && !declaration.StartsWith("color:", StringComparison.Ordinal))
+                own.Add(declaration);
+        own.Sort(StringComparer.Ordinal);
+        return [RuleOf(tester, text, "color") ?? "(none)", .. own];
+
+        static HtmlNode? Owner(HtmlNode node, string text) =>
+            node.Children.Any(child => child.Tag == "#text" && child.TextContent == text)
+                ? node
+                : node.Children.Select(child => Owner(child, text)).FirstOrDefault(found => found is not null);
+    }
 
     private static int Count(string html, string what) => Regex.Matches(html, Regex.Escape(what)).Count;
 
@@ -91,6 +107,7 @@ public class NavigationBuildersRealizerTests
         using var plain = Pumped(new Tabs(Labels, 1));
         using var built = Pumped(new Tabs(Labels, 1, tabBuilder: Drawn));
 
+        LookOf(plain, "Income").Length.Should().BeGreaterThan(1, "the tab's text writes its type");
         LookOf(built, "drawn-1").Should().Equal(LookOf(plain, "Income"), "the selected tab's colour and weight");
         LookOf(built, "drawn-0").Should().Equal(LookOf(plain, "All"), "and an inactive tab's");
         LookOf(built, "drawn-1").Should().NotEqual(LookOf(built, "drawn-0"), "the two are not the same look");
@@ -123,12 +140,14 @@ public class NavigationBuildersRealizerTests
 
         built.Html.Should().Contain("drawn-0").And.Contain("drawn-1").And.Contain("drawn-2");
         built.Html.Should().NotContain(">Inbox<", "the builder draws the label's place");
-        built.Semantics.Where(stop => stop.Role == SemanticRole.Destination).Select(stop => stop.Name)
-            .Should().Equal("Search", "Inbox", "Profile", "the item's text stays the destination's name");
+        // A destination is a button on the web that says where you are with aria-current.
+        built.Semantics.Where(stop => stop.Role == SemanticRole.Button).Select(stop => stop.Name)
+            .Should().Equal(new[] { "Search", "Inbox", "Profile" }, "the item's text stays the destination's name");
         Count(built.Html, "<svg").Should().Be(Count(plain.Html, "<svg"), "the pill keeps each glyph, and the first its badge's");
+        built.Html.Should().Contain("aria-current=\"page\"", "the selected destination still says where you are");
         built.Html.Should().Contain(">3<", "the badge stays on the first destination");
 
-        built.Tap(SemanticRole.Destination, "Inbox");
+        built.Tap(SemanticRole.Button, "Inbox");
         chosen.Should().Equal(1);
     }
 
@@ -156,7 +175,7 @@ public class NavigationBuildersRealizerTests
     // -- Breadcrumb ----------------------------------------------------------------------------------------
 
     private static VisualNode Crumbs(bool build = true) => new Breadcrumb(Path,
-        crumbBuilder: build ? index => index == 0 ? new Icon(Icons.Search) : Drawn(index) : null);
+        crumbBuilder: build ? index => index == 0 ? new Icon(Icons.Search, label: "Home") : Drawn(index) : null);
 
     [Fact]
     public void ACrumbsContent_IsDrawnByTheBuilder_KeepsItsSeparatorsAndLinks()
@@ -167,7 +186,7 @@ public class NavigationBuildersRealizerTests
         built.Html.Should().Contain("drawn-1").And.Contain("drawn-2").And.NotContain("drawn-0");
         built.Html.Should().NotContain(">Payments<", "the builder draws the crumb");
         built.Semantics.Where(stop => stop.Role == SemanticRole.Link).Select(stop => stop.Name)
-            .Should().Equal("Home", "Payments", "an ancestor is a link named by its crumb's text, and the current crumb is none");
+            .Should().Equal(new[] { "Home", "Payments" }, "an ancestor is a link named by its crumb's text, and the current crumb is none");
         built.Html.Should().Contain("href=\"/\"").And.Contain("href=\"/payments\"");
         Count(built.Html, "<svg").Should().Be(Count(plain.Html, "<svg") + 1, "the two separators stay, and the first crumb's icon is a third");
     }
@@ -178,7 +197,8 @@ public class NavigationBuildersRealizerTests
         using var plain = Pumped(Crumbs(build: false));
         using var built = Pumped(Crumbs());
 
-        LookOf(built, "drawn-1").Should().Equal(LookOf(plain, "Payments"), "an ancestor's colour");
+        LookOf(plain, "Payments").Length.Should().BeGreaterThan(1, "the crumb's text writes its type");
+        LookOf(built, "drawn-1").Should().Equal(LookOf(plain, "Payments"), "an ancestor's colour and type");
         LookOf(built, "drawn-2").Should().Equal(LookOf(plain, "Refund 42"), "and the current crumb's");
         LookOf(built, "drawn-1").Should().NotEqual(LookOf(built, "drawn-2"));
     }

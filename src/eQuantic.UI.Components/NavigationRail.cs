@@ -134,7 +134,7 @@ public sealed class NavigationRail : StatelessComponent
             };
             column.Add(pill);
             // Selection is also a WEIGHT here (C16: label 700 when selected), not only a tint.
-            var type = isActive
+            TypeStyle? type = isActive
                 ? new TypeStyle(slot?.RailSelectedLabelSize ?? 12, slot?.RailSelectedLabelLineHeight ?? 16,
                     slot?.RailSelectedLabelWeight ?? FontWeight.Bold, 0, 1.3f)
                 : null;

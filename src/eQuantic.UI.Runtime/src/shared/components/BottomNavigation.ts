@@ -1,4 +1,4 @@
-import { $eq, $IconsValue, Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, IconGlyph, NavItem, Pressable, Row, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, $IconsValue, Badge, Box, BoxStyle, BuildContext, Column, ContentStyle, CornerRadii, Flexible, Icon, IconGlyph, NavigationTheme, NavItem, Pressable, Row, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class BottomNavigation extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.BottomNavigation';
@@ -14,24 +14,30 @@ export class BottomNavigation extends StatelessComponent {
 
     declare selected: number;
     declare onSelect: ((int: number) => void) | null;
+    declare style: any;
+    declare destinationBuilder: ((value: number) => VisualNode) | null;
 
-    constructor(items?: any, selected?: any, onSelect: any = null, props?: any) {
+    constructor(items?: any, selected?: any, onSelect: any = null, style: any = null, destinationBuilder: any = null, props?: any) {
         super();
         if (items !== undefined) this.items = items;
         if (selected !== undefined) this.selected = selected;
         if (onSelect !== undefined) this.onSelect = onSelect;
+        if (style !== undefined) this.style = style;
+        if (destinationBuilder !== undefined) this.destinationBuilder = destinationBuilder;
         if (this.selected === undefined) this.selected = 0;
         this.$items = null!;
         this.items = items;
         this.selected = selected;
         this.onSelect = onSelect;
+        this.style = style;
+        this.destinationBuilder = destinationBuilder;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
         let primary = theme.colors('primary');
-        let slot = theme.navigation;
+        let slot = NavigationTheme.merge(theme.navigation, this.style);
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
         for (let i = 0; i < $eq.collections.count(this.items); i = i + 1 | 0) {
             let item = $eq.collections.item(this.items, i);
@@ -46,7 +52,9 @@ export class BottomNavigation extends StatelessComponent {
             let pill = new Box(new BoxStyle({ width: slot?.barPillWidth ?? 56, height: slot?.barPillHeight ?? 26, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(slot?.pillRadius ?? theme.shape('full')), pressed: isActive ? null : new StyleDiff({ background: primary.subtle.withOpacity(slot?.pillPressOpacity ?? Math.fround(0.4)) }) }), pillContent);
             let column = new Column(slot?.pillLabelGap ?? 2, 'start', 'stretch', false, null, null, { height: SizeValue.fill, main: 'center', cross: 'center' });
             column.add(pill);
-            column.add(new Text(item.label, 'caption', tint, 1, null, false, false, null, 0, { styleOverride: new TypeStyle(slot?.barLabelSize ?? 11, slot?.barLabelLineHeight ?? 14, slot?.barLabelWeight ?? 'bold', slot?.barLabelTracking ?? Math.fround(0.1), Math.fround(1.3)) }));
+            let type = new TypeStyle(slot?.barLabelSize ?? 11, slot?.barLabelLineHeight ?? 14, slot?.barLabelWeight ?? 'bold', slot?.barLabelTracking ?? Math.fround(0.1), Math.fround(1.3));
+            let builder: any; 
+            if ((builder = this.destinationBuilder) != null) column.add(new Box(new BoxStyle({ foreground: tint, content: new ContentStyle({ role: 'caption', type: type, maxLines: 1 }) }), builder(index))); else column.add(new Text(item.label, 'caption', tint, 1, null, false, false, null, 0, { styleOverride: type }));
             row.add(new Flexible(new Pressable(column, this.onSelect == null ? null : () => this.onSelect!(index), { label: item.label, role: 'destination', selected: isActive })));
         }
         return new Box(new BoxStyle({ width: SizeValue.fill, height: slot?.barHeight ?? 56, background: slot?.background ?? theme.surface }), row);

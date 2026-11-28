@@ -1,8 +1,9 @@
-import { $eq, Box, BoxStyle, BuildContext, EdgeInsets, Flexible, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, EdgeInsets, Flexible, NavigationTheme, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class AppBar extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.AppBar';
     declare title: string;
+    declare style: any;
     declare leading: any;
     declare $actions: any;
 
@@ -16,18 +17,20 @@ export class AppBar extends StatelessComponent {
 
     declare scrolled: boolean;
 
-    constructor(title?: any, props?: any) {
+    constructor(title?: any, style: any = null, props?: any) {
         super();
         if (title !== undefined) this.title = title;
+        if (style !== undefined) this.style = style;
         if (this.scrolled === undefined) this.scrolled = false;
         this.$actions = null!;
         this.title = title;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let slot = theme.navigation;
+        let slot = NavigationTheme.merge(theme.navigation, this.style);
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center' });
         let leading: any; 
         if ((leading = this.leading) != null) row.add(leading);

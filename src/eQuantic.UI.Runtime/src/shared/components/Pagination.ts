@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Button, CornerRadii, Motion, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, StyleDiff, Text, TransitionSpec } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, Button, CornerRadii, Motion, NavigationTheme, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, StyleDiff, Text, TransitionSpec } from "../runtime-exports";
 
 export class Pagination extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Pagination';
@@ -7,29 +7,32 @@ export class Pagination extends StatelessComponent {
     declare pageCount: number;
     declare currentPage: number;
     declare onChanged: ((int: number) => void) | null;
+    declare style: any;
 
-    constructor(pageCount?: any, currentPage?: any, onChanged: any = null, props?: any) {
+    constructor(pageCount?: any, currentPage?: any, onChanged: any = null, style: any = null, props?: any) {
         super();
         if (pageCount !== undefined) this.pageCount = pageCount;
         if (currentPage !== undefined) this.currentPage = currentPage;
         if (onChanged !== undefined) this.onChanged = onChanged;
+        if (style !== undefined) this.style = style;
         if (this.pageCount === undefined) this.pageCount = 0;
         if (this.currentPage === undefined) this.currentPage = 0;
         this.pageCount = pageCount;
         this.currentPage = currentPage;
         this.onChanged = onChanged;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
         let current = $eq.num.clamp(this.currentPage, 1, Math.max(1, this.pageCount), 'int32');
-        let slot = theme.navigation;
+        let slot = NavigationTheme.merge(theme.navigation, this.style);
         let numbers = new Row(slot?.pageGap ?? 3, 'start', 'center', false, null, null, { cross: 'center' });
         let previous = 0;
         for (const page of Pagination.pages(this.pageCount, current)) {
-            if (previous > 0 && page > (previous + 1 | 0)) numbers.add(Pagination.ellipsis(theme));
-            numbers.add(this.number(theme, page, page === current));
+            if (previous > 0 && page > (previous + 1 | 0)) numbers.add(Pagination.ellipsis(theme, slot));
+            numbers.add(this.number(theme, slot, page, page === current));
             previous = page;
         }
         let row = new Row(slot?.paginationGap ?? 8, 'start', 'center', false, null, null, { cross: 'center' });
@@ -55,8 +58,7 @@ export class Pagination extends StatelessComponent {
         return ordered;
     }
 
-    number(theme: any, page: number, current: boolean) {
-        let slot = theme.navigation;
+    number(theme: any, slot: any, page: number, current: boolean) {
         let cell = slot?.pageCellSize ?? 30;
         let centered = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center' });
         centered.add(new Text($eq.text.format(page, null, undefined, undefined, 'int32'), 'caption', current ? theme.colors('primary').onBase : slot?.pageColor ?? theme.textSecondary, 1, null, false, false, null, 0, { tabular: true }));
@@ -64,8 +66,7 @@ export class Pagination extends StatelessComponent {
         return new Pressable(box, current ? null : () => this.onChanged?.(page), { label: SdkStrings.pageNumbered(page), selected: current });
     }
 
-    static ellipsis(theme: any) {
-        let slot = theme.navigation;
+    static ellipsis(theme: any, slot: any) {
         let cell = slot?.pageCellSize ?? 30;
         let centered = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center' });
         centered.add(new Text('…', 'caption', slot?.ellipsisColor ?? theme.textMuted, 1));

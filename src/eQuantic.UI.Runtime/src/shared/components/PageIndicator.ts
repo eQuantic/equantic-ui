@@ -1,4 +1,4 @@
-import { $eq, $VariantValue, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Motion, Pressable, Row, SizeValue, StatelessComponent, Text, TransitionSpec, VisualNode } from "../runtime-exports";
+import { $eq, $VariantValue, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Motion, NavigationTheme, Pressable, Row, SizeValue, StatelessComponent, Text, TransitionSpec, VisualNode } from "../runtime-exports";
 
 export class PageIndicator extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.PageIndicator';
@@ -6,19 +6,22 @@ export class PageIndicator extends StatelessComponent {
     declare count: number;
     declare currentIndex: number;
     declare onSelected: ((int: number) => void) | null;
+    declare style: any;
     declare variant: $VariantValue;
 
-    constructor(count?: any, currentIndex?: any, onSelected: any = null, props?: any) {
+    constructor(count?: any, currentIndex?: any, onSelected: any = null, style: any = null, props?: any) {
         super();
         if (count !== undefined) this.count = count;
         if (currentIndex !== undefined) this.currentIndex = currentIndex;
         if (onSelected !== undefined) this.onSelected = onSelected;
+        if (style !== undefined) this.style = style;
         if (this.count === undefined) this.count = 0;
         if (this.currentIndex === undefined) this.currentIndex = 0;
         if (this.variant === undefined) this.variant = 'primary';
         this.count = count;
         this.currentIndex = currentIndex;
         this.onSelected = onSelected;
+        this.style = style;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
@@ -26,7 +29,7 @@ export class PageIndicator extends StatelessComponent {
         let theme = context.theme;
         let active = theme.colors(this.variant).base;
         let label = `Page ${$eq.text.format(this.currentIndex + 1 | 0, null, undefined, undefined, 'int32')} of ${$eq.text.format(this.count, null, undefined, undefined, 'int32')}`;
-        let slot = theme.navigation;
+        let slot = NavigationTheme.merge(theme.navigation, this.style);
         if (this.count > PageIndicator.maxDots) {
             return new Text(label, 'caption', slot?.pageColor ?? theme.textSecondary, 1, null, false, false, null, 0, { tabular: true });
         }

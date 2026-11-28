@@ -27,7 +27,7 @@ export class ListDetail extends StatelessComponent {
     build(_context: BuildContext) {
         const pane = (title: string | null, body: VisualNode, leading?: IconButton | null): VisualNode => {
             let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
-            if (!(title == null)) column.add(new AppBar(title, { leading: leading }));
+            if (!(title == null)) column.add(new AppBar(title, null, { leading: leading }));
             column.add(new Flexible(body));
             return column;
         };

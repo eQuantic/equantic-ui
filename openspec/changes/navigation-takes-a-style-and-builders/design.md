@@ -95,8 +95,10 @@ look reaches the content; a node that names its own look wins, as everywhere.
 
 The three have no factory in `UI.cs`: an app reaches them only with `new`, which the declarative surface does not
 write (the samples' `ConsoleLayout`, `PaymentsPage` and the Studio's gallery do), and principle 15 asks for a
-style the factory reaches. Each gets the factory that mirrors its widened constructor, and the call sites that
-import the surface move to it.
+style the factory reaches. Each gets the factory that mirrors its widened constructor. The call sites that write
+`new` today keep it: the two in the dashboard (`ConsoleLayout`, `PaymentsPage`) sit in screens that already mix the
+two shapes, nothing there is shadowed, and both screens are README pictures (`assets/readme/captures.json`), which a
+move would make taken again for a screen that does not change.
 
 A factory named like its type shadows the type in a file that imports the surface by `using static`, so a static
 of the type is no longer reached by its simple name there: `Pagination.Pages`, `Pagination.Window`,

@@ -1,4 +1,4 @@
-import { $eq, $IconsValue, $MainAlignValue, Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconGlyph, NavItem, Pressable, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, $IconsValue, $MainAlignValue, Badge, Box, BoxStyle, BuildContext, Column, ContentStyle, CornerRadii, EdgeInsets, Icon, IconGlyph, NavigationTheme, NavItem, Pressable, SizeValue, StatelessComponent, StyleDiff, Text, TypeStyle, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class NavigationRail extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.NavigationRail';
@@ -14,27 +14,33 @@ export class NavigationRail extends StatelessComponent {
 
     declare selected: number;
     declare onSelect: ((int: number) => void) | null;
+    declare style: any;
+    declare destinationBuilder: ((value: number) => VisualNode) | null;
     declare leading: any;
     declare alignment: $MainAlignValue;
 
-    constructor(items?: any, selected?: any, onSelect: any = null, props?: any) {
+    constructor(items?: any, selected?: any, onSelect: any = null, style: any = null, destinationBuilder: any = null, props?: any) {
         super();
         if (items !== undefined) this.items = items;
         if (selected !== undefined) this.selected = selected;
         if (onSelect !== undefined) this.onSelect = onSelect;
+        if (style !== undefined) this.style = style;
+        if (destinationBuilder !== undefined) this.destinationBuilder = destinationBuilder;
         if (this.selected === undefined) this.selected = 0;
         if (this.alignment === undefined) this.alignment = 'start';
         this.$items = null!;
         this.items = items;
         this.selected = selected;
         this.onSelect = onSelect;
+        this.style = style;
+        this.destinationBuilder = destinationBuilder;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     build(context: BuildContext) {
         let theme = context.theme;
         let primary = theme.colors('primary');
-        let slot = theme.navigation;
+        let slot = NavigationTheme.merge(theme.navigation, this.style);
         let gap = slot?.railGap ?? 8;
         let destinations = new Column(gap, 'start', 'stretch', false, null, null, { width: SizeValue.fill, cross: 'center' });
         for (let i = 0; i < $eq.collections.count(this.items); i = i + 1 | 0) {
@@ -49,7 +55,9 @@ export class NavigationRail extends StatelessComponent {
             let pill = new Box(new BoxStyle({ width: slot?.railPillWidth ?? 52, height: slot?.railPillHeight ?? 30, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(slot?.pillRadius ?? theme.shape('full')), pressed: isActive ? null : new StyleDiff({ background: primary.subtle.withOpacity(slot?.pillPressOpacity ?? Math.fround(0.4)) }) }), VisualNodeExtensions.centered(iconNode));
             let column = new Column(slot?.pillLabelGap ?? 2, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: slot?.railItemHeight ?? 56, main: 'center', cross: 'center' });
             column.add(pill);
-            column.add(new Text(item.label, 'caption', tint, 1, null, false, false, null, 0, { styleOverride: isActive ? new TypeStyle(slot?.railSelectedLabelSize ?? 12, slot?.railSelectedLabelLineHeight ?? 16, slot?.railSelectedLabelWeight ?? 'bold', 0, Math.fround(1.3)) : null }));
+            let type = isActive ? new TypeStyle(slot?.railSelectedLabelSize ?? 12, slot?.railSelectedLabelLineHeight ?? 16, slot?.railSelectedLabelWeight ?? 'bold', 0, Math.fround(1.3)) : null;
+            let builder: any; 
+            if ((builder = this.destinationBuilder) != null) column.add(new Box(new BoxStyle({ foreground: tint, content: new ContentStyle({ role: 'caption', type: type, maxLines: 1 }) }), builder(index))); else column.add(new Text(item.label, 'caption', tint, 1, null, false, false, null, 0, { styleOverride: type }));
             destinations.add(new Pressable(column, this.onSelect == null ? null : () => this.onSelect!(index), { label: item.label, role: 'destination', selected: isActive }));
         }
         let rail = new Column(gap, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center', main: this.alignment });

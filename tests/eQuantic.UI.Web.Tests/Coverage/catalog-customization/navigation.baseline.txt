@@ -1,14 +1,7 @@
 # Navigation. Its slice is #1549. The format is README.md's.
 # owns: AppBar BottomNavigation Breadcrumb NavigationRail PageIndicator Pagination Tabs Crumb NavItem
-AppBar  style  #1549: NavigationTheme
 AppBar.Title  text  #1549: the bar's title, a node
-BottomNavigation  style  #1549: NavigationTheme
-Breadcrumb  style  #1549: NavigationTheme
 Crumb.Destination  text  kept: a route, never drawn
 Crumb.Label  text  kept: a crumb's name, its accessible name; the crumb builder draws it (#1549)
 NavItem.Label  text  kept: a destination's name, its accessible name; the destination builder draws it (#1549)
-NavigationRail  style  #1549: NavigationTheme
-PageIndicator  style  #1549: NavigationTheme
-Pagination  style  #1549: NavigationTheme
-Tabs  style  #1549: NavigationTheme
 Tabs.Labels  text  kept: a tab's name, its accessible name; the tab builder draws it (#1549)

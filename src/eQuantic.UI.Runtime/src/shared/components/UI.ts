@@ -1,4 +1,4 @@
-import { $AdjustableRoleValue, $AlignmentValue, $CrossAlignValue, $DragAxisValue, $eq, $HitTestBehaviorValue, $IconsValue, $ImageFitValue, $LiveRegionUrgencyValue, $LoopEffectValue, $MainAlignValue, $NavigableMoveValue, $NavigableRoleValue, $PresenceMotionValue, $PressableRoleValue, $ScrollAxisValue, $SizeVariantValue, $TableCellRoleValue, $TableRoleValue, $TextAlignmentValue, $TextDirectionValue, $TextEntryKindValue, $TypeRoleValue, $VariantValue, AdaptiveNode, Adjustable, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxConstraints, BoxStyle, Button, Calendar, CalendarTheme, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, CodeSurface, ColorToken, Column, ConstrainedBox, ContextMenu, ContextRequest, ContextTarget, CookieConsent, CornerRadii, CultureOption, CultureSwitcher, Currency, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Directionality, Divider, DragDismiss, Draggable, Drawer, Drawing, DropTarget, EdgeInsets, EmptyState, ExcludeSemantics, FileUpload, Flexible, GestureRecognizerFactory, Grid, GridTrack, Group, Hoverable, Icon, IconButton, IconGlyph, Image, InFlow, InputTheme, InView, KeyChord, LayoutBuilder, Link, ListDetail, Listener, ListItem, ListTheme, ListView, LiveRegion, LoopMotion, Markdown, MenuItem, MergeSemantics, Mermaid, MoneyInput, Navigable, NavigationRail, NavItem, NumberInput, OptionGroup, Overlay, PickedFile, Pinned, PointerEvent, Positioned, Presence, Pressable, Progress, ProgressBar, RangeValue, RawGestureDetector, Row, SafeArea, ScrollView, SdkStrings, SearchField, SegmentedControl, SegmentedTheme, Select, SheetSurface, Shortcut, Simulated, Size, SizeValue, Skeleton, Slider, Sortable, SortableItem, SortableTheme, SortAnnouncements, SortDrop, Spacer, Spinner, Stack, Stepper, Switch, TableOffset, TableRange, TableScroll, TableScrollRequest, TableSpans, TableView, TableViewCell, TableViewport, Tabs, Text, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TreeEditRequest, TreeMove, TreeNode, TreeReloadRequest, TreeRowState, TreeView, TypeStyle, UploadedFile, UploadPolicy, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "../runtime-exports";
+import { $AdjustableRoleValue, $AlignmentValue, $CrossAlignValue, $DragAxisValue, $eq, $HitTestBehaviorValue, $IconsValue, $ImageFitValue, $LiveRegionUrgencyValue, $LoopEffectValue, $MainAlignValue, $NavigableMoveValue, $NavigableRoleValue, $PresenceMotionValue, $PressableRoleValue, $ScrollAxisValue, $SizeVariantValue, $TableCellRoleValue, $TableRoleValue, $TextAlignmentValue, $TextDirectionValue, $TextEntryKindValue, $TypeRoleValue, $VariantValue, AdaptiveNode, Adjustable, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxConstraints, BoxStyle, Breadcrumb, Button, Calendar, CalendarTheme, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, CodeSurface, ColorToken, Column, ConstrainedBox, ContextMenu, ContextRequest, ContextTarget, CookieConsent, CornerRadii, Crumb, CultureOption, CultureSwitcher, Currency, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Directionality, Divider, DragDismiss, Draggable, Drawer, Drawing, DropTarget, EdgeInsets, EmptyState, ExcludeSemantics, FileUpload, Flexible, GestureRecognizerFactory, Grid, GridTrack, Group, Hoverable, Icon, IconButton, IconGlyph, Image, InFlow, InputTheme, InView, KeyChord, LayoutBuilder, Link, ListDetail, Listener, ListItem, ListTheme, ListView, LiveRegion, LoopMotion, Markdown, MenuItem, MergeSemantics, Mermaid, MoneyInput, Navigable, NavigationRail, NavigationTheme, NavItem, NumberInput, OptionGroup, Overlay, PageIndicator, Pagination, PickedFile, Pinned, PointerEvent, Positioned, Presence, Pressable, Progress, ProgressBar, RangeValue, RawGestureDetector, Row, SafeArea, ScrollView, SdkStrings, SearchField, SegmentedControl, SegmentedTheme, Select, SheetSurface, Shortcut, Simulated, Size, SizeValue, Skeleton, Slider, Sortable, SortableItem, SortableTheme, SortAnnouncements, SortDrop, Spacer, Spinner, Stack, Stepper, Switch, TableOffset, TableRange, TableScroll, TableScrollRequest, TableSpans, TableView, TableViewCell, TableViewport, Tabs, Text, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TreeEditRequest, TreeMove, TreeNode, TreeReloadRequest, TreeRowState, TreeView, TypeStyle, UploadedFile, UploadPolicy, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "../runtime-exports";
 
 export class UI {
     static column(gap: number = 0, main: $MainAlignValue = 'start', cross: $CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
@@ -327,24 +327,36 @@ export class UI {
         return new SegmentedControl(segments, selectedIndex, onChanged, style, segmentBuilder, { stretch: stretch });
     }
 
-    static tabs(labels: string[], selected: number, onSelect: ((int: number) => void) | null = null) {
-        return new Tabs(labels, selected, onSelect);
+    static tabs(labels: string[], selected: number, onSelect: ((int: number) => void) | null = null, style: NavigationTheme | null = null, tabBuilder: ((value: number) => VisualNode) | null = null) {
+        return new Tabs(labels, selected, onSelect, style, tabBuilder);
     }
 
-    static bottomNavigation(items: NavItem[], selected: number, onSelect: ((int: number) => void) | null = null) {
-        return new BottomNavigation(items, selected, onSelect);
+    static bottomNavigation(items: NavItem[], selected: number, onSelect: ((int: number) => void) | null = null, style: NavigationTheme | null = null, destinationBuilder: ((value: number) => VisualNode) | null = null) {
+        return new BottomNavigation(items, selected, onSelect, style, destinationBuilder);
     }
 
-    static navigationRail(items: NavItem[], selected: number, onSelect: ((int: number) => void) | null = null) {
-        return new NavigationRail(items, selected, onSelect);
+    static navigationRail(items: NavItem[], selected: number, onSelect: ((int: number) => void) | null = null, style: NavigationTheme | null = null, destinationBuilder: ((value: number) => VisualNode) | null = null) {
+        return new NavigationRail(items, selected, onSelect, style, destinationBuilder);
     }
 
     static drawer(content: VisualNode, open: boolean, onDismiss: (() => void) | null = null) {
         return new Drawer(content, open, onDismiss);
     }
 
-    static appBar(title: string) {
-        return new AppBar(title);
+    static appBar(title: string, style: NavigationTheme | null = null) {
+        return new AppBar(title, style);
+    }
+
+    static breadcrumb(crumbs: Crumb[], style: NavigationTheme | null = null, crumbBuilder: ((value: number) => VisualNode) | null = null) {
+        return new Breadcrumb(crumbs, style, crumbBuilder);
+    }
+
+    static pagination(pageCount: number, currentPage: number, onChanged: ((int: number) => void) | null = null, style: NavigationTheme | null = null) {
+        return new Pagination(pageCount, currentPage, onChanged, style);
+    }
+
+    static pageIndicator(count: number, currentIndex: number, onSelected: ((int: number) => void) | null = null, style: NavigationTheme | null = null) {
+        return new PageIndicator(count, currentIndex, onSelected, style);
     }
 
     static listItem(title: string, subtitle: string | null = null, onPressed: (() => void) | null = null) {

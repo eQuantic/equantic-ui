@@ -183,7 +183,7 @@ public sealed class ConsoleLayout(VisualNode body) : StatefulComponent
         Row(gap: Space.S2, width: SizeValue.Fill, height: SizeValue.Fill, children: [
             IconButton(Icon(Icons.Menu), "Navigation", IconButtonKind.Standard, SizeVariant.Small,
                 onPressed: () => SetState(() => _navOpen = !_navOpen)),
-            Flexible(Breadcrumb(crumbs), 1),
+            Flexible(new Breadcrumb(crumbs), 1),
         ]));
 
     private static VisualNode Toolbar(IAppTheme theme, IReadOnlyList<Crumb> crumbs) =>
@@ -200,7 +200,7 @@ public sealed class ConsoleLayout(VisualNode body) : StatefulComponent
         // at its TOP, and a 40dp row in a 56dp bar reads as "glued to the top". The same contract
         // AppBar, SearchField and SegmentedControl state in the library.
         Row(gap: Space.S2, width: SizeValue.Fill, height: SizeValue.Fill, children: [
-            Breadcrumb(crumbs),
+            new Breadcrumb(crumbs),
             Spacer(),
             // A Menu owns its own open/close and dismisses on an outside tap, so the frame states
             // WHAT the entries are and nothing about when the panel is up.

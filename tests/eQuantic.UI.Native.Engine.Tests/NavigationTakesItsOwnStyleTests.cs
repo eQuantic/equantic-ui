@@ -121,15 +121,28 @@ public class NavigationTakesItsOwnStyleTests
     {
         var theme = Photon.With(navigation: new NavigationTheme { RailBorderWidth = 1, RailWidth = 88 });
 
-        var (styledBoxes, styledFrame) = Draw(new NavigationRail(Destinations, 0, style: new NavigationTheme { RailBorderWidth = 0 }), theme);
-        var (_, plainFrame) = Draw(new NavigationRail(Destinations, 0), theme);
+        var styled = Draw(new NavigationRail(Destinations, 0, style: new NavigationTheme { RailBorderWidth = 0 }), theme);
+        var plain = Draw(new NavigationRail(Destinations, 0), theme);
 
-        styledBoxes.Any(r => Near(r.Width, 88)).Should().BeTrue("the rail is still the theme's width");
-        Edges(plainFrame).Should().BeGreaterThan(Edges(styledFrame), "the theme's rail draws its trailing edge and this one none");
+        styled.Boxes.Any(r => Near(r.Width, 88)).Should().BeTrue("the rail is still the theme's width");
+        TrailingEdge(new NavigationRail(Destinations, 0), theme).Should().Be(1, "the theme's rail draws its trailing edge");
+        TrailingEdge(new NavigationRail(Destinations, 0, style: new NavigationTheme { RailBorderWidth = 0 }), theme)
+            .Should().Be(0, "and this one none");
+        plain.Boxes.Any(r => Near(r.Width, 88)).Should().BeTrue();
     }
 
-    /// <summary>Thin filled rectangles, one dp wide: a rail's trailing edge.</summary>
-    private static int Edges(DisplayList list) =>
-        list.Commands.ToArray().Count(c => c.Kind is DrawCommandKind.FillRRect or DrawCommandKind.StrokeRRect
-            && c.Shape.Rect.Width < 1.5f && c.Shape.Rect.Height > 100);
+    /// <summary>The width of the border the rail's box draws on its trailing edge.</summary>
+    private static float TrailingEdge(VisualNode node, IAppTheme theme)
+    {
+        var result = PhotonRealizer.Realize(node, 400, 800, theme, ThemeMode.Light, ContrastLevel.Standard, new DisplayListBuilder());
+        return Find(result.Root)!.Style.BorderWidth;
+
+        static Box? Find(eQuantic.UI.Native.Framework.LayoutNode layout)
+        {
+            if (layout.Source is Box { Style.BorderSides: BorderSides.End } box) return box;
+            foreach (var child in layout.Children)
+                if (Find(child) is { } found) return found;
+            return null;
+        }
+    }
 }
