@@ -19,7 +19,7 @@
         "samples/DefaultUIDashboard/Program.cs": "4ef2e83b6e34bfc2847e1e71abb0703e4e1e40b8a7890753e690c0f9857bd0b0",
         "samples/DefaultUIDashboard/Screens/ConsoleLayout.cs": "49d04db467afe23c1e3179c08ab24dac1748363ea71c97351b455122fb437b71",
         "samples/DefaultUIDashboard/Screens/ConsoleData.cs": "abcb0a957c3823167118ea3f6ea2f100dc9e0aab969910388f3e3d4c4c91403e",
-        "samples/DefaultUIDashboard/Screens/PaymentsPage.cs": "212049d3c5d2179818a879addd880a35b5aaaf230d7a804189c0d704186a270a"
+        "samples/DefaultUIDashboard/Screens/PaymentsPage.cs": "60d6c4b25ee80ac4025b23a945ff4b31b35ab62fdd0fbe17b8031d552d753176"
       }
     },
     "web-charts.png": {
