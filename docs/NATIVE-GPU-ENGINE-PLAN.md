@@ -546,7 +546,7 @@ Bun and the JS bundling chain, the TypeScript runtime.
   The engine/native layer grew far past the last entry while this log slept; the systems, briefly,
   with their homes: **group-opacity layers** — `DisplayList` gained `BeginLayer`/`EndLayer`
   (`PushLayer(alpha)`/`PopLayer`, balance-checked); the Reference backend composites a real offscreen
-  layer, the Metal spike approximated per-command alpha (fence RETIRED 2026-08-01 by the offscreen pass — see that entry).
+  layer, the Metal spike approximated per-command alpha (fence RETIRED offscreen 2026-08-01 by the offscreen pass — see that entry — and on the windows on 2026-11-28, #1952).
   **Static transforms** — center-anchored `Matrix2D` from `Transform2D` (translate→rotate→scale).
   **Scroll compositor v1** — `ScrollStore` (path-keyed offsets), `ScrollRegion` routing in
   `PhotonRealizer`, `PhotonHost.ScrollBy`, real `PinSticky` (vertical; end-of-container release
@@ -757,6 +757,11 @@ Bun and the JS bundling chain, the TypeScript runtime.
   would notice if anyone leaned on it.
   This is the machinery `backdrop-blur` needs — the blur chain renders into these same offscreen
   targets — so the next slice is the dual-Kawase (plan W3), not new plumbing.
+  It was retired OFFSCREEN only. The windows' paths, `MetalBackend.RenderToDrawable` and
+  `VulkanSwapchain.Present`, opened a pass of their own and encoded into it, so on screen a group
+  kept the per-command alpha and a backdrop drew no blur, while every golden, drawn offscreen, was
+  right. #1952 (2026-11-28) put both on the one entry, `RhiRenderer.Render(DisplayList,
+  IRhiFrameTarget)`, deleted the fallback, and pooled the targets the frames draw into.
 
 - **2026-08-01 — W3 lands end-to-end: dual-Kawase blur + BackdropBlur, CPU-normative on three
   backends, and the Hero pill is real frosted glass.** The pyramid's normative math lives in
