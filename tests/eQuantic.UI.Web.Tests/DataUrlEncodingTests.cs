@@ -42,6 +42,38 @@ public class DataUrlEncodingTests
     public void APlainSource_IsWrittenAsItIs() =>
         DataUrl.Css("img/linen.png").Should().Be("url(\"img/linen.png\")");
 
+    /// <summary>
+    /// Every control character in a source is its code point in hexadecimal and a space, not only the
+    /// line breaks that end a CSS string: the server's sheet reads a control character as the marker
+    /// of a rule's state, so a raw one inside a URL split the rule (security review W1, #1937).
+    /// </summary>
+    [Fact]
+    public void EveryControlCharacter_InASource_IsAHexEscape()
+    {
+        foreach (var c in Enumerable.Range(0, 0x20).Append(0x7F).Select(code => (char)code))
+            DataUrl.Css($"a{c}b").Should().Be($"url(\"a\\{(int)c:X} b\")", $"code point {(int)c}");
+    }
+
+    /// <summary>
+    /// A brace in a source is a hex escape: the runtime adopts the server's sheet by finding each
+    /// <c>.class{</c> in its text, so a raw brace inside a URL could mark a class as already styled
+    /// (security review W2, #1937).
+    /// </summary>
+    [Fact]
+    public void ABrace_InASource_IsAHexEscape() =>
+        DataUrl.Css("a{b}c").Should().Be("url(\"a\\7B b\\7D c\")");
+
+    /// <summary>Every other ASCII character is written as it is, the two a backslash escapes aside.</summary>
+    [Fact]
+    public void EveryOtherAsciiCharacter_InASource_IsWrittenAsItIs()
+    {
+        for (var c = (char)0x20; c < 0x7F; c++)
+        {
+            if (c is '\\' or '"' or '{' or '}') continue;
+            DataUrl.Css($"a{c}b").Should().Be($"url(\"a{c}b\")", $"code point {(int)c}");
+        }
+    }
+
     /// <summary>The fixture the twin replays: every case above, as the C# table writes it.</summary>
     [Fact]
     public void TheFixture_IsWhatTheTableWrites()
@@ -49,7 +81,8 @@ public class DataUrlEncodingTests
         var encode = Enumerable.Range(0, 128).Select(c => ((char)c).ToString())
             .Concat(["é", "€", "😀", "<svg xmlns='http://www.w3.org/2000/svg' fill='#C8796B'>100%</svg>"])
             .Select(text => new[] { text, DataUrl.Encode(text) });
-        var css = new[] { "img/linen.png", "img/a\"b\\c\nd\re\ff.png", "data:image/svg+xml,%3Csvg/%3E" }
+        var css = new[] { "img/linen.png", "img/a\"b\\c\nd\re\ff.png", "data:image/svg+xml,%3Csvg/%3E", "a{b}c", "é" }
+            .Concat(Enumerable.Range(0, 128).Select(c => $"a{(char)c}b"))
             .Select(text => new[] { text, DataUrl.Css(text) });
         var text = FixtureJson.Write(new { encode, css }, FixtureJson.Readable);
 

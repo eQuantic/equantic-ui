@@ -15,7 +15,17 @@ describe('the data URL table (C# DataUrlEncodingTests cross-pin)', () => {
   });
 
   it('writes every source of the fixture as the C# CSS string', () => {
+    expect(fixture.css.length).toBeGreaterThan(128);
     for (const [text, written] of fixture.css) expect(cssUrl(text), JSON.stringify(text)).toBe(written);
+  });
+
+  // A raw control character or brace in a source was read as the sheet's structure when the sheet's
+  // text was read again (security review W1 and W2, #1937): both are hex escapes inside the string.
+  it('writes every control character and brace of a source as a hex escape', () => {
+    expect(cssUrl('/a.png\u0001x')).toBe('url("/a.png\\1 x")');
+    expect(cssUrl('a\u007fb')).toBe('url("a\\7F b")');
+    expect(cssUrl('/a.png?.eq-1x2y3z{')).toBe('url("/a.png?.eq-1x2y3z\\7B ")');
+    expect(cssUrl('a}b')).toBe('url("a\\7D b")');
   });
 
   it('leaves what encodeURIComponent would not, and escapes what a data URL needs', () => {

@@ -49,23 +49,26 @@ internal static class DataUrl
 
     /// <summary>
     /// A URL as a CSS <c>url("…")</c>: written as a CSS string, where <c>\</c> and <c>"</c> are escaped
-    /// with a backslash and a line break as its code point (<c>\A </c>, <c>\D </c>, <c>\C </c>), so a
-    /// source an <see cref="Primitives.Image"/> would take works unchanged.
+    /// with a backslash, and every control character (0 to 31, and 127), <c>{</c> and <c>}</c> as its
+    /// code point in hexadecimal and a space (<c>\A </c>, <c>\1 </c>, <c>\7B </c>), so a source an
+    /// <see cref="Primitives.Image"/> would take works unchanged.
+    /// <para>
+    /// A line break ends a CSS string, so it must be escaped to stay inside one. The other controls
+    /// and the braces are escaped because a stylesheet's text is read again after it is written: the
+    /// server's sheet marks a rule's state with a control character, and the runtime adopts that
+    /// sheet by finding each <c>.class{</c> in its text. A raw one in a source was read as part of
+    /// that structure, not of the URL. CSS reads every escape back as the character it stands for.
+    /// </para>
     /// </summary>
     public static string Css(string url)
     {
         var builder = new StringBuilder(url.Length + 7).Append("url(\"");
         foreach (var c in url)
         {
-            switch (c)
-            {
-                case '\\': builder.Append("\\\\"); break;
-                case '"': builder.Append("\\\""); break;
-                case '\n': builder.Append("\\A "); break;
-                case '\r': builder.Append("\\D "); break;
-                case '\f': builder.Append("\\C "); break;
-                default: builder.Append(c); break;
-            }
+            if (c is '\\' or '"') builder.Append('\\').Append(c);
+            else if (c < 0x20 || c == 0x7F || c is '{' or '}')
+                builder.Append('\\').Append(((int)c).ToString("X", System.Globalization.CultureInfo.InvariantCulture)).Append(' ');
+            else builder.Append(c);
         }
         return builder.Append("\")").ToString();
     }

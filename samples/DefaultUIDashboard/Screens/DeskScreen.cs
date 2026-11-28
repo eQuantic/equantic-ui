@@ -25,7 +25,9 @@ public sealed class DeskScreen : StatelessComponent
     private static readonly ColorToken Ink = new ColorToken(Color.FromRgb(0x1F, 0x6F, 0x6B), Color.FromRgb(0xE8, 0xA8, 0x4C))
         .WithMore(Color.FromRgb(0x0B, 0x3B, 0x39), Color.FromRgb(0xFF, 0xC8, 0x6B));
 
-    // The image tiles are served from wwwroot/desk, 360 px for a 120 dp tile: crisp at 3x.
+    // The image tiles are served from wwwroot/desk, 360 px for a 120 dp tile: crisp at 3x. Both are
+    // original artwork, drawn for this sample once by a one-off script that is not kept: a seamless,
+    // transparent paper grain, in teal for the light page and in amber for the dark one.
     private const string PaperLight = "/desk/paper-light.png";
     private const string PaperDark = "/desk/paper-dark.png";
 

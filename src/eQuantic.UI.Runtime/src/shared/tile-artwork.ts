@@ -180,18 +180,19 @@ function escapeByte(byte: number): string {
 
 /**
  * The C# `DataUrl.Css`: a URL as a CSS `url("…")`, a CSS string where `\` and `"` are escaped with a
- * backslash and a line break as its code point (`\A `, `\D `, `\C `).
+ * backslash, and every control character (0 to 31, and 127), `{` and `}` as its code point in
+ * hexadecimal and a space (`\A `, `\1 `, `\7B `). A raw control or brace was read as part of the
+ * sheet's structure when its text was read again (the server's state marker, this registry's
+ * adoption of `.class{`), not as part of the URL.
  */
 export function cssUrl(url: string): string {
   let out = 'url("';
   for (const c of url) {
+    const code = c.codePointAt(0)!;
     out +=
-      c === '\\' ? '\\\\'
-        : c === '"' ? '\\"'
-          : c === '\n' ? '\\A '
-            : c === '\r' ? '\\D '
-              : c === '\f' ? '\\C '
-                : c;
+      c === '\\' || c === '"' ? `\\${c}`
+        : code < 0x20 || code === 0x7f || c === '{' || c === '}' ? `\\${code.toString(16).toUpperCase()} `
+          : c;
   }
   return `${out}")`;
 }

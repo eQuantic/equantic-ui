@@ -25,43 +25,66 @@ internal sealed class PatternPainter : IPatternVisitor<PatternLayer, Nothing>
     /// magnified by the filter.</summary>
     internal const int MaxTileSide = 4096;
 
+    /// <summary>The most rules a grid draws on one axis, as many as a tile at its cap has pixels on a
+    /// side. Past it, the rules are closer than any screen tells apart.</summary>
+    internal const int MaxRulesPerAxis = MaxTileSide;
+
     private PatternPainter() { }
 
     public Nothing Visit(GridPattern pattern, PatternLayer layer)
     {
         var s = layer.State;
-        if (!(pattern.Cell > 0) || !(pattern.LineWidth > 0)) return Nothing.Value;
         var color = pattern.Color.Resolve(s.Mode, s.Contrast);
         if (color.A == 0) return Nothing.Value;
         var clip = layer.Placement[pattern.ClipTo];
         var bounds = clip.Rect;
         if (bounds.IsEmpty) return Nothing.Value;
-        var origin = layer.Placement.PlacingArea(pattern, Window(pattern, s));
+        var placing = layer.Placement.PlacingArea(pattern, Window(pattern, s));
 
-        var paint = Paint.Solid(color);
         var cell = pattern.Cell;
-        var line = pattern.LineWidth;
+        // A rule as wide as its cell already fills it, as the web's hard-stop gradient does.
+        var line = MathF.Min(pattern.LineWidth, cell);
         // Rules are sized to the clip area's rectangle, so only its rounded corners need a clip.
         var rounded = !clip.Radii.IsZero;
         if (rounded) s.Builder.PushClip(clip);
-        // The rules start at the placing area's origin and continue on every side of it, by index
-        // rather than by a running sum, so the hundredth rule is where the first one says.
-        for (var k = MathF.Floor((bounds.Left - line - origin.X) / cell); ; k++)
-        {
-            var x = origin.X + k * cell;
-            if (x >= bounds.Right) break;
-            var rule = Rect.FromLTRB(MathF.Max(x, bounds.Left), bounds.Top, MathF.Min(x + line, bounds.Right), bounds.Bottom);
-            if (rule.Width > 0) s.Builder.FillRect(rule, paint);
-        }
-        for (var k = MathF.Floor((bounds.Top - line - origin.Y) / cell); ; k++)
-        {
-            var y = origin.Y + k * cell;
-            if (y >= bounds.Bottom) break;
-            var rule = Rect.FromLTRB(bounds.Left, MathF.Max(y, bounds.Top), bounds.Right, MathF.Min(y + line, bounds.Bottom));
-            if (rule.Height > 0) s.Builder.FillRect(rule, paint);
-        }
+        Rules(s, color, cell, line, placing, bounds, vertical: true);
+        Rules(s, color, cell, line, placing, bounds, vertical: false);
         if (rounded) s.Builder.PopClip();
         return Nothing.Value;
+    }
+
+    /// <summary>
+    /// The rules of one axis across <paramref name="bounds"/>, the vertical ones or the horizontal: from
+    /// the origin of <paramref name="placing"/>, the placing area, and on every side of it, by index rather than by a running sum, so the
+    /// hundredth rule is where the first one says. The range of indices is counted before the first
+    /// rule, so the loop ends whatever the cell. An axis with more rules than
+    /// <see cref="MaxRulesPerAxis"/>, or whose rules fill their cells, is ONE fill of the colour at the
+    /// share of each cell its rule covers, which is what so many rules average to on any screen.
+    /// </summary>
+    private static void Rules(in EmitState s, Color color, float cell, float line, Rect placing, Rect bounds,
+        bool vertical)
+    {
+        var (at0, start, end) = vertical ? (placing.X, bounds.Left, bounds.Right) : (placing.Y, bounds.Top, bounds.Bottom);
+        var first = Math.Floor(((double)start - line - at0) / cell);
+        var count = Math.Ceiling(((double)end - at0) / cell) - first;
+        if (!(count > 0)) return;
+        if (line >= cell || count > MaxRulesPerAxis)
+        {
+            s.Builder.FillRect(bounds, Paint.Solid(color.WithOpacity(line / cell)));
+            return;
+        }
+        var paint = Paint.Solid(color);
+        for (var i = 0; i < (int)count; i++)
+        {
+            var at = at0 + (float)(first + i) * cell;
+            if (at >= end) break;
+            var from = MathF.Max(at, start);
+            var to = MathF.Min(at + line, end);
+            if (!(to > from)) continue;
+            s.Builder.FillRect(vertical
+                ? Rect.FromLTRB(from, bounds.Top, to, bounds.Bottom)
+                : Rect.FromLTRB(bounds.Left, from, bounds.Right, to), paint);
+        }
     }
 
     public Nothing Visit(DrawingPattern pattern, PatternLayer layer)

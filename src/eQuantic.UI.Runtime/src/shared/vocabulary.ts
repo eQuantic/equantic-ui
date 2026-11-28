@@ -1640,7 +1640,10 @@ export abstract class Pattern {
   attachment: TileAttachmentValue = 'box';
 }
 
-/** Mirror of the C# `GridPattern`: repeating hairline grid (square cell, token line color). */
+/**
+ * Mirror of the C# `GridPattern`: repeating hairline grid (square cell, token line color). The C#
+ * init accessors' refusals run once the config is applied, word for word.
+ */
 export class GridPattern extends Pattern {
   readonly patternKind = 'grid' as const;
   cell: number;
@@ -1653,6 +1656,14 @@ export class GridPattern extends Pattern {
     this.color = color;
     this.lineWidth = lineWidth;
     if (config) Object.assign(this, config);
+    if (!(this.cell > 0 && Number.isFinite(this.cell))) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A grid's cell is the distance between its rules in dp, a finite number above 0. (Parameter 'Cell')");
+    }
+    if (!(this.lineWidth > 0 && Number.isFinite(this.lineWidth))) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A grid's rule is a line in dp, a finite number above 0. (Parameter 'LineWidth')");
+    }
   }
 }
 

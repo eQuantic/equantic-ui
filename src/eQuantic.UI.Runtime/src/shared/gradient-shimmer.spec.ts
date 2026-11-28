@@ -387,6 +387,14 @@ describe('gradient + shimmer lowering (C# GradientShimmerRealizerTests cross-pin
     expect(() => new DrawingPattern(square, -1)).toThrow("(Parameter 'dp')");
     expect(() => new BoxStyle({ patterns: [new DrawingPattern(square)] })).toThrow("(Parameter 'Fit')");
     expect(() => new BoxStyle({ patterns: [new DrawingPattern(square, undefined, undefined, null, { fit: 'contain' })] })).not.toThrow();
+    // A grid's cell and rule are finite and above 0, or Photon's loop over its rules has no end
+    // (security review P1).
+    for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() => new GridPattern(bad, photonTheme.border)).toThrow("(Parameter 'Cell')");
+      expect(() => new GridPattern(24, photonTheme.border, bad)).toThrow("(Parameter 'LineWidth')");
+      expect(() => new GridPattern(24, photonTheme.border, 1, { lineWidth: bad })).toThrow("(Parameter 'LineWidth')");
+    }
+    expect(() => new GridPattern(24, photonTheme.border, 1e9)).not.toThrow();
   });
 
   it('the transpiled Skeleton sweeps the rest-hidden mirrored glint inside the clipped track', () => {

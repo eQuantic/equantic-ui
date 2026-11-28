@@ -59,9 +59,10 @@ const abstractBases = new Set(['VisualNode', 'FlexNode', 'TableSpans', 'Pattern'
 /**
  * The positional arguments of a twin whose constructor refuses what the C# one refuses before any
  * initializer runs, so `undefined` cannot reach its config: a drawing tile needs its artwork, an image
- * tile its source (#1937). The probe still rides the last slot.
+ * tile its source, a grid its cell and its rule (#1937). The probe still rides the last slot.
  */
 const requiredArguments: Record<string, unknown[]> = {
+  GridPattern: [24, undefined, 1],
   DrawingPattern: [new vocabulary.VectorDrawing(0, 0, 1, 1, []), 1, undefined, null],
   ImagePattern: ['img/tile.png', 1, undefined],
 };

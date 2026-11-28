@@ -89,6 +89,35 @@ public class PatternVocabularyTests
         refuse.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("Opacity");
     }
 
+    /// <summary>
+    /// A grid's cell and rule are finite numbers above 0: Photon paints a grid rule by rule, and a cell
+    /// or a rule that is not finite gave that loop no end (security review P1, #1937). A <c>with</c>
+    /// passes the same refusal.
+    /// </summary>
+    [Theory]
+    [InlineData(0f)]
+    [InlineData(-1f)]
+    [InlineData(float.NaN)]
+    [InlineData(float.PositiveInfinity)]
+    [InlineData(float.NegativeInfinity)]
+    public void AGridCellOrRuleThatIsNotAFiniteNumberAboveZero_IsRefused_NamingIt(float value)
+    {
+        var cell = () => new GridPattern(value, Theme.Border);
+        cell.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("Cell");
+        var rule = () => new GridPattern(24, Theme.Border, value);
+        rule.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("LineWidth");
+        var with = () => new GridPattern(24, Theme.Border) with { LineWidth = value };
+        with.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("LineWidth");
+    }
+
+    [Fact]
+    public void AGridOfAnyFiniteCellAndRuleAboveZero_IsTaken()
+    {
+        var grid = new GridPattern(0.01f, Theme.Border, 1e9f);
+        grid.Cell.Should().Be(0.01f);
+        grid.LineWidth.Should().Be(1e9f, "a rule wider than its cell fills it, as the web's gradient does");
+    }
+
     [Fact]
     public void AnEmptySource_IsRefused_NamingIt()
     {
@@ -207,7 +236,7 @@ public class PatternVocabularyTests
             .Split(Path.PathSeparator)
             .Append(typeof(Pattern).Assembly.Location)
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Select(path => MetadataReference.CreateFromFile(path));
+            .Select(path => TestReferences.Of(path));
         var compilation = CSharpCompilation.Create("Outside", [CSharpSyntaxTree.ParseText(source)], references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
