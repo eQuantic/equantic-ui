@@ -523,8 +523,15 @@ public sealed class DisplayListBuilder
         });
     }
 
+    /// <summary>
+    /// Ends the layer <see cref="PushLayer"/> began. A pop with no layer open throws: the renderer
+    /// composites each layer from a target its scope drew into, and a scope that ends before it begins
+    /// has none (#1952).
+    /// </summary>
     public void PopLayer()
     {
+        if (_openLayers == 0)
+            throw new InvalidOperationException("PopLayer without an open PushLayer: no layer is open to end.");
         _openLayers--;
         _commands.Add(new DrawCommand { Kind = DrawCommandKind.EndLayer });
     }

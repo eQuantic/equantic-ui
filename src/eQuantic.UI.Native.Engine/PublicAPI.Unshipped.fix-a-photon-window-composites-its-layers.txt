@@ -1,0 +1,11 @@
+#nullable enable
+*REMOVED*[EQX0001]eQuantic.UI.Native.Engine.RhiRenderer.Blur(eQuantic.UI.Native.Engine.IRhiRenderTarget! source, float radius) -> eQuantic.UI.Native.Engine.IRhiRenderTarget!
+*REMOVED*[EQX0001]eQuantic.UI.Native.Engine.RhiRenderer.Encode(eQuantic.UI.Native.Engine.DisplayList! displayList, eQuantic.UI.Native.Engine.IRhiCommandList! commands) -> void
+*REMOVED*[EQX0001]eQuantic.UI.Native.Engine.RhiRenderer.Encode(eQuantic.UI.Native.Engine.DisplayList! displayList, eQuantic.UI.Native.Engine.IRhiCommandList! commands, object? layersHandle) -> void
+[EQX0001]eQuantic.UI.Native.Engine.IRhiFrameTarget
+[EQX0001]eQuantic.UI.Native.Engine.IRhiFrameTarget.Width.get -> int
+[EQX0001]eQuantic.UI.Native.Engine.IRhiFrameTarget.Height.get -> int
+[EQX0001]eQuantic.UI.Native.Engine.IRhiFrameTarget.Begin(eQuantic.UI.Primitives.Color clearColor) -> eQuantic.UI.Native.Engine.IRhiCommandList!
+[EQX0001]eQuantic.UI.Native.Engine.IRhiFrameTarget.Submit(eQuantic.UI.Native.Engine.IRhiCommandList! commands) -> void
+[EQX0001]static eQuantic.UI.Native.Engine.DrawUniforms.TryBuildTiled(in eQuantic.UI.Native.Engine.DrawCommand command, eQuantic.UI.Native.Engine.TextureData! texture, out eQuantic.UI.Native.Engine.DrawUniforms uniforms) -> bool
+[EQX0001]eQuantic.UI.Native.Engine.RhiRenderer.Render(eQuantic.UI.Native.Engine.DisplayList! displayList, eQuantic.UI.Native.Engine.IRhiFrameTarget! frame) -> void
