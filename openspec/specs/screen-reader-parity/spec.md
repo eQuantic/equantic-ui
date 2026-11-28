@@ -191,7 +191,7 @@ the node SHALL stay in the tree. It SHALL add no geometry of its own.
 
 ### Requirement: A select is named by its label on every target
 
-A `Select` given a label SHALL be announced as a combobox named by it, with the choice it shows as its value, on the web and on Photon alike. Its label SHALL be drawn above the field and left out of the reading, so the words are heard once. With the label left out of the drawing for a form that draws its own, the field SHALL still be named by it. A select with no label SHALL have no name, never the choice it shows.
+A `Select` given a label SHALL be announced as a combobox named by it, with the choice it shows as its value, on the web and on Photon alike. Its label SHALL be drawn above the field and left out of the reading, so the words are heard once. With the label left out of the drawing for a form that draws its own, the field SHALL still be named by it. A select with no label SHALL have no name, never the choice it shows, and a label that is empty or only spaces SHALL be no label: nothing drawn above the field, and no name.
 
 #### Scenario: A labelled select
 
@@ -207,3 +207,8 @@ A `Select` given a label SHALL be announced as a combobox named by it, with the 
 
 - **WHEN** the labelled select's list is open
 - **THEN** both targets read the combobox named "City", expanded, then its options, alike
+
+#### Scenario: A label of nothing but spaces
+
+- **WHEN** a `Select` labelled with spaces showing "Lisbon" is read on the web and on Photon
+- **THEN** nothing is drawn above the field, and both read one combobox with no name whose value is "Lisbon"
