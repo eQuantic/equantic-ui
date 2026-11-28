@@ -35,6 +35,18 @@ internal sealed class MotionScope
     /// <summary>W4: the platform icon service + per-host raster cache (null = disc placeholder).</summary>
     public Framework.IIconRasterizer? IconRasterizer { get; init; }
     public IconRasterCache? IconCache { get; init; }
+
+    /// <summary>The host's cache of the tiles a box's patterns composite (#1937); null = the shared one.</summary>
+    public PatternTileCache? PatternCache { get; init; }
+
+    /// <summary>
+    /// The transform the frame's root is drawn under, the render scale and what the host lays over it:
+    /// what maps the window, the root's own box, into the device. A window-attached pattern is placed in the
+    /// window mapped from here into the box's own space (#1937), so a scroll, which moves the box and not
+    /// the window, leaves its tiles where they were.
+    /// </summary>
+    public Matrix2D Root { get; init; } = Matrix2D.Identity;
+
     public float RenderScale { get; init; } = 1f;
     public float TypeScale { get; init; } = 1f;
     public bool Active { get; set; }
@@ -52,6 +64,21 @@ internal sealed class MotionScope
     /// time as a picture: a sortable item's copy (#1537). Its paint would otherwise become the subtree's
     /// exit snapshot, and its resting colours a transition the subtree glides toward and back every frame.
     /// </summary>
+    /// <summary>
+    /// <paramref name="source"/> decoded by the host's image loader, once per source (<see cref="ImageCache"/>):
+    /// what an <see cref="Image"/> draws and an <see cref="ImagePattern"/> tiles, so a source both use is
+    /// decoded once. Null with no loader, or where the loader could not decode it.
+    /// </summary>
+    public TextureData? Decoded(string source)
+    {
+        if (ImageLoader is not { } loader) return null;
+        if (ImageCache is { } cache && cache.TryGetValue(source, out var known)) return known;
+        var decoded = loader.Load(source);
+        var data = decoded is null ? null : TextureData.Rgba(decoded.Width, decoded.Height, decoded.Rgba);
+        ImageCache?[source] = data;
+        return data;
+    }
+
     public MotionScope Still() => new(TimeMs, Reduced)
     {
         ViewportW = ViewportW,
@@ -62,6 +89,8 @@ internal sealed class MotionScope
         ImageCache = ImageCache,
         IconRasterizer = IconRasterizer,
         IconCache = IconCache,
+        PatternCache = PatternCache,
+        Root = Root,
         RenderScale = RenderScale,
         TypeScale = TypeScale,
     };

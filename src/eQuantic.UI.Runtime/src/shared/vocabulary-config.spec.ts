@@ -54,7 +54,18 @@ function declaredArity(Klass: { toString(): string }): number {
 }
 
 /** Abstract bases are never constructed by transpiled code — only their concrete subclasses are. */
-const abstractBases = new Set(['VisualNode', 'FlexNode', 'TableSpans']);
+const abstractBases = new Set(['VisualNode', 'FlexNode', 'TableSpans', 'Pattern', 'ArtworkPattern']);
+
+/**
+ * The positional arguments of a twin whose constructor refuses what the C# one refuses before any
+ * initializer runs, so `undefined` cannot reach its config: a drawing tile needs its artwork, an image
+ * tile its source, a grid its cell and its rule (#1937). The probe still rides the last slot.
+ */
+const requiredArguments: Record<string, unknown[]> = {
+  GridPattern: [24, undefined, 1],
+  DrawingPattern: [new vocabulary.VectorDrawing(0, 0, 1, 1, []), 1, undefined, null],
+  ImagePattern: ['img/tile.png', 1, undefined],
+};
 
 const classes = (Object.entries(vocabulary) as [string, unknown][])
   .filter(
@@ -74,7 +85,9 @@ describe('vocabulary twins accept the trailing config eqc emits', () => {
       const probe = { eqProbe: 'kept' };
       let built: Record<string, unknown>;
       try {
-        built = construct(Klass, arity, probe);
+        built = requiredArguments[name]
+          ? (Reflect.construct(Klass, [...requiredArguments[name], probe]) as Record<string, unknown>)
+          : construct(Klass, arity, probe);
       } catch (error) {
         // A constructor that throws on undefined arguments (a guard) is not what this proves.
         expect.soft(String(error)).toBe('');

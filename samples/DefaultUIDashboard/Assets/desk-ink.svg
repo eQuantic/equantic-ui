@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A tile whose shapes ask to be tinted by whatever holds them: every stroke and fill is
+     currentColor, so a pattern's tint (or the theme's text colour) is the ink. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <circle cx="60" cy="60" r="38" fill="none" stroke="currentColor" stroke-width="3"/>
+  <circle cx="60" cy="60" r="8" fill="currentColor"/>
+  <line x1="10" y1="60" x2="30" y2="60" stroke="currentColor" stroke-width="3"/>
+  <line x1="90" y1="60" x2="110" y2="60" stroke="currentColor" stroke-width="3"/>
+  <line x1="60" y1="10" x2="60" y2="30" stroke="currentColor" stroke-width="3"/>
+  <line x1="60" y1="90" x2="60" y2="110" stroke="currentColor" stroke-width="3"/>
+</svg>

@@ -200,7 +200,17 @@ public static class TokenCss
     public static string? Shift(float x, float y) =>
         x == 0 && y == 0
             ? null
-            : $"translate({(x == 0 ? "0" : $"calc(var(--eq-inline, 1) * {Percent(x)})")}, {(y == 0 ? "0" : Percent(y))})";
+            : $"translate({(x == 0 ? "0" : TowardEnd(Percent(x)))}, {(y == 0 ? "0" : Percent(y))})";
+
+    /// <summary>
+    /// A horizontal length measured toward the END of the direction where its element sits:
+    /// <c>calc(var(--eq-inline, 1) * 25%)</c>. The token sheet sets <c>--eq-inline</c> to 1 under
+    /// <c>ltr</c> and -1 under <c>rtl</c> (<see cref="ThemeStylesheet"/>), so the same string is
+    /// "toward the right" in one and "toward the left" in the other, and follows a direction that
+    /// changes with no lowering again. A shift (<see cref="Shift"/>) and a draggable's horizontal rest
+    /// both write through it; the TS <c>towardEnd()</c> twin writes the same string.
+    /// </summary>
+    internal static string TowardEnd(string length) => $"calc(var(--eq-inline, 1) * {length})";
 
     /// <summary>A bare invariant number ("0.####") — opacity, aspect-ratio, scale factors.</summary>
     public static string Number(float value) => value.ToString("0.####", CultureInfo.InvariantCulture);
@@ -318,21 +328,4 @@ public static class TokenCss
         $"radial-gradient({Px(glow.RadiusX)} {Px(glow.RadiusY)} at "
         + $"{Number(glow.CenterX * 100)}% {Number(glow.CenterY * 100)}%, "
         + $"{Value(glow.From)}, {Value(glow.To)})";
-
-    /// <summary>The grid as its TWO background-image layers (vertical rules, then horizontal) —
-    /// each a hard-stop linear gradient that repeats at <c>background-size</c>.</summary>
-    public static string GridPattern(GridPattern pattern)
-    {
-        var color = Value(pattern.Color);
-        var line = Px(pattern.LineWidth);
-        return $"linear-gradient(to right, {color} {line}, transparent {line}), "
-             + $"linear-gradient(to bottom, {color} {line}, transparent {line})";
-    }
-
-    /// <summary>The <c>background-size</c> entry pair matching <see cref="GridPattern"/>'s layers.</summary>
-    public static string GridPatternSize(GridPattern pattern)
-    {
-        var cell = Px(pattern.Cell);
-        return $"{cell} {cell}, {cell} {cell}";
-    }
 }

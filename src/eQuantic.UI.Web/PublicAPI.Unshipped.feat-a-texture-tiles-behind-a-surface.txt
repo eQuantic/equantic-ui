@@ -1,0 +1,9 @@
+#nullable enable
+*REMOVED*static eQuantic.UI.Web.TokenCss.GridPattern(eQuantic.UI.Primitives.GridPattern pattern) -> string!
+*REMOVED*static eQuantic.UI.Web.TokenCss.GridPatternSize(eQuantic.UI.Primitives.GridPattern pattern) -> string!
+eQuantic.UI.Web.HtmlStyle.BackgroundRepeat.get -> string?
+eQuantic.UI.Web.HtmlStyle.BackgroundRepeat.set -> void
+eQuantic.UI.Web.HtmlStyle.BackgroundOrigin.get -> string?
+eQuantic.UI.Web.HtmlStyle.BackgroundOrigin.set -> void
+eQuantic.UI.Web.HtmlStyle.BackgroundAttachment.get -> string?
+eQuantic.UI.Web.HtmlStyle.BackgroundAttachment.set -> void

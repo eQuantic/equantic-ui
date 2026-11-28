@@ -223,6 +223,7 @@ public sealed partial class PhotonHost
 
     private readonly Dictionary<string, TextureData?> _imageCache = new();
     private readonly IconRasterCache _iconCache = new();
+    private readonly PatternTileCache _patternCache = new();
 
     /// <summary>Device pixels per dp (the shell's backingScaleFactor). Layout, input and hit
     /// regions stay in dp; the emitted commands are wrapped in one root scale so the GPU
@@ -344,6 +345,7 @@ public sealed partial class PhotonHost
             _textCache.Clear();
             _iconCache.Clear();
             _imageCache.Clear();
+            _patternCache.Clear();
             // A patched Build has to run to be seen, in every component that has one.
             Volatile.Write(ref _rebuildAll, 1);
         }
@@ -386,7 +388,7 @@ public sealed partial class PhotonHost
         // Taken and cleared as late as possible: whatever the drain, the frame ticker or an edit
         // asked for before this point is in this frame, and anything after it is in the next.
         var rebuildAll = Interlocked.Exchange(ref _rebuildAll, 0) == 1;
-        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, Contrast, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _owner, timeMs, ReducedMotion, _transitions, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedAt,
+        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, Contrast, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _owner, timeMs, ReducedMotion, _transitions, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, _patternCache, safeArea, _pressedAt,
             _focusVisible ? _focusedId : 0, _textAt, caretIndex, CaretVisible,
             selection.Start, selection.End, density: Density,
             markedText: _marked, composing: _composing,
@@ -3736,7 +3738,8 @@ public sealed partial class PhotonHost
         // An Adjustable under focus answers the arrows — the reason it exists. Resolved out of
         // THIS frame's stops by id: the node from the frame it was focused in is long gone. The step is the
         // web's, by role (AdjustableKeys): up was +1 for every role, so a vertical radio group or tab strip
-        // stepped backwards here (#1873).
+        // stepped backwards here (#1873). Left to right, whatever the culture says, for the reason the
+        // Navigable keys below give: Photon does not mirror its layout for 1.0 (#1569).
         if (modifiers == KeyModifiers.None && _focusedId != 0
             && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
             && _lastFrame?.FocusStops is { } stops)
@@ -3744,7 +3747,7 @@ public sealed partial class PhotonHost
             for (var i = 0; i < stops.Count; i++)
             {
                 if (stops[i].Id != _focusedId || stops[i].Adjustable is not { } adjustable) continue;
-                adjustable.OnAdjust(AdjustableKeys.Step(key, adjustable.Role)!.Value);
+                adjustable.OnAdjust(AdjustableKeys.Step(key, adjustable.Role, TextDirection.LeftToRight)!.Value);
                 NeedsRender = true;
                 return true;
             }
@@ -3758,9 +3761,15 @@ public sealed partial class PhotonHost
         // Nothing dispatched here at all before the rows laid out (#248): Navigable.OnMove was wired
         // on one target, so a calendar on Photon was a grid you could not walk. A key the grid does
         // not claim answers null and travels on, so Tab and Escape still belong to the page.
+        //
+        // LEFT TO RIGHT, whatever the culture says: Photon lays out left to right for 1.0 (the direction
+        // is read and not yet mirrored), so ArrowRight points the way the next item is drawn, which is
+        // what this table answers for that direction. The day Photon mirrors, it passes its own direction
+        // here and nothing else moves; until then a culture that reads right to left must not turn the
+        // keys of a layout that did not turn (#1569).
         if (modifiers is KeyModifiers.None or KeyModifiers.Shift
             && _focusedId != 0
-            && NavigableKeys.Move(key, modifiers.HasFlag(KeyModifiers.Shift)) is { } move
+            && NavigableKeys.Move(key, modifiers.HasFlag(KeyModifiers.Shift), TextDirection.LeftToRight) is { } move
             && _lastFrame?.FocusStops is { } gridStops)
         {
             for (var i = 0; i < gridStops.Count; i++)

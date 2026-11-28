@@ -334,3 +334,87 @@ float4 textured_rgba_fragment(float4 position: SV_Position) : SV_Target
     if (a <= 0.0) discard;
     return float4(texel.rgb * a, a);
 }
+
+// Tiling.TryTexel, one axis: the cell is floor(offset / period), so it is negative left of and above
+// the origin; an axis that does not repeat keeps cell 0 alone; the position inside the cell must be
+// below the extent, which is the spaced gap, unless the tile fills its period (then a rounding onto
+// its far edge is the seam, not a hole). Answers the texel position, or -1 where no tile is.
+float tileTexel(float offset, float period, float extent, float repeats, float size)
+{
+    if (!(period > 0.0) || !(extent > 0.0) || size <= 0.0) return -1.0;
+    float cell = floor(offset / period);
+    float within = offset - cell * period;
+    // Settled by the remainder, as the C# does: a reciprocal's hair either side of a whole cell moves the
+    // cell, never the tile a point on its start belongs to.
+    if (within < 0.0) { cell -= 1.0; within += period; }
+    else if (within >= period) { cell += 1.0; within -= period; }
+    if (repeats < 0.5 && cell != 0.0) return -1.0;
+    if (within >= extent && extent < period) return -1.0;
+    return min(within / extent, 1.0) * size;
+}
+
+// Tiling.Sample's index on one axis: wrapped where tiles touch, held at the edge where they do not.
+int tileIndex(int index, int size, float wraps)
+{
+    return wraps > 0.5 ? ((index % size) + size) % size : clamp(index, 0, size - 1);
+}
+
+// One texel of the tile, PREMULTIPLIED: the _sRGB view hands it back linear and straight.
+float4 tileTexelPremultiplied(int x, int y)
+{
+    float4 texel = colorTexture.Load(int3(x, y, 0));
+    return float4(texel.rgb * texel.a, texel.a);
+}
+
+// #1937 — DrawCommandKind.TiledTexture: ONE Rgba8 tile repeated over the command's area, transliterating
+// Tiling (the normative C#). The period and the phase are exact, never moved to a pixel; each pixel
+// samples the fraction of the tile it falls in, filtered linearly between four texel Loads in
+// premultiplied light (no sampler, so the Reference backend's weights are the GPU's), wrapping where
+// tiles touch. Slots textured_rgba_fragment leaves unused carry the tiling, so the block keeps its
+// layout: radii.xy the origin, radii.zw the period, colorA.xy the extent, colorA.w the opacity,
+// colorB.xy whether each axis repeats, colorB.zw whether it wraps, gradient.xy the texture's size.
+[shader("fragment")]
+float4 tiled_rgba_fragment(float4 position: SV_Position) : SV_Target
+{
+    float2 pixel = position.xy;
+    float2 local = float2(
+        pixel.x * u.inv0.x + pixel.y * u.inv0.y + u.inv0.z,
+        pixel.x * u.inv1.x + pixel.y * u.inv1.y + u.inv1.z);
+
+    // Outside the area there is no tile (the Reference's early-out).
+    float2 rectMin = u.rect.xy - u.rect.zw;
+    float2 inside = (local - rectMin) / (u.rect.zw * 2.0);
+    if (inside.x < 0.0 || inside.x >= 1.0 || inside.y < 0.0 || inside.y >= 1.0) discard;
+
+    float x = tileTexel(local.x - u.radii.x, u.radii.z, u.colorA.x, u.colorB.x, u.gradient.x);
+    if (x < 0.0) discard;
+    float y = tileTexel(local.y - u.radii.y, u.radii.w, u.colorA.y, u.colorB.y, u.gradient.y);
+    if (y < 0.0) discard;
+
+    int width = int(u.gradient.x);
+    int height = int(u.gradient.y);
+    float fx = x - 0.5;
+    float fy = y - 0.5;
+    float x0 = floor(fx);
+    float y0 = floor(fy);
+    float ax = fx - x0;
+    float ay = fy - y0;
+    int left = tileIndex(int(x0), width, u.colorB.z);
+    int right = tileIndex(int(x0) + 1, width, u.colorB.z);
+    int top = tileIndex(int(y0), height, u.colorB.w);
+    int bottom = tileIndex(int(y0) + 1, height, u.colorB.w);
+    float4 above = lerp(tileTexelPremultiplied(left, top), tileTexelPremultiplied(right, top), ax);
+    float4 below = lerp(tileTexelPremultiplied(left, bottom), tileTexelPremultiplied(right, bottom), ax);
+    float4 filtered = lerp(above, below, ay);
+
+    float coverage = u.colorA.w;
+    if (u.flags.z > 0.5)
+    {
+        float cd = sdRoundedRect(pixel - u.clipRect.xy, u.clipRect.zw, u.clipRadii);
+        coverage *= clamp(0.5 - cd, 0.0, 1.0);
+    }
+
+    float4 result = filtered * coverage;
+    if (result.a <= 0.0) discard;
+    return result;  // premultiplied linear; the sRGB target encodes on store
+}

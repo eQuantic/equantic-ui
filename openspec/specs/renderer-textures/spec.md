@@ -17,7 +17,8 @@ each frame draws.
 
 #### Scenario: A thousand rasters, one a frame
 
-- **WHEN** a renderer encodes a thousand frames, each drawing one raster no other frame draws
+- **WHEN** a renderer draws a thousand frames into a window's frame target, each drawing one raster no
+  other frame draws
 - **THEN** it holds the last thirty or so, not a thousand
 
 #### Scenario: A raster drawn every frame
@@ -48,7 +49,8 @@ each frame draws.
 
 #### Scenario: Every way into the encoder
 
-- **WHEN** a window path encodes five hundred frames through the overload that takes its layers
+- **WHEN** a window's frame target draws a thousand frames through `Render`, which is now the one way into the
+  renderer, each with a raster no other frame draws
 - **THEN** each one counts as a frame, and the renderer holds the last thirty or so of their rasters
 
 ### Requirement: A released texture leaves the device
@@ -89,3 +91,36 @@ as an error.
 - **WHEN** an app on the Android emulator draws 1,296 different texts in one frame
 - **THEN** the 1,025th set comes from a second pool and the screen is drawn, and the same screen left
   and opened again is drawn from the sets its release gave back
+
+### Requirement: The renderer keeps the targets its frames draw into
+
+The shared renderer SHALL take the render targets a frame draws its own passes into (a group's layer, a backdrop's
+content, its blur and the blur's levels) from a pool keyed by size and kept across frames, creating one only when the
+pool has none of that size free. It SHALL release a pooled target no frame rented for more than thirty whole frames, and
+every pooled target when a frame's surface size differs from the frame before it. Disposing the renderer SHALL release
+the pool.
+
+#### Scenario: A layer drawn every frame
+
+- **WHEN** a frame with one layer is drawn a hundred times at the same size
+- **THEN** the device creates one render target
+
+#### Scenario: The layers of one frame
+
+- **WHEN** a frame holds a layer inside a layer, or three layers side by side, and is drawn fifty times
+- **THEN** the device creates two render targets, or three
+
+#### Scenario: A backdrop drawn every frame
+
+- **WHEN** a frame with a backdrop blur is drawn fifty times after its first
+- **THEN** no target is created after the first frame's
+
+#### Scenario: A target that is not rented again
+
+- **WHEN** a frame with one layer is followed by thirty frames without one, and one more
+- **THEN** its target is still held; followed by thirty-one, it is released
+
+#### Scenario: A window being resized
+
+- **WHEN** thirty frames with a layer are drawn, each at a new size
+- **THEN** the renderer holds one target

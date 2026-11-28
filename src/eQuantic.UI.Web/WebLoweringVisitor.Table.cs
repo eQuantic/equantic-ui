@@ -24,6 +24,8 @@ internal sealed partial class WebLoweringVisitor
 
     private HtmlElement LowerTableViewport(TableViewport viewport)
     {
+        // The host writes dir="ltr" on itself below, so everything it holds is read left to right.
+        using var reading = ReadAs(TextDirection.LeftToRight);
         var rows = viewport.Rows;
         var columns = viewport.Columns;
         var pinnedRows = Math.Clamp(viewport.PinnedRows, 0, rows.Count);

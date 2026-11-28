@@ -69,6 +69,29 @@ public class ComboBoxAndDialogSemanticsTests
     /// <summary>A grouped Select's open list names each group and then walks into it (#677): the
     /// group, named by the heading a person sees, then its options; the web's <c>role="group"</c>
     /// reads the same.</summary>
+    /// <summary>
+    /// A select names its field by its label (#1838): the combobox is announced by it, with the choice it shows as its
+    /// value, and the drawn label above the field is not read a second time. With the label left to the form, the
+    /// field names itself by the same words. A combobox is never named from its content, so before the label a
+    /// select had no name on any target.
+    /// </summary>
+    [Fact]
+    public void ALabelledSelect_IsAComboBoxNamedByItsLabel_WithItsChoiceAsItsValue()
+    {
+        foreach (var select in new[]
+        {
+            new Select(["Lisbon", "Porto"], 0, _ => { }, label: "City"),
+            new Select(["Lisbon", "Porto"], 0, _ => { }, label: "City") { LabelHidden = true },
+        })
+        {
+            var host = Render(select);
+            var field = host.Semantics().Should().ContainSingle("the label above the field is its name, never a second stop").Subject;
+            field.Role.Should().Be(SemanticRole.ComboBox);
+            field.Label.Should().Be("City");
+            field.Value.Should().Be("Lisbon", "the choice the field shows is its value");
+        }
+    }
+
     [Fact]
     public void AGroupedSelectsListNamesEachGroupBeforeItsOptions()
     {
