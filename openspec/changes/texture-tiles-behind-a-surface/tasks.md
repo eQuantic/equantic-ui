@@ -82,7 +82,7 @@
     extracted once.
 - [x] 3.6 Extend `ThemeStylesheetTests`: the toggles for each declared mode, under `data-theme`, and in the contrast
   query, under the same selectors as `eq-themed-dark`.
-- [ ] 3.7 Check, against the real thing: a page of `samples/DefaultUIDashboard` with a desk that has a vector tile, an
+- [x] 3.7 Check, against the real thing: a page of `samples/DefaultUIDashboard` with a desk that has a vector tile, an
   image tile with a dark source, a tinted tile and a window-attached tile inside a scroller. Open it in a browser:
   - in light and in dark;
   - with the theme toggled live;
@@ -91,6 +91,8 @@
 
   Write down a screenshot of each.
 
+
+  Done on 2026-11-28 in Chrome 157 and Firefox 159 at scale 2, in light and dark, standard and more contrast, and scrolled. It found the contrast toggles' cascade defect, now fixed and pinned (`TheContrastToggles_StandardDefault_ComesBeforeTheMoreBlock_AndNothingSetsThemAfter`).
 ## 4. The web: the runtime's twin
 
 - [x] 4.1 `vocabulary.ts`:
@@ -113,8 +115,10 @@
   - they also gain `box-pattern-themed`: a tint that differs by mode, and an image tile with a dark source.
 
   The fixture pins the atomic class names. Regenerate with `EQ_UPDATE_PARITY_FIXTURE=1`, and read the diff.
-- [ ] 4.6 Regenerate `primitives-types.fixture.json` and `roslyn-completions.fixture.json`, and read both diffs.
-- [ ] 4.7 Check:
+- [x] 4.6 Regenerate `primitives-types.fixture.json` and `roslyn-completions.fixture.json`, and read both diffs.
+
+  `primitives-types.fixture.json` is regenerated. `roslyn-completions.fixture.json` is a recording made in another repository, and nothing here writes it, so it stays as recorded.
+- [x] 4.7 Check:
   - `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime` is green;
   - the page of 3.7, reached by navigation from another page, shows the same layers, with no patch in the hydration
     log;
@@ -122,6 +126,8 @@
     tile moves with the box (WebKit's documented behaviour, which the web keeps, with no workaround). Write the
     measured answer into design.md decision 7 and into the wiki's note of task 6.1.
 
+
+  TestRuntime is green, and `/desk` reached from `/colors` by a link draws the same six layers as its SSR, with no hydration warning. iPad Safari (iOS 26.5) draws every layer. The window attachment on iOS was measured by task 0.1 on a page of its own: the tile is anchored to the document.
 ## 5. Photon: placement, one repeating draw, and the compositor
 
 - [x] 5.1 `PatternPlacement` (decision 5): the three areas with their radii, the placing area, the clip area and the
@@ -172,9 +178,11 @@
 
   Ask for the macOS jobs on the branch (`gh workflow run ci.yml --ref <branch>`), since this changes the Apple track.
 
+
+  Partly done. PhotonDesktop's desk was drawn headless through the app's own compositor, with CoreGraphics' rasterizer and image loader, in light and dark, and it matches the web's. `MetalParityTests` holds the tiled draw on Metal. Still owed: a window on Metal at two scales (this Mac has one display), and Vulkan on the Windows runner, which CI's Windows leg runs.
 ## 6. Documentation, ledger and suites
 
-- [ ] 6.1 The wiki's `Styling` page, in all five languages (English, pt-BR, es, fr, de), "Tile artwork behind a
+- [x] 6.1 The wiki's `Styling` page, in all five languages (English, pt-BR, es, fr, de), "Tile artwork behind a
   surface":
   - the desk as the example;
   - a table of the members;
@@ -185,9 +193,9 @@
 
   `Upgrading`, in every language it is written in: the break and its migration line. Write both on the wiki branch
   `feat/a-texture-tiles-behind-a-surface` (worktree `wiki-texture`).
-- [ ] 6.2 `docs/FLUTTER-PARITY.md`: a row for `DecorationImage` (`repeat`, `alignment`, `fit`, `opacity`), with the
+- [x] 6.2 `docs/FLUTTER-PARITY.md`: a row for `DecorationImage` (`repeat`, `alignment`, `fit`, `opacity`), with the
   fenced `centerSlice` and `scale` and their reasons.
-- [ ] 6.3 A ledger entry under `docs/ledger/`, citing #1937 and #1939.
+- [x] 6.3 A ledger entry under `docs/ledger/`, citing #1937 and #1939.
 - [ ] 6.4 Archive the change with `openspec archive texture-tiles-behind-a-surface --yes` before the merge.
 - [ ] 6.5 Every test project of the solution, with the Conformance suite in full, each read by its exit code, through
   the build lock with `EQ_WIKI_DIR` pointed at the wiki worktree.
