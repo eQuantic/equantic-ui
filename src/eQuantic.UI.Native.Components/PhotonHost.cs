@@ -223,6 +223,7 @@ public sealed partial class PhotonHost
 
     private readonly Dictionary<string, TextureData?> _imageCache = new();
     private readonly IconRasterCache _iconCache = new();
+    private readonly PatternTileCache _patternCache = new();
 
     /// <summary>Device pixels per dp (the shell's backingScaleFactor). Layout, input and hit
     /// regions stay in dp; the emitted commands are wrapped in one root scale so the GPU
@@ -344,6 +345,7 @@ public sealed partial class PhotonHost
             _textCache.Clear();
             _iconCache.Clear();
             _imageCache.Clear();
+            _patternCache.Clear();
             // A patched Build has to run to be seen, in every component that has one.
             Volatile.Write(ref _rebuildAll, 1);
         }
@@ -386,7 +388,7 @@ public sealed partial class PhotonHost
         // Taken and cleared as late as possible: whatever the drain, the frame ticker or an edit
         // asked for before this point is in this frame, and anything after it is in the next.
         var rebuildAll = Interlocked.Exchange(ref _rebuildAll, 0) == 1;
-        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, Contrast, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _owner, timeMs, ReducedMotion, _transitions, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, safeArea, _pressedAt,
+        _lastFrame = PhotonRealizer.Realize(_root, Width, height, _theme, Mode, Contrast, builder, _measurer, _typeScale, _pressed, _focusVisible ? _focused : null, _hovered, _owner, timeMs, ReducedMotion, _transitions, _presences, _drags, TextRasterizer, _textCache, RenderScale, IconRasterizer, _iconCache, ImageLoader, _imageCache, _patternCache, safeArea, _pressedAt,
             _focusVisible ? _focusedId : 0, _textAt, caretIndex, CaretVisible,
             selection.Start, selection.End, density: Density,
             markedText: _marked, composing: _composing,

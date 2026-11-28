@@ -210,17 +210,7 @@ internal sealed partial class EmitVisitor
     /// </summary>
     private static void EmitImage(LayoutNode node, Image image, IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder, MotionScope motion)
     {
-        TextureData? data = null;
-        if (motion.ImageLoader is { } loader)
-        {
-            var cache = motion.ImageCache;
-            if (cache is null || !cache.TryGetValue(image.Source, out data))
-            {
-                var decoded = loader.Load(image.Source);
-                data = decoded is null ? null : TextureData.Rgba(decoded.Width, decoded.Height, decoded.Rgba);
-                cache?[image.Source] = data;
-            }
-        }
+        var data = motion.Decoded(image.Source);
         if (data is null)
         {
             builder.FillRRect(new RRect(node.Bounds, image.CornerRadius),

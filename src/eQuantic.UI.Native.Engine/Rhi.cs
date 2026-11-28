@@ -44,6 +44,14 @@ public enum RhiPipelineKind : byte
 
     /// <summary>Dual-Kawase pyramid, upsampling half — <c>blur_up</c>. Blending OFF; LINEAR.</summary>
     BlurUp = 5,
+
+    /// <summary>
+    /// A tile layer (#1937): one Rgba8 tile repeated over the command's area — <c>tiled_rgba_fragment</c>.
+    /// It filters linearly between four texel LOADS in premultiplied light, wrapping where tiles touch,
+    /// which is <see cref="Tiling.Sample"/> on the GPU: no sampler, so a GPU's own filter weights cannot
+    /// set it apart from the Reference backend's.
+    /// </summary>
+    TiledRgba = 6,
 }
 
 /// <summary>Texture filtering for a binding (D6b). Nearest is the DEFAULT and stays correct for
@@ -127,6 +135,25 @@ public struct DrawUniforms
             uniforms.ClipRect = new Float4(clip.Rect.Center.X, clip.Rect.Center.Y, clip.Rect.Width / 2, clip.Rect.Height / 2);
             uniforms.ClipRadii = new Float4(clip.Radii.TopLeft, clip.Radii.TopRight, clip.Radii.BottomRight, clip.Radii.BottomLeft);
         }
+        return true;
+    }
+
+    /// <summary>
+    /// Builds the block for a <see cref="DrawCommandKind.TiledTexture"/> command, its tiling in the slots
+    /// <c>textured_rgba_fragment</c> leaves unused, so the block keeps its layout: <c>Radii</c> holds the
+    /// origin and the period, <c>ColorA</c> the extent and the opacity (times <paramref name="layerAlpha"/>),
+    /// <c>ColorB</c> whether each axis repeats and whether it wraps, and <c>Gradient</c> the texture's
+    /// size. False when the command's transform cannot be inverted.
+    /// </summary>
+    public static bool TryBuildTiled(in DrawCommand command, TextureData texture, float layerAlpha, out DrawUniforms uniforms)
+    {
+        if (!TryBuild(in command, out uniforms)) return false;
+        var tiling = command.Tiling;
+        uniforms.Radii = new Float4(tiling.Origin.X, tiling.Origin.Y, tiling.Period.Width, tiling.Period.Height);
+        uniforms.ColorA = new Float4(tiling.Extent.Width, tiling.Extent.Height, 0, command.StrokeWidth * layerAlpha);
+        uniforms.ColorB = new Float4(tiling.RepeatX ? 1 : 0, tiling.RepeatY ? 1 : 0, tiling.WrapsX ? 1 : 0, tiling.WrapsY ? 1 : 0);
+        uniforms.Gradient = new Float4(texture.Width, texture.Height, 0, 0);
+        uniforms.Flags = new Float4(0, 0, command.Clip is null ? 0 : 1, 0);
         return true;
     }
 
@@ -560,6 +587,20 @@ public sealed class RhiRenderer : IDisposable
                 }
                 commands.BindTexture(kind == RhiPipelineKind.TexturedRgba ? ColorSlot : CoverageSlot, TextureFor(data));
                 commands.Draw(in textured);
+                continue;
+            }
+            if (command.Kind == DrawCommandKind.TiledTexture)
+            {
+                if (command.TextureId < 0 || command.TextureId >= displayList.Textures.Count) continue;
+                var tile = displayList.Textures[command.TextureId];
+                if (!DrawUniforms.TryBuildTiled(in command, tile, layerAlpha, out var tiled)) continue;
+                if (activeKind != RhiPipelineKind.TiledRgba)
+                {
+                    commands.SetPipeline(RhiPipelineKind.TiledRgba);
+                    activeKind = RhiPipelineKind.TiledRgba;
+                }
+                commands.BindTexture(ColorSlot, TextureFor(tile));
+                commands.Draw(in tiled);
                 continue;
             }
             if (activeKind != RhiPipelineKind.Sdf)

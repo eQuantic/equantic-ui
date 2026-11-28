@@ -119,9 +119,8 @@ internal sealed partial class EmitVisitor
             borderColor = new ColorToken(colorClock.ResolveColor(at, GlideChannel.Border, borderColor.Resolve(s.Mode, s.Contrast), s.Motion.TimeMs, colorSpec, s.Motion.Reduced));
         }
 
-        EmitChrome(s.Node.Bounds, fill, style.CornerRadius,
-            borderColor, borderWidth, s.Theme, s.Mode, s.Contrast, s.Builder,
-            style.Gradient, style.Patterns, style.Glow, style.BorderSides, style.InsetHighlight);
+        EmitChrome(s, s.Node.Bounds, fill, style.CornerRadius, borderColor, borderWidth,
+            style.Gradient, style.Patterns, style.Padding, style.Glow, style.BorderSides, style.InsetHighlight);
 
         // Focus double ring (spec §01): 2dp Surface gap + 2dp FocusRing OUTSIDE the control,
         // following the control's own radius — the first Box under the focused Pressable
@@ -174,15 +173,16 @@ internal sealed partial class EmitVisitor
 
     private void EmitFlexBackground(FlexNode flex, EmitState s)
     {
-        EmitChrome(s.Node.Bounds, flex.Background, flex.CornerRadius, default, 0, s.Theme, s.Mode, s.Contrast, s.Builder);
+        EmitChrome(s, s.Node.Bounds, flex.Background, flex.CornerRadius, default, 0);
     }
 
-    private static void EmitChrome(Rect bounds, ColorToken? background, CornerRadii radius,
-        ColorToken borderColor, float borderWidth, IAppTheme theme, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder,
-        LinearGradient? gradient = null, IReadOnlyList<Pattern>? patterns = null, RadialGradient? glow = null,
-        BorderSides sides = BorderSides.All, ColorToken? insetHighlight = null)
+    private static void EmitChrome(in EmitState s, Rect bounds, ColorToken? background, CornerRadii radius,
+        ColorToken borderColor, float borderWidth,
+        LinearGradient? gradient = null, IReadOnlyList<Pattern>? patterns = null, EdgeInsets padding = default,
+        RadialGradient? glow = null, BorderSides sides = BorderSides.All, ColorToken? insetHighlight = null)
     {
         if (bounds.IsEmpty) return;
+        var (mode, contrast, builder) = (s.Mode, s.Contrast, s.Builder);
 
         if (background is { } bg)
         {
@@ -193,16 +193,14 @@ internal sealed partial class EmitVisitor
 
         // The patterns draw over the solid and UNDER the glow and the gradient, in list order, the
         // last on top — the reverse of the web realizer's background-image list, where the first is.
-        // Hairlines are ordinary fills bounded by the box: no engine primitive and no shader.
-        if (patterns is not null)
-            foreach (var layer in patterns)
-            {
-                if (layer is GridPattern grid && grid.Cell > 0 && grid.LineWidth > 0)
-                    EmitGridPattern(bounds, grid, mode, contrast, builder);
-                // A DrawingPattern and an ImagePattern draw nothing on Photon yet: #1942 places and
-                // clips every kind and draws the tiles, through a PatternPainter : IPatternVisitor
-                // that replaces this test.
-            }
+        // Each is placed in one of the box's areas and clipped to another, its rounded corners
+        // included, as CSS places a background layer (#1937, #1939).
+        if (patterns is { Count: > 0 })
+        {
+            var layer = new PatternLayer(s, PatternPlacement.Of(bounds, radius, borderWidth, sides, padding));
+            foreach (var pattern in patterns)
+                pattern.Accept(PatternPainter.Shared, layer);
+        }
 
         // The spotlight sits above the grid and below the linear gradient — the same stacking the
         // web realizer's layer list produces (there the FIRST entry is topmost; here the LAST drawn
@@ -295,21 +293,10 @@ internal sealed partial class EmitVisitor
         var color = highlight.Resolve(mode, contrast);
         if (color.A == 0) return;
 
-        var width = Math.Max(borderWidth, 0);
-        var top = sides.HasFlag(BorderSides.Top) ? width : 0;
-        var bottom = sides.HasFlag(BorderSides.Bottom) ? width : 0;
-        var start = sides.HasFlag(BorderSides.Start) ? width : 0;
-        var end = sides.HasFlag(BorderSides.End) ? width : 0;
-        var inner = new Rect(bounds.X + start, bounds.Y + top, bounds.Width - start - end, bounds.Height - top - bottom);
+        // The padding box, where CSS paints an inset shadow: the same area a pattern is placed in by default.
+        var padding = PatternPlacement.Of(bounds, radius, borderWidth, sides, default).Padding;
+        var (inner, radii) = (padding.Rect, padding.Radii);
         if (inner.Width <= 0 || inner.Height <= 0) return;
-
-        // CSS shrinks each corner's two radii by the border beside it, an ellipse; one radius per corner here takes
-        // the larger of the two borders, so the clip never reaches past the inner edge.
-        var radii = new CornerRadii(
-            Math.Max(0, radius.TopLeft - Math.Max(start, top)),
-            Math.Max(0, radius.TopRight - Math.Max(end, top)),
-            Math.Max(0, radius.BottomRight - Math.Max(end, bottom)),
-            Math.Max(0, radius.BottomLeft - Math.Max(start, bottom)));
 
         builder.PushClip(new RRect(inner, radii));
         builder.FillRect(new Rect(inner.X, inner.Y, inner.Width, Math.Min(1, inner.Height)), Paint.Solid(color));
@@ -324,28 +311,6 @@ internal sealed partial class EmitVisitor
         builder.PushClip(new RRect(band(bounds)));
         builder.StrokeRRect(stroke, width, Paint.Solid(color));
         builder.PopClip();
-    }
-
-    /// <summary>
-    /// The <see cref="GridPattern"/> hairlines, matching the CSS layers exactly: rules START at the
-    /// box origin and repeat every <c>Cell</c> dp — the same phase as a <c>background-size</c> tile,
-    /// so a grid straddling both realizers lands on the same pixels. Lines are clipped to the box by
-    /// construction (each rule is sized to the bounds), and a degenerate cell emits nothing rather
-    /// than looping forever.
-    /// </summary>
-    private static void EmitGridPattern(Rect bounds, GridPattern pattern, ThemeMode mode, ContrastLevel contrast, DisplayListBuilder builder)
-    {
-        var color = pattern.Color.Resolve(mode, contrast);
-        if (color.A == 0) return;
-
-        var paint = Paint.Solid(color);
-        var line = pattern.LineWidth;
-
-        for (var x = bounds.X; x < bounds.X + bounds.Width; x += pattern.Cell)
-            builder.FillRect(new Rect(x, bounds.Y, line, bounds.Height), paint);
-
-        for (var y = bounds.Y; y < bounds.Y + bounds.Height; y += pattern.Cell)
-            builder.FillRect(new Rect(bounds.X, y, bounds.Width, line), paint);
     }
 
     /// <summary>

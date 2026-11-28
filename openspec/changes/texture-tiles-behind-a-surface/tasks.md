@@ -124,33 +124,33 @@
 
 ## 5. Photon: placement, one repeating draw, and the compositor
 
-- [ ] 5.1 `PatternPlacement` (decision 5): the three areas with their radii, the placing area, the clip area and the
+- [x] 5.1 `PatternPlacement` (decision 5): the three areas with their radii, the placing area, the clip area and the
   window attachment.
-- [ ] 5.2 The grid through `PatternPlacement`: rules from the placing area's origin across the clip area, inside
+- [x] 5.2 The grid through `PatternPlacement`: rules from the placing area's origin across the clip area, inside
   `PushClip` of the clip area's rounded rectangle (#1939). `GradientShimmerTests:86-123` stays green unchanged.
-- [ ] 5.3 The normative math, `Tiling` and `Tiling.TryTexel`. `TilingTests` covers:
+- [x] 5.3 The normative math, `Tiling` and `Tiling.TryTexel`. `TilingTests` covers:
   - negative cells, left of and above the origin;
   - `Once` on one axis;
   - the spaced gap;
   - a texel at each edge.
-- [ ] 5.4 `DrawCommandKind.TiledTexture = 9` and `DisplayListBuilder.TiledTexture(in Rect area, TextureData texture,
+- [x] 5.4 `DrawCommandKind.TiledTexture = 9` and `DisplayListBuilder.TiledTexture(in Rect area, TextureData texture,
   in Tiling tiling, float opacity)`. The Reference backend draws it through `Tiling.TryTexel`, premultiplied and
   linear.
-- [ ] 5.5 `tiled_rgba_fragment` in `Sdf.slang`, with the slots of decision 12. `RhiPipelineKind.TiledRgba`,
+- [x] 5.5 `tiled_rgba_fragment` in `Sdf.slang`, with the slots of decision 12. `RhiPipelineKind.TiledRgba`,
   appended, and registered by the Metal and the Vulkan devices. Regenerate with `./scripts/generate-shaders.sh` and
   commit `Sdf.metal`, `Sdf.spv` and `Sdf.metallib`, never edited by hand.
-- [ ] 5.6 The exact geometry of decision 11: a fractional period and phase, never snapped, sampled with linear
+- [x] 5.6 The exact geometry of decision 11: a fractional period and phase, never snapped, sampled with linear
   filtering and repeat addressing. `TilingTests` holds the tenth tile of 330 dp at 2.625 at 7796.25 device px.
-- [ ] 5.7 `EmitState.UnderTransform`, set when the emitter descends through a box with a `Transform` or a motion that
+- [x] 5.7 `EmitState.UnderTransform`, set when the emitter descends through a box with a `Transform` or a motion that
   transforms. Under it, a window attachment paints as a box attachment.
-- [ ] 5.8 `TileCompositor`: a vector through the host's `IIconRasterizer` and `ArtworkPaint`; a raster through
+- [x] 5.8 `TileCompositor`: a vector through the host's `IIconRasterizer` and `ArtworkPaint`; a raster through
   `motion.ImageLoader` and `motion.ImageCache`, resampled as decision 10 says. Both composite in premultiplied linear
   space and store straight sRGB.
-- [ ] 5.9 `PatternTileCache`, threaded through `PhotonRealizer.Realize` and `MotionScope`, with the key and the
+- [x] 5.9 `PatternTileCache`, threaded through `PhotonRealizer.Realize` and `MotionScope`, with the key and the
   budget of decision 13.
-- [ ] 5.10 `EmitVisitor`: `EmitChrome` takes `Patterns`, and `PatternPainter : IPatternVisitor` draws each in order,
+- [x] 5.10 `EmitVisitor`: `EmitChrome` takes `Patterns`, and `PatternPainter : IPatternVisitor` draws each in order,
   between the background and the glow. With no rasterizer there is no vector tile, and with no loader no image tile.
-- [ ] 5.11 `PatternPhotonTests` (new, `tests/eQuantic.UI.Native.Engine.Tests`, with `PortableIconRasterizer` and a test
+- [x] 5.11 `PatternPhotonTests` (new, `tests/eQuantic.UI.Native.Engine.Tests`, with `PortableIconRasterizer` and a test
   image loader), for emission:
   - one `TiledTexture` command per tile layer for a 2560 × 1440 box;
   - the list's order against the glow and the gradient;
@@ -159,7 +159,7 @@
   - the window attachment's origin before and after a scroll of 300 dp;
   - the transform rule;
   - an image tile's texture at 240 × 160 for the spec's case.
-- [ ] 5.12 Pixel tests on the Reference backend, in the same file:
+- [x] 5.12 Pixel tests on the Reference backend, in the same file:
   - no seam at 2.625;
   - one tile against the same artwork as a `Drawing`, within one level per channel;
   - the corner outside the radius is the page, for a tile and for a grid (#1939);
