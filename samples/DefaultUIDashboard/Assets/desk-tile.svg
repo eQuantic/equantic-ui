@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A desk tile, drawn for the sample: circles and rules in one fixed ink, which a pattern repeats
+     at a width. Everything sits inside the viewBox, so the repetition shows no seam. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160">
+  <circle cx="60" cy="48" r="22" fill="none" stroke="#8A6F4E" stroke-width="2"/>
+  <circle cx="60" cy="48" r="6" fill="#8A6F4E"/>
+  <circle cx="180" cy="112" r="30" fill="none" stroke="#8A6F4E" stroke-width="2"/>
+  <circle cx="180" cy="112" r="10" fill="#8A6F4E"/>
+  <line x1="110" y1="20" x2="160" y2="20" stroke="#8A6F4E" stroke-width="2"/>
+  <line x1="110" y1="32" x2="140" y2="32" stroke="#8A6F4E" stroke-width="2"/>
+  <line x1="20" y1="130" x2="110" y2="130" stroke="#8A6F4E" stroke-width="2"/>
+  <line x1="20" y1="142" x2="80" y2="142" stroke="#8A6F4E" stroke-width="2"/>
+  <line x1="170" y1="40" x2="226" y2="40" stroke="#8A6F4E" stroke-width="2"/>
+</svg>
