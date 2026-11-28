@@ -525,7 +525,7 @@ public sealed class PaymentsPage : StatefulComponent
         var foot = new Row(gap: Space.S3) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
         foot.Add(new Flexible(new Text($"{_selected.Count} of {Visible().Count} selected", TypeRole.Caption,
             theme.TextMuted, maxLines: 1) { Tabular = true }, 1));
-        foot.Add(new Pagination(70, _page, page => SetState(() => _page = page)));
+        foot.Add(Pagination(70, _page, page => SetState(() => _page = page)));
 
         var column = new Column(gap: 0) { Width = SizeValue.Fill };
         column.Add(new Box(new BoxStyle

@@ -11,23 +11,38 @@ namespace eQuantic.UI.Components;
 /// </summary>
 public sealed class Tabs : StatelessComponent
 {
-    public Tabs(IReadOnlyList<string> labels, int selected, Action<int>? onSelect = null)
+    public Tabs(IReadOnlyList<string> labels, int selected, Action<int>? onSelect = null,
+        NavigationTheme? style = null, Func<int, VisualNode>? tabBuilder = null)
     {
         Labels = labels;
         Selected = selected;
         OnSelect = onSelect;
+        Style = style;
+        TabBuilder = tabBuilder;
     }
 
     public IReadOnlyList<string> Labels { get; init; }
     public int Selected { get; init; }
     public Action<int>? OnSelect { get; init; }
 
+    /// <summary>This component's own look, laid over the theme's <see cref="IAppTheme.Navigation"/> slot with
+    /// <see cref="NavigationTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's.</summary>
+    public NavigationTheme? Style { get; init; }
+
+    /// <summary>
+    /// Draws a tab's CONTENT, by its index in <see cref="Labels"/>, the index <see cref="Selected"/> and
+    /// <see cref="OnSelect"/> count. The strip keeps the chrome (the indicator, the pressed fill, the arrow
+    /// keys) and hands the content the colour and the type the tab's own text is drawn in; the tab's text stays
+    /// its accessible name. Null draws the text.
+    /// </summary>
+    public Func<int, VisualNode>? TabBuilder { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
-        // The theme's Navigation slot, then the component's own (§3.10).
-        var slot = theme.Navigation;
+        // The instance's style over the theme's Navigation slot, then the component's own (§3.10).
+        var slot = NavigationTheme.Merge(theme.Navigation, Style);
         var indicator = slot?.IndicatorThickness ?? 3;
 
         var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = slot?.TabHeight ?? 48 };
@@ -36,15 +51,21 @@ public sealed class Tabs : StatelessComponent
             var isActive = i == Selected;
             var index = i;
 
-            var label = new Text(Labels[i], TypeRole.Caption,
-                isActive ? primary.Base : slot?.InactiveColor ?? theme.TextMuted, maxLines: 1)
-            {
-                StyleOverride = new TypeStyle(slot?.TabLabelSize ?? 14, slot?.TabLabelLineHeight ?? 18,
-                    isActive ? slot?.TabSelectedLabelWeight ?? FontWeight.Bold : slot?.TabLabelWeight ?? FontWeight.SemiBold,
-                    slot?.TabLabelTracking ?? 0.1f, 1.3f),
-            };
+            var tint = isActive ? primary.Base : slot?.InactiveColor ?? theme.TextMuted;
+            var type = new TypeStyle(slot?.TabLabelSize ?? 14, slot?.TabLabelLineHeight ?? 18,
+                isActive ? slot?.TabSelectedLabelWeight ?? FontWeight.Bold : slot?.TabLabelWeight ?? FontWeight.SemiBold,
+                slot?.TabLabelTracking ?? 0.1f, 1.3f);
             var labelRow = new Row(gap: 0) { Main = MainAlign.Center, Height = SizeValue.Fill };
-            labelRow.Add(label);
+            // The developer's content, when they drew it, in the colour and the type the tab's text takes;
+            // the tab's text otherwise.
+            if (TabBuilder is { } builder)
+                labelRow.Add(new Box(new BoxStyle
+                {
+                    Foreground = tint,
+                    Content = new ContentStyle { Role = TypeRole.Caption, Type = type, MaxLines = 1 },
+                }, builder(index)));
+            else
+                labelRow.Add(new Text(Labels[i], TypeRole.Caption, tint, maxLines: 1) { StyleOverride = type });
 
             // Cell = label centered + the 3dp indicator (inset 16, top corners rounded) at the bottom.
             var cell = new Column(gap: 0) { Height = SizeValue.Fill };

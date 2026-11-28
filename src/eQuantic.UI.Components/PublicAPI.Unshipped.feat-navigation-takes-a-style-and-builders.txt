@@ -1,0 +1,48 @@
+#nullable enable
+*REMOVED*eQuantic.UI.Components.Tabs.Tabs(System.Collections.Generic.IReadOnlyList<string!>! labels, int selected, System.Action<int>? onSelect = null) -> void
+*REMOVED*static eQuantic.UI.Components.UI.AppBar(string! title) -> eQuantic.UI.Components.AppBar!
+*REMOVED*static eQuantic.UI.Components.UI.BottomNavigation(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null) -> eQuantic.UI.Components.BottomNavigation!
+*REMOVED*static eQuantic.UI.Components.UI.NavigationRail(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null) -> eQuantic.UI.Components.NavigationRail!
+*REMOVED*static eQuantic.UI.Components.UI.Tabs(System.Collections.Generic.IReadOnlyList<string!>! labels, int selected, System.Action<int>? onSelect = null) -> eQuantic.UI.Components.Tabs!
+*REMOVED*eQuantic.UI.Components.AppBar.AppBar(string! title) -> void
+*REMOVED*eQuantic.UI.Components.BottomNavigation.BottomNavigation(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null) -> void
+*REMOVED*eQuantic.UI.Components.Breadcrumb.Breadcrumb(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.Crumb!>! crumbs) -> void
+*REMOVED*eQuantic.UI.Components.NavigationRail.NavigationRail(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null) -> void
+*REMOVED*eQuantic.UI.Components.PageIndicator.PageIndicator(int count, int currentIndex, System.Action<int>? onSelected = null) -> void
+*REMOVED*eQuantic.UI.Components.Pagination.Pagination(int pageCount, int currentPage, System.Action<int>? onChanged = null) -> void
+eQuantic.UI.Components.AppBar.AppBar(string! title, eQuantic.UI.Primitives.NavigationTheme? style = null) -> void
+eQuantic.UI.Components.AppBar.Style.get -> eQuantic.UI.Primitives.NavigationTheme?
+eQuantic.UI.Components.AppBar.Style.init -> void
+eQuantic.UI.Components.BottomNavigation.BottomNavigation(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null, eQuantic.UI.Primitives.NavigationTheme? style = null, System.Func<int, eQuantic.UI.Primitives.VisualNode!>? destinationBuilder = null) -> void
+eQuantic.UI.Components.BottomNavigation.Style.get -> eQuantic.UI.Primitives.NavigationTheme?
+eQuantic.UI.Components.BottomNavigation.Style.init -> void
+eQuantic.UI.Components.BottomNavigation.DestinationBuilder.get -> System.Func<int, eQuantic.UI.Primitives.VisualNode!>?
+eQuantic.UI.Components.BottomNavigation.DestinationBuilder.init -> void
+eQuantic.UI.Components.Breadcrumb.Breadcrumb(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.Crumb!>! crumbs, eQuantic.UI.Primitives.NavigationTheme? style = null, System.Func<int, eQuantic.UI.Primitives.VisualNode!>? crumbBuilder = null) -> void
+eQuantic.UI.Components.Breadcrumb.Style.get -> eQuantic.UI.Primitives.NavigationTheme?
+eQuantic.UI.Components.Breadcrumb.Style.init -> void
+eQuantic.UI.Components.Breadcrumb.CrumbBuilder.get -> System.Func<int, eQuantic.UI.Primitives.VisualNode!>?
+eQuantic.UI.Components.Breadcrumb.CrumbBuilder.init -> void
+eQuantic.UI.Components.NavigationRail.NavigationRail(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null, eQuantic.UI.Primitives.NavigationTheme? style = null, System.Func<int, eQuantic.UI.Primitives.VisualNode!>? destinationBuilder = null) -> void
+eQuantic.UI.Components.NavigationRail.Style.get -> eQuantic.UI.Primitives.NavigationTheme?
+eQuantic.UI.Components.NavigationRail.Style.init -> void
+eQuantic.UI.Components.NavigationRail.DestinationBuilder.get -> System.Func<int, eQuantic.UI.Primitives.VisualNode!>?
+eQuantic.UI.Components.NavigationRail.DestinationBuilder.init -> void
+eQuantic.UI.Components.PageIndicator.PageIndicator(int count, int currentIndex, System.Action<int>? onSelected = null, eQuantic.UI.Primitives.NavigationTheme? style = null) -> void
+eQuantic.UI.Components.PageIndicator.Style.get -> eQuantic.UI.Primitives.NavigationTheme?
+eQuantic.UI.Components.PageIndicator.Style.init -> void
+eQuantic.UI.Components.Pagination.Pagination(int pageCount, int currentPage, System.Action<int>? onChanged = null, eQuantic.UI.Primitives.NavigationTheme? style = null) -> void
+eQuantic.UI.Components.Pagination.Style.get -> eQuantic.UI.Primitives.NavigationTheme?
+eQuantic.UI.Components.Pagination.Style.init -> void
+eQuantic.UI.Components.Tabs.Tabs(System.Collections.Generic.IReadOnlyList<string!>! labels, int selected, System.Action<int>? onSelect = null, eQuantic.UI.Primitives.NavigationTheme? style = null, System.Func<int, eQuantic.UI.Primitives.VisualNode!>? tabBuilder = null) -> void
+eQuantic.UI.Components.Tabs.Style.get -> eQuantic.UI.Primitives.NavigationTheme?
+eQuantic.UI.Components.Tabs.Style.init -> void
+eQuantic.UI.Components.Tabs.TabBuilder.get -> System.Func<int, eQuantic.UI.Primitives.VisualNode!>?
+eQuantic.UI.Components.Tabs.TabBuilder.init -> void
+static eQuantic.UI.Components.UI.Tabs(System.Collections.Generic.IReadOnlyList<string!>! labels, int selected, System.Action<int>? onSelect = null, eQuantic.UI.Primitives.NavigationTheme? style = null, System.Func<int, eQuantic.UI.Primitives.VisualNode!>? tabBuilder = null) -> eQuantic.UI.Components.Tabs!
+static eQuantic.UI.Components.UI.BottomNavigation(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null, eQuantic.UI.Primitives.NavigationTheme? style = null, System.Func<int, eQuantic.UI.Primitives.VisualNode!>? destinationBuilder = null) -> eQuantic.UI.Components.BottomNavigation!
+static eQuantic.UI.Components.UI.NavigationRail(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null, eQuantic.UI.Primitives.NavigationTheme? style = null, System.Func<int, eQuantic.UI.Primitives.VisualNode!>? destinationBuilder = null) -> eQuantic.UI.Components.NavigationRail!
+static eQuantic.UI.Components.UI.AppBar(string! title, eQuantic.UI.Primitives.NavigationTheme? style = null) -> eQuantic.UI.Components.AppBar!
+static eQuantic.UI.Components.UI.Breadcrumb(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.Crumb!>! crumbs, eQuantic.UI.Primitives.NavigationTheme? style = null, System.Func<int, eQuantic.UI.Primitives.VisualNode!>? crumbBuilder = null) -> eQuantic.UI.Components.Breadcrumb!
+static eQuantic.UI.Components.UI.Pagination(int pageCount, int currentPage, System.Action<int>? onChanged = null, eQuantic.UI.Primitives.NavigationTheme? style = null) -> eQuantic.UI.Components.Pagination!
+static eQuantic.UI.Components.UI.PageIndicator(int count, int currentIndex, System.Action<int>? onSelected = null, eQuantic.UI.Primitives.NavigationTheme? style = null) -> eQuantic.UI.Components.PageIndicator!

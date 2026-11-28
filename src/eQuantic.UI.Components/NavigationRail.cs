@@ -28,11 +28,14 @@ namespace eQuantic.UI.Components;
 /// </summary>
 public sealed class NavigationRail : StatelessComponent
 {
-    public NavigationRail(IReadOnlyList<NavItem> items, int selected, Action<int>? onSelect = null)
+    public NavigationRail(IReadOnlyList<NavItem> items, int selected, Action<int>? onSelect = null,
+        NavigationTheme? style = null, Func<int, VisualNode>? destinationBuilder = null)
     {
         Items = items;
         Selected = selected;
         OnSelect = onSelect;
+        Style = style;
+        DestinationBuilder = destinationBuilder;
     }
 
     /// <summary>
@@ -53,6 +56,18 @@ public sealed class NavigationRail : StatelessComponent
     public int Selected { get; init; }
     public Action<int>? OnSelect { get; init; }
 
+    /// <summary>This component's own look, laid over the theme's <see cref="IAppTheme.Navigation"/> slot with
+    /// <see cref="NavigationTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's.</summary>
+    public NavigationTheme? Style { get; init; }
+
+    /// <summary>
+    /// Draws a destination's LABEL, by its index in <see cref="Items"/>, under the pill. The rail keeps the
+    /// chrome (the pill with the destination's glyph, its badge and the selection) and hands the content the
+    /// colour and the type the label is drawn in; the item's text stays the destination's accessible name.
+    /// Null draws the text.
+    /// </summary>
+    public Func<int, VisualNode>? DestinationBuilder { get; init; }
+
     /// <summary>The rail's header — a FAB or a menu IconButton by convention. It sits ABOVE the
     /// destinations rather than among them, whatever <see cref="Alignment"/> says.</summary>
     public VisualNode? Leading { get; init; }
@@ -69,8 +84,8 @@ public sealed class NavigationRail : StatelessComponent
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
-        // The theme's Navigation slot, then the component's own (§3.10).
-        var slot = theme.Navigation;
+        // The instance's style over the theme's Navigation slot, then the component's own (§3.10).
+        var slot = NavigationTheme.Merge(theme.Navigation, Style);
         var gap = slot?.RailGap ?? Space.S2;
 
         // C16's own gap, not the bar's: a rail stacks its cells 8 apart.
@@ -118,15 +133,21 @@ public sealed class NavigationRail : StatelessComponent
                 Cross = CrossAlign.Center,
             };
             column.Add(pill);
-            column.Add(new Text(item.Label, TypeRole.Caption,
-                tint, maxLines: 1)
-            {
-                // Selection is also a WEIGHT here (C16: label 700 when selected), not only a tint.
-                StyleOverride = isActive
-                    ? new TypeStyle(slot?.RailSelectedLabelSize ?? 12, slot?.RailSelectedLabelLineHeight ?? 16,
-                        slot?.RailSelectedLabelWeight ?? FontWeight.Bold, 0, 1.3f)
-                    : null,
-            });
+            // Selection is also a WEIGHT here (C16: label 700 when selected), not only a tint.
+            var type = isActive
+                ? new TypeStyle(slot?.RailSelectedLabelSize ?? 12, slot?.RailSelectedLabelLineHeight ?? 16,
+                    slot?.RailSelectedLabelWeight ?? FontWeight.Bold, 0, 1.3f)
+                : null;
+            // The developer's content, when they drew it, in the colour and the type the label takes;
+            // the item's text otherwise.
+            if (DestinationBuilder is { } builder)
+                column.Add(new Box(new BoxStyle
+                {
+                    Foreground = tint,
+                    Content = new ContentStyle { Role = TypeRole.Caption, Type = type, MaxLines = 1 },
+                }, builder(index)));
+            else
+                column.Add(new Text(item.Label, TypeRole.Caption, tint, maxLines: 1) { StyleOverride = type });
 
             destinations.Add(new Pressable(column, OnSelect is null ? null : () => OnSelect(index))
             {

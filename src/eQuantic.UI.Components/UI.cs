@@ -734,26 +734,45 @@ public static class UI
         new SegmentedControl(segments, selectedIndex, onChanged, style, segmentBuilder) { Stretch = stretch };
 
     /// <summary>Horizontal tab strip.</summary>
-    public static Tabs Tabs(IReadOnlyList<string> labels, int selected, Action<int>? onSelect = null) =>
-        new Tabs(labels, selected, onSelect);
+    public static Tabs Tabs(IReadOnlyList<string> labels, int selected, Action<int>? onSelect = null,
+        NavigationTheme? style = null, Func<int, VisualNode>? tabBuilder = null) =>
+        new Tabs(labels, selected, onSelect, style, tabBuilder);
 
     /// <summary>The phone's destination bar (spec B4) — 3-5 destinations across the bottom.</summary>
     public static BottomNavigation BottomNavigation(IReadOnlyList<NavItem> items, int selected,
-        Action<int>? onSelect = null) =>
-        new BottomNavigation(items, selected, onSelect);
+        Action<int>? onSelect = null, NavigationTheme? style = null, Func<int, VisualNode>? destinationBuilder = null) =>
+        new BottomNavigation(items, selected, onSelect, style, destinationBuilder);
 
     /// <summary>The same destinations stood on their side for a wide window (spec B4). Hand both
     /// this and the bar the SAME item list inside an AdaptiveNode and the shell follows the window.</summary>
     public static NavigationRail NavigationRail(IReadOnlyList<NavItem> items, int selected,
-        Action<int>? onSelect = null) =>
-        new NavigationRail(items, selected, onSelect);
+        Action<int>? onSelect = null, NavigationTheme? style = null, Func<int, VisualNode>? destinationBuilder = null) =>
+        new NavigationRail(items, selected, onSelect, style, destinationBuilder);
 
     /// <summary>The sliding panel for everything past a rail's worth of destinations.</summary>
     public static Drawer Drawer(VisualNode content, bool open, Action? onDismiss = null) =>
         new Drawer(content, open, onDismiss);
 
     /// <summary>The bar across the top of a screen (spec B3) — Leading and Actions are init slots.</summary>
-    public static AppBar AppBar(string title) => new AppBar(title);
+    public static AppBar AppBar(string title, NavigationTheme? style = null) => new AppBar(title, style);
+
+    /// <summary>WHERE you are in a hierarchy (spec B20), and the way back up: a link for each ancestor, the
+    /// current page last.</summary>
+    public static Breadcrumb Breadcrumb(IReadOnlyList<Crumb> crumbs, NavigationTheme? style = null,
+        Func<int, VisualNode>? crumbBuilder = null) =>
+        new Breadcrumb(crumbs, style, crumbBuilder);
+
+    /// <summary>Page navigation for a set too large to scroll (spec B19): Previous, the windowed page numbers and
+    /// Next. A static of <see cref="Components.Pagination"/> is reached by its namespace where the surface is
+    /// imported.</summary>
+    public static Pagination Pagination(int pageCount, int currentPage, Action<int>? onChanged = null,
+        NavigationTheme? style = null) =>
+        new Pagination(pageCount, currentPage, onChanged, style);
+
+    /// <summary>The dot row under a pager (spec B16): WHERE you are in a short, ordered set.</summary>
+    public static PageIndicator PageIndicator(int count, int currentIndex, Action<int>? onSelected = null,
+        NavigationTheme? style = null) =>
+        new PageIndicator(count, currentIndex, onSelected, style);
 
     /// <summary>One row of a list (spec B7) — the slots (Leading, Trailing) are init properties.</summary>
     public static ListItem ListItem(string title, string? subtitle = null, Action? onPressed = null) =>

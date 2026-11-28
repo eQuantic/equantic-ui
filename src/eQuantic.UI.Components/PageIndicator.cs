@@ -17,16 +17,21 @@ public sealed class PageIndicator : StatelessComponent
     /// <summary>Beyond this many pages the dots become an "n of m" readout.</summary>
     public const int MaxDots = 8;
 
-    public PageIndicator(int count, int currentIndex, Action<int>? onSelected = null)
+    public PageIndicator(int count, int currentIndex, Action<int>? onSelected = null, NavigationTheme? style = null)
     {
         Count = count;
         CurrentIndex = currentIndex;
         OnSelected = onSelected;
+        Style = style;
     }
 
     public int Count { get; init; }
     public int CurrentIndex { get; init; }
     public Action<int>? OnSelected { get; init; }
+
+    /// <summary>This component's own look, laid over the theme's <see cref="IAppTheme.Navigation"/> slot with
+    /// <see cref="NavigationTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's.</summary>
+    public NavigationTheme? Style { get; init; }
 
     /// <summary>Tints the active dot with a variant instead of the default primary.</summary>
     public Variant Variant { get; init; } = Variant.Primary;
@@ -36,8 +41,8 @@ public sealed class PageIndicator : StatelessComponent
         var theme = context.Theme;
         var active = theme.Colors(Variant).Base;
         var label = $"Page {CurrentIndex + 1} of {Count}";
-        // The theme's Navigation slot, then the component's own (§3.10).
-        var slot = theme.Navigation;
+        // The instance's style over the theme's Navigation slot, then the component's own (§3.10).
+        var slot = NavigationTheme.Merge(theme.Navigation, Style);
 
         if (Count > MaxDots)
         {

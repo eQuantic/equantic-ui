@@ -17,12 +17,17 @@ namespace eQuantic.UI.Components;
 /// </summary>
 public sealed class AppBar : StatelessComponent
 {
-    public AppBar(string title)
+    public AppBar(string title, NavigationTheme? style = null)
     {
         Title = title;
+        Style = style;
     }
 
     public string Title { get; init; }
+
+    /// <summary>This component's own look, laid over the theme's <see cref="IAppTheme.Navigation"/> slot with
+    /// <see cref="NavigationTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's.</summary>
+    public NavigationTheme? Style { get; init; }
 
     /// <summary>Leading slot — a back IconButton by convention (48×48).</summary>
     public VisualNode? Leading { get; init; }
@@ -48,8 +53,8 @@ public sealed class AppBar : StatelessComponent
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
-        // The theme's Navigation slot, then the component's own (§3.10).
-        var slot = theme.Navigation;
+        // The instance's style over the theme's Navigation slot, then the component's own (§3.10).
+        var slot = NavigationTheme.Merge(theme.Navigation, Style);
         var row = new Row(gap: 0)
         {
             Width = SizeValue.Fill,

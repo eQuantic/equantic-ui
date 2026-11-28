@@ -19,11 +19,14 @@ public sealed record NavItem(Icons Icon, string Label, Icons? SelectedIcon = nul
 /// </summary>
 public sealed class BottomNavigation : StatelessComponent
 {
-    public BottomNavigation(IReadOnlyList<NavItem> items, int selected, Action<int>? onSelect = null)
+    public BottomNavigation(IReadOnlyList<NavItem> items, int selected, Action<int>? onSelect = null,
+        NavigationTheme? style = null, Func<int, VisualNode>? destinationBuilder = null)
     {
         Items = items;
         Selected = selected;
         OnSelect = onSelect;
+        Style = style;
+        DestinationBuilder = destinationBuilder;
     }
 
     /// <summary>
@@ -42,12 +45,24 @@ public sealed class BottomNavigation : StatelessComponent
     public int Selected { get; init; }
     public Action<int>? OnSelect { get; init; }
 
+    /// <summary>This component's own look, laid over the theme's <see cref="IAppTheme.Navigation"/> slot with
+    /// <see cref="NavigationTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's.</summary>
+    public NavigationTheme? Style { get; init; }
+
+    /// <summary>
+    /// Draws a destination's LABEL, by its index in <see cref="Items"/>, under the pill. The bar keeps the
+    /// chrome (the pill with the destination's glyph, its badge and the selection) and hands the content the
+    /// colour and the type the label is drawn in; the item's text stays the destination's accessible name.
+    /// Null draws the text.
+    /// </summary>
+    public Func<int, VisualNode>? DestinationBuilder { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var primary = theme.Colors(Variant.Primary);
-        // The theme's Navigation slot, then the component's own (§3.10).
-        var slot = theme.Navigation;
+        // The instance's style over the theme's Navigation slot, then the component's own (§3.10).
+        var slot = NavigationTheme.Merge(theme.Navigation, Style);
         var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
         for (var i = 0; i < Items.Count; i++)
         {
@@ -82,11 +97,18 @@ public sealed class BottomNavigation : StatelessComponent
                 Cross = CrossAlign.Center,
             };
             column.Add(pill);
-            column.Add(new Text(item.Label, TypeRole.Caption, tint, maxLines: 1)
-            {
-                StyleOverride = new TypeStyle(slot?.BarLabelSize ?? 11, slot?.BarLabelLineHeight ?? 14,
-                    slot?.BarLabelWeight ?? FontWeight.Bold, slot?.BarLabelTracking ?? 0.1f, 1.3f),
-            });
+            var type = new TypeStyle(slot?.BarLabelSize ?? 11, slot?.BarLabelLineHeight ?? 14,
+                slot?.BarLabelWeight ?? FontWeight.Bold, slot?.BarLabelTracking ?? 0.1f, 1.3f);
+            // The developer's content, when they drew it, in the colour and the type the label takes;
+            // the item's text otherwise.
+            if (DestinationBuilder is { } builder)
+                column.Add(new Box(new BoxStyle
+                {
+                    Foreground = tint,
+                    Content = new ContentStyle { Role = TypeRole.Caption, Type = type, MaxLines = 1 },
+                }, builder(index)));
+            else
+                column.Add(new Text(item.Label, TypeRole.Caption, tint, maxLines: 1) { StyleOverride = type });
 
             row.Add(new Flexible(new Pressable(column, OnSelect is null ? null : () => OnSelect(index))
             {

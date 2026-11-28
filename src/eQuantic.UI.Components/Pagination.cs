@@ -23,11 +23,12 @@ public sealed class Pagination : StatelessComponent
     /// <summary>Up to this many pages, every number is shown — eliding would save nothing.</summary>
     public const int AlwaysShow = 7;
 
-    public Pagination(int pageCount, int currentPage, Action<int>? onChanged = null)
+    public Pagination(int pageCount, int currentPage, Action<int>? onChanged = null, NavigationTheme? style = null)
     {
         PageCount = pageCount;
         CurrentPage = currentPage;
         OnChanged = onChanged;
+        Style = style;
     }
 
     /// <summary>Total pages; 1-based numbering throughout, because that is what users read.</summary>
@@ -35,19 +36,25 @@ public sealed class Pagination : StatelessComponent
     public int CurrentPage { get; init; }
     public Action<int>? OnChanged { get; init; }
 
+    /// <summary>This pagination's own look, laid over the theme's <see cref="IAppTheme.Navigation"/> slot with
+    /// <see cref="NavigationTheme.Merge"/>: a member it sets wins, one it leaves null is the theme's. It reaches
+    /// the page cells and the ellipsis too; Previous and Next are <see cref="Button"/>s, styled by the button's own record.</summary>
+    public NavigationTheme? Style { get; init; }
+
     public override VisualNode Build(ComponentContext context)
     {
         var theme = context.Theme;
         var current = Math.Clamp(CurrentPage, 1, Math.Max(1, PageCount));
-        // The theme's Navigation slot, then the component's own (§3.10).
-        var slot = theme.Navigation;
+        // The instance's style over the theme's Navigation slot, then the component's own (§3.10): read HERE, once,
+        // and handed to the cells and the ellipsis, which would otherwise read the theme's slot again.
+        var slot = NavigationTheme.Merge(theme.Navigation, Style);
 
         var numbers = new Row(gap: slot?.PageGap ?? 3) { Cross = CrossAlign.Center };
         var previous = 0;
         foreach (var page in Pages(PageCount, current))
         {
-            if (previous > 0 && page > previous + 1) numbers.Add(Ellipsis(theme));
-            numbers.Add(Number(theme, page, page == current));
+            if (previous > 0 && page > previous + 1) numbers.Add(Ellipsis(theme, slot));
+            numbers.Add(Number(theme, slot, page, page == current));
             previous = page;
         }
 
@@ -84,9 +91,8 @@ public sealed class Pagination : StatelessComponent
         return ordered;
     }
 
-    private VisualNode Number(IAppTheme theme, int page, bool current)
+    private VisualNode Number(IAppTheme theme, NavigationTheme? slot, int page, bool current)
     {
-        var slot = theme.Navigation;
         var cell = slot?.PageCellSize ?? 30;
         var centered = new Row(gap: 0)
         {
@@ -119,9 +125,8 @@ public sealed class Pagination : StatelessComponent
     }
 
     /// <summary>The skipped run. Not a button — there is no single page it could mean.</summary>
-    private static VisualNode Ellipsis(IAppTheme theme)
+    private static VisualNode Ellipsis(IAppTheme theme, NavigationTheme? slot)
     {
-        var slot = theme.Navigation;
         var cell = slot?.PageCellSize ?? 30;
         var centered = new Row(gap: 0)
         {
