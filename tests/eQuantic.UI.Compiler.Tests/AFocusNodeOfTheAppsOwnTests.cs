@@ -92,7 +92,7 @@ public class AFocusNodeOfTheAppsOwnTests
     /// has a constructor with no parameter for one: the edge is dropped in the browser, and the runtime's tsc refuses
     /// the call (TS2554). A hand-written twin takes the config (#1823); a transpiled one does not.
     /// </summary>
-    [Fact(Skip = "A gap of eqc, to be filed (PRINCIPLES 14): an object initializer on a transpiled vocabulary class is emitted as a config argument its twin has no parameter for.")]
+    [Fact(Skip = "#1993: an object initializer on a transpiled vocabulary class is emitted as a config argument its twin has no parameter for.")]
     public void AnObjectInitializerOnAFocusScopeNode_ReachesTheNodeInTheBrowser()
     {
         using var solution = new Solution()
