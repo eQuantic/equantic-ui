@@ -14,7 +14,8 @@ import type { SheetTheme } from './sheet-theme';
 import { slotBuilders, type SlotData } from './theme-slots';
 
 type RgbaTuple = readonly [number, number, number, number];
-type TokenTuple = readonly [RgbaTuple, RgbaTuple];
+/** A token's light and dark legs, and its More legs after them where it steps up at More (#1937). */
+type TokenTuple = readonly [RgbaTuple, RgbaTuple] | readonly [RgbaTuple, RgbaTuple, RgbaTuple, RgbaTuple];
 /** A face file on the wire: `[assembly, resource, minWeight, maxWeight, italic]`. */
 type FontFileData = readonly [string, string, number, number, boolean];
 /** A family on the wire: its name where it ships no file, else its name and each of its files. */
@@ -82,7 +83,10 @@ export interface ThemeData {
 }
 
 const color = (t: RgbaTuple): ColorValue => ({ r: t[0], g: t[1], b: t[2], a: t[3] });
-const token = (t: TokenTuple): ColorToken => new ColorToken(color(t[0]), color(t[1]));
+const token = (t: TokenTuple): ColorToken =>
+  t.length === 4
+    ? new ColorToken(color(t[0]), color(t[1]), color(t[2]), color(t[3]))
+    : new ColorToken(color(t[0]), color(t[1]));
 
 /**
  * The family `data` names, with its files when it ships them (C# `ThemeBridge.Family`): the family a

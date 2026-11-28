@@ -32,7 +32,7 @@ mkdir -p "$OUT"
 mkdir -p "$OUT/spirv"
 for entry in fullscreen_vertex:vertex sdf_fragment:fragment textured_fragment:fragment \
              textured_rgba_fragment:fragment layer_composite:fragment \
-             blur_down:fragment blur_up:fragment; do
+             blur_down:fragment blur_up:fragment tiled_rgba_fragment:fragment; do
   name="${entry%%:*}"; stage="${entry##*:}"
   "$SLANGC" "$SRC" -target spirv -entry "$name" -stage "$stage" -o "$OUT/spirv/$name.spv"
 done

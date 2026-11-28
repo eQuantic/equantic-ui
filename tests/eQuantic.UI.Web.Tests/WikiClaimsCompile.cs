@@ -822,15 +822,17 @@ public class WikiClaimsCompile
     /// <summary>The declaration ServerIntegration shows, which refuses a layout that cannot take the page.</summary>
     private static void DeclaresTheLayout(eQuantic.UI.Server.UIOptions options) => options.UseLayout<ConsoleLayout>();
 
-    /// <summary>Localization's right-to-left section (#1568): a subtree that reads the other way, and a
-    /// component that asks which way it reads.</summary>
+    /// <summary>Localization's right-to-left section (#1568, #1569): a subtree that reads the other way, a
+    /// glyph that turns with the direction, and a glyph of the app's own that says it points somewhere.</summary>
     private sealed class BackLink(string snippet) : Primitives.StatelessComponent
     {
         public override VisualNode Build(ComponentContext context)
         {
-            var back = context.TextDirection == TextDirection.RightToLeft ? Icons.ChevronRight : Icons.ChevronLeft;
+            var back = Icons.ChevronLeft;
+            var own = new IconGlyph("back", "M15 6l-6 6 6 6", IconGlyphStyle.Stroke, MatchTextDirection: true);
             return Column(children: [
                 Icon(back, 16),
+                Icon(own, 16),
                 Directionality(TextDirection.LeftToRight, new CodeBlock(snippet, "csharp")),
             ]);
         }

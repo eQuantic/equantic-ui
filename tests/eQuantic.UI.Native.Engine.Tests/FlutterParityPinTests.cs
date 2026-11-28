@@ -296,6 +296,9 @@ public class FlutterParityPinTests
         ["SliverGridDelegateWithMaxCrossAxisExtent"] = () => HasMember("GridTrack", "AutoFill")
             && HasMember("GridTrack", "Repeats"),
         ["SvgPicture"] = () => HasMember("Drawing", "Aspect") && HasMember("Drawing", "HeightAt"),
+        ["DecorationImage"] = () => HasMember("BoxStyle", "Patterns") && Has("DrawingPattern") && Has("ImagePattern")
+            && HasMember("ArtworkPattern", "Anchor") && HasMember("ArtworkPattern", "HorizontalRepeat")
+            && HasMember("Pattern", "Attachment") && HasMember("DrawingPattern", "Opacity"),
         ["WidgetStateProperty"] = () => HasMember("BoxStyle", "Hover") && HasMember("BoxStyle", "Focus")
             && HasMember("BoxStyle", "Pressed")
             && HasMember("StyleDiff", "Shadows") && HasMember("StyleDiff", "Transform"),
@@ -401,6 +404,8 @@ public class FlutterParityPinTests
         // the web's half (the shell's dir, the logical CSS) is held by the Web and Server suites (#1568).
         ["TextDirection.ltr/rtl"] = () => Has("TextDirection") && Has("Directionality")
             && HasMember("ComponentContext", "TextDirection"),
+        // The glyph's flag, which the web turns under right to left (#1569); Photon draws it unmirrored.
+        ["IconData.matchTextDirection"] = () => HasMember("IconGlyph", "MatchTextDirection"),
         ["ThemeData"] = () => Has("IAppTheme") && Has("Density") && Nothing("CupertinoThemeData"),
         ["MediaQuery"] = () => Has("SafeArea") && Nothing("MediaQuery"),
         ["MediaQuery.viewInsets"] = () => HasMember("PhotonHost", "ViewInsets"),

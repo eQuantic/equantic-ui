@@ -5,12 +5,23 @@ export class Select extends StatefulComponent {
     _open: boolean = false;
     _highlight: number = 0;
     _choices: string[];
+    _labelHidden: boolean = false;
     _disabled: boolean = false;
     declare options: string[];
     declare groups: OptionGroup[];
     declare selectedIndex: number;
     declare onChanged: ((int: number) => void) | null;
     declare placeholder: any;
+    declare label: string;
+
+    get labelHidden() {
+        return this._labelHidden;
+    }
+
+    set labelHidden(value) {
+        this._labelHidden = value;
+    }
+
     declare style: any;
     declare optionBuilder: ((value: number) => VisualNode) | null;
 
@@ -22,7 +33,7 @@ export class Select extends StatefulComponent {
         this._disabled = value;
     }
 
-    constructor(options: any = null, selectedIndex: any = -1, onChanged: any = null, placeholder: any = null, groups: any = null, style: any = null, optionBuilder: any = null, props?: any) {
+    constructor(options: any = null, selectedIndex: any = -1, onChanged: any = null, placeholder: any = null, groups: any = null, style: any = null, optionBuilder: any = null, label: any = '', props?: any) {
         super();
         if (options !== undefined) this.options = options;
         if (selectedIndex !== undefined) this.selectedIndex = selectedIndex;
@@ -31,8 +42,10 @@ export class Select extends StatefulComponent {
         if (groups !== undefined) this.groups = groups;
         if (style !== undefined) this.style = style;
         if (optionBuilder !== undefined) this.optionBuilder = optionBuilder;
+        if (label !== undefined) this.label = label;
         if (this.selectedIndex === undefined) this.selectedIndex = 0;
         this.options = options ?? [];
+        this.label = label;
         this.selectedIndex = selectedIndex;
         this.onChanged = onChanged;
         this.placeholder = placeholder;
@@ -73,8 +86,14 @@ export class Select extends StatefulComponent {
             for (const option of $eq.collections.sequenceWalk(group.options)) rows.add(this.optionRow(theme, option, (($old) => (index = $old + 1 | 0, $old))(index), gap, paddingX, rowHeight));
         }
         let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(radius), borderWidth: borderWidth, borderColor: slot?.panelBorderColor ?? theme.border, elevation: slot?.panelElevation ?? 2, padding: EdgeInsets.symmetric(0, 4), clip: true }), list);
-        let trigger = new Pressable(field, this.disabled ? null : $eq.delegates.bound(this, this.toggle), { disabled: this.disabled, expanded: this._open && !this.disabled });
+        let trigger = new Pressable(field, this.disabled ? null : $eq.delegates.bound(this, this.toggle), { disabled: this.disabled, expanded: this._open && !this.disabled, label: this.label.length > 0 ? this.label : null });
         let select: VisualNode = new Anchored(trigger, panel, { open: this._open && !this.disabled, onDismiss: () => this.setState(() => this._open = false), matchAnchorWidth: true, panelRole: 'listbox', activeIndex: this._open && $eq.collections.count(this._choices) > 0 ? this._highlight : -1 });
+        if (this.label.length > 0 && !this.labelHidden) {
+            let labelled = new Column(slot?.labelGap ?? 6, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
+            labelled.add(new Text(this.label, slot?.labelRole ?? 'label', theme.textSecondary, null, null, false, false, null, 0, { excludeFromSemantics: true }));
+            labelled.add(select);
+            select = labelled;
+        }
         let live = this._open && !this.disabled && $eq.collections.count(choices) > 0;
         select = new Shortcut(select, KeyChord.arrowDown, () => this.setState(() => this._highlight = Math.min($eq.collections.count(choices) - 1 | 0, this._highlight + 1 | 0)), { enabled: live });
         select = new Shortcut(select, KeyChord.arrowUp, () => this.setState(() => this._highlight = Math.max(0, this._highlight - 1 | 0)), { enabled: live });
@@ -89,6 +108,8 @@ export class Select extends StatefulComponent {
         this.selectedIndex = fresh.selectedIndex;
         this.onChanged = fresh.onChanged;
         this.placeholder = fresh.placeholder;
+        this.label = fresh.label;
+        this._labelHidden = fresh.labelHidden;
         this.groups = fresh.groups;
         this.style = fresh.style;
         this.optionBuilder = fresh.optionBuilder;

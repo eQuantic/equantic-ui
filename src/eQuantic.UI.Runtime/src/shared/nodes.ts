@@ -19,6 +19,9 @@ export interface ColorValue {
 export interface ColorTokenValue {
   light: ColorValue;
   dark: ColorValue;
+  /** The legs at `ContrastLevel.More`, present only where one differs from its Standard leg. */
+  moreLight?: ColorValue;
+  moreDark?: ColorValue;
 }
 
 /**
@@ -45,7 +48,9 @@ export interface MotionSpecValue {
 // Re-exported so every importer of './nodes' keeps the name it always had, and IMPORTED because a
 // re-export alone does not bring a name into this module's own scope.
 import type {
+  BoxAreaValue,
   CrossAlignValue,
+  ImageFitValue,
   KeyboardConventionValue,
   LiveRegionUrgencyValue,
   MainAlignValue,
@@ -58,6 +63,8 @@ import type {
   TypeRoleValue,
   TableRoleValue,
   TextEntryKindValue,
+  TileAttachmentValue,
+  TileRepeatValue,
   VectorPaintKindValue,
 } from './enums.generated';
 import type { NodeKind } from './node-kinds.generated';
@@ -282,7 +289,8 @@ export interface BoxStyleValue {
   clip?: boolean;
   /** 2-stop linear gradient (engine fence) — draws OVER the solid background when both are set. */
   gradient?: LinearGradientValue | null;
-  pattern?: GridPatternValue | null;
+  /** C# `BoxStyle.Patterns` (#1937): painted in order, the last on top, under the glow and the gradient. */
+  patterns?: PatternValue[] | null;
   glow?: RadialGradientValue | null;
   /** Spec S1 group opacity 0–1 (one composited layer — CSS opacity / native PushLayer). */
   opacity?: number | null;
@@ -382,12 +390,56 @@ export interface RadialGradientValue {
   radiusY: number;
 }
 
+/** What every kind of the C# `Pattern` carries (#1937): where it is placed, clipped and attached. */
+interface PatternBaseValue {
+  area?: BoxAreaValue;
+  clipTo?: BoxAreaValue;
+  attachment?: TileAttachmentValue;
+}
+
 /** Wire shape of the C# `GridPattern`: repeating hairline grid (square cell, token line color). */
-export interface GridPatternValue {
+export interface GridPatternValue extends PatternBaseValue {
+  patternKind: 'grid';
   cell: number;
   color: ColorTokenValue;
   lineWidth: number;
 }
+
+/** The C# `TileLength`: auto, dp, or a fraction of the placing area. */
+export interface TileLengthValue {
+  readonly value: number;
+  readonly isFraction: boolean;
+  readonly isAuto: boolean;
+}
+
+/** What the two tile kinds share (C# `ArtworkPattern`): the size, the repetition and the position. */
+interface ArtworkPatternValue extends PatternBaseValue {
+  width: TileLengthValue;
+  height: TileLengthValue;
+  fit?: ImageFitValue | null;
+  horizontalRepeat?: TileRepeatValue;
+  verticalRepeat?: TileRepeatValue;
+  anchor?: { x: number; y: number };
+  offset?: { x: number; y: number };
+}
+
+/** Wire shape of the C# `DrawingPattern`: a vector drawing repeated. */
+export interface DrawingPatternValue extends ArtworkPatternValue {
+  patternKind: 'drawing';
+  artwork: VectorDrawingValue;
+  tint?: ColorTokenValue | null;
+  opacity?: number;
+}
+
+/** Wire shape of the C# `ImagePattern`: a raster image repeated, with its dark pair. */
+export interface ImagePatternValue extends ArtworkPatternValue {
+  patternKind: 'image';
+  source: string;
+  darkSource?: string | null;
+}
+
+/** The closed set of the C# `Pattern`, discriminated by `patternKind`. */
+export type PatternValue = GridPatternValue | DrawingPatternValue | ImagePatternValue;
 
 /** Base shape every abstract node carries. */
 /** A shared component instance sitting in a child slot — the lowering expands it via build(). */
@@ -1194,6 +1246,8 @@ export interface IconGlyphValue {
   strokeWidth?: number;
   /** The fill's rule: even-odd where true, nonzero otherwise (#1210). */
   evenOdd?: boolean;
+  /** C# `IconGlyph.MatchTextDirection`: the glyph is drawn mirrored where its element reads right to left. */
+  matchTextDirection?: boolean;
 }
 
 export interface IconNode extends VisualNodeValue {

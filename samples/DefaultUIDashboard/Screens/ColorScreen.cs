@@ -34,6 +34,10 @@ public sealed class ColorScreen : StatelessComponent
             Swatch(theme, faded, "faded"),
             Swatch(theme, mixed, "mixed"),
             Swatch(theme, made, "made"),
+            // The desk (#1937): the textures behind a surface. No destination of the sidebar leads
+            // there, so this is the way in, by navigation rather than by the address.
+            Link("/desk", Text("Open the desk: textures behind a surface", TypeRole.Label, theme.TextPrimary),
+                label: "Open the desk"),
         ]));
     }
 

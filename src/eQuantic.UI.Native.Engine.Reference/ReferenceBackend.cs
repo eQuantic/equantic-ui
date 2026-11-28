@@ -65,6 +65,9 @@ public sealed class ReferenceBackend : IRenderBackend
                 case DrawCommandKind.Texture:
                     RasterizeTexture(target, command, displayList.Textures);
                     break;
+                case DrawCommandKind.TiledTexture:
+                    RasterizeTiled(target, command, displayList.Textures);
+                    break;
                 case DrawCommandKind.BeginLayer:
                     (layers ??= new()).Push((target, command.StrokeWidth));
                     target = new ReferenceSurface(target.Width, target.Height);
@@ -171,6 +174,66 @@ public sealed class ReferenceBackend : IRenderBackend
                     continue;
                 }
                 target.BlendOver(px, py, ColorSpace.ToPremultipliedLinear(texel, coverage));
+            }
+        });
+    }
+
+    /// <summary>
+    /// A tile layer (NORMATIVE, #1937): every pixel inside the area asks <see cref="Tiling.TryTexel"/>
+    /// where it falls in the one tile the texture holds, and takes <see cref="Tiling.Sample"/> there,
+    /// premultiplied and linear, at the command's opacity times the clip's coverage. The period and the
+    /// phase are the exact ones, so no pixel is between two tiles and none is in both.
+    /// </summary>
+    private void RasterizeTiled(ReferenceSurface target, DrawCommand command, IReadOnlyList<TextureData> textures)
+    {
+        if (command.TextureId < 0 || command.TextureId >= textures.Count) return;
+        var texture = textures[command.TextureId];
+        if (texture.Format != TextureFormat.Rgba8 || texture.Width <= 0 || texture.Height <= 0) return;
+        var rect = command.Shape.Rect;
+        var transform = command.Transform;
+        var inverse = transform.Invert();
+        if (inverse is null || rect.Width <= 0 || rect.Height <= 0) return;
+
+        var bounds = transform.TransformBounds(rect);
+        if (command.Clip is { } clipBounds) bounds = bounds.Intersect(clipBounds.Rect.Inflate(1));
+        if (bounds.IsEmpty) return;
+        var x0 = Math.Max(0, (int)MathF.Floor(bounds.Left));
+        var y0 = Math.Max(0, (int)MathF.Floor(bounds.Top));
+        var x1 = Math.Min(target.Width, (int)MathF.Ceiling(bounds.Right));
+        var y1 = Math.Min(target.Height, (int)MathF.Ceiling(bounds.Bottom));
+        if (x1 <= x0 || y1 <= y0) return;
+
+        var inv = inverse.Value;
+        var tiling = command.Tiling;
+        var opacity = command.StrokeWidth;
+        if (opacity <= 0) return;
+
+        Rows(y0, y1, py =>
+        {
+            for (var px = x0; px < x1; px++)
+            {
+                var device = new Point(px + 0.5f, py + 0.5f);
+                var local = inv.Transform(device);
+                var u = (local.X - rect.X) / rect.Width;
+                var v = (local.Y - rect.Y) / rect.Height;
+                if (u < 0 || u >= 1 || v < 0 || v >= 1) continue;
+                if (!tiling.TryTexel(local, texture.Width, texture.Height, out var tx, out var ty)) continue;
+
+                var coverage = opacity;
+                if (command.Clip is { } clip)
+                {
+                    var clipDistance = Sdf.RoundedRect(
+                        device - clip.Rect.Center,
+                        new Size(clip.Rect.Width / 2, clip.Rect.Height / 2),
+                        clip.Radii);
+                    coverage *= Sdf.Coverage(clipDistance);
+                    if (coverage <= 0) continue;
+                }
+
+                var sample = tiling.Sample(texture, tx, ty);
+                if (sample.A <= 0) continue;
+                target.BlendOver(px, py, new LinearColor(
+                    sample.R * coverage, sample.G * coverage, sample.B * coverage, sample.A * coverage));
             }
         });
     }

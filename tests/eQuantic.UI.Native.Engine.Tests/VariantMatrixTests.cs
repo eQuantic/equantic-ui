@@ -108,6 +108,116 @@ public class VariantMatrixTests(ITestOutputHelper output)
             + $"and the baseline may only shrink ({UpdateVariable}=1 drops what no longer occurs)");
     }
 
+    /// <summary>
+    /// A RIGHT-TO-LEFT CELL PER CONTROL (#1569, D8): the control at its default variant and size, Comfortable,
+    /// under <c>Directionality(RightToLeft)</c>, reads exactly as the left-to-right cell does on both targets.
+    /// <para>
+    /// A component speaks logically and a realizer binds it by the direction where its element sits, so the
+    /// only thing the direction may change in what a control lowers is the one <c>dir</c> attribute the
+    /// <see cref="Directionality"/> writes on its child, and on Photon, which lays out left to right for 1.0,
+    /// nothing at all. A control that starts to flip by <c>context.TextDirection</c> (a back chevron chosen
+    /// by the context, a physical offset) fails here by name.
+    /// </para>
+    /// <para>
+    /// ASSERTED, not pinned a second time: measured, the web's reading under right to left is the
+    /// left-to-right cell's with that one attribute, for every control, so a second pin per control would
+    /// be the first and a <c>dir</c> repeated, and would stay green while a component flipped the markup in
+    /// both. Equality is the instrument that fails.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void EveryControl_ReadsTheSameUnderRightToLeft_OnBothTargets()
+    {
+        var different = new List<string>();
+        var compared = 0;
+        foreach (var control in Controls())
+        {
+            if (control.Unbuilt is not null) continue;
+            var cell = new Cell(control.Variant is null ? null : default(Variant),
+                control.Size is null ? null : default(SizeVariant), Density.Comfortable);
+
+            // A cell the matrix could not draw is the matrix's to say, with its reason in the baseline.
+            if (!Try(() => OnTheWeb(InTheCulture(() => Build(control, cell)), cell), out var web, out _)
+                || !Try(() => OnPhoton(InTheCulture(() => Build(control, cell)), cell), out var photon, out _))
+                continue;
+
+            VisualNode Turned() => new Directionality(TextDirection.RightToLeft, InTheCulture(() => Build(control, cell)));
+            if (!Try(() => OnTheWeb(Turned(), cell), out var webTurned, out var webFailure))
+            {
+                different.Add($"{control.Name}: not drawn on the web under right to left ({webFailure})");
+                continue;
+            }
+            // The Directionality is a measured node of its own on Photon: the control is its one child.
+            if (!Try(() => OnPhoton(Turned(), cell, skipRoot: true), out var photonTurned, out var photonFailure))
+            {
+                different.Add($"{control.Name}: not drawn on Photon under right to left ({photonFailure})");
+                continue;
+            }
+            compared++;
+
+            // Without the one attribute the wrapper writes, on the control's root and nowhere else, and without the
+            // scope a grid's cell ids are hashed from: it is the grid's place in the tree, and the wrapper is one
+            // step down it. A dir="rtl" anywhere below the root is the control's own and stays, so a control that
+            // writes one only under right to left differs here.
+            if (WithoutTheWrappersDir(webTurned!) is not { } unwrapped)
+            {
+                different.Add($"{control.Name}: the web root says no direction under right to left");
+                continue;
+            }
+            var webWithoutDir = CellScope.Replace(unwrapped, "$1#-");
+            web = CellScope.Replace(web!, "$1#-");
+            if (webWithoutDir != web) different.Add($"{control.Name}: the web lowers differently under right to left ({FirstDifference(web!, webWithoutDir)})");
+            if (photonTurned != photon) different.Add($"{control.Name}: Photon measures differently under right to left ({FirstDifference(photon!, photonTurned!)})");
+        }
+
+        compared.Should().BeGreaterThan(50, "the derived set reaches every control");
+        foreach (var line in different) output.WriteLine(line);
+        different.Should().BeEmpty(
+            "the direction changes nothing a control lowers but the dir attribute on the web, and nothing on Photon; "
+            + "a control that flips by context.TextDirection fails here");
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex CellScope = new(@"(eq-t?cell-)[a-z0-9]+-");
+
+    /// <summary>
+    /// The web reading under right to left with the <c>dir="rtl"</c> the <see cref="Directionality"/> wrote taken
+    /// off the control's root element, the first line of the reading, and only there. A root that says its own
+    /// direction (the <c>dir="ltr"</c> of a code, table or sheet host) gets none from the wrapper and is read as it
+    /// is, and so is the bare <c>&lt;span&gt;</c> the host stands in with when the control lowered nothing, which
+    /// leaves the wrapper no element to write on. Null when any other root says no direction: the wrapper wrote
+    /// nothing where it must.
+    /// </summary>
+    private static string? WithoutTheWrappersDir(string turned)
+    {
+        const string header = "### web\n";
+        const string attribute = " dir=\"rtl\"";
+        var at = turned.IndexOf(header, StringComparison.Ordinal);
+        if (at < 0) return null;
+        var start = at + header.Length;
+        var end = turned.IndexOf('\n', start);
+        if (end < 0) end = turned.Length;
+        var root = turned[start..end];
+        var written = root.IndexOf(attribute, StringComparison.Ordinal);
+        if (written >= 0) return turned[..start] + root.Remove(written, attribute.Length) + turned[end..];
+        return root == "<span>" || root.Contains(" dir=\"", StringComparison.Ordinal) ? turned : null;
+    }
+
+    /// <summary>The first line the two readings disagree on, each side quoted.</summary>
+    private static string FirstDifference(string expected, string actual)
+    {
+        var before = expected.Split('\n');
+        var after = actual.Split('\n');
+        for (var line = 0; line < Math.Max(before.Length, after.Length); line++)
+        {
+            var was = line < before.Length ? before[line] : "<end>";
+            var now = line < after.Length ? after[line] : "<end>";
+            if (was != now) return $"line {line + 1}: \"{Clip(was)}\" then \"{Clip(now)}\"";
+        }
+        return "no line differs";
+    }
+
+    private static string Clip(string line) => line.Length <= 140 ? line : line[..140] + "…";
+
     private static string Without(string name, string axis, string? why) =>
         why is null ? $"{name}: no {axis}" : $"{name}: no {axis} ({why})";
 
@@ -286,12 +396,13 @@ public class VariantMatrixTests(ITestOutputHelper output)
 
     /// <summary>What Photon measures, through the Photon tester: every box the layout placed, in the tree's
     /// order, and every overlay layer the frame showed.</summary>
-    private static string OnPhoton(VisualNode node, Cell cell)
+    private static string OnPhoton(VisualNode node, Cell cell, bool skipRoot = false)
     {
         using var tester = new PhotonTester(Theme, width: Width, height: Height, density: cell.Density);
         tester.Pump(node);
         var text = new StringBuilder("### photon\n");
-        Boxes(tester.Root, 0, text);
+        // A wrapper the reading is about, which is a measured node of its own, is not part of what is read.
+        Boxes(skipRoot ? tester.Root.Children.Single() : tester.Root, 0, text);
         foreach (var layer in tester.Layers)
         {
             text.Append("### photon layer\n");

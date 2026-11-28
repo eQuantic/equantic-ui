@@ -12,7 +12,8 @@ namespace eQuantic.UI.Web.Tests;
 /// this one runs before hydration, `lowering.ts`'s runs after. A key one half claims and the other
 /// ignores is a calendar whose arrows work until the page finishes loading, or start working only
 /// then, and nothing else in the suite would notice.
-/// <para>Regenerate with <c>EQ_UPDATE_NAVIGABLE_KEYS=1</c>.</para>
+/// <para>The fixture holds the table at each direction (<c>leftToRight</c>, <c>rightToLeft</c>): the twin's
+/// <c>navigableMove(event, direction)</c> is asserted against both. Regenerate with <c>EQ_UPDATE_NAVIGABLE_KEYS=1</c>.</para>
 /// </summary>
 public class NavigableKeyTableTests
 {
@@ -33,19 +34,30 @@ public class NavigableKeyTableTests
             "navigable-keys.fixture.json");
     }
 
-    [Fact]
-    public void TheKeyTableIsPinnedForTheClientHalf()
+    /// <summary>The key table at ONE direction, by the spelling both halves compare (a move's camelCase name).</summary>
+    private static Dictionary<string, string?> TableAt(TextDirection direction)
     {
         var table = new Dictionary<string, string?>(StringComparer.Ordinal);
         foreach (var (key, shift) in Probed)
         {
             // The camelCase spelling is what the enum crosses as, so the twin compares like for like.
-            var move = NavigableKeys.Move(key, shift);
+            var move = NavigableKeys.Move(key, shift, direction);
             table[shift ? $"shift+{key}" : key] =
                 move is null ? null : char.ToLowerInvariant(move.Value.ToString()[0]) + move.Value.ToString()[1..];
         }
+        return table;
+    }
 
-        var json = FixtureJson.Write(table);
+    [Fact]
+    public void TheKeyTableIsPinnedForTheClientHalf()
+    {
+        // BOTH directions, because what ArrowLeft means depends on it: the client half's
+        // `navigableMove(event, direction)` reads each section with the direction it is named for.
+        var tables = new Dictionary<string, Dictionary<string, string?>>(StringComparer.Ordinal);
+        foreach (var direction in Enum.GetValues<TextDirection>())
+            tables[char.ToLowerInvariant(direction.ToString()[0]) + direction.ToString()[1..]] = TableAt(direction);
+
+        var json = FixtureJson.Write(tables);
         var path = FixturePath();
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_NAVIGABLE_KEYS") == "1")
         {
@@ -60,13 +72,36 @@ public class NavigableKeyTableTests
     }
 
     [Fact]
+    public void TheHorizontalArrows_AreNextAndPreviousByTheDirection()
+    {
+        NavigableKeys.Move("ArrowRight", false, TextDirection.LeftToRight).Should().Be(NavigableMove.NextItem);
+        NavigableKeys.Move("ArrowLeft", false, TextDirection.LeftToRight).Should().Be(NavigableMove.PreviousItem);
+        NavigableKeys.Move("ArrowLeft", false, TextDirection.RightToLeft).Should().Be(NavigableMove.NextItem);
+        NavigableKeys.Move("ArrowRight", false, TextDirection.RightToLeft).Should().Be(NavigableMove.PreviousItem);
+    }
+
+    [Fact]
+    public void EveryOtherKey_MeansTheSameInBothDirections()
+    {
+        // Derived from the probed set, not listed: the horizontal arrows are the ONLY keys that read the
+        // direction, so a key that starts to would show here without anyone naming it.
+        foreach (var (key, shift) in Probed.Where(probe => probe.Key is not ("ArrowLeft" or "ArrowRight")))
+            NavigableKeys.Move(key, shift, TextDirection.RightToLeft)
+                .Should().Be(NavigableKeys.Move(key, shift, TextDirection.LeftToRight),
+                    $"{(shift ? "shift+" : "")}{key} is not a horizontal arrow");
+    }
+
+    [Fact]
     public void KeysTheGridDoesNotClaim_ReachThePage()
     {
-        // Tab must leave the composite, Escape must reach the dismiss binding, ⌘K the palette.
-        NavigableKeys.Move("Tab", false).Should().BeNull();
-        NavigableKeys.Move("Escape", false).Should().BeNull();
-        NavigableKeys.Move("k", false).Should().BeNull();
-        // …and Enter is the CELL's, not the grid's: a gridcell is a button and answers it itself.
-        NavigableKeys.Move("Enter", false).Should().BeNull();
+        foreach (var direction in Enum.GetValues<TextDirection>())
+        {
+            // Tab must leave the composite, Escape must reach the dismiss binding, ⌘K the palette.
+            NavigableKeys.Move("Tab", false, direction).Should().BeNull();
+            NavigableKeys.Move("Escape", false, direction).Should().BeNull();
+            NavigableKeys.Move("k", false, direction).Should().BeNull();
+            // …and Enter is the CELL's, not the grid's: a gridcell is a button and answers it itself.
+            NavigableKeys.Move("Enter", false, direction).Should().BeNull();
+        }
     }
 }

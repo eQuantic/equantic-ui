@@ -26,6 +26,7 @@ import { commitShortcuts, type ShortcutDeclarer } from '../dom/shortcuts';
 import { commitFocusTraps } from '../dom/focus-trap';
 import { afterWrite } from './after-write';
 import { installHoverRevealSuppression } from '../dom/hover-reveal';
+import { commitAnchoredPanels } from '../dom/anchor-inset';
 import { attachCameraStreams } from './devices/camera';
 import { scheduleScrollViewportCommit } from './scroll-viewports';
 import { scheduleTableViewportCommit } from './table-viewports';
@@ -189,6 +190,9 @@ export function exitPass(shortcutsDeclaredBy?: ShortcutDeclarer): void {
   // a layer that appeared takes focus (recording its invoker), one that vanished gives it back.
   afterWrite(commitFocusTraps);
   installHoverRevealSuppression();
+  // An anchored panel past the viewport's start or end edge moves back inside once the pass is written and its box
+  // can be measured (#1933), as Photon's realizer moves it once its layer is laid out.
+  afterWrite(commitAnchoredPanels);
   // A CameraPreview lowered this pass has a fresh <video>, which exists once the pass is written: the
   // stream attaches then, at the moment the traps reconcile (#1830).
   afterWrite(attachCameraStreams);

@@ -83,10 +83,10 @@ public class AdjustableArrowsTests
     public void TheTable_StepsByRole_AndLetsEveryOtherKeyThrough()
     {
         foreach (var role in new[] { AdjustableRole.Tablist, AdjustableRole.Radiogroup })
-            (AdjustableKeys.Step("ArrowDown", role), AdjustableKeys.Step("ArrowUp", role)).Should().Be((1, -1), $"{role}: down is next");
+            (AdjustableKeys.Step("ArrowDown", role, TextDirection.LeftToRight), AdjustableKeys.Step("ArrowUp", role, TextDirection.LeftToRight)).Should().Be((1, -1), $"{role}: down is next");
         foreach (var role in new[] { AdjustableRole.Slider, AdjustableRole.Separator })
-            (AdjustableKeys.Step("ArrowDown", role), AdjustableKeys.Step("ArrowUp", role)).Should().Be((-1, 1), $"{role}: up raises the value");
-        AdjustableKeys.Step("Tab", AdjustableRole.Radiogroup).Should().BeNull("Tab leaves the group");
-        AdjustableKeys.Step("Home", AdjustableRole.Slider).Should().BeNull();
+            (AdjustableKeys.Step("ArrowDown", role, TextDirection.LeftToRight), AdjustableKeys.Step("ArrowUp", role, TextDirection.LeftToRight)).Should().Be((-1, 1), $"{role}: up raises the value");
+        AdjustableKeys.Step("Tab", AdjustableRole.Radiogroup, TextDirection.LeftToRight).Should().BeNull("Tab leaves the group");
+        AdjustableKeys.Step("Home", AdjustableRole.Slider, TextDirection.LeftToRight).Should().BeNull();
     }
 }

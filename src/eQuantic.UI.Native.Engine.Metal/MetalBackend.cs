@@ -39,18 +39,15 @@ public sealed class MetalBackend : IRenderBackend
         _renderer.Render(displayList, ((RhiSurface)surface).Target);
 
     /// <summary>
-    /// Shell path: encode the display list straight into a WINDOW drawable's texture and present
-    /// it on commit. Presents are ASYNCHRONOUS — the CAMetalLayer's drawable pool provides the
-    /// backpressure (nextDrawable blocks when the queue is full), so the CPU never stalls on the
-    /// GPU. Offscreen renders (goldens, parity readbacks) go through <see cref="Render"/> and
-    /// wait: the caller reads pixels right after.
+    /// Shell path: draws the display list into a WINDOW drawable's texture and presents it on
+    /// commit, through the same phases <see cref="Render"/> runs (#1952): its layers and its
+    /// backdrops draw into the renderer's own targets first, and only the last pass draws into the
+    /// drawable. That pass is presented ASYNCHRONOUSLY — the CAMetalLayer's drawable pool provides
+    /// the backpressure (nextDrawable blocks when the queue is full). Offscreen renders (goldens,
+    /// parity readbacks) go through <see cref="Render"/> and wait: the caller reads pixels right after.
     /// </summary>
-    public void RenderToDrawable(DisplayList displayList, IntPtr drawableTexture, ulong pixelFormat, IntPtr drawable)
-    {
-        var commands = _device.BeginDrawable(drawableTexture, pixelFormat, drawable, RhiRenderer.ClearColorOf(displayList));
-        _renderer.Encode(displayList, commands);
-        commands.Submit(waitUntilCompleted: false);
-    }
+    public void RenderToDrawable(DisplayList displayList, IntPtr drawableTexture, ulong pixelFormat, IntPtr drawable) =>
+        _renderer.Render(displayList, new MetalDrawableFrame(_device, drawableTexture, pixelFormat, drawable));
 
     public void Dispose()
     {

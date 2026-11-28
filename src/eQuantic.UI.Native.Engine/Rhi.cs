@@ -44,6 +44,14 @@ public enum RhiPipelineKind : byte
 
     /// <summary>Dual-Kawase pyramid, upsampling half — <c>blur_up</c>. Blending OFF; LINEAR.</summary>
     BlurUp = 5,
+
+    /// <summary>
+    /// A tile layer (#1937): one Rgba8 tile repeated over the command's area — <c>tiled_rgba_fragment</c>.
+    /// It filters linearly between four texel LOADS in premultiplied light, wrapping where tiles touch,
+    /// which is <see cref="Tiling.Sample"/> on the GPU: no sampler, so a GPU's own filter weights cannot
+    /// set it apart from the Reference backend's.
+    /// </summary>
+    TiledRgba = 6,
 }
 
 /// <summary>Texture filtering for a binding (D6b). Nearest is the DEFAULT and stays correct for
@@ -130,6 +138,26 @@ public struct DrawUniforms
         return true;
     }
 
+    /// <summary>
+    /// Builds the block for a <see cref="DrawCommandKind.TiledTexture"/> command, its tiling in the slots
+    /// <c>textured_rgba_fragment</c> leaves unused, so the block keeps its layout: <c>Radii</c> holds the
+    /// origin and the period, <c>ColorA</c> the extent and the opacity, <c>ColorB</c> whether each axis
+    /// repeats and whether it wraps, and <c>Gradient</c> the texture's size. A group's opacity is not
+    /// here: the group draws into a layer of its own and composites once (#1952). False when the
+    /// command's transform cannot be inverted.
+    /// </summary>
+    public static bool TryBuildTiled(in DrawCommand command, TextureData texture, out DrawUniforms uniforms)
+    {
+        if (!TryBuild(in command, out uniforms)) return false;
+        var tiling = command.Tiling;
+        uniforms.Radii = new Float4(tiling.Origin.X, tiling.Origin.Y, tiling.Period.Width, tiling.Period.Height);
+        uniforms.ColorA = new Float4(tiling.Extent.Width, tiling.Extent.Height, 0, command.StrokeWidth);
+        uniforms.ColorB = new Float4(tiling.RepeatX ? 1 : 0, tiling.RepeatY ? 1 : 0, tiling.WrapsX ? 1 : 0, tiling.WrapsY ? 1 : 0);
+        uniforms.Gradient = new Float4(texture.Width, texture.Height, 0, 0);
+        uniforms.Flags = new Float4(0, 0, command.Clip is null ? 0 : 1, 0);
+        return true;
+    }
+
     private static Float4 ToFloat4(Color color) =>
         new(color.R / 255f, color.G / 255f, color.B / 255f, color.A / 255f);
 }
@@ -208,11 +236,18 @@ public interface IRhiDevice : IDisposable
 
 /// <summary>
 /// The SHARED display-list encoder — the Metal spike's RenderCore loop, hoisted above the RHI so
-/// every GPU backend runs the identical frame semantics: leading Clear becomes the pass clear,
-/// group-opacity layers approximate as per-command alpha (documented fence — the D4 offscreen
-/// composite pass replaces this), Texture commands switch to the textured pipelines, and each
-/// command becomes one uniform block + one fullscreen-triangle draw. Owns the per-device sampled-
-/// texture cache (keyed by <see cref="TextureData"/> IDENTITY — the raster caches reuse instances).
+/// every GPU backend runs the identical frame semantics: leading Clear becomes the pass clear, each
+/// group-opacity layer draws into a target of its own and composites once, each backdrop splits the
+/// frame, Texture commands switch to the textured pipelines, and each command becomes one uniform
+/// block + one fullscreen-triangle draw. Owns the per-device sampled-texture cache (keyed by
+/// <see cref="TextureData"/> IDENTITY — the raster caches reuse instances) and the pool of targets a
+/// frame's own passes draw into.
+/// <para>
+/// ONE way in, <see cref="Render(DisplayList, IRhiFrameTarget)"/>, for a window and an offscreen
+/// target alike (#1952). The windows used to open their own pass and encode into it, skipping the
+/// phase that draws the layers, so a group's opacity blended each of its draws on its own and a
+/// backdrop drew no blur on screen, while the goldens, which render offscreen, saw neither.
+/// </para>
 /// <para>
 /// What it holds follows what is DRAWN: a raster no display list has drawn for
 /// <see cref="RetainFrames"/> frames gives its GPU texture back (#858). Kept for the renderer's
@@ -263,6 +298,8 @@ public sealed class RhiRenderer : IDisposable
     private readonly IRhiDevice _device;
     private readonly Dictionary<TextureData, Uploaded> _textures = new();
     private readonly List<TextureData> _retired = new();
+    private readonly RhiTargetPool _pool;
+    private readonly LayerTargets _layers = new();
     private long _frame;
     private int _uploads;   // new rasters uploaded by the frame being encoded
     private IRhiTexture? _dummy;
@@ -276,12 +313,16 @@ public sealed class RhiRenderer : IDisposable
         public long LastFrame = frame;
     }
 
-    public RhiRenderer(IRhiDevice device) => _device = device;
+    public RhiRenderer(IRhiDevice device)
+    {
+        _device = device;
+        _pool = new RhiTargetPool(device);
+    }
 
     /// <summary>
     /// The pass clear for <paramref name="displayList"/>: its leading Clear command's color
-    /// (engine lists always start with one), or transparent. Callers pass this to
-    /// <see cref="IRhiDevice.Begin"/>; <see cref="Encode(DisplayList, IRhiCommandList)"/> then skips Clear commands.
+    /// (engine lists always start with one), or transparent. The frame's first pass clears to it, and
+    /// the encoder then skips Clear commands.
     /// </summary>
     public static Color ClearColorOf(DisplayList displayList)
     {
@@ -291,27 +332,52 @@ public sealed class RhiRenderer : IDisposable
             : Color.Transparent;
     }
 
-    /// <summary>Offscreen path: begin, encode, submit-and-wait (the caller reads pixels right after).</summary>
-    public void Render(DisplayList displayList, IRhiRenderTarget target)
+    /// <summary>
+    /// Offscreen: the frame's passes into <paramref name="target"/>, the last one waited for, since the
+    /// caller reads its pixels right after. The same path a window takes, only the last pass differs.
+    /// </summary>
+    public void Render(DisplayList displayList, IRhiRenderTarget target) =>
+        Render(displayList, new OffscreenFrame(_device, target));
+
+    /// <summary>
+    /// Draws one frame into <paramref name="frame"/>, through every phase, the one entry a window and
+    /// an offscreen target both take (#1952):
+    /// <list type="number">
+    /// <item>each group-opacity layer into a target of its own, innermost first;</item>
+    /// <item>each backdrop outside a layer splits the frame: what is drawn so far blurs, and the next
+    /// pass starts from it;</item>
+    /// <item>the last pass, into <paramref name="frame"/>, compositing each layer once.</item>
+    /// </list>
+    /// Every pass before the last draws into a target from the pool and is submitted and waited for
+    /// before the next begins, so the last pass reads them finished on every backend, a queue that
+    /// runs its submissions apart included.
+    /// </summary>
+    public void Render(DisplayList displayList, IRhiFrameTarget frame)
     {
-        BeginFrame();
-        var layers = RenderLayers(displayList, target.Width, target.Height);
-        var splits = FindTopLevelBackdrops(displayList.Commands);
-        if (splits is null)
+        BeginFrame(frame.Width, frame.Height);
+        try
         {
-            var commands = _device.Begin(target, ClearColorOf(displayList));
-            EncodeRange(displayList, commands, layers, 0, displayList.Commands.Length);
-            commands.Submit(waitUntilCompleted: true);
-            layers?.Dispose();
-            return;
+            var layers = RenderLayers(displayList, frame.Width, frame.Height);
+            RenderPasses(displayList, frame, layers, FindTopLevelBackdrops(displayList.Commands));
         }
-        RenderWithBackdrops(displayList, target, layers, splits);
-        layers?.Dispose();
+        finally
+        {
+            _layers.Return(_pool);
+        }
+    }
+
+    /// <summary>The last pass offscreen: a render target the device begins, waited for when it submits.</summary>
+    private sealed class OffscreenFrame(IRhiDevice device, IRhiRenderTarget target) : IRhiFrameTarget
+    {
+        public int Width => target.Width;
+        public int Height => target.Height;
+        public IRhiCommandList Begin(Color clearColor) => device.Begin(target, clearColor);
+        public void Submit(IRhiCommandList commands) => commands.Submit(waitUntilCompleted: true);
     }
 
     /// <summary>Indices of BackdropBlur commands OUTSIDE layer scopes (the fence: inside a
     /// group-opacity layer the backdrop is isolated and the command is skipped). Null when none —
-    /// the common frame takes the single-pass path untouched.</summary>
+    /// the common frame is one pass and allocates nothing for the splits.</summary>
     private static List<int>? FindTopLevelBackdrops(ReadOnlySpan<DrawCommand> cmds)
     {
         List<int>? splits = null;
@@ -331,29 +397,28 @@ public sealed class RhiRenderer : IDisposable
     }
 
     /// <summary>
-    /// The frosted-glass frame (W3): each BackdropBlur SPLITS the frame into passes — the content
-    /// so far accumulates offscreen, runs the pyramid, and the next pass seeds itself by
-    /// compositing that content plus the blurred copy clipped to the region rrect, then keeps
-    /// drawing. The LAST segment draws straight into the caller's target. Metal and Vulkan allow
-    /// one open pass per encoder, so "read what you just drew" is necessarily a pass boundary.
+    /// The frame's passes after its layers. With no backdrop that is one pass, into
+    /// <paramref name="frame"/>. Each BackdropBlur (W3) SPLITS the frame: the content so far
+    /// accumulates in a pooled target, runs the pyramid, and the next pass seeds itself by compositing
+    /// that content plus the blurred copy clipped to the region rrect, then keeps drawing. The LAST
+    /// segment draws into <paramref name="frame"/>. Metal and Vulkan allow one open pass per encoder,
+    /// so "read what you just drew" is necessarily a pass boundary.
     /// </summary>
-    private void RenderWithBackdrops(DisplayList displayList, IRhiRenderTarget target,
-        object? layersHandle, List<int> splits)
+    private void RenderPasses(DisplayList displayList, IRhiFrameTarget frame, LayerTargets? layers, List<int>? splits)
     {
-        var layers = layersHandle as LayerTargets;
         var cmds = displayList.Commands;
-        var width = target.Width;
-        var height = target.Height;
+        var splitCount = splits?.Count ?? 0;
 
         IRhiRenderTarget? content = null;  // the accumulated frame BELOW the current split
         IRhiRenderTarget? blurred = null;  // its pyramid output
         var start = 0;
-        for (var s = 0; s <= splits.Count; s++)
+        for (var s = 0; s <= splitCount; s++)
         {
-            var isLast = s == splits.Count;
-            var end = isLast ? cmds.Length : splits[s];
-            var destination = isLast ? target : _device.CreateRenderTarget(width, height);
-            var commands = _device.Begin(destination, s == 0 ? ClearColorOf(displayList) : Color.Transparent);
+            var isLast = s == splitCount;
+            var end = isLast ? cmds.Length : splits![s];
+            var clear = s == 0 ? ClearColorOf(displayList) : Color.Transparent;
+            var segment = isLast ? null : _pool.Rent(frame.Width, frame.Height);
+            var commands = segment is null ? frame.Begin(clear) : _device.Begin(segment, clear);
             if (content is not null && blurred is not null)
             {
                 // Seed: full content below, then the blurred backdrop inside the glass rrect.
@@ -362,16 +427,17 @@ public sealed class RhiRenderer : IDisposable
                 commands.BindTexture(ColorSlot, Dummy());
                 var active = RhiPipelineKind.Sdf;
                 CompositeLayer(commands, content, 1f, ref active);
-                CompositeBackdrop(commands, blurred, in cmds[splits[s - 1]], ref active);
+                CompositeBackdrop(commands, blurred, in cmds[splits![s - 1]], ref active);
             }
             EncodeRange(displayList, commands, layers, start, end);
-            commands.Submit(waitUntilCompleted: true);
-            content?.Dispose();
-            blurred?.Dispose();
+            if (segment is null) frame.Submit(commands);
+            else commands.Submit(waitUntilCompleted: true);
+            if (content is not null) _pool.Return(content);
+            if (blurred is not null) _pool.Return(blurred);
             if (isLast) return;
 
-            content = destination;
-            blurred = Blur(content, cmds[splits[s]].StrokeWidth);
+            content = segment;
+            blurred = Blur(segment!, cmds[splits![s]].StrokeWidth);
             start = splits[s] + 1;
         }
     }
@@ -418,11 +484,10 @@ public sealed class RhiRenderer : IDisposable
             hasLayer = cmds[i].Kind == DrawCommandKind.BeginLayer;
         if (!hasLayer) return null;
 
-        var layers = new LayerTargets();
         // Walk innermost-first by resolving each BeginLayer against its matching EndLayer and
         // recursing into the enclosed range.
-        RenderLayerRange(displayList, 0, cmds.Length, width, height, layers);
-        return layers;
+        RenderLayerRange(displayList, 0, cmds.Length, width, height, _layers);
+        return _layers;
     }
 
     private void RenderLayerRange(DisplayList displayList, int start, int end, int width, int height, LayerTargets layers)
@@ -439,13 +504,13 @@ public sealed class RhiRenderer : IDisposable
                 if (cmds[j].Kind == DrawCommandKind.BeginLayer) depth++;
                 else if (cmds[j].Kind == DrawCommandKind.EndLayer && --depth == 0) { close = j; break; }
             }
-            if (close < 0) return; // unbalanced (the builder rejects this; be defensive anyway)
+            if (close < 0) return; // unbalanced: the builder refuses it, and the encoder fails on it
 
             // Nested layers inside this scope render FIRST, so this scope's own pass can composite
             // them while it draws.
             RenderLayerRange(displayList, i + 1, close, width, height, layers);
 
-            var target = _device.CreateRenderTarget(width, height);
+            var target = _pool.Rent(width, height);
             var commands = _device.Begin(target, Color.Transparent);
             EncodeRange(displayList, commands, layers, i + 1, close);
             commands.Submit(waitUntilCompleted: true);
@@ -455,9 +520,9 @@ public sealed class RhiRenderer : IDisposable
         }
     }
 
-    /// <summary>The offscreen targets a frame's layer scopes rendered into, keyed by the index of
-    /// their BeginLayer command. Disposed with the frame.</summary>
-    private sealed class LayerTargets : IDisposable
+    /// <summary>The pooled targets a frame's layer scopes rendered into, keyed by the index of their
+    /// BeginLayer command, given back to the pool when the frame is done.</summary>
+    private sealed class LayerTargets
     {
         private readonly Dictionary<int, IRhiRenderTarget> _targets = new();
 
@@ -465,33 +530,11 @@ public sealed class RhiRenderer : IDisposable
 
         public IRhiRenderTarget? Get(int beginIndex) => _targets.GetValueOrDefault(beginIndex);
 
-        public void Dispose()
+        public void Return(RhiTargetPool pool)
         {
-            foreach (var target in _targets.Values) target.Dispose();
+            foreach (var target in _targets.Values) pool.Return(target);
             _targets.Clear();
         }
-    }
-
-    /// <summary>
-    /// Encodes <paramref name="displayList"/> into an open pass. Window paths call this directly
-    /// with a backend-created command list (drawable target) and submit without waiting.
-    /// </summary>
-    public void Encode(DisplayList displayList, IRhiCommandList commands) =>
-        Encode(displayList, commands, layersHandle: null);
-
-    /// <summary>
-    /// Encodes <paramref name="displayList"/> into an open pass, compositing any layer scopes from
-    /// the offscreen targets phase one produced. A null <paramref name="layersHandle"/> means the caller
-    /// never ran phase one — layers then fall back to the historical per-command alpha
-    /// approximation, which is what the WINDOW path used before offscreen layers existed.
-    /// </summary>
-    public void Encode(DisplayList displayList, IRhiCommandList commands, object? layersHandle)
-    {
-        // A caller's own pass is one frame. Render begins its frame itself and encodes through
-        // EncodeRange, so every way into the encoder passes BeginFrame exactly once.
-        BeginFrame();
-        var layers = layersHandle as LayerTargets;
-        EncodeRange(displayList, commands, layers, 0, displayList.Commands.Length);
     }
 
     private void EncodeRange(DisplayList displayList, IRhiCommandList commands, LayerTargets? layers,
@@ -504,12 +547,6 @@ public sealed class RhiRenderer : IDisposable
         commands.BindTexture(CoverageSlot, dummy);
         commands.BindTexture(ColorSlot, dummy);
         var activeKind = RhiPipelineKind.Sdf;
-
-        // FENCE (carried from the spike): group-opacity layers approximate as per-command alpha —
-        // overlapping children inside a layer double-blend; the Reference backend is normative and
-        // the bounded offscreen composite pass (plan D4) retires this.
-        var layerAlpha = 1f;
-        Stack<float>? layerStack = null;
 
         var cmds = displayList.Commands;
         for (var i = start; i < end; i++)
@@ -524,11 +561,6 @@ public sealed class RhiRenderer : IDisposable
                 if (command.TextureId < 0 || command.TextureId >= displayList.Textures.Count) continue;
                 var data = displayList.Textures[command.TextureId];
                 if (!DrawUniforms.TryBuild(in command, out var textured)) continue;
-                if (layerAlpha < 1f)
-                {
-                    textured.ColorA.W *= layerAlpha;
-                    textured.ColorB.W *= layerAlpha;
-                }
                 // The textured path reuses free slots rather than growing the block: the texture
                 // size rides `Gradient`, and a GRADIENT TINT (gradient text) rides `Radii` (axis)
                 // + `ColorB` (second stop) — neither is read by the textured entry points.
@@ -562,6 +594,20 @@ public sealed class RhiRenderer : IDisposable
                 commands.Draw(in textured);
                 continue;
             }
+            if (command.Kind == DrawCommandKind.TiledTexture)
+            {
+                if (command.TextureId < 0 || command.TextureId >= displayList.Textures.Count) continue;
+                var tile = displayList.Textures[command.TextureId];
+                if (!DrawUniforms.TryBuildTiled(in command, tile, out var tiled)) continue;
+                if (activeKind != RhiPipelineKind.TiledRgba)
+                {
+                    commands.SetPipeline(RhiPipelineKind.TiledRgba);
+                    activeKind = RhiPipelineKind.TiledRgba;
+                }
+                commands.BindTexture(ColorSlot, TextureFor(tile));
+                commands.Draw(in tiled);
+                continue;
+            }
             if (activeKind != RhiPipelineKind.Sdf)
             {
                 commands.SetPipeline(RhiPipelineKind.Sdf);
@@ -569,45 +615,34 @@ public sealed class RhiRenderer : IDisposable
             }
             if (command.Kind == DrawCommandKind.BeginLayer)
             {
-                // REAL offscreen layer: phase one rendered this scope into its own target, so the
-                // whole group composites with ONE blend and overlapping children never
-                // double-blend. Skip to the matching EndLayer — its contents are already drawn.
-                if (layers?.Get(i) is { } layerTarget)
-                {
-                    CompositeLayer(commands, layerTarget, command.StrokeWidth * layerAlpha, ref activeKind);
-                    i = MatchingEnd(cmds, i, end);
-                    continue;
-                }
-                // Fallback (window path, pre-offscreen): approximate as per-command alpha —
-                // overlapping children double-blend. Documented, and now only reachable when the
-                // caller skipped phase one.
-                (layerStack ??= new()).Push(layerAlpha);
-                layerAlpha *= command.StrokeWidth;
+                // Phase one rendered this scope into its own target, so the whole group composites
+                // with ONE blend and overlapping children never double-blend. Skip to the matching
+                // EndLayer — its contents are already drawn. Every way into the encoder runs phase
+                // one, so a scope without a target is a list no builder makes, and it fails here
+                // rather than drawing each child at the group's alpha, as the windows once did.
+                var layerTarget = layers?.Get(i)
+                    ?? throw new InvalidOperationException(
+                        $"The layer that begins at command {i} has no target: its scope is not balanced.");
+                CompositeLayer(commands, layerTarget, command.StrokeWidth, ref activeKind);
+                i = MatchingEnd(cmds, i, end);
                 continue;
             }
-            if (command.Kind == DrawCommandKind.EndLayer)
-            {
-                if (layerStack is { Count: > 0 }) layerAlpha = layerStack.Pop();
-                continue;
-            }
+            // An EndLayer is reached only past its BeginLayer, which skips it; one alone closes nothing.
+            if (command.Kind == DrawCommandKind.EndLayer) continue;
             if (!DrawUniforms.TryBuild(in command, out var uniforms)) continue;
-            if (layerAlpha < 1f)
-            {
-                uniforms.ColorA.W *= layerAlpha;
-                uniforms.ColorB.W *= layerAlpha;
-            }
             commands.Draw(in uniforms);
         }
     }
 
     /// <summary>
-    /// Runs the dual-Kawase pyramid over <paramref name="source"/> and returns a NEW full-size
-    /// target with the blurred result (caller disposes it; intermediates are disposed here). Each
-    /// level is one fullscreen draw through the LINEAR sampler (D6b); the tap pattern is Blur.cs's,
-    /// which is the normative math. v1 submits level-by-level with waits — correct first; folding
-    /// the pyramid into one command buffer is a known optimization for the frame path.
+    /// Runs the dual-Kawase pyramid over <paramref name="source"/> and returns a full-size target
+    /// from the pool with the blurred result, which the frame gives back once a pass has read it; the
+    /// levels go back here. Each level is one fullscreen draw through the LINEAR sampler (D6b); the
+    /// tap pattern is Blur.cs's, which is the normative math. v1 submits level-by-level with waits —
+    /// correct first; folding the pyramid into one command buffer is a known optimization for the
+    /// frame path.
     /// </summary>
-    public IRhiRenderTarget Blur(IRhiRenderTarget source, float radius)
+    internal IRhiRenderTarget Blur(IRhiRenderTarget source, float radius)
     {
         var levels = Engine.Blur.Levels(radius);
         var down = new IRhiRenderTarget[levels];
@@ -616,7 +651,7 @@ public sealed class RhiRenderer : IDisposable
         {
             var width = Math.Max(1, source.Width >> (i + 1));
             var height = Math.Max(1, source.Height >> (i + 1));
-            down[i] = _device.CreateRenderTarget(width, height);
+            down[i] = _pool.Rent(width, height);
             BlurPass(current, down[i], RhiPipelineKind.BlurDown);
             current = down[i];
         }
@@ -629,9 +664,9 @@ public sealed class RhiRenderer : IDisposable
             current = down[i];
         }
 
-        var result = _device.CreateRenderTarget(source.Width, source.Height);
+        var result = _pool.Rent(source.Width, source.Height);
         BlurPass(current, result, RhiPipelineKind.BlurUp);
-        foreach (var target in down) target.Dispose();
+        foreach (var target in down) _pool.Return(target);
         return result;
     }
 
@@ -721,14 +756,16 @@ public sealed class RhiRenderer : IDisposable
     }
 
     /// <summary>
-    /// A new frame starts: the rasters that went undrawn for more than <see cref="RetainFrames"/>
-    /// whole frames are released, before anything is encoded, so nothing this frame binds can be
-    /// one of them. A raster drawn again later is uploaded again, from the bytes its owner still
-    /// holds.
+    /// A new frame of <paramref name="width"/> by <paramref name="height"/> starts: the rasters that
+    /// went undrawn for more than <see cref="RetainFrames"/> whole frames are released, before
+    /// anything is encoded, so nothing this frame binds can be one of them, and so are the pooled
+    /// targets this frame cannot use (see <see cref="RhiTargetPool"/>). A raster drawn again later is
+    /// uploaded again, from the bytes its owner still holds.
     /// </summary>
-    private void BeginFrame()
+    private void BeginFrame(int width, int height)
     {
         _frame++;
+        _pool.BeginFrame(_frame, width, height);
         // As many as the last frame uploaded, and never fewer than the share: see ReleasesPerFrame.
         var releases = Math.Max(ReleasesPerFrame, _uploads);
         _uploads = 0;
@@ -761,6 +798,7 @@ public sealed class RhiRenderer : IDisposable
     {
         foreach (var uploaded in _textures.Values) uploaded.Texture.Dispose();
         _textures.Clear();
+        _pool.Dispose();
         _dummy?.Dispose();
         _dummy = null;
     }

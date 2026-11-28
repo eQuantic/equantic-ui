@@ -480,3 +480,103 @@ describe('a scroll view that fills its viewport', () => {
     expect(effectiveStyle(lowered.children[0])).not.toContain('flex-grow');
   });
 });
+
+/**
+ * A horizontal view counts from the READING START (#1569): under `rtl` the CSSOM's `scrollLeft` is 0 at the start and
+ * negative toward the end, so the offset the component reads, declares and requests is its negation. The direction is
+ * the nearest `[dir]` of the view where it is read, the way every other reading of it is (`reading-direction.ts`),
+ * since a DOM with no layout engine computes none from `dir`.
+ */
+describe('a horizontal ScrollView counts from the reading start (#1569)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  /** A page of one direction holding the view the lowering declared, adopted the way the commit finds it. */
+  function pageOf(direction: 'ltr' | 'rtl', lowered: HtmlNode): HTMLElement {
+    const page = document.createElement('div');
+    page.setAttribute('dir', direction);
+    const view = document.createElement('div');
+    view.setAttribute('data-eq-scroll', lowered.attributes['data-eq-scroll'] ?? '');
+    page.append(view);
+    document.body.append(page);
+    return view;
+  }
+
+  const horizontal = (overrides: Partial<ScrollViewNode> = {}): ScrollViewNode =>
+    scrollNode({ axis: 'horizontal', ...overrides });
+
+  it('reports the distance toward the end as a positive number where the view reads right to left', () => {
+    const seen: number[] = [];
+    const lowered = lowerVisualNode(horizontal({ onScrolled: (o) => seen.push(o) }), context());
+    const handler = (lowered as { events: Record<string, (e: Event) => void> }).events['scroll'];
+
+    const page = document.createElement('div');
+    page.setAttribute('dir', 'rtl');
+    const view = document.createElement('div');
+    page.append(view);
+    document.body.append(page);
+
+    // The browser's own numbers: 0 at the start, then negative toward the end.
+    for (const scrolled of [0, -100, -250.5]) {
+      view.scrollLeft = scrolled;
+      handler({ target: view } as unknown as Event);
+    }
+    expect(seen).toEqual([0, 100, 250.5]);
+    expect(Object.is(seen[0], 0)).toBe(true);
+  });
+
+  it('reports scrollLeft as it is where the view reads left to right, inside an rtl page too', () => {
+    const seen: number[] = [];
+    const lowered = lowerVisualNode(horizontal({ onScrolled: (o) => seen.push(o) }), context());
+    const handler = (lowered as { events: Record<string, (e: Event) => void> }).events['scroll'];
+
+    const page = document.createElement('div');
+    page.setAttribute('dir', 'rtl');
+    const fence = document.createElement('div');
+    fence.setAttribute('dir', 'ltr');
+    const view = document.createElement('div');
+    fence.append(view);
+    page.append(fence);
+    document.body.append(page);
+
+    view.scrollLeft = 100;
+    handler({ target: view } as unknown as Event);
+    expect(seen).toEqual([100]);
+  });
+
+  it('scrolls to an Offset of 100 by setting scrollLeft to -100 where the view reads right to left', () => {
+    const view = pageOf('rtl', lowerVisualNode(horizontal({ offset: 100 }), context()));
+
+    commitScrollViewports();
+
+    expect(view.scrollLeft).toBe(-100);
+  });
+
+  it('honours a ScrollRequest the same way, once per version', () => {
+    const render = keptRenders();
+    const declare = (request: { version: number; offset: number }) =>
+      render(horizontal({ request }) as ScrollViewNode);
+    const view = pageOf('rtl', declare({ version: 1, offset: 100 }));
+
+    commitScrollViewports();
+    expect(view.scrollLeft).toBe(-100);
+
+    declare({ version: 2, offset: 0 });
+    commitScrollViewports();
+    expect(Object.is(view.scrollLeft, 0)).toBe(true);
+  });
+
+  it('leaves scrollLeft as the offset where the view reads left to right, and a vertical view alone', () => {
+    const ltr = pageOf('ltr', lowerVisualNode(horizontal({ offset: 100 }), context()));
+    commitScrollViewports();
+    expect(ltr.scrollLeft).toBe(100);
+
+    // A vertical view under rtl has no end to the side: scrollTop is the offset in both directions.
+    const down = pageOf('rtl', lowerVisualNode(scrollNode({ offset: 40 }), context()));
+    commitScrollViewports();
+    expect(down.scrollTop).toBe(40);
+    expect(down.scrollLeft).toBe(0);
+  });
+});
+

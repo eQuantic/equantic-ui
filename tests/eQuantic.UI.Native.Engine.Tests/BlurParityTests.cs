@@ -69,8 +69,7 @@ public class BlurParityTests
         var blurred = renderer.Blur(source, Radius);
         var gpu = new byte[GoldenScenes.Width * GoldenScenes.Height * 4];
         blurred.ReadPixelsSrgb(gpu);
-        blurred.Dispose();
-        source.Dispose();
+        source.Dispose();   // the blurred copy is the renderer's pool's, released with it
         renderer.Dispose();
 
         AssertFuzzyEqual(label, cpu, gpu);

@@ -839,7 +839,7 @@ internal sealed partial class WebLoweringVisitor
         && box.Style.Background is null
         && box.Style.Gradient is null
         && box.Style.Glow is null
-        && box.Style.Pattern is null
+        && box.Style.Patterns is null or []
         && box.Style.BorderWidth == 0
         && box.Style.Elevation == 0;
 
@@ -883,11 +883,6 @@ internal sealed partial class WebLoweringVisitor
                 // The foreground the text and icons inside inherit when they name none (#614): CSS's
                 // own inheritance is DefaultTextStyle's, so it is one declaration here.
                 Color = style.Foreground is { } fg ? TokenCss.Value(fg) : null,
-                // Layers compose like CSS: the FIRST entry paints on top, so a gradient sits over
-                // the grid, and both sit over background-color. background-size must carry one
-                // entry per layer, hence the `auto` placeholder for the gradient.
-                BackgroundImage = BackgroundLayers(style),
-                BackgroundSize = BackgroundLayerSizes(style),
                 BorderRadius = style.CornerRadius.IsZero ? null : TokenCss.Radius(style.CornerRadius),
                 // Depth (Elevation), the CUSTOM shadow and the inset highlight compose as one
                 // box-shadow list — the design stacks glows on elevated glossy cards.
@@ -939,6 +934,10 @@ internal sealed partial class WebLoweringVisitor
                 PointerEvents = PaintsNothing(box) ? "none" : "auto",
             },
         };
+        // Layers compose like CSS: the FIRST entry paints on top, so a gradient sits over the glow and
+        // the patterns, and all of them over background-color (#1937).
+        if (style.Gradient is not null || style.Glow is not null || style.Patterns is { Count: > 0 })
+            new BackgroundLayers(style, _context.Theme).WriteInto(element.Style!);
 
         // ELEVATION DECIDES WHAT IS ON TOP, not just how deep the shadow is.
         //
@@ -1165,12 +1164,10 @@ internal sealed partial class WebLoweringVisitor
         else if (diff.BorderColor is { } onlyColor) declarations.Add(("border-color", TokenCss.Value(onlyColor)));
         if (StateShadowList(style, diff) is { } shadows) declarations.Add(("box-shadow", shadows));
         if (diff.Opacity is { } alpha) declarations.Add(("opacity", TokenCss.Number(alpha)));
+        // Every list, padded for the gradient's layer: CSS repeats a short list from its start, so the
+        // base's lists would otherwise shift by one layer under the state.
         if (diff.Gradient is { } gradient)
-        {
-            var layered = style with { Gradient = gradient };
-            declarations.Add(("background-image", BackgroundLayers(layered)!));
-            if (BackgroundLayerSizes(layered) is { } sizes) declarations.Add(("background-size", sizes));
-        }
+            declarations.AddRange(new BackgroundLayers(style with { Gradient = gradient }, _context.Theme).Declarations());
         if (diff.BackdropBlur is { } blur)
         {
             var filter = blur > 0 ? $"blur({TokenCss.Px(blur)})" : "none";
@@ -1206,6 +1203,13 @@ internal sealed partial class WebLoweringVisitor
                 case "opacity": style.Opacity = value; break;
                 case "background-image": style.BackgroundImage = value; break;
                 case "background-size": style.BackgroundSize = value; break;
+                case "background-repeat": style.BackgroundRepeat = value; break;
+                case "background-position": style.BackgroundPosition = value; break;
+                case "background-origin": style.BackgroundOrigin = value; break;
+                // HtmlStyle writes both spellings from the one property.
+                case "background-clip": style.BackgroundClip = value; break;
+                case "-webkit-background-clip": break;
+                case "background-attachment": style.BackgroundAttachment = value; break;
                 // HtmlStyle writes both spellings from the one property.
                 case "backdrop-filter": style.BackdropFilter = value; break;
                 case "-webkit-backdrop-filter": break;
@@ -1464,31 +1468,6 @@ internal sealed partial class WebLoweringVisitor
                 : $"{TokenCss.Px(flex.Gap)} {TokenCss.Px(run)}";
         }
         return flex.Gap > 0 ? TokenCss.Px(flex.Gap) : null;
-    }
-    /// <summary>
-    /// The <c>background-image</c> layer LIST, in CSS paint order — the FIRST entry sits on top.
-    /// The order (gradient → glow → grid) is the one the native realizer emits back-to-front, so a
-    /// box carrying all three stacks identically on both targets.
-    /// </summary>
-    private string? BackgroundLayers(BoxStyle style)
-    {
-        var layers = new List<string>(3);
-        if (style.Gradient is { } gradient) layers.Add(TokenCss.Gradient(gradient));
-        if (style.Glow is { } glow) layers.Add(TokenCss.Glow(glow));
-        if (style.Pattern is { } pattern) layers.Add(TokenCss.GridPattern(pattern));
-        return layers.Count == 0 ? null : string.Join(", ", layers);
-    }
-
-    /// <summary>The matching <c>background-size</c> list: one entry per layer (the grid contributes
-    /// TWO), with `auto` standing in for the layers that size themselves.</summary>
-    private string? BackgroundLayerSizes(BoxStyle style)
-    {
-        if (style.Pattern is not { } pattern) return null;
-        var sizes = new List<string>(3);
-        if (style.Gradient is not null) sizes.Add("auto");
-        if (style.Glow is not null) sizes.Add("auto");
-        sizes.Add(TokenCss.GridPatternSize(pattern));
-        return string.Join(", ", sizes);
     }
     private HtmlElement LowerFlexible(Flexible flexible, bool? horizontalAxis)
     {
