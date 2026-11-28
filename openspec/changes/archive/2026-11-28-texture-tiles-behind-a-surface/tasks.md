@@ -196,6 +196,8 @@
 - [x] 6.2 `docs/FLUTTER-PARITY.md`: a row for `DecorationImage` (`repeat`, `alignment`, `fit`, `opacity`), with the
   fenced `centerSlice` and `scale` and their reasons.
 - [x] 6.3 A ledger entry under `docs/ledger/`, citing #1937 and #1939.
-- [ ] 6.4 Archive the change with `openspec archive texture-tiles-behind-a-surface --yes` before the merge.
-- [ ] 6.5 Every test project of the solution, with the Conformance suite in full, each read by its exit code, through
+- [x] 6.4 Archive the change with `openspec archive texture-tiles-behind-a-surface --yes` before the merge.
+- [x] 6.5 Every test project of the solution, with the Conformance suite in full, each read by its exit code, through
   the build lock with `EQ_WIKI_DIR` pointed at the wiki worktree.
+
+  Run on 2026-11-28, every project through the lock, Conformance in full with `EQ_REQUIRE_JS=1`: Web 2028/1 skipped, Native.Engine 3862/30, Native.Testing 17, Design 107, Email 113, Heroicons 2, Images 120, Lucide 3, Testing 49, Conformance 8508/1, all green. Server and Compiler each failed one guard (the desk unnamed by the layout, a test reading an assembly by file), both fixed at the review gate, after which Web 2040/1, Runtime 3717, Server 692, Native.Engine 3872/30 and Compiler 3090 passed in full.
