@@ -47,7 +47,8 @@ public sealed class Select : StatefulComponent
         InputTheme? style = null, Func<int, VisualNode>? optionBuilder = null, string label = "")
     {
         Options = options ?? [];
-        Label = label;
+        // A label of nothing but spaces is no label: it draws nothing and names nothing (#1988).
+        Label = string.IsNullOrWhiteSpace(label) ? "" : label;
         SelectedIndex = selectedIndex;
         OnChanged = onChanged;
         Placeholder = placeholder;

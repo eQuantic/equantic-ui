@@ -652,11 +652,17 @@ public static class UI
         new Calendar(selected, onChanged, min, max, style);
 
     /// <summary>One choice out of a dropdown list: the ungrouped <paramref name="options"/> first, then
-    /// each of <paramref name="groups"/> under its heading, one index across them all.</summary>
+    /// each of <paramref name="groups"/> under its heading, one index across them all. <paramref name="label"/>
+    /// names it; <paramref name="labelHidden"/> draws no label, for a form that lays its own, and the label still
+    /// names the field (#1838, #1988).</summary>
     public static Select Select(IReadOnlyList<string>? options = null, int selectedIndex = -1,
         Action<int>? onChanged = null, string? placeholder = null, IReadOnlyList<OptionGroup>? groups = null,
-        InputTheme? style = null, Func<int, VisualNode>? optionBuilder = null, string label = "") =>
-        new Select(options, selectedIndex, onChanged, placeholder, groups, style, optionBuilder, label);
+        InputTheme? style = null, Func<int, VisualNode>? optionBuilder = null, string label = "",
+        bool labelHidden = false) =>
+        new Select(options, selectedIndex, onChanged, placeholder, groups, style, optionBuilder, label)
+        {
+            LabelHidden = labelHidden,
+        };
 
     /// <summary>The full text field: label, helper, error, leading icon, and a trailing SLOT
     /// for whatever belongs at the end of the row — a picker's opener, a clear affordance.

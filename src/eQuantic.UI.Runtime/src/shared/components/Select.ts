@@ -45,7 +45,7 @@ export class Select extends StatefulComponent {
         if (label !== undefined) this.label = label;
         if (this.selectedIndex === undefined) this.selectedIndex = 0;
         this.options = options ?? [];
-        this.label = label;
+        this.label = (!$eq.text.hasNonWhiteSpace(label)) ? '' : label;
         this.selectedIndex = selectedIndex;
         this.onChanged = onChanged;
         this.placeholder = placeholder;

@@ -1,6 +1,7 @@
 using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
+using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Xunit;
@@ -66,32 +67,42 @@ public class ComboBoxAndDialogSemanticsTests
             .Should().Equal([true, false]);
     }
 
+    /// <summary>
+    /// A select names its field by its label (#1838): the combobox is announced by it, with the choice it shows as its
+    /// value, and the drawn label above the field is not read a second time. With the label left to the form, nothing
+    /// is drawn above the field and the field names itself by the same words. A label of nothing but spaces is no
+    /// label (#1988). A combobox is never named from its content, so before the label a select had no name on any
+    /// target.
+    /// </summary>
+    [Theory]
+    [InlineData("City", false, "City", true)]
+    [InlineData("City", true, "City", false)]
+    [InlineData("   ", false, "", false)]
+    public void ASelect_IsAComboBoxNamedByItsLabel_WithItsChoiceAsItsValue(string label, bool hidden, string named, bool drawn)
+    {
+        var host = Render(new Select(["Lisbon", "Porto"], 0, _ => { }, label: label) { LabelHidden = hidden });
+
+        var field = host.Semantics().Should().ContainSingle("the label above the field is its name, never a second stop").Subject;
+        field.Role.Should().Be(SemanticRole.ComboBox);
+        field.Label.Should().Be(named);
+        field.Value.Should().Be("Lisbon", "the choice the field shows is its value");
+        // What is drawn above the field: the label's own line, or nothing at all.
+        var labels = Texts(host.LastFrame!.Root).Where(text => text != "Lisbon").ToList();
+        if (drawn) labels.Should().Equal([label], "the label is drawn above the field");
+        else labels.Should().BeEmpty("nothing is drawn above the field: the form draws its own label, or there is none");
+    }
+
+    private static IEnumerable<string> Texts(LayoutNode node)
+    {
+        if (node.Source is Text { Content: var content }) yield return content;
+        foreach (var child in node.Children)
+            foreach (var text in Texts(child))
+                yield return text;
+    }
+
     /// <summary>A grouped Select's open list names each group and then walks into it (#677): the
     /// group, named by the heading a person sees, then its options; the web's <c>role="group"</c>
     /// reads the same.</summary>
-    /// <summary>
-    /// A select names its field by its label (#1838): the combobox is announced by it, with the choice it shows as its
-    /// value, and the drawn label above the field is not read a second time. With the label left to the form, the
-    /// field names itself by the same words. A combobox is never named from its content, so before the label a
-    /// select had no name on any target.
-    /// </summary>
-    [Fact]
-    public void ALabelledSelect_IsAComboBoxNamedByItsLabel_WithItsChoiceAsItsValue()
-    {
-        foreach (var select in new[]
-        {
-            new Select(["Lisbon", "Porto"], 0, _ => { }, label: "City"),
-            new Select(["Lisbon", "Porto"], 0, _ => { }, label: "City") { LabelHidden = true },
-        })
-        {
-            var host = Render(select);
-            var field = host.Semantics().Should().ContainSingle("the label above the field is its name, never a second stop").Subject;
-            field.Role.Should().Be(SemanticRole.ComboBox);
-            field.Label.Should().Be("City");
-            field.Value.Should().Be("Lisbon", "the choice the field shows is its value");
-        }
-    }
-
     [Fact]
     public void AGroupedSelectsListNamesEachGroupBeforeItsOptions()
     {

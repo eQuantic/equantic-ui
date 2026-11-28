@@ -283,8 +283,8 @@ export class UI {
         return new Calendar(selected, onChanged, min, max, style);
     }
 
-    static select(options: string[] | null = null, selectedIndex: number = -1, onChanged: ((int: number) => void) | null = null, placeholder: string | null = null, groups: OptionGroup[] | null = null, style: InputTheme | null = null, optionBuilder: ((value: number) => VisualNode) | null = null, label: string = '') {
-        return new Select(options, selectedIndex, onChanged, placeholder, groups, style, optionBuilder, label);
+    static select(options: string[] | null = null, selectedIndex: number = -1, onChanged: ((int: number) => void) | null = null, placeholder: string | null = null, groups: OptionGroup[] | null = null, style: InputTheme | null = null, optionBuilder: ((value: number) => VisualNode) | null = null, label: string = '', labelHidden: boolean = false) {
+        return new Select(options, selectedIndex, onChanged, placeholder, groups, style, optionBuilder, label, { labelHidden: labelHidden });
     }
 
     static textInput(value: string, onChanged: ((string: string) => void) | null = null, label: string = '', placeholder: string | null = null, helper: string | null = null, error: string | null = null, leading: $IconsValue | null = null, size: $SizeVariantValue = 'large', trailing: VisualNode | null = null, kind: $TextEntryKindValue = 'text', prefix: string | null = null, suffix: string | null = null, style: InputTheme | null = null, labelHidden: boolean = false) {

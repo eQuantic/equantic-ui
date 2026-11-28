@@ -128,6 +128,8 @@ public class SemanticsParityTests(ITestOutputHelper output)
         yield return new("case labelled select, label hidden",
             () => new Select(["Lisbon", "Porto"], 0, _ => { }, label: "City") { LabelHidden = true });
         yield return new("case labelled select opened", () => new Select(["Lisbon", "Porto"], 0, _ => { }, label: "City"), Open: true);
+        // A label of nothing but spaces is no label: no name and nothing drawn, on both targets (#1988).
+        yield return new("case select labelled with spaces", () => new Select(["Lisbon", "Porto"], 0, _ => { }, label: "   "));
         yield return new("case time-picker", () => new TimePicker(new TimeOnly(9, 30), _ => { }, label: "Arrival"));
         yield return new("case disabled select", () => new Select(["Lisbon", "Porto"], 0, _ => { }) { Disabled = true });
         yield return new("case disabled time-picker",
