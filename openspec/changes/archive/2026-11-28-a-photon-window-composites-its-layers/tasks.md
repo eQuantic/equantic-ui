@@ -15,5 +15,5 @@
 - [x] 3.1 `AWindowFrameCompositesItsLayersTests` on Metal and Vulkan, failing on main's window paths
 - [x] 3.2 `RendererTargetPoolTests`, failing on main and with a pool that keeps the sizes a resize left
 - [x] 3.3 The native GPU engine plan's entry on the layers, and a ledger entry under `docs/ledger/`
-- [ ] 3.4 Every test project of the solution with the Conformance suite in full, each read by its exit code
-- [ ] 3.5 The macOS jobs on the branch, and the Vulkan tests on a runner's software driver
+- [x] 3.4 Every test project of the solution with the Conformance suite in full, each read by its exit code
+- [x] 3.5 The macOS jobs on the branch, and the Vulkan tests on a runner's software driver
