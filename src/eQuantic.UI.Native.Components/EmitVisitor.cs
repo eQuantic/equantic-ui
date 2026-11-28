@@ -105,7 +105,8 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
                 var matrix = CenterAnchored(transformNow, node.Bounds.Center);
                 s.Builder.PushTransform(matrix);
                 // What the box draws transformed takes the pointer where it is drawn (#513).
-                drawn = s with { Input = s.Input.Under(matrix) };
+                // And a window-attached pattern inside is placed in its own box (#1937).
+                drawn = s with { Input = s.Input.Under(matrix), UnderTransform = true };
             }
 
             // Neither the layer nor the transform is paint of the node around this one: settled past both, whatever

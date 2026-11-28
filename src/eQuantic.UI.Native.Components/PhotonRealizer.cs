@@ -329,6 +329,8 @@ public static class PhotonRealizer
         IconRasterCache? iconCache = null,
         Framework.IImageLoader? imageLoader = null,
         Dictionary<string, TextureData?>? imageCache = null,
+        // The host's cache of the tiles its boxes' patterns composite (#1937); null = the shared one.
+        PatternTileCache? patternCache = null,
         EdgeInsets safeAreaInsets = default,
         // A press lasts a moment and focus lasts until the user says otherwise — both outlive the
         // frame that started them, and `Build` hands back NEW nodes every time. The node is the
@@ -418,6 +420,9 @@ public static class PhotonRealizer
             TypeScale = typeScale,
             IconRasterizer = iconRasterizer,
             IconCache = iconCache,
+            PatternCache = patternCache,
+            // Whatever the host drew the frame under (its render scale), before anything of the tree.
+            Root = builder.CurrentTransform,
         };
         var overlays = new List<QueuedLayer>();
         var input = new InputSink(regions);

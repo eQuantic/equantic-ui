@@ -211,10 +211,12 @@ public class S5StateRealizerTests
     {
         var pattern = new GridPattern(16, Halo);
         var gradient = new LinearGradient(Glow, Halo);
-        var css = Css(new BoxStyle { Pattern = pattern, Hover = new StyleDiff { Gradient = gradient } });
+        var css = Css(new BoxStyle { Patterns = [pattern], Hover = new StyleDiff { Gradient = gradient } });
 
-        css.Should().Contain($":hover{{background-image:{TokenCss.Gradient(gradient)}, {TokenCss.GridPattern(pattern)}}}");
-        css.Should().Contain($":hover{{background-size:auto, {TokenCss.GridPatternSize(pattern)}}}");
+        var line = TokenCss.Value(Halo);
+        css.Should().Contain($":hover{{background-image:{TokenCss.Gradient(gradient)}, "
+            + $"linear-gradient(to right, {line} 1px, transparent 1px), linear-gradient(to bottom, {line} 1px, transparent 1px)}}");
+        css.Should().Contain(":hover{background-size:auto, 16px 16px, 16px 16px}");
     }
 
     [Fact]

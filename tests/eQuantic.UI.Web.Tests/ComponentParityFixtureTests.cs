@@ -76,6 +76,14 @@ public class ComponentParityFixtureTests
         ("box-hover-lift", HoverLift(), NoPresses),
         ("box-hover-lift-simulated",
             new Simulated(SimulatedState.Hovered | SimulatedState.Focused, HoverLift()), NoPresses),
+        // A box's PATTERNS (#1937): a grid, a three-shape drawing tile (solid, inherited at 55%, a
+        // two-stop run) and an image tile, under a gradient and a glow, with every member each kind
+        // has set away from its default. The seven background lists and the data URL are written by
+        // both producers, and their class hashes are what hydration recognises the server's markup by.
+        ("box-patterns", BoxPatterns(), NoPresses),
+        // A tile whose image differs by mode and by contrast, and an image tile with a dark source:
+        // the variants are custom properties of the element, inline on both sides.
+        ("box-pattern-themed", BoxPatternThemed(), NoPresses),
         // A CONTROL in every state (#508): its box's hover, and its focus and press in the families
         // that select under the control, with the ring's slot leading every shadow list. Simulated,
         // the press and the focus land on the base and the control is marked eq-focused.
@@ -491,7 +499,7 @@ public class ComponentParityFixtureTests
         Shadow = new ShadowSpec(0, 24, 0, Theme.FocusRing),
         Shadows = [new ShadowSpec(2, 4, 0, Theme.Border), new ShadowSpec(0, 0, 0, Theme.Border)],
         InsetHighlight = Theme.SurfaceSubtle,
-        Pattern = new GridPattern(16, Theme.Border),
+        Patterns = [new GridPattern(16, Theme.Border)],
         Transform = Transform2D.Rotate(2),
         Hover = new StyleDiff
         {
@@ -503,6 +511,61 @@ public class ComponentParityFixtureTests
             Opacity = 0.9f,
         },
         Focus = new StyleDiff { Elevation = 0, Transform = Transform2D.Scale(1) },
+    });
+
+    /// <summary>The tile of the pattern cases: a solid shape, an inherited one at 55% and a two-stop run.</summary>
+    private static readonly VectorDrawing TileArt = new(0, 0, 24, 16,
+    [
+        new VectorShape("M0 0H12V8H0Z", VectorPaint.Solid(Color.FromRgb(0xC8, 0x79, 0x6B))),
+        new VectorShape("M12 0H24V8H12Z", new VectorPaint(VectorPaintKind.Inherit, Color.Black.WithOpacity(0.55f))),
+        new VectorShape("M0 8H24V16H0Z", VectorPaint.Gradients(VectorPaintKind.LinearGradient,
+            new VectorGradient(0, 0, 1, 0, 0, false,
+                [new VectorStop(0, Color.FromRgb(255, 0, 0)), new VectorStop(1, Color.FromRgb(0, 0, 255))]))),
+    ]);
+
+    private static Box BoxPatterns() => new(new BoxStyle
+    {
+        Width = 320,
+        Height = 200,
+        BorderWidth = 2,
+        BorderColor = Theme.Border,
+        Gradient = new LinearGradient(Theme.Scrim, new ColorToken(Color.Transparent)),
+        Glow = new RadialGradient(Theme.Colors(Variant.Info).Base, new ColorToken(Color.Transparent), 0.5f, 0.5f, 200, 120),
+        Patterns =
+        [
+            new GridPattern(24, Theme.Border, 2) { Area = BoxArea.Border, ClipTo = BoxArea.Padding, Attachment = TileAttachment.Window },
+            new DrawingPattern(TileArt, TileLength.Fraction(0.25f), 40, new ColorToken(Color.FromRgb(0x33, 0x44, 0x55)))
+            {
+                HorizontalRepeat = TileRepeat.Once,
+                VerticalRepeat = TileRepeat.Spaced,
+                Anchor = new Point(0.5f, 1),
+                Offset = new Point(12, -8),
+                Area = BoxArea.Content,
+                ClipTo = BoxArea.Padding,
+                Attachment = TileAttachment.Window,
+                Opacity = 0.5f,
+            },
+            new ImagePattern("img/a\"b.png")
+            {
+                Fit = ImageFit.Cover,
+                HorizontalRepeat = TileRepeat.Fitted,
+                Anchor = new Point(1, 0),
+                Area = BoxArea.Border,
+                ClipTo = BoxArea.Content,
+            },
+        ],
+    });
+
+    private static Box BoxPatternThemed() => new(new BoxStyle
+    {
+        Width = 320,
+        Height = 200,
+        Patterns =
+        [
+            new DrawingPattern(TileArt, 48),
+            new DrawingPattern(TileArt, 48, tint: Theme.TextMuted),
+            new ImagePattern("img/linen.png", 120) { DarkSource = "img/linen-dark.png" },
+        ],
     });
 
     /// <summary>The stack of the directionality cases: a box with more padding at its start and a border at its

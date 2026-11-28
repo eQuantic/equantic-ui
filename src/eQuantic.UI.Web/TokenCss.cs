@@ -328,21 +328,4 @@ public static class TokenCss
         $"radial-gradient({Px(glow.RadiusX)} {Px(glow.RadiusY)} at "
         + $"{Number(glow.CenterX * 100)}% {Number(glow.CenterY * 100)}%, "
         + $"{Value(glow.From)}, {Value(glow.To)})";
-
-    /// <summary>The grid as its TWO background-image layers (vertical rules, then horizontal) —
-    /// each a hard-stop linear gradient that repeats at <c>background-size</c>.</summary>
-    public static string GridPattern(GridPattern pattern)
-    {
-        var color = Value(pattern.Color);
-        var line = Px(pattern.LineWidth);
-        return $"linear-gradient(to right, {color} {line}, transparent {line}), "
-             + $"linear-gradient(to bottom, {color} {line}, transparent {line})";
-    }
-
-    /// <summary>The <c>background-size</c> entry pair matching <see cref="GridPattern"/>'s layers.</summary>
-    public static string GridPatternSize(GridPattern pattern)
-    {
-        var cell = Px(pattern.Cell);
-        return $"{cell} {cell}, {cell} {cell}";
-    }
 }

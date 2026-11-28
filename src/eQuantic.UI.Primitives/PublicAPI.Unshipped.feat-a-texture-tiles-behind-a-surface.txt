@@ -1,0 +1,112 @@
+#nullable enable
+abstract eQuantic.UI.Primitives.Pattern.<Clone>$() -> eQuantic.UI.Primitives.Pattern!
+eQuantic.UI.Primitives.ArtworkPattern
+eQuantic.UI.Primitives.ArtworkPattern.Anchor.get -> eQuantic.UI.Primitives.Point
+eQuantic.UI.Primitives.ArtworkPattern.Anchor.init -> void
+eQuantic.UI.Primitives.ArtworkPattern.ArtworkPattern(eQuantic.UI.Primitives.ArtworkPattern! original) -> void
+eQuantic.UI.Primitives.ArtworkPattern.Fit.get -> eQuantic.UI.Primitives.ImageFit?
+eQuantic.UI.Primitives.ArtworkPattern.Fit.init -> void
+eQuantic.UI.Primitives.ArtworkPattern.Height.get -> eQuantic.UI.Primitives.TileLength
+eQuantic.UI.Primitives.ArtworkPattern.HorizontalRepeat.get -> eQuantic.UI.Primitives.TileRepeat
+eQuantic.UI.Primitives.ArtworkPattern.HorizontalRepeat.init -> void
+eQuantic.UI.Primitives.ArtworkPattern.Offset.get -> eQuantic.UI.Primitives.Point
+eQuantic.UI.Primitives.ArtworkPattern.Offset.init -> void
+eQuantic.UI.Primitives.ArtworkPattern.SizeIn(eQuantic.UI.Primitives.Size area, float aspect) -> eQuantic.UI.Primitives.Size
+eQuantic.UI.Primitives.ArtworkPattern.VerticalRepeat.get -> eQuantic.UI.Primitives.TileRepeat
+eQuantic.UI.Primitives.ArtworkPattern.VerticalRepeat.init -> void
+eQuantic.UI.Primitives.ArtworkPattern.Width.get -> eQuantic.UI.Primitives.TileLength
+eQuantic.UI.Primitives.BoxArea
+eQuantic.UI.Primitives.BoxArea.Border = 0 -> eQuantic.UI.Primitives.BoxArea
+eQuantic.UI.Primitives.BoxArea.Content = 2 -> eQuantic.UI.Primitives.BoxArea
+eQuantic.UI.Primitives.BoxArea.Padding = 1 -> eQuantic.UI.Primitives.BoxArea
+eQuantic.UI.Primitives.BoxStyle.Patterns.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Pattern!>?
+eQuantic.UI.Primitives.BoxStyle.Patterns.init -> void
+eQuantic.UI.Primitives.DrawingPattern
+eQuantic.UI.Primitives.DrawingPattern.Artwork.get -> eQuantic.UI.Primitives.VectorDrawing!
+eQuantic.UI.Primitives.DrawingPattern.DrawingPattern(eQuantic.UI.Primitives.VectorDrawing! artwork, eQuantic.UI.Primitives.TileLength width = default(eQuantic.UI.Primitives.TileLength), eQuantic.UI.Primitives.TileLength height = default(eQuantic.UI.Primitives.TileLength), eQuantic.UI.Primitives.ColorToken? tint = null) -> void
+eQuantic.UI.Primitives.DrawingPattern.Equals(eQuantic.UI.Primitives.DrawingPattern? other) -> bool
+eQuantic.UI.Primitives.DrawingPattern.Opacity.get -> float
+eQuantic.UI.Primitives.DrawingPattern.Opacity.init -> void
+eQuantic.UI.Primitives.DrawingPattern.Tint.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Primitives.IPatternVisitor<TState, TResult>
+eQuantic.UI.Primitives.IPatternVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.DrawingPattern! pattern, TState state) -> TResult
+eQuantic.UI.Primitives.IPatternVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.GridPattern! pattern, TState state) -> TResult
+eQuantic.UI.Primitives.IPatternVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.ImagePattern! pattern, TState state) -> TResult
+eQuantic.UI.Primitives.ImagePattern
+eQuantic.UI.Primitives.ImagePattern.DarkSource.get -> string?
+eQuantic.UI.Primitives.ImagePattern.DarkSource.init -> void
+eQuantic.UI.Primitives.ImagePattern.Equals(eQuantic.UI.Primitives.ImagePattern? other) -> bool
+eQuantic.UI.Primitives.ImagePattern.ImagePattern(string! source, eQuantic.UI.Primitives.TileLength width = default(eQuantic.UI.Primitives.TileLength), eQuantic.UI.Primitives.TileLength height = default(eQuantic.UI.Primitives.TileLength)) -> void
+eQuantic.UI.Primitives.ImagePattern.Source.get -> string!
+eQuantic.UI.Primitives.Pattern
+eQuantic.UI.Primitives.Pattern.Accept<TState, TResult>(eQuantic.UI.Primitives.IPatternVisitor<TState, TResult>! visitor, TState state) -> TResult
+eQuantic.UI.Primitives.Pattern.Area.get -> eQuantic.UI.Primitives.BoxArea
+eQuantic.UI.Primitives.Pattern.Area.init -> void
+eQuantic.UI.Primitives.Pattern.Attachment.get -> eQuantic.UI.Primitives.TileAttachment
+eQuantic.UI.Primitives.Pattern.Attachment.init -> void
+eQuantic.UI.Primitives.Pattern.ClipTo.get -> eQuantic.UI.Primitives.BoxArea
+eQuantic.UI.Primitives.Pattern.ClipTo.init -> void
+eQuantic.UI.Primitives.Pattern.Pattern(eQuantic.UI.Primitives.Pattern! original) -> void
+eQuantic.UI.Primitives.TileAttachment
+eQuantic.UI.Primitives.TileAttachment.Box = 0 -> eQuantic.UI.Primitives.TileAttachment
+eQuantic.UI.Primitives.TileAttachment.Window = 1 -> eQuantic.UI.Primitives.TileAttachment
+eQuantic.UI.Primitives.TileLength
+eQuantic.UI.Primitives.TileLength.Equals(eQuantic.UI.Primitives.TileLength other) -> bool
+eQuantic.UI.Primitives.TileLength.IsAuto.get -> bool
+eQuantic.UI.Primitives.TileLength.IsFraction.get -> bool
+eQuantic.UI.Primitives.TileLength.TileLength() -> void
+eQuantic.UI.Primitives.TileLength.Value.get -> float
+eQuantic.UI.Primitives.TileRepeat
+eQuantic.UI.Primitives.TileRepeat.Fitted = 3 -> eQuantic.UI.Primitives.TileRepeat
+eQuantic.UI.Primitives.TileRepeat.Once = 1 -> eQuantic.UI.Primitives.TileRepeat
+eQuantic.UI.Primitives.TileRepeat.Repeat = 0 -> eQuantic.UI.Primitives.TileRepeat
+eQuantic.UI.Primitives.TileRepeat.Spaced = 2 -> eQuantic.UI.Primitives.TileRepeat
+override abstract eQuantic.UI.Primitives.ArtworkPattern.<Clone>$() -> eQuantic.UI.Primitives.ArtworkPattern!
+override eQuantic.UI.Primitives.ArtworkPattern.EqualityContract.get -> System.Type!
+override eQuantic.UI.Primitives.ArtworkPattern.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.ArtworkPattern.GetHashCode() -> int
+override eQuantic.UI.Primitives.ArtworkPattern.PrintMembers(System.Text.StringBuilder! builder) -> bool
+override eQuantic.UI.Primitives.ArtworkPattern.ToString() -> string!
+override eQuantic.UI.Primitives.DrawingPattern.<Clone>$() -> eQuantic.UI.Primitives.DrawingPattern!
+override eQuantic.UI.Primitives.DrawingPattern.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.DrawingPattern.GetHashCode() -> int
+override eQuantic.UI.Primitives.DrawingPattern.ToString() -> string!
+override eQuantic.UI.Primitives.GridPattern.<Clone>$() -> eQuantic.UI.Primitives.GridPattern!
+override eQuantic.UI.Primitives.ImagePattern.<Clone>$() -> eQuantic.UI.Primitives.ImagePattern!
+override eQuantic.UI.Primitives.ImagePattern.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.ImagePattern.GetHashCode() -> int
+override eQuantic.UI.Primitives.ImagePattern.ToString() -> string!
+override eQuantic.UI.Primitives.Pattern.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.Pattern.GetHashCode() -> int
+override eQuantic.UI.Primitives.Pattern.ToString() -> string!
+override eQuantic.UI.Primitives.TileLength.GetHashCode() -> int
+override sealed eQuantic.UI.Primitives.ArtworkPattern.Equals(eQuantic.UI.Primitives.Pattern? other) -> bool
+override sealed eQuantic.UI.Primitives.DrawingPattern.Equals(eQuantic.UI.Primitives.ArtworkPattern? other) -> bool
+override sealed eQuantic.UI.Primitives.GridPattern.Equals(eQuantic.UI.Primitives.Pattern? other) -> bool
+override sealed eQuantic.UI.Primitives.ImagePattern.Equals(eQuantic.UI.Primitives.ArtworkPattern? other) -> bool
+static eQuantic.UI.Primitives.ArtworkPattern.operator !=(eQuantic.UI.Primitives.ArtworkPattern? left, eQuantic.UI.Primitives.ArtworkPattern? right) -> bool
+static eQuantic.UI.Primitives.ArtworkPattern.operator ==(eQuantic.UI.Primitives.ArtworkPattern? left, eQuantic.UI.Primitives.ArtworkPattern? right) -> bool
+static eQuantic.UI.Primitives.DrawingPattern.operator !=(eQuantic.UI.Primitives.DrawingPattern? left, eQuantic.UI.Primitives.DrawingPattern? right) -> bool
+static eQuantic.UI.Primitives.DrawingPattern.operator ==(eQuantic.UI.Primitives.DrawingPattern? left, eQuantic.UI.Primitives.DrawingPattern? right) -> bool
+static eQuantic.UI.Primitives.ImagePattern.operator !=(eQuantic.UI.Primitives.ImagePattern? left, eQuantic.UI.Primitives.ImagePattern? right) -> bool
+static eQuantic.UI.Primitives.ImagePattern.operator ==(eQuantic.UI.Primitives.ImagePattern? left, eQuantic.UI.Primitives.ImagePattern? right) -> bool
+static eQuantic.UI.Primitives.Pattern.operator !=(eQuantic.UI.Primitives.Pattern? left, eQuantic.UI.Primitives.Pattern? right) -> bool
+static eQuantic.UI.Primitives.Pattern.operator ==(eQuantic.UI.Primitives.Pattern? left, eQuantic.UI.Primitives.Pattern? right) -> bool
+static eQuantic.UI.Primitives.TileLength.Fraction(float fraction) -> eQuantic.UI.Primitives.TileLength
+static eQuantic.UI.Primitives.TileLength.implicit operator eQuantic.UI.Primitives.TileLength(float dp) -> eQuantic.UI.Primitives.TileLength
+static eQuantic.UI.Primitives.TileLength.operator !=(eQuantic.UI.Primitives.TileLength left, eQuantic.UI.Primitives.TileLength right) -> bool
+static eQuantic.UI.Primitives.TileLength.operator ==(eQuantic.UI.Primitives.TileLength left, eQuantic.UI.Primitives.TileLength right) -> bool
+virtual eQuantic.UI.Primitives.ArtworkPattern.Equals(eQuantic.UI.Primitives.ArtworkPattern? other) -> bool
+virtual eQuantic.UI.Primitives.Pattern.EqualityContract.get -> System.Type!
+virtual eQuantic.UI.Primitives.Pattern.Equals(eQuantic.UI.Primitives.Pattern? other) -> bool
+virtual eQuantic.UI.Primitives.Pattern.PrintMembers(System.Text.StringBuilder! builder) -> bool
+~override eQuantic.UI.Primitives.TileLength.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.TileLength.ToString() -> string
+eQuantic.UI.Primitives.GridPattern.Equals(eQuantic.UI.Primitives.GridPattern? other) -> bool
+override eQuantic.UI.Primitives.GridPattern.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.GridPattern.ToString() -> string!
+static eQuantic.UI.Primitives.GridPattern.operator !=(eQuantic.UI.Primitives.GridPattern? left, eQuantic.UI.Primitives.GridPattern? right) -> bool
+static eQuantic.UI.Primitives.GridPattern.operator ==(eQuantic.UI.Primitives.GridPattern? left, eQuantic.UI.Primitives.GridPattern? right) -> bool
+*REMOVED*eQuantic.UI.Primitives.BoxStyle.Pattern.get -> eQuantic.UI.Primitives.GridPattern?
+*REMOVED*eQuantic.UI.Primitives.BoxStyle.Pattern.init -> void
+*REMOVED*eQuantic.UI.Primitives.GridPattern.GridPattern() -> void

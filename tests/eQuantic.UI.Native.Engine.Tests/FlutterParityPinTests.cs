@@ -296,6 +296,9 @@ public class FlutterParityPinTests
         ["SliverGridDelegateWithMaxCrossAxisExtent"] = () => HasMember("GridTrack", "AutoFill")
             && HasMember("GridTrack", "Repeats"),
         ["SvgPicture"] = () => HasMember("Drawing", "Aspect") && HasMember("Drawing", "HeightAt"),
+        ["DecorationImage"] = () => HasMember("BoxStyle", "Patterns") && Has("DrawingPattern") && Has("ImagePattern")
+            && HasMember("ArtworkPattern", "Anchor") && HasMember("ArtworkPattern", "HorizontalRepeat")
+            && HasMember("Pattern", "Attachment") && HasMember("DrawingPattern", "Opacity"),
         ["WidgetStateProperty"] = () => HasMember("BoxStyle", "Hover") && HasMember("BoxStyle", "Focus")
             && HasMember("BoxStyle", "Pressed")
             && HasMember("StyleDiff", "Shadows") && HasMember("StyleDiff", "Transform"),

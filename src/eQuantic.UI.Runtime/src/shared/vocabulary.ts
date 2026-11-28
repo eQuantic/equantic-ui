@@ -10,7 +10,17 @@
 
 import type { AnchorPlacementValue, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { NodeKind } from './node-kinds.generated';
-import type { HitTestBehaviorValue, TableCellRoleValue, TableRoleValue, TextDirectionValue, TextEntryKindValue } from './enums.generated';
+import type {
+  BoxAreaValue,
+  HitTestBehaviorValue,
+  ImageFitValue,
+  TableCellRoleValue,
+  TableRoleValue,
+  TextDirectionValue,
+  TextEntryKindValue,
+  TileAttachmentValue,
+  TileRepeatValue,
+} from './enums.generated';
 import type { HtmlNode } from '../core/types';
 import type { AppTheme, BoxConstraints, ContextRequest, PointerEvent } from './value-types';
 import type { GestureRecognizerFactory } from './components/GestureRecognizerFactory';
@@ -251,7 +261,7 @@ interface BoxStyleConfig {
   elevation?: number;
   clip?: boolean;
   gradient?: LinearGradient | null;
-  pattern?: GridPattern | null;
+  patterns?: (GridPattern | DrawingPattern | ImagePattern)[] | null;
   glow?: RadialGradient | null;
   opacity?: number | null;
   transform?: unknown;
@@ -295,8 +305,8 @@ export class BoxStyle {
   elevation = 0;
   clip = false;
   gradient: LinearGradient | null = null;
-  /** The repeating hairline grid backdrop (null = none). */
-  pattern: GridPattern | null = null;
+  /** The repeating artwork behind the content, painted in order, the last on top (C# `BoxStyle.Patterns`, #1937). */
+  patterns: (GridPattern | DrawingPattern | ImagePattern)[] | null = null;
   /** The elliptical spotlight glow (null = none). */
   glow: RadialGradient | null = null;
   /** Spec S1 group opacity (null = opaque). */
@@ -329,6 +339,16 @@ export class BoxStyle {
     Object.assign(this, rest);
     this.width = SizeValue.from(width);
     this.height = SizeValue.from(height);
+    // The C# `Patterns` init accessor's refusals: a tile's fit is set after its constructor, so a tile
+    // sized by neither is refused where it enters a box, the first place both are known.
+    for (const pattern of this.patterns ?? []) {
+      if (pattern == null) {
+        throw exception('System.ArgumentNullException', "A pattern of the list is null. (Parameter 'Patterns')");
+      }
+      if (pattern instanceof ArtworkPattern && !pattern.isSized) {
+        throw exception('System.ArgumentOutOfRangeException', UNSIZED_TILE);
+      }
+    }
   }
 }
 
@@ -1604,17 +1624,189 @@ export class RadialGradient {
   }
 }
 
-/** Mirror of the C# `GridPattern`: repeating hairline grid (square cell, token line color). */
-export class GridPattern {
+/**
+ * Mirror of the C# `Pattern` (#1937): repeating artwork a box paints behind its content, one layer of
+ * `BoxStyle.patterns`. A CLOSED set — a grid, a drawing tile and an image tile — told apart by
+ * `patternKind`, on which the lowering switches with an exhaustive check, so a kind added here fails
+ * the type check until it is drawn, as the C# visitor fails the build.
+ */
+export abstract class Pattern {
+  abstract readonly patternKind: 'grid' | 'drawing' | 'image';
+  /** Where the pattern is placed: the padding area by default. */
+  area: BoxAreaValue = 'padding';
+  /** Where the pattern is clipped: the whole box by default. */
+  clipTo: BoxAreaValue = 'border';
+  /** What the pattern is placed against: its box by default, or the window. */
+  attachment: TileAttachmentValue = 'box';
+}
+
+/**
+ * Mirror of the C# `GridPattern`: repeating hairline grid (square cell, token line color). The C#
+ * init accessors' refusals run once the config is applied, word for word.
+ */
+export class GridPattern extends Pattern {
+  readonly patternKind = 'grid' as const;
   cell: number;
   color: ColorTokenValue;
   lineWidth: number;
 
   constructor(cell: number, color: ColorTokenValue, lineWidth = 1, config?: EqConfig) {
+    super();
     this.cell = cell;
     this.color = color;
     this.lineWidth = lineWidth;
     if (config) Object.assign(this, config);
+    if (!(this.cell > 0 && Number.isFinite(this.cell))) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A grid's cell is the distance between its rules in dp, a finite number above 0. (Parameter 'Cell')");
+    }
+    if (!(this.lineWidth > 0 && Number.isFinite(this.lineWidth))) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A grid's rule is a line in dp, a finite number above 0. (Parameter 'LineWidth')");
+    }
+  }
+}
+
+/**
+ * Mirror of the C# `TileLength` (#1937): one side of a tile — auto (the default), dp, or a fraction
+ * of the placing area. A number IS dp: the C# conversion passes the number through, and
+ * `TileLength.from` normalizes it here, refusing what the conversion refuses.
+ */
+export class TileLength {
+  readonly value: number = 0;
+  readonly isFraction: boolean = false;
+  private readonly given: boolean = false;
+
+  /** C# `default(TileLength)`: auto. A record struct with nothing to initialize, the config included. */
+  constructor(config?: EqConfig) {
+    if (config) Object.assign(this, config);
+  }
+
+  private static of(value: number, isFraction: boolean): TileLength {
+    return Object.assign(new TileLength(), { value: Math.fround(value), isFraction, given: true });
+  }
+
+  /** Whether the side is left to the other one and the artwork's aspect. */
+  get isAuto(): boolean {
+    return !this.given;
+  }
+
+  /** C# twin: a fraction of the placing area on the side's axis, refused outside (0, 1]. */
+  static fraction(fraction: number): TileLength {
+    if (!(fraction > 0 && fraction <= 1)) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A tile's fraction is a part of the area it is placed in, above 0 and at most 1. (Parameter 'fraction')");
+    }
+    return TileLength.of(fraction, true);
+  }
+
+  /** A side as the twin receives it: a number (dp, the C# conversion's operand), a length, or nothing (auto). */
+  static from(length: TileLength | number | null | undefined): TileLength {
+    if (length == null) return new TileLength();
+    if (typeof length !== 'number') return length;
+    if (!(length >= 0 && Number.isFinite(length))) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A tile's length in dp is a finite number, zero or more. (Parameter 'dp')");
+    }
+    return TileLength.of(length, false);
+  }
+}
+
+/** Why a tile with neither a length nor a fit is refused (C# `ArtworkPattern.Unsized`). */
+const UNSIZED_TILE =
+  "A tile needs a width, a height or a Fit: it is never sized by its artwork's own pixels, which are not dp. (Parameter 'Fit')";
+
+/**
+ * Mirror of the C# `ArtworkPattern` (#1937): what a drawing tile and an image tile share — the size,
+ * the repetition per axis and the position. The C# init accessors' refusals run once the config is
+ * applied, word for word, so a page refuses in the browser what it refuses on the server.
+ */
+export abstract class ArtworkPattern extends Pattern {
+  width: TileLength;
+  height: TileLength;
+  fit: ImageFitValue | null = null;
+  horizontalRepeat: TileRepeatValue = 'repeat';
+  verticalRepeat: TileRepeatValue = 'repeat';
+  anchor: Point = new Point(0, 0);
+  offset: Point = new Point(0, 0);
+
+  protected constructor(width: TileLength | number | null | undefined, height: TileLength | number | null | undefined) {
+    super();
+    this.width = TileLength.from(width);
+    this.height = TileLength.from(height);
+  }
+
+  /** Whether the tile is sized at all: by a length or by a fit (C# `IsSized`). */
+  get isSized(): boolean {
+    return this.fit != null || !this.width.isAuto || !this.height.isAuto;
+  }
+
+  /** The C# refusals of the members the config sets. */
+  protected refuse(): void {
+    if (this.fit != null && !(this.width.isAuto && this.height.isAuto)) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A tile is sized by a fit or by its lengths, never both: a fit beside a width or a height has nothing left to decide. (Parameter 'Fit')");
+    }
+    const { x, y } = this.anchor;
+    if (!(x >= 0 && x <= 1) || !(y >= 0 && y <= 1)) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A tile's anchor is a fraction of the area it is placed in on each axis, from 0 to 1. (Parameter 'Anchor')");
+    }
+    if (!Number.isFinite(this.offset.x) || !Number.isFinite(this.offset.y)) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A tile's offset is a finite distance in dp on each axis. (Parameter 'Offset')");
+    }
+  }
+}
+
+/** Mirror of the C# `DrawingPattern` (#1937): a vector drawing repeated behind a box. */
+export class DrawingPattern extends ArtworkPattern {
+  readonly patternKind = 'drawing' as const;
+  artwork: VectorDrawing;
+  tint: ColorTokenValue | null;
+  opacity = 1;
+
+  constructor(
+    artwork: VectorDrawing,
+    width?: TileLength | number | null,
+    height?: TileLength | number | null,
+    tint: ColorTokenValue | null = null,
+    config?: EqConfig,
+  ) {
+    super(width, height);
+    if (artwork == null) {
+      throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'artwork')");
+    }
+    this.artwork = artwork;
+    this.tint = tint;
+    if (config) Object.assign(this, config);
+    this.refuse();
+    if (!(this.opacity >= 0 && this.opacity <= 1)) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A tile's opacity is a fraction from 0 (nothing shows) to 1 (fully opaque). (Parameter 'Opacity')");
+    }
+  }
+}
+
+/** Mirror of the C# `ImagePattern` (#1937): a raster image repeated behind a box, with its dark pair. */
+export class ImagePattern extends ArtworkPattern {
+  readonly patternKind = 'image' as const;
+  source: string;
+  darkSource: string | null = null;
+
+  constructor(source: string, width?: TileLength | number | null, height?: TileLength | number | null, config?: EqConfig) {
+    super(width, height);
+    if (!source) {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A tile's image source names the image it repeats, so it is never empty. (Parameter 'source')");
+    }
+    this.source = source;
+    if (config) Object.assign(this, config);
+    this.refuse();
+    if (this.darkSource === '') {
+      throw exception('System.ArgumentOutOfRangeException',
+        "A tile's image source names the image it repeats, so it is never empty. (Parameter 'DarkSource')");
+    }
   }
 }
 
@@ -2608,6 +2800,9 @@ hashesByValue(
   TransitionSpec,
   RadialGradient,
   GridPattern,
+  DrawingPattern,
+  ImagePattern,
+  TileLength,
   RangeValue,
   IconGlyph,
   VectorStop,

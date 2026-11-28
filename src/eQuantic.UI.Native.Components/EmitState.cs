@@ -52,6 +52,15 @@ internal readonly record struct EmitState(
     /// tree, so a node is painted in the look it was measured in. Null = none stated.</summary>
     public ContentStyle? Content { get; init; }
 
+    /// <summary>
+    /// Whether a transform is drawn around this node (#1937): a box's <c>Transform</c>, or a motion that
+    /// moves its subtree by one (a loop, an entrance's rise, a drag, a carried item's copy). Under one, a
+    /// window-attached pattern is placed in its own box, as CSS Transforms 1 §6 paints a fixed background
+    /// under a transform as a scrolling one. A scroll is no transform here, as in a browser: layout moves
+    /// the scrolled boxes, and the window stays where it is.
+    /// </summary>
+    public bool UnderTransform { get; init; }
+
     /// <summary>What a node that names <paramref name="own"/> (or no colour) is drawn in.</summary>
     public ColorToken Ink(ColorToken? own) => own ?? Foreground ?? Theme.TextPrimary;
 }

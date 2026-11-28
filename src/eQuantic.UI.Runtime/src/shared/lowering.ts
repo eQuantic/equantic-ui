@@ -21,6 +21,8 @@ import { CanvasPointer } from './canvas-pointer';
 import { browserPastesOn, ClipboardRefused, CodeSurfaceClipboard } from './code-surface-clipboard';
 // Leaf helpers — see css-values for why they are not defined here.
 import { floatText, hex, modifiersOf, num, tokenValue } from './css-values';
+import { cssUrl, drawingInherits, drawingRuns, drawingShapes, gradientElement, svgDataUrl, tileArtwork } from './tile-artwork';
+export { gradientId } from './tile-artwork';
 export { num, tokenValue };
 import { DomCanvasPainter } from './canvas-painter';
 import { declareCanvas } from './canvas-surface';
@@ -79,10 +81,10 @@ import type {
   BoxStyleValue,
   ContentStyleValue,
   ColorTokenValue,
+  ColorValue,
   CanvasNodeValue,
   LayoutBuilderValue,
   DrawingNode,
-  VectorGradientValue,
   VectorPaintValue,
   VectorShapeValue,
   CornerRadiiValue,
@@ -106,7 +108,10 @@ import type {
   TextReadingLike,
   CodeSurfaceNode,
   ImageNode,
-  GridPatternValue,
+  DrawingPatternValue,
+  ImagePatternValue,
+  PatternValue,
+  TileLengthValue,
   LinearGradientValue,
   RadialGradientValue,
   DragDismissNode,
@@ -154,7 +159,7 @@ import type {
   TableViewportNode,
   VisualNodeValue,
 } from './nodes';
-import type { KeyboardConventionValue, TextDirectionValue, TextEntryKindValue } from './enums.generated';
+import type { BoxAreaValue, KeyboardConventionValue, TextDirectionValue, TextEntryKindValue, TileRepeatValue } from './enums.generated';
 import { readsRightToLeft } from '../dom/reading-direction';
 import { declareShortcut, shortcutMark, TAKES_KEY_FIRST } from '../dom/shortcuts';
 import { installScrolledController } from './scrolled-pinned';
@@ -2118,22 +2123,6 @@ function glowValue(glow: RadialGradientValue): string {
   );
 }
 
-/** Mirror of C# TokenCss.GridPattern: the two repeating hairline layers. */
-function gridPatternValue(pattern: GridPatternValue): string {
-  const color = tokenValue(pattern.color);
-  const line = px(pattern.lineWidth);
-  return (
-    `linear-gradient(to right, ${color} ${line}, transparent ${line}), ` +
-    `linear-gradient(to bottom, ${color} ${line}, transparent ${line})`
-  );
-}
-
-/** Mirror of C# TokenCss.GridPatternSize: one size entry per grid layer. */
-function gridPatternSize(pattern: GridPatternValue): string {
-  const cell = px(pattern.cell);
-  return `${cell} ${cell}, ${cell} ${cell}`;
-}
-
 /** Fraction → CSS percentage, mirroring C# TokenCss.Percent ("0.##": -0.35 → "-35%"). */
 function pct(fraction: number): string {
   return `${parseFloat((fraction * 100).toFixed(2))}%`;
@@ -3155,22 +3144,6 @@ function lowerGlyph(
  * Mirror of the C# `LowerDrawing`. The shapes the file left as `currentColor` stay the WORD, so the
  * `color` on the wrapper answers them — that is what makes a monochrome mark follow the theme.
  */
-/** Whether a paint is a run of colours rather than one — the twin of `VectorPaint.IsGradient`. */
-function isGradient(value: VectorPaintValue): boolean {
-  return (value.kind === 'linearGradient' || value.kind === 'radialGradient') && !!value.gradient;
-}
-
-/**
- * A gradient's id, byte for byte with the C# realizer: the FNV hash of everything that makes the
- * run what it is. Content-addressed rather than counted — SSR and this twin do not agree about how
- * many drawings came before, and a mismatched id repaints every path that names it.
- */
-export function gradientId(run: VectorGradientValue): string {
-  let text = `${run.userSpace ? 'u' : 'o'}|${num(run.x1)},${num(run.y1)},${num(run.x2)},${num(run.y2)},${num(run.radius)}`;
-  for (const stop of run.stops) text += `|${num(stop.offset)}:${hex(stop.color)}`;
-  return `eq-g-${hashDeclaration(text)}`;
-}
-
 /**
  * Every gradient the DOCUMENT paints with, in one container — the twin of the C# GradientSink, and
  * the same shape the atomic styles use: adopt what the server left, add only what is missing.
@@ -3244,38 +3217,6 @@ function domFromNode(node: HtmlNode): Element {
     if (value !== undefined) element.setAttribute(name, value);
   for (const child of node.children) element.appendChild(domFromNode(child as HtmlNode));
   return element;
-}
-
-/** One paint server, in SVG's own words — the twin of the C# GradientElement. */
-function gradientElement(id: string, paint: VectorPaintValue): HtmlNode {
-  const run = paint.gradient!;
-  const radial = paint.kind === 'radialGradient';
-  const attributes: Record<string, string | undefined> = { id };
-  if (radial) {
-    attributes['cx'] = num(run.x1);
-    attributes['cy'] = num(run.y1);
-    attributes['r'] = num(run.radius);
-  } else {
-    attributes['x1'] = num(run.x1);
-    attributes['y1'] = num(run.y1);
-    attributes['x2'] = num(run.x2);
-    attributes['y2'] = num(run.y2);
-  }
-  if (run.userSpace) attributes['gradientUnits'] = 'userSpaceOnUse';
-
-  return {
-    tag: radial ? 'radialGradient' : 'linearGradient',
-    attributes,
-    events: {},
-    children: run.stops.map((stop) => {
-      const stopAttributes: Record<string, string | undefined> = {
-        offset: num(stop.offset),
-        'stop-color': hex({ ...stop.color, a: 255 }),
-      };
-      if (stop.color.a < 255) stopAttributes['stop-opacity'] = num(stop.color.a / 255);
-      return { tag: 'stop', attributes: stopAttributes, events: {}, children: [] };
-    }),
-  };
 }
 
 /** W3: the app's own drawing as one inline `<svg>`, with its pointer handlers attached. */
@@ -3413,22 +3354,9 @@ function lowerDrawing(node: DrawingNode): HtmlNode {
   if (node.label) attributes['aria-label'] = node.label;
   else if (!hasInputs) attributes['aria-hidden'] = 'true';
 
-  const paint = (value: VectorPaintValue): string =>
-    value.kind === 'inherit'
-      ? 'currentColor'
-      : value.kind === 'solid'
-        ? hex(value.color)
-        : isGradient(value)
-          ? `url(#${gradientId(value.gradient!)})`
-          : 'none';
-
   // Every run the artwork paints with, declared once, in first-use order — the C# realizer keys the
   // same map by the same id, so the two markups match and hydration patches nothing.
-  const runs = new Map<string, VectorPaintValue>();
-  for (const shape of artwork.shapes ?? [])
-    for (const value of [shape.fill, shape.stroke])
-      if (isGradient(value) && !runs.has(gradientId(value.gradient!)))
-        runs.set(gradientId(value.gradient!), value);
+  const runs = drawingRuns(artwork);
 
   // With a document, the runs go to its ONE container; without one — a unit test, a lowering asked
   // for its shape rather than for a page — they stay inline, exactly as the C# realizer does when
@@ -3454,27 +3382,8 @@ function lowerDrawing(node: DrawingNode): HtmlNode {
     events: {},
     children: [
       ...defs,
-      ...(artwork.shapes ?? []).map((shape) => {
-        const shapeAttributes: Record<string, string | undefined> = {
-          d: shape.path,
-          fill: paint(shape.fill),
-        };
-        // `currentColor` has no alpha of its own — the C# realizer says why, and the two must agree.
-        const alpha = (value: VectorPaintValue): number =>
-          value.kind === 'none' ? 0 : value.color.a / 255;
-        if (shape.fill.kind === 'inherit' && alpha(shape.fill) < 1)
-          shapeAttributes['fill-opacity'] = num(alpha(shape.fill));
-        if (shape.stroke.kind !== 'none') {
-          shapeAttributes['stroke'] = paint(shape.stroke);
-          if (shape.stroke.kind === 'inherit' && alpha(shape.stroke) < 1)
-            shapeAttributes['stroke-opacity'] = num(alpha(shape.stroke));
-          shapeAttributes['stroke-width'] = num(shape.strokeWidth);
-          shapeAttributes['stroke-linecap'] = 'round';
-          shapeAttributes['stroke-linejoin'] = 'round';
-        }
-        if (shape.evenOdd) shapeAttributes['fill-rule'] = 'evenodd';
-        if (shape.opacity < 1) shapeAttributes['opacity'] = num(shape.opacity);
-        const path: HtmlNode = { tag: 'path', attributes: shapeAttributes, events: {}, children: [] };
+      ...drawingShapes(artwork).map((path, index) => {
+        const shape = (artwork.shapes ?? [])[index];
         if (shape.onPressed != null) makeShapeInput(path, shape);
         return path;
       }),
@@ -3790,7 +3699,7 @@ function paintsNothing(box: BoxNode): boolean {
     !style.background &&
     !style.gradient &&
     !style.glow &&
-    !style.pattern &&
+    !(style.patterns && style.patterns.length > 0) &&
     !(style.borderWidth && style.borderWidth > 0) &&
     !(style.elevation && style.elevation > 0)
   );
@@ -3853,8 +3762,7 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     color: style.foreground ? tokenValue(style.foreground) : undefined,
     // Mirror of the C# realizer: the FIRST layer paints on top, so a gradient sits over the grid,
     // and background-size carries one entry per layer (`auto` stands in for the gradient).
-    'background-image': backgroundLayers(style),
-    'background-size': backgroundLayerSizes(style),
+    ...backgroundEntries(style),
     'border-radius':
       style.cornerRadius && !isZeroRadii(style.cornerRadius)
         ? radiusValue(style.cornerRadius)
@@ -4100,11 +4008,11 @@ function diffEntries(diff: StyleDiffValue, style: BoxStyleValue): Record<string,
   const shadows = stateShadowList(style, diff);
   if (shadows !== undefined) entries['box-shadow'] = shadows;
   if (diff.opacity != null) entries['opacity'] = num(diff.opacity);
+  // Every list, padded for the gradient's layer: CSS repeats a short list from its start, so the
+  // base's lists would otherwise shift by one layer under the state (C# twin).
   if (diff.gradient) {
-    const layered: BoxStyleValue = { ...style, gradient: diff.gradient };
-    entries['background-image'] = backgroundLayers(layered);
-    const sizes = backgroundLayerSizes(layered);
-    if (sizes !== undefined) entries['background-size'] = sizes;
+    for (const [name, value] of Object.entries(backgroundEntries({ ...style, gradient: diff.gradient })))
+      if (value !== undefined && !name.startsWith('--')) entries[name] = value;
   }
   if (diff.backdropBlur != null) {
     const filter = diff.backdropBlur > 0 ? `blur(${px(diff.backdropBlur)})` : 'none';
@@ -4248,23 +4156,207 @@ function crossAlign(value: FlexNodeValue['cross']): string {
   }
 }
 
-/** Mirror of C# WebRealizer.BackgroundLayers: CSS paint order — the FIRST entry sits on top. */
-function backgroundLayers(style: BoxStyleValue): string | undefined {
-  const layers: string[] = [];
-  if (style.gradient) layers.push(gradientValue(style.gradient));
-  if (style.glow) layers.push(glowValue(style.glow));
-  if (style.pattern) layers.push(gridPatternValue(style.pattern));
-  return layers.length === 0 ? undefined : layers.join(', ');
+/** One layer of a box's CSS background: its entry in each `background-*` list (C# `BackgroundLayer`). */
+interface BackgroundLayer {
+  image: string;
+  size?: string;
+  repeat?: string;
+  position?: string;
+  origin?: string;
+  clip?: string;
+  attachment?: string;
 }
 
-/** Mirror of C# WebRealizer.BackgroundLayerSizes: one entry per layer (the grid contributes two). */
-function backgroundLayerSizes(style: BoxStyleValue): string | undefined {
-  if (!style.pattern) return undefined;
-  const sizes: string[] = [];
-  if (style.gradient) sizes.push('auto');
-  if (style.glow) sizes.push('auto');
-  sizes.push(gridPatternSize(style.pattern));
-  return sizes.join(', ');
+/** CSS's own initial value of each list, which a list padded for another layer repeats. */
+const LAYER_DEFAULTS = {
+  size: 'auto',
+  repeat: 'repeat',
+  position: '0% 0%',
+  origin: 'padding-box',
+  clip: 'border-box',
+  attachment: 'scroll',
+} as const;
+
+/** The legs a tile's image may vary by, in the order its variants chain (C# `PatternLayers.Legs`). */
+const LEGS: readonly (readonly [dark: boolean, more: boolean])[] = [
+  [false, false],
+  [false, true],
+  [true, false],
+  [true, true],
+];
+
+/** A token's leg, as the C# `ColorToken.Resolve` picks it: More falls back to the Standard leg. */
+function tokenLeg(token: ColorTokenValue, dark: boolean, more: boolean): ColorValue {
+  return dark ? (more ? token.moreDark ?? token.dark : token.dark) : more ? token.moreLight ?? token.light : token.light;
+}
+
+/** A fraction as the C# `TokenCss.Percent` writes it from a float: `(fraction * 100).ToString("0.##")`. */
+function floatPercent(fraction: number): string {
+  return `${floatText(Math.fround(Math.fround(fraction) * 100), 2)}%`;
+}
+
+/**
+ * The C# `PatternLayers.Varying`: the layer's image directly when it is the same in every mode and
+ * contrast; otherwise one custom property per variant, valid only while the theme's toggles on
+ * `:root` select it, read through nested fallbacks — the palette's own decision picks the artwork.
+ */
+function varyingImage(
+  index: number,
+  image: (dark: boolean, more: boolean) => string,
+  variants: Record<string, string>,
+): string {
+  const images = LEGS.map(([dark, more]) => image(dark, more));
+  const byMode = images[0] !== images[2] || images[1] !== images[3];
+  const byContrast = images[0] !== images[1] || images[2] !== images[3];
+  if (!byMode && !byContrast) return images[0];
+  const names: string[] = [];
+  LEGS.forEach(([dark, more], leg) => {
+    if ((!byMode && dark) || (!byContrast && more)) return;
+    const name = `--eq-p${index}-${byMode ? (dark ? 'd' : 'l') : ''}${byContrast ? (more ? 'm' : 's') : ''}`;
+    const toggles =
+      (byMode ? `var(--eq-on-${dark ? 'dark' : 'light'}) ` : '') + (byContrast ? `var(--eq-on-${more ? 'more' : 'std'}) ` : '');
+    variants[name] = toggles + images[leg];
+    names.push(name);
+  });
+  let chain = `var(${names[names.length - 1]})`;
+  for (let i = names.length - 2; i >= 0; i--) chain = `var(${names[i]}, ${chain})`;
+  return chain;
+}
+
+function boxArea(area: BoxAreaValue | undefined, standard: BoxAreaValue): string {
+  switch (area ?? standard) {
+    case 'border':
+      return 'border-box';
+    case 'content':
+      return 'content-box';
+    default:
+      return 'padding-box';
+  }
+}
+
+function tileRepeat(repeat: TileRepeatValue | undefined): string {
+  switch (repeat ?? 'repeat') {
+    case 'once':
+      return 'no-repeat';
+    case 'spaced':
+      return 'space';
+    case 'fitted':
+      return 'round';
+    default:
+      return 'repeat';
+  }
+}
+
+function tileLength(length: TileLengthValue): string {
+  return length.isAuto ? 'auto' : length.isFraction ? floatPercent(length.value) : px(length.value);
+}
+
+function tilePosition(anchor: number, offset: number): string {
+  if (offset === 0) return floatPercent(anchor);
+  return offset > 0
+    ? `calc(${floatPercent(anchor)} + ${px(offset)})`
+    : `calc(${floatPercent(anchor)} - ${px(-offset)})`;
+}
+
+/** The C# `PatternLayers.Tile`: the entries a drawing tile and an image tile share. */
+function tileLayer(pattern: DrawingPatternValue | ImagePatternValue, image: string): BackgroundLayer {
+  const fit = pattern.fit;
+  const anchor = pattern.anchor ?? { x: 0, y: 0 };
+  const offset = pattern.offset ?? { x: 0, y: 0 };
+  const across = tileRepeat(pattern.horizontalRepeat);
+  const down = tileRepeat(pattern.verticalRepeat);
+  return {
+    image,
+    size:
+      fit === 'contain' ? 'contain'
+        : fit === 'cover' ? 'cover'
+          : fit === 'stretch' ? '100% 100%'
+            : `${tileLength(pattern.width)} ${tileLength(pattern.height)}`,
+    repeat: across === down ? across : `${across} ${down}`,
+    position: `${tilePosition(anchor.x, offset.x)} ${tilePosition(anchor.y, offset.y)}`,
+    origin: boxArea(pattern.area, 'padding'),
+    clip: boxArea(pattern.clipTo, 'border'),
+    attachment: pattern.attachment === 'window' ? 'fixed' : 'scroll',
+  };
+}
+
+/**
+ * The C# `PatternLayers` visitor: each kind's layers, switched on `patternKind` and ended by an
+ * exhaustive check, so a kind added to the set fails the type check until it is drawn here.
+ */
+function patternLayers(pattern: PatternValue, index: number, variants: Record<string, string>): BackgroundLayer[] {
+  switch (pattern.patternKind) {
+    case 'grid': {
+      const color = tokenValue(pattern.color);
+      const line = px(pattern.lineWidth);
+      const cell = px(pattern.cell);
+      return ['to right', 'to bottom'].map((direction) => ({
+        image: `linear-gradient(${direction}, ${color} ${line}, transparent ${line})`,
+        size: `${cell} ${cell}`,
+        origin: boxArea(pattern.area, 'padding'),
+        clip: boxArea(pattern.clipTo, 'border'),
+        attachment: pattern.attachment === 'window' ? 'fixed' : 'scroll',
+      }));
+    }
+    case 'drawing': {
+      const tint = pattern.tint ?? getPhotonTheme().textPrimary;
+      const inherits = drawingInherits(pattern.artwork);
+      const opacity = pattern.opacity ?? 1;
+      const documents = new Map<string, string>();
+      const image = (dark: boolean, more: boolean): string => {
+        const color = inherits ? tokenLeg(tint, dark, more) : { r: 0, g: 0, b: 0, a: 0 };
+        const key = hex(color);
+        let url = documents.get(key);
+        if (url === undefined) {
+          url = cssUrl(svgDataUrl(tileArtwork(pattern.artwork, opacity, color)));
+          documents.set(key, url);
+        }
+        return url;
+      };
+      return [tileLayer(pattern, varyingImage(index, image, variants))];
+    }
+    case 'image':
+      return [
+        tileLayer(
+          pattern,
+          varyingImage(index, (dark) => cssUrl(dark && pattern.darkSource ? pattern.darkSource : pattern.source), variants),
+        ),
+      ];
+    default:
+      return assertNever(pattern);
+  }
+}
+
+/**
+ * Mirror of the C# `BackgroundLayers`: every layer above the box's colour in CSS's order, the FIRST
+ * on top — the gradient, the glow, then the patterns from the last to the first. Each list is
+ * written only when one of its entries is not CSS's default, and then padded for every layer; the
+ * size list whenever the box has a pattern. The variants of a layer that differs by mode or contrast
+ * are the custom properties it returns beside the lists.
+ */
+function backgroundEntries(style: BoxStyleValue): Record<string, string | undefined> {
+  const layers: BackgroundLayer[] = [];
+  if (style.gradient) layers.push({ image: gradientValue(style.gradient) });
+  if (style.glow) layers.push({ image: glowValue(style.glow) });
+  const patterns = style.patterns ?? [];
+  const variants: Record<string, string> = {};
+  for (let index = patterns.length - 1; index >= 0; index--) layers.push(...patternLayers(patterns[index], index, variants));
+  const list = (entry: keyof typeof LAYER_DEFAULTS): string | undefined =>
+    layers.some((layer) => (layer[entry] ?? LAYER_DEFAULTS[entry]) !== LAYER_DEFAULTS[entry])
+      ? layers.map((layer) => layer[entry] ?? LAYER_DEFAULTS[entry]).join(', ')
+      : undefined;
+  const clips = list('clip');
+  return {
+    'background-image': layers.length === 0 ? undefined : layers.map((layer) => layer.image).join(', '),
+    'background-size': patterns.length > 0 ? layers.map((layer) => layer.size ?? LAYER_DEFAULTS.size).join(', ') : undefined,
+    'background-position': list('position'),
+    'background-repeat': list('repeat'),
+    'background-origin': list('origin'),
+    '-webkit-background-clip': clips,
+    'background-clip': clips,
+    'background-attachment': list('attachment'),
+    ...variants,
+  };
 }
 
 /**
