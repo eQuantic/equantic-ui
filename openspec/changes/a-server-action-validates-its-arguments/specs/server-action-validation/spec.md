@@ -1,3 +1,7 @@
+## Purpose
+
+How a Server Action's arguments are validated with .NET's DataAnnotations before it runs, how a refusal reaches the page in .NET's validation problem shape, and how a form shows it on its fields.
+
 ## ADDED Requirements
 
 ### Requirement: A Server Action validates its arguments before it runs
@@ -10,7 +14,7 @@ SHALL keep the action from running.
 #### Scenario: A nested model
 
 - **WHEN** an action taking a `Patient` with `[Required] Name`, `[Range(0, 150)] Age` and an `Address` with
-  `[Mask("00000-000")] PostalCode` is called with an empty name, an age of 200 and the postal code `0131`, in pt-BR
+  `[RegularExpression("^[0-9]{8}$")] PostalCode` is called with an empty name, an age of 200 and the postal code `0131`, in pt-BR
 - **THEN** the action does not run, and the refusal names `Name`, `Age` and `Address.PostalCode`
 
 #### Scenario: A scalar parameter

@@ -10,11 +10,11 @@ composing a word.
 
 #### Scenario: A plate's keyboard
 
-- **WHEN** the caret enters a `MaskedInput` of mask `>LL-0000` on the iOS simulator and on the Android emulator
+- **WHEN** the caret enters a field formatted by a `MaskFormatter` of mask `>LL-0000` on the iOS simulator and on the Android emulator
 - **THEN** the text keyboard opens with no suggestion bar and no capital forced, and `a` typed reaches the field
   as `A`
 
 #### Scenario: A postal code's keypad
 
-- **WHEN** the caret enters a `MaskedInput` of mask `00000-000` on the same two
+- **WHEN** the caret enters a field of kind `Number` formatted by a `MaskFormatter` of mask `00000-000` on the same two
 - **THEN** iOS opens `NumberPad` and Android describes `ClassNumber`

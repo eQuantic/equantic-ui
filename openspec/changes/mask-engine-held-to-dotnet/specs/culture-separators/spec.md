@@ -1,3 +1,7 @@
+## Purpose
+
+What a page's code reads of its culture's date and time formatting in the browser, as .NET answers it for the page's culture: the date and time separators a mask or a format writes.
+
 ## ADDED Requirements
 
 ### Requirement: A page reads its culture's date and time separators
