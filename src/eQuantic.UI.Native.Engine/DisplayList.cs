@@ -493,6 +493,16 @@ public sealed class DisplayListBuilder
     /// </summary>
     public void Replay(in DrawCommand command, in Matrix2D offset)
     {
+        // A replayed layer opens and closes as a pushed one does, so Build refuses a replay that leaves
+        // one open: the renderer composites a layer from the target its whole scope drew into (#1952).
+        if (command.Kind == DrawCommandKind.BeginLayer) _openLayers++;
+        else if (command.Kind == DrawCommandKind.EndLayer)
+        {
+            // Checked before the count moves, so a refused replay leaves the builder as it was.
+            if (_openLayers == 0)
+                throw new InvalidOperationException("Replay of an EndLayer with no layer open: the replayed commands are not a whole scope.");
+            _openLayers--;
+        }
         if (offset.IsIdentity)
         {
             _commands.Add(command);
@@ -523,8 +533,15 @@ public sealed class DisplayListBuilder
         });
     }
 
+    /// <summary>
+    /// Ends the layer <see cref="PushLayer"/> began. A pop with no layer open throws: the renderer
+    /// composites each layer from a target its scope drew into, and a scope that ends before it begins
+    /// has none (#1952).
+    /// </summary>
     public void PopLayer()
     {
+        if (_openLayers == 0)
+            throw new InvalidOperationException("PopLayer without an open PushLayer: no layer is open to end.");
         _openLayers--;
         _commands.Add(new DrawCommand { Kind = DrawCommandKind.EndLayer });
     }

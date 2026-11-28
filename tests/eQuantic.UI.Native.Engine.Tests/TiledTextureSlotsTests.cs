@@ -60,13 +60,14 @@ public class TiledTextureSlotsTests
         Recorded(Spaced, opacity).StrokeWidth.Should().Be(written);
 
     [Fact]
-    public void TheShaderBlock_PacksTheOpacityFromTheSlotTheBuilderWrites_TimesTheLayer()
+    public void TheShaderBlock_PacksTheOpacityFromTheSlotTheBuilderWrites()
     {
         var command = Recorded(Spaced, 0.4f);
 
-        DrawUniforms.TryBuildTiled(command, Tile, 0.5f, out var uniforms).Should().BeTrue();
+        DrawUniforms.TryBuildTiled(command, Tile, out var uniforms).Should().BeTrue();
 
-        uniforms.ColorA.W.Should().BeApproximately(0.2f, 1e-6f, "the command's opacity times the layer's alpha");
+        uniforms.ColorA.W.Should().BeApproximately(0.4f, 1e-6f,
+            "the command's own opacity: a group's is the layer's composite, never the command's (#1952)");
         uniforms.ColorA.X.Should().Be(33.25f);
         uniforms.ColorA.Y.Should().Be(30);
         uniforms.Radii.Should().Be(new Float4(-7.25f, 3.5f, 41.5f, 30), "the origin, then the period");
