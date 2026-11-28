@@ -2,7 +2,6 @@
 [EQX0001]eQuantic.UI.Native.Engine.DrawCommand.Tiling.get -> eQuantic.UI.Native.Engine.Tiling
 [EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.TiledTexture(in eQuantic.UI.Primitives.Rect area, eQuantic.UI.Native.Engine.TextureData! texture, in eQuantic.UI.Native.Engine.Tiling tiling, float opacity) -> void
 [EQX0001]eQuantic.UI.Native.Engine.DrawCommandKind.TiledTexture = 9 -> eQuantic.UI.Native.Engine.DrawCommandKind
-[EQX0001]static eQuantic.UI.Native.Engine.DrawUniforms.TryBuildTiled(in eQuantic.UI.Native.Engine.DrawCommand command, eQuantic.UI.Native.Engine.TextureData! texture, float layerAlpha, out eQuantic.UI.Native.Engine.DrawUniforms uniforms) -> bool
 [EQX0001]eQuantic.UI.Native.Engine.RhiPipelineKind.TiledRgba = 6 -> eQuantic.UI.Native.Engine.RhiPipelineKind
 [EQX0001]eQuantic.UI.Native.Engine.Tiling
 [EQX0001]eQuantic.UI.Native.Engine.Tiling.Deconstruct(out eQuantic.UI.Primitives.Point Origin, out eQuantic.UI.Primitives.Size Period, out eQuantic.UI.Primitives.Size Extent, out bool RepeatX, out bool RepeatY) -> void
