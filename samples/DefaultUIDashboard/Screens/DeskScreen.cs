@@ -22,7 +22,8 @@ public sealed class DeskScreen : StatelessComponent
     private static readonly ColorToken Desk = new(Color.FromRgb(0xF4, 0xEC, 0xDD), Color.FromRgb(0x24, 0x21, 0x1D));
 
     // An ink that differs by mode: a deep teal on the light page, an amber on the dark one.
-    private static readonly ColorToken Ink = new(Color.FromRgb(0x1F, 0x6F, 0x6B), Color.FromRgb(0xE8, 0xA8, 0x4C));
+    private static readonly ColorToken Ink = new ColorToken(Color.FromRgb(0x1F, 0x6F, 0x6B), Color.FromRgb(0xE8, 0xA8, 0x4C))
+        .WithMore(Color.FromRgb(0x0B, 0x3B, 0x39), Color.FromRgb(0xFF, 0xC8, 0x6B));
 
     // The image tiles are served from wwwroot/desk, 360 px for a 120 dp tile: crisp at 3x.
     private const string PaperLight = "/desk/paper-light.png";
@@ -73,7 +74,7 @@ public sealed class DeskScreen : StatelessComponent
 
     /// <summary>(c) A tile whose currentColor shapes take a token that differs between light and dark.</summary>
     private static VisualNode TintedTile(IAppTheme theme) => Section(theme, "Tinted vector tile",
-        "DrawingPattern(Vectors.DeskInk, 96, tint: Ink): the currentColor shapes are teal in light and amber in dark.",
+        "DrawingPattern(Vectors.DeskInk, 96, tint: Ink): the currentColor shapes are teal in light and amber in dark, and deeper or brighter under more contrast.",
         Box(new BoxStyle
         {
             Width = SizeValue.Fill,

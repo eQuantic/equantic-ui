@@ -99,8 +99,7 @@ public class ThemeStylesheetTests
     {
         var css = ThemeStylesheet.Generate(PhotonTheme.Instance, mode);
 
-        css.Should().Contain(":root { --eq-on-light: ; --eq-on-dark: initial; --eq-on-std: ; --eq-on-more: initial; }",
-            "light and standard until something says otherwise");
+        css.Should().Contain(":root { --eq-on-light: ; --eq-on-dark: initial; }", "light until something says otherwise");
         foreach (var line in css.Split('\n').Where(line => line.Contains(".eq-themed-dark { display: block; }")))
             line.Should().Contain("{ --eq-on-light: initial; --eq-on-dark: ; }", "dark artwork and dark tiles are one decision");
         foreach (var line in css.Split('\n').Where(line => line.Contains(".eq-themed-light { display: block; }")))
@@ -126,6 +125,25 @@ public class ThemeStylesheetTests
         var block = css[start..css.IndexOf("\n}", start, StringComparison.Ordinal)];
         block.Should().Contain("--eq-on-std: initial;");
         block.Should().Contain("--eq-on-more: ;");
+    }
+
+    /// <summary>
+    /// The CASCADE, not the text: the More block's <c>:root</c> ties with every other <c>:root</c>, so the
+    /// standard default must come before it, and nothing after it may set the pair again. Written after
+    /// it, the default beat the More block on every page, and a tile under more contrast drew its
+    /// standard leg while every check of the text passed (#1937, found in a browser).
+    /// </summary>
+    [Fact]
+    public void TheContrastToggles_StandardDefault_ComesBeforeTheMoreBlock_AndNothingSetsThemAfter()
+    {
+        var css = ThemeStylesheet.Generate(PhotonTheme.Instance);
+        var more = css.IndexOf("@media (prefers-contrast: more) {", StringComparison.Ordinal);
+        more.Should().BeGreaterThan(0, "the theme steps tokens up, so the More block is written");
+        var end = css.IndexOf("\n}", more, StringComparison.Ordinal);
+
+        css.IndexOf("--eq-on-std: ;", StringComparison.Ordinal).Should().BeInRange(0, more - 1);
+        css.IndexOf("--eq-on-more: initial;", StringComparison.Ordinal).Should().BeInRange(0, more - 1);
+        css[end..].Should().NotContain("--eq-on-std").And.NotContain("--eq-on-more");
     }
 
     /// <summary>Unset stays "follow the OS" — the default every app built before this relied on.</summary>

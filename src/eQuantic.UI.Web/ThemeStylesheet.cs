@@ -130,6 +130,11 @@ public static class ThemeStylesheet
         // Which way the inline axis runs (#1568): 1 left to right, -1 right to left. A positioned
         // child's shift across multiplies by it (TokenCss.Shift), so it moves toward the end in both.
         css.AppendLine("  --eq-inline: 1;");
+        // The contrast toggles a tile's variants read (#1937), standard until the query below says more.
+        // Here and not beside the mode toggles: the More block that flips them ties with this :root, so
+        // only a declaration BEFORE it lets it win, and one written after it beat it on every page.
+        css.AppendLine("  --eq-on-std: ;");
+        css.AppendLine("  --eq-on-more: initial;");
         css.AppendLine("}");
         // Set again wherever a direction is said, the page's <html dir> and a Directionality's host, and
         // inherited from there: after :root, which these tie with, so the nearest `dir` wins.
@@ -370,7 +375,7 @@ public static class ThemeStylesheet
         // families are written from ONE list of those selectors (ModeDecisions), so the image pair and
         // the tiles cannot follow two decisions.
         css.AppendLine(".eq-themed-dark { display: none; }");
-        css.AppendLine(":root { --eq-on-light: ; --eq-on-dark: initial; --eq-on-std: ; --eq-on-more: initial; }");
+        css.AppendLine(":root { --eq-on-light: ; --eq-on-dark: initial; }");
         foreach (var (media, attribute, dark) in ModeDecisions(mode))
         {
             var scope = attribute.Length == 0 ? "" : $":root{attribute} ";
