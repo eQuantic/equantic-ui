@@ -1,0 +1,10 @@
+#nullable enable
+*REMOVED*[EQX0001]static eQuantic.UI.Native.Engine.Paint.Linear(eQuantic.UI.Primitives.Point start, eQuantic.UI.Primitives.Point end, eQuantic.UI.Primitives.Color from, eQuantic.UI.Primitives.Color to) -> eQuantic.UI.Native.Engine.Paint
+*REMOVED*[EQX0001]static eQuantic.UI.Native.Engine.Paint.Radial(eQuantic.UI.Primitives.Point center, float radiusX, float radiusY, eQuantic.UI.Primitives.Color from, eQuantic.UI.Primitives.Color to) -> eQuantic.UI.Native.Engine.Paint
+[EQX0001]eQuantic.UI.Native.Engine.GradientInterpolation
+[EQX0001]eQuantic.UI.Native.Engine.GradientInterpolation.Straight = 0 -> eQuantic.UI.Native.Engine.GradientInterpolation
+[EQX0001]eQuantic.UI.Native.Engine.GradientInterpolation.Premultiplied = 1 -> eQuantic.UI.Native.Engine.GradientInterpolation
+[EQX0001]eQuantic.UI.Native.Engine.Paint.Interpolation.get -> eQuantic.UI.Native.Engine.GradientInterpolation
+[EQX0001]eQuantic.UI.Native.Engine.Paint.Interpolation.init -> void
+[EQX0001]static eQuantic.UI.Native.Engine.Paint.Linear(eQuantic.UI.Primitives.Point start, eQuantic.UI.Primitives.Point end, eQuantic.UI.Primitives.Color from, eQuantic.UI.Primitives.Color to, eQuantic.UI.Native.Engine.GradientInterpolation interpolation) -> eQuantic.UI.Native.Engine.Paint
+[EQX0001]static eQuantic.UI.Native.Engine.Paint.Radial(eQuantic.UI.Primitives.Point center, float radiusX, float radiusY, eQuantic.UI.Primitives.Color from, eQuantic.UI.Primitives.Color to, eQuantic.UI.Native.Engine.GradientInterpolation interpolation) -> eQuantic.UI.Native.Engine.Paint

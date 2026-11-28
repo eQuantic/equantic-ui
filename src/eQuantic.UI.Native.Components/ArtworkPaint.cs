@@ -34,12 +34,17 @@ internal sealed class ArtworkPaint(VectorDrawing artwork, Rect bounds)
         return paint.Kind == VectorPaintKind.RadialGradient
             ? Paint.Radial(
                 new Point(box.X + run.X1 * box.Width, box.Y + run.Y1 * box.Height),
-                run.Radius * box.Width, run.Radius * box.Height, from, to)
+                run.Radius * box.Width, run.Radius * box.Height, from, to, Svg)
             : Paint.Linear(
                 new Point(box.X + run.X1 * box.Width, box.Y + run.Y1 * box.Height),
                 new Point(box.X + run.X2 * box.Width, box.Y + run.Y2 * box.Height),
-                from, to);
+                from, to, Svg);
     }
+
+    // An artwork's runs are SVG paint servers on the web, and Chromium 156 mixes their stops straight:
+    // red into transparent black reads (191, 128, 128) over white, where a CSS gradient reads (255, 128,
+    // 128). So the artwork keeps the straight mix a box's gradient left (#1956).
+    private const GradientInterpolation Svg = GradientInterpolation.Straight;
 
     // Where the run's fractions are measured from. SVG's default is the SHAPE's own box
     // (objectBoundingBox), which is why the path has to answer for its own bounds;

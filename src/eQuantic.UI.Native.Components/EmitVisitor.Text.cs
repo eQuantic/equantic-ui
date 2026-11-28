@@ -125,19 +125,12 @@ internal sealed partial class EmitVisitor
                 {
                     // Gradient text: the glyph coverage is tinted by a PAINT. The axis spans the
                     // text's own box on the declared direction, matching what `background-clip:text`
-                    // does on web (the gradient box is the element).
-                    var end = g.Direction switch
-                    {
-                        GradientDirection.ToBottom => new Point(rect.X, rect.Y + rect.Height),
-                        GradientDirection.ToBottomRight => new Point(rect.X + rect.Width, rect.Y + rect.Height),
-                        GradientDirection.ToBottomLeft => new Point(rect.X, rect.Y + rect.Height),
-                        _ => new Point(rect.X + rect.Width, rect.Y),
-                    };
-                    var start = g.Direction == GradientDirection.ToBottomLeft
-                        ? new Point(rect.X + rect.Width, rect.Y)
-                        : new Point(rect.X, rect.Y);
+                    // does on web (the gradient box is the element): a CSS gradient's line, whose
+                    // corners run through the other two (#1955), with its stops premultiplied (#1956).
+                    var (start, end) = GradientLine.Across(rect, g.Direction);
                     builder.Texture(rect,
-                        Paint.Linear(start, end, g.From.Resolve(mode, contrast), g.To.Resolve(mode, contrast)),
+                        Paint.Linear(start, end, g.From.Resolve(mode, contrast), g.To.Resolve(mode, contrast),
+                            GradientInterpolation.Premultiplied),
                         raster.Texture);
                     return;
                 }

@@ -210,33 +210,22 @@ internal sealed partial class EmitVisitor
             builder.FillRRect(new RRect(bounds, radius), Paint.Radial(
                 new Point(bounds.X + bounds.Width * g2.CenterX, bounds.Y + bounds.Height * g2.CenterY),
                 g2.RadiusX, g2.RadiusY,
-                g2.From.Resolve(mode, contrast), g2.To.Resolve(mode, contrast)));
+                g2.From.Resolve(mode, contrast), g2.To.Resolve(mode, contrast),
+                // The web's spotlight is a CSS radial-gradient, whose stops mix premultiplied (#1956).
+                GradientInterpolation.Premultiplied));
         }
 
         // The gradient draws OVER the solid (CSS background-image/background-color composition):
         // Paint.Linear across the box bounds on the declared axis, stops resolved per mode.
         if (gradient is { } g)
         {
-            // The axis is a pair of points, so the diagonals need no new engine primitive — only
-            // the right corners. ToBottomLeft starts at the TOP-RIGHT corner (CSS's `to bottom left`
-            // runs from the opposite corner), which is why the start point is not always the origin.
-            var (start, end) = g.Direction switch
-            {
-                GradientDirection.ToBottom => (
-                    new Point(bounds.X, bounds.Y),
-                    new Point(bounds.X, bounds.Y + bounds.Height)),
-                GradientDirection.ToBottomRight => (
-                    new Point(bounds.X, bounds.Y),
-                    new Point(bounds.X + bounds.Width, bounds.Y + bounds.Height)),
-                GradientDirection.ToBottomLeft => (
-                    new Point(bounds.X + bounds.Width, bounds.Y),
-                    new Point(bounds.X, bounds.Y + bounds.Height)),
-                _ => (
-                    new Point(bounds.X, bounds.Y),
-                    new Point(bounds.X + bounds.Width, bounds.Y)),
-            };
+            // The axis is a pair of points, placed as CSS places a box's gradient line: a corner's
+            // runs through the other two corners at its middle, not corner to corner (#1955). The
+            // stops mix premultiplied, as a CSS gradient's do (#1956).
+            var (start, end) = GradientLine.Across(bounds, g.Direction);
             builder.FillRRect(new RRect(bounds, radius),
-                Paint.Linear(start, end, g.From.Resolve(mode, contrast), g.To.Resolve(mode, contrast)));
+                Paint.Linear(start, end, g.From.Resolve(mode, contrast), g.To.Resolve(mode, contrast),
+                    GradientInterpolation.Premultiplied));
         }
 
         // The inner top highlight draws over every background layer and under the border: CSS paints an inset shadow

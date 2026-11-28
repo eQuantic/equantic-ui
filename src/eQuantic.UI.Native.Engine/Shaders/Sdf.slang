@@ -14,7 +14,7 @@ struct DrawUniforms
     float4 colorA;    // sRGB 0..1 straight alpha (solid / gradient start)
     float4 colorB;    // sRGB 0..1 straight alpha (gradient end)
     float4 gradient;  // start.x, start.y, end.x, end.y (LOCAL space)
-    float4 flags;     // x: 0 fill | 1 stroke | 2 shadow · y: 0 solid | 1 linear gradient · z: 1 = clipped
+    float4 flags;     // x: 0 fill | 1 stroke | 2 shadow · y: 0 solid | 1 linear gradient · z: 1 = clipped · w: 1 = premultiplied stops
     float4 clipRect;  // DEVICE-space clip: center.x, center.y, halfSize.w, halfSize.h
     float4 clipRadii; // tl, tr, br, bl
 };
@@ -38,6 +38,16 @@ struct DrawUniforms
 float srgbToLinear(float c)
 {
     return c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4);
+}
+
+// Paint.ColorAt's mix of two stops, in sRGB space (#1956). Straight mixes each channel on its own,
+// as an SVG paint server does; premultiplied weighs each colour by its alpha and divides by the
+// mixed alpha, as a CSS gradient does, so a colour fading into transparent keeps its own colour.
+float4 gradientColor(float4 from, float4 to, float t, float premultiplied)
+{
+    if (premultiplied < 0.5) return lerp(from, to, t);
+    float4 mixed = lerp(float4(from.rgb * from.a, from.a), float4(to.rgb * to.a, to.a), t);
+    return mixed.a > 0.0 ? float4(mixed.rgb / mixed.a, mixed.a) : float4(0.0, 0.0, 0.0, 0.0);
 }
 
 // Sdf.RoundedRect — quadrant radius select (y grows down), q = |p| − (half − r).
@@ -154,7 +164,7 @@ float4 sdf_fragment(float4 position: SV_Position) : SV_Target
         if (coverage <= 0.0) discard;
     }
 
-    // Paint.ColorAt — gradients interpolate per-channel in sRGB space (the CSS/Skia look).
+    // Paint.ColorAt — gradients mix their stops in sRGB space, straight or premultiplied (flags.w).
     // flags.y: 0 solid · 1 linear (axis in `gradient`) · 2 RADIAL (center.xy + radii.zw, same slots).
     float4 srgb = u.colorA;
     if (u.flags.y > 1.5)
@@ -163,14 +173,14 @@ float4 sdf_fragment(float4 position: SV_Position) : SV_Target
         float dx = u.gradient.z <= 0.0 ? 0.0 : (local.x - u.gradient.x) / u.gradient.z;
         float dy = u.gradient.w <= 0.0 ? 0.0 : (local.y - u.gradient.y) / u.gradient.w;
         float t = clamp(sqrt(dx * dx + dy * dy), 0.0, 1.0);
-        srgb = lerp(u.colorA, u.colorB, t);
+        srgb = gradientColor(u.colorA, u.colorB, t, u.flags.w);
     }
     else if (u.flags.y > 0.5)
     {
         float2 axis = u.gradient.zw - u.gradient.xy;
         float len2 = dot(axis, axis);
         float t = len2 <= 0.0 ? 0.0 : clamp(dot(local - u.gradient.xy, axis) / len2, 0.0, 1.0);
-        srgb = lerp(u.colorA, u.colorB, t);
+        srgb = gradientColor(u.colorA, u.colorB, t, u.flags.w);
     }
 
     // ColorSpace.ToPremultipliedLinear(color, coverage): linearize, premultiply by alpha·coverage.
@@ -210,7 +220,7 @@ float4 textured_fragment(float4 position: SV_Position) : SV_Target
     // GRADIENT TINT (gradient text, and artwork's own runs): the geometry rides `radii` and the
     // second stop `colorB` — both slots the textured path never used, so this needed no uniform
     // re-layout. `flags.y` says WHICH run: 1 linear, 2 elliptical radial, the same two the SDF
-    // path draws. The interpolation is the SAME sRGB-space lerp Paint.ColorAt performs, so a run
+    // path draws. The interpolation is the SAME sRGB-space mix Paint.ColorAt performs, so a run
     // over glyph coverage, a run over artwork and a run over an rrect fill cannot disagree.
     float4 srgb = u.colorA;
     if (u.flags.y > 1.5)
@@ -219,14 +229,14 @@ float4 textured_fragment(float4 position: SV_Position) : SV_Target
         float dx = u.radii.z <= 0.0 ? 0.0 : (local.x - u.radii.x) / u.radii.z;
         float dy = u.radii.w <= 0.0 ? 0.0 : (local.y - u.radii.y) / u.radii.w;
         float t = clamp(sqrt(dx * dx + dy * dy), 0.0, 1.0);
-        srgb = lerp(u.colorA, u.colorB, t);
+        srgb = gradientColor(u.colorA, u.colorB, t, u.flags.w);
     }
     else if (u.flags.y > 0.5)
     {
         float2 axis = u.radii.zw - u.radii.xy;
         float len2 = dot(axis, axis);
         float t = len2 <= 0.0 ? 0.0 : clamp(dot(local - u.radii.xy, axis) / len2, 0.0, 1.0);
-        srgb = lerp(u.colorA, u.colorB, t);
+        srgb = gradientColor(u.colorA, u.colorB, t, u.flags.w);
     }
 
     float a = srgb.a * coverage;

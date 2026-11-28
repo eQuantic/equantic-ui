@@ -90,7 +90,7 @@ public struct DrawUniforms
     public Float4 ColorA;    // sRGB 0..1 straight alpha (solid / gradient start)
     public Float4 ColorB;    // sRGB 0..1 straight alpha (gradient end)
     public Float4 Gradient;  // start.x, start.y, end.x, end.y (LOCAL space) | texture w/h for textured draws
-    public Float4 Flags;     // x: 0 fill | 1 stroke | 2 shadow · y: 1 = linear gradient · z: 1 = clipped
+    public Float4 Flags;     // x: 0 fill | 1 stroke | 2 shadow · y: 1 = linear gradient · z: 1 = clipped · w: 1 = premultiplied stops
     public Float4 ClipRect;  // DEVICE-space clip: center.x, center.y, halfSize.w, halfSize.h
     public Float4 ClipRadii; // tl, tr, br, bl
 
@@ -129,7 +129,9 @@ public struct DrawUniforms
             // 0 solid · 1 linear · 2 radial — the paint kinds share the `Gradient` slot, so a radial
             // needed no new uniform: center rides .xy and the radii .zw.
             paint.Kind switch { PaintKind.LinearGradient => 1, PaintKind.RadialGradient => 2, _ => 0 },
-            command.Clip is null ? 0 : 1, 0);
+            command.Clip is null ? 0 : 1,
+            // How the stops mix (#1956): CSS's gradients premultiply, SVG's paint servers do not.
+            paint.Interpolation == GradientInterpolation.Premultiplied ? 1 : 0);
         if (command.Clip is { } clip)
         {
             uniforms.ClipRect = new Float4(clip.Rect.Center.X, clip.Rect.Center.Y, clip.Rect.Width / 2, clip.Rect.Height / 2);
@@ -577,7 +579,8 @@ public sealed class RhiRenderer : IDisposable
                         command.Paint.GradientEnd.X, command.Paint.GradientEnd.Y);
                 }
                 textured.Gradient = new Float4(data.Width, data.Height, 0, 0);
-                textured.Flags = new Float4(0, gradientTint, command.Clip is null ? 0 : 1, 0);
+                textured.Flags = new Float4(0, gradientTint, command.Clip is null ? 0 : 1,
+                    command.Paint.Interpolation == GradientInterpolation.Premultiplied ? 1 : 0);
 
                 var kind = data.Format == TextureFormat.Rgba8 ? RhiPipelineKind.TexturedRgba : RhiPipelineKind.TexturedA8;
                 if (activeKind != kind)
