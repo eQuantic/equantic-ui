@@ -169,9 +169,10 @@ unless the app gives its own, and SHALL NOT show it while it is being typed into
 
 ### Requirement: The server validates a masked value with MaskedTextProvider
 
-A property marked `[Mask("…")]` SHALL be valid under `System.ComponentModel.DataAnnotations.Validator` when it
+A property marked `[Mask("…")]` (`eQuantic.UI.Masking.MaskAttribute`) SHALL be valid under `System.ComponentModel.DataAnnotations.Validator` when it
 is null or empty, or when .NET's `MaskedTextProvider`, in the current culture with the SDK's options, places
-every character of it and completes the mask. A `[FormModel]` with such a property SHALL validate it in the
+every character of it, completes the mask, and, when the attribute names a `ValidatingType`, parses with that
+type's `TryParse(string, IFormatProvider, out T)` in the current culture. A `[FormModel]` with such a property SHALL validate it in the
 browser with the SDK's engine, by the same rule.
 
 #### Scenario: Raw and formatted on the server
@@ -184,3 +185,98 @@ browser with the SDK's engine, by the same rule.
 
 - **WHEN** a `[FormModel]` with that property is validated in the browser in pt-BR with the same four values
 - **THEN** it answers as the server does
+
+### Requirement: The mask engine is an assembly the SDK delivers
+
+The mask engine and its public surface (`MaskFormatter`, `MaskedText`, `InsertKeyMode`, `IMaskedValueParser`,
+`MaskedValueParser<TValue>`, `MaskAttribute`) SHALL ship as the assembly and package `eQuantic.UI.Masking`, of
+surface class `contract`, whose types the runtime provides. Both SDKs SHALL reference it, by package and, beside
+a source tree, by project, and SHALL put `eQuantic.UI.Masking` in scope, so an app's csproj names nothing.
+
+#### Scenario: An app that writes only its SDK
+
+- **WHEN** an app whose csproj is `<Project Sdk="eQuantic.UI.Sdk">` and nothing else builds a page that holds a
+  `MaskedText` and composes a `MaskedInput`
+- **THEN** it builds with no `using` and no `PackageReference` of its own, and its module imports the engine from
+  `@equantic/runtime`
+
+#### Scenario: The surface is declared
+
+- **WHEN** a public member is added to `eQuantic.UI.Masking` without a line in its `PublicAPI.Unshipped.txt`
+- **THEN** the build fails with RS0016
+
+### Requirement: A masked field overtypes as MaskedTextBox does
+
+A `MaskedInput` SHALL take `InsertKeyMode` with .NET's three members: `Default` inserts and toggles to overwrite
+and back with the Insert key, `Insert` always inserts, and `Overwrite` always overwrites. In overwrite mode a
+typed character SHALL replace the edit position at or after the caret without shifting what follows, as
+`MaskedTextBox`'s `PlaceChar` with `overwrite` does, and the caret SHALL be drawn as a block where the target can.
+
+#### Scenario: Overtyping a full CPF
+
+- **WHEN** `9` is typed at 0 and `8` at 3 of a full pt-BR CPF in overwrite mode
+- **THEN** it holds `923,856,789-01` with the caret at 5
+
+#### Scenario: Insert on a full field
+
+- **WHEN** `9` is typed at 0 of a full field of mask `00000-000` in insert mode
+- **THEN** nothing changes
+
+#### Scenario: The Insert key
+
+- **WHEN** Insert is pressed in a field of `InsertKeyMode.Default`, then `9` typed at 0 of a full CPF
+- **THEN** the `9` replaces the first digit, and Insert pressed again goes back to inserting
+
+### Requirement: An obscured masked field hides what was entered and shows its literals
+
+A `MaskedInput` with `Obscure` SHALL draw every entered position as the target's password glyph and every
+literal as it is, as `MaskedTextBox` with a `PasswordChar` draws it, and SHALL keep everything the target's own
+password field gives: no copy out, no autocorrection, the secure keyboard on iOS and Android, and, on the web, a
+real `type="password"` input that password managers recognise.
+
+#### Scenario: A PIN with a separator on the web
+
+- **WHEN** an obscured web field of mask `0000-0000` holds `12345`, in Chrome and in Firefox
+- **THEN** its input is of type `password` and holds `1234-5`, and the page draws `-` at the fifth cell over the
+  bullets, hidden from assistive technology
+
+#### Scenario: The same on Photon
+
+- **WHEN** an obscured Photon field of mask `0000-0000` holds `12345`
+- **THEN** it draws `••••-•`, and `Cmd+C` over a selection of it writes nothing to the clipboard
+
+### Requirement: A masked field parses its text into a typed value
+
+A `MaskedInput` SHALL take a `validatingType`, an `IMaskedValueParser`. A `MaskedValueParser<TValue>` SHALL be
+built from a method of the shape `bool TryParse(string, IFormatProvider?, out TValue)` and SHALL parse a
+`MaskedText`'s `Text` in the current culture. A field left completed but unparsable SHALL show the SDK's invalid
+value error, as `MaskedTextBox`'s `TypeValidationCompleted` reports `IsValidInput` false.
+
+#### Scenario: A date in Brazil
+
+- **WHEN** `28112026` and then `31022026` are typed into a pt-BR field of mask `00/00/0000` with
+  `new MaskedValueParser<DateOnly>(DateOnly.TryParse)`, and the field is left after each
+- **THEN** the first parses to 2026-11-28 and the field shows no error, and the second shows the invalid value
+  error, on .NET and in the browser
+
+#### Scenario: The server agrees
+
+- **WHEN** a model's `[Mask("00/00/0000", ValidatingType = typeof(DateOnly))]` property holds `28/11/2026` and
+  `31/02/2026`, validated in pt-BR
+- **THEN** the first is valid and the second is not
+
+### Requirement: A masked field undoes and redoes
+
+A `MaskedInput` SHALL keep a history of what it showed: a run of typing is one step until a deletion, a paste,
+a caret moved elsewhere or a pause, a new step drops what could be redone, and a value the page writes clears the
+history. Undo and redo SHALL show the text and the caret of the step and hand the page its `MaskedText`.
+
+#### Scenario: Undo a paste
+
+- **WHEN** `123` is typed into a pt-BR CPF, `45678901` pasted after it, and undo pressed twice
+- **THEN** the first undo shows `123` with the caret at 3, and the second an empty field
+
+#### Scenario: A reset is not undone
+
+- **WHEN** `123` is typed, the page resets the value to `""`, and undo is pressed
+- **THEN** the field stays empty

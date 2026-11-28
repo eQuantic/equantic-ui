@@ -62,3 +62,33 @@ suggestions or automatic capitals on every target, whatever its kind.
 
 - **WHEN** a formatted web field of kind `Text` that is not prose is served
 - **THEN** its input carries `spellcheck="false"`, `autocapitalize="none"` and `autocorrect="off"`
+
+### Requirement: The targets' undo, redo and Insert reach a formatter
+
+A `TextEntry` with a `Formatter` SHALL hand it `TextCommand.Undo`, `Redo` and `ToggleOverwrite` from every way
+the target offers them, and SHALL show the state it answers; a command the formatter does not take SHALL do what
+the target does without one. On the web: `Ctrl`/`Cmd+Z`, `Ctrl`/`Cmd+Shift+Z`, `Ctrl+Y` and `Insert`, and the
+`historyUndo` and `historyRedo` the browser's menus and gestures dispatch, which the field keeps armed by writing
+its text with `execCommand('insertText')`. On Photon: the same keys on every shell, Edit › Undo and Redo in the
+macOS shell's menu, and on iOS the field's undo manager, which the shake and the three-finger gestures drive.
+
+#### Scenario: The browser's own undo, cancelled
+
+- **WHEN** `Meta+Z` is pressed in a formatted web field after two typed characters, in Chrome and in Firefox
+- **THEN** the field receives a cancelable `historyUndo`, cancels it, and shows the formatter's answer
+
+#### Scenario: The macOS menu
+
+- **WHEN** Edit › Undo is chosen in the PhotonDesktop sample while a formatted field holds the caret
+- **THEN** the formatter receives `TextCommand.Undo`
+
+### Requirement: An obscured formatted entry shows the formatter's literals
+
+An obscured `TextEntry` with a `Formatter` SHALL draw as the target's password glyph every character the
+formatter does not call a literal, and the literals as they are, on the web over a real password input and on
+Photon in its own drawing, and SHALL copy nothing out of it.
+
+#### Scenario: A literal over the bullets
+
+- **WHEN** an obscured web entry whose formatter calls position 4 a literal holds `1234-5`, and its input scrolls
+- **THEN** the drawn `-` stays over the fifth bullet as the input scrolls
