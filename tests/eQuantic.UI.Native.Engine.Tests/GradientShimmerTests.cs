@@ -60,21 +60,30 @@ public class GradientShimmerTests
     }
 
     /// <summary>
-    /// The DIAGONAL axes run corner to corner — and <c>ToBottomLeft</c> starts at the TOP-RIGHT
-    /// corner, mirroring CSS's <c>to bottom left</c>. No engine change was needed: the axis was
-    /// always a pair of arbitrary points, so the diagonals are pure realizer work.
+    /// The DIAGONAL axes run as CSS places a corner's gradient line (#1955): perpendicular to the
+    /// diagonal through the other two corners, so the middle of the gradient passes through them, and
+    /// <c>ToBottomLeft</c> is the same line mirrored. No engine change was needed: the axis was always
+    /// a pair of arbitrary points, so the diagonals are pure realizer work.
     /// </summary>
     [Fact]
-    public void GradientBox_Diagonals_RunCornerToCorner()
+    public void GradientBox_Diagonals_RunAsCssPlacesThem()
     {
         Point Start(GradientDirection direction) => Fill(direction).Paint.GradientStart;
         Point End(GradientDirection direction) => Fill(direction).Paint.GradientEnd;
 
-        Start(GradientDirection.ToBottomRight).Should().Be(new Point(0, 0));
-        End(GradientDirection.ToBottomRight).Should().Be(new Point(120, 40));
+        // On the 120 x 40 box the line runs through the centre (60, 20) along (40, 120), and half of it
+        // is the half-diagonal's projection on it: the end is the centre plus (12, 36). Corner to corner,
+        // as it ran before #1955, put the top-right corner 90% of the way along; this line puts it at 50%.
+        Start(GradientDirection.ToBottomRight).Should().Be(new Point(48, -16));
+        End(GradientDirection.ToBottomRight).Should().Be(new Point(72, 56));
 
-        Start(GradientDirection.ToBottomLeft).Should().Be(new Point(120, 0), "CSS runs it from the opposite corner");
-        End(GradientDirection.ToBottomLeft).Should().Be(new Point(0, 40));
+        Start(GradientDirection.ToBottomLeft).Should().Be(new Point(72, -16), "the same line, mirrored");
+        End(GradientDirection.ToBottomLeft).Should().Be(new Point(48, 56));
+
+        var right = Fill(GradientDirection.ToBottomRight).Paint;
+        var axis = right.GradientEnd - right.GradientStart;
+        (new Point(120, 0) - right.GradientStart).Dot(axis).Should().Be(axis.Dot(axis) / 2,
+            "the top-right corner sits at the middle of the line, as CSS's magic corners put it");
     }
 
     /// <summary>

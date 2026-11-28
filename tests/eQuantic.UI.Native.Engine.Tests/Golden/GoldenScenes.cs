@@ -59,7 +59,7 @@ public static class GoldenScenes
             b.FillAnnularSector(c, 14, 26, -0.4f, 1.6f, Paint.Solid(Warm), rounding: 2);
             b.FillAnnularSector(c, 30, 48,
                 -2.6f, -1.2f,
-                Paint.Radial(c, 48, 48, Warm, Mint), rounding: 3);
+                Paint.Radial(c, 48, 48, Warm, Mint, GradientInterpolation.Straight), rounding: 3);
             b.FillAnnularSector(c, 30, 48, -1.0f, 0.9f, Paint.Solid(Mint));
             b.FillAnnularSector(c, 6, 10, 0, 2 * MathF.PI, Paint.Solid(Warm));
         },
@@ -76,11 +76,11 @@ public static class GoldenScenes
 
         ["gradient-horizontal"] = b =>
             b.FillRect(new Rect(20, 30, 120, 60),
-                Paint.Linear(new Point(20, 0), new Point(140, 0), Warm, Accent)),
+                Paint.Linear(new Point(20, 0), new Point(140, 0), Warm, Accent, GradientInterpolation.Straight)),
 
         ["gradient-diagonal-rrect"] = b =>
             b.FillRRect(new RRect(new Rect(25, 20, 110, 80), new CornerRadii(20)),
-                Paint.Linear(new Point(25, 20), new Point(135, 100), Mint, Accent)),
+                Paint.Linear(new Point(25, 20), new Point(135, 100), Mint, Accent, GradientInterpolation.Straight)),
 
         // Rotate 30° around the rect center: exercises inverse-transform sampling + AA on slanted edges.
         ["transform-rotate"] = b =>
@@ -108,7 +108,7 @@ public static class GoldenScenes
         {
             var viewport = new RRect(new Rect(30, 20, 100, 80), new CornerRadii(16));
             b.PushClip(viewport);
-            b.FillRect(new Rect(10, 30, 140, 25), Paint.Linear(new Point(10, 0), new Point(150, 0), Warm, Accent));
+            b.FillRect(new Rect(10, 30, 140, 25), Paint.Linear(new Point(10, 0), new Point(150, 0), Warm, Accent, GradientInterpolation.Straight));
             b.FillRRect(new RRect(new Rect(90, 50, 70, 70), new CornerRadii(35)), Paint.Solid(Mint));
             var center = new Point(50, 75);
             b.PushTransform(
@@ -185,15 +185,15 @@ public static class GoldenScenes
 
             b.FillRect(new Rect(8, 8, 64, 64),
                 Paint.Radial(new Point(40, 40), 32, 32,
-                    Color.FromRgb(0x5B, 0x88, 0xFF), new Color(0x5B, 0x88, 0xFF, 0)));
+                    Color.FromRgb(0x5B, 0x88, 0xFF), new Color(0x5B, 0x88, 0xFF, 0), GradientInterpolation.Straight));
 
             b.FillRect(new Rect(80, 8, 72, 48),
                 Paint.Radial(new Point(96, 8), 64, 40,
-                    Color.FromRgb(0x7A, 0x64, 0xFF), Color.FromRgb(0x80, 0xB8, 0x5C)));
+                    Color.FromRgb(0x7A, 0x64, 0xFF), Color.FromRgb(0x80, 0xB8, 0x5C), GradientInterpolation.Straight));
 
             b.FillRRect(new RRect(new Rect(16, 78, 128, 34), new CornerRadii(12)),
                 Paint.Radial(new Point(80, 95), 60, 18,
-                    new Color(0xFF, 0xFF, 0xFF, 200), new Color(0xFF, 0xFF, 0xFF, 0)));
+                    new Color(0xFF, 0xFF, 0xFF, 200), new Color(0xFF, 0xFF, 0xFF, 0), GradientInterpolation.Straight));
         },
 
         // GRADIENT TEXT: A8 coverage filled with a gradient TINT instead of a flat color. The axis
@@ -211,13 +211,13 @@ public static class GoldenScenes
 
             b.Texture(new Rect(12, 16, 120, 32),
                 Paint.Linear(new Point(12, 16), new Point(132, 16),
-                    Color.FromRgb(0x8E, 0xB0, 0xFF), Color.FromRgb(0x7A, 0x64, 0xFF)),
+                    Color.FromRgb(0x8E, 0xB0, 0xFF), Color.FromRgb(0x7A, 0x64, 0xFF), GradientInterpolation.Straight),
                 raster);
 
             b.PushClip(new RRect(new Rect(16, 60, 110, 40), new CornerRadii(12)));
             b.Texture(new Rect(12, 56, 120, 48),
                 Paint.Linear(new Point(12, 56), new Point(12, 104),
-                    Color.FromRgb(0x80, 0xB8, 0x5C), new Color(0x28, 0x49, 0xF0, 160)),
+                    Color.FromRgb(0x80, 0xB8, 0x5C), new Color(0x28, 0x49, 0xF0, 160), GradientInterpolation.Straight),
                 raster);
             b.PopClip();
         },
@@ -280,7 +280,7 @@ public static class GoldenScenes
         ["backdrop-blur"] = b =>
         {
             b.FillRRect(new RRect(new Rect(0, 0, 160, 120)),
-                Paint.Linear(new Point(0, 0), new Point(160, 120), Color.FromRgb(30, 26, 60), Color.FromRgb(16, 42, 54)));
+                Paint.Linear(new Point(0, 0), new Point(160, 120), Color.FromRgb(30, 26, 60), Color.FromRgb(16, 42, 54), GradientInterpolation.Straight));
             b.FillRRect(new RRect(new Rect(14, 10, 52, 52), new CornerRadii(26)), Paint.Solid(Accent));
             b.FillRRect(new RRect(new Rect(70, 30, 60, 34), new CornerRadii(8)), Paint.Solid(Mint));
             b.FillRRect(new RRect(new Rect(110, 8, 36, 36), new CornerRadii(18)),
@@ -311,7 +311,7 @@ public static class GoldenScenes
             b.FillRRect(new RRect(new Rect(62, 60, 48, 7), new CornerRadii(3.5f)), Paint.Solid(Color.FromRgb(70, 75, 92)));
             // action pill with gradient
             b.FillRRect(new RRect(new Rect(30, 80, 56, 16), new CornerRadii(8)),
-                Paint.Linear(new Point(30, 0), new Point(86, 0), Accent, Mint));
+                Paint.Linear(new Point(30, 0), new Point(86, 0), Accent, Mint, GradientInterpolation.Straight));
         },
     };
 
