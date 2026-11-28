@@ -81,6 +81,11 @@ public class ValueShapeCollisionTests
             "a spreadsheet cell is (row, column) and a caret is (line, character). They look alike "
             + "and are never interchanged: one indexes a grid, the other a text buffer, and one of "
             + "them is 1-based to its user."),
+        ["Single,Boolean"] = (
+            ["MeasuredLine", "TileLength"],
+            "a laid-out line's width and whether it was cut short, and one side of a tile (#1937): a number and "
+            + "whether it is a fraction of the area rather than dp. One is a measurement the text engine answers, "
+            + "the other a request a pattern makes; neither is ever read as the other."),
         ["Single,Single,Single"] = (
             ["FluidSize", "MotionVector", "RangeValue", "SpringSpec"],
             "a device's three axes of acceleration, a spring's stiffness, damping and mass, and "

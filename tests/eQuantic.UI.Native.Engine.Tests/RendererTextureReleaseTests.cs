@@ -62,6 +62,15 @@ public class RendererTextureReleaseTests
         public void Submit(bool waitUntilCompleted) { }
     }
 
+    /// <summary>A window's frame over <paramref name="pass"/>: the one way into the renderer (#1952).</summary>
+    private sealed class Window(IRhiCommandList pass) : IRhiFrameTarget
+    {
+        public int Width => 2;
+        public int Height => 2;
+        public IRhiCommandList Begin(Color clearColor) => pass;
+        public void Submit(IRhiCommandList commands) => commands.Submit(waitUntilCompleted: false);
+    }
+
     private static TextureData Raster() => new(2, 2, new byte[4]);
 
     private static DisplayList Frame(params TextureData[] rasters)
@@ -81,7 +90,7 @@ public class RendererTextureReleaseTests
         var device = new CountingDevice();
         using var renderer = new RhiRenderer(device);
 
-        for (var frame = 0; frame < 1000; frame++) renderer.Encode(Frame(Raster()), new Pass());
+        for (var frame = 0; frame < 1000; frame++) renderer.Render(Frame(Raster()), new Window(new Pass()));
 
         device.Created.Should().BeGreaterThanOrEqualTo(1000, "each new raster is uploaded");
         device.Live.Should().BeLessThanOrEqualTo(RhiRenderer.RetainFrames + 3,
@@ -96,7 +105,7 @@ public class RendererTextureReleaseTests
         using var renderer = new RhiRenderer(device);
         var steady = Raster();
 
-        for (var frame = 0; frame < 300; frame++) renderer.Encode(Frame(steady, Raster()), new Pass());
+        for (var frame = 0; frame < 300; frame++) renderer.Render(Frame(steady, Raster()), new Window(new Pass()));
 
         device.Uploads[steady].Should().Be(1, "it was drawn in every frame, so it was never released");
     }
@@ -115,28 +124,13 @@ public class RendererTextureReleaseTests
         using var renderer = new RhiRenderer(device);
         var raster = Raster();
 
-        renderer.Encode(Frame(raster), new Pass());
-        for (var frame = 0; frame < framesAway; frame++) renderer.Encode(Frame(), new Pass());
+        renderer.Render(Frame(raster), new Window(new Pass()));
+        for (var frame = 0; frame < framesAway; frame++) renderer.Render(Frame(), new Window(new Pass()));
         var back = new Pass();
-        renderer.Encode(Frame(raster), back);
+        renderer.Render(Frame(raster), new Window(back));
 
         device.Uploads[raster].Should().Be(uploads);
         back.Bound.Should().BeGreaterThan(0, "the frame that draws it again binds a texture that is on the GPU");
-    }
-
-    /// <summary>
-    /// Every way into the encoder is a frame. The three-argument overload is the window path's own
-    /// fallback; left out of the count, a caller on it would never release anything.
-    /// </summary>
-    [Fact]
-    public void TheOverloadThatTakesLayers_CountsFramesToo()
-    {
-        var device = new CountingDevice();
-        using var renderer = new RhiRenderer(device);
-
-        for (var frame = 0; frame < 500; frame++) renderer.Encode(Frame(Raster()), new Pass(), layersHandle: null);
-
-        device.Live.Should().BeLessThanOrEqualTo(RhiRenderer.RetainFrames + 3);
     }
 
     /// <summary>
@@ -153,7 +147,7 @@ public class RendererTextureReleaseTests
         using var renderer = new RhiRenderer(device);
 
         for (var frame = 0; frame < 500; frame++)
-            renderer.Encode(Frame(Enumerable.Range(0, aFrame).Select(_ => Raster()).ToArray()), new Pass());
+            renderer.Render(Frame(Enumerable.Range(0, aFrame).Select(_ => Raster()).ToArray()), new Window(new Pass()));
 
         device.Live.Should().BeLessThanOrEqualTo(aFrame * (RhiRenderer.RetainFrames + 3),
             "what is held is the last few frames' worth, however many frames there were");
@@ -169,19 +163,19 @@ public class RendererTextureReleaseTests
         var device = new CountingDevice();
         using var renderer = new RhiRenderer(device);
         var screen = Enumerable.Range(0, RhiRenderer.ReleasesPerFrame * 3 + 10).Select(_ => Raster()).ToArray();
-        renderer.Encode(Frame(screen), new Pass());
+        renderer.Render(Frame(screen), new Window(new Pass()));
         var held = device.Live;
 
         // A frame learns what it draws only as it encodes, so a raster is counted away at the start
         // of the frame AFTER one that left it out: the frame below is the first to find the screen
         // away for longer than it is kept.
-        for (var frame = 0; frame <= RhiRenderer.RetainFrames; frame++) renderer.Encode(Frame(), new Pass());
+        for (var frame = 0; frame <= RhiRenderer.RetainFrames; frame++) renderer.Render(Frame(), new Window(new Pass()));
         device.Live.Should().Be(held, "not yet away for longer than it is kept");
 
-        renderer.Encode(Frame(), new Pass());
+        renderer.Render(Frame(), new Window(new Pass()));
         device.Live.Should().Be(held - RhiRenderer.ReleasesPerFrame, "the first frame releases its share and no more");
 
-        for (var frame = 0; frame < 4; frame++) renderer.Encode(Frame(), new Pass());
+        for (var frame = 0; frame < 4; frame++) renderer.Render(Frame(), new Window(new Pass()));
         device.Live.Should().Be(held - screen.Length, "and a few frames later none of the screen is held");
     }
 
@@ -193,13 +187,13 @@ public class RendererTextureReleaseTests
         var device = new CountingDevice();
         using var renderer = new RhiRenderer(device);
         var live = Raster();
-        renderer.Encode(Frame(live), new Pass());
+        renderer.Render(Frame(live), new Window(new Pass()));
         var held = device.Live;
 
         for (var version = 1; version <= 200; version++)
         {
             live.Version = version;
-            renderer.Encode(Frame(live), new Pass());
+            renderer.Render(Frame(live), new Window(new Pass()));
             device.Live.Should().Be(held, "the old upload goes as the new one arrives");
         }
         device.Uploads[live].Should().Be(201);
@@ -210,7 +204,7 @@ public class RendererTextureReleaseTests
     {
         var device = new CountingDevice();
         var renderer = new RhiRenderer(device);
-        renderer.Encode(Frame(Raster(), Raster()), new Pass());
+        renderer.Render(Frame(Raster(), Raster()), new Window(new Pass()));
 
         renderer.Dispose();
 

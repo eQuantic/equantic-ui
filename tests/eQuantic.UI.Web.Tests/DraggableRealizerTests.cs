@@ -30,7 +30,7 @@ public class DraggableRealizerTests
         var style = StyleOf(Draggable(new BoxStyle { Width = 40, Height = 40, Transform = Half }, rest: -80));
 
         style.Should().Contain($"transform: {TokenCss.Transform(Half)}", "the box's own transform stays")
-            .And.Contain("translate: -80px", "and the offset rides beside it");
+            .And.Contain("translate: calc(var(--eq-inline, 1) * -80px)", "and the offset rides beside it, toward the end");
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class DraggableRealizerTests
             Axis = DragAxis.Horizontal, Min = 0, Max = 1, RestOffset = 0.25f, Normalized = true,
         };
 
-        StyleOf(node).Should().Contain("translate: 25%");
+        StyleOf(node).Should().Contain("translate: calc(var(--eq-inline, 1) * 25%)");
     }
 
     /// <summary>The server-rendered row under the pointer: the box's hover moves it, and the open
@@ -104,7 +104,7 @@ public class DraggableRealizerTests
         var css = sink.Css;
 
         var classes = node.Attributes["class"]!.Split(' ');
-        classes.Should().Contain(cls => css.Contains($".{cls}{{translate:-80px}}"),
+        classes.Should().Contain(cls => css.Contains($".{cls}{{translate:calc(var(--eq-inline, 1) * -80px)}}"),
             "the offset is a class of its own");
         css.Should().Contain(":hover{transform:", "and the hover writes the box's transform, not the offset");
     }

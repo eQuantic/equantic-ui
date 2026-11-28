@@ -1,0 +1,29 @@
+#nullable enable
+[EQX0001]eQuantic.UI.Native.Engine.DrawCommand.Tiling.get -> eQuantic.UI.Native.Engine.Tiling
+[EQX0001]eQuantic.UI.Native.Engine.DisplayListBuilder.TiledTexture(in eQuantic.UI.Primitives.Rect area, eQuantic.UI.Native.Engine.TextureData! texture, in eQuantic.UI.Native.Engine.Tiling tiling, float opacity) -> void
+[EQX0001]eQuantic.UI.Native.Engine.DrawCommandKind.TiledTexture = 9 -> eQuantic.UI.Native.Engine.DrawCommandKind
+[EQX0001]eQuantic.UI.Native.Engine.RhiPipelineKind.TiledRgba = 6 -> eQuantic.UI.Native.Engine.RhiPipelineKind
+[EQX0001]eQuantic.UI.Native.Engine.Tiling
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.Deconstruct(out eQuantic.UI.Primitives.Point Origin, out eQuantic.UI.Primitives.Size Period, out eQuantic.UI.Primitives.Size Extent, out bool RepeatX, out bool RepeatY) -> void
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.Equals(eQuantic.UI.Native.Engine.Tiling other) -> bool
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.Tiling() -> void
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.Tiling(eQuantic.UI.Primitives.Point Origin, eQuantic.UI.Primitives.Size Period, eQuantic.UI.Primitives.Size Extent, bool RepeatX, bool RepeatY) -> void
+[EQX0001]override eQuantic.UI.Native.Engine.Tiling.GetHashCode() -> int
+[EQX0001]static eQuantic.UI.Native.Engine.Tiling.operator !=(eQuantic.UI.Native.Engine.Tiling left, eQuantic.UI.Native.Engine.Tiling right) -> bool
+[EQX0001]static eQuantic.UI.Native.Engine.Tiling.operator ==(eQuantic.UI.Native.Engine.Tiling left, eQuantic.UI.Native.Engine.Tiling right) -> bool
+~[EQX0001]override eQuantic.UI.Native.Engine.Tiling.Equals(object obj) -> bool
+~[EQX0001]override eQuantic.UI.Native.Engine.Tiling.ToString() -> string
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.Origin.get -> eQuantic.UI.Primitives.Point
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.Origin.init -> void
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.Period.get -> eQuantic.UI.Primitives.Size
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.Period.init -> void
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.Extent.get -> eQuantic.UI.Primitives.Size
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.Extent.init -> void
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.RepeatX.get -> bool
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.RepeatX.init -> void
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.RepeatY.get -> bool
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.RepeatY.init -> void
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.WrapsX.get -> bool
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.WrapsY.get -> bool
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.TryTexel(eQuantic.UI.Primitives.Point local, int width, int height, out float x, out float y) -> bool
+[EQX0001]eQuantic.UI.Native.Engine.Tiling.Sample(eQuantic.UI.Native.Engine.TextureData! texture, float x, float y) -> eQuantic.UI.Native.Engine.LinearColor

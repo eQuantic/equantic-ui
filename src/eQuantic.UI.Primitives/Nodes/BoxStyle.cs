@@ -62,11 +62,33 @@ public readonly record struct BoxStyle
     /// the CSS background-image/background-color composition). <c>null</c> = no gradient.</summary>
     public LinearGradient? Gradient { get; init; }
 
-    /// <summary>Repeating hairline grid drawn BELOW <see cref="Gradient"/> and above
-    /// <see cref="Background"/> — the "engineering graph paper" backdrop. <c>null</c> = none.</summary>
-    public GridPattern? Pattern { get; init; }
+    /// <summary>
+    /// Repeating artwork behind the content (#1937): a grid, a vector tile or a raster tile, each a
+    /// <see cref="Pattern"/>. The list paints IN ORDER, the last on top, as a <see cref="Stack"/>
+    /// orders its children, and every pattern sits above <see cref="Background"/> and below
+    /// <see cref="Glow"/> and <see cref="Gradient"/>: from the bottom, the background colour, the
+    /// patterns, the glow, the gradient. <c>null</c> or empty = none.
+    /// <para>Equality is the list's reference, as for <see cref="Shadows"/>.</para>
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">A tile with neither a width, a height nor a fit,
+    /// which a pattern's own initializer cannot refuse, since its fit is set after its constructor.</exception>
+    public IReadOnlyList<Pattern>? Patterns
+    {
+        get => _patterns;
+        init
+        {
+            if (value is not null)
+                foreach (var pattern in value)
+                    if (pattern is null) throw new ArgumentNullException(nameof(Patterns), "A pattern of the list is null.");
+                    else if (pattern is ArtworkPattern { IsSized: false } unsized)
+                        throw new ArgumentOutOfRangeException(nameof(ArtworkPattern.Fit), unsized, ArtworkPattern.Unsized);
+            _patterns = value;
+        }
+    }
 
-    /// <summary>Elliptical "spotlight" glow, painted ABOVE the grid and the solid background and
+    private readonly IReadOnlyList<Pattern>? _patterns;
+
+    /// <summary>Elliptical "spotlight" glow, painted ABOVE the patterns and the solid background and
     /// below <see cref="Gradient"/>. <c>null</c> = none.</summary>
     public RadialGradient? Glow { get; init; }
 

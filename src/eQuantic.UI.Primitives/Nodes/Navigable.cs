@@ -42,7 +42,9 @@ public sealed class Navigable : VisualNode
     /// </para></summary>
     public IReadOnlyList<VisualNode> Rows { get; init; }
 
-    /// <summary>Where the keyboard asked to go. The COMPOSITE owns what a move means — which cell
+    /// <summary>Where the keyboard asked to go. The horizontal arrows are the previous and next
+    /// ITEM along the reading, by the direction where the grid sits on the web
+    /// (<see cref="NavigableKeys.Move"/>). The COMPOSITE owns what a move means — which cell
     /// is focused, whether the ends wrap, whether a page is a month or a screenful — exactly as
     /// <see cref="Adjustable.OnAdjust"/> leaves the step's worth to its control.</summary>
     public Action<NavigableMove> OnMove { get; init; }

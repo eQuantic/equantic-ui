@@ -35,7 +35,8 @@ public sealed unsafe class VulkanDevice : IRhiDevice
 
     private static readonly RhiPipelineKind[] RegistryKinds =
         [RhiPipelineKind.Sdf, RhiPipelineKind.TexturedA8, RhiPipelineKind.TexturedRgba,
-         RhiPipelineKind.LayerComposite, RhiPipelineKind.BlurDown, RhiPipelineKind.BlurUp];
+         RhiPipelineKind.LayerComposite, RhiPipelineKind.BlurDown, RhiPipelineKind.BlurUp,
+         RhiPipelineKind.TiledRgba];
 
     private readonly IntPtr _instance;
     private readonly IntPtr _physicalDevice;
@@ -822,6 +823,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         RhiPipelineKind.LayerComposite => "layer_composite",
         RhiPipelineKind.BlurDown => "blur_down",
         RhiPipelineKind.BlurUp => "blur_up",
+        RhiPipelineKind.TiledRgba => "tiled_rgba_fragment",
         _ => "sdf_fragment",
     };
 

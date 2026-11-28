@@ -47,6 +47,18 @@ public enum DrawCommandKind : byte
     /// 0 along +X, increasing toward +Y (y grows down: clockwise on screen).
     /// </summary>
     FillAnnularSector = 8,
+
+    /// <summary>
+    /// A tile layer (#1937): <see cref="DrawCommand.Shape"/>'s rect is the area the tiles cover, and
+    /// the Rgba8 texture (<see cref="DrawCommand.TextureId"/>) holds ONE tile, repeated over it as
+    /// <see cref="DrawCommand.Tiling"/> says, in one draw however many tiles show. Slot reuse, the
+    /// idiom <see cref="FillAnnularSector"/> set, so the command costs no byte more than before: the
+    /// shape's radii carry the extent and the repeat flags, the paint's two points the origin and the
+    /// period, and <see cref="DrawCommand.StrokeWidth"/> the opacity, unquantized, as
+    /// <see cref="BeginLayer"/> carries its alpha. The rounded clip is the baked
+    /// <see cref="DrawCommand.Clip"/>.
+    /// </summary>
+    TiledTexture = 9,
 }
 
 /// <summary>
@@ -117,14 +129,21 @@ public readonly record struct DrawCommand
     public float StrokeWidth { get; init; }
     public Matrix2D Transform { get; init; }
 
-    /// <summary>Index into <see cref="DisplayList.Textures"/> for <see cref="DrawCommandKind.Texture"/>;
-    /// -1 otherwise.</summary>
+    /// <summary>Index into <see cref="DisplayList.Textures"/> for <see cref="DrawCommandKind.Texture"/> and
+    /// <see cref="DrawCommandKind.TiledTexture"/>; -1 otherwise.</summary>
     public int TextureId { get; init; }
 
     /// <summary>DEVICE-space rounded-rect clip baked by the builder (like the transform), or null =
     /// unclipped. Rasterizers multiply pixel coverage by the clip's SDF coverage — anti-aliased clip
     /// edges by construction.</summary>
     public RRect? Clip { get; init; }
+
+    /// <summary>How a <see cref="DrawCommandKind.TiledTexture"/> repeats its texture, read from the slots
+    /// its kind reuses; <c>default</c> for every other kind.</summary>
+    public Tiling Tiling => Kind == DrawCommandKind.TiledTexture
+        ? new Tiling(Paint.GradientStart, new Size(Paint.GradientEnd.X, Paint.GradientEnd.Y),
+            new Size(Shape.Radii.TopLeft, Shape.Radii.TopRight), Shape.Radii.BottomRight > 0, Shape.Radii.BottomLeft > 0)
+        : default;
 }
 
 /// <summary>
@@ -198,6 +217,36 @@ public sealed class DisplayListBuilder
         Transform = _current,
         Clip = _clip,
     });
+
+    /// <summary>
+    /// A tile layer (#1937): <paramref name="texture"/>, an Rgba8 tile, repeated over
+    /// <paramref name="area"/> as <paramref name="tiling"/> says, at <paramref name="opacity"/>, in ONE
+    /// command. The area's edges land on whole device pixels as a fill's do, so the tiles end where the
+    /// box's background ends; the tiling itself is never moved to a pixel (<see cref="Engine.Tiling"/>).
+    /// </summary>
+    public void TiledTexture(in Rect area, TextureData texture, in Tiling tiling, float opacity)
+    {
+        if (texture.Format != TextureFormat.Rgba8)
+            throw new ArgumentException("A tile layer repeats an Rgba8 texture: the tile carries its own colour.", nameof(texture));
+        _commands.Add(new DrawCommand
+        {
+            Kind = DrawCommandKind.TiledTexture,
+            // NOT Normalized(): the radii slots carry the extent and the repeat flags (see the kind's doc).
+            Shape = new RRect(OnDevicePixels(area, _current), new CornerRadii(
+                tiling.Extent.Width, tiling.Extent.Height, tiling.RepeatX ? 1 : 0, tiling.RepeatY ? 1 : 0)),
+            Paint = new Paint
+            {
+                Kind = PaintKind.Solid,
+                Color = Color.White,
+                GradientStart = tiling.Origin,
+                GradientEnd = new Point(tiling.Period.Width, tiling.Period.Height),
+            },
+            StrokeWidth = Math.Clamp(opacity, 0f, 1f),
+            TextureId = RegisterTexture(texture),
+            Transform = _current,
+            Clip = _clip,
+        });
+    }
 
     /// <summary>
     /// A filled rounded rectangle, its EDGES on whole device pixels where the transform keeps it axis-aligned, as a
@@ -401,7 +450,8 @@ public sealed class DisplayListBuilder
         var textures = new TextureData?[commands.Length];
         for (var i = 0; i < commands.Length; i++)
         {
-            if (commands[i].Kind == DrawCommandKind.Texture) textures[i] = _textures[commands[i].TextureId];
+            if (commands[i].Kind is DrawCommandKind.Texture or DrawCommandKind.TiledTexture)
+                textures[i] = _textures[commands[i].TextureId];
         }
         return new Picture(commands, textures);
     }
@@ -443,6 +493,16 @@ public sealed class DisplayListBuilder
     /// </summary>
     public void Replay(in DrawCommand command, in Matrix2D offset)
     {
+        // A replayed layer opens and closes as a pushed one does, so Build refuses a replay that leaves
+        // one open: the renderer composites a layer from the target its whole scope drew into (#1952).
+        if (command.Kind == DrawCommandKind.BeginLayer) _openLayers++;
+        else if (command.Kind == DrawCommandKind.EndLayer)
+        {
+            // Checked before the count moves, so a refused replay leaves the builder as it was.
+            if (_openLayers == 0)
+                throw new InvalidOperationException("Replay of an EndLayer with no layer open: the replayed commands are not a whole scope.");
+            _openLayers--;
+        }
         if (offset.IsIdentity)
         {
             _commands.Add(command);
@@ -473,8 +533,15 @@ public sealed class DisplayListBuilder
         });
     }
 
+    /// <summary>
+    /// Ends the layer <see cref="PushLayer"/> began. A pop with no layer open throws: the renderer
+    /// composites each layer from a target its scope drew into, and a scope that ends before it begins
+    /// has none (#1952).
+    /// </summary>
     public void PopLayer()
     {
+        if (_openLayers == 0)
+            throw new InvalidOperationException("PopLayer without an open PushLayer: no layer is open to end.");
         _openLayers--;
         _commands.Add(new DrawCommand { Kind = DrawCommandKind.EndLayer });
     }

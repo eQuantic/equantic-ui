@@ -71,6 +71,8 @@ internal sealed partial class EmitVisitor
             Motion = s.Motion.Still(),
             Builder = copy,
             Overlays = [],
+            // The copy is drawn again wherever the pointer carries it: a moved picture (#1937).
+            UnderTransform = true,
         };
         foreach (var child in s.Node)
             Emit(still with { Node = child });

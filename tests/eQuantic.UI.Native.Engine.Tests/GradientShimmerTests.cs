@@ -90,7 +90,7 @@ public class GradientShimmerTests
             Width = 120,
             Height = 100,
             Background = Theme.Surface,
-            Pattern = new GridPattern(50, Theme.Border),
+            Patterns = [new GridPattern(50, Theme.Border)],
         })).Where(c => c.Kind == DrawCommandKind.FillRRect).ToList();
 
         // 1 background + 3 vertical rules (x = 0, 50, 100) + 2 horizontal rules (y = 0, 50).
@@ -108,18 +108,46 @@ public class GradientShimmerTests
         commands[4].Shape.Rect.Width.Should().Be(120, "a horizontal rule spans the box width");
     }
 
-    /// <summary>A degenerate cell must emit nothing rather than loop forever.</summary>
+    /// <summary>
+    /// A rule wider than its cell fills the cell, as the web's hard-stop gradient does, so each axis is
+    /// one fill over the box. The painter counted its rules from a start the rule's width pushed far
+    /// before the box, one fill per period, so a wide rule cost a fill per dp of its width, and a
+    /// width past a float's integers never reached the box at all (security review P1, #1937).
+    /// </summary>
     [Fact]
-    public void GridPattern_ZeroCell_EmitsNoHairlines()
+    public void GridPattern_ARuleWiderThanItsCell_IsOneFillPerAxis()
     {
         var commands = Render(new Box(new BoxStyle
         {
             Width = 120,
             Height = 100,
-            Pattern = new GridPattern(0, Theme.Border),
+            Patterns = [new GridPattern(1, Theme.Border, 100_000)],
         })).Where(c => c.Kind == DrawCommandKind.FillRRect).ToList();
 
-        commands.Should().BeEmpty();
+        commands.Should().HaveCount(2, "the vertical rules fill the box, and so do the horizontal ones");
+        commands.Select(c => c.Shape.Rect).Should().AllBeEquivalentTo(new Rect(0, 0, 120, 100));
+        commands[0].Paint.Color.Should().Be(Theme.Border.Resolve(ThemeMode.Light, ContrastLevel.Standard));
+    }
+
+    /// <summary>
+    /// A cell so small that its rules outnumber what any screen tells apart is drawn as what they average
+    /// to: one fill per axis, at the share of each cell its rule covers. The painter drew every rule, a
+    /// fill each, however many the box held.
+    /// </summary>
+    [Fact]
+    public void GridPattern_RulesPastTheCap_AreOneFillPerAxis_AtTheShareTheyCover()
+    {
+        var commands = Render(new Box(new BoxStyle
+        {
+            Width = 120,
+            Height = 100,
+            Patterns = [new GridPattern(0.004f, Theme.Border, 0.001f)],
+        })).Where(c => c.Kind == DrawCommandKind.FillRRect).ToList();
+
+        commands.Should().HaveCount(2, "120 dp hold 30,000 rules of a 0.004 dp cell, past the painter's cap of 4,096");
+        var border = Theme.Border.Resolve(ThemeMode.Light, ContrastLevel.Standard);
+        commands[0].Paint.Color.Should().Be(border.WithOpacity(0.25f), "each rule covers a quarter of its cell");
+        commands[0].Shape.Rect.Should().Be(new Rect(0, 0, 120, 100));
     }
 
     private DrawCommand Fill(GradientDirection direction) => Render(new Box(new BoxStyle

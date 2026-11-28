@@ -1,4 +1,4 @@
-import { $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, Button, CodeBlock, CodeDecoration, CodeDiffLayout, CodeDiffSource, CodeEditorController, CodeGrid, CodeLanguages, CodeLineChange, CodePatchFile, CodePosition, CodeRange, CodeRow, CodeSurface, ColorToken, Column, CornerRadii, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, StatefulComponent, Text, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, $SizeVariantValue, Box, BoxStyle, BuildContext, Button, CodeBlock, CodeDecoration, CodeDiffLayout, CodeDiffSource, CodeEditorController, CodeGrid, CodeLanguages, CodeLineChange, CodePatchFile, CodePosition, CodeRange, CodeRow, CodeSurface, ColorToken, Column, CornerRadii, Directionality, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, StatefulComponent, Text, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeDiff extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeDiff';
@@ -155,7 +155,7 @@ export class CodeDiff extends StatefulComponent {
         shortcuts = new Shortcut(shortcuts, new KeyChord('F5', 2), () => this.stepTo(true), { focusScoped: true });
         shortcuts = new Shortcut(shortcuts, new KeyChord('F5', 2 | 1), () => this.stepTo(false), { focusScoped: true });
         let capped = bounded && this.maxHeight > 0;
-        return new Box(new BoxStyle({ width: SizeValue.fill, height: this.height, maxHeight: capped ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), shortcuts);
+        return new Directionality('leftToRight', new Box(new BoxStyle({ width: SizeValue.fill, height: this.height, maxHeight: capped ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), shortcuts));
     }
 
     static ofPatch(file: CodePatchFile, language: any = null) {

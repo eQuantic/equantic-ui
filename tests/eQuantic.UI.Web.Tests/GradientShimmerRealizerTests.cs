@@ -104,7 +104,7 @@ public class GradientShimmerRealizerTests
         {
             Width = 200,
             Height = 200,
-            Pattern = new GridPattern(56, Theme.Border),
+            Patterns = [new GridPattern(56, Theme.Border)],
         }));
 
         var line = TokenCss.Value(Theme.Border);
@@ -143,7 +143,7 @@ public class GradientShimmerRealizerTests
             Gradient = new LinearGradient(Theme.Scrim, new ColorToken(Color.Transparent)),
             Glow = new RadialGradient(Theme.Colors(Variant.Info).Base, new ColorToken(Color.Transparent),
                 0.5f, 0.5f, 200, 120),
-            Pattern = new GridPattern(56, Theme.Border),
+            Patterns = [new GridPattern(56, Theme.Border)],
         }));
 
         var style = node.Attributes["style"] ?? "";
@@ -166,7 +166,7 @@ public class GradientShimmerRealizerTests
             Width = 200,
             Height = 200,
             Gradient = new LinearGradient(Theme.Scrim, new ColorToken(Color.Transparent)),
-            Pattern = new GridPattern(56, Theme.Border),
+            Patterns = [new GridPattern(56, Theme.Border)],
         }));
 
         var style = node.Attributes["style"];
@@ -175,6 +175,175 @@ public class GradientShimmerRealizerTests
         style.IndexOf(TokenCss.Gradient(new LinearGradient(Theme.Scrim, new ColorToken(Color.Transparent))), StringComparison.Ordinal)
             .Should().BeLessThan(style.IndexOf("transparent 1px", StringComparison.Ordinal),
                 "the gradient layer is listed first, so it paints on top of the grid");
+    }
+
+    // -- The patterns of #1937: each list, padded, and written only when it is not CSS's default ------
+
+    /// <summary>A small tile painted in its own colour: one document whatever the mode.</summary>
+    private static readonly VectorDrawing Square = new(0, 0, 10, 10,
+        [new VectorShape("M0 0H10V10H0Z", VectorPaint.Solid(Color.FromRgb(0xC8, 0x79, 0x6B)))]);
+
+    /// <summary>Its data URL, written out by hand from the table: the oracle the lowering is held to.</summary>
+    private const string SquareUrl = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' "
+        + "width='10' height='10' preserveAspectRatio='none' fill='none'%3E%3Cpath d='M0 0H10V10H0Z' fill='%23c8796b'/%3E%3C/svg%3E\")";
+
+    private static string Style(params Pattern[] patterns) =>
+        Render(new Box(new BoxStyle { Width = 200, Height = 200, Patterns = patterns })).Attributes["style"]!;
+
+    [Fact]
+    public void ADefaultGrid_WritesNoListButTheImagesAndTheSizes()
+    {
+        var style = Style(new GridPattern(56, Theme.Border));
+        style.Should().Contain("background-size: 56px 56px, 56px 56px");
+        foreach (var list in new[] { "background-repeat", "background-position", "background-origin", "background-clip", "background-attachment" })
+            style.Should().NotContain(list, "every entry is CSS's default, which is what the box wrote before #1937");
+    }
+
+    [Fact]
+    public void ADrawingTile_IsADataUrlOfItsArtwork_WithAnAutoSide()
+    {
+        var style = Style(new DrawingPattern(Square, 330));
+        style.Should().Contain($"background-image: {SquareUrl}");
+        style.Should().Contain("background-size: 330px auto");
+    }
+
+    [Fact]
+    public void TwoPatterns_UnderAGradientAndAGlow_KeepTheOrderAndPadEveryList()
+    {
+        var gradient = new LinearGradient(Theme.Scrim, new ColorToken(Color.Transparent));
+        var glow = new RadialGradient(Theme.Colors(Variant.Info).Base, new ColorToken(Color.Transparent), 0.5f, 0.5f, 200, 120);
+        var style = Render(new Box(new BoxStyle
+        {
+            Width = 300,
+            Height = 300,
+            Gradient = gradient,
+            Glow = glow,
+            Patterns = [new GridPattern(56, Theme.Border), new DrawingPattern(Square, 40) { HorizontalRepeat = TileRepeat.Once }],
+        })).Attributes["style"]!;
+
+        var line = TokenCss.Value(Theme.Border);
+        style.Should().Contain($"background-image: {TokenCss.Gradient(gradient)}, {TokenCss.Glow(glow)}, {SquareUrl}, "
+            + $"linear-gradient(to right, {line} 1px, transparent 1px), linear-gradient(to bottom, {line} 1px, transparent 1px)",
+            "the last pattern is on top, so it comes first after the glow, as Photon paints it last");
+        style.Should().Contain("background-size: auto, auto, 40px auto, 56px 56px, 56px 56px");
+        style.Should().Contain("background-repeat: repeat, repeat, no-repeat repeat, repeat, repeat",
+            "a list one entry needs is written for every layer, or CSS would repeat it from the start");
+    }
+
+    [Fact]
+    public void OnceAcrossAndSpacedDown_WritesBothKeywords() =>
+        Style(new DrawingPattern(Square, 40) { HorizontalRepeat = TileRepeat.Once, VerticalRepeat = TileRepeat.Spaced })
+            .Should().Contain("background-repeat: no-repeat space");
+
+    [Fact]
+    public void FittedBothWays_IsRound() =>
+        Style(new DrawingPattern(Square, 40) { HorizontalRepeat = TileRepeat.Fitted, VerticalRepeat = TileRepeat.Fitted })
+            .Should().Contain("background-repeat: round;");
+
+    [Fact]
+    public void AnAnchorWithAnOffset_IsACalcOnEachAxis() =>
+        Style(new DrawingPattern(Square, 40) { Anchor = new Point(0.5f, 1), Offset = new Point(12, -8) })
+            .Should().Contain("background-position: calc(50% + 12px) calc(100% - 8px)");
+
+    [Fact]
+    public void AFraction_IsAPercentage_AndAFit_ItsKeyword()
+    {
+        Style(new DrawingPattern(Square, TileLength.Fraction(0.25f))).Should().Contain("background-size: 25% auto");
+        Style(new DrawingPattern(Square) { Fit = ImageFit.Cover }).Should().Contain("background-size: cover");
+        Style(new DrawingPattern(Square) { Fit = ImageFit.Contain }).Should().Contain("background-size: contain");
+        Style(new DrawingPattern(Square) { Fit = ImageFit.Stretch }).Should().Contain("background-size: 100% 100%");
+    }
+
+    [Fact]
+    public void TheAreas_AreTheOriginAndTheClip()
+    {
+        var style = Style(new DrawingPattern(Square, 40) { Area = BoxArea.Content, ClipTo = BoxArea.Padding });
+        style.Should().Contain("background-origin: content-box");
+        style.Should().Contain("background-clip: padding-box");
+        Style(new GridPattern(50, Theme.Border) { Area = BoxArea.Border })
+            .Should().Contain("background-origin: border-box, border-box", "a grid's two layers are placed alike");
+    }
+
+    [Fact]
+    public void AWindowAttachment_IsFixed_AndEveryOtherLayerScrolls()
+    {
+        var style = Render(new Box(new BoxStyle
+        {
+            Gradient = new LinearGradient(Theme.Scrim, new ColorToken(Color.Transparent)),
+            Patterns = [new DrawingPattern(Square, 40) { Attachment = TileAttachment.Window }],
+        })).Attributes["style"]!;
+        style.Should().Contain("background-attachment: scroll, fixed");
+    }
+
+    [Fact]
+    public void AnImageTile_IsItsSourceAsACssString()
+    {
+        var style = Style(new ImagePattern("img/linen.png", 120));
+        style.Should().Contain("background-image: url(\"img/linen.png\")");
+        style.Should().Contain("background-size: 120px auto");
+    }
+
+    [Fact]
+    public void AnOpacity_IsOneGroupAroundTheShapes() =>
+        Style(new DrawingPattern(Square, 40) { Opacity = 0.5f })
+            .Should().Contain("fill='none'%3E%3Cg opacity='0.5'%3E%3Cpath d='M0 0H10V10H0Z' fill='%23c8796b'/%3E%3C/g%3E%3C/svg%3E");
+
+    /// <summary>
+    /// A tile whose shapes inherit its tint varies by mode, so the element carries each variant as a
+    /// custom property, valid only while the theme's toggle selects it, and the layer reads them
+    /// through nested fallbacks (design.md decision 8). Photon's TextPrimary keeps its pair at More,
+    /// so only the mode varies.
+    /// </summary>
+    [Fact]
+    public void ATintThatDiffersByMode_IsAVariantPerMode_ReadThroughTheToggles()
+    {
+        var inked = new VectorDrawing(0, 0, 10, 10, [new VectorShape("M0 0H10V10H0Z", VectorPaint.Inherit)]);
+        var style = Style(new DrawingPattern(inked, 40));
+
+        style.Should().Contain("background-image: var(--eq-p0-l, var(--eq-p0-d))");
+        var light = WebRealizer.CssColor(Theme.TextPrimary.Light).Replace("#", "%23");
+        var dark = WebRealizer.CssColor(Theme.TextPrimary.Dark).Replace("#", "%23");
+        style.Should().Contain($"--eq-p0-l: var(--eq-on-light) url(\"data:image/svg+xml,");
+        style.Should().Contain($"fill='none' color='{light}'%3E");
+        style.Should().Contain($"--eq-p0-d: var(--eq-on-dark) url(\"data:image/svg+xml,");
+        style.Should().Contain($"fill='none' color='{dark}'%3E");
+    }
+
+    [Fact]
+    public void ATintThatDiffersByContrast_IsAVariantPerLeg()
+    {
+        var inked = new VectorDrawing(0, 0, 10, 10, [new VectorShape("M0 0H10V10H0Z", VectorPaint.Inherit)]);
+        var tint = new ColorToken(Color.FromRgb(1, 2, 3), Color.FromRgb(4, 5, 6)).WithMore(Color.FromRgb(7, 8, 9), Color.FromRgb(10, 11, 12));
+        var style = Style(new GridPattern(8, Theme.Border), new DrawingPattern(inked, 40, tint: tint));
+
+        style.Should().Contain("background-image: var(--eq-p1-ls, var(--eq-p1-lm, var(--eq-p1-ds, var(--eq-p1-dm)))), ",
+            "the index is the pattern's place in the list");
+        style.Should().Contain("--eq-p1-lm: var(--eq-on-light) var(--eq-on-more) url(");
+        style.Should().Contain("color='%23070809'");
+    }
+
+    [Fact]
+    public void ADarkSource_IsAVariantPerMode()
+    {
+        var style = Style(new ImagePattern("img/linen.png", 120) { DarkSource = "img/linen-dark.png" });
+        style.Should().Contain("background-image: var(--eq-p0-l, var(--eq-p0-d))");
+        style.Should().Contain("--eq-p0-l: var(--eq-on-light) url(\"img/linen.png\")");
+        style.Should().Contain("--eq-p0-d: var(--eq-on-dark) url(\"img/linen-dark.png\")");
+    }
+
+    [Fact]
+    public void AHoverGradient_PadsEveryListTheBaseWrote()
+    {
+        var gradient = new LinearGradient(Theme.Scrim, new ColorToken(Color.Transparent));
+        var sink = new StyleSink();
+        WebRealizer.Lower(new Box(new BoxStyle
+        {
+            Patterns = [new DrawingPattern(Square, 40) { HorizontalRepeat = TileRepeat.Once }],
+            Hover = new StyleDiff { Gradient = gradient },
+        }), Theme, 1f, sink);
+        var css = sink.Css;
+        css.Should().Contain(":hover{background-repeat:repeat, no-repeat repeat}",
+            "under the hover the gradient is the first layer, so the base's entry moves to the second");
     }
 
     [Fact]

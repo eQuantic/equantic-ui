@@ -59,10 +59,9 @@ public sealed unsafe class VulkanSwapchain : IDisposable
             _acquired, 0, &index);
         if (!SwapchainStatus.Usable(acquire, "swapchain acquire")) return false;
 
-        var target = _targets[index];
-        var commands = (VulkanCommandList)_device.Begin(target, RhiRenderer.ClearColorOf(displayList));
-        renderer.Encode(displayList, commands);
-        commands.SubmitPresenting(_acquired, _rendered);
+        // The same phases an offscreen frame runs: the layers and the backdrops draw into the
+        // renderer's own targets first, and only the last pass draws into the image (#1952).
+        renderer.Render(displayList, new SwapchainFrame(_device, _targets[index], _acquired, _rendered));
 
         var swapchain = _swapchain;
         var rendered = _rendered;

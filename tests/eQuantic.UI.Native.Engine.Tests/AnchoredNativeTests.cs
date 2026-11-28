@@ -20,7 +20,9 @@ public class AnchoredNativeTests
         var itemPressed = false;
         var anchor = new Box(new BoxStyle { Width = 100, Height = 40 });
         var panel = new Pressable(new Box(new BoxStyle { Width = 120, Height = 48 }), () => itemPressed = true);
-        var root = new Column(gap: 0) { Width = SizeValue.Fill };
+        // 24dp in from the viewport's edges, so the panel stands where its placement puts it: one at the edge itself
+        // keeps the viewport's inset (#1933, AnAnchoredPanelStaysInTheViewportTests).
+        var root = new Column(gap: 0) { Width = SizeValue.Fill, Padding = EdgeInsets.All(24) };
         root.Add(new Anchored(anchor, panel) { Open = true, OnDismiss = () => { } });
 
         var host = new PhotonHost(root, PhotonTheme.Instance, ThemeMode.Light, 360, 400);
@@ -32,8 +34,8 @@ public class AnchoredNativeTests
         scrim.Bounds.Height.Should().Be(400);
 
         var item = frame.HitRegions[^1];
-        item.Bounds.X.Should().Be(0, "BottomStart aligns the panel to the anchor's start edge");
-        item.Bounds.Y.Should().Be(40 + Anchored.DefaultGap, "the panel sits below the anchor plus the gap");
+        item.Bounds.X.Should().Be(24, "BottomStart aligns the panel to the anchor's start edge");
+        item.Bounds.Y.Should().Be(24 + 40 + Anchored.DefaultGap, "the panel sits below the anchor plus the gap");
         itemPressed.Should().BeFalse();
     }
 

@@ -123,6 +123,11 @@ public class SemanticsParityTests(ITestOutputHelper output)
         yield return new("case segmented-control", () => new SegmentedControl(["All", "Income"], 0, _ => { }));
         yield return new("case select", () => new Select(["Lisbon", "Porto"], 0, _ => { }));
         yield return new("case select opened", () => new Select(["Lisbon", "Porto"], 0, _ => { }), Open: true);
+        // A select named by its label, drawn or left to the form, the combobox's name on both targets (#1838).
+        yield return new("case labelled select", () => new Select(["Lisbon", "Porto"], 0, _ => { }, label: "City"));
+        yield return new("case labelled select, label hidden",
+            () => new Select(["Lisbon", "Porto"], 0, _ => { }, label: "City") { LabelHidden = true });
+        yield return new("case labelled select opened", () => new Select(["Lisbon", "Porto"], 0, _ => { }, label: "City"), Open: true);
         yield return new("case time-picker", () => new TimePicker(new TimeOnly(9, 30), _ => { }, label: "Arrival"));
         yield return new("case disabled select", () => new Select(["Lisbon", "Porto"], 0, _ => { }) { Disabled = true });
         yield return new("case disabled time-picker",

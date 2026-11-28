@@ -25,11 +25,18 @@ public sealed class Draggable : SingleChildNode
 
     public DragAxis Axis { get; init; }
 
-    /// <summary>Travel limits along the axis. Negative is up / towards the start.</summary>
+    /// <summary>
+    /// Travel limits along the axis. Negative is up, or toward the START of the reading on a horizontal
+    /// axis: horizontal travel is toward the END in every direction, so a row that opens toward its start
+    /// has a negative <see cref="Min"/> under left to right and under right to left alike. The web
+    /// reads the direction where the surface sits and does the negation; Photon lays out left to right
+    /// for 1.0, where toward the end is toward the right.
+    /// </summary>
     public float Min { get; init; }
     public float Max { get; init; }
 
-    /// <summary>Where the child sits when no finger is on it — the CALLER's state, not the node's.</summary>
+    /// <summary>Where the child sits when no finger is on it — the CALLER's state, not the node's. On a
+    /// horizontal axis it is measured toward the end, as the limits are.</summary>
     public float RestOffset { get; init; }
 
     /// <summary>The offset at the moment of release. The caller decides what it meant.</summary>

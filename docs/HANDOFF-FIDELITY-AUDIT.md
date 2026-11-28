@@ -2751,7 +2751,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: A Box is the engine's rrect surfaced as a widget: 1 fill draw + optional border draw + optional shadow draw. … Paint order: shadow → fill (solid or 2-stop linear gradient) → border (inside stroke) → child.
-- **Code**: BoxStyle carries two further fill layers beyond the single fill: Pattern, a repeating hairline grid (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and Glow, a radial gradient (121). Both reach paint — EmitChrome takes gradient, pattern and glow together (EmitVisitor.Chrome.cs:121) and the web stacks them as background-image layers (WebLoweringVisitor.Containers.cs BackgroundLayers). The documented order is grid below gradient, glow above the grid, which is a four-layer fill, not one.
+- **Code**: BoxStyle carries two further fill layers beyond the single fill: Patterns, a list of repeating layers (a hairline grid, a vector drawing or an image, src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and Glow, a radial gradient (121). Both reach paint — EmitChrome takes gradient, patterns and glow together (EmitVisitor.Chrome.cs:121) and the web stacks them as background-image layers (Patterns/BackgroundLayers.cs BackgroundLayers). The documented order is grid below gradient, glow above the grid, which is a four-layer fill, not one.
 - **Evidence**:
 
   ```
@@ -2962,7 +2962,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Image.cs`
 - **Handoff**: "Loading: SurfaceSubtle fill (or Skeleton shimmer when inside one). Error: SurfaceSubtle + Md broken-image glyph in TextMuted. Decoded image crossfades in, 200ms."
-- **Code**: Neither realizer has a loading or error state: the web lowering emits a bare <img> with src/alt and no placeholder, no error fallback and no crossfade (WebLoweringVisitor.Graphics.cs LowerImage); the native path draws a plain SurfaceSubtle rrect on a null/failed decode, with no Md broken-image glyph in TextMuted and no 200ms fade (EmitVisitor.Media.cs:270-274). Stated reason: the class doc fences "the loading/error states and the decode crossfade" to the asset/animation systems.
+- **Code**: Neither realizer has a loading or error state: the web lowering emits a bare <img> with src/alt and no placeholder, no error fallback and no crossfade (WebLoweringVisitor.Graphics.cs LowerImage); the native path draws a plain SurfaceSubtle rrect on a null/failed decode, with no Md broken-image glyph in TextMuted and no 200ms fade (EmitVisitor.Media.cs:219-223). Stated reason: the class doc fences "the loading/error states and the decode crossfade" to the asset/animation systems.
 - **Evidence**:
 
   ```
@@ -2971,7 +2971,7 @@ the pill's 40 down.
       builder.FillRRect(new RRect(node.Bounds, image.CornerRadius),
           Paint.Solid(theme.SurfaceSubtle.Resolve(mode)));
       return;
-  }                                                     // EmitVisitor.Media.cs:270-274
+  }                                                     // EmitVisitor.Media.cs:219-223
   ```
 
 ### A11 Image · missing-feature · **CONFIRMED**
@@ -2983,19 +2983,19 @@ the pill's 40 down.
 
   ```
   var decoded = loader.Load(image.Source);
-  data = decoded is null ? null : TextureData.Rgba(decoded.Width, decoded.Height, decoded.Rgba);   // EmitVisitor.Media.cs:265-266
+  data = decoded is null ? null : TextureData.Rgba(decoded.Width, decoded.Height, decoded.Rgba);   // EmitVisitor.Media.cs:214-215
   ```
 
 ### A11 Image · missing-feature · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Image.cs`
 - **Handoff**: "atlas pages evict LRU under memory pressure (M4 lifecycle)"
-- **Code**: The native image cache is an unbounded Dictionary keyed by source string with no eviction policy, no LRU ordering, no size cap and no memory-pressure hook — entries are only ever added (MotionScope.cs:33 declares it, EmitVisitor.Media.cs:267 writes it). Not named as a fence in the Image or EmitImage doc comments.
+- **Code**: The native image cache is an unbounded Dictionary keyed by source string with no eviction policy, no LRU ordering, no size cap and no memory-pressure hook — entries are only ever added (MotionScope.cs:33 declares it, EmitVisitor.Media.cs:216 writes it). Not named as a fence in the Image or EmitImage doc comments.
 - **Evidence**:
 
   ```
   public Dictionary<string, TextureData?>? ImageCache { get; init; }   // MotionScope.cs:33
-  cache?[image.Source] = data;                                          // EmitVisitor.Media.cs:267
+  cache?[image.Source] = data;                                          // EmitVisitor.Media.cs:216
   ```
 
 ### A12 Button · documented-deviation · **CONFIRMED**
@@ -3347,7 +3347,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Spinner.cs`
 - **Handoff**: Appears only after a 400ms delay (skip flash for fast ops).
-- **Code**: Spinner.AppearDelayMs has exactly one consumer, the generated web stylesheet (ThemeStylesheet.cs:203). EmitVisitor.EmitSpinner (EmitVisitor.Media.cs:360-388) paints the bars from frame 0 with no appear gate, so the native spinner flashes on fast operations. The Spinner doc names the fence: the delay "is generated CSS on web and joins the native transition animator".
+- **Code**: Spinner.AppearDelayMs has exactly one consumer, the generated web stylesheet (ThemeStylesheet.cs:203). EmitVisitor.EmitSpinner (EmitVisitor.Media.cs:309-337) paints the bars from frame 0 with no appear gate, so the native spinner flashes on fast operations. The Spinner doc names the fence: the delay "is generated CSS on web and joins the native transition animator".
 - **Evidence**:
 
   ```
